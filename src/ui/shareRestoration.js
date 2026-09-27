@@ -27,6 +27,7 @@ export class ShareRestoration {
     this._disposed = false;
     this._shareTrackingAcquiringKey = null;
     this._shareTrackingNoticeGeneration = 0;
+    this._pendingLayerStateNotice = false;
     this._initialShareState = null;
     this._initialShareNavigationGeneration = null;
     this._initialShareRestoreTimeout = null;
@@ -86,6 +87,7 @@ export class ShareRestoration {
               layers,
               tracking,
             });
+            this._handleInvalidShareLayerState(savedState);
           } catch (error) {
             this.shareLinkManager.completeInitialRestore();
             this._settleInitialShareRestore({
@@ -182,6 +184,22 @@ export class ShareRestoration {
       Promise.resolve({ status: 'not-requested' })
     );
   }
+  _handleInvalidShareLayerState(state) {
+    if (!state?.layerStateInvalid || this._disposed) return;
+    // A selected-subject acquisition owns the universal status surface while
+    // it is pending. Show the layer warning after a successful/cancelled
+    // acquisition; a specific tracking failure below takes precedence.
+    if (this._shareTrackingAcquiringKey) {
+      this._pendingLayerStateNotice = true;
+      return;
+    }
+    this._pendingLayerStateNotice = false;
+    const noticeGeneration = ++this._shareTrackingNoticeGeneration;
+    this._showDeferredShareStatus(
+      'Shared layer selection could not be restored',
+      noticeGeneration,
+    );
+  }
   _handleShareTrackingRestoreStatus(result) {
     if (!result || this._disposed) return;
     const trackingKey = `${result.layerId || ''}:${result.targetId ?? ''}`;
@@ -207,13 +225,19 @@ export class ShareRestoration {
     if (
       result.classification === 'followed' ||
       result.classification === 'cancelled'
-    )
+    ) {
+      if (this._pendingLayerStateNotice)
+        this._handleInvalidShareLayerState({ layerStateInvalid: true });
       return;
+    }
     // A stale terminal result must never replace a newer target's acquisition.
     if (this._shareTrackingAcquiringKey) return;
     const noticeGeneration = ownsAcquiringNotice
       ? this._shareTrackingNoticeGeneration
       : ++this._shareTrackingNoticeGeneration;
+    // A concrete tracking failure is more actionable than the generic layer
+    // payload warning when both occurred in the same shared link.
+    this._pendingLayerStateNotice = false;
     const subject = result.label || 'entity';
     const message =
       result.classification === 'expired'
@@ -221,6 +245,10 @@ export class ShareRestoration {
         : result.classification === 'source-unavailable'
           ? `Shared ${subject} could not be restored — feed unavailable`
           : `Shared ${subject} is unavailable`;
+    this._showDeferredShareStatus(message, noticeGeneration);
+  }
+
+  _showDeferredShareStatus(message, noticeGeneration) {
     const showAfterStartupCover = () => {
       this._lifetime.frame(() => {
         if (
@@ -282,6 +310,7 @@ export class ShareRestoration {
     this._disposed = true;
     this._shareTrackingNoticeGeneration += 1;
     this._shareTrackingAcquiringKey = null;
+    this._pendingLayerStateNotice = false;
     this._layerStateCoordinator?.destroy();
     this._layerStateCoordinator = null;
     this._layerStateRestorePromise = null;

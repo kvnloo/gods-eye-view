@@ -1678,6 +1678,14 @@ isCurrent })` gates BOTH halves of the map-stack switch, which is its only
 > - **`#active-style-name` has exactly one writer (2026-08-20):** the style-name
 >   mapping in `setStyle`. Location, search, and scene paths report where the
 >   camera is through the LOCATION surfaces, never the style slot.
+> - **Rejected share-link layer state (2026-09-27):** a v2 share whose
+>   `l` field is present but fails the layer-state decoder still restores its
+>   valid camera/style state, but no longer looks fully successful: after the
+>   startup cover clears, the universal top-center status reports `Shared layer
+>   selection could not be restored`. The valid explicit-empty form (`l=`)
+>   remains unchanged. If a shared tracked subject is still acquiring, that
+>   notice keeps the status surface until it settles; a concrete tracking
+>   failure is more specific and takes precedence over the layer warning.
 > - **Share-link selected-subject Follow (2026-08-20):** a copied v2 link adds
 >   an ephemeral `at` epoch-seconds field; ordinary live hash updates omit it.
 >   A shared Flights, Military Flights, or Satellites selection restores only

@@ -1,6 +1,72 @@
 import { matchFlowToRoads } from '../../data/flowMatch.js';
 import { TRAFFIC_TIMING_ENABLED, FLOW_RENDER_RACE_MS } from './policy.js';
 
+const FLOW_ROAD_CLASS = new Map([
+  ['motorway', 'motorway'],
+  ['major_road', 'primary'],
+  ['other_major_road', 'primary'],
+  ['secondary_road', 'secondary'],
+  ['local_connecting_road', 'tertiary'],
+  ['local_road_of_high_importance', 'tertiary'],
+  ['local_road', 'residential'],
+  ['trunk', 'trunk'],
+  ['primary', 'primary'],
+  ['secondary', 'secondary'],
+  ['tertiary', 'tertiary'],
+  ['residential', 'residential'],
+  ['unclassified', 'unclassified'],
+]);
+
+function flowRoadClass(value) {
+  const key = String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_');
+  return FLOW_ROAD_CLASS.get(key) ?? 'unclassified';
+}
+
+/**
+ * Turn TomTom's already-decoded flow polylines into the road-data shape the
+ * traffic renderer consumes. This is only a live-mode resilience path: normal
+ * loads still prefer OSM geometry and match these segments onto it.
+ */
+export function flowSegmentsAsRoadData(segments) {
+  const roads = [];
+  for (const segment of Array.isArray(segments) ? segments : []) {
+    const coordinates = segment?.coords;
+    const level = segment?.trafficLevel;
+    if (
+      !Array.isArray(coordinates) ||
+      coordinates.length < 2 ||
+      !coordinates.every(
+        (point) =>
+          Array.isArray(point) &&
+          point.length >= 2 &&
+          Number.isFinite(point[0]) &&
+          Number.isFinite(point[1]) &&
+          point[0] >= -180 &&
+          point[0] <= 180 &&
+          point[1] >= -90 &&
+          point[1] <= 90,
+      ) ||
+      (!Number.isFinite(level) && segment?.closure !== true)
+    )
+      continue;
+    roads.push({
+      coordinates,
+      type: flowRoadClass(segment.roadType),
+      // The vector tile does not expose the OSM one-way tag. Rendering both
+      // directions is preferable to inventing a legal direction.
+      oneway: 0,
+      flow: {
+        level: segment.closure === true ? 0 : Math.max(0, Math.min(1, level)),
+        closure: segment.closure === true,
+      },
+    });
+  }
+  return { roads };
+}
+
 export function createFlow({ state: layerState, services, parts, source }) {
   const { registerDynamicCredit, TOMTOM_CREDIT } = services.credits;
   const { fetchFlowForBounds } = source;
@@ -193,6 +259,7 @@ export function createFlow({ state: layerState, services, parts, source }) {
       );
     }
     if (generation !== layerState._loadGeneration) return false;
+    layerState._roadGeometrySource = 'osm';
     parts.rendering.renderRoadsForAltitude(roads, altitude, label, trace);
     if (outcome === 'timeout') {
       flowJob
@@ -206,10 +273,35 @@ export function createFlow({ state: layerState, services, parts, source }) {
     }
     return true;
   }
+  function renderFlowGeometryFallback(
+    segments,
+    generation,
+    altitude,
+    label = 'TomTom flow geometry',
+  ) {
+    if (
+      !layerState._liveMode ||
+      !layerState._enabled ||
+      generation !== layerState._loadGeneration
+    )
+      return false;
+    const roadData = flowSegmentsAsRoadData(segments);
+    if (!roadData.roads.length) return false;
+    const roads = layerState._parseRoads(roadData);
+    if (!roads.length) return false;
+    layerState._flowCoveragePct = 100;
+    layerState._flowError = null;
+    layerState._roadError = null;
+    layerState._roadGeometrySource = 'tomtom';
+    parts.rendering.renderRoadsForAltitude(roads, altitude, label);
+    return true;
+  }
+
   return {
     deriveTrafficFlowError,
     ensureFlowStatus,
     applyFlowToRoads,
     applyFlowThenRender,
+    renderFlowGeometryFallback,
   };
 }

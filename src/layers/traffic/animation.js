@@ -309,6 +309,7 @@ export function createAnimation({
     layerState._count = 0;
     layerState._bucketCounts = { free: 0, slow: 0, jam: 0, sim: 0 };
     layerState._closedRoads = 0;
+    layerState._roadGeometrySource = null;
   }
   return { spawnDotsForRoad, animate, maybeStopLight, clearDots };
 }

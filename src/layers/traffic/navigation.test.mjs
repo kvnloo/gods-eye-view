@@ -11,7 +11,7 @@ function deferred() {
   return { promise, resolve };
 }
 
-function setup(t, requestRoads) {
+function setup(t, requestRoads, sourceOverrides = {}) {
   t.mock.timers.enable({ apis: ['setTimeout', 'setInterval'] });
   const camera = {
     positionCartographic: Cesium.Cartographic.fromDegrees(
@@ -50,7 +50,10 @@ function setup(t, requestRoads) {
   };
   const layer = createTrafficLayer({
     services: {
-      credits: {},
+      credits: {
+        registerDynamicCredit() {},
+        TOMTOM_CREDIT: 'TomTom',
+      },
       render: { holdContinuousRender() {}, releaseContinuousRender() {} },
     },
     source: {
@@ -59,6 +62,7 @@ function setup(t, requestRoads) {
       fetchFlowForBounds: async () => [],
       getFlowSessionStats: () => ({ tilesFetched: 0 }),
       resetFlowTileCache() {},
+      ...sourceOverrides,
     },
   });
   layer.init(viewer);
@@ -251,4 +255,54 @@ test('an unclassified road failure keeps the general line', async (t) => {
   layer.enable(viewer);
   await tick(400);
   assert.equal(layer.getStats().error, 'Road data temporarily unavailable');
+});
+
+
+test('live traffic falls back to TomTom flow geometry when Overpass declines', async (t) => {
+  let roadCalls = 0;
+  let flowCalls = 0;
+  const { layer, viewer, tick } = setup(
+    t,
+    async () => {
+      roadCalls++;
+      return { ok: false, status: 406 };
+    },
+    {
+      getStatus: async () => ({ hasKey: true }),
+      fetchFlowForBounds: async () => {
+        flowCalls++;
+        return [
+          {
+            coords: [
+              [-97.744, 30.267],
+              [-97.739, 30.272],
+            ],
+            trafficLevel: 0.25,
+            roadType: 'MOTORWAY',
+            closure: false,
+          },
+        ];
+      },
+      getFlowSessionStats: () => ({ tilesFetched: flowCalls }),
+    },
+  );
+  layer.enable(viewer);
+  await tick(400);
+  await tick(0);
+
+  const stats = layer.getStats();
+  assert.ok(stats.count > 0, 'TomTom polyline rendered traffic dots');
+  assert.equal(stats.mode, 'live');
+  assert.equal(stats.error, null);
+  assert.equal(stats.flowCoveragePct, 100);
+  assert.equal(stats.geometrySource, 'tomtom');
+  assert.equal(flowCalls, 1, 'the concurrent warm result is reused');
+  assert.equal(roadCalls, 1);
+
+  await tick(60_000);
+  assert.equal(
+    roadCalls,
+    1,
+    'a successful live fallback does not enter the parked Overpass retry loop',
+  );
 });

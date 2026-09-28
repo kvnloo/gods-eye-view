@@ -73,7 +73,14 @@ export function createModel({ state: layerState, services, parts, source }) {
         );
       }
 
-      roads.push({ coords, type, oneway, waypoints, segmentDist });
+      roads.push({
+        coords,
+        type,
+        oneway,
+        waypoints,
+        segmentDist,
+        ...(road.flow ? { flow: road.flow } : {}),
+      });
     }
 
     return roads;

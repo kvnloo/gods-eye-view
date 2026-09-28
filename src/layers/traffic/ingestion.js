@@ -174,18 +174,26 @@ export function createIngestion({
     }
     layerState._roadError = null;
 
-    // Live mode: warm the flow-tile cache CONCURRENTLY with the Overpass road
-    // fetch — sequential fetches doubled first-paint latency (field-test
-    // round 1). Failures are irrelevant; applyFlowToRoads settles the truth.
-    parts.flow.ensureFlowStatus().then(() => {
+    // Live mode: warm flow CONCURRENTLY with Overpass. Keep the result: if
+    // OSM geometry fails, TomTom's decoded flow polylines are sufficient for a
+    // bounded live-only fallback instead of sending the user to another public
+    // Overpass mirror.
+    const flowWarm = parts.flow.ensureFlowStatus().then(async () => {
       if (
-        layerState._liveMode &&
-        layerState._enabled &&
-        generation === layerState._loadGeneration
-      ) {
-        fetchFlowForBounds(clamped, { signal: requestSignal }).catch(() => {
-          /* warm-up only */
-        });
+        !layerState._liveMode ||
+        !layerState._enabled ||
+        generation !== layerState._loadGeneration
+      )
+        return { segments: null, error: null };
+      try {
+        return {
+          segments: await fetchFlowForBounds(clamped, {
+            signal: requestSignal,
+          }),
+          error: null,
+        };
+      } catch (error) {
+        return { segments: null, error };
       }
     });
 
@@ -309,6 +317,31 @@ export function createIngestion({
     } catch (e) {
       if (e?.name === 'AbortError') return;
       if (generation === layerState._loadGeneration && !renderedSomething) {
+        const warm = await flowWarm;
+        if (
+          generation !== layerState._loadGeneration ||
+          requestSignal.aborted ||
+          !layerState._enabled
+        )
+          return;
+        if (
+          warm.segments?.length &&
+          parts.flow.renderFlowGeometryFallback(
+            warm.segments,
+            generation,
+            altitude,
+          )
+        ) {
+          renderedSomething = true;
+          console.warn(
+            '[Data:Traffic] Overpass unavailable; rendering TomTom flow geometry:',
+            e?.message || e,
+          );
+          return;
+        }
+        if (warm.error?.name !== 'AbortError' && warm.error)
+          layerState._flowError = parts.flow.deriveTrafficFlowError(warm.error);
+
         // A refusal we classified carries its own line; anything else — a
         // dropped connection, a malformed snapshot — keeps the general one,
         // because `e.message` from the platform is not a sentence anyone

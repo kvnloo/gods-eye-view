@@ -1,5 +1,11 @@
 # Changelog
 
+- Share links no longer silently look restored when their v2 layer selection is
+  rejected. The existing `layerStateInvalid` signal now produces a deferred
+  top-center notice after the startup cover clears. A selected-subject
+  acquisition keeps its existing notice until it settles, and a concrete
+  tracking failure takes precedence over the generic layer warning (#776).
+
 - CCTV cameras whose bearing is a guess now say so. Packs mark bearings derived
   from a hash of the camera id as `headingConfidence: 'low'`, but nothing read the
   flag, so roughly 70% of a default catalog rendered like surveyed facings. The HUD

@@ -97,7 +97,12 @@ export function createHazardEvidenceHandoff({
   showToast = () => {},
 } = {}) {
   if (!documentRef?.createElement || !windowRef?.addEventListener)
-    return { destroy() {}, openForRecord() { return false; } };
+    return {
+      destroy() {},
+      openForRecord() {
+        return false;
+      },
+    };
 
   let dialog = null;
   let currentRecord = null;

@@ -39,7 +39,13 @@ export function validateWeatherSnapshot(value, product) {
     value.latest !== times.at(-1) ||
     value.tileSize !== 256 ||
     value.maxLevel !== 6 ||
-    !['geographic', 'web-mercator'].includes(value.tilingScheme)
+    !['geographic', 'web-mercator'].includes(value.tilingScheme) ||
+    (product === 'radar-global'
+      ? value.shellSupported !== false ||
+        value.imageUrl !== null ||
+        value.imageSize !== null ||
+        value.tilingScheme !== 'web-mercator'
+      : value.shellSupported !== true)
   )
     throw new Error('Malformed weather manifest');
   return value;
@@ -48,7 +54,6 @@ export function validateWeatherSnapshot(value, product) {
 /** Largest whole-extent image per product; also the proxy default size. */
 export const WEATHER_IMAGE_SIZES = Object.freeze({
   radar: Object.freeze({ width: 4096, height: 2048 }),
-  'radar-global': Object.freeze({ width: 4096, height: 2048 }),
   'clouds-regional': Object.freeze({ width: 4096, height: 2048 }),
   clouds: Object.freeze({ width: 2048, height: 1024 }),
   lightning: Object.freeze({ width: 4096, height: 2048 }),
@@ -66,6 +71,8 @@ export function weatherImageUrl(
 ) {
   if (!WEATHER_PRODUCTS.includes(product) || !Number.isFinite(Date.parse(time)))
     throw new Error('Invalid weather frame');
+  if (product === 'radar-global')
+    throw new Error('Weather image unavailable for tile-only product');
   let box = '';
   if (bbox !== null) {
     const edges = [bbox.west, bbox.south, bbox.east, bbox.north];
@@ -95,7 +102,12 @@ export function weatherImageUrl(
 export function weatherTileUrl(product, time, { size } = {}) {
   if (!WEATHER_PRODUCTS.includes(product) || !Number.isFinite(Date.parse(time)))
     throw new Error('Invalid weather frame');
-  if (size !== undefined && ![256, 512, 1024].includes(size))
+  if (
+    size !== undefined &&
+    !(product === 'radar-global'
+      ? [256, 512].includes(size)
+      : [256, 512, 1024].includes(size))
+  )
     throw new Error('Invalid weather tile size');
   return `/api/weather/tile?product=${product}&time=${encodeURIComponent(time)}&z={z}&x={x}&y={y}${size === undefined ? '' : `&size=${size}`}`;
 }

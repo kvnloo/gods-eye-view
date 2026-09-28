@@ -94,3 +94,130 @@ Do not propose upstream until:
 - at least one non-voice consumer works
 - the API contains no z0/Jev-specific vocabulary
 - provenance and failure semantics survive compression
+## Humanitarian compute track
+
+### Product question
+
+Can the World Packet help coordinate humanitarian response by turning public
+need/access/context data plus explicitly supplied resource capacity into bounded,
+auditable candidate actions?
+
+Do not build another crisis dashboard. Build the analysis-to-action handoff.
+
+### Relief Packet
+
+Layer a humanitarian packet on top of the generic World Packet:
+
+```text
+Relief Packet
+  crisis
+    event type / severity / affected geometry / observedAt / source
+  need
+    population / food-security phase / requested commodities / uncertainty
+  access
+    roads / route matrix / isochrones / known closures / freshness
+  response
+    operational presence / known facilities / explicitly supplied stock/capacity
+  context
+    curated situation reports / provenance / freshness
+  gaps
+    unmet need / unreachable areas / duplicate-response risk / missing evidence
+```
+
+### Candidate public sources
+
+- GDACS: rapid-onset disaster alerts and geospatial event data.
+- HDX HAPI: standardized humanitarian indicators, including IPC/CH acute food
+  insecurity, WFP food prices, population/context, and operational presence.
+- HOT/OpenStreetMap: roads, buildings and mapped humanitarian infrastructure.
+- ReliefWeb: curated situation reports and disaster metadata.
+- openrouteservice/VROOM: route matrices, isochrones and vehicle-routing
+  optimization; keep the engine swappable/local where possible.
+
+### First experiment: food distribution planning
+
+Use a historical or synthetic crisis first. Given:
+
+- affected admin areas and food-security estimates;
+- one or more depots with explicit stock;
+- a small vehicle fleet with explicit capacity/time windows;
+- current or fixture road/access constraints;
+
+produce:
+
+- candidate delivery quantities per zone;
+- candidate routes / fleet assignment;
+- expected unmet need after the plan;
+- areas excluded because evidence/access/capacity is unknown;
+- provenance and timestamp for every input;
+- a compact explanation of why each candidate allocation exists.
+
+### Optimization objective
+
+Prefer deterministic optimization over model judgement.
+
+Candidate objective components:
+
+```text
+minimize
+  weighted unmet need
+  + delivery time
+  + route/access risk
+  + duplicate-response penalty
+subject to
+  stock
+  vehicle capacity
+  time windows
+  route availability
+  explicit organizational constraints
+```
+
+Fairness and priority weights must be explicit inputs/policy, not inferred by
+a language model.
+
+### Jev / local-intelligence role
+
+Jev does not choose who receives aid. It can:
+
+- verify that a proposed action is supported by the packet;
+- detect missing/stale/conflicting evidence;
+- check that the compact explanation matches the deterministic optimizer result;
+- route ambiguous cases to a larger model or human reviewer;
+- reject plans whose preconditions changed after optimization.
+
+### Safety / humanitarian operating rules
+
+- aggregate/admin-area planning first; no individual tracking;
+- public or explicitly authorized data only;
+- never infer stock, shelter capacity, road safety or organizational presence
+  when the source is unknown;
+- distinguish `unknown`, `zero`, `unreachable`, `stale`, and `not assessed`;
+- recommendations are candidate plans until confirmed by the responsible
+  humanitarian operator;
+- preserve source license/attribution and timestamps through every packet;
+- keep a receipt for every plan input and optimizer output.
+
+### Suggested first benchmark
+
+Reproduce a historical disaster-delivery problem such as the public
+openrouteservice Cyclone Idai medical-goods example, then replace the fixture
+need layer with HDX/HAPI-derived humanitarian indicators.
+
+Compare:
+
+1. naive nearest-first routing;
+2. deterministic capacity-aware optimization;
+3. robust optimization with one injected road outage;
+4. the same plan after World/Relief Packet compression + Jev verification.
+
+Measure total travel time, served need, unmet need, recompute latency, serialized
+packet size, and whether stale/unknown inputs survive compression.
+
+### Stop conditions before any live operational use
+
+- historical/synthetic benchmark passes;
+- missing-data mutations cannot silently become zero;
+- route outage forces a replan rather than replaying the old dispatch;
+- optimizer result is reproducible from its receipt;
+- human-readable explanation is mechanically consistent with the result;
+- no model is required for the core plan;

@@ -7,6 +7,7 @@ import {
   roadRequestError,
 } from './source.js';
 import { clampBoundsAroundCenter } from '../../data/trafficBounds.js';
+import { flowSegmentsAsRoadData } from './flow.js';
 const bounds = { south: 30.267, west: -97.744, north: 30.268, east: -97.743 };
 const fixture = readFileSync(
   new URL(
@@ -232,5 +233,63 @@ test('an Overpass refusal is named by status, and keeps the status beside the wo
     refused.status,
     406,
     'a caller must be able to branch on the code without parsing English',
+  );
+});
+
+
+test('TomTom flow geometry becomes bounded pre-matched road data', () => {
+  const result = flowSegmentsAsRoadData([
+    {
+      coords: [
+        [-97.744, 30.267],
+        [-97.743, 30.268],
+      ],
+      trafficLevel: 0.25,
+      roadType: 'MOTORWAY',
+      closure: false,
+    },
+    {
+      coords: [
+        [-97.742, 30.267],
+        [-97.741, 30.268],
+      ],
+      trafficLevel: 0.7,
+      roadType: 'local road of high importance',
+      closure: false,
+    },
+    {
+      coords: [
+        [-97.74, 30.267],
+        [-97.739, 30.268],
+      ],
+      roadType: 'unknown-provider-class',
+      closure: true,
+    },
+    {
+      coords: [[Infinity, 30], [-97, 30]],
+      trafficLevel: 0.5,
+      roadType: 'major road',
+      closure: false,
+    },
+  ]);
+  assert.deepEqual(
+    result.roads.map(({ type, oneway, flow }) => ({ type, oneway, flow })),
+    [
+      {
+        type: 'motorway',
+        oneway: 0,
+        flow: { level: 0.25, closure: false },
+      },
+      {
+        type: 'tertiary',
+        oneway: 0,
+        flow: { level: 0.7, closure: false },
+      },
+      {
+        type: 'unclassified',
+        oneway: 0,
+        flow: { level: 0, closure: true },
+      },
+    ],
   );
 });

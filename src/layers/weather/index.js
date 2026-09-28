@@ -225,7 +225,10 @@ export function createWeatherLayer({
         rendering.setHidden?.(false);
         void warmNext(time);
       }
-      error = ok ? null : 'Frame unavailable; previous observation retained';
+      error = ok
+        ? null
+        : rendering.getDiagnostics().error ||
+          'Frame unavailable; previous observation retained';
       if (!ok) stop();
       return ok;
     } catch {

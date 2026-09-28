@@ -18,6 +18,7 @@ const snapshot = () => ({
   tileSize: 256,
   maxLevel: 6,
   tilingScheme: 'geographic',
+  shellSupported: true,
 });
 test('observed source accepts bounded exact times and refuses malformed or unsorted frames', () => {
   assert.equal(validateWeatherSnapshot(snapshot(), 'radar').latest, time);
@@ -161,4 +162,40 @@ test('detail-window image URLs carry the bbox and omit the default detail size',
     () => weatherImageUrl('radar', time, { width: 8192, height: 4096 }, box),
     /size/,
   );
+});
+
+
+test('RainViewer snapshots are tile-only and use the bounded WebMercator contract', () => {
+  const value = {
+    ...snapshot(),
+    product: 'radar-global',
+    bounds: { west: -180, south: -85, east: 180, north: 85 },
+    tilingScheme: 'web-mercator',
+    shellSupported: false,
+    imageUrl: null,
+    imageSize: null,
+  };
+  assert.equal(validateWeatherSnapshot(value, 'radar-global'), value);
+  assert.match(
+    weatherTileUrl('radar-global', time, { size: 512 }),
+    /size=512$/,
+  );
+  assert.throws(
+    () => weatherTileUrl('radar-global', time, { size: 1024 }),
+    /tile size/,
+  );
+  assert.throws(
+    () => weatherImageUrl('radar-global', time),
+    /tile-only/,
+  );
+  for (const bad of [
+    { shellSupported: true },
+    { imageUrl: '/api/weather/image?product=radar-global' },
+    { imageSize: { width: 4096, height: 2048 } },
+    { tilingScheme: 'geographic' },
+  ])
+    assert.throws(
+      () => validateWeatherSnapshot({ ...value, ...bad }, 'radar-global'),
+      /Malformed/,
+    );
 });

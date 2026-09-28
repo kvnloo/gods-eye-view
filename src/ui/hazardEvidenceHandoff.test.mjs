@@ -186,7 +186,7 @@ test('FIRMS selection hands its own coordinates to Recent Imagery and remembers 
   const cameras = findAction(dialog, 'cameras');
   assert.ok(imagery);
   assert.ok(cameras);
-  assert.equal(cameras.disabled, true);
+  assert.equal(cameras.disabled, false);
 
   imagery.click();
   await Promise.resolve();
@@ -212,6 +212,60 @@ test('FIRMS selection hands its own coordinates to Recent Imagery and remembers 
 
   handoff.destroy();
   assert.equal(windowRef.listenerCount('gev:entity-selected'), 0);
+});
+
+test('Nearby Cameras uses the hazard coordinate, not viewer position, and learns that explicit choice', async () => {
+  const documentRef = fakeDocument();
+  const windowRef = fakeWindow();
+  const storage = memoryStorage();
+  const calls = [];
+  const cctv = {
+    focusNearestToPoint(lat, lon, options) {
+      calls.push(['nearest-camera', lat, lon, options]);
+      return 'cam-near-hazard';
+    },
+  };
+  const dataManager = {
+    layers: new Map([['cctv', { module: cctv }]]),
+    async setEnabled(id, enabled, options) {
+      calls.push(['enable', id, enabled, options]);
+      return true;
+    },
+  };
+  const handoff = createHazardEvidenceHandoff({
+    documentRef,
+    windowRef,
+    storage,
+    dataManager,
+    styleManager: {
+      setPanelCollapsed(id, collapsed, options) {
+        calls.push(['panel', id, collapsed, options]);
+      },
+    },
+    recentImagery: {},
+  });
+
+  const record = {
+    layerId: 'local-firms',
+    latitude: 46.123,
+    longitude: -121.456,
+  };
+  assert.equal(handoff.openForRecord(record), true);
+  findAction(documentRef.body.children[0], 'cameras').click();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.deepEqual(calls, [
+    ['enable', 'cctv', true, { origin: 'user' }],
+    ['nearest-camera', 46.123, -121.456, { focus: true }],
+    ['panel', 'cctv-panel', false, { explicit: true }],
+  ]);
+  assert.deepEqual(readHazardEvidencePreference(storage), {
+    imagery: 0,
+    cameras: 1,
+  });
+
+  handoff.destroy();
 });
 
 test('the production selection event opens the chooser only for supported hazard records', () => {

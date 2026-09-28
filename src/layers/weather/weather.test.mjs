@@ -2257,3 +2257,34 @@ for (const product of ['radar', 'clouds-regional', 'lightning']) {
     assert.equal(h.viewer.camera.moveEnd.size, 0);
   });
 }
+
+
+test('RainViewer tile-only radar refuses the 3D Tiles shell without fetching or creating a surface', async () => {
+  let fetches = 0;
+  const h = renderingHarness({
+    getHost: () => ({ collection: new ImageryLayerCollection(), kind: 'tileset' }),
+    fetchImpl: async () => {
+      fetches++;
+      return mockResponse();
+    },
+  });
+  const rainViewer = {
+    ...snapshot,
+    product: 'radar-global',
+    tilingScheme: 'web-mercator',
+    shellSupported: false,
+    imageUrl: null,
+    imageSize: null,
+  };
+  assert.equal(await h.rendering.setFrame(rainViewer, times[0]), false);
+  assert.equal(await h.rendering.prefetch(rainViewer, times[1]), false);
+  assert.equal(fetches, 0);
+  assert.equal(h.shells().length, 0);
+  assert.equal(h.layers.length, 0);
+  assert.equal(h.rendering.getDiagnostics().host, 'shell');
+  assert.match(
+    h.rendering.getDiagnostics().error,
+    /RainViewer radar is unavailable on Google 3D/,
+  );
+  h.rendering.clear();
+});

@@ -1,5 +1,4 @@
-export const HAZARD_EVIDENCE_STORAGE_KEY =
-  'gev:hazard-evidence-preferences:v1';
+export const HAZARD_EVIDENCE_STORAGE_KEY = 'gev:hazard-evidence-preferences:v1';
 
 export const HAZARD_EVIDENCE_ACTIONS = Object.freeze(['imagery', 'cameras']);
 
@@ -21,9 +20,7 @@ function emptyPreference() {
 export function readHazardEvidencePreference(storage) {
   const fallback = emptyPreference();
   try {
-    const raw = resolveStorage(storage)?.getItem?.(
-      HAZARD_EVIDENCE_STORAGE_KEY,
-    );
+    const raw = resolveStorage(storage)?.getItem?.(HAZARD_EVIDENCE_STORAGE_KEY);
     if (!raw) return fallback;
     const parsed = JSON.parse(raw);
     return Object.fromEntries(

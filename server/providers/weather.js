@@ -6,6 +6,7 @@ import { readWindBody as readBytesCapped } from '../../src/sources/windBody.js';
 
 const BASE = 'https://nowcoast.noaa.gov/geoserver/observations/';
 const RAINVIEWER_API = 'https://api.rainviewer.com/public/weather-maps.json';
+const RAINVIEWER_TILE_ORIGIN = 'https://tilecache.rainviewer.com';
 const HOUR = 3600_000;
 const PRODUCTS = Object.freeze({
   lightning: Object.freeze({
@@ -203,8 +204,17 @@ export function weatherImageBbox(value) {
   return [west, south, east, north];
 }
 
+/** GeographicTilingScheme's two longitude tiles and one latitude tile at level zero. */
 export function weatherTileBounds(z, x, y) {
-  if (![z, x, y].every(Number.isInteger) || z < 0 || z > 7 || x < 0 || y < 0)
+  if (
+    ![z, x, y].every(Number.isInteger) ||
+    z < 0 ||
+    z > 6 ||
+    x < 0 ||
+    y < 0 ||
+    x >= 2 ** (z + 1) ||
+    y >= 2 ** z
+  )
     throw failure('invalid_weather_tile', 400);
   const span = 180 / 2 ** z;
   return [
@@ -215,6 +225,34 @@ export function weatherTileBounds(z, x, y) {
   ];
 }
 
+function rainViewerTileCoordinates(z, x, y) {
+  if (
+    ![z, x, y].every(Number.isInteger) ||
+    z < 0 ||
+    z > 7 ||
+    x < 0 ||
+    y < 0 ||
+    x >= 2 ** z ||
+    y >= 2 ** z
+  )
+    throw failure('invalid_weather_tile', 400);
+  return [z, x, y];
+}
+
+function rainViewerFramePath(frame, nowMs) {
+  if (
+    !frame ||
+    !Number.isInteger(frame.time) ||
+    frame.time <= 0 ||
+    nowMs - frame.time * 1000 > 24 * HOUR ||
+    frame.time * 1000 > nowMs + 5 * 60_000
+  )
+    throw failure('invalid_weather_metadata');
+  const path = `/v2/radar/${frame.time}`;
+  if (frame.path !== path) throw failure('invalid_weather_metadata');
+  return path;
+}
+
 function validatePng(bytes, width, height) {
   const buffer = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   if (
@@ -223,7 +261,9 @@ function validatePng(bytes, width, height) {
       .subarray(0, 8)
       .equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])) ||
     buffer.readUInt32BE(8) !== 13 ||
-    buffer.toString('ascii', 12, 16) !== 'IHDR'
+    buffer.toString('ascii', 12, 16) !== 'IHDR' ||
+    buffer.readUInt32BE(16) !== width ||
+    buffer.readUInt32BE(20) !== height
   )
     throw failure('invalid_weather_image');
   return buffer;
@@ -353,17 +393,28 @@ export function weatherProxy({
           signal,
         );
         const data = JSON.parse(jsonText);
-        const frames = data.radar?.past || [];
-        if (!frames.length) throw failure('weather_metadata_unavailable');
+        const frames = data.radar?.past;
+        if (
+          data.host !== RAINVIEWER_TILE_ORIGIN ||
+          !Array.isArray(frames) ||
+          frames.length < 1 ||
+          frames.length > 64
+        )
+          throw failure('weather_metadata_unavailable');
 
-        const host = data.host || 'https://tilecache.rainviewer.com';
+        const nextPaths = new Map();
         const allowedTimes = [];
         for (const frame of frames) {
+          const path = rainViewerFramePath(frame, now());
           const iso = new Date(frame.time * 1000).toISOString();
+          if (nextPaths.has(iso)) throw failure('invalid_weather_metadata');
           allowedTimes.push(iso);
-          rainViewerFramePaths.set(iso, { host, path: frame.path });
+          nextPaths.set(iso, path);
         }
         allowedTimes.sort();
+        rainViewerFramePaths.clear();
+        for (const [time, framePath] of nextPaths)
+          rainViewerFramePaths.set(time, framePath);
         const times = allowedTimes.slice(-13);
         const value = {
           bounds: { west: -180, south: -85, east: 180, north: 85 },
@@ -454,10 +505,12 @@ export function weatherProxy({
       tileTemplate: time
         ? `/api/weather/tile?product=${product}&time=${encodeURIComponent(time)}&z={z}&x={x}&y={y}`
         : null,
-      imageUrl: time
-        ? `/api/weather/image?product=${product}&time=${encodeURIComponent(time)}`
-        : null,
-      imageSize: { ...spec.image },
+      shellSupported: product !== 'radar-global',
+      imageUrl:
+        time && product !== 'radar-global'
+          ? `/api/weather/image?product=${product}&time=${encodeURIComponent(time)}`
+          : null,
+      imageSize: product === 'radar-global' ? null : { ...spec.image },
     };
   }
 
@@ -505,6 +558,22 @@ export function weatherProxy({
       const size =
         url.searchParams.get('size') ??
         (wholeImage ? `${largest.width}x${largest.height}` : '256');
+      if (
+        wholeImage
+          ? !IMAGE_SIZES.includes(size) ||
+            Number.parseInt(size, 10) > largest.width
+          : product === 'radar-global'
+            ? !['256', '512'].includes(size)
+            : !['256', '512', '1024'].includes(size)
+      )
+        throw failure(
+          wholeImage
+            ? 'invalid_weather_image_size'
+            : 'invalid_weather_tile_size',
+          400,
+        );
+      if (wholeImage && product === 'radar-global')
+        throw failure('weather_image_unsupported', 400);
 
       if (url.pathname === '/manifest') {
         try {
@@ -521,6 +590,15 @@ export function weatherProxy({
       const coords = wholeImage
         ? null
         : ['z', 'x', 'y'].map((key) => url.searchParams.get(key));
+      if (coords?.some((value) => !/^(?:0|[1-9]\d{0,2})$/.test(value ?? '')))
+        throw failure('invalid_weather_tile', 400);
+      const tileCoords = coords?.map(Number) ?? null;
+      const tileBounds =
+        product === 'radar-global'
+          ? (tileCoords ? rainViewerTileCoordinates(...tileCoords) : null)
+          : tileCoords
+            ? weatherTileBounds(...tileCoords)
+            : null;
       const time = url.searchParams.get('time');
       if (!time || observationTime(time) !== time)
         throw failure('invalid_weather_time', 400);
@@ -532,6 +610,14 @@ export function weatherProxy({
         now() - Date.parse(time) > 24 * HOUR
       )
         throw failure('unknown_weather_time', 400);
+      if (
+        detailBox &&
+        (detailBox[0] < value.bounds.west ||
+          detailBox[1] < value.bounds.south ||
+          detailBox[2] > value.bounds.east ||
+          detailBox[3] > value.bounds.north)
+      )
+        throw failure('invalid_weather_bbox', 400);
 
       const [width, height] = wholeImage
         ? size.split('x').map(Number)
@@ -556,16 +642,12 @@ export function weatherProxy({
 
         let upstreamUrl;
         if (product === 'radar-global') {
-          const frameInfo = rainViewerFramePaths.get(time);
-          if (!frameInfo) throw failure('unknown_weather_time', 400);
-          const [z, x, y] = coords.map(Number);
-          const clampedZ = Math.min(z, 7);
-          upstreamUrl = `${frameInfo.host}${frameInfo.path}/256/${clampedZ}/${x}/${y}/2/1_1.png`;
+          const framePath = rainViewerFramePaths.get(time);
+          if (!framePath) throw failure('unknown_weather_time', 400);
+          const [z, x, y] = tileBounds;
+          upstreamUrl = `${RAINVIEWER_TILE_ORIGIN}${framePath}/${width}/${z}/${x}/${y}/2/1_1.png`;
         } else {
           const spec = PRODUCTS[product];
-          const tileBounds = coords
-            ? weatherTileBounds(...coords.map(Number))
-            : null;
           const bbox =
             detailBox ??
             (wholeImage

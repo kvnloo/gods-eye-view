@@ -1205,7 +1205,7 @@ test('RainViewer manifest is tile-only and tiles use the pinned official origin'
       calls.push({ url: parsed, options });
       if (parsed.href === 'https://api.rainviewer.com/public/weather-maps.json')
         return rainViewerMetadata();
-      const size = Number(parsed.pathname.split('/').at(-7));
+      const size = Number(parsed.pathname.split('/').at(-6));
       return image(png(size, size));
     },
   });

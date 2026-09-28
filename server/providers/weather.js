@@ -8,6 +8,7 @@ const BASE = 'https://nowcoast.noaa.gov/geoserver/observations/';
 const RAINVIEWER_API = 'https://api.rainviewer.com/public/weather-maps.json';
 const RAINVIEWER_TILE_ORIGIN = 'https://tilecache.rainviewer.com';
 const HOUR = 3600_000;
+const RAINVIEWER_RATE_WINDOW_MS = 60_000;
 const PRODUCTS = Object.freeze({
   lightning: Object.freeze({
     service: 'lightning_detection',
@@ -273,6 +274,7 @@ export function weatherProxy({
   fetchImpl = fetch,
   now = () => Date.now(),
   timeoutMs = 12_000,
+  rainViewerMaxRequestsPerMinute = 100,
 } = {}) {
   const metadata = new Map();
   const attempts = new Map();
@@ -283,6 +285,16 @@ export function weatherProxy({
   let tileBytes = 0;
   let active = 0;
   const rainViewerFramePaths = new Map();
+  const rainViewerRequests = [];
+
+  function admitRainViewerRequest() {
+    const cutoff = now() - RAINVIEWER_RATE_WINDOW_MS;
+    while (rainViewerRequests.length && rainViewerRequests[0] <= cutoff)
+      rainViewerRequests.shift();
+    if (rainViewerRequests.length >= rainViewerMaxRequestsPerMinute)
+      throw failure('weather_rate_limited', 429);
+    rainViewerRequests.push(now());
+  }
 
   function pump() {
     while (active < 8 && pending.length) {
@@ -364,6 +376,7 @@ export function weatherProxy({
         !/^image\/png(?:;|$)/i.test(response.headers.get('content-type') || ''))
     ) {
       await response.body?.cancel();
+      if (response.status === 429) throw failure('weather_rate_limited', 429);
       throw failure('weather_upstream_unavailable');
     }
     const value = image
@@ -389,7 +402,10 @@ export function weatherProxy({
         attempts.set(product, now());
         const jsonText = await shared(
           'metadata:rainviewer',
-          (activeSignal) => upstream(RAINVIEWER_API, activeSignal),
+          (activeSignal) => {
+            admitRainViewerRequest();
+            return upstream(RAINVIEWER_API, activeSignal);
+          },
           signal,
         );
         const data = JSON.parse(jsonText);
@@ -679,7 +695,10 @@ export function weatherProxy({
         try {
           const bytes = await shared(
             `image:${key}`,
-            (signal) => upstream(upstreamUrl, signal, imageShape),
+            (signal) => {
+              if (product === 'radar-global') admitRainViewerRequest();
+              return upstream(upstreamUrl, signal, imageShape);
+            },
             controller.signal,
           );
           rememberTile(key, bytes);

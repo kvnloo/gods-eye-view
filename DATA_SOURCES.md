@@ -297,9 +297,9 @@ This implementation is original; those contributions have not been merged here.
 ### Observed weather: RainViewer global radar
 
 - **Source:** [RainViewer public weather maps API](https://www.rainviewer.com/api.html) (`https://api.rainviewer.com/public/weather-maps.json`) and CDN tile cache.
-- **Rights/credit:** RainViewer; free for personal and educational use.
+- **Rights/credit:** RainViewer; public API terms cover personal, educational, and small-scale community use, with visible RainViewer attribution.
 - **Coverage/meaning:** Global radar composite covering North America, Europe, Asia, Australia, and South America. Complements the high-resolution NOAA CONUS radar by providing worldwide precipitation context on the shared weather timeline.
-- **Delivery:** Keyless same-origin `/api/weather/manifest?product=radar-global` and `/api/weather/tile?product=radar-global`, with 5-minute metadata caching and server-side tile proxying.
+- **Delivery:** Keyless same-origin `/api/weather/manifest?product=radar-global` and `/api/weather/tile?product=radar-global`, with 5-minute metadata caching and server-side tile proxying. RainViewer's 2026 transition summary states a 100 requests/IP/minute service limit; uncached metadata/tile acquisition is admitted under that same rolling ceiling before contacting RainViewer.
 
 ### Weather: NHC/CPHC cyclone advisories
 

@@ -15,6 +15,14 @@
   read `Overpass mirrors unreachable` and `Overpass temporarily unavailable`.
   Failures the layer cannot classify keep the general line (daikaginza, #665).
 
+- Keep live Street Traffic usable when Overpass road geometry is unavailable.
+  When a TomTom key is configured, the flow tiles already fetched for
+  congestion contain bounded road polylines; a failed Overpass load now renders
+  those polylines directly with their attached flow instead of retrying a
+  public mirror forever. OSM remains the preferred geometry and the keyless
+  simulation path is unchanged. Stats expose whether the current geometry came
+  from `osm` or the `tomtom` fallback (#661).
+
 - Bound the client terrain-height cache at 20 000 entries with least-recently-used eviction, so a long session no longer retains every coordinate it ever resolved. Consumer reads promote their entry and a batch still reports every point it resolved (Pedro Lobato, #594).
 
 - Release CCTV media streams whose upstream falls silent after answering. The

@@ -1383,7 +1383,6 @@ body.recording-mode #right-context-rail > [data-panel-id] {
   }
 }
 
-
 /* Hazard evidence handoff: a small chooser over existing Recent Imagery/CCTV tools. */
 .hazard-evidence-dialog {
   width: min(420px, calc(100vw - 32px));

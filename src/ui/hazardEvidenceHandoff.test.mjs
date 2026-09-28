@@ -62,7 +62,8 @@ class FakeNode {
     this.open = false;
   }
   click() {
-    for (const listener of this.listeners.get('click') || []) listener({ target: this });
+    for (const listener of this.listeners.get('click') || [])
+      listener({ target: this });
   }
 }
 
@@ -102,7 +103,9 @@ function findAction(root, action) {
   return null;
 }
 
-test('preference ranking is stable, bounded and records only explicit valid actions', () => {
+test(
+  'preference ranking is stable, bounded and records only explicit valid actions',
+  () => {
   const storage = memoryStorage();
   assert.deepEqual(readHazardEvidencePreference(storage), {
     imagery: 0,
@@ -117,10 +120,13 @@ test('preference ranking is stable, bounded and records only explicit valid acti
     imagery: 1,
     cameras: 2,
   });
-  assert.deepEqual(rankHazardEvidenceActions(storage), ['cameras', 'imagery']);
-});
+    assert.deepEqual(rankHazardEvidenceActions(storage), ['cameras', 'imagery']);
+  },
+);
 
-test('blocked or malformed storage degrades to the stable default instead of breaking hazard selection', () => {
+test(
+  'blocked or malformed storage degrades to the stable default instead of breaking hazard selection',
+  () => {
   const blocked = {
     getItem() {
       throw new Error('blocked');
@@ -138,13 +144,16 @@ test('blocked or malformed storage degrades to the stable default instead of bre
 
   const malformed = memoryStorage();
   malformed.data.set(HAZARD_EVIDENCE_STORAGE_KEY, '{broken');
-  assert.deepEqual(readHazardEvidencePreference(malformed), {
-    imagery: 0,
-    cameras: 0,
-  });
-});
+    assert.deepEqual(readHazardEvidencePreference(malformed), {
+      imagery: 0,
+      cameras: 0,
+    });
+  },
+);
 
-test('FIRMS selection hands its own coordinates to Recent Imagery and remembers only the successful choice', async () => {
+test(
+  'FIRMS selection hands its own coordinates to Recent Imagery and remembers only the successful choice',
+  async () => {
   const documentRef = fakeDocument();
   const windowRef = fakeWindow();
   const storage = memoryStorage();
@@ -172,7 +181,14 @@ test('FIRMS selection hands its own coordinates to Recent Imagery and remembers 
     },
   });
 
-  assert.equal(handoff.openForRecord({ layerId: 'flights', latitude: 1, longitude: 2 }), false);
+    assert.equal(
+      handoff.openForRecord({
+        layerId: 'flights',
+        latitude: 1,
+        longitude: 2,
+      }),
+      false,
+    );
   assert.equal(documentRef.body.children.length, 0);
 
   const record = {
@@ -210,11 +226,14 @@ test('FIRMS selection hands its own coordinates to Recent Imagery and remembers 
     'RECENT IMAGERY · USUAL',
   );
 
-  handoff.destroy();
-  assert.equal(windowRef.listenerCount('gev:entity-selected'), 0);
-});
+    handoff.destroy();
+    assert.equal(windowRef.listenerCount('gev:entity-selected'), 0);
+  },
+);
 
-test('Nearby Cameras uses the hazard coordinate, not viewer position, and learns that explicit choice', async () => {
+test(
+  'Nearby Cameras uses the hazard coordinate, not viewer position, and learns that explicit choice',
+  async () => {
   const documentRef = fakeDocument();
   const windowRef = fakeWindow();
   const storage = memoryStorage();
@@ -265,8 +284,9 @@ test('Nearby Cameras uses the hazard coordinate, not viewer position, and learns
     cameras: 1,
   });
 
-  handoff.destroy();
-});
+    handoff.destroy();
+  },
+);
 
 test('the production selection event opens the chooser only for supported hazard records', () => {
   const documentRef = fakeDocument();

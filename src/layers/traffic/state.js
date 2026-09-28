@@ -222,6 +222,9 @@ export function createState({ services }) {
   layerState._retryBoundsKey = null;
   layerState._roadError = null;
 
+  /** @type {'osm'|'tomtom'|null} Geometry backing the current rendered roads. */
+  layerState._roadGeometrySource = null;
+
   /** @type {number} 0–100 int — matched roads / roads with any flow candidates */
 
   layerState._flowCoveragePct = 0;

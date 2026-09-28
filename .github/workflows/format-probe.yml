@@ -1,0 +1,21 @@
+name: Format probe
+on:
+  push:
+    branches:
+      - scratch/earthquake-format-probe
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.14.0
+          cache: npm
+      - run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: 1
+      - name: Show formatter diff
+        run: |
+          npm run format
+          git diff -- src/layers/earthquakes/ownership.test.mjs

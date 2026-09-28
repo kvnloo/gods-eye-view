@@ -136,15 +136,39 @@ export function createHazardEvidenceHandoff({
     return true;
   };
 
+  const runCameras = async (record) => {
+    const enabled = await dataManager?.setEnabled?.('cctv', true, {
+      origin: 'user',
+    });
+    if (enabled === false) {
+      showToast('CCTV could not be enabled');
+      return false;
+    }
+    const cctv = dataManager?.layers?.get?.('cctv')?.module;
+    const cameraId = cctv?.focusNearestToPoint?.(
+      Number(record.latitude),
+      Number(record.longitude),
+      { focus: true },
+    );
+    if (!cameraId) {
+      showToast('No public camera is available near this hazard');
+      return false;
+    }
+    styleManager?.setPanelCollapsed?.('cctv-panel', false, {
+      explicit: true,
+    });
+    return true;
+  };
+
   const choose = async (action) => {
     const record = currentRecord;
     if (!record) return false;
-    if (action === 'cameras') {
-      showToast('Nearby Cameras handoff needs target-coordinate selection first');
-      return false;
-    }
-    if (action !== 'imagery') return false;
-    const ok = await runImagery(record);
+    const ok =
+      action === 'imagery'
+        ? await runImagery(record)
+        : action === 'cameras'
+          ? await runCameras(record)
+          : false;
     if (ok) recordHazardEvidenceChoice(action, storage);
     if (ok) close();
     return ok;
@@ -184,10 +208,12 @@ export function createHazardEvidenceHandoff({
         node.addEventListener('click', () => void choose(action));
         actions.appendChild(node);
       } else {
-        const node = button(documentRef, 'NEARBY CAMERAS · NEXT', action);
-        node.disabled = true;
-        node.title =
-          'Coming next: camera selection must use the hazard coordinate, not the current viewer position';
+        const node = button(
+          documentRef,
+          preferred ? 'NEARBY CAMERAS · USUAL' : 'NEARBY CAMERAS',
+          action,
+        );
+        node.addEventListener('click', () => void choose(action));
         actions.appendChild(node);
       }
     }

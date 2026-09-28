@@ -1233,6 +1233,39 @@ test('RainViewer manifest is tile-only and tiles use the pinned official origin'
   );
 });
 
+test('RainViewer request budget blocks uncached bursts before upstream fetch', async () => {
+  let calls = 0;
+  const { request } = install({
+    rainViewerMaxRequestsPerMinute: 3,
+    fetchImpl: async (url) => {
+      calls += 1;
+      if (String(url) === 'https://api.rainviewer.com/public/weather-maps.json')
+        return rainViewerMetadata();
+      return image(png(256, 256));
+    },
+  });
+  assert.equal(
+    (await request('/manifest?product=radar-global')).statusCode,
+    200,
+  );
+  assert.equal(
+    (await request(tile({ product: 'radar-global', z: 2, x: 0, y: 0 })))
+      .statusCode,
+    200,
+  );
+  assert.equal(
+    (await request(tile({ product: 'radar-global', z: 2, x: 1, y: 0 })))
+      .statusCode,
+    200,
+  );
+  const limited = await request(
+    tile({ product: 'radar-global', z: 2, x: 2, y: 0 }),
+  );
+  assert.equal(limited.statusCode, 429);
+  assert.equal(body(limited).error, 'weather_rate_limited');
+  assert.equal(calls, 3, 'blocked request never reaches RainViewer');
+});
+
 test('RainViewer route enforces WebMercator bounds, supported sizes and no image endpoint before fetching', async () => {
   let calls = 0;
   const { request } = install({

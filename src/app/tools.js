@@ -3,6 +3,7 @@ import { initAnnotations } from '../annotations/index.js';
 import { initDrawTool } from '../annotations/drawTool.js';
 import { initImageryBoxTool } from '../ui/imageryBoxTool.js';
 import { createRecentImageryPanel } from '../ui/recentImagery.js';
+import { createHazardEvidenceHandoff } from '../ui/hazardEvidenceHandoff.js';
 import { initGevVoiceCommands } from '../voice/gevRealtime.js';
 import { installScopeMask, destroyScopeMask } from '../scopeMask.js';
 import {
@@ -85,6 +86,14 @@ export function createApplicationTools({
     // The live gate's handle (scripts/qa-recent-imagery.mjs).
     const recentImageryHandle = { layer: recentImagery, tool: imageryBoxTool };
     window.__gevRecentImagery = recentImageryHandle;
+    const hazardEvidenceHandoff = createHazardEvidenceHandoff({
+      documentRef: document,
+      windowRef: window,
+      dataManager,
+      styleManager,
+      recentImagery,
+    });
+    defer(() => hazardEvidenceHandoff.destroy());
     defer(() => {
       if (window.__gevRecentImagery === recentImageryHandle)
         delete window.__gevRecentImagery;

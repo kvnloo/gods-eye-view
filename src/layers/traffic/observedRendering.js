@@ -126,6 +126,8 @@ export function createObservedRendering({ state: layerState, parts }) {
           cameraId: item.cameraId,
           observedAt: item.observedAt,
           stale: item.stale,
+          qualityStatus: item.quality?.status || null,
+          provenanceSource: item.provenance?.source || null,
         },
       };
 
@@ -152,6 +154,7 @@ export function createObservedRendering({ state: layerState, parts }) {
           label: {
             text: `OBSERVED · ${item.measurement}`,
             font: '11px monospace',
+            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
             fillColor: color,
             outlineColor: Cesium.Color.BLACK,
             outlineWidth: 3,

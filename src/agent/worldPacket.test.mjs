@@ -2,7 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as Cesium from 'cesium';
 
-import { getWorldPacket } from './worldPacket.js';
+import {
+  getWorldPacket,
+  semanticWorldPacketFingerprint,
+} from './worldPacket.js';
 import { createGevActionRunner } from '../voice/gevActions.js';
 
 function harness() {
@@ -89,4 +92,19 @@ test('World Packet keeps stale/unavailable feed semantics distinct from empty', 
   assert.notEqual(packet.layers[0].feedState, 'nominal');
   assert.notEqual(packet.feedProvenance.overall, 'nominal');
   assert.match(packet.feedProvenance.note, /fixture unavailable/i);
+});
+
+
+test('semantic fingerprint ignores narration prose but changes with observed state', () => {
+  const { viewer, dataManager, styleManager } = harness();
+  const packet = getWorldPacket({ viewer, dataManager, styleManager });
+  const original = semanticWorldPacketFingerprint(packet);
+
+  const proseOnly = structuredClone(packet);
+  proseOnly.feedProvenance.note = 'different generated narration';
+  assert.equal(semanticWorldPacketFingerprint(proseOnly), original);
+
+  const changed = structuredClone(packet);
+  changed.layers[0].count += 1;
+  assert.notEqual(semanticWorldPacketFingerprint(changed), original);
 });

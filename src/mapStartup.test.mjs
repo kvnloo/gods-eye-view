@@ -16,8 +16,8 @@ function fakeCesium(outcomes = []) {
     calls,
     Ion: { defaultAccessToken: undefined },
     GoogleMaps: { defaultApiKey: undefined },
-    async createGooglePhotorealistic3DTileset(options) {
-      calls.push({ options, googleKey: options.key });
+    async createGooglePhotorealistic3DTileset(options, tilesetOptions) {
+      calls.push({ options, googleKey: options.key, tilesetOptions });
       return next();
     },
     IonResource: {
@@ -139,4 +139,28 @@ test('independent source configurations never mutate shared SDK credentials', as
   assert.equal(Cesium.calls[1].ionToken, 'source-b');
   assert.equal(Cesium.Ion.defaultAccessToken, 'untouched-ion');
   assert.equal(Cesium.GoogleMaps.defaultApiKey, 'untouched-google');
+});
+
+
+test('photoreal loading forwards an explicit low-end tileset budget to either route', async () => {
+  const options = {
+    cacheBytes: 256,
+    maximumCacheOverflowBytes: 128,
+    maximumScreenSpaceError: 32,
+  };
+  const direct = fakeCesium([{ id: 'direct' }]);
+  await loadPhotorealisticTileset(direct, {
+    googleApiKey: 'google-secret',
+    tilesetOptions: options,
+  });
+  assert.deepEqual(direct.calls[0].tilesetOptions, options);
+
+  const ion = fakeCesium([{ id: 'ion' }]);
+  await loadPhotorealisticTileset(ion, {
+    cesiumToken: 'ion-secret',
+    tilesetOptions: options,
+  });
+  assert.equal(ion.calls[0].options.cacheBytes, 256);
+  assert.equal(ion.calls[0].options.maximumCacheOverflowBytes, 128);
+  assert.equal(ion.calls[0].options.maximumScreenSpaceError, 32);
 });

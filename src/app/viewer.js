@@ -126,6 +126,7 @@ export function createApplicationViewer({
     infoBox: false,
     baseLayer: false,
     creditContainer,
+    scene3DOnly: performance.scene3DOnly,
     msaaSamples: performance.msaaSamples,
     contextOptions: {
       webgl: { preserveDrawingBuffer: performance.preserveDrawingBuffer },

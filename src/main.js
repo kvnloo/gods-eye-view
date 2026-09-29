@@ -5,9 +5,7 @@ import { performanceProfileFromSearch } from './app/performanceProfile.js';
 const application = createStandaloneApplication({
   googleApiKey: import.meta.env.GOOGLE_MAPS_API_KEY,
   cesiumToken: import.meta.env.CESIUM_ION_TOKEN,
-  performanceProfile: performanceProfileFromSearch(
-    globalThis.location?.search,
-  ),
+  performanceProfile: performanceProfileFromSearch(globalThis.location?.search),
   allowQaRegistration: import.meta.env.DEV,
 });
 

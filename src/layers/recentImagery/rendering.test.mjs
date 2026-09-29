@@ -234,26 +234,27 @@ test('against the basemap slot a splits left with no second layer, and leaving t
   assert.equal(layer.splitDirection, 0);
   assert.deepEqual(renders, ['recent-imagery-show', 'recent-imagery-look']);
 });
+
 test(
   'camera motion defers tile refinement and wakes exactly once after settle',
   async () => {
-  
+    const { renderer, globe, timers, tileFrames, camera } = fixture();
     renderer.showSlot('a', S30, BOX);
     const { provider } = globe.layers[0];
-  
+
     camera.start();
     for (let i = 0; i < 40; i += 1)
       assert.equal(provider.requestImage(i, 0, 1), undefined);
     assert.equal(provider.calls.length, 0, 'motion admits no tile fetches');
-      assert.equal(
-        tileFrames(),
-        0,
-        'motion deferral does not ask for retry frames',
-      );
+    assert.equal(
+      tileFrames(),
+      0,
+      'motion deferral does not ask for retry frames',
+    );
     assert.equal(renderer.diagnostics().motion.settled, false);
     assert.equal(renderer.diagnostics().motion.generation, 1);
     assert.equal(renderer.diagnostics().motionDeferred, 40);
-  
+
     camera.end();
     assert.equal(timers.armed(), 1);
     assert.equal(
@@ -261,14 +262,14 @@ test(
       CAMERA_REFINEMENT_SETTLE_MS,
     );
     timers.flush();
-      assert.equal(
-        tileFrames(),
-        1,
-        'settle coalesces all deferrals into one frame',
-      );
+    assert.equal(
+      tileFrames(),
+      1,
+      'settle coalesces all deferrals into one frame',
+    );
     assert.equal(renderer.diagnostics().motion.settled, true);
     assert.equal(renderer.diagnostics().motionRetryPending, false);
-  
+
     const request = provider.requestImage(99, 0, 1);
     assert.ok(request instanceof Promise, 'refinement resumes after settle');
     provider.pending[0]('tile');

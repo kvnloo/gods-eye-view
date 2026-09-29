@@ -187,6 +187,7 @@ export function installObservedTrafficCorridorFixture({
     !dataManager?.setEnabled
   )
     return () => {};
+  if (signal?.aborted) return () => {};
 
   let disposed = false;
   let launched = false;
@@ -226,8 +227,16 @@ export function installObservedTrafficCorridorFixture({
   unsubscribe = cctv.subscribe(maybeLaunch);
   signal?.addEventListener?.('abort', cleanup, { once: true });
 
-  void dataManager.setEnabled('traffic', true, { origin: 'programmatic' });
-  void dataManager.setEnabled('cctv', true, { origin: 'programmatic' });
+  const enable = (layerId) =>
+    Promise.resolve(
+      dataManager.setEnabled(layerId, true, { origin: 'programmatic' }),
+    ).catch((error) => {
+      if (!signal?.aborted)
+        console.warn(`[Observed traffic fixture] ${layerId} enable failed`);
+      return false;
+    });
+  void enable('traffic');
+  void enable('cctv');
 
   return cleanup;
 }

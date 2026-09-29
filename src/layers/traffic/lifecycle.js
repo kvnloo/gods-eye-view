@@ -24,6 +24,11 @@ export function createLifecycle({
      * @param {Cesium.Viewer} viewer - The Cesium viewer instance.
      */
     init(viewer) {
+      layerState._observedTrafficUnsubscribe?.();
+      layerState._observedTrafficUnsubscribe =
+        parts.observed?.methods?.subscribeObservedTraffic?.((snapshot) => {
+          parts.observedRendering?.syncObservedTraffic?.(snapshot);
+        }) || null;
       layerState._viewer = viewer;
       layerState._pointCollection = new Cesium.PointPrimitiveCollection({
         blendOption: Cesium.BlendOption.TRANSLUCENT,
@@ -84,6 +89,9 @@ export function createLifecycle({
       holdContinuousRender('traffic'); // per-frame animator (perf wave 2)
       layerState._lastAnimTime = 0;
       layerState._pointCollection.show = true;
+      parts.observedRendering?.syncObservedTraffic?.(
+        parts.observed?.methods?.getObservedTrafficSnapshot?.(),
+      );
 
       layerState._preRenderRemover = viewer.scene.preRender.addEventListener(
         parts.animation.animate,
@@ -155,6 +163,7 @@ export function createLifecycle({
       layerState._flowPending = 0;
       layerState._roadError = null;
       parts.animation.clearDots();
+      parts.observedRendering?.clearObservedTraffic?.();
       layerState._lastBounds = null;
       layerState._lastViewCenter = null;
       // A stale outage from the last session would misreport a fresh enable —
@@ -191,6 +200,9 @@ export function createLifecycle({
      */
     destroy(viewer) {
       this.disable(viewer);
+      layerState._observedTrafficUnsubscribe?.();
+      layerState._observedTrafficUnsubscribe = null;
+      layerState._observedTrafficListeners?.clear?.();
       if (layerState._pointCollection) {
         viewer.scene.primitives.remove(layerState._pointCollection);
         layerState._pointCollection = null;

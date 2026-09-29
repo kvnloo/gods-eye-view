@@ -34,6 +34,7 @@ test('observed traffic is unconfigured by default and does not alter shipped tra
     state: 'unconfigured',
     source: null,
     count: 0,
+    rendered: 0,
     staleCount: 0,
     partial: false,
     loading: false,

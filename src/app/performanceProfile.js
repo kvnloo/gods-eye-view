@@ -4,12 +4,14 @@ const PERFORMANCE_PROFILES = Object.freeze({
     targetFrameRate: 60,
     msaaSamples: 4,
     resolutionScale: 1,
+    preserveDrawingBuffer: true,
   }),
   potato: Object.freeze({
     id: 'potato',
     targetFrameRate: 30,
     msaaSamples: 1,
     resolutionScale: 0.75,
+    preserveDrawingBuffer: false,
   }),
 });
 

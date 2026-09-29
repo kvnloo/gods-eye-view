@@ -27,7 +27,10 @@ test('potato performance profile lowers render cost explicitly', () => {
     msaaSamples: 1,
     resolutionScale: 0.75,
   });
-  assert.equal(resolvePerformanceProfile(' POTATO '), PERFORMANCE_PROFILES.potato);
+  assert.equal(
+    resolvePerformanceProfile(' POTATO '),
+    PERFORMANCE_PROFILES.potato,
+  );
 });
 
 test('standalone query parsing opts in only to known profiles', () => {

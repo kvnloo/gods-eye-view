@@ -853,6 +853,8 @@
   "src/ui/imageryBoxTool.test.mjs",
   "src/ui/recentImagery.test.mjs",
   "src/layers/recentImagery/testDoubles.mjs",
+  "src/ui/hazardEvidenceHandoff.test.mjs",
+  "src/ui/hazardEvidenceHandoff.js",
   "scripts/qa-recent-imagery.mjs",
   "scripts/qa-overpass-offload.mjs",
   "src/overpassOffload.test.mjs",

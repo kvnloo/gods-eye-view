@@ -178,6 +178,39 @@ test('controller enables both layers and refreshes once after real camera rows a
   assert.equal(listeners.size, 0);
 });
 
+test('already-aborted fixture controller performs no layer work', () => {
+  const controller = new AbortController();
+  controller.abort();
+  let subscriptions = 0;
+  let enables = 0;
+  const dispose = installObservedTrafficCorridorFixture({
+    catalog: {
+      get(id) {
+        if (id === 'cctv')
+          return {
+            subscribe() {
+              subscriptions++;
+              return () => {};
+            },
+          };
+        if (id === 'traffic')
+          return { refreshObservedTraffic: async () => {} };
+        return null;
+      },
+    },
+    dataManager: {
+      setEnabled() {
+        enables++;
+        return Promise.resolve(true);
+      },
+    },
+    signal: controller.signal,
+  });
+  assert.equal(subscriptions, 0);
+  assert.equal(enables, 0);
+  dispose();
+});
+
 test('aborting fixture controller unsubscribes without another refresh', async () => {
   const listeners = new Set();
   const controller = new AbortController();

@@ -1,6 +1,6 @@
 # Changelog
 
-- Add an explicit `?performance=potato` viewer profile for constrained devices. It lowers the continuous target to 30 FPS, MSAA to 1x and render resolution scale to 0.75 disables preserved WebGL backbuffers and enables Cesium's 3D-only scene optimization while leaving the default viewer settings and all data/source semantics unchanged. Unknown profile values fall back to the standard profile; automatic adaptation is not enabled.
+- Add an explicit `?performance=potato` viewer profile for constrained devices. It lowers the continuous target to 30 FPS, MSAA to 1x and render resolution scale to 0.75 disables preserved WebGL backbuffers and enables Cesium's 3D-only scene optimization, and bounds Google 3D tile residency to 256 MiB + 128 MiB overflow with maximum screen-space error 32 while leaving the default viewer settings and all data/source semantics unchanged. Unknown profile values fall back to the standard profile; automatic adaptation is not enabled.
 
 - Public Overpass instances are no longer used by default. Street Traffic
   roads come from TomTom flow tiles, OpenFreeMap vector tiles, or both, chosen

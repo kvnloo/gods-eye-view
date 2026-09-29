@@ -1,5 +1,7 @@
 # Changelog
 
+- Defer optional Recent Imagery GIBS tile refinement while the camera is moving, keeping the last committed visual in place. After 180 ms of quiet input one coalesced retry frame resumes refinement; camera-motion generations are exposed for stale-work diagnostics. This is the first Quackles-derived motion-safe scheduling slice and does not introduce a texture atlas.
+
 - Public Overpass instances are no longer used by default. Street Traffic
   roads come from TomTom flow tiles, OpenFreeMap vector tiles, or both, chosen
   on the layer row (TomTom / OSM / Hybrid) or with `?trafficRoads=`. With a

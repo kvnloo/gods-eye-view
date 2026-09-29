@@ -6,6 +6,7 @@ const SUPPORTED_HAZARD_LAYERS = new Set([
   'local-firms',
   'fire-perimeters',
   'earthquakes',
+  'weather-cyclones',
 ]);
 
 function resolveStorage(injected) {

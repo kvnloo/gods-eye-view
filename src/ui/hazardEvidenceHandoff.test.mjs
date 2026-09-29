@@ -335,7 +335,12 @@ test('the production selection event opens the chooser for each supported hazard
   });
   assert.equal(documentRef.body.children.length, 0);
 
-  for (const layerId of ['local-firms', 'fire-perimeters', 'earthquakes']) {
+  for (const layerId of [
+    'local-firms',
+    'fire-perimeters',
+    'earthquakes',
+    'weather-cyclones',
+  ]) {
     windowRef.dispatch('gev:entity-selected', {
       layerId,
       latitude: 10,
@@ -343,6 +348,86 @@ test('the production selection event opens the chooser for each supported hazard
     });
     assert.equal(documentRef.body.children.length, 1);
   }
+
+  handoff.destroy();
+});
+
+test('explicit weather-cyclones selection opens the chooser, keeps cyclone coordinates, and never auto-runs', async () => {
+  const documentRef = fakeDocument();
+  const windowRef = fakeWindow();
+  const storage = memoryStorage();
+  const calls = [];
+  const cctv = {
+    focusNearestToPoint(lat, lon, options) {
+      calls.push(['nearest-camera', lat, lon, options]);
+      return 'cam-near-cyclone';
+    },
+  };
+  const handoff = createHazardEvidenceHandoff({
+    documentRef,
+    windowRef,
+    storage,
+    dataManager: {
+      layers: new Map([['cctv', { module: cctv }]]),
+      async setEnabled(id, enabled, options) {
+        calls.push(['enable', id, enabled, options]);
+        return true;
+      },
+    },
+    styleManager: {
+      setPanelCollapsed(id, collapsed, options) {
+        calls.push(['panel', id, collapsed, options]);
+      },
+    },
+    recentImagery: {
+      boxFromPinAt(lon, lat) {
+        calls.push(['box', lon, lat]);
+        return true;
+      },
+    },
+  });
+
+  const record = {
+    layerId: 'weather-cyclones',
+    latitude: 18.4,
+    longitude: -66.1,
+    source: 'nhc',
+  };
+
+  windowRef.dispatch('gev:entity-selected', record);
+  assert.equal(documentRef.body.children.length, 1);
+  // Opening the chooser must not enable imagery/cameras by itself.
+  assert.deepEqual(calls, []);
+  assert.deepEqual(readHazardEvidencePreference(storage), {
+    imagery: 0,
+    cameras: 0,
+  });
+
+  findAction(documentRef.body.children[0], 'imagery').click();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.deepEqual(calls, [
+    ['enable', 'recent-imagery', true, { origin: 'user' }],
+    ['box', -66.1, 18.4],
+    ['panel', 'recent-imagery-panel', false, { explicit: true }],
+  ]);
+  assert.deepEqual(readHazardEvidencePreference(storage), {
+    imagery: 1,
+    cameras: 0,
+  });
+
+  calls.length = 0;
+  assert.equal(handoff.openForRecord(record), true);
+  findAction(documentRef.body.children[0], 'cameras').click();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.deepEqual(calls, [
+    ['enable', 'cctv', true, { origin: 'user' }],
+    ['nearest-camera', 18.4, -66.1, { focus: true }],
+    ['panel', 'cctv-panel', false, { explicit: true }],
+  ]);
 
   handoff.destroy();
 });

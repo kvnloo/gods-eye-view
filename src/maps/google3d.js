@@ -2,7 +2,7 @@ const clean = (value) => String(value || '').trim();
 
 /**
  * Decide which map provider can deliver the best startup experience.
- * @param {{googleApiKey?: string, cesiumToken?: string}} credentials
+ * @param {{googleApiKey?: string, cesiumToken?: string, tilesetOptions?: object|null}} credentials
  * @returns {'google-direct'|'google-ion'|'osm'}
  */
 export function selectMapStartupRoute({
@@ -25,7 +25,7 @@ export function selectMapStartupRoute({
  */
 export async function loadPhotorealisticTileset(
   Cesium,
-  { googleApiKey = '', cesiumToken = '' } = {},
+  { googleApiKey = '', cesiumToken = '', tilesetOptions = null } = {},
 ) {
   const googleKey = clean(googleApiKey);
   const ionToken = clean(cesiumToken);
@@ -38,8 +38,14 @@ export async function loadPhotorealisticTileset(
   for (const attempt of attempts) {
     try {
       const tileset = attempt.googleKey
-        ? await createGoogleDirectTileset(Cesium, attempt.googleKey)
-        : await createGoogleIonTileset(Cesium, ionToken);
+        ? await createGoogleDirectTileset(
+            Cesium,
+            attempt.googleKey,
+            tilesetOptions,
+          )
+        : await createGoogleIonTileset(Cesium, ionToken, {
+            tilesetOptions,
+          });
       return { tileset, route: attempt.route, errors };
     } catch (error) {
       errors.push(error instanceof Error ? error : new Error(String(error)));
@@ -50,20 +56,23 @@ export async function loadPhotorealisticTileset(
 }
 
 /** Pass credentials to the source instead of changing SDK-wide defaults. */
-export function createGoogleDirectTileset(Cesium, key) {
+export function createGoogleDirectTileset(Cesium, key, tilesetOptions = null) {
   key = clean(key);
   if (!key) throw new Error('Google 3D requires an explicit browser key');
   // Tiles keep drawing their own texture while draped weather loads.
   return Cesium.createGooglePhotorealistic3DTileset(
     { key, onlyUsingWithGoogleGeocoder: true },
-    { asynchronouslyLoadImagery: true },
+    {
+      asynchronouslyLoadImagery: true,
+      ...(tilesetOptions || {}),
+    },
   );
 }
 
 export async function createGoogleIonTileset(
   Cesium,
   accessToken,
-  { signal } = {},
+  { signal, tilesetOptions = null } = {},
 ) {
   accessToken = clean(accessToken);
   if (!accessToken)
@@ -80,5 +89,6 @@ export async function createGoogleIonTileset(
     enableCollision: true,
     // Tiles keep drawing their own texture while draped weather loads.
     asynchronouslyLoadImagery: true,
+    ...(tilesetOptions || {}),
   });
 }

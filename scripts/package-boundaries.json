@@ -2013,6 +2013,7 @@
       "src/layers/recentImagery/thumbnails.js",
       "src/maps/imageryHost.js",
       "src/ui/recentImagery.js",
+      "src/ui/hazardEvidenceHandoff.js",
       "src/ui/imageryBoxTool.js",
       "src/layers/alpr/tileRecords.js",
       "src/sources/capability.js",

@@ -881,3 +881,93 @@ test('thrown evidence enable recovers busy actions so a retry can proceed', asyn
 
   handoff.destroy();
 });
+
+test('stale success after dismiss does not box, focus, or uncollapse onto a successor', async () => {
+  const documentRef = fakeDocument();
+  const windowRef = fakeWindow();
+  const storage = memoryStorage();
+  const toasts = [];
+  let resolveEnable;
+  const enableGate = new Promise((resolve) => {
+    resolveEnable = resolve;
+  });
+  const calls = [];
+  const cctv = {
+    focusNearestToPoint(lat, lon, options) {
+      calls.push(['nearest-camera', lat, lon, options]);
+      return 'cam-stale';
+    },
+  };
+  const handoff = createHazardEvidenceHandoff({
+    documentRef,
+    windowRef,
+    storage,
+    showToast: (message) => toasts.push(message),
+    dataManager: {
+      layers: new Map([['cctv', { module: cctv }]]),
+      async setEnabled(id, enabled, options) {
+        calls.push(['enable', id, enabled, options]);
+        await enableGate;
+        return true;
+      },
+    },
+    styleManager: {
+      setPanelCollapsed(id, collapsed, options) {
+        calls.push(['panel', id, collapsed, options]);
+      },
+    },
+    recentImagery: {
+      boxFromPinAt(lon, lat) {
+        calls.push(['box', lon, lat]);
+        return true;
+      },
+    },
+  });
+
+  const cyclone = {
+    layerId: 'weather-cyclones',
+    latitude: 18.4,
+    longitude: -66.1,
+  };
+  const firms = {
+    layerId: 'local-firms',
+    latitude: 34.25,
+    longitude: -118.5,
+  };
+
+  assert.equal(handoff.openForRecord(cyclone), true);
+  findAction(documentRef.body.children[0], 'imagery').click();
+  // Owning-layer clear dismisses while a successful enable is still pending.
+  windowRef.dispatch('gev:entity-selection-cleared', {
+    layerId: 'weather-cyclones',
+    reason: 'deliberate',
+  });
+  assert.equal(documentRef.body.children.length, 0);
+
+  // Successor VERIFY dialog opens before the stale success settles.
+  assert.equal(handoff.openForRecord(firms), true);
+  assert.equal(documentRef.body.children.length, 1);
+  const successor = documentRef.body.children[0];
+
+  resolveEnable(true);
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  // Layer enable may settle (source-owned), but presentation must not apply
+  // the abandoned hazard's box/focus/panel onto the successor context.
+  assert.deepEqual(calls, [
+    ['enable', 'recent-imagery', true, { origin: 'user' }],
+  ]);
+  assert.deepEqual(toasts, []);
+  assert.deepEqual(readHazardEvidencePreference(storage), {
+    imagery: 0,
+    cameras: 0,
+  });
+  assert.equal(documentRef.body.children.length, 1);
+  assert.equal(documentRef.body.children[0], successor);
+  assert.equal(findAction(successor, 'imagery').disabled, false);
+  assert.equal(findAction(successor, 'cameras').disabled, false);
+
+  handoff.destroy();
+});

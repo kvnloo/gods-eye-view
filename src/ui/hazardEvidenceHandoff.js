@@ -141,10 +141,18 @@ export function createHazardEvidenceHandoff({
   // toasts only when this same chooser generation is still open, so a
   // dismiss/rebind mid-flight cannot drop a stale failure toast onto a
   // successor VERIFY dialog.
-  const runImagery = async (record) => {
+  //
+  // After await setEnabled, abandon presentation (box / focus / panel) when
+  // the starting chooser was dismissed or rebound. Layer enable may still
+  // settle (source-owned); only ranking/close/toast stay gated in choose().
+  const stillCurrent = (record, generation) =>
+    generation === openGeneration && currentRecord === record;
+
+  const runImagery = async (record, generation) => {
     const enabled = await dataManager?.setEnabled?.('recent-imagery', true, {
       origin: 'user',
     });
+    if (!stillCurrent(record, generation)) return { ok: false, abandoned: true };
     if (enabled === false) {
       return {
         ok: false,
@@ -167,10 +175,11 @@ export function createHazardEvidenceHandoff({
     return { ok: true };
   };
 
-  const runCameras = async (record) => {
+  const runCameras = async (record, generation) => {
     const enabled = await dataManager?.setEnabled?.('cctv', true, {
       origin: 'user',
     });
+    if (!stillCurrent(record, generation)) return { ok: false, abandoned: true };
     if (enabled === false) {
       return { ok: false, toast: 'CCTV could not be enabled' };
     }
@@ -214,12 +223,13 @@ export function createHazardEvidenceHandoff({
     try {
       const result =
         action === 'imagery'
-          ? await runImagery(record)
+          ? await runImagery(record, generation)
           : action === 'cameras'
-            ? await runCameras(record)
+            ? await runCameras(record, generation)
             : { ok: false };
       // Dismiss / rebind / destroy while we awaited → drop stale completion
       // (no ranking, no successor close, no soft-fail toast).
+      // Runners already skipped box/focus/panel when abandoned mid-flight.
       if (generation !== openGeneration || currentRecord !== record)
         return false;
       if (result?.ok) {

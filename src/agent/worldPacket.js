@@ -24,6 +24,41 @@ const NESTED_CONTEXT_RESULT_FIELDS = Object.freeze([
   'contextRollback',
 ]);
 
+const NON_SEMANTIC_PACKET_KEYS = new Set([
+  'note',
+  'ageLabel',
+  'generatedAt',
+]);
+
+function semanticPacketValue(value) {
+  if (Array.isArray(value)) return value.map(semanticPacketValue);
+  if (!value || typeof value !== 'object') return value;
+  const out = {};
+  for (const key of Object.keys(value).sort()) {
+    if (NON_SEMANTIC_PACKET_KEYS.has(key)) continue;
+    out[key] = semanticPacketValue(value[key]);
+  }
+  return out;
+}
+
+/**
+ * Stable semantic fingerprint for change detection, not authentication.
+ *
+ * Presentation-only narration/age labels are excluded. Feed state, source,
+ * lastUpdate, camera, context, tracked entities, and other semantic state stay
+ * inside the digest.
+ */
+export function semanticWorldPacketFingerprint(packet) {
+  const canonical = JSON.stringify(semanticPacketValue(packet));
+  let hash = 0xcbf29ce484222325n;
+  const prime = 0x100000001b3n;
+  for (let i = 0; i < canonical.length; i += 1) {
+    hash ^= BigInt(canonical.charCodeAt(i));
+    hash = BigInt.asUintN(64, hash * prime);
+  }
+  return `fnv1a64:${hash.toString(16).padStart(16, '0')}`;
+}
+
 /**
  * Translate context-mode payloads into the public tool vocabulary while
  * retaining the internal id beside each translated field.

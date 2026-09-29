@@ -1,5 +1,31 @@
 # God's Eye View Current State
 
+## Observed traffic spatial rendering — September 29, 2026
+
+The provider-neutral #830 snapshot can render directly in Street Traffic without
+being converted into simulated moving dots. The renderer is deliberately
+separate from the ordinary OpenStreetMap/TomTom dot path.
+
+A bounded recent-first pass renders at most 128 observations:
+
+- `intersection` → measured point + compact `OBSERVED` rate/count label
+- `road-segment` / `approach` → measured polyline along the supplied geometry
+
+Fresh measured geometry uses a dedicated cyan treatment. Evidence older than
+the same observed-traffic freshness window is retained but rendered amber as
+stale rather than silently presented as current. Every Cesium entity carries
+`gevSource: observed-traffic` plus source/observation identifiers, camera id,
+timestamp and stale state.
+
+Observed rendering subscribes to committed snapshot updates. It renders only
+while Street Traffic is enabled and clears every observed entity on disable or
+destroy. The plan is capped at 128 records and sorted newest-first so a large
+source snapshot cannot create an unbounded entity pass. Existing simulated
+traffic dots, TomTom flow coloring and road loading are untouched.
+
+This supplies the generic observed-vs-simulated spatial distinction requested
+by #830/#831. CCTV remains only one possible producer of the same contract.
+
 ## Provider-neutral observed traffic — September 28, 2026
 
 Street Traffic accepts an optional observed-traffic source without coupling the

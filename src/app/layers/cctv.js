@@ -14,6 +14,13 @@ export function createApplicationCctv({
   source,
   visionSuitability = null,
 }) {
+  if (
+    visionSuitability !== null &&
+    (typeof visionSuitability?.getSnapshot !== 'function' ||
+      (visionSuitability.subscribe !== undefined &&
+        typeof visionSuitability.subscribe !== 'function'))
+  )
+    throw new TypeError('Invalid CCTV vision suitability service');
   const { terrain, groundFloor: ground, meshFloor: mesh } = surface;
   return createCctvLayer({
     source,

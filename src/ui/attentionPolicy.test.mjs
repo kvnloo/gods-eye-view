@@ -31,40 +31,34 @@ test('repeated updates decay to silence before ordinary surfacing', () => {
   );
 });
 
-test(
-  'explicit focus and quiet mode suppress proactive suggestion pressure',
-  () => {
-    assert.deepEqual(
-      resolveAttentionDisposition({ preparedActionReady: true }),
-      { disposition: 'suggest', reasonCode: 'prepared-action-ready' },
-    );
-    assert.deepEqual(
-      resolveAttentionDisposition({
-        preparedActionReady: true,
-        explicitUserFocus: true,
-      }),
-      { disposition: 'ambient', reasonCode: 'prepared-action-deferred' },
-    );
-    assert.deepEqual(
-      resolveAttentionDisposition({
-        freshnessTransition: 'recovered',
-        quietMode: true,
-      }),
-      { disposition: 'ambient', reasonCode: 'source-recovered' },
-    );
-  },
-);
+test('explicit focus and quiet mode suppress proactive suggestion pressure', () => {
+  assert.deepEqual(resolveAttentionDisposition({ preparedActionReady: true }), {
+    disposition: 'suggest',
+    reasonCode: 'prepared-action-ready',
+  });
+  assert.deepEqual(
+    resolveAttentionDisposition({
+      preparedActionReady: true,
+      explicitUserFocus: true,
+    }),
+    { disposition: 'ambient', reasonCode: 'prepared-action-deferred' },
+  );
+  assert.deepEqual(
+    resolveAttentionDisposition({
+      freshnessTransition: 'recovered',
+      quietMode: true,
+    }),
+    { disposition: 'ambient', reasonCode: 'source-recovered' },
+  );
+});
 
-test(
-  'ordinary background failure stays visible without claiming exception state',
-  () => {
-    assert.deepEqual(
-      resolveAttentionDisposition({ freshnessTransition: 'failed' }),
-      { disposition: 'ambient', reasonCode: 'source-failed' },
-    );
-    assert.deepEqual(resolveAttentionDisposition(), {
-      disposition: 'silent',
-      reasonCode: 'no-surface-needed',
-    });
-  },
-);
+test('ordinary background failure stays visible without claiming exception state', () => {
+  assert.deepEqual(
+    resolveAttentionDisposition({ freshnessTransition: 'failed' }),
+    { disposition: 'ambient', reasonCode: 'source-failed' },
+  );
+  assert.deepEqual(resolveAttentionDisposition(), {
+    disposition: 'silent',
+    reasonCode: 'no-surface-needed',
+  });
+});

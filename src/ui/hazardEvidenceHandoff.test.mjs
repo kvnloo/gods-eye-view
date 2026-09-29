@@ -316,7 +316,7 @@ test('Nearby Cameras uses the hazard coordinate, not viewer position, and learns
   handoff.destroy();
 });
 
-test('the production selection event opens the chooser only for supported hazard records', () => {
+test('the production selection event opens the chooser for each supported hazard source only', () => {
   const documentRef = fakeDocument();
   const windowRef = fakeWindow();
   const handoff = createHazardEvidenceHandoff({
@@ -329,11 +329,20 @@ test('the production selection event opens the chooser only for supported hazard
   });
 
   windowRef.dispatch('gev:entity-selected', {
-    layerId: 'local-firms',
+    layerId: 'flights',
     latitude: 10,
     longitude: 20,
   });
-  assert.equal(documentRef.body.children.length, 1);
+  assert.equal(documentRef.body.children.length, 0);
+
+  for (const layerId of ['local-firms', 'fire-perimeters', 'earthquakes']) {
+    windowRef.dispatch('gev:entity-selected', {
+      layerId,
+      latitude: 10,
+      longitude: 20,
+    });
+    assert.equal(documentRef.body.children.length, 1);
+  }
 
   handoff.destroy();
 });

@@ -137,26 +137,34 @@ export function createHazardEvidenceHandoff({
     chooseInFlight = false;
   };
 
+  // Soft failures return { ok:false, toast } without announcing. choose()
+  // toasts only when this same chooser generation is still open, so a
+  // dismiss/rebind mid-flight cannot drop a stale failure toast onto a
+  // successor VERIFY dialog.
   const runImagery = async (record) => {
     const enabled = await dataManager?.setEnabled?.('recent-imagery', true, {
       origin: 'user',
     });
     if (enabled === false) {
-      showToast('Recent Imagery could not be enabled');
-      return false;
+      return {
+        ok: false,
+        toast: 'Recent Imagery could not be enabled',
+      };
     }
     const accepted = recentImagery?.boxFromPinAt?.(
       Number(record.longitude),
       Number(record.latitude),
     );
     if (accepted === false || accepted == null) {
-      showToast('Recent Imagery could not use this hazard location');
-      return false;
+      return {
+        ok: false,
+        toast: 'Recent Imagery could not use this hazard location',
+      };
     }
     styleManager?.setPanelCollapsed?.('recent-imagery-panel', false, {
       explicit: true,
     });
-    return true;
+    return { ok: true };
   };
 
   const runCameras = async (record) => {
@@ -164,8 +172,7 @@ export function createHazardEvidenceHandoff({
       origin: 'user',
     });
     if (enabled === false) {
-      showToast('CCTV could not be enabled');
-      return false;
+      return { ok: false, toast: 'CCTV could not be enabled' };
     }
     const cctv = dataManager?.layers?.get?.('cctv')?.module;
     const cameraId = cctv?.focusNearestToPoint?.(
@@ -174,13 +181,15 @@ export function createHazardEvidenceHandoff({
       { focus: true },
     );
     if (!cameraId) {
-      showToast('No public camera is available near this hazard');
-      return false;
+      return {
+        ok: false,
+        toast: 'No public camera is available near this hazard',
+      };
     }
     styleManager?.setPanelCollapsed?.('cctv-panel', false, {
       explicit: true,
     });
-    return true;
+    return { ok: true };
   };
 
   const setEvidenceActionsBusy = (busy) => {
@@ -203,19 +212,24 @@ export function createHazardEvidenceHandoff({
     chooseInFlight = true;
     setEvidenceActionsBusy(true);
     try {
-      const ok =
+      const result =
         action === 'imagery'
           ? await runImagery(record)
           : action === 'cameras'
             ? await runCameras(record)
-            : false;
-      // Dismiss / rebind / destroy while we awaited → drop stale completion.
+            : { ok: false };
+      // Dismiss / rebind / destroy while we awaited → drop stale completion
+      // (no ranking, no successor close, no soft-fail toast).
       if (generation !== openGeneration || currentRecord !== record)
         return false;
-      if (ok) recordHazardEvidenceChoice(action, storage);
-      if (ok) close();
-      else setEvidenceActionsBusy(false);
-      return ok;
+      if (result?.ok) {
+        recordHazardEvidenceChoice(action, storage);
+        close();
+        return true;
+      }
+      setEvidenceActionsBusy(false);
+      if (result?.toast) showToast(result.toast);
+      return false;
     } catch {
       // Owner threw while awaiting. Latch clears in finally; if this chooser
       // is still open, re-enable evidence actions so the operator can retry

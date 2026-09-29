@@ -658,6 +658,134 @@ test('concurrent evidence clicks while a choice is in flight neither double-enab
   handoff.destroy();
 });
 
+test('soft-fail on open chooser toasts once and recovers busy actions', async () => {
+  const documentRef = fakeDocument();
+  const windowRef = fakeWindow();
+  const storage = memoryStorage();
+  const toasts = [];
+  const handoff = createHazardEvidenceHandoff({
+    documentRef,
+    windowRef,
+    storage,
+    showToast: (message) => toasts.push(message),
+    dataManager: {
+      async setEnabled() {
+        return false;
+      },
+    },
+    styleManager: {},
+    recentImagery: {},
+  });
+
+  const record = {
+    layerId: 'local-firms',
+    latitude: 34.25,
+    longitude: -118.5,
+  };
+  assert.equal(handoff.openForRecord(record), true);
+  const dialog = documentRef.body.children[0];
+  const imagery = findAction(dialog, 'imagery');
+  const cameras = findAction(dialog, 'cameras');
+
+  imagery.click();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.equal(documentRef.body.children.length, 1);
+  assert.equal(imagery.disabled, false);
+  assert.equal(cameras.disabled, false);
+  assert.deepEqual(toasts, ['Recent Imagery could not be enabled']);
+  assert.deepEqual(readHazardEvidencePreference(storage), {
+    imagery: 0,
+    cameras: 0,
+  });
+
+  handoff.destroy();
+});
+
+test('soft-fail after dismiss does not toast onto a successor chooser', async () => {
+  const documentRef = fakeDocument();
+  const windowRef = fakeWindow();
+  const storage = memoryStorage();
+  const toasts = [];
+  let resolveEnable;
+  const enableGate = new Promise((resolve) => {
+    resolveEnable = resolve;
+  });
+  const calls = [];
+  const handoff = createHazardEvidenceHandoff({
+    documentRef,
+    windowRef,
+    storage,
+    showToast: (message) => toasts.push(message),
+    dataManager: {
+      async setEnabled(id, enabled, options) {
+        calls.push(['enable', id, enabled, options]);
+        await enableGate;
+        return false;
+      },
+    },
+    styleManager: {
+      setPanelCollapsed(id, collapsed, options) {
+        calls.push(['panel', id, collapsed, options]);
+      },
+    },
+    recentImagery: {
+      boxFromPinAt(lon, lat) {
+        calls.push(['box', lon, lat]);
+        return true;
+      },
+    },
+  });
+
+  const cyclone = {
+    layerId: 'weather-cyclones',
+    latitude: 18.4,
+    longitude: -66.1,
+  };
+  const firms = {
+    layerId: 'local-firms',
+    latitude: 34.25,
+    longitude: -118.5,
+  };
+
+  assert.equal(handoff.openForRecord(cyclone), true);
+  findAction(documentRef.body.children[0], 'imagery').click();
+  // Owning-layer clear dismisses while soft-fail enable is still pending.
+  windowRef.dispatch('gev:entity-selection-cleared', {
+    layerId: 'weather-cyclones',
+    reason: 'deliberate',
+  });
+  assert.equal(documentRef.body.children.length, 0);
+
+  // Successor VERIFY dialog opens before the stale soft-fail settles.
+  assert.equal(handoff.openForRecord(firms), true);
+  assert.equal(documentRef.body.children.length, 1);
+  const successor = documentRef.body.children[0];
+
+  resolveEnable(false);
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  // Stale soft-fail must not toast onto the successor, must not rank, and
+  // must leave the successor chooser open and idle.
+  assert.deepEqual(toasts, []);
+  assert.deepEqual(readHazardEvidencePreference(storage), {
+    imagery: 0,
+    cameras: 0,
+  });
+  assert.equal(documentRef.body.children.length, 1);
+  assert.equal(documentRef.body.children[0], successor);
+  assert.equal(findAction(successor, 'imagery').disabled, false);
+  assert.equal(findAction(successor, 'cameras').disabled, false);
+  assert.deepEqual(calls, [
+    ['enable', 'recent-imagery', true, { origin: 'user' }],
+  ]);
+
+  handoff.destroy();
+});
+
 test('thrown evidence enable recovers busy actions so a retry can proceed', async () => {
   const documentRef = fakeDocument();
   const windowRef = fakeWindow();

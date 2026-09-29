@@ -64,6 +64,19 @@ test('old evidence remains renderable but is explicitly stale', () => {
   assert.equal(plan[0].stale, true);
 });
 
+test('error-backed retained evidence is rendered stale', () => {
+  const plan = planObservedTrafficRendering(
+    {
+      configured: true,
+      state: 'error',
+      error: 'Observed traffic source unavailable',
+      records: [record('a')],
+    },
+    { now: NOW },
+  );
+  assert.equal(plan[0].stale, true);
+});
+
 test('road and approach geometry are admitted without becoming simulated dots', () => {
   const coordinates = [
     [-117.9, 33.9],

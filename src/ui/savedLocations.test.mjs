@@ -73,27 +73,24 @@ test('saved locations persist only typed fly_to_location arguments', () => {
   );
 });
 
-test(
-  'creation injects identity/time and still passes the persisted contract',
-  () => {
-    assert.deepEqual(
-      createSavedLocation(
-        {
-          label: '  Austin  ',
-          args: { latitude: 30, longitude: -97, rangeM: 1000 },
-        },
-        { idFactory: () => 'saved-austin', now: () => 1234 },
-      ),
+test('creation injects identity/time and still passes the persisted contract', () => {
+  assert.deepEqual(
+    createSavedLocation(
       {
-        id: 'saved-austin',
-        label: 'Austin',
-        action: 'fly_to_location',
+        label: '  Austin  ',
         args: { latitude: 30, longitude: -97, rangeM: 1000 },
-        createdAt: 1234,
       },
-    );
-  },
-);
+      { idFactory: () => 'saved-austin', now: () => 1234 },
+    ),
+    {
+      id: 'saved-austin',
+      label: 'Austin',
+      action: 'fly_to_location',
+      args: { latitude: 30, longitude: -97, rangeM: 1000 },
+      createdAt: 1234,
+    },
+  );
+});
 
 test('storage is bounded and malformed or blocked storage fails closed', () => {
   const store = memoryStorage();
@@ -122,23 +119,21 @@ test('storage is bounded and malformed or blocked storage fails closed', () => {
   assert.equal(persistSavedLocations(items, blocked), false);
 });
 
-test(
-  'upsert and remove preserve stable ids and normalize persisted rows',
-  () => {
-    let items = [record('a'), record('b')];
-    items = upsertSavedLocation(items, {
-      ...record('a'),
-      label: 'Austin Updated',
-    });
-    assert.deepEqual(
-      items.map((item) => [item.id, item.label]),
-      [
-        ['a', 'Austin Updated'],
-        ['b', 'Austin'],
-      ],
-    );
-    assert.deepEqual(removeSavedLocation(items, 'b').map((item) => item.id), [
-      'a',
-    ]);
-  },
-);
+test('upsert and remove preserve stable ids and normalize persisted rows', () => {
+  let items = [record('a'), record('b')];
+  items = upsertSavedLocation(items, {
+    ...record('a'),
+    label: 'Austin Updated',
+  });
+  assert.deepEqual(
+    items.map((item) => [item.id, item.label]),
+    [
+      ['a', 'Austin Updated'],
+      ['b', 'Austin'],
+    ],
+  );
+  assert.deepEqual(
+    removeSavedLocation(items, 'b').map((item) => item.id),
+    ['a'],
+  );
+});

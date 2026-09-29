@@ -1,5 +1,6 @@
 import * as Cesium from 'cesium';
 import { applyModelAtmosphereWorkaround } from './atmosphereCompat.js';
+import { resolvePerformanceProfile } from './performanceProfile.js';
 
 const PINCH_ZOOM_MULTIPLIER = 8;
 const MAX_PINCH_PIXEL_DELTA = 120;
@@ -103,9 +104,14 @@ export function installTrackpadPinchZoom(
 }
 
 /** Create the standard globe viewer in caller-owned, visible containers. */
-export function createApplicationViewer({ container, creditContainer }) {
+export function createApplicationViewer({
+  container,
+  creditContainer,
+  performanceProfile = 'standard',
+}) {
   if (!container || !creditContainer)
     throw new TypeError('Viewer and credit containers are required');
+  const performance = resolvePerformanceProfile(performanceProfile);
   const viewer = new Cesium.Viewer(container, {
     timeline: false,
     animation: false,
@@ -120,11 +126,13 @@ export function createApplicationViewer({ container, creditContainer }) {
     infoBox: false,
     baseLayer: false,
     creditContainer,
-    msaaSamples: 4,
+    msaaSamples: performance.msaaSamples,
     contextOptions: { webgl: { preserveDrawingBuffer: true } },
   });
   try {
-    viewer.targetFrameRate = 60;
+    viewer.targetFrameRate = performance.targetFrameRate;
+    viewer.resolutionScale = performance.resolutionScale;
+    viewer.gevPerformanceProfile = performance.id;
     // Before any tile builds a draw command: Cesium's per-vertex model
     // atmosphere fails to LINK on Apple's Metal backend and kills the
     // render loop. See app/atmosphereCompat.js.

@@ -114,6 +114,9 @@ export function createHazardEvidenceHandoff({
 
   let dialog = null;
   let currentRecord = null;
+  // Bumped whenever the open chooser is dismissed or replaced so a late
+  // async evidence action cannot rank preference or close a successor.
+  let openGeneration = 0;
 
   const close = () => {
     if (!dialog) return;
@@ -125,6 +128,7 @@ export function createHazardEvidenceHandoff({
     dialog.remove?.();
     dialog = null;
     currentRecord = null;
+    openGeneration += 1;
   };
 
   const runImagery = async (record) => {
@@ -175,6 +179,7 @@ export function createHazardEvidenceHandoff({
 
   const choose = async (action) => {
     const record = currentRecord;
+    const generation = openGeneration;
     if (!record) return false;
     const ok =
       action === 'imagery'
@@ -182,6 +187,8 @@ export function createHazardEvidenceHandoff({
         : action === 'cameras'
           ? await runCameras(record)
           : false;
+    // Dismiss / rebind / destroy while we awaited → drop stale completion.
+    if (generation !== openGeneration || currentRecord !== record) return false;
     if (ok) recordHazardEvidenceChoice(action, storage);
     if (ok) close();
     return ok;

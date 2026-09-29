@@ -502,3 +502,78 @@ test('owning-layer selection clear dismisses the open chooser without auto-runni
   assert.equal(windowRef.listenerCount('gev:entity-selected'), 0);
   assert.equal(windowRef.listenerCount('gev:entity-selection-cleared'), 0);
 });
+
+test('stale evidence choice after dismiss or rebind neither ranks nor closes a successor chooser', async () => {
+  const documentRef = fakeDocument();
+  const windowRef = fakeWindow();
+  const storage = memoryStorage();
+  let resolveEnable;
+  const enableGate = new Promise((resolve) => {
+    resolveEnable = resolve;
+  });
+  const calls = [];
+  const handoff = createHazardEvidenceHandoff({
+    documentRef,
+    windowRef,
+    storage,
+    dataManager: {
+      async setEnabled(id, enabled, options) {
+        calls.push(['enable', id, enabled, options]);
+        await enableGate;
+        return true;
+      },
+    },
+    styleManager: {
+      setPanelCollapsed(id, collapsed, options) {
+        calls.push(['panel', id, collapsed, options]);
+      },
+    },
+    recentImagery: {
+      boxFromPinAt(lon, lat) {
+        calls.push(['box', lon, lat]);
+        return true;
+      },
+    },
+  });
+
+  const cyclone = {
+    layerId: 'weather-cyclones',
+    latitude: 18.4,
+    longitude: -66.1,
+  };
+  const firms = {
+    layerId: 'local-firms',
+    latitude: 34.25,
+    longitude: -118.5,
+  };
+
+  assert.equal(handoff.openForRecord(cyclone), true);
+  findAction(documentRef.body.children[0], 'imagery').click();
+  // Chooser dismissed (owning-layer clear) while imagery enable is still pending.
+  windowRef.dispatch('gev:entity-selection-cleared', {
+    layerId: 'weather-cyclones',
+    reason: 'deliberate',
+  });
+  assert.equal(documentRef.body.children.length, 0);
+
+  // A newer supported selection opens a successor chooser before the stale await settles.
+  assert.equal(handoff.openForRecord(firms), true);
+  assert.equal(documentRef.body.children.length, 1);
+  const successor = documentRef.body.children[0];
+
+  resolveEnable(true);
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  // Stale completion must not rank and must not close the successor.
+  assert.deepEqual(readHazardEvidencePreference(storage), {
+    imagery: 0,
+    cameras: 0,
+  });
+  assert.equal(documentRef.body.children.length, 1);
+  assert.equal(documentRef.body.children[0], successor);
+  assert.ok(findAction(successor, 'imagery'));
+
+  handoff.destroy();
+});

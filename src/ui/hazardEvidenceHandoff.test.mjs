@@ -577,3 +577,83 @@ test('stale evidence choice after dismiss or rebind neither ranks nor closes a s
 
   handoff.destroy();
 });
+
+test('concurrent evidence clicks while a choice is in flight neither double-enable nor double-rank', async () => {
+  const documentRef = fakeDocument();
+  const windowRef = fakeWindow();
+  const storage = memoryStorage();
+  let resolveEnable;
+  const enableGate = new Promise((resolve) => {
+    resolveEnable = resolve;
+  });
+  const calls = [];
+  const cctv = {
+    focusNearestToPoint(lat, lon, options) {
+      calls.push(['nearest-camera', lat, lon, options]);
+      return 'cam-near-cyclone';
+    },
+  };
+  const handoff = createHazardEvidenceHandoff({
+    documentRef,
+    windowRef,
+    storage,
+    dataManager: {
+      layers: new Map([['cctv', { module: cctv }]]),
+      async setEnabled(id, enabled, options) {
+        calls.push(['enable', id, enabled, options]);
+        await enableGate;
+        return true;
+      },
+    },
+    styleManager: {
+      setPanelCollapsed(id, collapsed, options) {
+        calls.push(['panel', id, collapsed, options]);
+      },
+    },
+    recentImagery: {
+      boxFromPinAt(lon, lat) {
+        calls.push(['box', lon, lat]);
+        return true;
+      },
+    },
+  });
+
+  const record = {
+    layerId: 'weather-cyclones',
+    latitude: 18.4,
+    longitude: -66.1,
+  };
+  assert.equal(handoff.openForRecord(record), true);
+  const dialog = documentRef.body.children[0];
+  const imagery = findAction(dialog, 'imagery');
+  const cameras = findAction(dialog, 'cameras');
+  const dismiss = findAction(dialog, 'dismiss');
+
+  imagery.click();
+  // Second evidence click while the first enable is still gated must be ignored.
+  cameras.click();
+  const busyDuringFlight =
+    imagery.disabled === true && cameras.disabled === true;
+  // NOT NOW stays usable so the operator can still dismiss mid-flight.
+  assert.equal(dismiss.disabled, false);
+
+  resolveEnable(true);
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  // Only the first choice runs; preference ranks imagery once, never cameras.
+  assert.deepEqual(calls, [
+    ['enable', 'recent-imagery', true, { origin: 'user' }],
+    ['box', -66.1, 18.4],
+    ['panel', 'recent-imagery-panel', false, { explicit: true }],
+  ]);
+  assert.deepEqual(readHazardEvidencePreference(storage), {
+    imagery: 1,
+    cameras: 0,
+  });
+  assert.equal(documentRef.body.children.length, 0);
+  assert.equal(busyDuringFlight, true);
+
+  handoff.destroy();
+});

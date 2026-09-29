@@ -117,6 +117,9 @@ export function createHazardEvidenceHandoff({
   // Bumped whenever the open chooser is dismissed or replaced so a late
   // async evidence action cannot rank preference or close a successor.
   let openGeneration = 0;
+  // One in-flight evidence choice per open generation so a double-click
+  // cannot start a second enable or double-rank preference.
+  let chooseInFlight = false;
 
   const close = () => {
     if (!dialog) return;
@@ -129,6 +132,9 @@ export function createHazardEvidenceHandoff({
     dialog = null;
     currentRecord = null;
     openGeneration += 1;
+    // Free the in-flight latch so a successor chooser can accept a fresh click
+    // while a stale await from this generation is still settling.
+    chooseInFlight = false;
   };
 
   const runImagery = async (record) => {
@@ -177,21 +183,42 @@ export function createHazardEvidenceHandoff({
     return true;
   };
 
+  const setEvidenceActionsBusy = (busy) => {
+    if (!dialog) return;
+    const walk = (node) => {
+      if (!node) return;
+      if (HAZARD_EVIDENCE_ACTIONS.includes(node.dataset?.action)) {
+        node.disabled = busy;
+      }
+      for (const child of node.children || []) walk(child);
+    };
+    walk(dialog);
+  };
+
   const choose = async (action) => {
     const record = currentRecord;
     const generation = openGeneration;
     if (!record) return false;
-    const ok =
-      action === 'imagery'
-        ? await runImagery(record)
-        : action === 'cameras'
-          ? await runCameras(record)
-          : false;
-    // Dismiss / rebind / destroy while we awaited → drop stale completion.
-    if (generation !== openGeneration || currentRecord !== record) return false;
-    if (ok) recordHazardEvidenceChoice(action, storage);
-    if (ok) close();
-    return ok;
+    if (chooseInFlight) return false;
+    chooseInFlight = true;
+    setEvidenceActionsBusy(true);
+    try {
+      const ok =
+        action === 'imagery'
+          ? await runImagery(record)
+          : action === 'cameras'
+            ? await runCameras(record)
+            : false;
+      // Dismiss / rebind / destroy while we awaited → drop stale completion.
+      if (generation !== openGeneration || currentRecord !== record)
+        return false;
+      if (ok) recordHazardEvidenceChoice(action, storage);
+      if (ok) close();
+      else setEvidenceActionsBusy(false);
+      return ok;
+    } finally {
+      chooseInFlight = false;
+    }
   };
 
   const openForRecord = (record) => {
@@ -262,7 +289,10 @@ export function createHazardEvidenceHandoff({
   };
 
   windowRef.addEventListener('gev:entity-selected', onSelection);
-  windowRef.addEventListener('gev:entity-selection-cleared', onSelectionCleared);
+  windowRef.addEventListener(
+    'gev:entity-selection-cleared',
+    onSelectionCleared,
+  );
 
   return {
     openForRecord,

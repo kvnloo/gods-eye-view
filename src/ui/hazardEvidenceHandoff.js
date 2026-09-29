@@ -2,7 +2,11 @@ export const HAZARD_EVIDENCE_STORAGE_KEY = 'gev:hazard-evidence-preferences:v1';
 
 export const HAZARD_EVIDENCE_ACTIONS = Object.freeze(['imagery', 'cameras']);
 
-const SUPPORTED_HAZARD_LAYERS = new Set(['local-firms']);
+const SUPPORTED_HAZARD_LAYERS = new Set([
+  'local-firms',
+  'fire-perimeters',
+  'earthquakes',
+]);
 
 function resolveStorage(injected) {
   if (injected !== undefined) return injected;

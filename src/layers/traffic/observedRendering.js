@@ -134,9 +134,10 @@ export function createObservedRendering({ state: layerState, parts }) {
         const [lon, lat] = item.geometry.coordinates;
         entity = layerState._viewer.entities.add({
           ...common,
-          position: Cesium.Cartesian3.fromDegrees(lon, lat, 3),
+          position: Cesium.Cartesian3.fromDegrees(lon, lat),
           point: {
             pixelSize: 10,
+            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
             color,
             outlineColor: Cesium.Color.BLACK.withAlpha(0.9),
             outlineWidth: 2,
@@ -168,11 +169,11 @@ export function createObservedRendering({ state: layerState, parts }) {
           ...common,
           polyline: {
             positions: item.geometry.coordinates.map(([lon, lat]) =>
-              Cesium.Cartesian3.fromDegrees(lon, lat, 3),
+              Cesium.Cartesian3.fromDegrees(lon, lat),
             ),
             width: 4,
             material: color,
-            clampToGround: false,
+            clampToGround: true,
           },
         });
       }

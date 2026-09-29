@@ -1,0 +1,41 @@
+name: Format RFC slices
+
+on:
+  push:
+    branches:
+      - automation/format-rfc-slices-20260928
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.14.0
+          cache: npm
+      - run: npm ci
+      - name: Format target branches
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "gev-format-bot"
+          git config user.email "actions@users.noreply.github.com"
+          for branch in             exp/perception-tier-policy             exp/attention-disposition-policy             exp/saved-location-action-records
+          do
+            git fetch origin "$branch"
+            git checkout -B "$branch" "origin/$branch"
+            node scripts/format.mjs --write
+            git add -A
+            if git diff --cached --quiet; then
+              echo "$branch already formatted"
+              continue
+            fi
+            git commit -m "style: apply repository formatter"
+            git push origin "HEAD:$branch"
+          done

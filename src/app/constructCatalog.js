@@ -83,6 +83,7 @@ export function createApplicationCatalog({
   vesselOptions,
   resolveAsset,
   nepalBoundaryResolver,
+  visionSuitability = null,
 }) {
   if (!signal?.addEventListener)
     throw new TypeError('An application lifetime signal is required');
@@ -151,7 +152,11 @@ export function createApplicationCatalog({
         satellites,
         createApplicationLaunches({ source: sources.launches, satellites }),
         createApplicationTraffic({ source: sources.traffic, surface }),
-        createApplicationCctv({ surface, source: sources.cctv }),
+        createApplicationCctv({
+          surface,
+          source: sources.cctv,
+          visionSuitability,
+        }),
         createApplicationRadio({ surface, source: sources.radio }),
         createApplicationTransit({ surface, source: sources.transit }),
         createApplicationBikeshare({ source: sources.bikeshare }),

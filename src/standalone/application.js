@@ -16,6 +16,7 @@ export function createStandaloneApplication({
   cesiumToken,
   geospatial = {},
   voice = {},
+  performanceProfile = 'standard',
   allowQaRegistration = false,
 }) {
   if (constructed)
@@ -40,6 +41,7 @@ export function createStandaloneApplication({
         ...context,
         googleApiKey,
         cesiumToken,
+        performanceProfile,
         loaderStatus,
       });
       catalog = createStandaloneCatalog({

@@ -127,7 +127,9 @@ export function createApplicationViewer({
     baseLayer: false,
     creditContainer,
     msaaSamples: performance.msaaSamples,
-    contextOptions: { webgl: { preserveDrawingBuffer: true } },
+    contextOptions: {
+      webgl: { preserveDrawingBuffer: performance.preserveDrawingBuffer },
+    },
   });
   try {
     viewer.targetFrameRate = performance.targetFrameRate;

@@ -1,5 +1,13 @@
 # Changelog
 
+- Add optional provider-neutral CCTV **vision suitability** metadata.
+  External qualification owners can report `ready`, `marginal`,
+  `unsuitable`, or `unknown` per camera with timestamp/provenance and
+  descriptive metrics. CCTV presents the qualification separately from stream
+  health and calibration, adds compact panel/card metadata, and remains
+  unchanged when no qualification service is configured. No CV model, polling,
+  browser inference, or pixel threshold is introduced (#828).
+
 - Public Overpass instances are no longer used by default. Street Traffic
   roads come from TomTom flow tiles, OpenFreeMap vector tiles, or both, chosen
   on the layer row (TomTom / OSM / Hybrid) or with `?trafficRoads=`. With a

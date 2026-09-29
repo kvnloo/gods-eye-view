@@ -14,7 +14,10 @@ test('standard performance profile preserves the shipped viewer defaults', () =>
     msaaSamples: 4,
     resolutionScale: 1,
   });
-  assert.equal(resolvePerformanceProfile('unknown'), PERFORMANCE_PROFILES.standard);
+  assert.equal(
+    resolvePerformanceProfile('unknown'),
+    PERFORMANCE_PROFILES.standard,
+  );
 });
 
 test('potato performance profile lowers render cost explicitly', () => {

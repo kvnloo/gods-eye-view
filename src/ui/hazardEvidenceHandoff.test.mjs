@@ -260,6 +260,7 @@ test('FIRMS selection hands its own coordinates to Recent Imagery and remembers 
 
   handoff.destroy();
   assert.equal(windowRef.listenerCount('gev:entity-selected'), 0);
+  assert.equal(windowRef.listenerCount('gev:entity-selection-cleared'), 0);
 });
 
 test('Nearby Cameras uses the hazard coordinate, not viewer position, and learns that explicit choice', async () => {
@@ -430,4 +431,74 @@ test('explicit weather-cyclones selection opens the chooser, keeps cyclone coord
   ]);
 
   handoff.destroy();
+});
+
+test('owning-layer selection clear dismisses the open chooser without auto-running evidence', () => {
+  const documentRef = fakeDocument();
+  const windowRef = fakeWindow();
+  const storage = memoryStorage();
+  const calls = [];
+  const handoff = createHazardEvidenceHandoff({
+    documentRef,
+    windowRef,
+    storage,
+    dataManager: {
+      async setEnabled(id, enabled, options) {
+        calls.push(['enable', id, enabled, options]);
+        return true;
+      },
+    },
+    styleManager: {
+      setPanelCollapsed(id, collapsed, options) {
+        calls.push(['panel', id, collapsed, options]);
+      },
+    },
+    recentImagery: {
+      boxFromPinAt(lon, lat) {
+        calls.push(['box', lon, lat]);
+        return true;
+      },
+    },
+  });
+
+  const record = {
+    layerId: 'weather-cyclones',
+    latitude: 18.4,
+    longitude: -66.1,
+  };
+  assert.equal(handoff.openForRecord(record), true);
+  assert.equal(documentRef.body.children.length, 1);
+
+  // A clear for a different layer must leave this chooser alone.
+  windowRef.dispatch('gev:entity-selection-cleared', {
+    layerId: 'earthquakes',
+    reason: 'deliberate',
+  });
+  assert.equal(documentRef.body.children.length, 1);
+
+  // Owning-layer deliberate clear dismisses without enabling evidence.
+  windowRef.dispatch('gev:entity-selection-cleared', {
+    layerId: 'weather-cyclones',
+    reason: 'deliberate',
+  });
+  assert.equal(documentRef.body.children.length, 0);
+  assert.deepEqual(calls, []);
+  assert.deepEqual(readHazardEvidencePreference(storage), {
+    imagery: 0,
+    cameras: 0,
+  });
+
+  // Eviction clear also dismisses after a fresh open.
+  assert.equal(handoff.openForRecord(record), true);
+  assert.equal(documentRef.body.children.length, 1);
+  windowRef.dispatch('gev:entity-selection-cleared', {
+    layerId: 'weather-cyclones',
+    reason: 'evicted',
+  });
+  assert.equal(documentRef.body.children.length, 0);
+  assert.deepEqual(calls, []);
+
+  handoff.destroy();
+  assert.equal(windowRef.listenerCount('gev:entity-selected'), 0);
+  assert.equal(windowRef.listenerCount('gev:entity-selection-cleared'), 0);
 });

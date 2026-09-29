@@ -243,12 +243,28 @@ export function createHazardEvidenceHandoff({
   };
 
   const onSelection = (event) => openForRecord(event?.detail);
+
+  // Publishers already emit gev:entity-selection-cleared on deliberate clear
+  // and eviction. Dismiss only when that clear belongs to the open chooser's
+  // hazard layer so a stale VERIFY dialog cannot outlive its source selection.
+  const onSelectionCleared = (event) => {
+    const layerId = event?.detail?.layerId;
+    if (!dialog || !currentRecord) return;
+    if (layerId != null && layerId !== currentRecord.layerId) return;
+    close();
+  };
+
   windowRef.addEventListener('gev:entity-selected', onSelection);
+  windowRef.addEventListener('gev:entity-selection-cleared', onSelectionCleared);
 
   return {
     openForRecord,
     destroy() {
       windowRef.removeEventListener?.('gev:entity-selected', onSelection);
+      windowRef.removeEventListener?.(
+        'gev:entity-selection-cleared',
+        onSelectionCleared,
+      );
       close();
     },
   };

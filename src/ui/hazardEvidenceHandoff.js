@@ -118,7 +118,10 @@ export function createHazardEvidenceHandoff({
   // async evidence action cannot rank preference or close a successor.
   let openGeneration = 0;
   // One in-flight evidence choice per open generation so a double-click
-  // cannot start a second enable or double-rank preference.
+  // cannot start a second enable or double-rank preference. close() clears
+  // the latch for a successor; choose()'s finally only clears when its
+  // starting generation is still current so a stale settle cannot free a
+  // successor's latch.
   let chooseInFlight = false;
 
   const close = () => {
@@ -241,17 +244,23 @@ export function createHazardEvidenceHandoff({
       if (result?.toast) showToast(result.toast);
       return false;
     } catch {
-      // Owner threw while awaiting. Latch clears in finally; if this chooser
-      // is still open, re-enable evidence actions so the operator can retry
-      // or pick the other view. Do not rank. A dismiss/rebind mid-flight
-      // already closed the dialog — leave successor UI alone.
+      // Owner threw while awaiting. Latch clears in finally only when this
+      // generation still owns it; if this chooser is still open, re-enable
+      // evidence actions so the operator can retry or pick the other view.
+      // Do not rank. A dismiss/rebind mid-flight already closed the dialog
+      // — leave successor UI alone.
       if (generation === openGeneration && currentRecord === record) {
         setEvidenceActionsBusy(false);
         showToast('Evidence view could not be opened');
       }
       return false;
     } finally {
-      chooseInFlight = false;
+      // close() already freed the latch when this generation was dismissed
+      // or rebound. A stale finally must not wipe a successor that has
+      // already taken chooseInFlight for its own click (#100 across gens).
+      if (generation === openGeneration) {
+        chooseInFlight = false;
+      }
     }
   };
 

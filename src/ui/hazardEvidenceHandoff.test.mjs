@@ -971,3 +971,109 @@ test('stale success after dismiss does not box, focus, or uncollapse onto a succ
 
   handoff.destroy();
 });
+
+test('stale choose finally does not clear a successor in-flight latch', async () => {
+  const documentRef = fakeDocument();
+  const windowRef = fakeWindow();
+  const storage = memoryStorage();
+  const toasts = [];
+  /** @type {Array<() => void>} */
+  const releaseEnables = [];
+  const calls = [];
+  const cctv = {
+    focusNearestToPoint(lat, lon, options) {
+      calls.push(['nearest-camera', lat, lon, options]);
+      return 'cam-near';
+    },
+  };
+  const handoff = createHazardEvidenceHandoff({
+    documentRef,
+    windowRef,
+    storage,
+    showToast: (message) => toasts.push(message),
+    dataManager: {
+      layers: new Map([['cctv', { module: cctv }]]),
+      async setEnabled(id, enabled, options) {
+        calls.push(['enable', id, enabled, options]);
+        await new Promise((resolve) => {
+          releaseEnables.push(resolve);
+        });
+        return true;
+      },
+    },
+    styleManager: {
+      setPanelCollapsed(id, collapsed, options) {
+        calls.push(['panel', id, collapsed, options]);
+      },
+    },
+    recentImagery: {
+      boxFromPinAt(lon, lat) {
+        calls.push(['box', lon, lat]);
+        return true;
+      },
+    },
+  });
+
+  const cyclone = {
+    layerId: 'weather-cyclones',
+    latitude: 18.4,
+    longitude: -66.1,
+  };
+  const firms = {
+    layerId: 'local-firms',
+    latitude: 34.25,
+    longitude: -118.5,
+  };
+
+  // Generation A starts imagery, then is dismissed while enable is pending.
+  assert.equal(handoff.openForRecord(cyclone), true);
+  findAction(documentRef.body.children[0], 'imagery').click();
+  assert.equal(releaseEnables.length, 1);
+  windowRef.dispatch('gev:entity-selection-cleared', {
+    layerId: 'weather-cyclones',
+    reason: 'deliberate',
+  });
+  assert.equal(documentRef.body.children.length, 0);
+
+  // Successor generation B starts its own imagery choice before A settles.
+  assert.equal(handoff.openForRecord(firms), true);
+  const successor = documentRef.body.children[0];
+  const imageryB = findAction(successor, 'imagery');
+  const camerasB = findAction(successor, 'cameras');
+  imageryB.click();
+  assert.equal(releaseEnables.length, 2);
+  assert.equal(imageryB.disabled, true);
+  assert.equal(camerasB.disabled, true);
+
+  // Stale A settles. Its finally must NOT wipe B's in-flight latch.
+  releaseEnables[0]();
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  // A concurrent second click on B must still be ignored (#100 for successor).
+  camerasB.click();
+  assert.equal(releaseEnables.length, 2);
+
+  // Finish B successfully: only one imagery enable for B, cameras never ran.
+  releaseEnables[1]();
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.deepEqual(calls, [
+    ['enable', 'recent-imagery', true, { origin: 'user' }],
+    ['enable', 'recent-imagery', true, { origin: 'user' }],
+    ['box', -118.5, 34.25],
+    ['panel', 'recent-imagery-panel', false, { explicit: true }],
+  ]);
+  assert.deepEqual(readHazardEvidencePreference(storage), {
+    imagery: 1,
+    cameras: 0,
+  });
+  assert.deepEqual(toasts, []);
+  assert.equal(documentRef.body.children.length, 0);
+
+  handoff.destroy();
+});
+

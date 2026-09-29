@@ -330,6 +330,7 @@ export function createLifecycle({
       parts.rendering.refreshCoverageStyles();
       layerState._visionSuitabilityUnsubscribe =
         services.visionSuitability?.subscribe?.(() => {
+          layerState._visionSuitabilityRevision += 1;
           if (!layerState._viewer) return;
           if (layerState._enabled) parts.cards.pushAmbientCardEntries();
           parts.presentation.notifyListeners();

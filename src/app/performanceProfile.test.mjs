@@ -13,6 +13,7 @@ test('standard performance profile preserves the shipped viewer defaults', () =>
     targetFrameRate: 60,
     msaaSamples: 4,
     resolutionScale: 1,
+    preserveDrawingBuffer: true,
   });
   assert.equal(
     resolvePerformanceProfile('unknown'),
@@ -26,6 +27,7 @@ test('potato performance profile lowers render cost explicitly', () => {
     targetFrameRate: 30,
     msaaSamples: 1,
     resolutionScale: 0.75,
+    preserveDrawingBuffer: false,
   });
   assert.equal(
     resolvePerformanceProfile(' POTATO '),

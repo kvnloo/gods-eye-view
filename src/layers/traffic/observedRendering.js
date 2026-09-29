@@ -76,7 +76,7 @@ export function planObservedTrafficRendering(
     .map((record) => {
       const ageMs = Math.max(0, Number(now) - recordTime(record));
       const stale =
-        snapshot.state === 'stale' ||
+        Boolean(snapshot.error || snapshot.state === 'stale') ||
         ageMs > staleLimit;
       return {
         id: record.id,

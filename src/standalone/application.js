@@ -6,6 +6,11 @@ import { createStandaloneScene } from './scene.js';
 import { createStandaloneControls } from './controls.js';
 import { createStandaloneData } from './data.js';
 import { createStandaloneTools } from './tools.js';
+import {
+  createObservedTrafficCorridorFixtureSource,
+  installObservedTrafficCorridorFixture,
+  observedTrafficFixtureRequested,
+} from './observedTrafficFixture.js';
 
 // The existing controls and layer catalog contain page-scoped state.
 let constructed = false;
@@ -17,6 +22,10 @@ export function createStandaloneApplication({
   geospatial = {},
   voice = {},
   allowQaRegistration = false,
+  locationSearch =
+    typeof globalThis.location?.search === 'string'
+      ? globalThis.location.search
+      : '',
 }) {
   if (constructed)
     throw new Error('The standalone application already owns this page');
@@ -25,6 +34,11 @@ export function createStandaloneApplication({
   const loaderStatus = loadingScreen.querySelector('.loader-status');
   let placeSearch;
   let catalog;
+  const observedFixtureEnabled =
+    observedTrafficFixtureRequested(locationSearch);
+  const observedTrafficSource = observedFixtureEnabled
+    ? createObservedTrafficCorridorFixtureSource()
+    : null;
   return createApplication({
     createScene: async (context) => {
       placeSearch = createStandalonePlaceSearch({
@@ -43,6 +57,7 @@ export function createStandaloneApplication({
         loaderStatus,
       });
       catalog = createStandaloneCatalog({
+        observedTrafficSource,
         nepalBoundaryResolver: (signal) =>
           scene.operations.annotationResolver.resolveRegionRingForQuery(
             'Nepal',
@@ -63,8 +78,23 @@ export function createStandaloneApplication({
         placeSearch,
         catalog,
       }),
-    createData: (context) =>
-      createStandaloneData({ ...context, allowQaRegistration, catalog }),
+    createData: (context) => {
+      const data = createStandaloneData({
+        ...context,
+        allowQaRegistration,
+        catalog,
+      });
+      if (observedFixtureEnabled) {
+        context.defer(
+          installObservedTrafficCorridorFixture({
+            catalog,
+            dataManager: data.dataManager,
+            signal: context.signal,
+          }),
+        );
+      }
+      return data;
+    },
     createTools: (context) =>
       createStandaloneTools({ ...context, loadingScreen, placeSearch, voice }),
   });

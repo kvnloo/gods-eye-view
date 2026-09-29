@@ -54,6 +54,7 @@ export function planObservedTrafficRendering(
   );
   const staleLimit = Math.max(0, Number(staleAfterMs) || 0);
 
+  const seenIds = new Set();
   return snapshot.records
     .filter((record) => {
       const geometry = record?.geometry;
@@ -72,6 +73,12 @@ export function planObservedTrafficRendering(
         recordTime(b) - recordTime(a) ||
         String(a?.id || '').localeCompare(String(b?.id || '')),
     )
+    .filter((record) => {
+      const id = String(record?.id || '');
+      if (!id || seenIds.has(id)) return false;
+      seenIds.add(id);
+      return true;
+    })
     .slice(0, cap)
     .map((record) => {
       const ageMs = Math.max(0, Number(now) - recordTime(record));

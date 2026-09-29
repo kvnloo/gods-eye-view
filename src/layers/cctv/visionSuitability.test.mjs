@@ -118,6 +118,23 @@ test('ready record preserves producer status, provenance, age and metrics', () =
   ]);
 });
 
+test('source errors fail closed even when last-known READY metadata exists', () => {
+  const summary = summarizeVisionSuitability(
+    normalizeVisionSuitabilitySnapshot({
+      source: 'fixture',
+      error: 'provider down',
+      records: [record()],
+    }),
+    'cam-1',
+    { now: NOW },
+  );
+  assert.equal(summary.status, 'unknown');
+  assert.equal(summary.label, 'VISION · UNKNOWN');
+  assert.match(summary.detail, /Qualification source unavailable/);
+  assert.match(summary.detail, /last ready/);
+  assert.deepEqual(summary.cardDetails, []);
+});
+
 test('freshest qualification record wins per camera', () => {
   const snapshot = normalizeVisionSuitabilitySnapshot({
     records: [

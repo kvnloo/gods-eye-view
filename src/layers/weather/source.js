@@ -2,6 +2,7 @@ import { readResponseJsonCapped } from '../../sources/httpBody.js';
 
 export const WEATHER_PRODUCTS = Object.freeze([
   'radar',
+  'radar-global',
   'clouds',
   'clouds-regional',
   'lightning',
@@ -38,7 +39,13 @@ export function validateWeatherSnapshot(value, product) {
     value.latest !== times.at(-1) ||
     value.tileSize !== 256 ||
     value.maxLevel !== 6 ||
-    value.tilingScheme !== 'geographic'
+    !['geographic', 'web-mercator'].includes(value.tilingScheme) ||
+    (product === 'radar-global'
+      ? value.shellSupported !== false ||
+        value.imageUrl !== null ||
+        value.imageSize !== null ||
+        value.tilingScheme !== 'web-mercator'
+      : value.shellSupported !== true)
   )
     throw new Error('Malformed weather manifest');
   return value;
@@ -64,6 +71,8 @@ export function weatherImageUrl(
 ) {
   if (!WEATHER_PRODUCTS.includes(product) || !Number.isFinite(Date.parse(time)))
     throw new Error('Invalid weather frame');
+  if (product === 'radar-global')
+    throw new Error('Weather image unavailable for tile-only product');
   let box = '';
   if (bbox !== null) {
     const edges = [bbox.west, bbox.south, bbox.east, bbox.north];
@@ -85,7 +94,6 @@ export function weatherImageUrl(
       width > largest.width
     )
       throw new Error('Invalid weather image size');
-    // The largest size is the proxy default: one frame has one URL.
     if (width !== largest.width) size = `&size=${width}x${height}`;
   }
   return `/api/weather/image?product=${product}&time=${encodeURIComponent(time)}${box}${size}`;
@@ -94,9 +102,13 @@ export function weatherImageUrl(
 export function weatherTileUrl(product, time, { size } = {}) {
   if (!WEATHER_PRODUCTS.includes(product) || !Number.isFinite(Date.parse(time)))
     throw new Error('Invalid weather frame');
-  if (size !== undefined && ![256, 512, 1024].includes(size))
+  if (
+    size !== undefined &&
+    !(product === 'radar-global'
+      ? [256, 512].includes(size)
+      : [256, 512, 1024].includes(size))
+  )
     throw new Error('Invalid weather tile size');
-  // Construct locally; never accept a manifest-provided host or template.
   return `/api/weather/tile?product=${product}&time=${encodeURIComponent(time)}&z={z}&x={x}&y={y}${size === undefined ? '' : `&size=${size}`}`;
 }
 

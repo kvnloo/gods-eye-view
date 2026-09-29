@@ -1,8 +1,14 @@
-import { readResponseTextCapped } from './common/http.js';
+import {
+  readResponseTextCapped,
+  readResponseJsonCapped,
+} from './common/http.js';
 import { readWindBody as readBytesCapped } from '../../src/sources/windBody.js';
 
 const BASE = 'https://nowcoast.noaa.gov/geoserver/observations/';
+const RAINVIEWER_API = 'https://api.rainviewer.com/public/weather-maps.json';
+const RAINVIEWER_TILE_ORIGIN = 'https://tilecache.rainviewer.com';
 const HOUR = 3600_000;
+const RAINVIEWER_RATE_WINDOW_MS = 60_000;
 const PRODUCTS = Object.freeze({
   lightning: Object.freeze({
     service: 'lightning_detection',
@@ -26,6 +32,16 @@ const PRODUCTS = Object.freeze({
       'Contiguous United States; gaps do not establish absence of precipitation.',
     description:
       'Observed MRMS radar base reflectivity (dBZ), approximately 1 km and 4-minute updates; not a rainfall forecast.',
+    image: Object.freeze({ width: 4096, height: 2048 }),
+  }),
+  'radar-global': Object.freeze({
+    title: 'Global radar reflectivity',
+    coverage:
+      'Global radar composite; coverage depends on regional radar availability.',
+    description:
+      'Observed RainViewer global radar reflectivity (dBZ); approximately 10-minute updates.',
+    attribution: 'RainViewer (rainviewer.com)',
+    metadataTtlMs: 300_000,
     image: Object.freeze({ width: 4096, height: 2048 }),
   }),
   clouds: Object.freeze({
@@ -52,9 +68,7 @@ const PRODUCTS = Object.freeze({
   }),
 });
 
-// Whole-extent images: 2:1 sizes up to each product's largest (the default).
 const IMAGE_SIZES = Object.freeze(['1024x512', '2048x1024', '4096x2048']);
-// Detail windows: any product up to 4096×2048 (the default).
 const DETAIL_IMAGE = Object.freeze({ width: 4096, height: 2048 });
 const BBOX_STEP = 0.25;
 const MAX_IMAGE_BYTES = 16 * 1024 * 1024;
@@ -63,7 +77,6 @@ function failure(code, status = 503) {
   return Object.assign(new Error(code), { code, status });
 }
 
-/** Canonicalize only explicit UTC observations; never expand time intervals. */
 function observationTime(value) {
   if (
     typeof value !== 'string' ||
@@ -78,7 +91,6 @@ function observationTime(value) {
     : null;
 }
 
-/** Read the named leaf from bounded capabilities without resolving XML entities. */
 export function parseWeatherCapabilities(xml, product, nowMs = Date.now()) {
   const spec = PRODUCTS[product];
   if (
@@ -169,9 +181,6 @@ export function parseWeatherCapabilities(xml, product, nowMs = Date.now()) {
   return { bounds, times: recent.slice(-13), allowedTimes: recent };
 }
 
-/** A detail window `west,south,east,north` in degrees, rounded to 0.25° so cache
- * keys repeat, with a 2:1 aspect within 1 %; null when absent. Containment in
- * the product bounds is checked once the metadata is known. */
 export function weatherImageBbox(value) {
   if (value === null) return null;
   const parts = value.split(',');
@@ -180,7 +189,6 @@ export function weatherImageBbox(value) {
     parts.some((part) => !/^-?\d{1,3}(?:\.\d{1,6})?$/.test(part))
   )
     throw failure('invalid_weather_bbox', 400);
-  // `+ 0` turns a rounded -0 into 0 so equal windows share one key.
   const [west, south, east, north] = parts.map(
     (part) => Math.round(Number(part) / BBOX_STEP) * BBOX_STEP + 0,
   );
@@ -218,6 +226,34 @@ export function weatherTileBounds(z, x, y) {
   ];
 }
 
+function rainViewerTileCoordinates(z, x, y) {
+  if (
+    ![z, x, y].every(Number.isInteger) ||
+    z < 0 ||
+    z > 7 ||
+    x < 0 ||
+    y < 0 ||
+    x >= 2 ** z ||
+    y >= 2 ** z
+  )
+    throw failure('invalid_weather_tile', 400);
+  return [z, x, y];
+}
+
+function rainViewerFramePath(frame, nowMs) {
+  if (
+    !frame ||
+    !Number.isInteger(frame.time) ||
+    frame.time <= 0 ||
+    nowMs - frame.time * 1000 > 24 * HOUR ||
+    frame.time * 1000 > nowMs + 5 * 60_000
+  )
+    throw failure('invalid_weather_metadata');
+  const path = `/v2/radar/${frame.time}`;
+  if (frame.path !== path) throw failure('invalid_weather_metadata');
+  return path;
+}
+
 function validatePng(bytes, width, height) {
   const buffer = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   if (
@@ -234,11 +270,11 @@ function validatePng(bytes, width, height) {
   return buffer;
 }
 
-/** Fixed NOAA observed-weather metadata and WMS tiles; no client-supplied destinations. */
 export function weatherProxy({
   fetchImpl = fetch,
   now = () => Date.now(),
   timeoutMs = 12_000,
+  rainViewerMaxRequestsPerMinute = 100,
 } = {}) {
   const metadata = new Map();
   const attempts = new Map();
@@ -248,6 +284,17 @@ export function weatherProxy({
   const tileFailures = new Map();
   let tileBytes = 0;
   let active = 0;
+  const rainViewerFramePaths = new Map();
+  const rainViewerRequests = [];
+
+  function admitRainViewerRequest() {
+    const cutoff = now() - RAINVIEWER_RATE_WINDOW_MS;
+    while (rainViewerRequests.length && rainViewerRequests[0] <= cutoff)
+      rainViewerRequests.shift();
+    if (rainViewerRequests.length >= rainViewerMaxRequestsPerMinute)
+      throw failure('weather_rate_limited', 429);
+    rainViewerRequests.push(now());
+  }
 
   function pump() {
     while (active < 8 && pending.length) {
@@ -264,6 +311,7 @@ export function weatherProxy({
         });
     }
   }
+
   async function shared(key, work, clientSignal) {
     clientSignal.throwIfAborted();
     let operation = operations.get(key);
@@ -310,12 +358,17 @@ export function weatherProxy({
       if (!clientSignal.aborted) operation.waiters--;
     }
   }
+
   async function upstream(url, signal, image = null) {
     signal.throwIfAborted();
     const response = await fetchImpl(url, {
       signal,
       redirect: 'error',
-      headers: { Accept: image ? 'image/png' : 'application/xml,text/xml' },
+      headers: {
+        Accept: image
+          ? 'image/png'
+          : 'application/xml,text/xml,application/json',
+      },
     });
     if (
       !response.ok ||
@@ -323,6 +376,7 @@ export function weatherProxy({
         !/^image\/png(?:;|$)/i.test(response.headers.get('content-type') || ''))
     ) {
       await response.body?.cancel();
+      if (response.status === 429) throw failure('weather_rate_limited', 429);
       throw failure('weather_upstream_unavailable');
     }
     const value = image
@@ -335,12 +389,67 @@ export function weatherProxy({
     signal.throwIfAborted();
     return value;
   }
+
   async function getMetadata(product, signal) {
     signal.throwIfAborted();
     const old = metadata.get(product);
     const spec = PRODUCTS[product];
     if (old && now() - old.fetchedAt < (spec.metadataTtlMs ?? 120_000))
       return { ...old, stale: false };
+
+    if (product === 'radar-global') {
+      try {
+        attempts.set(product, now());
+        const jsonText = await shared(
+          'metadata:rainviewer',
+          (activeSignal) => {
+            admitRainViewerRequest();
+            return upstream(RAINVIEWER_API, activeSignal);
+          },
+          signal,
+        );
+        const data = JSON.parse(jsonText);
+        const frames = data.radar?.past;
+        if (
+          data.host !== RAINVIEWER_TILE_ORIGIN ||
+          !Array.isArray(frames) ||
+          frames.length < 1 ||
+          frames.length > 64
+        )
+          throw failure('weather_metadata_unavailable');
+
+        const nextPaths = new Map();
+        const allowedTimes = [];
+        for (const frame of frames) {
+          const path = rainViewerFramePath(frame, now());
+          const iso = new Date(frame.time * 1000).toISOString();
+          if (nextPaths.has(iso)) throw failure('invalid_weather_metadata');
+          allowedTimes.push(iso);
+          nextPaths.set(iso, path);
+        }
+        allowedTimes.sort();
+        rainViewerFramePaths.clear();
+        for (const [time, framePath] of nextPaths)
+          rainViewerFramePaths.set(time, framePath);
+        const times = allowedTimes.slice(-13);
+        const value = {
+          bounds: { west: -180, south: -85, east: 180, north: 85 },
+          times,
+          allowedTimes,
+          tilingScheme: 'web-mercator',
+          fetchedAt: now(),
+        };
+        metadata.set(product, value);
+        return { ...value, stale: false };
+      } catch (error) {
+        if (signal.aborted) attempts.delete(product);
+        signal.throwIfAborted();
+        if (old && now() - old.fetchedAt <= HOUR)
+          return { ...old, stale: true };
+        throw failure('weather_metadata_unavailable');
+      }
+    }
+
     try {
       if (
         now() - (attempts.get(product) ?? -Infinity) < 30_000 &&
@@ -356,6 +465,7 @@ export function weatherProxy({
       );
       const value = {
         ...parseWeatherCapabilities(xml, product, now()),
+        tilingScheme: 'geographic',
         fetchedAt: now(),
       };
       metadata.set(product, value);
@@ -368,6 +478,7 @@ export function weatherProxy({
       throw failure('weather_metadata_unavailable');
     }
   }
+
   function rememberTile(key, bytes) {
     if (tiles.has(key)) tileBytes -= tiles.get(key).bytes.length;
     tiles.delete(key);
@@ -379,6 +490,7 @@ export function weatherProxy({
     tiles.set(key, { bytes, at: now() });
     tileBytes += bytes.length;
   }
+
   function describe(product, value) {
     const spec = PRODUCTS[product];
     const time = value?.times.at(-1) ?? null;
@@ -388,7 +500,7 @@ export function weatherProxy({
       title: spec.title,
       coverage: spec.coverage,
       description: spec.description,
-      source: 'NOAA nowCOAST',
+      source: product === 'radar-global' ? 'RainViewer' : 'NOAA nowCOAST',
       attribution: spec.attribution ?? 'NOAA/NWS/NESDIS nowCOAST',
       bounds: value?.bounds ?? null,
       times: value?.times ?? [],
@@ -405,16 +517,19 @@ export function weatherProxy({
           : null,
       tileSize: 256,
       maxLevel: 6,
-      tilingScheme: 'geographic',
+      tilingScheme: value?.tilingScheme || 'geographic',
       tileTemplate: time
         ? `/api/weather/tile?product=${product}&time=${encodeURIComponent(time)}&z={z}&x={x}&y={y}`
         : null,
-      imageUrl: time
-        ? `/api/weather/image?product=${product}&time=${encodeURIComponent(time)}`
-        : null,
-      imageSize: { ...spec.image },
+      shellSupported: product !== 'radar-global',
+      imageUrl:
+        time && product !== 'radar-global'
+          ? `/api/weather/image?product=${product}&time=${encodeURIComponent(time)}`
+          : null,
+      imageSize: product === 'radar-global' ? null : { ...spec.image },
     };
   }
+
   function json(res, status, body) {
     res.writeHead(status, {
       'Content-Type': 'application/json',
@@ -423,6 +538,7 @@ export function weatherProxy({
     });
     res.end(JSON.stringify(body));
   }
+
   async function handler(req, res) {
     const controller = new AbortController();
     const close = () => controller.abort();
@@ -462,7 +578,9 @@ export function weatherProxy({
         wholeImage
           ? !IMAGE_SIZES.includes(size) ||
             Number.parseInt(size, 10) > largest.width
-          : !['256', '512', '1024'].includes(size)
+          : product === 'radar-global'
+            ? !['256', '512'].includes(size)
+            : !['256', '512', '1024'].includes(size)
       )
         throw failure(
           wholeImage
@@ -470,6 +588,9 @@ export function weatherProxy({
             : 'invalid_weather_tile_size',
           400,
         );
+      if (wholeImage && product === 'radar-global')
+        throw failure('weather_image_unsupported', 400);
+
       if (url.pathname === '/manifest') {
         try {
           const value = await getMetadata(product, controller.signal);
@@ -481,17 +602,23 @@ export function weatherProxy({
           return json(res, 200, describe(product, null));
         }
       }
+
       const coords = wholeImage
         ? null
         : ['z', 'x', 'y'].map((key) => url.searchParams.get(key));
       if (coords?.some((value) => !/^(?:0|[1-9]\d{0,2})$/.test(value ?? '')))
         throw failure('invalid_weather_tile', 400);
-      const tileBounds = coords
-        ? weatherTileBounds(...coords.map(Number))
-        : null;
+      const tileCoords = coords?.map(Number) ?? null;
+      const tileBounds =
+        product === 'radar-global'
+          ? (tileCoords ? rainViewerTileCoordinates(...tileCoords) : null)
+          : tileCoords
+            ? weatherTileBounds(...tileCoords)
+            : null;
       const time = url.searchParams.get('time');
       if (!time || observationTime(time) !== time)
         throw failure('invalid_weather_time', 400);
+
       const value = await getMetadata(product, controller.signal);
       controller.signal.throwIfAborted();
       if (
@@ -507,18 +634,7 @@ export function weatherProxy({
           detailBox[3] > value.bounds.north)
       )
         throw failure('invalid_weather_bbox', 400);
-      // A single advertised extent keeps NOAA's global reflectance contrast
-      // consistent across the image; independently normalized tiles create seams.
-      const bbox =
-        detailBox ??
-        (wholeImage
-          ? [
-              value.bounds.west,
-              value.bounds.south,
-              value.bounds.east,
-              value.bounds.north,
-            ]
-          : tileBounds);
+
       const [width, height] = wholeImage
         ? size.split('x').map(Number)
         : [Number(size), Number(size)];
@@ -529,39 +645,60 @@ export function weatherProxy({
           ? MAX_IMAGE_BYTES
           : Math.max(1024 * 1024, width ** 2 * 4 + 65_536),
       };
-      // NOAA WMS capabilities advertise no MaxWidth/MaxHeight. One GetMap
-      // returns a whole 4096×2048 extent or window, or a 1024 px tile, without
-      // composition. Images are keyed by product, time, size and bbox.
-      const key = `${product}:${time}:${wholeImage ? `image:${size}:${bbox.join(',')}` : `tile:${size}:${coords.join('/')}`}`;
+
+      const key = `${product}:${time}:${wholeImage ? `image:${size}:${detailBox ? detailBox.join(',') : 'all'}` : `tile:${size}:${coords.join('/')}`}`;
       let cached = tiles.get(key);
       if (cached && now() - cached.at <= 24 * HOUR) {
         tiles.delete(key);
         tiles.set(key, cached);
       } else {
-        // Never ask nearestValue=1 WMS to silently replace an expired frame.
         if (value.stale) throw failure('weather_metadata_stale');
         if (now() - (tileFailures.get(key) ?? -Infinity) < 30_000)
           throw failure('weather_upstream_unavailable');
-        const spec = PRODUCTS[product];
-        const upstreamUrl = new URL(`${BASE}${spec.service}/ows`);
-        upstreamUrl.search = new URLSearchParams({
-          service: 'WMS',
-          version: '1.1.1',
-          request: 'GetMap',
-          layers: spec.layer,
-          styles: spec.style,
-          srs: 'EPSG:4326',
-          bbox: bbox.join(','),
-          width: String(imageShape.width),
-          height: String(imageShape.height),
-          format: 'image/png',
-          transparent: 'true',
-          time,
-        }).toString();
+
+        let upstreamUrl;
+        if (product === 'radar-global') {
+          const framePath = rainViewerFramePaths.get(time);
+          if (!framePath) throw failure('unknown_weather_time', 400);
+          const [z, x, y] = tileBounds;
+          upstreamUrl = `${RAINVIEWER_TILE_ORIGIN}${framePath}/${width}/${z}/${x}/${y}/2/1_1.png`;
+        } else {
+          const spec = PRODUCTS[product];
+          const bbox =
+            detailBox ??
+            (wholeImage
+              ? [
+                  value.bounds.west,
+                  value.bounds.south,
+                  value.bounds.east,
+                  value.bounds.north,
+                ]
+              : tileBounds);
+          const u = new URL(`${BASE}${spec.service}/ows`);
+          u.search = new URLSearchParams({
+            service: 'WMS',
+            version: '1.1.1',
+            request: 'GetMap',
+            layers: spec.layer,
+            styles: spec.style,
+            srs: 'EPSG:4326',
+            bbox: bbox.join(','),
+            width: String(imageShape.width),
+            height: String(imageShape.height),
+            format: 'image/png',
+            transparent: 'true',
+            time,
+          }).toString();
+          upstreamUrl = u.href;
+        }
+
         try {
           const bytes = await shared(
             `image:${key}`,
-            (signal) => upstream(upstreamUrl.href, signal, imageShape),
+            (signal) => {
+              if (product === 'radar-global') admitRainViewerRequest();
+              return upstream(upstreamUrl, signal, imageShape);
+            },
             controller.signal,
           );
           rememberTile(key, bytes);
@@ -576,6 +713,7 @@ export function weatherProxy({
           throw error;
         }
       }
+
       res.writeHead(200, {
         'Content-Type': 'image/png',
         'Cache-Control': 'public, max-age=86400, immutable',
@@ -598,6 +736,7 @@ export function weatherProxy({
       res.removeListener?.('close', close);
     }
   }
+
   return {
     name: 'weather',
     configureServer({ middlewares }) {

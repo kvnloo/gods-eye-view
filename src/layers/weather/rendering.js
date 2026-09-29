@@ -324,21 +324,26 @@ function createGlobeRendering({
           viewer.scene.requestRender();
           return;
         }
-        const tilingScheme = new cesium.GeographicTilingScheme(
-          global
-            ? {
-                rectangle,
-                numberOfLevelZeroTilesX: 2,
-                numberOfLevelZeroTilesY: 1,
-              }
-            : undefined,
-        );
+        const tilingScheme =
+          snapshot.tilingScheme === 'web-mercator'
+            ? new cesium.WebMercatorTilingScheme({ rectangle })
+            : new cesium.GeographicTilingScheme(
+                global
+                  ? {
+                      rectangle,
+                      numberOfLevelZeroTilesX: 2,
+                      numberOfLevelZeroTilesY: 1,
+                    }
+                  : undefined,
+              );
         const credit = new cesium.Credit(
           snapshot.product === 'lightning'
             ? 'NOAA/NWS lightning density · derived from Vaisala NLDN/GLD360'
-            : snapshot.product === 'radar'
-              ? 'NOAA nowCOAST · NWS/OAR MRMS'
-              : 'NOAA nowCOAST · NESDIS GOES / global satellite partners',
+            : snapshot.product === 'radar-global'
+              ? 'RainViewer · Global radar composite (rainviewer.com)'
+              : snapshot.product === 'radar'
+                ? 'NOAA nowCOAST · NWS/OAR MRMS'
+                : 'NOAA nowCOAST · NESDIS GOES / global satellite partners',
           false,
         );
         const provider = global
@@ -553,6 +558,7 @@ export function createWeatherRendering({
   let hidden = false;
   let shown = null;
   let restaging = null;
+  let unsupportedHostError = null;
 
   // A host without imagery keeps the active renderer, which retains its frame.
   const wanted = () => {
@@ -573,6 +579,14 @@ export function createWeatherRendering({
     return shell;
   }
   function restage(frame) {
+    if (active === 'shell' && frame.snapshot.shellSupported === false) {
+      unsupportedHostError =
+        'RainViewer radar is unavailable on Google 3D; switch to a globe basemap';
+      restaging = null;
+      onChange();
+      return;
+    }
+    unsupportedHostError = null;
     const target =
       active === 'shell' ? shellFor(frame.snapshot.product) : globe;
     restaging = frame;
@@ -615,6 +629,8 @@ export function createWeatherRendering({
     },
     prefetch(snapshot, time, options) {
       switchHost();
+      if (active === 'shell' && snapshot.shellSupported === false)
+        return Promise.resolve(false);
       if (active === 'shell' && shell?.product !== snapshot.product)
         return Promise.resolve(false);
       return renderer().prefetch(snapshot, time, options);
@@ -623,6 +639,13 @@ export function createWeatherRendering({
       options.signal?.throwIfAborted();
       switchHost();
       restaging = null;
+      if (active === 'shell' && snapshot.shellSupported === false) {
+        unsupportedHostError =
+          'RainViewer radar is unavailable on Google 3D; switch to a globe basemap';
+        onChange();
+        return false;
+      }
+      unsupportedHostError = null;
       const target = active === 'shell' ? shellFor(snapshot.product) : globe;
       const ok = await target.setFrame(snapshot, time, options);
       if (ok)
@@ -642,6 +665,7 @@ export function createWeatherRendering({
       restaging = null;
       shown = null;
       hidden = false;
+      unsupportedHostError = null;
       shell?.clear();
       shell = null;
       globe.clear();
@@ -665,9 +689,13 @@ export function createWeatherRendering({
               }
             : globe.getDiagnostics();
       // A host switch restages the retained frame; keep reporting its time.
-      return restaging && !hidden && diagnostics.time === null
-        ? { ...diagnostics, time: restaging.time }
-        : diagnostics;
+      const result =
+        restaging && !hidden && diagnostics.time === null
+          ? { ...diagnostics, time: restaging.time }
+          : diagnostics;
+      return unsupportedHostError
+        ? { ...result, error: unsupportedHostError }
+        : result;
     },
   };
 }

@@ -1159,3 +1159,141 @@ test('large tile validation checks requested dimensions and bounded compressed b
   });
   assert.equal((await request(`${tile()}&size=1024`)).statusCode, 200);
 });
+
+
+const RAIN_TIME = Math.trunc(Date.parse(TIME) / 1000);
+const rainViewerMetadata = ({
+  host = 'https://tilecache.rainviewer.com',
+  path = `/v2/radar/${RAIN_TIME}`,
+} = {}) =>
+  new Response(
+    JSON.stringify({
+      version: '2.0.1',
+      generated: RAIN_TIME,
+      host,
+      radar: { past: [{ time: RAIN_TIME, path }] },
+    }),
+  );
+
+test('RainViewer metadata cannot choose an upstream origin or arbitrary frame path', async () => {
+  for (const metadata of [
+    { host: 'https://169.254.169.254' },
+    { host: 'https://user@tilecache.rainviewer.com' },
+    { path: '/v2/radar/../../admin' },
+    { path: `/v2/radar/${RAIN_TIME + 1}` },
+  ]) {
+    const calls = [];
+    const { request } = install({
+      fetchImpl: async (url) => {
+        calls.push(String(url));
+        return rainViewerMetadata(metadata);
+      },
+    });
+    const manifest = body(await request('/manifest?product=radar-global'));
+    assert.equal(manifest.unavailable, true);
+    assert.deepEqual(calls, [
+      'https://api.rainviewer.com/public/weather-maps.json',
+    ]);
+  }
+});
+
+test('RainViewer manifest is tile-only and tiles use the pinned official origin', async () => {
+  const calls = [];
+  const { request } = install({
+    fetchImpl: async (url, options) => {
+      const parsed = new URL(url);
+      calls.push({ url: parsed, options });
+      if (parsed.href === 'https://api.rainviewer.com/public/weather-maps.json')
+        return rainViewerMetadata();
+      const size = Number(parsed.pathname.split('/').at(-6));
+      return image(png(size, size));
+    },
+  });
+  const manifest = body(await request('/manifest?product=radar-global'));
+  assert.equal(manifest.source, 'RainViewer');
+  assert.equal(manifest.tilingScheme, 'web-mercator');
+  assert.equal(manifest.shellSupported, false);
+  assert.equal(manifest.imageUrl, null);
+  assert.equal(manifest.imageSize, null);
+  assert.deepEqual(manifest.times, [TIME]);
+
+  let response = await request(tile({ product: 'radar-global' }));
+  assert.equal(response.statusCode, 200);
+  assert.equal(
+    calls.at(-1).url.href,
+    `https://tilecache.rainviewer.com/v2/radar/${RAIN_TIME}/256/0/0/0/2/1_1.png`,
+  );
+  assert.equal(calls.at(-1).options.redirect, 'error');
+
+  response = await request(tile({ product: 'radar-global' }) + '&size=512');
+  assert.equal(response.statusCode, 200);
+  assert.equal(
+    calls.at(-1).url.href,
+    `https://tilecache.rainviewer.com/v2/radar/${RAIN_TIME}/512/0/0/0/2/1_1.png`,
+  );
+});
+
+test('RainViewer request budget blocks uncached bursts before upstream fetch', async () => {
+  let calls = 0;
+  const { request } = install({
+    rainViewerMaxRequestsPerMinute: 3,
+    fetchImpl: async (url) => {
+      calls += 1;
+      if (String(url) === 'https://api.rainviewer.com/public/weather-maps.json')
+        return rainViewerMetadata();
+      return image(png(256, 256));
+    },
+  });
+  assert.equal(
+    (await request('/manifest?product=radar-global')).statusCode,
+    200,
+  );
+  assert.equal(
+    (await request(tile({ product: 'radar-global', z: 2, x: 0, y: 0 })))
+      .statusCode,
+    200,
+  );
+  assert.equal(
+    (await request(tile({ product: 'radar-global', z: 2, x: 1, y: 0 })))
+      .statusCode,
+    200,
+  );
+  const limited = await request(
+    tile({ product: 'radar-global', z: 2, x: 2, y: 0 }),
+  );
+  assert.equal(limited.statusCode, 429);
+  assert.equal(body(limited).error, 'weather_rate_limited');
+  assert.equal(calls, 3, 'blocked request never reaches RainViewer');
+});
+
+test('RainViewer route enforces WebMercator bounds, supported sizes and no image endpoint before fetching', async () => {
+  let calls = 0;
+  const { request } = install({
+    fetchImpl: async () => {
+      calls++;
+      throw new Error('unexpected fetch');
+    },
+  });
+  for (const url of [
+    tile({ product: 'radar-global', z: 0, x: 1, y: 0 }),
+    tile({ product: 'radar-global', z: 0, x: 0, y: 1 }),
+    tile({ product: 'radar-global', z: 8, x: 0, y: 0 }),
+    tile({ product: 'radar-global' }) + '&size=1024',
+    wholeImage(TIME, 'radar-global'),
+  ])
+    assert.equal((await request(url)).statusCode, 400, url);
+  assert.equal(calls, 0);
+});
+
+test('RainViewer rejects a tile whose PNG dimensions do not match the requested size', async () => {
+  const { request } = install({
+    fetchImpl: async (url) =>
+      String(url) === 'https://api.rainviewer.com/public/weather-maps.json'
+        ? rainViewerMetadata()
+        : image(png(512, 512)),
+  });
+  assert.equal(
+    (await request(tile({ product: 'radar-global' }))).statusCode,
+    503,
+  );
+});

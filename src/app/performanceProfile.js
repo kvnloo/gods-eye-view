@@ -6,6 +6,7 @@ const PERFORMANCE_PROFILES = Object.freeze({
     resolutionScale: 1,
     preserveDrawingBuffer: true,
     scene3DOnly: false,
+    photorealisticTileset: null,
   }),
   potato: Object.freeze({
     id: 'potato',
@@ -14,6 +15,11 @@ const PERFORMANCE_PROFILES = Object.freeze({
     resolutionScale: 0.75,
     preserveDrawingBuffer: false,
     scene3DOnly: true,
+    photorealisticTileset: Object.freeze({
+      cacheBytes: 256 * 1024 * 1024,
+      maximumCacheOverflowBytes: 128 * 1024 * 1024,
+      maximumScreenSpaceError: 32,
+    }),
   }),
 });
 

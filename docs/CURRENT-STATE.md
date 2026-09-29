@@ -14,8 +14,9 @@ so the QA path never invents a camera ID when provider caps differ.
 
 The fixture publishes up to three normalized intersection observations through
 the #830 contract. One record is intentionally stale and a fourth selected
-camera is intentionally omitted, so the same no-network run exercises recent,
-stale and unknown presentation states. Records carry `synthetic-fixture`
+camera is intentionally omitted, so the same measurement-network-free fixture
+exercises recent, stale and unknown presentation states. Normal map/road
+providers still retain their usual network behavior. Records carry `synthetic-fixture`
 quality/provenance and deterministic coarse rates/class counts. CCTV receives
 those results only through the read-only #829 bridge.
 

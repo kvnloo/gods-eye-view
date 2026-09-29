@@ -26,6 +26,7 @@ export function _renderCctvState(state) {
   const enabled = !!state?.enabled && !!this.actions.isEnabled();
   const activeId = state?.activeCameraId || '';
   const activeCamera = state?.activeCamera || null;
+  const visionSuitability = activeCamera?.visionSuitability || null;
 
   // Auto-expand the panel when the active camera CHANGES to a new non-null
   // id while the layer is enabled. Covers click-on-globe, panel controls,
@@ -136,6 +137,35 @@ export function _renderCctvState(state) {
       ? 'CAL · EDITED (UNSAVED)'
       : `CAL · ${this._calBadgeLabel(badge)}`;
     this._cctvQualityChip.dataset.calBadge = dirty ? 'edited' : badge || '';
+  }
+
+  if (this._cctvVisionChip) {
+    const visible = !!enabled && !!activeCamera && !!visionSuitability;
+    this._cctvVisionChip.hidden = !visible;
+    this._cctvVisionChip.textContent = visible
+      ? visionSuitability.label || 'VISION · UNKNOWN'
+      : 'VISION · --';
+    this._cctvVisionChip.dataset.visionStatus = visible
+      ? visionSuitability.status || 'unknown'
+      : '';
+    this._cctvVisionChip.title = visible
+      ? visionSuitability.title || visionSuitability.label || ''
+      : '';
+  }
+
+  if (this._cctvVisionMeta) {
+    const visible =
+      !!enabled &&
+      !!activeCamera &&
+      !!visionSuitability &&
+      !!visionSuitability.detail;
+    this._cctvVisionMeta.hidden = !visible;
+    this._cctvVisionMeta.textContent = visible
+      ? visionSuitability.detail
+      : '';
+    this._cctvVisionMeta.dataset.visionStatus = visible
+      ? visionSuitability.status || 'unknown'
+      : '';
   }
 
   this._syncCctvCalReadout(enabled, activeCamera);

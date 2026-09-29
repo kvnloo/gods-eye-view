@@ -1,5 +1,13 @@
 # Changelog
 
+- Render bounded provider-neutral observed traffic distinctly from simulated
+  traffic. Fresh observations use a dedicated cyan measured overlay; stale
+  evidence remains visible but switches to an amber stale treatment. Intersection
+  records render as measured points/labels, while road-segment and approach
+  records render as measured polylines. The overlay is capped, recent-first,
+  clears on Traffic disable/destroy, and carries `gevSource: observed-traffic`
+  provenance properties instead of becoming simulated moving dots (#830, #831).
+
 - Add a provider-neutral observed-traffic source contract behind Street Traffic.
   External producers can supply bounded road-segment, approach or intersection
   observations with timestamps, coarse counts/rates, movements, quality and

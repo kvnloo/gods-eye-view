@@ -65,6 +65,7 @@ export function createState({ services }) {
   layerState._listeners = new Set();
 
   layerState._visionSuitabilityUnsubscribe = null;
+  layerState._visionSuitabilityRevision = 0;
 
   layerState._projectionRaf = 0;
 

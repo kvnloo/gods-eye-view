@@ -123,6 +123,15 @@ export {
 } from './policy.js';
 
 export { createCctvSource } from './source.js';
+export {
+  CCTV_VISION_SUITABILITY_STATUSES,
+  emptyVisionSuitabilitySnapshot,
+  formatVisionSuitabilityAge,
+  indexVisionSuitabilityByCamera,
+  normalizeVisionSuitabilityRecord,
+  normalizeVisionSuitabilitySnapshot,
+  summarizeVisionSuitability,
+} from './visionSuitability.js';
 
 export { CCTV_AMBIENT_CARD_MAX } from '../../data/cctvLod.js';
 export {

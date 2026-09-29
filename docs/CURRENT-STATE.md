@@ -1,5 +1,29 @@
 # God's Eye View Current State
 
+## Camera-observed corridor fixture — September 29, 2026
+
+The first #831 end-to-end proof is available behind the explicit query
+`?observedTraffic=fixture`. Default startup remains unchanged.
+
+When enabled, standalone composition installs a deterministic synthetic
+observed-traffic source, turns on Street Traffic and CCTV, waits for CCTV's real
+loaded catalog, then chooses up to four real camera IDs. Cameras whose metadata
+mentions SR-90 / Imperial Highway or nearby north-Orange-County names are
+preferred, followed by other loaded Caltrans rows and finally any loaded camera
+so the QA path never invents a camera ID when provider caps differ.
+
+The fixture publishes up to three normalized intersection observations through
+the #830 contract. One record is intentionally stale and a fourth selected
+camera is intentionally omitted, so the same no-network run exercises recent,
+stale and unknown presentation states. Records carry `synthetic-fixture`
+quality/provenance and deterministic coarse rates/class counts. CCTV receives
+those results only through the read-only #829 bridge.
+
+The fixture is a product/QA proof, not traffic ground truth: it performs no
+camera analysis, contains no identity/person/plate data, stores no video, and
+makes no accuracy claim. `npm run qa:observed-traffic` drives the browser
+surface against a running app and verifies the contract-to-card path.
+
 ## CCTV observed-traffic summaries — September 28, 2026
 
 CCTV can consume the provider-neutral observed-traffic snapshot introduced by

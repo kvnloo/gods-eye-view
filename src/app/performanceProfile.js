@@ -5,6 +5,7 @@ const PERFORMANCE_PROFILES = Object.freeze({
     msaaSamples: 4,
     resolutionScale: 1,
     preserveDrawingBuffer: true,
+    scene3DOnly: false,
   }),
   potato: Object.freeze({
     id: 'potato',
@@ -12,6 +13,7 @@ const PERFORMANCE_PROFILES = Object.freeze({
     msaaSamples: 1,
     resolutionScale: 0.75,
     preserveDrawingBuffer: false,
+    scene3DOnly: true,
   }),
 });
 

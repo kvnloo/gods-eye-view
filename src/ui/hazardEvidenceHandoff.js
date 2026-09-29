@@ -216,6 +216,16 @@ export function createHazardEvidenceHandoff({
       if (ok) close();
       else setEvidenceActionsBusy(false);
       return ok;
+    } catch {
+      // Owner threw while awaiting. Latch clears in finally; if this chooser
+      // is still open, re-enable evidence actions so the operator can retry
+      // or pick the other view. Do not rank. A dismiss/rebind mid-flight
+      // already closed the dialog — leave successor UI alone.
+      if (generation === openGeneration && currentRecord === record) {
+        setEvidenceActionsBusy(false);
+        showToast('Evidence view could not be opened');
+      }
+      return false;
     } finally {
       chooseInFlight = false;
     }

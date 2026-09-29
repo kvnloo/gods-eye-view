@@ -657,3 +657,99 @@ test('concurrent evidence clicks while a choice is in flight neither double-enab
 
   handoff.destroy();
 });
+
+test('thrown evidence enable recovers busy actions so a retry can proceed', async () => {
+  const documentRef = fakeDocument();
+  const windowRef = fakeWindow();
+  const storage = memoryStorage();
+  const toasts = [];
+  let resolveEnable;
+  let failNextEnable = true;
+  const enableGate = new Promise((resolve) => {
+    resolveEnable = resolve;
+  });
+  const calls = [];
+  const handoff = createHazardEvidenceHandoff({
+    documentRef,
+    windowRef,
+    storage,
+    showToast: (message) => toasts.push(message),
+    dataManager: {
+      async setEnabled(id, enabled, options) {
+        calls.push(['enable', id, enabled, options]);
+        if (failNextEnable) {
+          await enableGate;
+          throw new Error('enable exploded');
+        }
+        return true;
+      },
+    },
+    styleManager: {
+      setPanelCollapsed(id, collapsed, options) {
+        calls.push(['panel', id, collapsed, options]);
+      },
+    },
+    recentImagery: {
+      boxFromPinAt(lon, lat) {
+        calls.push(['box', lon, lat]);
+        return true;
+      },
+    },
+  });
+
+  const record = {
+    layerId: 'weather-cyclones',
+    latitude: 18.4,
+    longitude: -66.1,
+  };
+  assert.equal(handoff.openForRecord(record), true);
+  const dialog = documentRef.body.children[0];
+  const imagery = findAction(dialog, 'imagery');
+  const cameras = findAction(dialog, 'cameras');
+  const dismiss = findAction(dialog, 'dismiss');
+
+  imagery.click();
+  assert.equal(imagery.disabled, true);
+  assert.equal(cameras.disabled, true);
+  assert.equal(dismiss.disabled, false);
+
+  resolveEnable(true);
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  // Same open chooser must recover: evidence actions usable, no ranking, toast once.
+  assert.equal(documentRef.body.children.length, 1);
+  assert.equal(documentRef.body.children[0], dialog);
+  assert.equal(imagery.disabled, false);
+  assert.equal(cameras.disabled, false);
+  assert.deepEqual(readHazardEvidencePreference(storage), {
+    imagery: 0,
+    cameras: 0,
+  });
+  assert.deepEqual(toasts, ['Evidence view could not be opened']);
+  assert.deepEqual(calls, [
+    ['enable', 'recent-imagery', true, { origin: 'user' }],
+  ]);
+
+  // Retry after recovery must complete a successful choice (latch cleared).
+  failNextEnable = false;
+  imagery.click();
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.deepEqual(readHazardEvidencePreference(storage), {
+    imagery: 1,
+    cameras: 0,
+  });
+  assert.equal(documentRef.body.children.length, 0);
+  assert.deepEqual(calls, [
+    ['enable', 'recent-imagery', true, { origin: 'user' }],
+    ['enable', 'recent-imagery', true, { origin: 'user' }],
+    ['box', -66.1, 18.4],
+    ['panel', 'recent-imagery-panel', false, { explicit: true }],
+  ]);
+
+  handoff.destroy();
+});

@@ -61,6 +61,7 @@ export function createPresentation({
   }
 
   let cachedVisionRaw = null;
+  let cachedVisionRevision = -1;
   let cachedVisionSnapshot = emptyVisionSuitabilitySnapshot();
   let cachedVisionIndex = new Map();
 
@@ -71,13 +72,15 @@ export function createPresentation({
     } catch {
       raw = { configured: true, error: true, records: [] };
     }
-    if (raw === cachedVisionRaw) {
+    const revision = layerState._visionSuitabilityRevision || 0;
+    if (raw === cachedVisionRaw && revision === cachedVisionRevision) {
       return {
         snapshot: cachedVisionSnapshot,
         index: cachedVisionIndex,
       };
     }
     cachedVisionRaw = raw;
+    cachedVisionRevision = revision;
     cachedVisionSnapshot = services.visionSuitability
       ? normalizeVisionSuitabilitySnapshot(raw)
       : emptyVisionSuitabilitySnapshot();

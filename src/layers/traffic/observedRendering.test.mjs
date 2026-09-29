@@ -120,6 +120,29 @@ test('invalid geometry is skipped without hiding valid siblings', () => {
   assert.deepEqual(plan.map(({ id }) => id), ['valid']);
 });
 
+test('duplicate observation ids keep only the newest record', () => {
+  const plan = planObservedTrafficRendering(
+    {
+      configured: true,
+      state: 'fresh',
+      records: [
+        record('dup', {
+          observedAt: NOW - 60_000,
+          flow: { vehiclesPerMin: 4, counts: {} },
+        }),
+        record('dup', {
+          observedAt: NOW - 5_000,
+          flow: { vehiclesPerMin: 12, counts: {} },
+        }),
+      ],
+    },
+    { now: NOW },
+  );
+  assert.equal(plan.length, 1);
+  assert.equal(plan[0].id, 'dup');
+  assert.equal(plan[0].measurement, '12 veh/min');
+});
+
 test('render plan is recent-first and bounded', () => {
   const records = Array.from(
     { length: OBSERVED_TRAFFIC_RENDER_LIMIT + 20 },

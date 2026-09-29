@@ -1,3 +1,14 @@
+## Motion-safe Recent Imagery refinement — September 29, 2026
+
+Recent Imagery now treats camera motion as the realtime lane. Existing draped
+imagery remains committed while the camera is moving, but new GIBS tile
+refinement requests are deferred. After 180 ms of quiet camera input the renderer
+requests one coalesced retry frame and refinement resumes. Each new motion start
+increments a generation exposed in renderer diagnostics so later async work can
+reject stale viewport completions. This ports the first motion-safe scheduling
+rule proven in Quackles; it does not add a texture atlas or change imagery source
+truth/freshness semantics.
+
 # God's Eye View Current State
 
 ## Cyber HUD — September 23, 2026

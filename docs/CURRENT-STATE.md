@@ -1,5 +1,36 @@
 # God's Eye View Current State
 
+## CCTV vision suitability metadata — September 29, 2026
+
+CCTV accepts an optional read-only qualification service through
+`createApplicationCatalog({ visionSuitability })`. The service exposes
+`getSnapshot()` and may expose `subscribe(callback)`; with no service
+configured there is no additional UI, polling, request or rendering work.
+
+Qualification records are camera-scoped metadata with one producer-owned
+status: `ready`, `marginal`, `unsuitable`, or `unknown`. Optional
+descriptive measurements include `medianObjectPx` and `usableShare`, but GEV
+does not apply a hard-coded pixel/scale threshold or infer a different status
+from those fields. Non-`unknown` claims require both `measuredAt` and
+provenance, so a suitability badge cannot become anonymous or timeless
+authority.
+
+The active-camera panel shows a separate `VISION` chip and a small detail row
+with age, provenance, reason and any supplied descriptive metrics. Ambient CCTV
+thumbnail cards may show at most two terse vision detail lines. Stream health
+and calibration remain independent: a live camera is not automatically
+`VISION READY`, and a calibrated camera is not automatically suitable for
+measurement.
+
+Malformed sibling records fail soft, provider error text is sanitized, and
+subscription updates invalidate the camera index even if the provider reuses
+the same snapshot object. The full camera list is indexed once per snapshot, so
+presentation stays O(records + cameras).
+
+This is the metadata/presentation slice from upstream #828. It adds no detector,
+Torch/OpenCV/YOLO dependency, raw-video transport, person/identity/plate logic or
+engineering-accuracy claim.
+
 ## Cyber HUD — September 23, 2026
 
 Display > HUD > Layout includes Cyber, also available through the HUD voice

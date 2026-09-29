@@ -200,6 +200,37 @@ export function summarizeVisionSuitability(
   const measuredAt = finiteTimestamp(record.measuredAt);
   const ageMs =
     measuredAt === null ? null : Math.max(0, Number(now) - measuredAt);
+  if (snapshot.error) {
+    const ageLabel = ageMs === null ? null : formatVisionSuitabilityAge(ageMs);
+    const provenance =
+      record.provenance?.source ||
+      record.provenance?.method ||
+      snapshot.source ||
+      null;
+    const detail = [
+      'Qualification source unavailable',
+      record.status ? `last ${record.status}` : null,
+      ageLabel,
+      provenance,
+    ]
+      .filter(Boolean)
+      .join(' · ');
+    return {
+      cameraId: id,
+      status: 'unknown',
+      label: 'VISION · UNKNOWN',
+      detail,
+      title: ['VISION · UNKNOWN', detail].filter(Boolean).join(' · '),
+      measuredAt,
+      ageMs,
+      ageLabel,
+      provenance,
+      reason: record.reason || null,
+      medianObjectPx: record.medianObjectPx ?? null,
+      usableShare: record.usableShare ?? null,
+      cardDetails: [],
+    };
+  }
   const ageLabel = ageMs === null ? null : formatVisionSuitabilityAge(ageMs);
   const provenance =
     record.provenance?.source ||

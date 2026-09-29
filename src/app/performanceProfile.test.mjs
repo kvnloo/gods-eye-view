@@ -15,6 +15,7 @@ test('standard performance profile preserves the shipped viewer defaults', () =>
     resolutionScale: 1,
     preserveDrawingBuffer: true,
     scene3DOnly: false,
+    photorealisticTileset: null,
   });
   assert.equal(
     resolvePerformanceProfile('unknown'),
@@ -30,6 +31,11 @@ test('potato performance profile lowers render cost explicitly', () => {
     resolutionScale: 0.75,
     preserveDrawingBuffer: false,
     scene3DOnly: true,
+    photorealisticTileset: {
+      cacheBytes: 256 * 1024 * 1024,
+      maximumCacheOverflowBytes: 128 * 1024 * 1024,
+      maximumScreenSpaceError: 32,
+    },
   });
   assert.equal(
     resolvePerformanceProfile(' POTATO '),

@@ -14,6 +14,7 @@ import {
   governorRequestRender,
 } from '../renderGovernor.js';
 import { describeError } from './errors.js';
+import { resolvePerformanceProfile } from './performanceProfile.js';
 
 /** Construct the application globe using the caller's local configuration. */
 export async function createApplicationScene({
@@ -28,6 +29,7 @@ export async function createApplicationScene({
   signal,
   defer,
 }) {
+  const performance = resolvePerformanceProfile(performanceProfile);
   const operations = createApplicationOperations({
     requests: requestServices,
     signal,
@@ -67,6 +69,7 @@ export async function createApplicationScene({
   const photoreal = await loadPhotorealisticTileset(Cesium, {
     googleApiKey,
     cesiumToken,
+    tilesetOptions: performance.photorealisticTileset,
   });
   const tileset = photoreal.tileset;
   // A provider can finish after cancellation; retain ownership of its result.

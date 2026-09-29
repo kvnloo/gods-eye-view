@@ -2,7 +2,8 @@
 
 The standalone app accepts `?performance=potato` as an explicit low-end render
 profile. It keeps data/source behavior unchanged while setting the Cesium viewer
-to a 30 FPS target, 1x MSAA and 0.75 resolution scale. Missing or unknown profile
+to a 30 FPS target, 1x MSAA and 0.75 resolution scale, and does not preserve
+the WebGL drawing buffer between frames. Missing or unknown profile
 values preserve the existing 60 FPS, 4x MSAA and 1.0 resolution defaults.
 No automatic hardware detection or quality adaptation runs yet.
 

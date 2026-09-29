@@ -5,6 +5,7 @@ import {
   TILE_RETRY_DELAY_MS,
   createRecentImageryRenderer,
 } from './rendering.js';
+import { CAMERA_REFINEMENT_SETTLE_MS } from '../../services/cameraMotionGate.js';
 import { BOX, manualTimers } from './testDoubles.mjs';
 
 /** A provider whose tile requests stay pending until the test settles them. */
@@ -30,6 +31,30 @@ function fakeCesium(requestImage) {
       fromDegrees: (west, south, east, north) => ({ west, south, east, north }),
     },
     SplitDirection: { LEFT: -1, NONE: 0, RIGHT: 1 },
+  };
+}
+
+
+function cameraEvents() {
+  const createEvent = () => {
+    const listeners = new Set();
+    return {
+      addEventListener(listener) {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
+      raise() {
+        for (const listener of [...listeners]) listener();
+      },
+    };
+  };
+  const moveStart = createEvent();
+  const moveEnd = createEvent();
+  return {
+    moveStart,
+    moveEnd,
+    start: () => moveStart.raise(),
+    end: () => moveEnd.raise(),
   };
 }
 
@@ -63,11 +88,13 @@ function fixture({ requestImage, maxTileRequests } = {}) {
     setTimeoutImpl: timers.setTimeoutImpl,
     clearTimeoutImpl: timers.clearTimeoutImpl,
   });
+  const camera = cameraEvents();
+  renderer.attachViewer({ camera });
   const globe = fakeCollection();
   renderer.rebind({ collection: globe, kind: 'globe' });
   const tileFrames = () =>
     renders.filter((reason) => reason === TILE_RENDER_REASON).length;
-  return { renderer, globe, renders, timers, tileFrames };
+  return { renderer, globe, renders, timers, tileFrames, camera };
 }
 
 test('a slot drapes one GIBS provider bounded to the box; the same day only restyles it', () => {
@@ -207,4 +234,36 @@ test('against the basemap slot a splits left with no second layer, and leaving t
   assert.deepEqual(globe.layers, [layer], 'no rebuild for a new look');
   assert.equal(layer.splitDirection, 0);
   assert.deepEqual(renders, ['recent-imagery-show', 'recent-imagery-look']);
+});
+
+
+test('camera motion defers tile refinement and wakes exactly once after settle', async () => {
+  const { renderer, globe, timers, tileFrames, camera } = fixture();
+  renderer.showSlot('a', S30, BOX);
+  const { provider } = globe.layers[0];
+
+  camera.start();
+  for (let i = 0; i < 40; i += 1)
+    assert.equal(provider.requestImage(i, 0, 1), undefined);
+  assert.equal(provider.calls.length, 0, 'motion admits no tile fetches');
+  assert.equal(tileFrames(), 0, 'motion deferral does not ask for retry frames');
+  assert.equal(renderer.diagnostics().motion.settled, false);
+  assert.equal(renderer.diagnostics().motion.generation, 1);
+  assert.equal(renderer.diagnostics().motionDeferred, 40);
+
+  camera.end();
+  assert.equal(timers.armed(), 1);
+  assert.equal(
+    [...timers.pending.values()][0].ms,
+    CAMERA_REFINEMENT_SETTLE_MS,
+  );
+  timers.flush();
+  assert.equal(tileFrames(), 1, 'settle coalesces all deferrals into one frame');
+  assert.equal(renderer.diagnostics().motion.settled, true);
+  assert.equal(renderer.diagnostics().motionRetryPending, false);
+
+  const request = provider.requestImage(99, 0, 1);
+  assert.ok(request instanceof Promise, 'refinement resumes after settle');
+  provider.pending[0]('tile');
+  await request;
 });

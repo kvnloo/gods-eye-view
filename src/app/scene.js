@@ -23,6 +23,7 @@ export async function createApplicationScene({
   credits,
   MapController = MapStackController,
   mapOptions = {},
+  performanceProfile = 'standard',
   loaderStatus,
   signal,
   defer,
@@ -50,6 +51,7 @@ export async function createApplicationScene({
   const viewer = createApplicationViewer({
     container: 'cesiumContainer',
     creditContainer,
+    performanceProfile,
   });
   defer(() => {
     uninstallRenderGovernor(viewer);

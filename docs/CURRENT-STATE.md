@@ -1,3 +1,11 @@
+## Explicit low-end viewer profile — September 29, 2026
+
+The standalone app accepts `?performance=potato` as an explicit low-end render
+profile. It keeps data/source behavior unchanged while setting the Cesium viewer
+to a 30 FPS target, 1x MSAA and 0.75 resolution scale. Missing or unknown profile
+values preserve the existing 60 FPS, 4x MSAA and 1.0 resolution defaults.
+No automatic hardware detection or quality adaptation runs yet.
+
 # God's Eye View Current State
 
 ## Cyber HUD — September 23, 2026

@@ -3757,7 +3757,10 @@
       "src/data/ucsSatellites.js",
       "src/data/imagingSensors.js",
       "src/data/planespottersPhoto.js",
-      "src/ui/stores/dataLibrary.js"
+      "src/ui/stores/dataLibrary.js",
+      "src/layers/aurora/rendering.js",
+      "src/layers/aurora/source.js",
+      "src/layers/aurora/index.js"
     ],
     "external": [
       "hls.js",
@@ -4467,7 +4470,9 @@
       "src/layers/satellites/sensors.js",
       "src/data/ucsSatellites.js",
       "src/data/imagingSensors.js",
-      "src/data/planespottersPhoto.js"
+      "src/data/planespottersPhoto.js",
+      "src/layers/aurora/rendering.js",
+      "src/layers/aurora/index.js"
     ],
     "external": [
       "hls.js",

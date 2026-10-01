@@ -1,60 +1,87 @@
 # Québec 511 media-contract evidence packet
 
 Factory protocol: `oss-factory:v1`  
-Status: `CHECK`  
+Status: `REVISE`  
 Dedupe key: `gods-eye-view:quebec-511:media-contract`  
 Upstream issue: https://github.com/bilawalsidhu/gods-eye-view/issues/445  
 Base SHA: `b210ab0fe4d71c7faa0268134e0aa5f3c53fc7fe`  
 Branch: `feat/quebec-511-cctv`
 
-## Why this exists
+## Current verdict
 
-The official Québec 511 / MTMD WFS is suitable for camera identity and geometry, but its published `URL_FLUX_DONNEE` values are viewer pages such as:
+The technical media blocker is resolved: Québec 511 publishes stable, direct JPEG paths for camera images.
 
-`https://www.quebec511.info/Carte/Fenetres/FenetreVideo.html?id=4057`
+Promotion is still blocked by the service's current usage terms. The public Québec 511 terms say platform content must not be used for a purpose other than that for which the service was designed. The separate CC BY 4.0 dataset license covers the camera catalog/geometry, but this evidence does not establish that the camera imagery itself may be republished or proxied by a third-party application.
 
-God's Eye View's current CCTV contract requires an actual image, HLS, MP4 or WebM upstream. Registering the HTML viewer as `url` or `snapshotUrl` would make `/api/cctv/frame/:id` reject the body and fall through to Street View/synthetic while looking superficially configured.
+Do **not** promote a GEV camera proxy until the image-reuse rights are clarified or permission is obtained.
 
-Upstream comment recording the blocker:
-https://github.com/bilawalsidhu/gods-eye-view/issues/445#issuecomment-5841034498
+## Executed media evidence — 2026-10-01
 
-## Worker assignment
+Official camera listing:
 
-Grok bot / Muse bot: gather browser/network evidence only. Do not post upstream and do not implement a speculative scraper.
+https://www.quebec511-mtl.transports.gouv.qc.ca/fr/Diffusion/EtatReseau/Camera.aspx?Id=40&Type=2
 
-Use at least three MTMD cameras from different regions from the official WFS:
+Three Montréal A-40 cameras exposed these image paths:
+
+| Camera | Stable direct-media path |
+| --- | --- |
+| A-40, Île-aux-Tourtes / Sainte-Anne-de-Bellevue | `/Images/Cameras/Montreal/cam/0400406.jpg` |
+| A-40 at Autoroute 13 | `/Images/Cameras/Montreal/cam/0400609.jpg` |
+| A-40, Charles-De Gaulle bridge / Montréal side | `/Images/Cameras/Montreal/cam/0400924.jpg` |
+
+The page appended a changing cache-buster query to each JPEG. Two independent page fetches produced the same three paths with different query values and visibly updated image contents.
+
+First observed query generation:
+
+- `0400406.jpg?639246579600000000=`
+- `0400609.jpg?639246579600000000=`
+- `0400924.jpg?639246579600000000=`
+
+Later page fetch:
+
+- `0400406.jpg?639264744600000000=`
+- `0400609.jpg?639264744600000000=`
+- `0400924.jpg?639264744600000000=`
+
+This strongly supports a stable path + disposable cache-buster contract rather than a signed/session-specific media URL.
+
+The official Québec 511 FAQ also states that camera imagery is refreshed every 2–4 minutes.
+
+## What is now established
+
+- The official viewer is not the only usable surface; direct JPEG assets exist.
+- The media URLs are first-party Québec 511 / MTMD URLs.
+- Camera asset identity is stable across refreshes.
+- The cache-buster changes independently of the stable JPEG path.
+- At least three independent cameras use the same URL shape.
+- No login, signed token, or per-camera temporary media URL appeared in the tested page flow.
+
+## What remains unproven
+
+A browser/network capture should still confirm whether a server-side fetch requires any relevant cookie, Referer, Origin, or other header. The evidence above did not expose such a requirement, but it did not record raw response/request headers.
+
+More importantly, reuse rights remain unresolved.
+
+Québec 511's current Terms of Use state that the platforms/content may not be modified or used for a purpose other than that for which they were designed. The privacy policy confirms the traffic-camera images are transient and are published on Québec 511 to inform road users.
+
+Therefore public accessibility is **not** being treated as permission to proxy or redistribute the images through GEV.
+
+## Safe next step
+
+Keep the official WFS/GeoJSON catalog and CC BY 4.0 geometry/provenance work.
+
+For imagery, do one of:
+
+1. obtain an explicit MTMD reuse permission/license for camera imagery in third-party applications;
+2. find a separate officially licensed redistribution surface/API whose terms permit this use; or
+3. keep Québec 511 link-only in GEV rather than proxying the images.
+
+Do not bypass access controls, scrape private endpoints, or infer image-reuse rights from the catalog license.
+
+## Original worker assignment
+
+The official Québec 511 / MTMD WFS remains the source for camera identity and geometry:
 
 `https://ws.mapserver.transports.gouv.qc.ca/swtq?service=wfs&version=2.0.0&request=getfeature&typename=ms:infos_cameras&outfile=Camera&srsname=EPSG:4326&outputformat=geojson`
 
-For each camera:
-
-1. Open the official viewer in a real browser.
-2. Inspect the network requests that produce the actual camera image/video.
-3. Record the exact request URL shape, method, response status, `Content-Type`, redirects, and cache headers.
-4. Record whether cookies, Referer, Origin, CSRF/session state, temporary tokens, signed URLs, or browser-only APIs are required.
-5. Repeat from a fresh browser session.
-6. Verify whether the same derivation works for all sampled camera IDs.
-7. Check both the plain viewer URL and `?format=mp4&id=<IDEcamera>`; do not assume the latter is media.
-8. Determine whether the resolved surface is an official/public endpoint that a local server proxy can call without bypassing access controls or violating published terms.
-
-## Acceptance gate
-
-Return one of:
-
-### KEEP
-A stable official direct-media contract exists. Supply a compact evidence table plus reproducible requests for >=3 cameras and identify the safe allowlist/URL derivation for GEV.
-
-### REVISE
-Media is available but requires bounded, legitimate session/token negotiation. Document the exact lifecycle and the smallest safe server-side design.
-
-### KILL
-No stable/direct media contract exists, or access depends on unsupported scraping/private/authenticated behavior. Recommend explicit link-only semantics instead; do not fake a camera feed.
-
-## Evidence rules
-
-- Preserve negative results.
-- Separate what was executed from what was inferred.
-- Do not call an HTML 200 response a working media feed.
-- Do not bypass authentication, anti-bot controls, or access restrictions.
-- Do not create an upstream PR/comment; this draft PR is the downstream control plane.
-- Return exact URLs/headers only when they are public and non-secret.
+Preserve negative results and separate executed evidence from inference.

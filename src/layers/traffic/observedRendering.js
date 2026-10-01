@@ -151,12 +151,7 @@ export function createObservedRendering({ state: layerState, parts }) {
             outlineColor: Cesium.Color.BLACK.withAlpha(0.9),
             outlineWidth: 2,
             disableDepthTestDistance: Number.POSITIVE_INFINITY,
-            scaleByDistance: new Cesium.NearFarScalar(
-              100,
-              1.2,
-              15_000,
-              0.55,
-            ),
+            scaleByDistance: new Cesium.NearFarScalar(100, 1.2, 15_000, 0.55),
           },
           label: {
             text: `OBSERVED · ${item.measurement}`,

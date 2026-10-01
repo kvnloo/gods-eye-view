@@ -155,7 +155,8 @@ export function createHazardEvidenceHandoff({
     const enabled = await dataManager?.setEnabled?.('recent-imagery', true, {
       origin: 'user',
     });
-    if (!stillCurrent(record, generation)) return { ok: false, abandoned: true };
+    if (!stillCurrent(record, generation))
+      return { ok: false, abandoned: true };
     if (enabled === false) {
       return {
         ok: false,
@@ -182,7 +183,8 @@ export function createHazardEvidenceHandoff({
     const enabled = await dataManager?.setEnabled?.('cctv', true, {
       origin: 'user',
     });
-    if (!stillCurrent(record, generation)) return { ok: false, abandoned: true };
+    if (!stillCurrent(record, generation))
+      return { ok: false, abandoned: true };
     if (enabled === false) {
       return { ok: false, toast: 'CCTV could not be enabled' };
     }

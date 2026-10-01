@@ -21,8 +21,11 @@
   },
   "viewer": {
     "exports": ["./application/viewer"],
-    "modules": ["src/app/viewer.js", "src/app/atmosphereCompat.js"],
-    "src/app/performanceProfile.js",
+    "modules": [
+      "src/app/viewer.js",
+      "src/app/atmosphereCompat.js",
+      "src/app/performanceProfile.js"
+    ],
     "external": ["cesium"]
   },
   "vite-build": {

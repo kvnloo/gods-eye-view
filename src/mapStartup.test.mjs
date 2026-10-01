@@ -141,7 +141,6 @@ test('independent source configurations never mutate shared SDK credentials', as
   assert.equal(Cesium.GoogleMaps.defaultApiKey, 'untouched-google');
 });
 
-
 test('photoreal loading forwards an explicit low-end tileset budget to either route', async () => {
   const options = {
     cacheBytes: 256,

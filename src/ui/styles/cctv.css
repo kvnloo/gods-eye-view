@@ -178,7 +178,8 @@
   background: rgba(0, 212, 255, 0.14);
 }
 
-#cctv-quality-chip {
+#cctv-quality-chip,
+#cctv-vision-chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -323,6 +324,41 @@
   font-size: 9px;
   letter-spacing: 1px;
   color: var(--text-secondary);
+}
+
+#cctv-vision-meta {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  line-height: 1.4;
+  letter-spacing: 0.9px;
+  color: var(--text-dim);
+}
+
+#cctv-vision-chip[data-vision-status='ready'] {
+  color: #adffbf;
+  border-color: rgba(141, 255, 135, 0.42);
+  background: rgba(141, 255, 135, 0.12);
+}
+
+#cctv-vision-chip[data-vision-status='marginal'] {
+  color: #ffe6a2;
+  border-color: rgba(255, 217, 122, 0.4);
+  background: rgba(255, 217, 122, 0.1);
+}
+
+#cctv-vision-chip[data-vision-status='unsuitable'] {
+  color: #ffb0b0;
+  border-color: rgba(255, 102, 102, 0.48);
+  background: rgba(255, 72, 72, 0.11);
+}
+
+#cctv-vision-chip[data-vision-status='unknown'] {
+  color: var(--text-dim);
+}
+
+#cctv-vision-chip[hidden],
+#cctv-vision-meta[hidden] {
+  display: none;
 }
 
 #cctv-source-badge {

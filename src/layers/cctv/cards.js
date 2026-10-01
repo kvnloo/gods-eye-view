@@ -224,6 +224,8 @@ export function createCards({ state: layerState, services, parts, source }) {
     const push = (id, { pinned = false, active = false } = {}) => {
       const record = layerState._recordById.get(id);
       if (!record?.position) return;
+      const vision =
+        parts.presentation?.getVisionSuitabilityForCamera?.(id) || null;
       entries.push(
         createCctvThumbnailOverlayEntry({
           id,
@@ -231,6 +233,7 @@ export function createCards({ state: layerState, services, parts, source }) {
           gapPx: CARD_GAP_PX,
           title: record.camera.name,
           frameSlot: ensureCardFrameSlot(id),
+          details: vision?.cardDetails || [],
           rank: rank++,
           pinned,
           active,

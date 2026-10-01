@@ -1,6 +1,12 @@
 import { CCTV_AMBIENT_CARD_MAX } from '../../data/cctvLod.js';
 import { ACTIVE_FRAME_REFRESH_MS, IDLE_FRAME_REFRESH_MS } from './policy.js';
 import { headingHudToken, isHeadingEstimated } from './headingConfidence.js';
+import {
+  emptyVisionSuitabilitySnapshot,
+  indexVisionSuitabilityByCamera,
+  normalizeVisionSuitabilitySnapshot,
+  summarizeVisionSuitability,
+} from './visionSuitability.js';
 
 export function createPresentation({
   state: layerState,
@@ -54,6 +60,48 @@ export function createPresentation({
       .join(' · ');
   }
 
+  let cachedVisionRaw = null;
+  let cachedVisionRevision = -1;
+  let cachedVisionSnapshot = emptyVisionSuitabilitySnapshot();
+  let cachedVisionIndex = new Map();
+
+  function visionSuitabilityContext() {
+    let raw = null;
+    try {
+      raw = services.visionSuitability?.getSnapshot?.() || null;
+    } catch {
+      raw = { configured: true, error: true, records: [] };
+    }
+    const revision = layerState._visionSuitabilityRevision || 0;
+    if (raw === cachedVisionRaw && revision === cachedVisionRevision) {
+      return {
+        snapshot: cachedVisionSnapshot,
+        index: cachedVisionIndex,
+      };
+    }
+    cachedVisionRaw = raw;
+    cachedVisionRevision = revision;
+    cachedVisionSnapshot = services.visionSuitability
+      ? normalizeVisionSuitabilitySnapshot(raw)
+      : emptyVisionSuitabilitySnapshot();
+    cachedVisionIndex = indexVisionSuitabilityByCamera(cachedVisionSnapshot);
+    return {
+      snapshot: cachedVisionSnapshot,
+      index: cachedVisionIndex,
+    };
+  }
+
+  function getVisionSuitabilityForCamera(
+    cameraId,
+    context = visionSuitabilityContext(),
+    now = Date.now(),
+  ) {
+    return summarizeVisionSuitability(context.snapshot, cameraId, {
+      now,
+      recordIndex: context.index,
+    });
+  }
+
   /**
    * Builds a public-facing camera state object for UI consumption.
    * Includes all pose, calibration, CAL badge, projection, and feed metadata.
@@ -62,7 +110,12 @@ export function createPresentation({
    * @returns {Object} Public camera state.
    */
 
-  function getPublicCameraState(record, activeId = null) {
+  function getPublicCameraState(
+    record,
+    activeId = null,
+    visionContext = visionSuitabilityContext(),
+    visionNow = Date.now(),
+  ) {
     const resolvedActiveId =
       activeId || parts.selection.getActiveRecord()?.camera.id || null;
     const camera = record.camera;
@@ -102,6 +155,11 @@ export function createPresentation({
       sourceMessage: health?.message || '',
       sourceLabel: health?.label || camera.provider || '',
       credit: camera.credit || '',
+      visionSuitability: getVisionSuitabilityForCamera(
+        camera.id,
+        visionContext,
+        visionNow,
+      ),
       calibration: {
         ...parts.calibration.normalizeCalibration(camera.calibration),
       },
@@ -143,6 +201,8 @@ export function createPresentation({
   function uiState() {
     const active = parts.selection.getActiveRecord();
     const activeId = active?.camera.id || null;
+    const visionContext = visionSuitabilityContext();
+    const visionNow = Date.now();
     const payload = {
       enabled: layerState._enabled,
       // Compat boolean + the full tri-state (viewshed design §3b).
@@ -175,9 +235,11 @@ export function createPresentation({
         hoverId: layerState._hoverCardId,
       },
       activeCameraId: activeId,
-      activeCamera: active ? getPublicCameraState(active, activeId) : null,
+      activeCamera: active
+        ? getPublicCameraState(active, activeId, visionContext, visionNow)
+        : null,
       cameras: layerState._records.map((record) =>
-        getPublicCameraState(record, activeId),
+        getPublicCameraState(record, activeId, visionContext, visionNow),
       ),
       summary: buildSummaryText(),
     };
@@ -212,6 +274,7 @@ export function createPresentation({
   return {
     buildSummaryText,
     getPublicCameraState,
+    getVisionSuitabilityForCamera,
     uiState,
     notifyListeners,
     notifyListenersThrottled,

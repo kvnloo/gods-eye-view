@@ -9,7 +9,18 @@ import * as focus from '../../data/focusDeemphasis.js';
 import * as render from '../../renderGovernor.js';
 
 /** Construct one layer using the application scene owners and a supplied source. */
-export function createApplicationCctv({ surface, source }) {
+export function createApplicationCctv({
+  surface,
+  source,
+  visionSuitability = null,
+}) {
+  if (
+    visionSuitability !== null &&
+    (typeof visionSuitability?.getSnapshot !== 'function' ||
+      (visionSuitability.subscribe !== undefined &&
+        typeof visionSuitability.subscribe !== 'function'))
+  )
+    throw new TypeError('Invalid CCTV vision suitability service');
   const { terrain, groundFloor: ground, meshFloor: mesh } = surface;
   return createCctvLayer({
     source,
@@ -25,6 +36,7 @@ export function createApplicationCctv({ surface, source }) {
       mesh,
       focus,
       render,
+      visionSuitability,
     },
   });
 }

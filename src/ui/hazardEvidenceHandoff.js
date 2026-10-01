@@ -262,7 +262,10 @@ export function createHazardEvidenceHandoff({
   };
 
   windowRef.addEventListener('gev:entity-selected', onSelection);
-  windowRef.addEventListener('gev:entity-selection-cleared', onSelectionCleared);
+  windowRef.addEventListener(
+    'gev:entity-selection-cleared',
+    onSelectionCleared,
+  );
 
   return {
     openForRecord,

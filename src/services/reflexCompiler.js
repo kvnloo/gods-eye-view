@@ -158,17 +158,12 @@ export function reflexDemotionReason(
     overrideCount = 0,
     rejected = false,
   } = {},
-  {
-    maxVerifierFailures = 2,
-    maxUndoOrOverride = 2,
-  } = {},
+  { maxVerifierFailures = 2, maxUndoOrOverride = 2 } = {},
 ) {
   if (schemaChanged) return 'schema_drift';
   if (capabilityChanged) return 'capability_drift';
   if (rejected) return 'user_rejected';
-  if (
-    Number(verifierFailures) >= Math.max(1, Number(maxVerifierFailures) || 2)
-  )
+  if (Number(verifierFailures) >= Math.max(1, Number(maxVerifierFailures) || 2))
     return 'verifier_failures';
   if (
     Number(undoCount) + Number(overrideCount) >=

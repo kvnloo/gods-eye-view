@@ -47,7 +47,9 @@ function fixture(t) {
   return { controls, requests };
 }
 
-test('vision suitability chip stays hidden when absent and shows provenance when configured', (t) => {
+test(
+  'vision suitability chip stays hidden when absent and shows provenance when configured',
+  (t) => {
   const { controls } = fixture(t);
   controls._lastSeenCctvActiveId = 'cam-1';
   controls._cctvVisionChip = {
@@ -93,7 +95,8 @@ test('vision suitability chip stays hidden when absent and shows provenance when
   });
   assert.equal(controls._cctvVisionChip.hidden, true);
   assert.equal(controls._cctvVisionMeta.hidden, true);
-});
+  },
+);
 
 test('a late image completion cannot replace a newer camera preview', (t) => {
   const { controls, requests } = fixture(t);

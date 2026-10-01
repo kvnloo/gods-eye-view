@@ -61,7 +61,8 @@ export function normalizeVisionSuitabilityRecord(value) {
 
   const measuredAt = finiteTimestamp(value.measuredAt);
   const provenance = normalizeProvenance(value.provenance);
-  if (status !== 'unknown' && (measuredAt === null || !provenance)) return null;
+  if (status !== 'unknown' && (measuredAt === null || !provenance))
+    return null;
 
   const medianObjectPx = optionalNonNegative(value.medianObjectPx);
   const usableShare = optionalShare(value.usableShare);
@@ -118,7 +119,9 @@ export function normalizeVisionSuitabilitySnapshot(value) {
   const rawRecords = Array.isArray(value.records)
     ? value.records.slice(0, 5000)
     : [];
-  const records = rawRecords.map(normalizeVisionSuitabilityRecord).filter(Boolean);
+  const records = rawRecords
+    .map(normalizeVisionSuitabilityRecord)
+    .filter(Boolean);
   const dropped =
     (Array.isArray(value.records) ? value.records.length : 0) - records.length;
 
@@ -140,7 +143,8 @@ export function indexVisionSuitabilityByCamera(snapshot) {
   for (const record of snapshot.records) {
     const current = index.get(record.cameraId);
     const nextTime = Number(record.measuredAt) || Number.NEGATIVE_INFINITY;
-    const currentTime = Number(current?.measuredAt) || Number.NEGATIVE_INFINITY;
+    const currentTime =
+      Number(current?.measuredAt) || Number.NEGATIVE_INFINITY;
     if (!current || nextTime > currentTime)
       index.set(record.cameraId, record);
   }

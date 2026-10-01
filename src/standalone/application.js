@@ -34,8 +34,7 @@ export function createStandaloneApplication({
   const loaderStatus = loadingScreen.querySelector('.loader-status');
   let placeSearch;
   let catalog;
-  const observedFixtureEnabled =
-    observedTrafficFixtureRequested(locationSearch);
+  const observedFixtureEnabled = observedTrafficFixtureRequested(locationSearch);
   const observedTrafficSource = observedFixtureEnabled
     ? createObservedTrafficCorridorFixtureSource()
     : null;

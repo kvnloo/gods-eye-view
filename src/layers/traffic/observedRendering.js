@@ -100,13 +100,35 @@ export function planObservedTrafficRendering(
     });
 }
 
-export function createObservedRendering({ state: layerState, parts }) {
+const OBSERVED_TRAFFIC_OVERLAY_SOURCE = 'observed-traffic';
+const OBSERVED_TRAFFIC_LABEL_DISTANCE_M = 5000;
+
+export function createObservedRendering({
+  state: layerState,
+  parts,
+  services = {},
+}) {
+  const overlays = services.overlays;
+
+  function publishObservedLabels(entries) {
+    if (typeof overlays?.setOverlayEntries !== 'function') return;
+    overlays.setOverlayEntries(OBSERVED_TRAFFIC_OVERLAY_SOURCE, entries, {
+      cohortLimit: OBSERVED_TRAFFIC_RENDER_LIMIT,
+      moving: false,
+    });
+    overlays.setOverlaySourceVisible?.(
+      OBSERVED_TRAFFIC_OVERLAY_SOURCE,
+      entries.length > 0,
+    );
+  }
+
   function clearObservedTraffic() {
     const viewer = layerState._viewer;
     for (const entity of layerState._observedTrafficEntities || [])
       viewer?.entities?.remove?.(entity);
     layerState._observedTrafficEntities = [];
     layerState._observedTrafficRendered = 0;
+    overlays?.clearOverlaySource?.(OBSERVED_TRAFFIC_OVERLAY_SOURCE);
   }
 
   function entityColor(stale) {
@@ -122,6 +144,7 @@ export function createObservedRendering({ state: layerState, parts }) {
     if (!layerState._enabled || !layerState._viewer) return 0;
 
     const planned = planObservedTrafficRendering(snapshot);
+    const labels = [];
     for (const item of planned) {
       const color = entityColor(item.stale);
       const common = {
@@ -141,9 +164,10 @@ export function createObservedRendering({ state: layerState, parts }) {
       let entity;
       if (item.geometry.type === 'intersection') {
         const [lon, lat] = item.geometry.coordinates;
+        const position = Cesium.Cartesian3.fromDegrees(lon, lat);
         entity = layerState._viewer.entities.add({
           ...common,
-          position: Cesium.Cartesian3.fromDegrees(lon, lat),
+          position,
           point: {
             pixelSize: 10,
             heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
@@ -153,21 +177,20 @@ export function createObservedRendering({ state: layerState, parts }) {
             disableDepthTestDistance: Number.POSITIVE_INFINITY,
             scaleByDistance: new Cesium.NearFarScalar(100, 1.2, 15_000, 0.55),
           },
-          label: {
-            text: `OBSERVED · ${item.measurement}`,
-            font: '11px monospace',
-            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-            fillColor: color,
-            outlineColor: Cesium.Color.BLACK,
-            outlineWidth: 3,
-            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-            pixelOffset: new Cesium.Cartesian2(0, -18),
-            disableDepthTestDistance: Number.POSITIVE_INFINITY,
-            distanceDisplayCondition: new Cesium.DistanceDisplayCondition(
-              0,
-              5000,
-            ),
-          },
+        });
+        labels.push({
+          id: item.id,
+          position,
+          variant: 'label',
+          paintLane: 'ambient-label',
+          collisionGroup: 'ambient-label',
+          title: `OBSERVED · ${item.measurement}`,
+          accent: item.stale ? '#ff8c00' : '#00e5ff',
+          interactive: false,
+          stateless: true,
+          horizonCull: true,
+          maxDistance: OBSERVED_TRAFFIC_LABEL_DISTANCE_M,
+          priority: item.stale ? 1 : 2,
         });
       } else {
         entity = layerState._viewer.entities.add({
@@ -185,6 +208,7 @@ export function createObservedRendering({ state: layerState, parts }) {
       layerState._observedTrafficEntities.push(entity);
     }
 
+    publishObservedLabels(labels);
     layerState._observedTrafficRendered =
       layerState._observedTrafficEntities.length;
     layerState._viewer.scene?.requestRender?.();

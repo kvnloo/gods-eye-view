@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
   OBSERVED_TRAFFIC_RENDER_LIMIT,
+  createObservedRendering,
   planObservedTrafficRendering,
 } from './observedRendering.js';
 
@@ -177,4 +178,51 @@ test('count-only records get a compact measurement label', () => {
     { now: NOW },
   );
   assert.equal(plan[0].measurement, '9 vehicles');
+});
+
+test('intersection text uses the world overlay and never a Cesium label', () => {
+  const entities = [];
+  const published = [];
+  const cleared = [];
+  const rendering = createObservedRendering({
+    state: {
+      _enabled: true,
+      _viewer: {
+        entities: {
+          add(entity) {
+            entities.push(entity);
+            return entity;
+          },
+          remove() {},
+        },
+        scene: { requestRender() {} },
+      },
+    },
+    parts: {},
+    services: {
+      overlays: {
+        setOverlayEntries(sourceId, entries) {
+          published.push({ sourceId, entries });
+        },
+        setOverlaySourceVisible() {},
+        clearOverlaySource(sourceId) {
+          cleared.push(sourceId);
+        },
+      },
+    },
+  });
+
+  const rendered = rendering.syncObservedTraffic({
+    configured: true,
+    state: 'fresh',
+    records: [record('a')],
+  });
+
+  assert.equal(rendered, 1);
+  assert.equal('label' in entities[0], false);
+  assert.equal(published.at(-1).sourceId, 'observed-traffic');
+  assert.equal(published.at(-1).entries[0].title, 'OBSERVED · 18 veh/min');
+  assert.equal(published.at(-1).entries[0].maxDistance, 5000);
+  rendering.clearObservedTraffic();
+  assert.deepEqual(cleared, ['observed-traffic', 'observed-traffic']);
 });

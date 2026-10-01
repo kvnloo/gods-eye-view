@@ -1076,4 +1076,3 @@ test('stale choose finally does not clear a successor in-flight latch', async ()
 
   handoff.destroy();
 });
-

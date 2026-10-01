@@ -18,10 +18,7 @@ function stableActionSequence(steps) {
  * Mine repeated verified semantic sequences.
  * Raw keystrokes/pointer events are intentionally not accepted.
  */
-export function mineReflexCandidates(
-  episodes = [],
-  { minVerified = 3 } = {},
-) {
+export function mineReflexCandidates(episodes = [], { minVerified = 3 } = {}) {
   const required = Math.max(2, Math.floor(Number(minVerified) || 3));
   const groups = new Map();
 
@@ -32,7 +29,8 @@ export function mineReflexCandidates(
       episode?.userOverride
     )
       continue;
-    if (!episode.sourceStateFingerprint || !episode.capabilityRevision) continue;
+    if (!episode.sourceStateFingerprint || !episode.capabilityRevision)
+      continue;
     const sequence = stableActionSequence(episode.steps);
     if (!sequence) continue;
     const current = groups.get(sequence) || {
@@ -168,7 +166,9 @@ export function reflexDemotionReason(
   if (schemaChanged) return 'schema_drift';
   if (capabilityChanged) return 'capability_drift';
   if (rejected) return 'user_rejected';
-  if (Number(verifierFailures) >= Math.max(1, Number(maxVerifierFailures) || 2))
+  if (
+    Number(verifierFailures) >= Math.max(1, Number(maxVerifierFailures) || 2)
+  )
     return 'verifier_failures';
   if (
     Number(undoCount) + Number(overrideCount) >=

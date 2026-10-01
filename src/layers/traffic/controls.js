@@ -312,6 +312,7 @@ export function createControls({ state: layerState, services, parts, source }) {
           state: observed.state,
           source: observed.source,
           count: observed.accepted,
+          rendered: layerState._observedTrafficRendered || 0,
           staleCount: observed.staleCount,
           partial: observed.partial,
           loading: layerState._observedTrafficLoading,

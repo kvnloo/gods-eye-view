@@ -12,6 +12,11 @@ import { createLifecycle } from './lifecycle.js';
 import { createRetention } from './retention.js';
 import { createState } from './state.js';
 import { createObservedTraffic } from './observed.js';
+export {
+  OBSERVED_TRAFFIC_RENDER_LIMIT,
+  planObservedTrafficRendering,
+} from './observedRendering.js';
+import { createObservedRendering } from './observedRendering.js';
 
 /** Construct one layer with its own scene state and supplied application services. */
 export function createTrafficLayer({
@@ -44,6 +49,7 @@ export function createTrafficLayer({
   parts.retention = createRetention(context);
   parts.rendering = createRendering(context);
   parts.observed = createObservedTraffic(context);
+  parts.observedRendering = createObservedRendering(context);
   parts.controls = createControls(context);
   parts.lifecycle = createLifecycle(context);
   state._parseRoads = TRAFFIC_TIMING_ENABLED

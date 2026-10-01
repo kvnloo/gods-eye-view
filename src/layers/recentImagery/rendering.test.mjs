@@ -5,7 +5,9 @@ import {
   TILE_RETRY_DELAY_MS,
   createRecentImageryRenderer,
 } from './rendering.js';
-import { CAMERA_REFINEMENT_SETTLE_MS } from '../../services/cameraMotionGate.js';
+import {
+  CAMERA_REFINEMENT_SETTLE_MS,
+} from '../../services/cameraMotionGate.js';
 import { BOX, manualTimers } from './testDoubles.mjs';
 
 /** A provider whose tile requests stay pending until the test settles them. */

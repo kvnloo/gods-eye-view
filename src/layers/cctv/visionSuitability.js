@@ -1,9 +1,4 @@
-const VISION_STATUSES = new Set([
-  'ready',
-  'marginal',
-  'unsuitable',
-  'unknown',
-]);
+const VISION_STATUSES = new Set(['ready', 'marginal', 'unsuitable', 'unknown']);
 
 export const CCTV_VISION_SUITABILITY_STATUSES = Object.freeze([
   ...VISION_STATUSES,
@@ -30,9 +25,7 @@ function optionalNonNegative(value) {
 function optionalShare(value) {
   if (value === null || value === undefined || value === '') return null;
   const number = Number(value);
-  return Number.isFinite(number) && number >= 0 && number <= 1
-    ? number
-    : null;
+  return Number.isFinite(number) && number >= 0 && number <= 1 ? number : null;
 }
 
 function normalizeProvenance(value) {
@@ -61,8 +54,7 @@ export function normalizeVisionSuitabilityRecord(value) {
 
   const measuredAt = finiteTimestamp(value.measuredAt);
   const provenance = normalizeProvenance(value.provenance);
-  if (status !== 'unknown' && (measuredAt === null || !provenance))
-    return null;
+  if (status !== 'unknown' && (measuredAt === null || !provenance)) return null;
 
   const medianObjectPx = optionalNonNegative(value.medianObjectPx);
   const usableShare = optionalShare(value.usableShare);
@@ -143,10 +135,8 @@ export function indexVisionSuitabilityByCamera(snapshot) {
   for (const record of snapshot.records) {
     const current = index.get(record.cameraId);
     const nextTime = Number(record.measuredAt) || Number.NEGATIVE_INFINITY;
-    const currentTime =
-      Number(current?.measuredAt) || Number.NEGATIVE_INFINITY;
-    if (!current || nextTime > currentTime)
-      index.set(record.cameraId, record);
+    const currentTime = Number(current?.measuredAt) || Number.NEGATIVE_INFINITY;
+    if (!current || nextTime > currentTime) index.set(record.cameraId, record);
   }
   return index;
 }
@@ -155,18 +145,19 @@ export function formatVisionSuitabilityAge(ageMs) {
   const age = Math.max(0, Number(ageMs) || 0);
   if (age < 60_000) return `${Math.round(age / 1000)}s ago`;
   if (age < 60 * 60_000) return `${Math.round(age / 60_000)}m ago`;
-  if (age < 24 * 60 * 60_000)
-    return `${Math.round(age / (60 * 60_000))}h ago`;
+  if (age < 24 * 60 * 60_000) return `${Math.round(age / (60 * 60_000))}h ago`;
   return `${Math.round(age / (24 * 60 * 60_000))}d ago`;
 }
 
 function statusLabel(status) {
-  return {
-    ready: 'VISION · READY',
-    marginal: 'VISION · MARGINAL',
-    unsuitable: 'VISION · UNSUITABLE',
-    unknown: 'VISION · UNKNOWN',
-  }[status] || 'VISION · UNKNOWN';
+  return (
+    {
+      ready: 'VISION · READY',
+      marginal: 'VISION · MARGINAL',
+      unsuitable: 'VISION · UNSUITABLE',
+      unknown: 'VISION · UNKNOWN',
+    }[status] || 'VISION · UNKNOWN'
+  );
 }
 
 /**

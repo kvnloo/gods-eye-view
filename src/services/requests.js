@@ -1,6 +1,7 @@
 import { isUnavailableCapability } from '../sources/capability.js';
 import { createOverpassFeatureSource } from '../sources/overpassFeatures.js';
 import { createSingleflight } from './singleflight.js';
+import { createBoundedLru } from './boundedLru.js';
 /** Parse bounded retry information from a service response. */
 function retryAfterMs(value) {
   if (value == null || String(value).trim() === '') return null;
@@ -20,6 +21,12 @@ export function createApplicationRequestServices({
   boundaryProbe = { timeoutMs: 3000, retryMs: 30_000 },
 } = {}) {
   const terrainSingleflight = createSingleflight();
+  const terrainCache = createBoundedLru({
+    maxEntries: 64,
+    maxBytes: 512 * 1024,
+  });
+  const cloneJson = (value) =>
+    value == null ? value : JSON.parse(JSON.stringify(value));
   const urls = {
     boundaries: '/api/overpass',
     terrain: '/api/terrain/heights',
@@ -149,18 +156,30 @@ export function createApplicationRequestServices({
         const query = points
           .map(({ lat, lon }) => `${lon.toFixed(5)},${lat.toFixed(5)}`)
           .join(';');
-        return terrainSingleflight.run(
+        signal?.throwIfAborted();
+        const cached = terrainCache.get(query);
+        if (cached.hit) return cloneJson(cached.value);
+        const results = await terrainSingleflight.run(
           query,
-          async ({ signal: sharedSignal }) =>
-            requireOk(
+          async ({ signal: sharedSignal }) => {
+            const loaded = requireOk(
               await request(
                 `${urls.terrain}?points=${encodeURIComponent(query)}`,
                 { signal: sharedSignal },
               ),
               'Terrain heights',
-            )?.results,
+            )?.results;
+            sharedSignal.throwIfAborted();
+            if (Array.isArray(loaded)) terrainCache.set(query, cloneJson(loaded));
+            return loaded;
+          },
           { signal },
         );
+        signal?.throwIfAborted();
+        return cloneJson(results);
+      },
+      getCacheStats() {
+        return terrainCache.getStats();
       },
     },
     regional: {

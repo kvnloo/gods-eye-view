@@ -125,3 +125,70 @@ test('identical concurrent terrain requests share one transport while callers st
   assert.deepEqual(await second, [{ ellipsoid: 10 }]);
   assert.equal(requests, 1);
 });
+
+test('terrain repeat hits use the bounded cache without sharing mutable results', async () => {
+  let requests = 0;
+  const services = createApplicationRequestServices({
+    fetchImpl: async () => {
+      requests += 1;
+      return Response.json({ results: [{ ellipsoid: 10 }] });
+    },
+  });
+
+  const first = await services.terrain.getHeights([{ lat: 30, lon: -97 }]);
+  first[0].ellipsoid = 999;
+  const second = await services.terrain.getHeights([{ lat: 30, lon: -97 }]);
+
+  assert.deepEqual(second, [{ ellipsoid: 10 }]);
+  assert.equal(requests, 1);
+  assert.deepEqual(services.terrain.getCacheStats(), {
+    entries: 1,
+    bytes: 18,
+    maxEntries: 64,
+    maxBytes: 512 * 1024,
+    hits: 1,
+    misses: 1,
+    sets: 1,
+    evictions: 0,
+    oversize: 0,
+  });
+});
+
+test('failed terrain responses are not retained as cache data', async () => {
+  let requests = 0;
+  const services = createApplicationRequestServices({
+    fetchImpl: async () => {
+      requests += 1;
+      return requests === 1
+        ? new Response('nope', { status: 503 })
+        : Response.json({ results: [{ ellipsoid: 11 }] });
+    },
+  });
+
+  await assert.rejects(
+    services.terrain.getHeights([{ lat: 31, lon: -98 }]),
+    /Terrain heights unavailable/,
+  );
+  assert.deepEqual(
+    await services.terrain.getHeights([{ lat: 31, lon: -98 }]),
+    [{ ellipsoid: 11 }],
+  );
+  assert.equal(requests, 2);
+  assert.equal(services.terrain.getCacheStats().entries, 1);
+});
+
+test('an aborted cached terrain caller still fails before receiving data', async () => {
+  const services = createApplicationRequestServices({
+    fetchImpl: async () =>
+      Response.json({ results: [{ ellipsoid: 12 }] }),
+  });
+  const points = [{ lat: 32, lon: -99 }];
+  await services.terrain.getHeights(points);
+
+  const caller = new AbortController();
+  caller.abort();
+  await assert.rejects(
+    services.terrain.getHeights(points, { signal: caller.signal }),
+    { name: 'AbortError' },
+  );
+});

@@ -160,9 +160,7 @@ export function _renderCctvState(state) {
       !!visionSuitability &&
       !!visionSuitability.detail;
     this._cctvVisionMeta.hidden = !visible;
-    this._cctvVisionMeta.textContent = visible
-      ? visionSuitability.detail
-      : '';
+    this._cctvVisionMeta.textContent = visible ? visionSuitability.detail : '';
     this._cctvVisionMeta.dataset.visionStatus = visible
       ? visionSuitability.status || 'unknown'
       : '';

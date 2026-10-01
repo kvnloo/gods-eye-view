@@ -50,51 +50,51 @@ function fixture(t) {
 test(
   'vision suitability chip stays hidden when absent and shows provenance when configured',
   (t) => {
-  const { controls } = fixture(t);
-  controls._lastSeenCctvActiveId = 'cam-1';
-  controls._cctvVisionChip = {
-    hidden: true,
-    textContent: '',
-    dataset: {},
-    title: '',
-  };
-  controls._cctvVisionMeta = {
-    hidden: true,
-    textContent: '',
-    dataset: {},
-  };
+    const { controls } = fixture(t);
+    controls._lastSeenCctvActiveId = 'cam-1';
+    controls._cctvVisionChip = {
+      hidden: true,
+      textContent: '',
+      dataset: {},
+      title: '',
+    };
+    controls._cctvVisionMeta = {
+      hidden: true,
+      textContent: '',
+      dataset: {},
+    };
 
-  controls._renderCctvState({
-    enabled: true,
-    activeCameraId: 'cam-1',
-    activeCamera: {
-      id: 'cam-1',
-      visionSuitability: {
-        status: 'ready',
-        label: 'VISION · READY',
-        detail: '30s ago · External qualifier · median 42px',
-        title:
-          'VISION · READY · 30s ago · External qualifier · median 42px',
+    controls._renderCctvState({
+      enabled: true,
+      activeCameraId: 'cam-1',
+      activeCamera: {
+        id: 'cam-1',
+        visionSuitability: {
+          status: 'ready',
+          label: 'VISION · READY',
+          detail: '30s ago · External qualifier · median 42px',
+          title:
+            'VISION · READY · 30s ago · External qualifier · median 42px',
+        },
       },
-    },
-    cameras: [],
-  });
+      cameras: [],
+    });
 
-  assert.equal(controls._cctvVisionChip.hidden, false);
-  assert.equal(controls._cctvVisionChip.textContent, 'VISION · READY');
-  assert.equal(controls._cctvVisionChip.dataset.visionStatus, 'ready');
-  assert.match(controls._cctvVisionChip.title, /External qualifier/);
-  assert.equal(controls._cctvVisionMeta.hidden, false);
-  assert.match(controls._cctvVisionMeta.textContent, /median 42px/);
+    assert.equal(controls._cctvVisionChip.hidden, false);
+    assert.equal(controls._cctvVisionChip.textContent, 'VISION · READY');
+    assert.equal(controls._cctvVisionChip.dataset.visionStatus, 'ready');
+    assert.match(controls._cctvVisionChip.title, /External qualifier/);
+    assert.equal(controls._cctvVisionMeta.hidden, false);
+    assert.match(controls._cctvVisionMeta.textContent, /median 42px/);
 
-  controls._renderCctvState({
-    enabled: true,
-    activeCameraId: 'cam-1',
-    activeCamera: { id: 'cam-1', visionSuitability: null },
-    cameras: [],
-  });
-  assert.equal(controls._cctvVisionChip.hidden, true);
-  assert.equal(controls._cctvVisionMeta.hidden, true);
+    controls._renderCctvState({
+      enabled: true,
+      activeCameraId: 'cam-1',
+      activeCamera: { id: 'cam-1', visionSuitability: null },
+      cameras: [],
+    });
+    assert.equal(controls._cctvVisionChip.hidden, true);
+    assert.equal(controls._cctvVisionMeta.hidden, true);
   },
 );
 

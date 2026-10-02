@@ -38,6 +38,9 @@ export function createLifecycle({
     layerState._lastError = null;
     layerState._lastFocusStyleAt = 0;
     layerState._activeFocusStyleCount = 0;
+    layerState._cameraMoving = false;
+    layerState._cameraMotionGeneration = 0;
+    layerState._projectionStaleFrameDiscards = 0;
     // FIX ①/③: the discovered tileset handle is scene-scoped — drop it so a fresh
     // init re-discovers against the current scene primitives.
     layerState._activeTileset = null;
@@ -259,6 +262,7 @@ export function createLifecycle({
       if (!layerState._moveStartListener) {
         // Item B: hover picking pauses while the camera is in motion.
         layerState._moveStartListener = () => {
+          layerState._cameraMotionGeneration += 1;
           layerState._cameraMoving = true;
         };
         layerState._viewer.camera.moveStart.addEventListener(

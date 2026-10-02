@@ -202,6 +202,13 @@ export function createState({ services }) {
 
   layerState._cameraMoving = false;
 
+  // Monotonic owner for motion-sensitive async still-frame work. Every camera
+  // moveStart invalidates loads admitted under an older viewport intent.
+  layerState._cameraMotionGeneration = 0;
+
+  // Content-free diagnostic: late still-frame loads rejected by generation.
+  layerState._projectionStaleFrameDiscards = 0;
+
   layerState._moveStartListener = null;
   layerState._sourceAbort = null;
   return layerState;

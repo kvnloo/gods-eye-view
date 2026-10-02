@@ -171,6 +171,10 @@ export function createState({ services }) {
 
   layerState._cardFetchMode = 'steady';
 
+  layerState._cardMotionDeferredLaunches = 0;
+
+  layerState._cardMotionDiscardedSettles = 0;
+
   layerState.DEFAULT_CCTV_OVERLAY_HOST = Object.freeze({
     clearSource: clearOverlaySource,
     hitTest: hitTestWorldOverlay,

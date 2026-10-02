@@ -245,9 +245,7 @@ export function createProjection({
             runtime.image = new Image();
             runtime.image.decoding = 'async';
             runtime.image.onload = () => {
-              runtime.imageLoading = false;
-              runtime.imageReady = true;
-              runtime.imageStamp = Date.now();
+              parts.frames.acceptProjectionImageLoad(runtime);
             };
             runtime.image.onerror = () => {
               runtime.imageLoading = false;
@@ -264,9 +262,7 @@ export function createProjection({
       img.decoding = 'async';
       img.crossOrigin = 'anonymous';
       img.onload = () => {
-        runtime.imageLoading = false;
-        runtime.imageReady = true;
-        runtime.imageStamp = Date.now();
+        parts.frames.acceptProjectionImageLoad(runtime);
       };
       img.onerror = () => {
         runtime.imageLoading = false;

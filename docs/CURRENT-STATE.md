@@ -1,3 +1,12 @@
+## Motion-safe CCTV ambient-card refinement — September 29, 2026
+
+The background CCTV ambient-card frame pacer now yields completely while the
+Cesium camera is moving. Background thumbnail fetches are not admitted during
+motion, and a fetch that began before motion but settles after motion starts is
+discarded before canvas downscale, slot publication or render wakeup. Existing
+card pixels remain committed. Explicit user-gesture fast paths remain eligible.
+Diagnostics count deferred launches and discarded stale settlements.
+
 ## Motion-safe CCTV still refinement — September 29, 2026
 
 CCTV still-image projection refresh now yields while the Cesium camera is moving.

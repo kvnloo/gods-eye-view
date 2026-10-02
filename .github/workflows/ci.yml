@@ -15,7 +15,7 @@ concurrency:
 jobs:
   verify:
     name: Node ${{ matrix.node }}
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-latest
     timeout-minutes: 20
     strategy:
       fail-fast: false

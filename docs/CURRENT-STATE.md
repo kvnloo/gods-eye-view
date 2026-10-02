@@ -1,3 +1,12 @@
+## Generation-safe imagery settlement — September 29, 2026
+
+Recent Imagery tile requests now capture the camera-motion generation at
+admission. If camera motion advances the generation before a request settles,
+that obsolete completion does not request a refinement render for the old
+viewport. It increments a stale-settlement diagnostic and arms the same single
+post-settle retry used by motion deferrals, so the successor viewport receives
+one wakeup after quiet input.
+
 ## Motion-safe Recent Imagery refinement — September 29, 2026
 
 Recent Imagery now treats camera motion as the realtime lane. Existing draped

@@ -1,5 +1,7 @@
 # Changelog
 
+- Keep the last committed CCTV still frame during camera motion instead of starting optional periodic frame fetch/decode work. Normal still refinement resumes after camera settle through the existing projection loop; forced first-load/failover and live-video behavior are unchanged.
+
 - Defer optional Recent Imagery GIBS tile refinement while the camera is moving, keeping the last committed visual in place. After 180 ms of quiet input one coalesced retry frame resumes refinement; camera-motion generations are exposed for stale-work diagnostics. This is the first Quackles-derived motion-safe scheduling slice and does not introduce a texture atlas.
 
 - Public Overpass instances are no longer used by default. Street Traffic

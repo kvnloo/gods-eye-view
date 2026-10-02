@@ -19,6 +19,13 @@ import {
   CARD_FETCH_TICK_MS,
 } from './policy.js';
 
+export function cctvCardRefinementAllowed({
+  cameraMoving = false,
+  userGesture = false,
+} = {}) {
+  return !cameraMoving || userGesture;
+}
+
 export function createCards({ state: layerState, services, parts, source }) {
   /**
    * Configures optional CCTV card presentation without changing card density.
@@ -277,6 +284,15 @@ export function createCards({ state: layerState, services, parts, source }) {
     refreshMs,
     { userGesture = false } = {},
   ) {
+    if (
+      !cctvCardRefinementAllowed({
+        cameraMoving: layerState._cameraMoving,
+        userGesture,
+      })
+    ) {
+      layerState._cardMotionDeferredLaunches += 1;
+      return;
+    }
     if (typeof document !== 'undefined' && document.hidden && !userGesture)
       return;
     const now = Date.now();
@@ -307,6 +323,15 @@ export function createCards({ state: layerState, services, parts, source }) {
         );
         layerState._cardFetchPendingIds.delete(cameraId);
       }
+      if (
+        !cctvCardRefinementAllowed({
+          cameraMoving: layerState._cameraMoving,
+          userGesture,
+        })
+      ) {
+        layerState._cardMotionDiscardedSettles += 1;
+        return;
+      }
       let frame = null;
       if (ok) {
         try {
@@ -330,6 +355,13 @@ export function createCards({ state: layerState, services, parts, source }) {
     image.onload = () => settle(true);
     image.onerror = () => settle(false);
     image.src = parts.frames.frameUrlFor(record.camera, refreshMs);
+  }
+
+  function cardRefinementStats() {
+    return {
+      motionDeferredLaunches: layerState._cardMotionDeferredLaunches,
+      motionDiscardedSettles: layerState._cardMotionDiscardedSettles,
+    };
   }
 
   /** Starts the card-frame pacer (idempotent; policy-gated per tick). */
@@ -378,6 +410,8 @@ export function createCards({ state: layerState, services, parts, source }) {
     layerState._cardFetchCount = 0;
     layerState._cardLastFetchAt = 0;
     layerState._cardMinFetchSpacingMs = null;
+    layerState._cardMotionDeferredLaunches = 0;
+    layerState._cardMotionDiscardedSettles = 0;
   }
   function handleVisibilityChange() {
     if (!document.hidden) return;
@@ -397,6 +431,7 @@ export function createCards({ state: layerState, services, parts, source }) {
     refreshAmbientCards,
     pushAmbientCardEntries,
     fetchCardFrame,
+    cardRefinementStats,
     startCardFrameLoop,
     stopCardFrameLoop,
     teardownAmbientCards,

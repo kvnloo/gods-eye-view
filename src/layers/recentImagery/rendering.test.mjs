@@ -270,3 +270,29 @@ test('camera motion defers tile refinement and wakes exactly once after settle',
   provider.pending[0]('tile');
   await request;
 });
+
+test('a tile settlement from an obsolete camera generation cannot wake refinement', async () => {
+  const { renderer, globe, timers, tileFrames, camera } = fixture({
+    maxTileRequests: 1,
+  });
+  renderer.showSlot('a', S30, BOX);
+  const { provider } = globe.layers[0];
+
+  const request = provider.requestImage(0, 0, 1);
+  assert.ok(request instanceof Promise);
+  camera.start();
+
+  provider.pending[0]('tile');
+  await request;
+
+  assert.equal(tileFrames(), 0, 'obsolete settlement wakes no render');
+  assert.equal(renderer.diagnostics().staleSettlements, 1);
+  assert.equal(renderer.diagnostics().motionRetryPending, true);
+
+  camera.end();
+  assert.equal(timers.armed(), 1);
+  timers.flush();
+
+  assert.equal(tileFrames(), 1, 'successor generation gets one settle wakeup');
+  assert.equal(renderer.diagnostics().motionRetryPending, false);
+});

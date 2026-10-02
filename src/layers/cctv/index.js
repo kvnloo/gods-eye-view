@@ -66,6 +66,7 @@ export function createCctvLayer({ services, source }) {
       getActiveVideoElement: parts.projection.getActiveVideoElement,
       setCctvCardPresentationOptions:
         parts.cards.setCctvCardPresentationOptions,
+      getCctvCardRefinementStats: parts.cards.cardRefinementStats,
       surfaceRegimeKey: parts.ground.surfaceRegimeKey,
       normalizeCoverageMode: parts.model.normalizeCoverageMode,
       readCalibrationStoreV2: parts.calibration.readCalibrationStoreV2,

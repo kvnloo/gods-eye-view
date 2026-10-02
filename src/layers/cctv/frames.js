@@ -145,6 +145,27 @@ export function createFrames({ state: layerState, services, parts, source }) {
   }
 
   /**
+   * Commits one decoded still only if it still belongs to the current camera
+   * motion generation. A late completion from an older viewport intent is
+   * discarded before it can replace the committed canvas.
+   */
+  function acceptProjectionImageLoad(runtime) {
+    if (!runtime) return false;
+    runtime.imageLoading = false;
+    const requestGeneration = Number(runtime.imageRequestGeneration || 0);
+    const currentGeneration = Number(layerState._cameraMotionGeneration || 0);
+    if (requestGeneration !== currentGeneration) {
+      runtime.imageReady = false;
+      layerState._projectionStaleFrameDiscards =
+        (layerState._projectionStaleFrameDiscards || 0) + 1;
+      return false;
+    }
+    runtime.imageReady = true;
+    runtime.imageStamp = Date.now();
+    return true;
+  }
+
+  /**
    * Builds the URL for fetching a camera frame image from the backend.
    * Includes a tick parameter to control cache invalidation cadence.
    * @param {Object} camera - Camera object.
@@ -238,6 +259,9 @@ export function createFrames({ state: layerState, services, parts, source }) {
         : PROJECTION_IDLE_REFRESH_MS;
     if (!force && now - runtime.lastImageRefreshAt < refreshMs) return;
     runtime.lastImageRefreshAt = now;
+    runtime.imageRequestGeneration = Number(
+      layerState._cameraMotionGeneration || 0,
+    );
 
     const frameUrl = frameUrlFor(record.camera, refreshMs);
     const sep = frameUrl.includes('?') ? '&' : '?';
@@ -364,6 +388,7 @@ export function createFrames({ state: layerState, services, parts, source }) {
     projectionFrameSignature,
     paintNextProjectionBuffer,
     refreshProjectionTextures,
+    acceptProjectionImageLoad,
     frameUrlFor,
     mediaUrlFor,
     paintProjectionPlaceholder,

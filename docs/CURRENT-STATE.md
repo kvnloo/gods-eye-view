@@ -1,3 +1,12 @@
+## Motion-safe CCTV still refinement — September 29, 2026
+
+CCTV still-image projection refresh now yields while the Cesium camera is moving.
+The last committed frame remains on the monitor plane; ordinary periodic
+fetch/decode refinement resumes after `camera.moveEnd` through the existing
+projection loop. Forced first-load and video-to-still failover requests still run
+because they establish a usable visual rather than refine an existing one. Live
+video playback is unchanged.
+
 ## Motion-safe Recent Imagery refinement — September 29, 2026
 
 Recent Imagery now treats camera motion as the realtime lane. Existing draped

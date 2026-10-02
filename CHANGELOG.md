@@ -1,5 +1,7 @@
 # Changelog
 
+- Prevent a Recent Imagery tile request admitted before camera motion from waking a refinement frame after its viewport generation is obsolete. Stale settlements are counted and folded into the same single post-settle retry as motion deferrals.
+
 - Defer optional Recent Imagery GIBS tile refinement while the camera is moving, keeping the last committed visual in place. After 180 ms of quiet input one coalesced retry frame resumes refinement; camera-motion generations are exposed for stale-work diagnostics. This is the first Quackles-derived motion-safe scheduling slice and does not introduce a texture atlas.
 
 - Public Overpass instances are no longer used by default. Street Traffic

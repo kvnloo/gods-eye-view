@@ -463,6 +463,7 @@ export function createModel({ state: layerState, services, parts, source }) {
    */
 
   function cardFrameTick() {
+    if (layerState._cameraMoving) return;
     if (
       !layerState._enabled ||
       (!layerState._cardIds.size &&

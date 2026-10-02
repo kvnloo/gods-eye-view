@@ -170,7 +170,8 @@ export function createApplicationRequestServices({
               'Terrain heights',
             )?.results;
             sharedSignal.throwIfAborted();
-            if (Array.isArray(loaded)) terrainCache.set(query, cloneJson(loaded));
+            if (Array.isArray(loaded))
+              terrainCache.set(query, cloneJson(loaded));
             return loaded;
           },
           { signal },

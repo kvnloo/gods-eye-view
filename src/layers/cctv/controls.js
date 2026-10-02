@@ -247,6 +247,9 @@ export function createControls({ state: layerState, services, parts, source }) {
           layerState._geoLoadTotal,
         ),
         loadingTotal: layerState._geoLoadTotal,
+        projectionMotionGeneration: layerState._cameraMotionGeneration,
+        projectionStaleFrameDiscards:
+          layerState._projectionStaleFrameDiscards,
       };
     },
 

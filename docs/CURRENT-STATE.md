@@ -1,3 +1,14 @@
+## CCTV stale-frame generation guard — September 29, 2026
+
+CCTV still-image projection refresh now records the current camera-motion
+generation when a frame request is admitted. Each camera `moveStart` increments
+that generation. If an older in-flight image finishes after a newer motion
+intent began, the completion is discarded before `imageReady` / `imageStamp`
+can advance, so it cannot replace the committed monitor texture. CCTV stats
+expose the current motion generation and stale-frame discard count. Forced
+first-load/failover requests remain allowed, but are still generation-bound once
+issued.
+
 ## Motion-safe CCTV still refinement — September 29, 2026
 
 CCTV still-image projection refresh now yields while the Cesium camera is moving.

@@ -51,6 +51,7 @@ function admitTileRequests(
       return undefined;
     }
     if (admission.inFlight >= admission.limit) return undefined;
+    const generation = motionAdmission.getGeneration();
     admission.inFlight += 1;
     const release = () => {
       admission.inFlight -= 1;
@@ -69,6 +70,10 @@ function admitTileRequests(
     }
     return Promise.resolve(promise).finally(() => {
       release();
+      if (!motionAdmission.isCurrent(generation)) {
+        motionAdmission.markStaleSettlement();
+        return;
+      }
       requestRender(TILE_RENDER_REASON);
     });
   };
@@ -92,6 +97,7 @@ export function createRecentImageryRenderer({
   const motion = createCameraMotionGate({ setTimeoutImpl, clearTimeoutImpl });
   let motionRetryPending = false;
   let motionDeferred = 0;
+  let staleSettlements = 0;
   const stopMotionWatch = motion.subscribe((state, reason) => {
     if (
       reason === 'settled' &&
@@ -105,8 +111,14 @@ export function createRecentImageryRenderer({
   });
   const motionAdmission = {
     isSettled: () => motion.isSettled(),
+    getGeneration: () => motion.getGeneration(),
+    isCurrent: (generation) => motion.isCurrent(generation),
     defer() {
       motionDeferred += 1;
+      motionRetryPending = true;
+    },
+    markStaleSettlement() {
+      staleSettlements += 1;
       motionRetryPending = true;
     },
   };
@@ -295,6 +307,7 @@ export function createRecentImageryRenderer({
         motion: motion.snapshot(),
         motionDeferred,
         motionRetryPending,
+        staleSettlements,
         tileRequestsInFlight: admission.inFlight,
       };
     },

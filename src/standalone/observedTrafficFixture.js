@@ -34,12 +34,7 @@ function cameraSort(a, b) {
 }
 
 function fixtureCameraScore(camera) {
-  const text = [
-    camera.name,
-    camera.city,
-    camera.provider,
-    camera.id,
-  ]
+  const text = [camera.name, camera.city, camera.provider, camera.id]
     .filter(Boolean)
     .join(' ');
   if (CORRIDOR_TOKENS.test(text)) return 0;

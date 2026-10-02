@@ -217,6 +217,12 @@ export function createFrames({ state: layerState, services, parts, source }) {
   function refreshProjectionImage(record, force = false) {
     const runtime = record?.projection;
     if (!runtime || runtime.mode !== 'image' || !runtime.image) return;
+    // Motion-safe refinement (Quackles port): camera/input owns the realtime
+    // lane. Keep the last committed still-frame texture during motion and let
+    // the existing projection loop refill naturally after moveEnd. Forced
+    // first-load/failover requests still bypass this gate because they establish
+    // the visual rather than refine an already committed one.
+    if (layerState._cameraMoving && !force) return;
     // Hidden-state gate (perf wave 2): no new frame fetch/decode for a canvas
     // nobody can see. The refresh interval re-fills naturally on return.
     if (typeof document !== 'undefined' && document.hidden && !force) return;

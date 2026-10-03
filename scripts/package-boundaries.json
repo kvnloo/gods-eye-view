@@ -1764,6 +1764,7 @@
       "src/splitFlap.js",
       "src/standalone/catalog.js",
       "src/standalone/layerSources.js",
+      "src/standalone/observedTrafficFixture.js",
       "src/styles/anime.js",
       "src/styles/noir.js",
       "src/styles/retro.js",

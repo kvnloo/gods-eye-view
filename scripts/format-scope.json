@@ -37,6 +37,7 @@
   "docs/APPLICATION.md",
   "scripts/qa-application.mjs",
   "scripts/qa-terrain-429.mjs",
+  "src/services/cameraMotionGate.test.mjs",
   "src/app/application.js",
   "src/app/application.test.mjs",
   "src/app/mapLifecycle.test.mjs",

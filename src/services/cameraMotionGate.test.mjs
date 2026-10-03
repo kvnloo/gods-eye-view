@@ -65,10 +65,7 @@ test('camera motion opens a new generation and refinement resumes only after qui
   });
   moveEnd.raise();
   assert.equal(timers.pending.size, 1);
-  assert.equal(
-    [...timers.pending.values()][0].ms,
-    CAMERA_REFINEMENT_SETTLE_MS,
-  );
+  assert.equal([...timers.pending.values()][0].ms, CAMERA_REFINEMENT_SETTLE_MS);
   assert.equal(gate.isSettled(), false);
 
   timers.flush();

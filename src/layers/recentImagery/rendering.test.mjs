@@ -235,7 +235,6 @@ test('against the basemap slot a splits left with no second layer, and leaving t
   assert.deepEqual(renders, ['recent-imagery-show', 'recent-imagery-look']);
 });
 
-
 test('camera motion defers tile refinement and wakes exactly once after settle', async () => {
   const { renderer, globe, timers, tileFrames, camera } = fixture();
   renderer.showSlot('a', S30, BOX);

@@ -15,7 +15,6 @@
  */
 
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import puppeteer from 'puppeteer';
@@ -202,8 +201,13 @@ try {
     window.__riMotionIntervals = [];
     window.__riMotionRaf = null;
     window.__riMotionEndIndex = null;
+    window.__riCameraMoveStarted = false;
     window.__riCameraMoveEnded = false;
     const viewer = window.__godsEyeView.viewer;
+    const offMoveStart = viewer.camera.moveStart.addEventListener(() => {
+      window.__riCameraMoveStarted = true;
+      if (typeof offMoveStart === 'function') offMoveStart();
+    });
     const offMoveEnd = viewer.camera.moveEnd.addEventListener(() => {
       window.__riCameraMoveEnded = true;
       window.__riMotionEndIndex = window.__riMotionIntervals.length;
@@ -241,9 +245,7 @@ try {
   );
 
   await page.waitForFunction(
-    () =>
-      window.__gevRecentImagery.layer.diagnostics().refinement?.motion.moving ===
-      true,
+    () => window.__riCameraMoveStarted === true,
     { timeout: 3_000 },
   );
 
@@ -263,14 +265,19 @@ try {
   );
   phase = 'settle';
 
-  await page.waitForFunction(
-    () => {
-      const motion =
-        window.__gevRecentImagery.layer.diagnostics().refinement?.motion;
-      return motion?.moving === false && motion?.settled === true;
-    },
-    { timeout: SETTLE_TIMEOUT_MS },
+  const hasRefinementGate = await page.evaluate(
+    () => Boolean(window.__gevRecentImagery.layer.diagnostics().refinement),
   );
+  if (hasRefinementGate) {
+    await page.waitForFunction(
+      () => {
+        const motion =
+          window.__gevRecentImagery.layer.diagnostics().refinement?.motion;
+        return motion?.moving === false && motion?.settled === true;
+      },
+      { timeout: SETTLE_TIMEOUT_MS },
+    );
+  }
 
   await new Promise((resolve) => setTimeout(resolve, 700));
   phase = 'done';
@@ -321,7 +328,6 @@ try {
       commit: currentCommit(),
       platform: process.platform,
       arch: process.arch,
-      hostname: os.hostname(),
       node: process.version,
       browserVersion: await browser.version(),
       headful: true,
@@ -350,11 +356,15 @@ try {
       during: during.diagnostics.refinement,
       after: after.diagnostics.refinement,
       motionDeferredDelta:
-        after.diagnostics.refinement.motionDeferred -
-        before.diagnostics.refinement.motionDeferred,
+        after.diagnostics.refinement && before.diagnostics.refinement
+          ? after.diagnostics.refinement.motionDeferred -
+            before.diagnostics.refinement.motionDeferred
+          : null,
       generationDelta:
-        after.diagnostics.refinement.motion.generation -
-        before.diagnostics.refinement.motion.generation,
+        after.diagnostics.refinement && before.diagnostics.refinement
+          ? after.diagnostics.refinement.motion.generation -
+            before.diagnostics.refinement.motion.generation
+          : null,
     },
     continuity: {
       ownedBefore: before.owned,
@@ -371,23 +381,31 @@ try {
 
   console.log(JSON.stringify(report, null, 2));
 
-  if (requestCounts.motion !== 0) {
-    throw new Error(
-      `expected zero GIBS requests during camera motion, observed ${requestCounts.motion}`,
-    );
-  }
   if (during.owned !== before.owned || after.owned !== before.owned) {
     throw new Error('committed imagery ownership changed during the motion trace');
   }
-  if (report.refinement.motionDeferredDelta <= 0) {
-    throw new Error('the trace did not exercise deferred Recent Imagery refinement');
-  }
-  if (
-    after.diagnostics.refinement.motion.moving ||
-    !after.diagnostics.refinement.motion.settled ||
-    after.diagnostics.refinement.motionRetryPending
-  ) {
-    throw new Error('Recent Imagery did not settle cleanly after the trace');
+
+  // Baseline runs intentionally have no refinement diagnostics. When the
+  // treatment gate is present, enforce its local invariants here as well as
+  // in the A/B comparator.
+  if (after.diagnostics.refinement) {
+    if (requestCounts.motion !== 0) {
+      throw new Error(
+        `expected zero GIBS requests during camera motion, observed ${requestCounts.motion}`,
+      );
+    }
+    if (report.refinement.motionDeferredDelta <= 0) {
+      throw new Error(
+        'the trace did not exercise deferred Recent Imagery refinement',
+      );
+    }
+    if (
+      after.diagnostics.refinement.motion.moving ||
+      !after.diagnostics.refinement.motion.settled ||
+      after.diagnostics.refinement.motionRetryPending
+    ) {
+      throw new Error('Recent Imagery did not settle cleanly after the trace');
+    }
   }
 } finally {
   await browser.close();

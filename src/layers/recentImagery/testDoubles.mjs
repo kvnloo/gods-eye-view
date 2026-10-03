@@ -261,6 +261,12 @@ export function fakeRenderer() {
     getOwned: () => ({ ...owned }),
     ownedCount: () => ['a', 'b'].filter((slot) => owned[slot]).length,
     peak: () => peak,
+    diagnostics: () => ({
+      motion: { settled: true, moving: false, generation: 0 },
+      motionDeferred: 0,
+      motionRetryPending: false,
+      tileRequestsInFlight: 0,
+    }),
     destroy() {
       calls.push(['destroy']);
     },

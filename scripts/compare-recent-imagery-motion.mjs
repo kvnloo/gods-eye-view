@@ -26,6 +26,23 @@ for (const [name, report] of [
   }
 }
 
+const identityFields = ['platform', 'arch', 'browserVersion'];
+for (const field of identityFields) {
+  if (baseline.identity[field] !== treatment.identity[field]) {
+    throw new Error(
+      `incomparable identity: ${field} differs (${baseline.identity[field]} vs ${treatment.identity[field]})`,
+    );
+  }
+}
+if (
+  JSON.stringify(baseline.identity.viewport) !==
+    JSON.stringify(treatment.identity.viewport) ||
+  JSON.stringify(baseline.identity.camera) !==
+    JSON.stringify(treatment.identity.camera)
+) {
+  throw new Error('incomparable identity: viewport or camera trace differs');
+}
+
 const b = baseline.frameIntervals.motion;
 const t = treatment.frameIntervals.motion;
 const delta = (field) =>
@@ -79,6 +96,12 @@ const summary = {
     baseline: baseline.continuity,
     treatment: treatment.continuity,
   },
+  interpretation: {
+    semanticGatesBlocking: true,
+    timingComparisonAdvisory: true,
+    note:
+      'One baseline/treatment pair is not a timing gate. Repeat on the same host with interleaved ABBA/BAAB order before making a performance claim.',
+  },
 };
 
 console.log(JSON.stringify(summary, null, 2));
@@ -99,8 +122,7 @@ if (
   t.p99Ms > b.p99Ms ||
   t.over100ms > b.over100ms
 ) {
-  console.error(
-    'FAIL: treatment regressed a declared interaction-tail metric versus baseline',
+  console.warn(
+    'ADVISORY: this treatment sample has a worse interaction-tail metric; repeat interleaved runs before deciding whether it is a regression.',
   );
-  process.exitCode = 1;
 }

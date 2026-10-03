@@ -13,10 +13,10 @@ const CORRIDOR_TOKENS =
 function validCamera(camera) {
   return Boolean(
     camera &&
-      typeof camera.id === 'string' &&
-      camera.id &&
-      Number.isFinite(Number(camera.lat)) &&
-      Number.isFinite(Number(camera.lon)),
+    typeof camera.id === 'string' &&
+    camera.id &&
+    Number.isFinite(Number(camera.lat)) &&
+    Number.isFinite(Number(camera.lon)),
   );
 }
 
@@ -73,10 +73,9 @@ export function selectObservedTrafficFixtureCameras(
 }
 
 export function observedTrafficFixtureRequested(
-  search =
-    typeof globalThis.location?.search === 'string'
-      ? globalThis.location.search
-      : '',
+  search = typeof globalThis.location?.search === 'string'
+    ? globalThis.location.search
+    : '',
 ) {
   const params = new URLSearchParams(String(search || ''));
   return (

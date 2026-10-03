@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Defer optional Recent Imagery GIBS tile refinement during camera motion. The last committed visual remains visible; 180 ms of quiet input resumes refinement with one coalesced retry frame.
+
 ## [0.2.1] — 2026-10-02 — God's Eye View through Your Agent (with security fixes and other features)
 
 - Ship each bundled data pack once. The region, marine, admin-boundary,

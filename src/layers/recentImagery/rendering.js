@@ -8,6 +8,7 @@
  */
 import * as Cesium from 'cesium';
 import { PRODUCTS, gibsTemplate } from './model.js';
+import { createCameraMotionGate } from '../../services/cameraMotionGate.js';
 
 const SLOT_IDS = ['a', 'b'];
 const SPLIT_ENUM = { left: 'LEFT', right: 'RIGHT', none: 'NONE' };
@@ -36,9 +37,19 @@ const boxKey = (box) =>
  * asks for one frame when it settles), and a request the provider itself
  * deferred goes through the one coalesced delayed retry.
  */
-function admitTileRequests(provider, admission, requestRender, retry) {
+function admitTileRequests(
+  provider,
+  admission,
+  requestRender,
+  retry,
+  motionAdmission,
+) {
   const original = provider.requestImage.bind(provider);
   provider.requestImage = (x, y, level, request) => {
+    if (!motionAdmission.isSettled()) {
+      motionAdmission.defer();
+      return undefined;
+    }
     if (admission.inFlight >= admission.limit) return undefined;
     admission.inFlight += 1;
     const release = () => {
@@ -78,6 +89,27 @@ export function createRecentImageryRenderer({
   let host = NO_HOST;
   let destroyed = false;
   const admission = { limit: maxTileRequests, inFlight: 0 };
+  const motion = createCameraMotionGate({ setTimeoutImpl, clearTimeoutImpl });
+  let motionRetryPending = false;
+  let motionDeferred = 0;
+  const stopMotionWatch = motion.subscribe((state, reason) => {
+    if (
+      reason === 'settled' &&
+      state.settled &&
+      motionRetryPending &&
+      !destroyed
+    ) {
+      motionRetryPending = false;
+      requestRender(TILE_RENDER_REASON);
+    }
+  });
+  const motionAdmission = {
+    isSettled: () => motion.isSettled(),
+    defer() {
+      motionDeferred += 1;
+      motionRetryPending = true;
+    },
+  };
   /** @type {Record<'a'|'b', null | { layer: object, collection: object, candidate: object, box: object, alpha: number, split: string }>} */
   const owned = { a: null, b: null };
 
@@ -115,7 +147,13 @@ export function createRecentImageryRenderer({
       credit: 'NASA GIBS',
       hasAlphaChannel: spec.format === 'png',
     });
-    return admitTileRequests(provider, admission, requestRender, retry);
+    return admitTileRequests(
+      provider,
+      admission,
+      requestRender,
+      retry,
+      motionAdmission,
+    );
   }
 
   function removeOwned(slotId) {
@@ -152,6 +190,11 @@ export function createRecentImageryRenderer({
   }
 
   return {
+    /** Attach the camera whose motion owns the realtime rendering lane. */
+    attachViewer(viewer) {
+      motion.attach(viewer?.camera || null);
+    },
+
     /**
      * Drape a candidate into a slot. The same candidate on the same host only
      * updates its look; anything else replaces the slot's layer.
@@ -246,6 +289,16 @@ export function createRecentImageryRenderer({
       return out;
     },
 
+    /** Refinement scheduling diagnostics for performance gates. */
+    diagnostics() {
+      return {
+        motion: motion.snapshot(),
+        motionDeferred,
+        motionRetryPending,
+        tileRequestsInFlight: admission.inFlight,
+      };
+    },
+
     /** Number of layers this renderer owns (never above two). */
     ownedCount() {
       return SLOT_IDS.filter((slotId) => owned[slotId]).length;
@@ -256,6 +309,9 @@ export function createRecentImageryRenderer({
       if (destroyed) return;
       destroyed = true;
       retry.cancel();
+      stopMotionWatch();
+      motion.destroy();
+      motionRetryPending = false;
       let changed = false;
       for (const slotId of SLOT_IDS) changed = removeOwned(slotId) || changed;
       host = NO_HOST;

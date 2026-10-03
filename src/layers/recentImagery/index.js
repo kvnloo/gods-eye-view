@@ -1448,6 +1448,7 @@ export function createRecentImageryLayer({
         pending: _pending ? _pending.key : undefined,
         following: _followKey,
         splitFromLink: _splitFromLink,
+        refinement: renderer.diagnostics?.() ?? null,
       };
     },
   };

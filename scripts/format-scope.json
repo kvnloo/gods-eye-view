@@ -33,6 +33,7 @@
   "scripts/qa-admin-outlines.mjs",
   "src/data/inputOwnership.test.mjs",
   "src/data/disasterDirections.test.mjs",
+  "src/data/disasterReplay.test.mjs",
   "docs/CODE-BOUNDARIES.md",
   "src/main.js",
   "docs/APPLICATION.md",

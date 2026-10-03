@@ -181,6 +181,16 @@ const settleTimes = async (count = 4) => {
   for (let i = 0; i < count; i += 1) await settle();
 };
 
+test('layer diagnostics surface renderer refinement state', () => {
+  const f = fixture();
+  assert.deepEqual(f.diag().refinement, {
+    motion: { settled: true, moving: false, generation: 0 },
+    motionDeferred: 0,
+    motionRetryPending: false,
+    tileRequestsInFlight: 0,
+  });
+});
+
 test('a refused box is loud, says its size and persists until a box succeeds; so does a tool refusal', async () => {
   const f = fixture();
   f.layer.enable();

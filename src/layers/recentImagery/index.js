@@ -796,12 +796,14 @@ export function createRecentImageryLayer({
 
     init(viewer) {
       _viewer = viewer || null;
+      renderer.attachViewer?.(_viewer);
       return true;
     },
 
     enable(viewer) {
       if (_destroyed) return false;
       if (viewer) _viewer = viewer;
+      renderer.attachViewer?.(_viewer);
       _enabled = true;
       _comparisonError = null;
       _unsubscribeThumbnails?.();

@@ -1,0 +1,40 @@
+name: Recent Imagery promotion gate
+
+on:
+  push:
+    branches:
+      - perf/motion-safe-imagery-20260929
+
+permissions:
+  contents: read
+
+jobs:
+  browser-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.14.0
+          cache: npm
+      - run: npm ci
+      - name: Start GEV
+        run: |
+          npm run dev -- --host 127.0.0.1 --port 4173 > /tmp/gev-dev.log 2>&1 &
+          echo $! > /tmp/gev-dev.pid
+          for i in {1..90}; do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/gev-dev.log
+          exit 1
+      - name: Tracking regression
+        run: npm run test:track -- --offline-imagery
+      - name: Recent Imagery live gate
+        run: node scripts/qa-recent-imagery.mjs
+      - name: Dev log on failure
+        if: failure()
+        run: cat /tmp/gev-dev.log

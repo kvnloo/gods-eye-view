@@ -22,10 +22,9 @@ export function createStandaloneApplication({
   geospatial = {},
   voice = {},
   allowQaRegistration = false,
-  locationSearch =
-    typeof globalThis.location?.search === 'string'
-      ? globalThis.location.search
-      : '',
+  locationSearch = typeof globalThis.location?.search === 'string'
+    ? globalThis.location.search
+    : '',
 }) {
   if (constructed)
     throw new Error('The standalone application already owns this page');

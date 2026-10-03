@@ -1,0 +1,39 @@
+name: Observed traffic proof
+
+on:
+  push:
+    branches:
+      - feat/camera-observed-corridor-fixture
+
+permissions:
+  contents: read
+
+jobs:
+  browser-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.14.0
+          cache: npm
+      - run: npm ci
+      - name: Start GEV
+        run: |
+          npm run dev -- --host 127.0.0.1 --port 4173 > /tmp/gev-dev.log 2>&1 &
+          for i in {1..90}; do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/gev-dev.log
+          exit 1
+      - name: Tracking regression
+        run: npm run test:track -- --offline-imagery
+      - name: Observed traffic browser QA
+        run: npm run qa:observed-traffic
+      - name: Dev log on failure
+        if: failure()
+        run: cat /tmp/gev-dev.log

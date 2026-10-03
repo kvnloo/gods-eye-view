@@ -1,0 +1,81 @@
+name: Validate motion-safe Recent Imagery
+
+on:
+  pull_request:
+    branches:
+      - perf/motion-safe-imagery-20260929
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-motion-safe-imagery-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regression-track:
+    name: Regression track
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Use Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24.14.0
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Run tracked regression gate
+        run: npm run test:track
+
+  recent-imagery-live-qa:
+    name: Recent Imagery live QA
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Use Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24.14.0
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Start preview server
+        run: |
+          nohup npm run preview -- --host 127.0.0.1 --port 4173 > /tmp/gev-preview.log 2>&1 &
+          for attempt in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:4173/ >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/gev-preview.log
+          exit 1
+
+      - name: Run live Recent Imagery gate
+        run: |
+          set -o pipefail
+          node scripts/qa-recent-imagery.mjs | tee /tmp/recent-imagery-qa.log
+          if grep -q '^SKIP:' /tmp/recent-imagery-qa.log; then
+            echo 'Live NASA dependency was unavailable; this run is not promotion evidence.'
+            exit 1
+          fi

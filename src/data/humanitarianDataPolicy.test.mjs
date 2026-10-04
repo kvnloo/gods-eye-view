@@ -3,7 +3,9 @@ import test from 'node:test';
 
 import { evaluateHumanitarianDataPolicy } from './humanitarianDataPolicy.js';
 
-test('public hazard geometry is renderable, cacheable, shareable and agent-visible', () => {
+test(
+  'public hazard geometry is renderable, cacheable, shareable and agent-visible',
+  () => {
   const result = evaluateHumanitarianDataPolicy({
     sensitivity: 'public',
   });
@@ -17,9 +19,12 @@ test('public hazard geometry is renderable, cacheable, shareable and agent-visib
     agentVisible: true,
   });
   assert.deepEqual(result.reasons, []);
-});
+  },
+);
 
-test('restricted operational routes fail closed without an explicit role match', () => {
+test(
+  'restricted operational routes fail closed without an explicit role match',
+  () => {
   const denied = evaluateHumanitarianDataPolicy({
     sensitivity: 'restricted',
     allowedRoles: ['logistics'],
@@ -41,9 +46,12 @@ test('restricted operational routes fail closed without an explicit role match',
     agentVisible: false,
   });
   assert.ok(denied.reasons.includes('role-not-authorized'));
-});
+  },
+);
 
-test('restricted access can be granted per action without granting export by accident', () => {
+test(
+  'restricted access can be granted per action without granting export by accident',
+  () => {
   const result = evaluateHumanitarianDataPolicy(
     {
       sensitivity: 'restricted',
@@ -63,9 +71,12 @@ test('restricted access can be granted per action without granting export by acc
   assert.equal(result.permissions.export, false);
   assert.equal(result.permissions.share, false);
   assert.equal(result.permissions.agentVisible, true);
-});
+  },
+);
 
-test('sensitive shelter policy carries explicit coarsening/redaction and no persistence', () => {
+test(
+  'sensitive shelter policy carries explicit coarsening/redaction and no persistence',
+  () => {
   const result = evaluateHumanitarianDataPolicy(
     {
       sensitivity: 'sensitive',
@@ -88,9 +99,12 @@ test('sensitive shelter policy carries explicit coarsening/redaction and no pers
     redactFields: ['contactName', 'preciseCapacity'],
   });
   assert.ok(result.reasons.includes('persistent-cache-forbidden'));
-});
+  },
+);
 
-test('anonymous aggregate CCTV traffic is not blocked merely because it came from a camera', () => {
+test(
+  'anonymous aggregate CCTV traffic is not blocked merely because it came from a camera',
+  () => {
   const result = evaluateHumanitarianDataPolicy({
     sensitivity: 'public',
     capabilities: ['anonymous-aggregate-traffic'],
@@ -99,9 +113,12 @@ test('anonymous aggregate CCTV traffic is not blocked merely because it came fro
   assert.equal(result.permissions.render, true);
   assert.equal(result.permissions.export, true);
   assert.equal(result.permissions.agentVisible, true);
-});
+  },
+);
 
-test('identity-bearing humanitarian capability is prohibited even under permissive flags', () => {
+test(
+  'identity-bearing humanitarian capability is prohibited even under permissive flags',
+  () => {
   const result = evaluateHumanitarianDataPolicy({
     sensitivity: 'public',
     capabilities: ['person-identification'],
@@ -124,7 +141,8 @@ test('identity-bearing humanitarian capability is prohibited even under permissi
   assert.ok(
     result.reasons.includes('prohibited-capability:person-identification'),
   );
-});
+  },
+);
 
 test('prohibited-export is a hard boundary even for an authorized role', () => {
   const result = evaluateHumanitarianDataPolicy(
@@ -150,7 +168,9 @@ test('prohibited-export is a hard boundary even for an authorized role', () => {
   assert.ok(result.reasons.includes('prohibited-export'));
 });
 
-test('future publication boundary blocks export/share without hiding local evidence', () => {
+test(
+  'future publication boundary blocks export/share without hiding local evidence',
+  () => {
   const result = evaluateHumanitarianDataPolicy(
     {
       sensitivity: 'public',
@@ -165,7 +185,8 @@ test('future publication boundary blocks export/share without hiding local evide
   assert.equal(result.permissions.share, false);
   assert.equal(result.permissions.agentVisible, true);
   assert.ok(result.reasons.includes('publication-delayed'));
-});
+  },
+);
 
 test('unknown sensitivity fails closed', () => {
   const result = evaluateHumanitarianDataPolicy({
@@ -174,7 +195,9 @@ test('unknown sensitivity fails closed', () => {
 
   assert.equal(result.sensitivity, 'unknown');
   assert.equal(result.authorized, false);
-  assert.ok(Object.values(result.permissions).every((value) => value === false));
+  assert.ok(
+    Object.values(result.permissions).every((value) => value === false),
+  );
   assert.deepEqual(result.reasons, ['sensitivity-unknown']);
 });
 

@@ -34,6 +34,18 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      - name: Start dev server
+        run: |
+          nohup npm run dev -- --host 127.0.0.1 --port 4173 > /tmp/gev-dev.log 2>&1 &
+          for attempt in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:4173/ >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/gev-dev.log
+          exit 1
+
       - name: Run tracked regression gate
         run: npm run test:track
 

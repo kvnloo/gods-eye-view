@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+- Resume Historic Fires from @lleon-at-navteca's #609 with the backend rebased
+  onto current ownership: event definitions live under
+  `src/data/local_data/fire_events/`, archive cache identity includes the
+  normalized event definition, failed FIRMS windows cool down before retry,
+  and historic-perimeter acquisition is no longer duplicated in this provider.
+
 - Add Norway's road cameras from Statens vegvesen as a CCTV pack. The camera
   list is one keyless GeoJSON request to the agency's OGC API view of its
   DATEX 3.1 CCTV table, so no DATEX account is needed. Every working camera

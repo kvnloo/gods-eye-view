@@ -1,5 +1,22 @@
 # God's Eye View Current State
 
+## Hazard evidence handoff — downstream integration candidate, October 5, 2026
+
+Selecting a fire, fire perimeter, earthquake, or tropical cyclone offers an
+explicit choice between recent imagery and nearby public cameras. Successful
+choices affect only the locally stored ordering of these actions; a fresh user
+choice is required to open either view. The chooser closes when its owning layer
+selection clears. Dismissed or replaced choices cannot update a successor
+chooser after an asynchronous operation finishes. An unsuccessful choice leaves
+the current chooser available for retry, with persistent failure feedback inside
+the modal. The next accepted attempt clears that feedback.
+
+This downstream candidate preserves the current traffic layer surface services.
+The synthetic browser regression uses an inert enable result and blocks external
+traffic. It verifies modal-local failure feedback, not live imagery/camera
+availability or GPU performance. Required integration gates are recorded
+separately; source integration alone is not an acceptance result.
+
 ## God's Eye View in conversations — October 2, 2026
 
 Tool answers that can be shown in God's Eye View include a view: camera, layers,

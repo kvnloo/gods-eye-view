@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+- Offer an explicit imagery or nearby public-camera handoff for selected fires,
+  fire perimeters, earthquakes, and tropical cyclones. Successful choices rank
+  the local chooser without automatically opening either view. Dismissing or
+  replacing a chooser leaves its successor unaffected by late completions;
+  failed choices remain retryable and show feedback inside the modal chooser.
+
 - Add Norway's road cameras from Statens vegvesen as a CCTV pack. The camera
   list is one keyless GeoJSON request to the agency's OGC API view of its
   DATEX 3.1 CCTV table, so no DATEX account is needed. Every working camera

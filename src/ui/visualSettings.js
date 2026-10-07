@@ -39,6 +39,13 @@ import {
   setCyberSonarEnabled,
 } from '../cyberSonar.js';
 import { cyberVisualDefaultsForHudTransition } from '../hudLayouts.js';
+import {
+  applyRenderQuality,
+  normalizeRenderQualityName,
+  readStoredRenderQuality,
+  resolveRenderQualityName,
+  writeStoredRenderQuality,
+} from '../app/renderQuality.js';
 const DETECTION_ALLOCATION_STORAGE_KEY = 'gev:detection-allocation:v1';
 
 /** Own visual preferences, detection overrides and display-control state. */
@@ -207,6 +214,14 @@ export class VisualSettings {
       document.getElementById('detection-allocation-elastic'),
       document.getElementById('detection-allocation-weighted'),
     ].filter(Boolean);
+    this._renderQualityBtns = [
+      ...(document.querySelectorAll?.('[data-render-quality]') || []),
+    ];
+    this._renderQualityPreference = resolveRenderQualityName({
+      search: globalThis.location?.search,
+      stored: readStoredRenderQuality(),
+    });
+    this._syncRenderQualityUi();
     let storedDetectionAllocation = 'ELASTIC';
     try {
       storedDetectionAllocation =
@@ -545,6 +560,26 @@ export class VisualSettings {
       outsideOpacity: outsideOpacityPct / 100,
     });
     this.viewer.scene.requestRender?.();
+  }
+
+  _syncRenderQualityUi() {
+    for (const button of this._renderQualityBtns) {
+      const active =
+        button.dataset.renderQuality === this._renderQualityPreference;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-checked', String(active));
+    }
+  }
+
+  _setRenderQuality(name, { persist = true } = {}) {
+    const normalized = normalizeRenderQualityName(name);
+    if (!normalized) return false;
+    if (!applyRenderQuality(this.viewer, normalized)) return false;
+    this._renderQualityPreference = normalized;
+    this._syncRenderQualityUi();
+    if (persist) writeStoredRenderQuality(normalized);
+    this.viewer.scene.requestRender?.();
+    return true;
   }
 
   _setDetectionAllocation(strategy, { syncShare = true, persist = true } = {}) {

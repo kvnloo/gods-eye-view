@@ -190,6 +190,7 @@ export class StyleManager extends ShellFacade {
         _detectionBtn: this._detectionBtn,
         _detectionDensitySlider: this._detectionDensitySlider,
         _detectionDensityValue: this._detectionDensityValue,
+        _renderQualityBtns: this._visualSettings._renderQualityBtns,
         _detectionFadeRow: this._detectionFadeRow,
         _detectionFadeSlider: this._detectionFadeSlider,
         _detectionFadeValue: this._detectionFadeValue,
@@ -541,6 +542,8 @@ export class StyleManager extends ShellFacade {
           this._applyDetectionDensityFromUi(...args),
         _setDetectionAllocation: (...args) =>
           this._setDetectionAllocation(...args),
+        _setRenderQuality: (...args) =>
+          this._visualSettings._setRenderQuality(...args),
         _applyDetectionFadeFromUi: (...args) =>
           this._applyDetectionFadeFromUi(...args),
         setCelestialRingEnabled: (...args) =>

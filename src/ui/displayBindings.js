@@ -115,6 +115,7 @@ export class DisplayBindings {
         densitySlider: this._detectionDensitySlider,
         detectionButton: this._detectionBtn,
         allocationButtons: this._detectionAllocationBtns,
+        qualityButtons: this._renderQualityBtns,
         fadeSliders: [this._detectionFadeSlider, this._detectionOpacitySlider],
         celestialButton: this._celestialBtn,
         modelsButton: this._models3dBtn,
@@ -178,6 +179,7 @@ export class DisplayBindings {
           this.claimDetection();
           this._setDetectionAllocation(value);
         },
+        setQuality: (value) => this._setRenderQuality(value),
         setFade: () => {
           this.shareLinkManager?.claimRestoreLane?.('visual');
           this._applyDetectionFadeFromUi();

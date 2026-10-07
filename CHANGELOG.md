@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+- Add measured render-quality presets from @GGPOShadows' #680 to Display:
+  Performance / Balanced / High. Balanced is the default; explicit Display
+  choices persist locally, while a valid `?quality=` value overrides startup
+  without rewriting the stored preference. Ultra is intentionally omitted
+  until there is a measured discrete-GPU configuration worth shipping.
+
 - Street Level: a street-level imagery layer modelled on the iD editor's photo
   overlay, with Mapillary as its first provider (free client token, CC BY-SA 4.0
   imagery). One right-rail panel holds a chip per provider, shared 360°/flat and

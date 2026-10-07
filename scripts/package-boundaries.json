@@ -533,6 +533,7 @@
       "src/cyberSonar.js",
       "src/ui/radioPanelPlacement.js",
       "src/app/stateChannel.js",
+      "src/app/renderQuality.js",
       "src/bloom.js",
       "src/cctvFocusPolicy.js",
       "src/cctvFocusRequest.js",

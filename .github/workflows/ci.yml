@@ -46,7 +46,7 @@ jobs:
       - name: Check adopted formatting
         run: |
           npm run format
-          git diff -- scripts/package-boundaries.json src/app/renderQuality.js
+          git diff -- scripts/package-boundaries.json src/app/renderQuality.js src/ui/displayControls.test.mjs
           exit 1
 
       - name: Check package boundaries

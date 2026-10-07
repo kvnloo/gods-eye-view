@@ -44,7 +44,10 @@ jobs:
         run: npm run doctor -- --json
 
       - name: Check adopted formatting
-        run: npm run format:check
+        run: |
+          npm run format
+          git diff -- scripts/package-boundaries.json src/app/renderQuality.js
+          exit 1
 
       - name: Check package boundaries
         run: npm run check:boundaries

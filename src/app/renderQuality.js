@@ -22,12 +22,6 @@ export const RENDER_QUALITY_PRESETS = Object.freeze({
   }),
 });
 
-export const RENDER_QUALITY_NAMES = Object.freeze([
-  'performance',
-  'balanced',
-  'high',
-]);
-
 export function normalizeRenderQualityName(value) {
   const name = String(value ?? '').trim().toLowerCase();
   return Object.hasOwn(RENDER_QUALITY_PRESETS, name) ? name : null;
@@ -81,7 +75,8 @@ export function renderQualityPreset(name) {
 }
 
 export function applyRenderQuality(viewer, name) {
-  const normalized = normalizeRenderQualityName(name) || RENDER_QUALITY_DEFAULT;
+  const normalized =
+    normalizeRenderQualityName(name) || RENDER_QUALITY_DEFAULT;
   const preset = RENDER_QUALITY_PRESETS[normalized];
   if (!viewer?.scene) return null;
   try {

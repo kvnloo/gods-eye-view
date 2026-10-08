@@ -53,6 +53,12 @@ export async function playSceneQueue(
   const cancelled = () => Boolean(token.cancelled || token.signal?.aborted);
   let activeScene = null;
   let completedShots = 0;
+  let failure = null;
+  const releaseActiveScene = async () => {
+    const scene = activeScene;
+    activeScene = null;
+    if (scene) await adapter.releaseScene(scene);
+  };
   try {
     if (!queue.length || cancelled()) {
       return {
@@ -68,8 +74,7 @@ export async function playSceneQueue(
     for (let index = 0; index < queue.length && !cancelled(); index++) {
       const { scene, shot } = queue[index];
       if (activeScene && activeScene.id !== scene.id) {
-        await adapter.releaseScene(activeScene);
-        activeScene = null;
+        await releaseActiveScene();
         if (cancelled()) break;
       }
       activeScene = scene;
@@ -82,8 +87,21 @@ export async function playSceneQueue(
     }
     if (!cancelled()) await adapter.complete?.();
     return { status: cancelled() ? 'cancelled' : 'completed', completedShots };
+  } catch (error) {
+    failure = error;
+    throw error;
   } finally {
-    if (releaseOnFinish && activeScene) await adapter.releaseScene(activeScene);
+    if (releaseOnFinish && activeScene) {
+      try {
+        await releaseActiveScene();
+      } catch (error) {
+        if (!failure) throw error;
+        console.warn(
+          '[Scenes] Could not release scene after playback failure:',
+          error,
+        );
+      }
+    }
   }
 }
 

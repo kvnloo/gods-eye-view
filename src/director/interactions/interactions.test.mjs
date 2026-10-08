@@ -245,3 +245,80 @@ test('actions preserve camera refusal, layer admission signal and explicit trans
     false,
   );
 });
+
+test('a throwing observer at action start cannot strand the session busy', async (t) => {
+  const warn = console.warn;
+  console.warn = () => {};
+  t.after(() => {
+    console.warn = warn;
+  });
+  let fail = true;
+  let calls = 0;
+  const session = createInteractionSession({
+    execute: () => {
+      calls++;
+      return true;
+    },
+    changed(state) {
+      if (fail && state.busy) throw new Error('changed failed');
+    },
+  });
+  session.activate([{ id: 'a' }]);
+  assert.equal(await session.dispatch('a'), true);
+  assert.equal(session.getState().busy, false);
+  fail = false;
+  assert.equal(await session.dispatch('a'), true);
+  assert.equal(calls, 2);
+});
+
+test('a throwing observer at action completion cannot reject completed work', async (t) => {
+  const warn = console.warn;
+  console.warn = () => {};
+  t.after(() => {
+    console.warn = warn;
+  });
+  let calls = 0;
+  const session = createInteractionSession({
+    execute: () => {
+      calls++;
+      return true;
+    },
+    changed(state) {
+      if (state.active && !state.busy && state.selected === 'a') {
+        throw new Error('changed failed');
+      }
+    },
+  });
+  session.activate([{ id: 'a' }]);
+  assert.equal(await session.dispatch('a'), true);
+  assert.equal(calls, 1);
+  assert.deepEqual(session.getState(), {
+    active: true,
+    busy: false,
+    selected: 'a',
+    count: 1,
+  });
+});
+
+test('clear and activate survive a permanently throwing observer', (t) => {
+  const warn = console.warn;
+  console.warn = () => {};
+  t.after(() => {
+    console.warn = warn;
+  });
+  const session = createInteractionSession({
+    execute: () => true,
+    changed() {
+      throw new Error('changed failed');
+    },
+  });
+  assert.doesNotThrow(() => session.activate([{ id: 'a' }]));
+  assert.equal(session.getState().active, true);
+  assert.doesNotThrow(() => session.clear());
+  assert.deepEqual(session.getState(), {
+    active: false,
+    busy: false,
+    selected: null,
+    count: 0,
+  });
+});

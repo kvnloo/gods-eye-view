@@ -196,3 +196,40 @@ test('a cleanup failure rejects for the caller to restore its own controls', asy
     (error) => error === failure,
   );
 });
+
+test('a final release failure cannot replace the shot phase failure', async (t) => {
+  const warn = console.warn;
+  console.warn = () => {};
+  t.after(() => {
+    console.warn = warn;
+  });
+  const phaseFailure = new Error('travel failed');
+  const f = fixture({
+    travel: () => {
+      throw phaseFailure;
+    },
+    releaseScene: () => {
+      throw new Error('release failed');
+    },
+  });
+  await assert.rejects(
+    playSceneQueue(buildPlaybackQueue(scenes, 'a', { single: true }), f),
+    (error) => error === phaseFailure,
+  );
+});
+
+test('a failed between-scene release is attempted once', async () => {
+  const released = [];
+  const failure = new Error('release failed');
+  const f = fixture({
+    releaseScene: (scene) => {
+      released.push(scene.id);
+      throw failure;
+    },
+  });
+  await assert.rejects(
+    playSceneQueue(buildPlaybackQueue(scenes, 'a'), f),
+    (error) => error === failure,
+  );
+  assert.deepEqual(released, ['a']);
+});

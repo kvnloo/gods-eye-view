@@ -1,5 +1,10 @@
 import * as Cesium from 'cesium';
 import { applyModelAtmosphereWorkaround } from './atmosphereCompat.js';
+import {
+  applyRenderQuality,
+  readStoredRenderQuality,
+  resolveRenderQualityName,
+} from './renderQuality.js';
 
 const PINCH_ZOOM_MULTIPLIER = 8;
 const MAX_PINCH_PIXEL_DELTA = 120;
@@ -125,6 +130,13 @@ export function createApplicationViewer({ container, creditContainer }) {
   });
   try {
     viewer.targetFrameRate = 60;
+    applyRenderQuality(
+      viewer,
+      resolveRenderQualityName({
+        search: globalThis.location?.search,
+        stored: readStoredRenderQuality(),
+      }),
+    );
     // Before any tile builds a draw command: Cesium's per-vertex model
     // atmosphere fails to LINK on Apple's Metal backend and kills the
     // render loop. See app/atmosphereCompat.js.

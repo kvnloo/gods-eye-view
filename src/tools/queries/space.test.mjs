@@ -30,6 +30,21 @@ test('TLE text parses into named entries with catalog numbers', () => {
   assert.equal(tleCatalogNumber('1 xx'), null);
 });
 
+test('one TLE set missing line 2 does not discard the following sets', () => {
+  const set = (index) =>
+    `SAT ${index}\n` +
+    `1 ${25544 + index}U 98067A   24001.50000000  .00016717  00000-0  30270-3 0  9994\n` +
+    `2 ${25544 + index}  51.6416 247.4627 0006703 130.5360 325.0288 15.50377579432414\n`;
+  const whole = Array.from({ length: 8 }, (_, index) => set(index)).join('');
+  const broken = whole.replace(/\n2 25545[^\n]*/, '');
+
+  assert.equal(parseTleText(whole).length, 8);
+  assert.deepEqual(
+    parseTleText(broken).map((entry) => entry.name),
+    ['SAT 0', 'SAT 2', 'SAT 3', 'SAT 4', 'SAT 5', 'SAT 6', 'SAT 7'],
+  );
+});
+
 test('the next pass defaults to the ISS and reports times, peak and direction', async () => {
   const catalog = composeCatalog({
     tools: coreTools,

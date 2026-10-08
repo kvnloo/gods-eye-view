@@ -63,6 +63,12 @@
 
 ## [Unreleased]
 
+- Add measured render-quality presets from @GGPOShadows' #680 to Display:
+  Performance / Balanced / High. Balanced is the default; explicit Display
+  choices persist locally, while a valid `?quality=` value overrides startup
+  without rewriting the stored preference. Ultra is intentionally omitted
+  until there is a measured discrete-GPU configuration worth shipping.
+
 - Stdio servers from one install share a panel key so a page read from one
   process can make requests through another. Concurrent malformed-key repairs
   now select one winner; unavailable storage or a busy repair retains the

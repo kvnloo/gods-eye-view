@@ -171,3 +171,28 @@ test('a subscriber can Stop or replace the initial clock without the old start a
   });
   assert.equal(f.timers.size, 0);
 });
+
+test('a throwing immediate subscriber still receives an unsubscribe handle', (t) => {
+  const warn = console.warn;
+  console.warn = () => {};
+  t.after(() => {
+    console.warn = warn;
+  });
+  const f = fixture();
+  f.clock.publish(scene, shot, 1);
+  let calls = 0;
+  let unsubscribe;
+  assert.doesNotThrow(() => {
+    unsubscribe = f.clock.subscribe(() => {
+      calls++;
+      throw new Error('listener failed');
+    });
+  });
+  assert.equal(typeof unsubscribe, 'function');
+  f.clock.publish(scene, shot, 2);
+  assert.equal(calls, 2);
+  unsubscribe();
+  f.clock.publish(scene, shot, 3);
+  assert.equal(calls, 2);
+  f.clock.destroy();
+});

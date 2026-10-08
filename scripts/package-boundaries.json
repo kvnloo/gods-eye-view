@@ -22,7 +22,11 @@
   },
   "viewer": {
     "exports": ["./application/viewer"],
-    "modules": ["src/app/viewer.js", "src/app/atmosphereCompat.js"],
+    "modules": [
+      "src/app/renderQuality.js",
+      "src/app/viewer.js",
+      "src/app/atmosphereCompat.js"
+    ],
     "external": ["cesium"]
   },
   "vite-build": {
@@ -540,6 +544,7 @@
       "src/cyberSonar.js",
       "src/ui/radioPanelPlacement.js",
       "src/app/stateChannel.js",
+      "src/app/renderQuality.js",
       "src/bloom.js",
       "src/cctvFocusPolicy.js",
       "src/cctvFocusRequest.js",
@@ -1460,6 +1465,7 @@
       "src/app/stateChannel.js",
       "src/app/surfaceServices.js",
       "src/app/tools.js",
+      "src/app/renderQuality.js",
       "src/app/viewer.js",
       "src/app/atmosphereCompat.js",
       "src/bloom.js",
@@ -2814,6 +2820,7 @@
       "src/hudLayouts.js",
       "src/hudLayoutPolicy.js",
       "src/ui/radioPanelPlacement.js",
+      "src/app/renderQuality.js",
       "src/bloom.js",
       "src/cockpitVisionPolicy.js",
       "src/contactsDetectionPolicy.js",

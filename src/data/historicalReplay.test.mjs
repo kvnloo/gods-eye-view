@@ -114,7 +114,7 @@ test('evidence revision change forces re-evaluation before the next decision', (
   let replay = recordHistoricalReplayDecision(session(), {
     id: 'decision-baseline',
     assessment: 'unknown',
-    evidenceIds: ['evidence-1'],
+    evidenceIds: [event.evidenceSpine[0].id],
   });
   const baseline = replay.decisions[0];
   assert.equal(baseline.scorecard.pass, true);

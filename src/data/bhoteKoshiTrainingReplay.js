@@ -126,7 +126,7 @@ export function createBhoteKoshiTrainingReplay(event) {
         'facilitator-blocked-segment-r1',
         'simulated-access:r1-blocked',
         'blocked',
-        'current',
+        'fresh',
       ),
       accessMutation(
         'facilitator-stale-open-r2',

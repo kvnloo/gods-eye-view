@@ -121,7 +121,7 @@ function recordAudit(next, operation, result) {
 
 function finish(next, operation, result) {
   markSeen(next, operation.id);
-  recordAudit(next, operation, result);
+  if (result.category !== 'mergeable') recordAudit(next, operation, result);
   return { state: next, result: Object.freeze(result) };
 }
 

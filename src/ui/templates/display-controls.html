@@ -20,6 +20,14 @@
           <option value="cyber">Cyber</option>
         </select>
       </div>
+      <div class="pp-slider-row visible" id="render-quality-row">
+        <span class="pp-slider-mini-label">Quality</span>
+        <div class="pp-mode-seg" role="radiogroup" aria-label="Render quality">
+          <button class="pp-mode-btn" id="render-quality-performance" data-render-quality="performance" role="radio" aria-checked="false" title="Reduced resolution and no MSAA for constrained GPUs">Performance</button>
+          <button class="pp-mode-btn active" id="render-quality-balanced" data-render-quality="balanced" role="radio" aria-checked="true" title="Balanced visual fidelity and GPU cost">Balanced</button>
+          <button class="pp-mode-btn" id="render-quality-high" data-render-quality="high" role="radio" aria-checked="false" title="Full resolution and 4x MSAA">High</button>
+        </div>
+      </div>
       <div class="pp-slider-row cyber-sonar-control cyber-sonar-toggle-row" id="cyber-sonar-row">
         <span class="pp-slider-mini-label">Sonar</span>
         <button class="pp-mode-btn active" id="cyber-sonar-toggle" title="Cyber sonar contact scanner" aria-label="Cyber sonar contact scanner" aria-pressed="true">ON</button>

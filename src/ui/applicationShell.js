@@ -541,6 +541,8 @@ export class StyleManager extends ShellFacade {
           this._applyDetectionDensityFromUi(...args),
         _setDetectionAllocation: (...args) =>
           this._setDetectionAllocation(...args),
+        _setRenderQuality: (...args) =>
+          this._visualSettings._setRenderQuality(...args),
         _applyDetectionFadeFromUi: (...args) =>
           this._applyDetectionFadeFromUi(...args),
         setCelestialRingEnabled: (...args) =>

@@ -1,5 +1,17 @@
 # God's Eye View Current State
 
+## Render quality — October 7, 2026
+
+Render quality is one Display-owned preference built on @GGPOShadows' measured
+#680 preset work. Startup resolves **valid `?quality=` override -> stored
+`gev:render-quality:v1` preference -> `balanced`**. The URL override is
+ephemeral: only an explicit Display-panel choice is written to storage.
+
+The presets keep one owner for Cesium's `scene.msaaSamples` and
+`viewer.resolutionScale`: Performance = 1 / 0.6, Balanced = 2 / 0.85, High =
+4 / 1.0. High preserves the previous shipped fidelity. No Ultra preset is
+invented without measurement.
+
 ## God's Eye View in conversations — October 2, 2026
 
 Tool answers that can be shown in God's Eye View include a view: camera, layers,

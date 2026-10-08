@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { bindDisplayControls } from './displayControls.js';
 
@@ -115,29 +116,54 @@ test('the Cyber sonar control is an optional owned display action', () => {
 test('style, allocation and model choices retain their current data attributes', () => {
   const style = element();
   const allocation = element();
+  const quality = element();
   const mode = element();
   style.dataset.style = 'thermal';
   allocation.dataset.allocation = 'balanced';
+  quality.dataset.renderQuality = 'performance';
   mode.dataset.mode = 'all';
   const calls = [];
   const control = bindDisplayControls({
     elements: {
       styleButtons: [style],
       allocationButtons: [allocation],
+      qualityButtons: [quality],
       modelModeButtons: [mode],
     },
     actions: {
       setStyle: (value) => calls.push(value),
       setAllocation: (value) => calls.push(value),
+      setQuality: (value) => calls.push(value),
       setModelsMode: (value) => calls.push(value),
     },
   });
-  for (const el of [style, allocation, mode])
+  for (const el of [style, allocation, quality, mode])
     el.dispatchEvent(new Event('click'));
   mode.dataset.mode = 'unknown';
   mode.dispatchEvent(new Event('click'));
-  assert.deepEqual(calls, ['thermal', 'balanced', 'all', 'proximity']);
+  assert.deepEqual(calls, [
+    'thermal',
+    'balanced',
+    'performance',
+    'all',
+    'proximity',
+  ]);
   control.destroy();
+});
+
+test('render quality row is visible with Balanced as the markup default', () => {
+  const html = readFileSync(
+    new URL('./templates/display-controls.html', import.meta.url),
+    'utf8',
+  );
+  assert.match(html, /class="pp-slider-row visible" id="render-quality-row"/);
+  assert.match(html, /data-render-quality="performance"/);
+  assert.match(
+    html,
+    /class="pp-mode-btn active" id="render-quality-balanced"[^>]*aria-checked="true"/,
+  );
+  assert.match(html, /data-render-quality="high"/);
+  assert.doesNotMatch(html, /data-render-quality="ultra"/);
 });
 
 test('optional controls are absent safely and subscriptions stay instance-owned', () => {

@@ -106,6 +106,88 @@ test('share teardown settles its promise, removes gestures and rejects a retaine
   assert.equal(applies, 0);
 });
 
+test('render quality URL override is ephemeral while explicit Display choice persists', async (t) => {
+  const { VisualSettings } = await import('./visualSettings.js');
+  const priorDocument = globalThis.document;
+  const priorStorage = globalThis.localStorage;
+  const priorLocation = globalThis.location;
+  const qualityNames = ['performance', 'balanced', 'high'];
+  const buttons = qualityNames.map((name) => {
+    const classes = new Set(name === 'balanced' ? ['active'] : []);
+    return {
+      dataset: { renderQuality: name },
+      classList: {
+        toggle(value, active) {
+          if (active) classes.add(value);
+          else classes.delete(value);
+        },
+        contains: (value) => classes.has(value),
+      },
+      setAttribute(name, value) {
+        this[name] = value;
+      },
+    };
+  });
+  const stored = new Map([['gev:render-quality:v1', 'high']]);
+  globalThis.document = {
+    documentElement: { dataset: {} },
+    getElementById: () => null,
+    querySelectorAll: (selector) =>
+      selector === '[data-render-quality]' ? buttons : [],
+  };
+  globalThis.localStorage = {
+    getItem: (key) => stored.get(key) ?? null,
+    setItem: (key, value) => stored.set(key, value),
+  };
+  globalThis.location = { search: '?quality=performance' };
+  t.after(() => {
+    globalThis.document = priorDocument;
+    if (priorStorage === undefined) delete globalThis.localStorage;
+    else globalThis.localStorage = priorStorage;
+    if (priorLocation === undefined) delete globalThis.location;
+    else globalThis.location = priorLocation;
+  });
+
+  let renders = 0;
+  const viewer = {
+    resolutionScale: 0.6,
+    scene: {
+      msaaSamples: 1,
+      fog: { enabled: false },
+      requestRender: () => {
+        renders += 1;
+      },
+    },
+  };
+  const owner = new VisualSettings({
+    viewer,
+    elements: {},
+    operations: {},
+    services: {
+      governorRequestRender() {},
+      holdContinuousRender() {},
+      releaseContinuousRender() {},
+    },
+    readDataManager: () => ({ setLayerParams() {} }),
+  });
+
+  assert.equal(owner._renderQualityPreference, 'performance');
+  assert.equal(stored.get('gev:render-quality:v1'), 'high');
+  assert.equal(buttons[0].classList.contains('active'), true);
+  assert.equal(buttons[0]['aria-checked'], 'true');
+
+  assert.equal(owner._setRenderQuality('balanced'), true);
+  assert.equal(viewer.scene.msaaSamples, 2);
+  assert.equal(viewer.resolutionScale, 0.85);
+  assert.equal(stored.get('gev:render-quality:v1'), 'balanced');
+  assert.equal(buttons[1].classList.contains('active'), true);
+  assert.equal(buttons[1]['aria-checked'], 'true');
+  assert.equal(renders, 1);
+  assert.equal(owner._setRenderQuality('ultra'), false);
+  assert.equal(stored.get('gev:render-quality:v1'), 'balanced');
+  owner.destroy();
+});
+
 test('visual teardown restores owned fog and aircraft sensor state once', async (t) => {
   const { VisualSettings } = await import('./visualSettings.js');
   const priorDocument = globalThis.document;

@@ -74,17 +74,16 @@ test('canonical fixture cannot be mutated and branch mutations leave it unchange
     ({ id }) => id,
   );
   const mutatedEvidence = materializeHistoricalReplayEvidence(mutated);
+  const accessEvidence = mutatedEvidence.find(
+    ({ id }) => id === BHOTE_KOSHI_TRAINING_ACCESS_FIXTURE_ID,
+  );
 
   assert.equal(
     canonicalIds.includes(BHOTE_KOSHI_TRAINING_ACCESS_FIXTURE_ID),
     false,
   );
-  assert.equal(
-    mutatedEvidence.find(
-      ({ id }) => id === BHOTE_KOSHI_TRAINING_ACCESS_FIXTURE_ID,
-    ).state,
-    'blocked',
-  );
+  assert.equal(accessEvidence.state, 'blocked');
+  assert.equal(accessEvidence.freshness, 'fresh');
   assert.equal(canonical.scenario.evidence.length, 18);
 });
 

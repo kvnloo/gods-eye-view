@@ -46,6 +46,8 @@ export function bindDisplayControls({ elements, actions }) {
     listen(el, 'click', 'setStyle', (el) => el.dataset.style);
   for (const el of elements.allocationButtons || [])
     listen(el, 'click', 'setAllocation', (el) => el.dataset.allocation);
+  for (const el of elements.qualityButtons || [])
+    listen(el, 'click', 'setQuality', (el) => el.dataset.renderQuality);
   for (const el of elements.modelModeButtons || [])
     listen(el, 'click', 'setModelsMode', (el) =>
       el.dataset.mode === 'all' ? 'all' : 'proximity',

@@ -22,7 +22,10 @@ test('concurrent authored edits converge regardless of arrival order', () => {
   const b = annotation('op-b', 'bob', 'south bridge');
 
   const left = applyCollaborationOperations(createCollaborationState(), [a, b]);
-  const right = applyCollaborationOperations(createCollaborationState(), [b, a]);
+  const right = applyCollaborationOperations(createCollaborationState(), [
+    b,
+    a,
+  ]);
 
   assert.deepEqual(left.state, right.state);
   assert.equal(
@@ -63,37 +66,43 @@ test('conflicting evidence interpretations are both retained as claims', () => {
   );
 });
 
-test('offline authority transition against a superseded base is rejected explicitly', () => {
-  const first = {
-    id: 'status-1',
-    actorId: 'validator-a',
-    kind: 'claim-status',
-    targetId: 'claim-42',
-    baseRevision: 0,
-    nextRevision: 1,
-    value: 'reviewed',
-  };
-  const stale = {
-    id: 'status-stale',
-    actorId: 'validator-b',
-    kind: 'claim-status',
-    targetId: 'claim-42',
-    baseRevision: 0,
-    nextRevision: 1,
-    value: 'accepted',
-  };
+test(
+  'offline authority transition against a superseded base is rejected explicitly',
+  () => {
+    const first = {
+      id: 'status-1',
+      actorId: 'validator-a',
+      kind: 'claim-status',
+      targetId: 'claim-42',
+      baseRevision: 0,
+      nextRevision: 1,
+      value: 'reviewed',
+    };
+    const stale = {
+      id: 'status-stale',
+      actorId: 'validator-b',
+      kind: 'claim-status',
+      targetId: 'claim-42',
+      baseRevision: 0,
+      nextRevision: 1,
+      value: 'accepted',
+    };
 
-  const accepted = applyCollaborationOperation(createCollaborationState(), first);
-  const rejected = applyCollaborationOperation(accepted.state, stale);
+    const accepted = applyCollaborationOperation(
+      createCollaborationState(),
+      first,
+    );
+    const rejected = applyCollaborationOperation(accepted.state, stale);
 
-  assert.equal(rejected.result.accepted, false);
-  assert.equal(rejected.result.reason, 'base-revision-mismatch');
-  assert.equal(rejected.result.currentRevision, 1);
-  assert.equal(
-    rejected.state.authority['claim-status:claim-42'].value,
-    'reviewed',
-  );
-});
+    assert.equal(rejected.result.accepted, false);
+    assert.equal(rejected.result.reason, 'base-revision-mismatch');
+    assert.equal(rejected.result.currentRevision, 1);
+    assert.equal(
+      rejected.state.authority['claim-status:claim-42'].value,
+      'reviewed',
+    );
+  },
+);
 
 test('reconnect and replay cannot duplicate an authorization receipt', () => {
   const approval = {
@@ -111,12 +120,15 @@ test('reconnect and replay cannot duplicate an authorization receipt', () => {
   const exactReplay = applyCollaborationOperation(once.state, approval);
   assert.equal(exactReplay.result.reason, 'duplicate-operation');
 
-  const replayWithNewTransportId = applyCollaborationOperation(exactReplay.state, {
-    ...approval,
-    id: 'approval-op-replayed',
-    baseRevision: 1,
-    nextRevision: 2,
-  });
+  const replayWithNewTransportId = applyCollaborationOperation(
+    exactReplay.state,
+    {
+      ...approval,
+      id: 'approval-op-replayed',
+      baseRevision: 1,
+      nextRevision: 2,
+    },
+  );
 
   assert.equal(replayWithNewTransportId.result.accepted, true);
   assert.equal(replayWithNewTransportId.result.changed, false);
@@ -131,51 +143,54 @@ test('reconnect and replay cannot duplicate an authorization receipt', () => {
   );
 });
 
-test('remote camera/follow state may merge but side effects require local confirmation', () => {
-  let state = createCollaborationState();
+test(
+  'remote camera/follow state may merge but side effects require local confirmation',
+  () => {
+    let state = createCollaborationState();
 
-  const camera = applyCollaborationOperation(state, {
-    id: 'present-camera',
-    actorId: 'peer',
-    kind: 'presentation',
-    targetId: 'room',
-    field: 'camera',
-    counter: 1,
-    value: { lat: 27.9, lon: 85.1 },
-  });
-  state = camera.state;
-  assert.equal(camera.result.accepted, true);
-
-  const follow = applyCollaborationOperation(state, {
-    id: 'present-follow',
-    actorId: 'peer',
-    kind: 'presentation',
-    targetId: 'room',
-    field: 'follow',
-    counter: 2,
-    value: 'bridge-7',
-  });
-  state = follow.state;
-  assert.equal(follow.result.accepted, true);
-
-  for (const field of ['layers', 'media', 'micEnabled', 'action']) {
-    const blocked = applyCollaborationOperation(state, {
-      id: `blocked-${field}`,
+    const camera = applyCollaborationOperation(state, {
+      id: 'present-camera',
       actorId: 'peer',
       kind: 'presentation',
       targetId: 'room',
-      field,
-      counter: 3,
-      value: true,
+      field: 'camera',
+      counter: 1,
+      value: { lat: 27.9, lon: 85.1 },
     });
-    assert.equal(blocked.result.accepted, false);
-    assert.equal(
-      blocked.result.reason,
-      'remote-side-effect-requires-local-confirmation',
-    );
-    state = blocked.state;
-  }
-});
+    state = camera.state;
+    assert.equal(camera.result.accepted, true);
+
+    const follow = applyCollaborationOperation(state, {
+      id: 'present-follow',
+      actorId: 'peer',
+      kind: 'presentation',
+      targetId: 'room',
+      field: 'follow',
+      counter: 2,
+      value: 'bridge-7',
+    });
+    state = follow.state;
+    assert.equal(follow.result.accepted, true);
+
+    for (const field of ['layers', 'media', 'micEnabled', 'action']) {
+      const blocked = applyCollaborationOperation(state, {
+        id: `blocked-${field}`,
+        actorId: 'peer',
+        kind: 'presentation',
+        targetId: 'room',
+        field,
+        counter: 3,
+        value: true,
+      });
+      assert.equal(blocked.result.accepted, false);
+      assert.equal(
+        blocked.result.reason,
+        'remote-side-effect-requires-local-confirmation',
+      );
+      state = blocked.state;
+    }
+  },
+);
 
 test('superseded evidence status keeps an append-only audit trail', () => {
   const { state } = applyCollaborationOperations(createCollaborationState(), [

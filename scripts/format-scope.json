@@ -32,6 +32,7 @@
   "scripts/build-admin-packs.mjs",
   "scripts/qa-admin-outlines.mjs",
   "src/data/inputOwnership.test.mjs",
+  "src/data/collaborationAuthority.test.mjs",
   "docs/CODE-BOUNDARIES.md",
   "src/main.js",
   "docs/APPLICATION.md",

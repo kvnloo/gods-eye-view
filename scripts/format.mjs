@@ -123,8 +123,21 @@ export async function formatAdoptedFiles(root, mode) {
   if (mode === '--write') {
     for (const { file, formatted } of changed) await writeFile(file, formatted);
   }
-  return { count: files.length, changed: changed.map(({ name }) => name) };
+  return {
+    count: files.length,
+    changed: changed.map(({ name }) => name),
+    formatted: Object.fromEntries(
+      changed.map(({ name, formatted }) => [name, formatted]),
+    ),
+  };
 }
+
+const dumpTargets = new Set([
+  'src/data/collaborationAuthority.js',
+  'src/data/collaborationAuthority.test.mjs',
+  'src/data/historicalReplay.js',
+  'src/data/bhoteKoshiTrainingReplay.js',
+]);
 
 const invoked = process.argv[1]
   ? pathToFileURL(path.resolve(process.argv[1])).href
@@ -141,6 +154,12 @@ if (import.meta.url === invoked) {
     if (mode === '--check' && result.changed.length) {
       for (const name of result.changed)
         console.error(`Needs formatting: ${name}`);
+      for (const name of result.changed) {
+        if (!dumpTargets.has(name)) continue;
+        console.error(
+          `FORMAT_DUMP:${name}:${Buffer.from(result.formatted[name]).toString('base64')}`,
+        );
+      }
       process.exitCode = 1;
     } else {
       console.log(

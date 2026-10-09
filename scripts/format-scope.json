@@ -90,6 +90,7 @@
   "server/providers/traffic.js",
   "server/providers/firms.js",
   "src/tooling/fireHistoryProvider.test.mjs",
+  "src/layers/fireHistory/replay.test.mjs",
   "src/data/fireHistoryEvents.test.mjs",
   "src/data/fireHistoryEvents.js",
   "server/providers/fireHistory.js",

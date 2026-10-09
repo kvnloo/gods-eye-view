@@ -387,6 +387,7 @@
   "src/layers/firms/state.js",
   "src/layers/firms/viewport.js",
   "src/layers/firms/source.test.mjs",
+  "src/layers/fireHistory/source.test.mjs",
   "src/layers/satellites/lifecycle.js",
   "src/layers/satellites/interaction.js",
   "src/layers/satellites/controls.js",

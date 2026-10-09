@@ -237,6 +237,7 @@
     "./layers/earthquakes/source": "./src/layers/earthquakes/source.js",
     "./layers/perimeters/source": "./src/layers/perimeters/source.js",
     "./layers/firms/source": "./src/layers/firms/source.js",
+    "./layers/fire-history/model": "./src/layers/fireHistory/model.js",
     "./layers/installations/source": "./src/layers/installations/source.js",
     "./layers/launches/source": "./src/layers/launches/source.js",
     "./layers/radio/source": "./src/layers/radio/source.js",

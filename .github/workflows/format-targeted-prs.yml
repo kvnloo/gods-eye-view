@@ -1,7 +1,7 @@
 name: "Format targeted support PRs"
 
 on:
-  pull_request:
+  pull_request_target:
     types: [synchronize]
 
 permissions:
@@ -16,13 +16,13 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 24.14.0
           cache: npm
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - name: Format selected PR
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -35,10 +35,12 @@ jobs:
             rm -f .format-trigger-165
           fi
       - name: Commit formatted head
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           git diff --cached --quiet && exit 0
           git commit -m "chore: apply repository formatting"
-          git push origin HEAD:"${{ github.event.pull_request.head.ref }}"
+          git push origin HEAD:"$HEAD_REF"

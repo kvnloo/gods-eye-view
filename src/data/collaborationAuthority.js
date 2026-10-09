@@ -156,7 +156,11 @@ function mergeAuthored(next, operation, identity) {
   }
 
   const key = `${operation.kind}:${target}`;
-  const object = next.authored[key] || { kind: operation.kind, targetId: target, fields: {} };
+  const object = next.authored[key] || {
+    kind: operation.kind,
+    targetId: target,
+    fields: {},
+  };
   const current = object.fields[field];
 
   if (current && compareClock(clock, current.clock) <= 0) {
@@ -230,7 +234,12 @@ function applyRevisionOwned(next, operation, identity) {
     !Number.isSafeInteger(nextRevision) ||
     nextRevision !== baseRevision + 1
   ) {
-    return reject(next, operation, 'revision-owned', 'invalid-revision-transition');
+    return reject(
+      next,
+      operation,
+      'revision-owned',
+      'invalid-revision-transition',
+    );
   }
 
   const receiptId =
@@ -238,7 +247,12 @@ function applyRevisionOwned(next, operation, identity) {
       ? String(operation?.receiptId || '').trim()
       : null;
   if (operation.kind === 'action-approval' && !receiptId) {
-    return reject(next, operation, 'revision-owned', 'authorization-receipt-required');
+    return reject(
+      next,
+      operation,
+      'revision-owned',
+      'authorization-receipt-required',
+    );
   }
   if (receiptId && next.authorizationReceipts[receiptId]) {
     return finish(next, operation, {
@@ -319,7 +333,12 @@ export function applyCollaborationOperation(state, operation = {}) {
     };
   }
 
-  operation = { ...operation, id: identity.id, actorId: identity.actorId, kind };
+  operation = {
+    ...operation,
+    id: identity.id,
+    actorId: identity.actorId,
+    kind,
+  };
 
   if (category === 'mergeable') return mergeAuthored(next, operation, identity);
   if (category === 'append-only') return appendClaim(next, operation, identity);

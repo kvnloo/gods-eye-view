@@ -2948,6 +2948,11 @@
     "modules": ["src/layers/firms/source.js"],
     "external": []
   },
+  "fire-history-replay": {
+    "exports": ["./layers/fire-history/replay"],
+    "modules": ["src/layers/fireHistory/replay.js"],
+    "external": []
+  },
   "installations-source": {
     "exports": ["./layers/installations/source"],
     "modules": [

@@ -93,9 +93,8 @@ export function createBhoteKoshiTrainingReplay(event) {
     throw new TypeError('Bhote Koshi event id and observedDate are required');
   }
 
-  const observations = (Array.isArray(event.evidenceSpine)
-    ? event.evidenceSpine
-    : []
+  const observations = (
+    Array.isArray(event.evidenceSpine) ? event.evidenceSpine : []
   )
     .map(eventEvidence)
     .filter(Boolean);
@@ -145,14 +144,16 @@ export function createBhoteKoshiTrainingReplay(event) {
       },
       {
         id: 'blocked-segment-reassessment',
-        label: 'Reassess after an explicit simulated blocked segment arrives',
+        label:
+          'Reassess after an explicit simulated blocked segment arrives',
         expectedAssessment: 'unsupported',
         requiredEvidenceIds: [ACCESS_FIXTURE_ID],
         watchedEvidenceIds: [ACCESS_FIXTURE_ID],
       },
       {
         id: 'stale-open-reassessment',
-        label: 'Reassess after blocked evidence is replaced by stale-open evidence',
+        label:
+          'Reassess after blocked evidence is replaced by stale-open evidence',
         expectedAssessment: 'unknown',
         requiredEvidenceIds: [ACCESS_FIXTURE_ID],
         watchedEvidenceIds: [ACCESS_FIXTURE_ID],
@@ -167,7 +168,8 @@ export function createBhoteKoshiTrainingReplay(event) {
       imagery: imagery.map(({ id, source }) => ({ id, source })),
       linkedMediaNotRedistributed: observations.every(
         (record) =>
-          !record.rights.media || /not redistributed/i.test(record.rights.media),
+          !record.rights.media ||
+          /not redistributed/i.test(record.rights.media),
       ),
     },
     provenance: {

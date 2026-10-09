@@ -1,0 +1,35 @@
+name: "Fix formatting for PR 165"
+
+on:
+  push:
+    branches:
+      - exp/historical-replay-20261008
+    paths:
+      - .github/workflows/fix-format-165.yml
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: ${{ !contains(github.event.head_commit.message, '[format applied]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: exp/historical-replay-20261008
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.14.0
+          cache: npm
+      - run: npm ci
+      - run: npx prettier --write src/data/historicalReplay.js src/data/bhoteKoshiTrainingReplay.js
+      - name: Commit formatted source
+        run: |
+          rm .github/workflows/fix-format-165.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/data/historicalReplay.js src/data/bhoteKoshiTrainingReplay.js .github/workflows/fix-format-165.yml
+          git commit -m "chore(replay): apply repository formatting [format applied]"
+          git push origin HEAD:exp/historical-replay-20261008

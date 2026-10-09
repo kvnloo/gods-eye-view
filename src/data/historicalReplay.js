@@ -22,7 +22,8 @@ function cloneJson(value) {
 }
 
 function deepFreeze(value) {
-  if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;
+  if (!value || typeof value !== 'object' || Object.isFrozen(value))
+    return value;
   for (const child of Object.values(value)) deepFreeze(child);
   return Object.freeze(value);
 }
@@ -158,7 +159,8 @@ export function createHistoricalReplayScenario(input = {}) {
   uniqueIds(evidence, 'evidence');
   uniqueIds(mutations, 'mutation');
   uniqueIds(checkpoints, 'checkpoint');
-  if (!checkpoints.length) throw new TypeError('at least one checkpoint is required');
+  if (!checkpoints.length)
+    throw new TypeError('at least one checkpoint is required');
 
   const fixture = {
     schemaVersion: HISTORICAL_REPLAY_SCHEMA_VERSION,
@@ -241,7 +243,8 @@ export function seekHistoricalReplayCheckpoint(session, checkpointId) {
 export function branchHistoricalReplay(session, branchId) {
   assertScenario(session?.scenario);
   const id = nonEmptyText(branchId);
-  if (!id || id === 'canonical') throw new TypeError('non-canonical branch id required');
+  if (!id || id === 'canonical')
+    throw new TypeError('non-canonical branch id required');
   return sessionCopy(session, {
     branch: deepFreeze({
       id,
@@ -253,7 +256,9 @@ export function branchHistoricalReplay(session, branchId) {
 
 function resolveMutation(scenario, mutation) {
   if (typeof mutation === 'string') {
-    const found = scenario.mutations.find((candidate) => candidate.id === mutation);
+    const found = scenario.mutations.find(
+      (candidate) => candidate.id === mutation,
+    );
     if (!found) throw new RangeError(`unknown mutation: ${mutation}`);
     return found;
   }
@@ -263,7 +268,9 @@ function resolveMutation(scenario, mutation) {
 export function applyHistoricalReplayMutation(session, mutation) {
   assertScenario(session?.scenario);
   if (session.branch.id === 'canonical') {
-    throw new Error('canonical replay fixture cannot be mutated; create a branch');
+    throw new Error(
+      'canonical replay fixture cannot be mutated; create a branch',
+    );
   }
   const resolved = resolveMutation(session.scenario, mutation);
   if (session.branch.mutations.some((entry) => entry.id === resolved.id))
@@ -292,7 +299,9 @@ export function materializeHistoricalReplayEvidence(session) {
     if (!records.has(mutation.record.id)) order.push(mutation.record.id);
     records.set(mutation.record.id, mutation.record);
   }
-  return deepFreeze(order.filter((id) => records.has(id)).map((id) => records.get(id)));
+  return deepFreeze(
+    order.filter((id) => records.has(id)).map((id) => records.get(id)),
+  );
 }
 
 export function mountHistoricalReplayComparisonLane(session, lane = {}) {
@@ -371,7 +380,8 @@ export function recordHistoricalReplayDecision(session, decision = {}) {
   assertScenario(session?.scenario);
   const id = nonEmptyText(decision.id);
   const assessment = nonEmptyText(decision.assessment);
-  if (!id || !assessment) throw new TypeError('decision id and assessment required');
+  if (!id || !assessment)
+    throw new TypeError('decision id and assessment required');
   if (session.decisions.some((entry) => entry.id === id)) return session;
 
   const checkpoint = checkpointFor(session, decision.checkpointId);
@@ -394,7 +404,10 @@ export function recordHistoricalReplayDecision(session, decision = {}) {
   });
 }
 
-export function historicalReplayDecisionNeedsReevaluation(session, decision) {
+export function historicalReplayDecisionNeedsReevaluation(
+  session,
+  decision,
+) {
   assertScenario(session?.scenario);
   const receipt =
     typeof decision === 'string'

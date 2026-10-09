@@ -1,0 +1,44 @@
+name: "Format targeted support PRs"
+
+on:
+  pull_request:
+    types: [synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (github.event.pull_request.number == 164 || github.event.pull_request.number == 165)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.14.0
+          cache: npm
+      - run: npm ci
+      - name: Format selected PR
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          if [ "$PR_NUMBER" = "164" ]; then
+            npx prettier --write src/data/collaborationAuthority.js src/data/collaborationAuthority.test.mjs
+            rm -f .format-trigger-164
+          else
+            npx prettier --write src/data/historicalReplay.js src/data/bhoteKoshiTrainingReplay.js
+            rm -f .format-trigger-165
+          fi
+      - name: Commit formatted head
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && exit 0
+          git commit -m "chore: apply repository formatting"
+          git push origin HEAD:"${{ github.event.pull_request.head.ref }}"

@@ -25,6 +25,7 @@ import { createApplicationAwareness } from './layers/militaryAwareness.js';
 import { createApplicationFirms } from './layers/firms.js';
 import { createApplicationEarthquakes } from './layers/earthquakes.js';
 import { createApplicationFirePerimeters } from './layers/perimeters.js';
+import { createApplicationFireHistory } from './layers/fireHistory.js';
 import { createApplicationCables } from './layers/submarineCables.js';
 import { createApplicationStreetLevel } from './layers/streetLevel.js';
 import { createInfrastructureLayers } from '../data/infrastructure.js';
@@ -40,10 +41,21 @@ export const LOCAL_ONLY_LAYER_METADATA = Object.freeze([
   Object.freeze({ id: 'local-adsb', disposition: 'local-only' }),
 ]);
 
+/**
+ * Product layers intentionally omitted from stored/share state until an
+ * upstream serialization contract is assigned. The lifecycle's local-only
+ * disposition means "registered but never serialized"; it does not imply
+ * hardware locality.
+ */
+export const UNSHARED_LAYER_METADATA = Object.freeze([
+  Object.freeze({ id: 'fire-history', disposition: 'local-only' }),
+]);
+
 /** Serialization metadata for every layer the application catalog constructs. */
 export const APPLICATION_LAYER_METADATA = Object.freeze([
   ...LAYER_STATE_REGISTRY,
   ...LOCAL_ONLY_LAYER_METADATA,
+  ...UNSHARED_LAYER_METADATA,
 ]);
 
 /** Construct the current catalog without choosing any source provider.
@@ -119,6 +131,9 @@ export function createApplicationCatalog({
         createApplicationEarthquakes({ source: sources.earthquakes }),
         createApplicationFirePerimeters({
           source: sources['fire-perimeters'],
+        }),
+        createApplicationFireHistory({
+          source: sources['fire-history'],
         }),
         createApplicationAlpr({ surface, source: sources.alpr }),
         createApplicationStreetLevel({

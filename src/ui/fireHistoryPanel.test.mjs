@@ -61,6 +61,7 @@ test('Historic Fires presentation is composed from shared rail cards and timelin
   const f = railFixture();
   const panel = createFireHistoryPanel({ container: f.container });
   panel.update({
+    enabled: true,
     events: [CAMP, LAHAINA],
     selectedId: CAMP.id,
     event: CAMP,
@@ -108,6 +109,7 @@ test('event selection, focus and replay transport stay explicit callbacks', () =
     },
   });
   panel.update({
+    enabled: true,
     events: [CAMP, LAHAINA],
     selectedId: CAMP.id,
     event: CAMP,
@@ -148,6 +150,7 @@ test('partial/key/loading state stays presentation-only and does not invent data
   const f = railFixture();
   const panel = createFireHistoryPanel({ container: f.container });
   panel.update({
+    enabled: true,
     events: [CAMP],
     selectedId: CAMP.id,
     event: CAMP,
@@ -161,6 +164,7 @@ test('partial/key/loading state stays presentation-only and does not invent data
   );
 
   panel.update({
+    enabled: true,
     events: [CAMP],
     selectedId: CAMP.id,
     event: CAMP,
@@ -174,6 +178,7 @@ test('partial/key/loading state stays presentation-only and does not invent data
   );
 
   panel.update({
+    enabled: true,
     events: [CAMP],
     selectedId: CAMP.id,
     event: CAMP,

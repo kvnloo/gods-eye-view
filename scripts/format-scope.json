@@ -972,5 +972,10 @@
   "src/tools/views.test.mjs",
   "src/app/embed.test.mjs",
   "src/tools/globePanel.test.mjs",
-  "src/costEndpointThrottle.test.mjs"
+  "src/costEndpointThrottle.test.mjs",
+  "src/layers/fireHistory/source.test.mjs",
+  "src/layers/fireHistory/model.test.mjs",
+  "src/layers/fireHistory/replay.test.mjs",
+  "src/layers/fireHistory/index.test.mjs",
+  "src/ui/fireHistoryPanel.test.mjs"
 ]

@@ -977,5 +977,6 @@
   "src/layers/fireHistory/model.test.mjs",
   "src/layers/fireHistory/replay.test.mjs",
   "src/layers/fireHistory/index.test.mjs",
-  "src/ui/fireHistoryPanel.test.mjs"
+  "src/ui/fireHistoryPanel.test.mjs",
+  "src/layers/fireHistory/rendering.test.mjs"
 ]

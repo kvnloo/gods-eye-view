@@ -464,6 +464,6 @@ export function createFireHistoryLayer({
   return layer;
 }
 
-export { createFireHistorySource } from './source.js';
+export { createFireHistoryRendering } from './rendering.js';
 export * from './model.js';
 export * from './replay.js';

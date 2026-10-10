@@ -37,7 +37,7 @@ test('every acquisition source can be omitted without losing catalog membership'
 
 test('all acquisition sources may be absent, and enable fails before initializing or fetching', async (t) => {
   const actual = catalog({}, t);
-  assert.equal(actual.layers.length, 30);
+  assert.equal(actual.layers.length, 31);
   const manager = new LayerLifecycle(
     {},
     { getSourceAvailability: actual.getSourceAvailability },
@@ -153,4 +153,15 @@ test('absent military acquisition does not poll, suppress flights, or erase supp
   assert.equal(await manager.setEnabled('military', true), false);
   assert.equal(registry.isMilitaryLayerActive(), false);
   assert.equal(fetches, 0);
+});
+
+
+test('fire-history archive source may be omitted without inventing fallback acquisition', (t) => {
+  const actual = catalog(createStandaloneLayerSources({ 'fire-history': null }), t);
+  assert.ok(actual.get('fire-history'));
+  assert.deepEqual(actual.getSourceAvailability('fire-history'), {
+    available: false,
+    source: 'fire-history',
+    reason: 'Historic Fires: data source not configured',
+  });
 });

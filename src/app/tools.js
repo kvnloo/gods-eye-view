@@ -3,6 +3,7 @@ import { initAnnotations } from '../annotations/index.js';
 import { initDrawTool } from '../annotations/drawTool.js';
 import { initImageryBoxTool } from '../ui/imageryBoxTool.js';
 import { createRecentImageryPanel } from '../ui/recentImagery.js';
+import { createFireHistoryReadout } from '../ui/fireHistory.js';
 import { initGevVoiceCommands } from '../voice/gevRealtime.js';
 import { installViews, isEmbeddedInline } from './embed.js';
 import { installScopeMask, destroyScopeMask } from '../scopeMask.js';
@@ -91,6 +92,20 @@ export function createApplicationTools({
         delete window.__gevRecentImagery;
       data.presentation.attachRecentImagery(null);
       imageryBoxTool?.destroy();
+    });
+  }
+  const fireHistory = dataManager.layers.get('fire-history')?.module;
+  if (fireHistory) {
+    const fireHistoryReadout = createFireHistoryReadout({
+      container: document.getElementById('fire-history-panel-body'),
+      layer: fireHistory,
+    });
+    const fireHistoryHandle = { layer: fireHistory };
+    window.__gevFireHistory = fireHistoryHandle;
+    defer(() => {
+      fireHistoryReadout?.destroy();
+      if (window.__gevFireHistory === fireHistoryHandle)
+        delete window.__gevFireHistory;
     });
   }
   if (startChrome)

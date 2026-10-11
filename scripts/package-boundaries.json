@@ -1,4 +1,13 @@
 {
+  "fire-history-model": {
+    "exports": ["./layers/fire-history/model"],
+    "modules": [
+      "src/layers/fireHistory/model.js",
+      "src/data/firmsAdapt.js",
+      "src/data/fireHistoryEvents.js"
+    ],
+    "external": []
+  },
   "infrastructure": {
     "exports": [
       "./infrastructure",

@@ -126,8 +126,8 @@ export function fireDetectionPhase(
   cursorMs,
   activeMs = FIRE_REPLAY_ACTIVE_WINDOW_MS,
 ) {
-  const acquired = Number(record?.acqMs);
-  if (!Number.isFinite(acquired) || !Number.isFinite(cursorMs))
+  const acquired = record?.acqMs;
+  if (!Number.isFinite(acquired) || acquired <= 0 || !Number.isFinite(cursorMs))
     return 'pending';
   if (acquired > cursorMs) return 'pending';
   return cursorMs - acquired < activeMs ? 'active' : 'cooled';
@@ -145,8 +145,8 @@ export function fireReplayCounts(
   let shown = 0;
   let active = 0;
   for (const record of records || []) {
-    const acquired = Number(record?.acqMs);
-    if (!Number.isFinite(acquired)) continue;
+    const acquired = record?.acqMs;
+    if (!Number.isFinite(acquired) || acquired <= 0) continue;
     if (acquired > cursorMs) break;
     shown += 1;
     if (cursorMs - acquired < activeMs) active += 1;

@@ -133,6 +133,7 @@ test('changed access revision or changed route forces re-evaluation', () => {
     isDirectionsDisasterAccessCurrent(receipt, {
       route: candidate,
       accessRevision: 'access-r1',
+      segmentIds: ['a'],
     }),
     true,
   );
@@ -140,6 +141,7 @@ test('changed access revision or changed route forces re-evaluation', () => {
     isDirectionsDisasterAccessCurrent(receipt, {
       route: candidate,
       accessRevision: 'access-r2',
+      segmentIds: ['a'],
     }),
     false,
   );
@@ -147,6 +149,7 @@ test('changed access revision or changed route forces re-evaluation', () => {
     isDirectionsDisasterAccessCurrent(receipt, {
       route: route({ distanceM: 1300 }),
       accessRevision: 'access-r1',
+      segmentIds: ['a'],
     }),
     false,
   );
@@ -161,4 +164,66 @@ test('the adapter emits evidence-support language, never a safety verdict', () =
   });
 
   assert.equal(JSON.stringify(result).toLowerCase().includes('safe'), false);
+});
+
+test('a changed segment mapping invalidates a receipt even with unchanged route and packet revision', () => {
+  const candidate = route();
+  const receipt = evaluateDirectionsDisasterAccess({
+    route: candidate,
+    segmentIds: ['a'],
+    accessSegments: [segment('a'), segment('b', 'blocked')],
+    accessRevision: 'access-r1',
+  });
+
+  assert.equal(receipt.support, 'supported');
+  assert.equal(
+    isDirectionsDisasterAccessCurrent(receipt, {
+      route: candidate,
+      accessRevision: 'access-r1',
+    }),
+    false,
+  );
+  assert.equal(
+    isDirectionsDisasterAccessCurrent(receipt, {
+      route: candidate,
+      accessRevision: 'access-r1',
+      segmentIds: ['a', 'b'],
+    }),
+    false,
+  );
+  assert.equal(
+    isDirectionsDisasterAccessCurrent(receipt, {
+      route: candidate,
+      accessRevision: 'access-r1',
+      segmentIds: ['b'],
+    }),
+    false,
+  );
+  assert.equal(
+    isDirectionsDisasterAccessCurrent(receipt, {
+      route: candidate,
+      accessRevision: 'access-r1',
+      segmentIds: ['a'],
+    }),
+    true,
+  );
+});
+
+test('reordered equivalent segment mappings do not invalidate receipts', () => {
+  const candidate = route();
+  const receipt = evaluateDirectionsDisasterAccess({
+    route: candidate,
+    segmentIds: ['a', 'b'],
+    accessSegments: [segment('a'), segment('b')],
+    accessRevision: 'access-r1',
+  });
+
+  assert.equal(
+    isDirectionsDisasterAccessCurrent(receipt, {
+      route: candidate,
+      accessRevision: 'access-r1',
+      segmentIds: ['b', 'a', 'a'],
+    }),
+    true,
+  );
 });

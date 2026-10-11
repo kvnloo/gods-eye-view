@@ -140,3 +140,21 @@ test('presentation labels remain derived from replay state, not UI ownership', (
   );
   assert.equal(formatFireReplayClock(Number.NaN), '');
 });
+
+test('malformed acquisition values never count as historical detections', () => {
+  const invalid = [
+    { acqMs: null },
+    { acqMs: '' },
+    { acqMs: 0 },
+    { acqMs: Number.NaN },
+    { acqMs: '2018-11-08' },
+  ];
+  const cursor = START + 2 * HOUR;
+  assert.ok(
+    invalid.every((record) => fireDetectionPhase(record, cursor) === 'pending'),
+  );
+  assert.deepEqual(
+    fireReplayCounts([...invalid, { acqMs: START + HOUR }], cursor),
+    { shown: 1, active: 1 },
+  );
+});

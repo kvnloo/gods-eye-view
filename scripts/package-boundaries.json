@@ -1,4 +1,12 @@
 {
+  "fire-history-source": {
+    "exports": ["./layers/fire-history/source"],
+    "modules": [
+      "src/layers/fireHistory/source.js",
+      "src/sources/httpBody.js"
+    ],
+    "external": []
+  },
   "infrastructure": {
     "exports": [
       "./infrastructure",

@@ -145,7 +145,8 @@ export function isDirectionsDisasterAccessCurrent(
   const revision = nonEmptyText(accessRevision);
   const currentSegments = normalizedSegmentIds(segmentIds);
   const previousSegments = normalizedSegmentIds(receipt.segmentIds);
-  if (!routeId || !revision || !currentSegments || !previousSegments) return false;
+  if (!routeId || !revision || !currentSegments || !previousSegments)
+    return false;
   return (
     receipt.route?.id === routeId &&
     receipt.accessRevision === revision &&

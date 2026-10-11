@@ -227,3 +227,33 @@ test('reordered equivalent segment mappings do not invalidate receipts', () => {
     true,
   );
 });
+
+test('malformed coordinates cannot invent an OSRM candidate at zero latitude', () => {
+  const malformed = [
+    [[null, null], [null, null]],
+    [['', ''], [false, false]],
+    [[undefined, 28], [85, null]],
+  ];
+  for (const geometry of malformed) {
+    const candidate = route({ geometry });
+    assert.equal(directionsRouteIdentity(candidate), null);
+    const result = evaluateDirectionsDisasterAccess({
+      route: candidate,
+      segmentIds: ['bridge'],
+      accessSegments: [segment('bridge')],
+      accessRevision: 'access-r1',
+    });
+    assert.equal(result.support, 'unknown');
+    assert.deepEqual(result.reasons, ['directions-route-unavailable']);
+  }
+
+  // Real zero coordinates remain valid; legacy numeric strings stay compatible.
+  assert.equal(
+    directionsRouteIdentity(route({ geometry: [[0, 0], [1, 1]] })),
+    directionsRouteIdentity(route({ geometry: [['0', '0'], ['1', '1']] })),
+  );
+  assert.match(
+    directionsRouteIdentity(route({ geometry: [[0, 0], [1, 1]] })),
+    /^osrm:[0-9a-f]{8}$/,
+  );
+});

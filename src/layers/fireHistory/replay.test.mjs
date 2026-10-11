@@ -141,7 +141,7 @@ test('presentation labels remain derived from replay state, not UI ownership', (
   assert.equal(formatFireReplayClock(Number.NaN), '');
 });
 
-test('malformed acquisition values never count as historical detections', () => {
+test('malformed timestamps never count as detections', () => {
   const invalid = [
     { acqMs: null },
     { acqMs: '' },

@@ -126,17 +126,30 @@ export function evaluateDirectionsDisasterAccess({
   });
 }
 
+function normalizedSegmentIds(segmentIds) {
+  if (!Array.isArray(segmentIds)) return null;
+  return [...new Set(segmentIds.map(nonEmptyText).filter(Boolean))].sort();
+}
+
 /**
- * Whether a stored evaluation still describes the current route + access
- * revision. A changed route or evidence revision requires re-evaluation.
+ * Whether a stored evaluation still describes the current route, explicit
+ * segment association and access revision. Any change requires re-evaluation.
+ * Missing current mapping does not establish that a receipt is still current.
  */
 export function isDirectionsDisasterAccessCurrent(
   receipt,
-  { route, accessRevision } = {},
+  { route, accessRevision, segmentIds } = {},
 ) {
   if (receipt?.schemaVersion !== DIRECTIONS_ACCESS_SCHEMA_VERSION) return false;
   const routeId = directionsRouteIdentity(route);
   const revision = nonEmptyText(accessRevision);
-  if (!routeId || !revision) return false;
-  return receipt.route?.id === routeId && receipt.accessRevision === revision;
+  const currentSegments = normalizedSegmentIds(segmentIds);
+  const previousSegments = normalizedSegmentIds(receipt.segmentIds);
+  if (!routeId || !revision || !currentSegments || !previousSegments) return false;
+  return (
+    receipt.route?.id === routeId &&
+    receipt.accessRevision === revision &&
+    currentSegments.length === previousSegments.length &&
+    currentSegments.every((id, index) => id === previousSegments[index])
+  );
 }

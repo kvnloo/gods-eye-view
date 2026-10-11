@@ -187,3 +187,27 @@ test('partial/key/loading state stays presentation-only and does not invent data
 
   panel.destroy();
 });
+
+test('replay labels recent detections without asserting current burning', () => {
+  const f = railFixture();
+  const panel = createFireHistoryPanel({ container: f.container });
+  panel.update({
+    events: [CAMP],
+    selectedId: CAMP.id,
+    event: CAMP,
+    timeline: TIMELINE,
+    replay: {
+      status: 'playing',
+      shown: 12,
+      active: 3,
+      cursorMs: Date.parse('2018-11-09T12:00:00Z'),
+    },
+    count: 30,
+    complete: true,
+  });
+
+  const readout = f.find((node) => node.className === 'rail-timeline-readout');
+  assert.equal(readout?.textContent, 'PLAYING · 12 shown · 3 recent detections');
+  assert.doesNotMatch(readout.textContent, /burning|safe|active fire/i);
+  panel.destroy();
+});

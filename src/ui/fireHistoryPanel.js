@@ -110,7 +110,8 @@ function replayReadout(snapshot) {
   if (replay?.status && replay.status !== 'idle') {
     const shown = Number.isFinite(replay.shown) ? replay.shown : snapshot.count;
     const active = Number.isFinite(replay.active) ? replay.active : 0;
-    return `${String(replay.status).toUpperCase()} · ${shown ?? 0} shown · ${active} burning`;
+    // Twelve event-hours of visible/recent detections do not prove live burning.
+    return `${String(replay.status).toUpperCase()} · ${shown ?? 0} shown · ${active} recent detections`;
   }
   if (snapshot.event) {
     return `${snapshot.count ?? 0} detections · ${snapshot.complete === false ? 'PARTIAL' : 'COMPLETE'}`;

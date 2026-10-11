@@ -166,7 +166,7 @@ test('the adapter emits evidence-support language, never a safety verdict', () =
   assert.equal(JSON.stringify(result).toLowerCase().includes('safe'), false);
 });
 
-test('a changed segment mapping invalidates a receipt even with unchanged route and packet revision', () => {
+test('remapping route segments invalidates the old receipt', () => {
   const candidate = route();
   const receipt = evaluateDirectionsDisasterAccess({
     route: candidate,

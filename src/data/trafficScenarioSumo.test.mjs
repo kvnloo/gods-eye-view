@@ -99,6 +99,31 @@ test('unknown format and missing coverage block comparisons', () => {
   );
 });
 
+test('two matching generic formats cannot launder unverified SUMO gains', () => {
+  const baseline = receipt('base', 'fixed', 40);
+  const candidate = receipt('new', 'actuated', 1);
+  for (const run of [baseline, candidate]) {
+    run.quality.sourceFormat = 'generic';
+    delete run.quality.safety;
+  }
+  const result = compareTrafficScenarioRuns(baseline, candidate);
+  assert.equal(result.status, 'unknown');
+  assert.equal(result.reason, 'unverified-vehicle-metrics');
+  assert.deepEqual(result.metrics, {});
+});
+
+test('generic nonvehicle comparisons remain available', () => {
+  const baseline = receipt('base', 'fixed', 40);
+  const candidate = receipt('new', 'actuated', 1);
+  for (const run of [baseline, candidate]) {
+    run.quality = { sourceFormat: 'external-model', coverage: 'complete' };
+    run.metrics = { meanPersonDelaySeconds: 20 };
+  }
+  const result = compareTrafficScenarioRuns(baseline, candidate);
+  assert.equal(result.status, 'comparable');
+  assert.equal(result.metrics.meanPersonDelaySeconds.delta, 0);
+});
+
 test('safety faults, absent safety and invalid counters reject simulated gains', () => {
   for (const mutate of [
     (x) => {

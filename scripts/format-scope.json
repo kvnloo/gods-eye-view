@@ -22,6 +22,7 @@
   "src/data/trafficScenarioComparison.test.mjs",
   "src/data/trafficDemandEnsemble.js",
   "src/data/trafficDemandEnsemble.test.mjs",
+  "src/data/trafficDemandComparisonIntegration.test.mjs",
   "src/data/localGeojsonCore.js",
   "src/data/localGeojsonLod.js",
   "src/data/inputOwnership.js",

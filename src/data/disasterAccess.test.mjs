@@ -130,3 +130,37 @@ test('packet results use evidence-support language, never a safety verdict', () 
   assert.equal(packet.routes[0].support, 'supported');
   assert.equal(JSON.stringify(packet).toLowerCase().includes('safe'), false);
 });
+
+test('conflicting fresh segment states fail closed regardless of input order', () => {
+  const route = { id: 'relief-bridge', segmentIds: ['bridge'] };
+  const observations = [segment('bridge', 'open'), segment('bridge', 'blocked')];
+  for (const ordered of [observations, [...observations].reverse()]) {
+    const result = evaluateDisasterRouteSupport(route, ordered);
+    assert.equal(result.support, 'unknown');
+    assert.deepEqual(result.reasons, ['conflicting-access:bridge']);
+  }
+});
+
+test('duplicate matching observations preserve support while freshness conflicts do not', () => {
+  const route = { id: 'relief-bridge', segmentIds: ['bridge'] };
+  const same = [segment('bridge'), segment('bridge')];
+  assert.equal(evaluateDisasterRouteSupport(route, same).support, 'supported');
+
+  const mixed = [segment('bridge'), segment('bridge', 'open', 'stale')];
+  for (const ordered of [mixed, [...mixed].reverse()]) {
+    const result = evaluateDisasterRouteSupport(route, ordered);
+    assert.equal(result.support, 'unknown');
+    assert.deepEqual(result.reasons, ['conflicting-access:bridge']);
+  }
+});
+
+test('mixed observed and simulated declarations cannot be silently unified', () => {
+  const route = { id: 'relief-bridge', segmentIds: ['bridge'] };
+  const observed = segment('bridge');
+  const simulated = { ...segment('bridge'), determination: 'simulated' };
+  for (const ordered of [[observed, simulated], [simulated, observed]]) {
+    const result = evaluateDisasterRouteSupport(route, ordered);
+    assert.equal(result.support, 'unknown');
+    assert.deepEqual(result.reasons, ['conflicting-access:bridge']);
+  }
+});

@@ -7,6 +7,12 @@ import {
   planningView,
 } from './communityPlanning.js';
 
+import {
+  applyCollaborationOperation,
+  applyCollaborationOperations,
+  createCollaborationState,
+} from './collaborationAuthority.js';
+
 function project() {
   return createCommunityPlanningProject({
     id: 'sample-park', title: 'Neighborhood park proposal',
@@ -114,4 +120,26 @@ test('invalid remote side effects cannot be authored by the planning API', () =>
     features: [{ id: 'mic', kind: 'microphone', point: [-88.15, 40.05] }],
   }), /supported kind/);
   assert.throws(() => planningView(project(), {}, 'admin'), /unsupported planning mode/);
+});
+
+test('real collaboration kernel merges both neighbors and rejects remote control', () => {
+  const a = proposal('trees-first', 'alice', 'alice-op', 'oak');
+  const b = proposal('play-first', 'bob', 'bob-op', 'play', 'play-area');
+  const first = applyCollaborationOperations(createCollaborationState(), [a, b]);
+  const reversed = applyCollaborationOperations(createCollaborationState(), [b, a, a]);
+  assert.deepEqual(
+    listPlanningAlternatives(project(), first.state),
+    listPlanningAlternatives(project(), reversed.state),
+  );
+  assert.equal(listPlanningAlternatives(project(), first.state).length, 2);
+
+  const forbidden = applyCollaborationOperation(first.state, {
+    id: 'peer-mic', actorId: 'bob', kind: 'presentation',
+    targetId: 'room', field: 'micEnabled', counter: 3, value: true,
+  });
+  assert.equal(forbidden.result.accepted, false);
+  assert.equal(
+    forbidden.result.reason,
+    'remote-side-effect-requires-local-confirmation',
+  );
 });

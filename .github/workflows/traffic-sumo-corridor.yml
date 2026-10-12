@@ -2,7 +2,9 @@ name: SUMO corridor evidence
 
 on:
   push:
-    branches: [infra/sumo-corridor-ab-20261012]
+    branches:
+      - infra/sumo-corridor-ab-20261012
+      - infra/sumo-safety-receipt-gate-20261012
     paths:
       - '.github/workflows/traffic-sumo-corridor.yml'
       - 'scripts/traffic-scenarios/**'

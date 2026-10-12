@@ -140,3 +140,32 @@ test('presentation labels remain derived from replay state, not UI ownership', (
   );
   assert.equal(formatFireReplayClock(Number.NaN), '');
 });
+
+test('malformed timestamps never count as detections', () => {
+  const invalid = [
+    { acqMs: null },
+    { acqMs: '' },
+    { acqMs: 0 },
+    { acqMs: Number.NaN },
+    { acqMs: '2018-11-08' },
+  ];
+  const cursor = START + 2 * HOUR;
+  assert.ok(
+    invalid.every((record) => fireDetectionPhase(record, cursor) === 'pending'),
+  );
+  assert.deepEqual(
+    fireReplayCounts([...invalid, { acqMs: START + HOUR }], cursor),
+    { shown: 1, active: 1 },
+  );
+});
+
+test('an invalid replay clock cannot make every detection visible', () => {
+  const fires = [
+    { acqMs: START + HOUR },
+    { acqMs: START + 2 * HOUR },
+  ];
+  for (const cursor of [Number.NaN, Infinity, null, undefined, 'bad']) {
+    assert.deepEqual(fireReplayCounts(fires, cursor), { shown: 0, active: 0 });
+    assert.equal(fireDetectionPhase(fires[0], cursor), 'pending');
+  }
+});

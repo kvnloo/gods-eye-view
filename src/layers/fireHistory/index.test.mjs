@@ -40,7 +40,7 @@ const fires = (date) => [
   },
 ];
 
-function fixture({ keyRequired = false } = {}) {
+function fixture({ keyRequired = false, keyRequiredForId = null } = {}) {
   const calls = [];
   const source = {
     async listEvents() {
@@ -49,7 +49,8 @@ function fixture({ keyRequired = false } = {}) {
     },
     async getEvent(id) {
       calls.push(['event', id]);
-      if (keyRequired) return { keyRequired: true, eventId: id };
+      if (keyRequired || id === keyRequiredForId)
+        return { keyRequired: true, eventId: id };
       const event = id === LAHAINA.id ? LAHAINA : CAMP;
       return {
         event,
@@ -196,5 +197,23 @@ test('disable cancels replay visibility and destroy releases the renderer', asyn
 
   f.layer.destroy();
   assert.equal(f.rendering.destroyed, 1);
+  assert.deepEqual(f.layer.getAnalystRecords(), []);
+});
+
+test('key-required selection clears earlier event freshness', async () => {
+  const f = fixture({ keyRequiredForId: LAHAINA.id });
+  f.layer.init({});
+  f.layer.enable();
+  assert.equal(await f.layer.update(), true);
+  assert.equal(f.layer.getPresentationState().lastUpdate, 1_800_000_000_000);
+  assert.equal(
+    await f.layer.selectEvent(LAHAINA.id, { focus: false }),
+    true,
+  );
+  const state = f.layer.getPresentationState();
+  assert.equal(state.event.id, LAHAINA.id);
+  assert.equal(state.keyRequired, true);
+  assert.equal(state.lastUpdate, null);
+  assert.equal(f.layer.getStats().lastUpdate, null);
   assert.deepEqual(f.layer.getAnalystRecords(), []);
 });

@@ -157,6 +157,7 @@ export function createFireHistoryLayer({
     complete = true;
     keyRequired = false;
     error = null;
+    lastUpdate = null;
     renderer?.clear();
   };
 

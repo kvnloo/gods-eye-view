@@ -5,7 +5,9 @@ import {
   TRAFFIC_SCENARIO_METRICS,
 } from './trafficScenarioComparison.js';
 
-function receipt({ runId = 'base', planRevision = 'fixed-time', ...changes } = {}) {
+function receipt(
+  { runId = 'base', planRevision = 'fixed-time', ...changes } = {},
+) {
   return {
     runId,
     planRevision,
@@ -33,7 +35,7 @@ const compare = (left, right) =>
     receipt({ runId: 'candidate', planRevision: 'coordinated', ...right }),
   );
 
-test('same input context: signed delta and source identities, never a winner', () => {
+test('identical inputs yield neutral deltas with provenance', () => {
   const result = compare(
     {},
     { metrics: { meanPersonDelaySeconds: 30, maxQueueVehicles: 9 } },
@@ -67,7 +69,7 @@ test('a true zero is compared, missing metrics never default to zero', () => {
   assert.equal(result.metrics.transitDelaySeconds.status, 'missing');
 });
 
-test('drift of network, demand, evidence, simulator, seed, time or evaluation blocks comparison', () => {
+test('any comparison-input revision drift blocks results', () => {
   for (const key of Object.keys(receipt().context)) {
     const original = receipt().context;
     const next = {
@@ -103,10 +105,13 @@ test('invalid and incomplete contexts are unknown, not equivalent', () => {
 });
 
 test('identical run IDs cannot be a baseline versus candidate', () => {
-  assert.equal(compareTrafficScenarioRuns(receipt(), receipt()).reason, 'same-run');
+  assert.equal(
+    compareTrafficScenarioRuns(receipt(), receipt()).reason,
+    'same-run',
+  );
 });
 
-test('non-finite, negative and coerced metric values are never compared', () => {
+test('invalid and coerced metric values are never compared', () => {
   for (const value of [NaN, Infinity, -1, '4', true]) {
     const result = compare(
       {},
@@ -118,7 +123,7 @@ test('non-finite, negative and coerced metric values are never compared', () => 
   }
 });
 
-test('no mutation, deterministic receipts, and bounded known metrics only', () => {
+test('comparison is deterministic, immutable and metric-bounded', () => {
   const baseline = receipt();
   const candidate = receipt({
     runId: 'candidate',

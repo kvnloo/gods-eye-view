@@ -86,9 +86,21 @@ export function evaluateDisasterRouteSupport(route, accessSegments = []) {
   const normalizedSegments = accessSegments
     .map(normalizeDisasterAccessSegment)
     .filter(Boolean);
-  const byId = new Map(
-    normalizedSegments.map((segment) => [segment.id, segment]),
-  );
+  const byId = new Map();
+  const conflictingIds = new Set();
+  for (const segment of normalizedSegments) {
+    const previous = byId.get(segment.id);
+    if (!previous) {
+      byId.set(segment.id, segment);
+    } else if (
+      previous.state !== segment.state ||
+      previous.freshness !== segment.freshness ||
+      previous.determination !== segment.determination
+    ) {
+      // Resolving independent reports belongs to the access evidence owner.
+      conflictingIds.add(segment.id);
+    }
+  }
 
   if (segmentIds.length === 0) {
     return Object.freeze({
@@ -105,6 +117,11 @@ export function evaluateDisasterRouteSupport(route, accessSegments = []) {
   let degraded = false;
 
   for (const segmentId of segmentIds) {
+    if (conflictingIds.has(segmentId)) {
+      unknown = true;
+      reasons.push(`conflicting-access:${segmentId}`);
+      continue;
+    }
     const segment = byId.get(segmentId);
     if (!segment) {
       unknown = true;

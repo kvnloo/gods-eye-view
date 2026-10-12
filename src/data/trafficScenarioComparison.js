@@ -24,6 +24,10 @@ export const TRAFFIC_SCENARIO_METRICS = Object.freeze({
   pedestrianWaitSeconds: 'seconds/person',
   transitDelaySeconds: 'seconds/person',
   emergencyTravelSeconds: 'seconds',
+  meanVehicleTimeLossSeconds: 'seconds/vehicle',
+  meanVehicleTripDurationSeconds: 'seconds/vehicle',
+  totalVehicleTravelTimeSeconds: 'seconds',
+  totalVehicleDepartDelaySeconds: 'seconds',
 });
 
 const validId = (value) =>
@@ -52,6 +56,38 @@ function validateRun(run) {
     ctx.windowEndMs <= ctx.windowStartMs
   )
     return 'invalid-context';
+  return null;
+}
+
+/** Reject censored SUMO statistics before consulting any apparent delay gain. */
+function coverageIssue(run) {
+  const quality = run.quality;
+  if (quality === undefined) {
+    const hasSumoMetrics = Object.keys(run.metrics || {}).some(
+      (key) =>
+        key.startsWith('meanVehicle') || key.startsWith('totalVehicle'),
+    );
+    return hasSumoMetrics ? 'missing-sumo-coverage' : null;
+  }
+  if (!quality || quality.coverage !== 'complete')
+    return 'incomplete-simulation-coverage';
+  if (quality.sourceFormat !== 'sumo-statistics') return null;
+  const counts = quality.vehicleCounts;
+  if (
+    !counts ||
+    !Number.isSafeInteger(counts.loaded) ||
+    !Number.isSafeInteger(counts.inserted) ||
+    !Number.isSafeInteger(counts.tripStatisticsCount) ||
+    counts.inserted <= 0 ||
+    counts.loaded !== counts.inserted ||
+    counts.tripStatisticsCount !== counts.inserted ||
+    counts.running !== 0 ||
+    counts.waiting !== 0 ||
+    quality.teleports !== 0 ||
+    !Array.isArray(quality.reasonCodes) ||
+    quality.reasonCodes.length > 0
+  )
+    return 'incomplete-simulation-coverage';
   return null;
 }
 
@@ -134,10 +170,26 @@ export function compareTrafficScenarioRuns(baseline, candidate) {
       metrics: {},
     };
   }
+  if (baseline.quality?.sourceFormat !== candidate.quality?.sourceFormat) {
+    return {
+      status: 'incomparable',
+      reason: 'source-format-mismatch',
+      metrics: {},
+    };
+  }
+  const missingCoverage = coverageIssue(baseline) || coverageIssue(candidate);
+  if (missingCoverage) {
+    return { status: 'unknown', reason: missingCoverage, metrics: {} };
+  }
   const metrics = {};
   let compared = 0;
   for (const [key, unit] of Object.entries(TRAFFIC_SCENARIO_METRICS)) {
-    const metric = compareMetric(baseline.metrics, candidate.metrics, key, unit);
+    const metric = compareMetric(
+      baseline.metrics,
+      candidate.metrics,
+      key,
+      unit,
+    );
     metrics[key] = metric;
     if (metric.status === 'compared') compared++;
   }

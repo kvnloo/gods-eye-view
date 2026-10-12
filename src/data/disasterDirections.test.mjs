@@ -257,3 +257,28 @@ test('malformed coordinates cannot invent an OSRM candidate at zero latitude', (
     /^osrm:[0-9a-f]{8}$/,
   );
 });
+
+test('one invalid interior vertex makes the full candidate unavailable', () => {
+  const valid = route({
+    geometry: [[85.1, 27.9], [85.11, 27.91], [85.12, 27.92]],
+  });
+  assert.match(directionsRouteIdentity(valid), /^osrm:[0-9a-f]{8}$/);
+
+  const broken = [
+    [[85.1, 27.9], [null, null], [85.12, 27.92]],
+    [[85.1, 27.9], [181, 91], [85.12, 27.92]],
+    [[85.1, 27.9], null, [85.12, 27.92]],
+  ];
+  for (const geometry of broken) {
+    const candidate = route({ geometry });
+    assert.equal(directionsRouteIdentity(candidate), null);
+    const receipt = evaluateDirectionsDisasterAccess({
+      route: candidate,
+      segmentIds: ['bridge'],
+      accessSegments: [segment('bridge')],
+      accessRevision: 'access-r1',
+    });
+    assert.equal(receipt.support, 'unknown');
+    assert.deepEqual(receipt.reasons, ['directions-route-unavailable']);
+  }
+});

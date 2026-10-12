@@ -35,11 +35,17 @@ const validId = (value) =>
 function validateRun(run) {
   if (!run || typeof run !== 'object' || Array.isArray(run)) return 'invalid-run';
   if (run.determination !== 'simulated') return 'not-simulated';
-  if (!validId(run.runId) || !validId(run.planRevision) || !validId(run.sourceRef))
+  if (
+    !validId(run.runId) ||
+    !validId(run.planRevision) ||
+    !validId(run.sourceRef)
+  )
     return 'missing-run-identity';
   const ctx = run.context;
-  if (!ctx || typeof ctx !== 'object' || Array.isArray(ctx)) return 'missing-context';
-  if (CONTEXT_STRINGS.some((key) => !validId(ctx[key]))) return 'missing-context';
+  if (!ctx || typeof ctx !== 'object' || Array.isArray(ctx))
+    return 'missing-context';
+  if (CONTEXT_STRINGS.some((key) => !validId(ctx[key])))
+    return 'missing-context';
   if (
     CONTEXT_NUMBERS.some((key) => !Number.isSafeInteger(ctx[key])) ||
     ctx.randomSeed < 0 ||

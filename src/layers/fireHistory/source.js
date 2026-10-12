@@ -9,7 +9,11 @@ function eventId(value) {
 }
 
 function normalizeCatalog(payload) {
-  if (!payload || !Array.isArray(payload.events))
+  if (
+    !payload ||
+    !Array.isArray(payload.events) ||
+    typeof payload.hasKey !== 'boolean'
+  )
     throw new Error('Malformed fire-history catalog');
   const ids = new Set();
   const events = [];
@@ -21,7 +25,7 @@ function normalizeCatalog(payload) {
     events.push({ ...event, id });
   }
   return {
-    hasKey: Boolean(payload.hasKey),
+    hasKey: payload.hasKey,
     events,
   };
 }
@@ -35,14 +39,14 @@ function normalizeEventPayload(payload, requestedId) {
     id !== requestedId ||
     !Array.isArray(payload.fires) ||
     !Array.isArray(payload.windows) ||
-    !Number.isFinite(Number(payload.fetchedAt)) ||
+    !Number.isFinite(payload.fetchedAt) ||
     typeof payload.complete !== 'boolean'
   )
     throw new Error('Malformed fire-history snapshot');
 
   return {
     event: { ...payload.event, id },
-    fetchedAt: Number(payload.fetchedAt),
+    fetchedAt: payload.fetchedAt,
     complete: payload.complete,
     windows: payload.windows,
     count: payload.fires.length,

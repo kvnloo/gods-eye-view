@@ -49,6 +49,7 @@
     "qa:panel-resize": "node scripts/qa-panel-resize.mjs",
     "qa:street-level": "node scripts/qa-street-level.mjs",
     "qa:street-level:fixtures": "node scripts/qa-street-level.mjs --fixtures",
+    "qa:fire-history:fixtures": "node scripts/qa-fire-history.mjs",
     "check:boundaries": "node scripts/check-import-directions.mjs && node scripts/check-package-boundaries.mjs",
     "qa:transit": "node scripts/qa-transit.mjs",
     "mcp": "node server/mcp/stdio.js"

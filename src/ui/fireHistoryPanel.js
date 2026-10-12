@@ -110,7 +110,9 @@ function replayReadout(snapshot) {
   if (replay?.status && replay.status !== 'idle') {
     const shown = Number.isFinite(replay.shown) ? replay.shown : snapshot.count;
     const active = Number.isFinite(replay.active) ? replay.active : 0;
-    return `${String(replay.status).toUpperCase()} · ${shown ?? 0} shown · ${active} burning`;
+    // The replay's recent-detection window is not proof of live burning.
+    const status = String(replay.status).toUpperCase();
+    return `${status} · ${shown ?? 0} shown · ${active} recent detections`;
   }
   if (snapshot.event) {
     return `${snapshot.count ?? 0} detections · ${snapshot.complete === false ? 'PARTIAL' : 'COMPLETE'}`;
@@ -211,7 +213,7 @@ export function createFireHistoryPanel({
   return {
     update(next = {}) {
       snapshot = {
-        enabled: Boolean(next.enabled),
+        enabled: next.enabled !== false,
         events: Array.isArray(next.events) ? next.events : [],
         selectedId: next.selectedId || next.event?.id || null,
         event: next.event || null,

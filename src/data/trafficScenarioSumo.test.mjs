@@ -34,6 +34,7 @@ function receipt(runId, planRevision, meanVehicleTimeLossSeconds) {
         tripStatisticsCount: 4,
       },
       teleports: 0,
+      safety: { collisions: 0, emergencyStops: 0 },
     },
   };
 }
@@ -96,6 +97,25 @@ test('unknown format and missing coverage block comparisons', () => {
     compareTrafficScenarioRuns(baseline, candidate).reason,
     'missing-sumo-coverage',
   );
+});
+
+test('safety faults, absent safety and invalid counters reject simulated gains', () => {
+  for (const mutate of [
+    (x) => { x.quality.safety.collisions = 1; },
+    (x) => { x.quality.safety.emergencyStops = 2; },
+    (x) => { x.quality.safety.collisions = -1; },
+    (x) => { x.quality.safety.emergencyStops = '0'; },
+    (x) => { delete x.quality.safety; },
+  ]) {
+    const candidate = receipt('new', 'actuated', 1);
+    mutate(candidate);
+    const result = compareTrafficScenarioRuns(
+      receipt('base', 'fixed', 40), candidate,
+    );
+    assert.equal(result.status, 'unknown');
+    assert.equal(result.reason, 'incomplete-simulation-coverage');
+    assert.deepEqual(result.metrics, {});
+  }
 });
 
 test('SUMO inputs still reject seed and demand mismatch', () => {

@@ -158,3 +158,14 @@ test('malformed timestamps never count as detections', () => {
     { shown: 1, active: 1 },
   );
 });
+
+test('an invalid replay clock cannot make every detection visible', () => {
+  const fires = [
+    { acqMs: START + HOUR },
+    { acqMs: START + 2 * HOUR },
+  ];
+  for (const cursor of [Number.NaN, Infinity, null, undefined, 'bad']) {
+    assert.deepEqual(fireReplayCounts(fires, cursor), { shown: 0, active: 0 });
+    assert.equal(fireDetectionPhase(fires[0], cursor), 'pending');
+  }
+});

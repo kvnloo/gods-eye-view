@@ -73,6 +73,15 @@ function coverageIssue(run) {
     return 'incomplete-simulation-coverage';
   if (quality.sourceFormat !== 'sumo-statistics') return null;
   const counts = quality.vehicleCounts;
+  const safety = quality.safety;
+  if (
+    !safety ||
+    !Number.isSafeInteger(safety.collisions) ||
+    !Number.isSafeInteger(safety.emergencyStops) ||
+    safety.collisions !== 0 ||
+    safety.emergencyStops !== 0
+  )
+    return 'incomplete-simulation-coverage';
   if (
     !counts ||
     !Number.isSafeInteger(counts.loaded) ||

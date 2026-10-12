@@ -51,6 +51,11 @@ def run_command(args, log, *, allowed=(0,)):
     return result
 
 
+def format_change(value):
+    """A zero baseline has no defined percentage, not a formatting failure."""
+    return 'n/a' if value is None else f'{value:.2f}%'
+
+
 def check_binary(name, out):
     executable = shutil.which(name)
     if not executable:
@@ -163,7 +168,7 @@ def main(argv=None):
     report = {'schemaVersion': 1, 'status': 'failed', 'determination': 'simulated',
               'scenario': 'synthetic-three-signal-corridor', 'seeds': list(SEEDS),
               'sumoVersion': EXPECTED_VERSION, 'runnerRevision': digest(__file__),
-              'pairs': []}
+              'completedSimulationRuns': 0, 'pairs': []}
     try:
         sumo = check_binary('sumo', out)
         netconvert = check_binary('netconvert', out)
@@ -200,13 +205,17 @@ def main(argv=None):
             for mode, plan in plans.items():
                 prefix = out / f'{mode}-{seed}'
                 statistics = Path(f'{prefix}.statistics.xml')
+                plan_revision = digest(plan)
                 command = [sumo, '--net-file', network, '--route-files', demand,
                            '--additional-files', plan, '--begin', '0', '--end', str(END_SECONDS),
                            '--seed', str(seed), '--time-to-teleport', '-1', '--no-step-log', 'true',
                            '--duration-log.statistics', 'true', '--tripinfo-output.write-unfinished',
                            'true', '--statistic-output', statistics]
                 run_command(command, f'{prefix}.log')
-                metadata = {'runId': f'{mode}-{seed}', 'planRevision': digest(plan),
+                report['completedSimulationRuns'] += 1
+                if digest(plan) != plan_revision:
+                    raise ValueError('signal plan changed during simulation')
+                metadata = {'runId': f'{mode}-{seed}', 'planRevision': plan_revision,
                             'sumoOptions': {'tripinfoOutputWriteUnfinished': True,
                                             'durationLogStatistics': True}, 'context': context}
                 write_json(f'{prefix}.meta.json', metadata)
@@ -232,6 +241,7 @@ def main(argv=None):
                      '--seed', str(SEEDS[-1]), '--time-to-teleport', '-1', '--no-step-log', 'true',
                      '--duration-log.statistics', 'true', '--tripinfo-output.write-unfinished', 'true',
                      '--statistic-output', f'{prefix}.statistics.xml'], f'{prefix}.log')
+        report['completedSimulationRuns'] += 1
         metadata['runId'] = 'incomplete-control'
         metadata['planRevision'] = digest(plans['fixed'])
         metadata['context'] = {**context, 'windowEndMs': 30000}
@@ -247,13 +257,14 @@ def main(argv=None):
     finally:
         write_json(out / 'summary.json', report)
         summary = ['# SUMO corridor integration benchmark', '',
-                   f"Status: {report['status']}. Real simulator; synthetic roads and demand.", '',
+                   f"Status: {report['status']}. Completed SUMO executions: {report['completedSimulationRuns']}.",
+                   'Scenario: synthetic roads and demand; not field observations.', '',
                    '| Seed | Vehicles | Fixed time loss (s/veh) | Actuated (s/veh) | Change |',
                    '|---|---|---|---|---|']
         for pair in report['pairs']:
             metric = pair['comparison']['metrics']['meanVehicleTimeLossSeconds']
             summary.append(f"| {pair['seed']} | {pair['vehicleCount']} | {metric['baseline']} | "
-                           f"{metric['candidate']} | {metric['percentChange']:.2f}% |")
+                           f"{metric['candidate']} | {format_change(metric['percentChange'])} |")
         summary.extend(['', 'No field, city, pedestrian-safety or optimal-controller claim.',
                         'Negative change is lower modeled time loss, not proof of practical benefit.'])
         if 'error' in report:

@@ -83,7 +83,11 @@ and all required metrics. Missing, duplicated or malformed `<safety>` evidence
 also fails closed. Unsafe, empty or censored runs preserve reason codes but
 emit no performance metrics *in the saved JSON*, even when an outer runner
 subsequently aborts. The Node comparator independently rejects receipts with
-absent, nonnumeric or nonzero safety counters. A measured `0` is not missing.
+absent, nonnumeric or nonzero safety counters. It also refuses SUMO-style
+vehicle metrics labeled with an unverified/generic source format, even when
+both comparison inputs use that same format; only an explicitly validated
+producer can establish a different vehicle-metric contract. Generic
+nonvehicle comparisons remain unaffected. A measured `0` is not missing.
 
 Supported v0 statistics: average vehicle time loss, average vehicle trip
 duration, total vehicle travel time, and total vehicle departure delay. Those

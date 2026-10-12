@@ -24,15 +24,22 @@ function rounded(value, digits) {
 
 function normalizedGeometry(geometry) {
   if (!Array.isArray(geometry)) return [];
-  return geometry
-    .map((pair) => [rounded(pair?.[0], 6), rounded(pair?.[1], 6)])
-    .filter(
+  const points = geometry.map((pair) => [
+    rounded(pair?.[0], 6),
+    rounded(pair?.[1], 6),
+  ]);
+  // Dropping an invalid point would silently change the route under review.
+  if (
+    points.some(
       ([lon, lat]) =>
-        lon !== null &&
-        lat !== null &&
-        Math.abs(lon) <= 180 &&
-        Math.abs(lat) <= 90,
-    );
+        lon === null ||
+        lat === null ||
+        Math.abs(lon) > 180 ||
+        Math.abs(lat) > 90,
+    )
+  )
+    return [];
+  return points;
 }
 
 function fnv1a32(value) {

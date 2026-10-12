@@ -30,11 +30,25 @@ The Nepal flood scene and evidence playback were contributed by [manjunath22466 
 ## Facilitator preparation (not yet a checked browser recipe)
 
 1. Pin a repository commit and capture app/browser/device, data-provider availability, rights state and local time for the session. Install using [Quick Start](../README.md#-quick-start) or Node.js 24.14+/26 and `npm ci && npm run dev`.
-2. Confirm that the existing **Nepal flood scene** is actually reachable in this checkout. Record the *exact current click path and labels* in session notes. **Block a user-facing step-by-step tutorial until verified.** Do not assert that the pending disaster-access workspace in [#140](https://github.com/kvnloo/gods-eye-view/issues/140) is already in the application.
-3. Confirm the two comparison dates, embedded credits and at least one source link. If a source is missing/blocked/rights-unclear, record `unavailable`; do not fill it from memory.
+2. Follow the **source-audited** SCENES recipe below, then confirm those actions **in a real browser** and record the actual UI labels/screenshot and exact commit. Stop the user-facing rollout if any label, shot or source card differs. Do not assert that the pending disaster-access workspace in [#140](https://github.com/kvnloo/gods-eye-view/issues/140) is already in the app.
+3. Confirm that the scene exposes both comparison dates and at least one original source link, or supply the rights-permitted [event provenance sheet](../public/events/bhote-koshi-2026/README.md) *equally to both conditions* when the existing UI doesn't surface them. Record `unavailable` on a missing/blocked/right-unclear source; never invent a visual observation.
 4. Prepare **Condition A**: conventional source documents + normal map showing the same permitted material. **Condition B**: the same evidence in GEV's existing Nepal scene. Do not provide candidate road-closure labels unless they exist in cited sources.
 5. Prepare a cheap 2D fallback and an accessibility alternative, but **do not claim that an offline or Field Lite build exists or works** until [#146](https://github.com/kvnloo/gods-eye-view/issues/146) independently demonstrates it.
 6. Ask for informed consent; record no participant identity, contact details, personal health, precise private location, unapproved recordings, or sensitive response data in public issues. Use an approved private intake for anything sensitive.
+
+## Source-audited SCENES path — runtime acceptance pending
+
+The **existing** upstream code (not a new feature or browser verification) defines this path:
+
+1. Start a **fresh** instance from [Quick Start](../README.md#-quick-start); choose **Explore Manually** if the first-run mission selector appears. A saved scene project may differ, so record whether this is a fresh profile.
+2. Find and expand the panel labeled **SCENES**. In its **Scene recipe** dropdown (`#scene-select`), select **Nepal Flood Incident**. This is a built-in scene in `src/scenes/recipes.js`; it is intentionally **not** an independent Data Layers toggle.
+3. Inspect the shot rows in `#scene-shot-list`. Click **LOAD** next to **Bhote Koshi Regional Approach** (or another visible Nepal shot) to inspect a single static shot; **START** runs the selected scene sequence, and **STOP** ends playback. If the scene or shot is missing, log a version/storage mismatch instead of silently substituting a different task.
+4. Navigate to a shot showing the relevant **Vantor comparison** or **linked evidence card**. The exact per-shot UI, evidence source link, imagery dates and keyboard/focus affordances are **not yet browser-verified for this exercise**. Do not claim those facts are visible unless they are.
+5. Confirm the source's name/date and click its original link only when available and permitted. Open the [rights and provenance sheet](../public/events/bhote-koshi-2026/README.md) separately where needed; it is not evidence that the app itself exposes that detail.
+
+**Source evidence:** `src/ui/templates/layer-panels.html` declares **SCENES**, the select, **START/STOP**, and shot controls; `src/ui/scenePresentation.js` renders the **LOAD** button; `src/scenes/recipes.js` provides the built-in **Nepal Flood Incident** recipe; and the existing `scripts/qa-director-timing.mjs` checks that a Nepal scene and authored shots load.
+
+**Required browser gate before declaring this tutorial runnable:** With the repo's supported Node version, install/start the app and run `node scripts/qa-director-timing.mjs` in a second terminal. Then manually inspect the above path (including source links, keyboard/focus, keyless map fallback and both image dates), recording screenshots **only if third-party rights permit**. Report failures, device, commit, browser, and the exact script exit status. This gate is not the study itself and cannot prove participant benefit. Existing automated QA is neither claimed to have run here nor a substitute for the manual check.
 
 ## Participant task (same four questions in both conditions)
 

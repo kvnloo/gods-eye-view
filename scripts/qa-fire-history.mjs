@@ -150,12 +150,24 @@ async function run() {
         state.event?.id === 'camp-fire-2018' && state.count === 2;
     }, { timeout: 45_000 });
 
+    await page.waitForFunction(() => {
+      const root = document.querySelector('.fire-history-readout');
+      const rect = root?.getBoundingClientRect();
+      return Boolean(root && !root.hidden && rect?.width && rect?.height);
+    }, { timeout: 10_000 });
+
     const first = await page.evaluate(() => {
       const layer = window.__gevFireHistory.layer;
       const state = layer.getPresentationState();
       const root = document.querySelector('#fire-history-panel-body .fire-history-readout');
       return {
         hidden: root?.hidden,
+        visible: Boolean(
+          root &&
+          root.getBoundingClientRect().width > 0 &&
+          root.getBoundingClientRect().height > 0 &&
+          getComputedStyle(root).visibility !== 'hidden'
+        ),
         cards: root?.querySelectorAll('.rail-card').length,
         readout: root?.querySelector('.rail-timeline-readout')?.textContent,
         reference: root?.querySelector('a[href]')?.href,
@@ -164,24 +176,30 @@ async function run() {
       };
     });
     assert.equal(first.hidden, false);
+    assert.equal(first.visible, true, 'readout must be visible to users');
     assert.equal(first.cards, 2);
     assert.equal(first.complete, false);
     assert.deepEqual(first.timeline, [1, 1, 0]);
     assert.match(first.readout, /2 detections .* PARTIAL/);
     assert.match(first.reference, /^https:\/\/www\.fire\.ca\.gov\//);
 
-    await page.evaluate(() => {
-      const buttons = [...document.querySelectorAll('.fire-history-timeline button')];
-      const play = buttons.find((button) => button.textContent.trim() === 'Play');
-      if (!play) throw new Error('Historic Fires Play control missing');
-      play.click();
-    });
+    // A real pointer click catches occlusion that DOM click() would bypass.
+    await page.click(
+      '.fire-history-timeline .rail-timeline-controls button:nth-of-type(2)',
+    );
     await page.waitForFunction(() =>
       window.__gevFireHistory.layer.getPresentationState().replay?.status === 'playing',
     { timeout: 5_000 });
     const playText = await page.$eval('.fire-history-timeline .rail-timeline-readout',
       (node) => node.textContent);
     assert.doesNotMatch(playText, /\bburning\b|\bsafe\b/i);
+
+    await page.click(
+      '.fire-history-timeline .rail-timeline-controls button:nth-of-type(2)',
+    );
+    await page.waitForFunction(() =>
+      window.__gevFireHistory.layer.getPresentationState().replay?.status === 'paused',
+    { timeout: 5_000 });
 
     await page.evaluate(() => {
       const slider = document.querySelector('.fire-history-timeline input[type="range"]');
@@ -194,12 +212,9 @@ async function run() {
     assert.ok(tick >= Date.parse('2018-11-09T00:00:00Z'));
     assert.ok(tick < Date.parse('2018-11-10T00:00:00Z'));
 
-    await page.evaluate(() => {
-      const latest = [...document.querySelectorAll('.fire-history-timeline button')]
-        .find((button) => button.textContent.trim() === 'Latest');
-      if (!latest) throw new Error('Historic Fires Latest control missing');
-      latest.click();
-    });
+    await page.click(
+      '.fire-history-timeline .rail-timeline-controls button:nth-of-type(1)',
+    );
     assert.equal(await page.evaluate(() =>
       window.__gevFireHistory.layer.getPresentationState().replay.status), 'idle');
 
@@ -207,13 +222,13 @@ async function run() {
     await mkdir(out, { recursive: true });
     await page.screenshot({ path: path.join(out, 'partial.png') });
 
-    await page.evaluate(() => {
-      const button = document.querySelector(
-        '#fire-history-panel-body .fire-history-card:nth-child(2) [data-action-id="select"]',
-      );
-      if (!button) throw new Error('Lahaina selection button missing');
-      button.click();
-    });
+    // The unselected event starts collapsed; a user must open it first.
+    await page.click(
+      '#fire-history-panel-body .fire-history-card:nth-child(2) .rail-card-header',
+    );
+    await page.click(
+      '#fire-history-panel-body .fire-history-card:nth-child(2) [data-action-id="select"]',
+    );
     await page.waitForFunction(() => {
       const state = window.__gevFireHistory?.layer?.getPresentationState();
       return state && !state.loading && state.event?.id === 'lahaina-2023'

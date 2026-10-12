@@ -148,6 +148,32 @@ def build_receipt(metadata, xml_bytes):
     if total_teleports:
         reasons.append('simulator-teleports')
 
+    # SUMO exposes these independent safety counters in <safety>. Check
+    # them before emitting any performance metric: the caller may persist
+    # this receipt even when the surrounding experiment ultimately fails.
+    safety_counts = None
+    safety_elements = root.findall('safety')
+    if len(safety_elements) != 1:
+        reasons.append('missing-safety-evidence')
+    else:
+        safety = safety_elements[0]
+        try:
+            safety_counts = {
+                'collisions': nonnegative_int(
+                    safety.get('collisions'), 'safety.collisions'
+                ),
+                'emergencyStops': nonnegative_int(
+                    safety.get('emergencyStops'), 'safety.emergencyStops'
+                ),
+            }
+        except ValueError:
+            reasons.append('invalid-safety-evidence')
+        else:
+            if safety_counts['collisions']:
+                reasons.append('simulator-collisions')
+            if safety_counts['emergencyStops']:
+                reasons.append('simulator-emergency-stops')
+
     measures = {}
     for metric, attribute in VEHICLE_METRICS.items():
         raw = trips.get(attribute)
@@ -172,6 +198,7 @@ def build_receipt(metadata, xml_bytes):
             'reasonCodes': reasons,
             'vehicleCounts': counts,
             'teleports': total_teleports,
+            'safety': safety_counts,
         },
     }
 

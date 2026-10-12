@@ -101,11 +101,21 @@ test('unknown format and missing coverage block comparisons', () => {
 
 test('safety faults, absent safety and invalid counters reject simulated gains', () => {
   for (const mutate of [
-    (x) => { x.quality.safety.collisions = 1; },
-    (x) => { x.quality.safety.emergencyStops = 2; },
-    (x) => { x.quality.safety.collisions = -1; },
-    (x) => { x.quality.safety.emergencyStops = '0'; },
-    (x) => { delete x.quality.safety; },
+    (x) => {
+      x.quality.safety.collisions = 1;
+    },
+    (x) => {
+      x.quality.safety.emergencyStops = 2;
+    },
+    (x) => {
+      x.quality.safety.collisions = -1;
+    },
+    (x) => {
+      x.quality.safety.emergencyStops = '0';
+    },
+    (x) => {
+      delete x.quality.safety;
+    },
   ]) {
     const candidate = receipt('new', 'actuated', 1);
     mutate(candidate);

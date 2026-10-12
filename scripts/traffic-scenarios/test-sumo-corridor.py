@@ -89,6 +89,13 @@ class CorridorTests(unittest.TestCase):
             result = json.loads((out / 'summary.json').read_text())
             self.assertEqual(result['status'], 'failed')
             self.assertEqual(result['pairs'], [])
+            self.assertEqual(result['completedSimulationRuns'], 0)
+            self.assertIn('Completed SUMO executions: 0', (out / 'summary.md').read_text())
+
+    def test_zero_baseline_percentage_is_explicitly_undefined(self):
+        self.assertEqual(module.format_change(None), 'n/a')
+        self.assertEqual(module.format_change(0), '0.00%')
+        self.assertEqual(module.format_change(-12.5), '-12.50%')
 
 
 if __name__ == '__main__':

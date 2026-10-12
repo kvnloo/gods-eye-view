@@ -207,12 +207,13 @@ export function createFireHistoryPanel({
     });
 
     set(timelineHost, 'hidden', !snapshot.event);
-    set(root, 'hidden', events.length === 0);
+    set(root, 'hidden', !snapshot.enabled || events.length === 0);
   };
 
   return {
     update(next = {}) {
       snapshot = {
+        enabled: next.enabled !== false,
         events: Array.isArray(next.events) ? next.events : [],
         selectedId: next.selectedId || next.event?.id || null,
         event: next.event || null,

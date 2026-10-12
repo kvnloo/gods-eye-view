@@ -214,3 +214,30 @@ test('replay does not imply current fire activity', () => {
   assert.doesNotMatch(readout.textContent, /burning|safe|active fire/i);
   panel.destroy();
 });
+
+test('disabled layer hides its event readout', () => {
+  const f = railFixture();
+  const panel = createFireHistoryPanel({ container: f.container });
+  const state = {
+    events: [CAMP],
+    selectedId: CAMP.id,
+    event: CAMP,
+    timeline: TIMELINE,
+    count: 2,
+    complete: false,
+  };
+  const root = f.find((node) => node.className === 'fire-history-readout');
+
+  panel.update({ ...state, enabled: true });
+  assert.equal(root.hidden, false);
+  panel.update({ ...state, enabled: false });
+  assert.equal(root.hidden, true);
+  assert.equal(
+    f.find((node) => node.className === 'fire-history-cards').children.length,
+    1,
+  );
+  panel.update({ ...state, enabled: true });
+  assert.equal(root.hidden, false);
+  panel.destroy();
+  assert.equal(f.container.children.length, 0);
+});

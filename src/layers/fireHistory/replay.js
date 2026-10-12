@@ -142,6 +142,8 @@ export function fireReplayCounts(
   cursorMs,
   activeMs = FIRE_REPLAY_ACTIVE_WINDOW_MS,
 ) {
+  // An invalid replay cursor cannot establish observed visibility.
+  if (!Number.isFinite(cursorMs)) return { shown: 0, active: 0 };
   let shown = 0;
   let active = 0;
   for (const record of records || []) {

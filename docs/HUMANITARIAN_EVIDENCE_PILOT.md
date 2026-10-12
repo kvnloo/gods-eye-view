@@ -25,7 +25,7 @@ Use only the repository's existing, **historical** [Bhote Koshi event pack](../p
 
 **Rights:** Pack imagery and derived centerline are **CC BY-NC 4.0**, separately from the MIT application. Source posts and map links retain their owners' terms. Do not copy those assets into a new portable bundle, a commercial deployment, or public recording unless their terms expressly permit it. Attribution and limitations are in [pack provenance](../public/events/bhote-koshi-2026/README.md) and [DATA_SOURCES](../DATA_SOURCES.md).
 
-The original Nepal presentation and source reconstructions belong to their respective upstream contributors and data owners; this exercise does not claim authorship of the event data or scene. See [Director attribution](../docs/DIRECTOR.md) and the pack credits.
+The Nepal flood scene and evidence playback were contributed by [manjunath22466 in upstream PR #590](https://github.com/bilawalsidhu/gods-eye-view/pull/590); the maintainers preserved that authorship while integrating the work. The underlying flood reconstruction comes from GeoPera and imagery from Vantor, with linked witness sources retaining their own authors and terms. This exercise changes none of that work. See the [Director documentation](DIRECTOR.md) and the pack credits.
 
 ## Facilitator preparation (not yet a checked browser recipe)
 

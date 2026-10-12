@@ -148,3 +148,31 @@ test('abort before request prevents acquisition', async () => {
   });
   assert.equal(calls, 0);
 });
+
+test('catalog refuses non-boolean FIRMS key capability values', async () => {
+  for (const hasKey of ['false', null, 0]) {
+    const source = createFireHistorySource({
+      fetchImpl: async () => json({ hasKey, events: [EVENT] }),
+    });
+    await assert.rejects(source.listEvents(), /Malformed fire-history catalog/);
+  }
+});
+
+test('snapshot rejects coerced or missing fetch timestamps', async () => {
+  for (const fetchedAt of [null, '', '1800000000000']) {
+    const source = createFireHistorySource({
+      fetchImpl: async () =>
+        json({
+          event: EVENT,
+          fetchedAt,
+          complete: true,
+          windows: [],
+          fires: [],
+        }),
+    });
+    await assert.rejects(
+      source.getEvent(EVENT.id),
+      /Malformed fire-history snapshot/,
+    );
+  }
+});

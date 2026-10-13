@@ -349,3 +349,19 @@ test('attributed declared evidence retains its degraded status', () => {
   assert.equal(result.support, 'degraded');
   assert.deepEqual(result.reasons, ['degraded:a']);
 });
+
+test('invalid evidence collection returns unknown instead of throwing', () => {
+  for (const accessSegments of [null, {}, 'open']) {
+    const receipt = evaluateDirectionsDisasterAccess({
+      route: route(),
+      segmentIds: ['a'],
+      accessSegments,
+      accessRevision: 'access-r1',
+    });
+    assert.equal(receipt.support, 'unknown');
+    assert.deepEqual(receipt.reasons, [
+      'missing-access:a',
+      'invalid-access-collection',
+    ]);
+  }
+});

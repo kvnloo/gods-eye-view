@@ -164,3 +164,36 @@ test('mixed observed and simulated declarations cannot be silently unified', () 
     assert.deepEqual(result.reasons, ['conflicting-access:bridge']);
   }
 });
+
+test('malformed access collections remain unknown without throwing', () => {
+  const route = { id: 'relief-a', segmentIds: ['a'] };
+  for (const accessSegments of [null, {}, 'open']) {
+    const evaluation = evaluateDisasterRouteSupport(route, accessSegments);
+    assert.equal(evaluation.support, 'unknown');
+    assert.deepEqual(evaluation.reasons, ['missing-access:a']);
+  }
+});
+
+test('invalid packet collections are reported as evidence gaps', () => {
+  const route = { id: 'relief-a', segmentIds: ['a'] };
+  for (const accessSegments of [null, {}]) {
+    const packet = buildDisasterAccessPacket({
+      accessSegments,
+      candidateRoutes: [route],
+    });
+    assert.equal(packet.routes[0].support, 'unknown');
+    assert.deepEqual(packet.gaps, [
+      'invalid-access-collection',
+      'access-not-assessed',
+    ]);
+  }
+});
+
+test('malformed route collection cannot produce unreviewed candidates', () => {
+  const packet = buildDisasterAccessPacket({
+    accessSegments: [segment('a')],
+    candidateRoutes: null,
+  });
+  assert.deepEqual(packet.routes, []);
+  assert.deepEqual(packet.gaps, ['invalid-route-collection']);
+});

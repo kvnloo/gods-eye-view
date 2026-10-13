@@ -157,7 +157,25 @@ export function listPlanningAlternatives(project, collaborationState) {
           alternativeId: id, title: candidate.title, features: candidate.features,
           assumptions: candidate.assumptions,
         }).value;
-        return validated;
+        const provenance = entry?.fields?.proposal;
+        const clock = provenance?.clock;
+        const hasRecordedActor = (
+          typeof clock?.actorId === 'string' &&
+          ID_PATTERN.test(clock.actorId) &&
+          typeof clock?.operationId === 'string' &&
+          ID_PATTERN.test(clock.operationId) &&
+          Number.isSafeInteger(clock.counter) &&
+          clock.counter >= 0 &&
+          provenance.operationId === clock.operationId
+        );
+        return {
+          ...validated,
+          authorship: hasRecordedActor
+            ? { status: 'recorded', actorId: clock.actorId,
+                operationId: clock.operationId, counter: clock.counter }
+            : { status: 'unknown', actorId: null,
+                operationId: null, counter: null },
+        };
       } catch {
         return null;
       }

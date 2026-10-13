@@ -83,7 +83,7 @@ export function normalizeDisasterAccessSegment(input) {
 export function evaluateDisasterRouteSupport(route, accessSegments = []) {
   const routeId = nonEmptyText(route?.id) || 'candidate-route';
   const segmentIds = uniqueIds(route?.segmentIds);
-  const normalizedSegments = accessSegments
+  const normalizedSegments = (Array.isArray(accessSegments) ? accessSegments : [])
     .map(normalizeDisasterAccessSegment)
     .filter(Boolean);
   const byId = new Map();
@@ -181,22 +181,25 @@ export function buildDisasterAccessPacket({
   accessSegments = [],
   candidateRoutes = [],
 } = {}) {
-  const normalizedSegments = accessSegments
+  const inputSegments = Array.isArray(accessSegments) ? accessSegments : [];
+  const normalizedSegments = inputSegments
     .map(normalizeDisasterAccessSegment)
     .filter(Boolean);
   const invalidAccessRecordCount = Math.max(
     0,
-    accessSegments.length - normalizedSegments.length,
+    inputSegments.length - normalizedSegments.length,
   );
 
   const gaps = [];
+  if (!Array.isArray(accessSegments)) gaps.push('invalid-access-collection');
+  if (!Array.isArray(candidateRoutes)) gaps.push('invalid-route-collection');
   if (normalizedSegments.length === 0) gaps.push('access-not-assessed');
   if (invalidAccessRecordCount > 0)
     gaps.push(`invalid-access-records:${invalidAccessRecordCount}`);
 
   const eventId = nonEmptyText(event?.id);
-  const routes = candidateRoutes.map((route) =>
-    evaluateDisasterRouteSupport(route, normalizedSegments),
+  const routes = (Array.isArray(candidateRoutes) ? candidateRoutes : []).map(
+    (route) => evaluateDisasterRouteSupport(route, normalizedSegments),
   );
 
   return Object.freeze({

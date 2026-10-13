@@ -61,6 +61,17 @@ export function normalizeFirePerimeter(raw) {
   return Object.freeze(out);
 }
 
+function finiteCoordinate(value) {
+  // Number(null), Number('') and Number(false) invent zero coordinates.
+  if (
+    typeof value !== 'number' &&
+    (typeof value !== 'string' || !value.trim())
+  )
+    return NaN;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : NaN;
+}
+
 export function normalizeFireEvent(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const id = typeof raw.id === 'string' ? raw.id.trim() : '';
@@ -72,7 +83,7 @@ export function normalizeFireEvent(raw) {
   if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs < startMs)
     return null;
   if (!Array.isArray(raw.bbox) || raw.bbox.length !== 4) return null;
-  const [west, south, east, north] = raw.bbox.map(Number);
+  const [west, south, east, north] = raw.bbox.map(finiteCoordinate);
   if (
     ![west, south, east, north].every(Number.isFinite) ||
     west < -180 ||
@@ -170,9 +181,17 @@ export function filterRecordsToEvent(records, event) {
   if (!Array.isArray(records) || !event) return [];
   const [west, south, east, north] = event.bbox;
   return records.filter((record) => {
-    const lat = Number(record?.lat);
-    const lon = Number(record?.lon);
-    if (lat < south || lat > north || lon < west || lon > east) return false;
+    const lat = finiteCoordinate(record?.lat);
+    const lon = finiteCoordinate(record?.lon);
+    if (
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lon) ||
+      lat < south ||
+      lat > north ||
+      lon < west ||
+      lon > east
+    )
+      return false;
     const dayMs = parseUtcDay(record?.acqDate);
     return (
       Number.isFinite(dayMs) && dayMs >= event.startMs && dayMs < event.endMs

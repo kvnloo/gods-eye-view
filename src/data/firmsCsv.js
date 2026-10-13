@@ -103,9 +103,18 @@ export function parseFirmsCsv(text) {
     if (!line) continue;
     const parts = line.split(',');
     if (parts.length < header.length) continue; // malformed row — skip
-    const lat = Number(parts[iLat]);
-    const lon = Number(parts[iLon]);
-    if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+    const latText = cell(parts, iLat);
+    const lonText = cell(parts, iLon);
+    if (!latText || !lonText) continue;
+    const lat = Number(latText);
+    const lon = Number(lonText);
+    if (
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lon) ||
+      Math.abs(lat) > 90 ||
+      Math.abs(lon) > 180
+    )
+      continue;
 
     records.push({
       lat,

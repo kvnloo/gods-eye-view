@@ -109,3 +109,32 @@ test('filterRecordsToEvent clamps to box and inclusive day range', () => {
     lastDay,
   ]);
 });
+
+test('event bounding boxes reject missing and coerced zero coordinates', () => {
+  for (const invalid of [null, '', false, [], {}]) {
+    assert.equal(
+      normalizeFireEvent({ ...VALID, bbox: [invalid, -20, 20, 20] }),
+      null,
+    );
+  }
+  assert.deepEqual(
+    normalizeFireEvent({ ...VALID, bbox: ['0', -20, 20, 20] })?.bbox,
+    [0, -20, 20, 20],
+  );
+});
+
+test('missing detections do not become equatorial zero-coordinate fires', () => {
+  const event = normalizeFireEvent({
+    ...VALID,
+    bbox: [-10, -10, 10, 10],
+  });
+  const valid = [
+    { lat: 0, lon: 0, acqDate: '2018-11-10' },
+    { lat: '0', lon: '1', acqDate: '2018-11-10' },
+  ];
+  const bad = [null, '', false, undefined].flatMap((invalid) => [
+    { lat: invalid, lon: 1, acqDate: '2018-11-10' },
+    { lat: 1, lon: invalid, acqDate: '2018-11-10' },
+  ]);
+  assert.deepEqual(filterRecordsToEvent([...bad, ...valid], event), valid);
+});

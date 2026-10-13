@@ -137,13 +137,15 @@ export function evaluateDirectionsDisasterAccess({
     });
   }
 
+  const validAccessCollection = Array.isArray(accessSegments);
+  const evidence = validAccessCollection ? accessSegments : [];
   const evaluation = evaluateDisasterRouteSupport(
     { id: routeId, segmentIds },
-    accessSegments,
+    evidence,
   );
   const unverified = unverifiedAccessReasons(
     evaluation.segmentIds,
-    accessSegments,
+    evidence,
   );
 
   return Object.freeze({
@@ -156,9 +158,16 @@ export function evaluateDirectionsDisasterAccess({
       durationS: finiteNumber(route?.durationS),
     }),
     accessRevision: revision,
-    support: unverified.length ? 'unknown' : evaluation.support,
+    support:
+      unverified.length || !validAccessCollection
+        ? 'unknown'
+        : evaluation.support,
     segmentIds: evaluation.segmentIds,
-    reasons: Object.freeze([...evaluation.reasons, ...unverified]),
+    reasons: Object.freeze([
+      ...evaluation.reasons,
+      ...(!validAccessCollection ? ['invalid-access-collection'] : []),
+      ...unverified,
+    ]),
   });
 }
 

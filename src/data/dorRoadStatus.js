@@ -12,8 +12,7 @@ const STATE_BY_CLOSURE_TYPE = Object.freeze({
   PARTIAL_OPEN: 'degraded',
 });
 
-const clean = (value) =>
-  typeof value === 'string' ? value.trim() : '';
+const clean = (value) => typeof value === 'string' ? value.trim() : '';
 
 export function adaptDorRoadStatusRecord(record) {
   if (!record || typeof record !== 'object' || Array.isArray(record))

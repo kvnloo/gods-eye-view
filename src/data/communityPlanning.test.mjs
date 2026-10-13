@@ -113,6 +113,34 @@ test('stale or cross-project alternatives are not materialized as current', () =
   } }), []);
 });
 
+test('unknown imported schema revisions cannot be rebranded as local v1', () => {
+  const p = project();
+  const valid = proposal('trees-first', 'alice', 'alice-op', 'oak');
+  for (const version of [0, 2, 99, null, undefined]) {
+    const remote = {
+      ...valid,
+      id: `future-schema-${String(version)}`,
+      value: { ...valid.value, schemaVersion: version },
+    };
+    const merged = applyCollaborationOperation(
+      createCollaborationState(),
+      remote,
+    );
+    assert.equal(merged.result.accepted, true);
+    assert.deepEqual(listPlanningAlternatives(p, merged.state), []);
+    assert.deepEqual(planningView(p, merged.state).alternatives, []);
+  }
+  const accepted = applyCollaborationOperation(
+    createCollaborationState(),
+    valid,
+  );
+  assert.equal(listPlanningAlternatives(p, accepted.state).length, 1);
+  assert.equal(
+    listPlanningAlternatives(p, accepted.state)[0].schemaVersion,
+    1,
+  );
+});
+
 test('invalid remote side effects cannot be authored by the planning API', () => {
   assert.throws(() => createPlanningAlternativeOperation(project(), {
     alternativeId: 'illegal', operationId: 'op', actorId: 'alice', counter: 0,

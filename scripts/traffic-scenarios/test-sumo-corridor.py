@@ -85,19 +85,25 @@ class CorridorTests(unittest.TestCase):
     def test_controller_trace_is_execution_evidence_not_plan_intent(self):
         with tempfile.TemporaryDirectory() as directory:
             trace = Path(directory) / 'switches.xml'
+            full = [(0, 'Gr'), (30, 'rG'), (900, 'Gr'), (1730, 'rG')]
 
-            def save(ids=('J1', 'J2', 'J3'), program='experiment-actuated'):
+            def save(ids=('J1', 'J2', 'J3'), program='experiment-actuated',
+                     steps=None):
                 root = ET.Element('tlsStates')
                 for ident in ids:
-                    ET.SubElement(root, 'tlsState', id=ident, time='21',
-                                  state='Gr', programID=program, phase='1')
+                    for timestamp, state in full if steps is None else steps:
+                        ET.SubElement(root, 'tlsState', id=ident,
+                                      time=str(timestamp), state=state,
+                                      programID=program, phase='1')
                 module.write_xml(trace, root)
 
             save()
             proof = module.verify_active_signal_programs(trace, 'actuated')
             self.assertEqual(proof['controllers'], ['J1', 'J2', 'J3'])
             self.assertEqual(proof['programId'], 'experiment-actuated')
-            self.assertEqual(proof['switchRecords'], 3)
+            self.assertEqual(proof['switchRecords'], 12)
+            self.assertEqual(proof['perController']['J1']['firstTime'], 0)
+            self.assertEqual(proof['perController']['J3']['lastTime'], 1730)
 
             for ids, program in [
                 (('J1', 'J2'), 'experiment-actuated'),
@@ -109,6 +115,24 @@ class CorridorTests(unittest.TestCase):
                     save(ids, program)
                     with self.assertRaises(ValueError):
                         module.verify_active_signal_programs(trace, 'actuated')
+
+            # A spoofed three-line log used to pass, despite no evidence
+            # beyond the first phase of a thirty-minute simulation.
+            for steps in [
+                [(21, 'Gr')],
+                [(0, 'Gr'), (30, 'rG'), (60, 'Gr')],
+                [(300, 'Gr'), (900, 'rG'), (1780, 'Gr')],
+                [(0, 'Gr'), (900, 'rG'), (1801, 'Gr')],
+                [(0, 'Gr'), (900, 'rG'), (400, 'Gr'), (1740, 'rG')],
+                [(0, 'Gr'), (900, 'Gr'), (1740, 'Gr')],
+                [(0, 'Gr'), ('nan', 'rG'), (1740, 'Gr')],
+                [(0, 'Gr'), ('oops', 'rG'), (1740, 'Gr')],
+            ]:
+                with self.subTest(steps=steps):
+                    save(steps=steps)
+                    with self.assertRaises(ValueError):
+                        module.verify_active_signal_programs(trace, 'actuated')
+
             trace.write_text('<bad/>')
             with self.assertRaises(ValueError):
                 module.verify_active_signal_programs(trace, 'actuated')

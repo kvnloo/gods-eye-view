@@ -31,7 +31,9 @@ export function adaptDorRoadStatusRecord(record) {
   )
     return null;
 
-  const closureType = clean(record.closureType).toUpperCase();
+  const closureTypeRaw =
+    typeof record.closureType === 'string' ? record.closureType : '';
+  const closureType = closureTypeRaw.trim().toUpperCase();
   const state = STATE_BY_CLOSURE_TYPE[closureType] || 'unknown';
   return Object.freeze({
     id: `nepal-dor:${linkCode}`,
@@ -48,7 +50,7 @@ export function adaptDorRoadStatusRecord(record) {
       linkCode,
       publisher,
       locationText: clean(record.location),
-      closureTypeRaw: closureType,
+      closureTypeRaw,
       localDateText: clean(record.openDate),
       timeZone: 'unverified',
       reuseRights: 'unverified',

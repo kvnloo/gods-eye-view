@@ -214,3 +214,35 @@ test('stable outcome independent of input ordering', () => {
   };
   assert.deepEqual(compareSyntheticReliefCapacity(f), compareSyntheticReliefCapacity(reversed));
 });
+
+
+test('explicit synthetic policy weights determine tie among equal delivered-unit alternatives', () => {
+  const f = fixture();
+  f.vehicles = [f.vehicles[0]];
+  f.vehicles[0].capacityUnits = 2;
+  f.depots[0].stockUnits = 2;
+  f.zones.forEach(z => { z.needUnits = 2; });
+  f.zones[0].priorityWeight = 5;
+  f.zones[1].priorityWeight = 1;
+  f.routes = f.routes.filter(r => r.vehicleId === 'vehicle-a');
+  const out = compareSyntheticReliefCapacity(f);
+  assert.equal(out.exhaustive.servedUnits, 2);
+  assert.equal(out.exhaustive.priorityWeightedServedUnits, 10);
+  assert.equal(out.exhaustive.assignments[0].zoneId, 'zone-a');
+  assert.equal(out.nearestFirst.servedUnits, 2);
+  assert.equal(out.nearestFirst.priorityWeightedServedUnits, 2);
+  assert.equal(out.exhaustive.totalOneWayTravelMinutes, 8);
+});
+
+test('shortest one-way travel breaks ties only after served units and explicit priority', () => {
+  const f = fixture();
+  f.vehicles = [f.vehicles[0]];
+  f.vehicles[0].capacityUnits = 1;
+  f.depots[0].stockUnits = 1;
+  f.routes = f.routes.filter(r => r.vehicleId === 'vehicle-a');
+  f.zones.forEach(z => { z.needUnits = 1; z.priorityWeight = 1; });
+  const out = compareSyntheticReliefCapacity(f);
+  assert.equal(out.exhaustive.servedUnits, 1);
+  assert.equal(out.exhaustive.assignments[0].zoneId, 'zone-b');
+  assert.equal(out.exhaustive.totalOneWayTravelMinutes, 1);
+});

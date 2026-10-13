@@ -1,0 +1,151 @@
+import { createSceneDialog } from './sceneSharing.js';
+import { planningView } from '../data/communityPlanning.js';
+
+const FEATURE_COLORS = Object.freeze({
+  tree: '#65b58b',
+  garden: '#93bb67',
+  seating: '#cbb780',
+  'play-area': '#dfa56b',
+  shade: '#74afc7',
+  'path-marker': '#b6c1d6',
+});
+
+function addText(parent, tag, value, className = '') {
+  const node = parent.ownerDocument.createElement(tag);
+  node.className = className;
+  node.textContent = value;
+  parent.appendChild(node);
+  return node;
+}
+
+/** A schematic of authored marker positions, never a map or verified geometry. */
+function drawSyntheticMarkers(host, alternative, bounds) {
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = host.ownerDocument.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', '0 0 300 150');
+  svg.setAttribute('width', '100%');
+  svg.setAttribute('height', '150');
+  svg.setAttribute('role', 'img');
+  svg.setAttribute(
+    'aria-label',
+    `Synthetic marker positions for ${alternative.title}; not surveyed`,
+  );
+  const backdrop = host.ownerDocument.createElementNS(ns, 'rect');
+  for (const [key, value] of Object.entries({
+    x: 1, y: 1, width: 298, height: 148, rx: 6,
+    fill: '#0b2630', stroke: '#3d6372',
+  })) backdrop.setAttribute(key, String(value));
+  svg.appendChild(backdrop);
+  for (const feature of alternative.features) {
+    const dot = host.ownerDocument.createElementNS(ns, 'circle');
+    const x = 16 + ((feature.point[0] - bounds[0]) / (bounds[2] - bounds[0])) * 268;
+    const y = 134 - ((feature.point[1] - bounds[1]) / (bounds[3] - bounds[1])) * 118;
+    dot.setAttribute('cx', String(x));
+    dot.setAttribute('cy', String(y));
+    dot.setAttribute('r', '7');
+    dot.setAttribute('fill', FEATURE_COLORS[feature.kind]);
+    dot.setAttribute('stroke', '#f0f7f8');
+    dot.setAttribute('stroke-width', '1.5');
+    const title = host.ownerDocument.createElementNS(ns, 'title');
+    title.textContent = `${feature.kind}: ${feature.id}`;
+    dot.appendChild(title);
+    svg.appendChild(dot);
+  }
+  host.appendChild(svg);
+}
+
+/**
+ * Open an opt-in GEV Scene dialog for two authored hypothetical park branches.
+ * No Cesium entities, persistence, dispatch, remote transport, or real map claim.
+ */
+export function openCommunityPlanningPreview({ project, collaborationState }) {
+  const view = planningView(project, collaborationState, 'co-op');
+  let dialog;
+  const close = () => dialog?.dispose();
+  dialog = createSceneDialog('Community planning · hypothetical preview', close);
+  dialog.element.dataset.communityPlanningPreview = '';
+  dialog.element.style.width = 'min(900px,calc(100vw - 32px))';
+  dialog.status.textContent =
+    'SYNTHETIC FIXTURE · NO LAND RIGHTS, MUNICIPAL APPROVAL OR MODELED IMPACT';
+  const intro = addText(dialog.body, 'p',
+    `${project.place.label} · reference-only baseline ${view.baselineRevision}`);
+  intro.style.color = '#aad3db';
+  addText(dialog.body, 'p',
+    'Compare user-authored possibilities, not verified construction or traffic forecasts.');
+  const cards = dialog.body.ownerDocument.createElement('div');
+  cards.dataset.planningAlternatives = '';
+  Object.assign(cards.style, {
+    display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'stretch',
+  });
+  dialog.body.appendChild(cards);
+  for (const alternative of view.alternatives.slice(0, 2)) {
+    const article = dialog.body.ownerDocument.createElement('article');
+    article.dataset.alternativeId = alternative.alternativeId;
+    article.setAttribute('aria-label', alternative.title);
+    Object.assign(article.style, {
+      flex: '1 1 245px', minWidth: '0', padding: '12px',
+      background: '#10242e', border: '1px solid #397080', borderRadius: '6px',
+    });
+    addText(article, 'h3', alternative.title);
+    const label = addText(article, 'p', 'HYPOTHETICAL · NOT APPROVED');
+    label.style.color = '#d5b67b';
+    const credit = alternative.authorship?.status === 'recorded'
+      ? `Recorded author: ${alternative.authorship.actorId} (unverified identity)`
+      : 'Recorded author: unknown';
+    addText(article, 'p', credit, 'planning-author-credit');
+    addText(article, 'p', `Source revision: ${alternative.baselineRevision}`);
+    drawSyntheticMarkers(article, alternative, project.place.bounds);
+    const features = alternative.features.length
+      ? alternative.features.map((f) => f.kind).join(', ')
+      : 'none';
+    addText(article, 'p', `Proposed markers: ${features}`);
+    addText(article, 'p', `Modeled impact: ${alternative.modeledImpact}`);
+    addText(article, 'p', `Approval: ${alternative.approval}`);
+    for (const assumption of alternative.assumptions)
+      addText(article, 'p', `Assumption: ${assumption}`);
+    cards.appendChild(article);
+  }
+  const modeStatus = addText(
+    dialog.body, 'p', 'View: co-op · neither mode grants authority',
+  );
+  modeStatus.dataset.planningModeStatus = '';
+  for (const mode of ['co-op', 'game']) {
+    dialog.button(mode === 'co-op' ? 'Co-op view' : 'Game view', () => {
+      const selected = planningView(project, collaborationState, mode);
+      modeStatus.textContent =
+        `View: ${selected.mode} · neither mode grants authority`;
+    });
+  }
+  return dialog;
+}
+
+/** Scene-panel entry; no launch or DOM mutation until explicitly opted in. */
+export function mountCommunityPlanningPreview({
+  project,
+  collaborationState,
+  panel = document.getElementById('scene-panel'),
+}) {
+  if (!panel) return () => {};
+  const button = panel.ownerDocument.createElement('button');
+  button.type = 'button';
+  button.className = 'scene-btn';
+  button.dataset.communityPlanningPreviewOpen = '';
+  button.textContent = 'COMPARE PARK PROPOSALS · FIXTURE';
+  let dialog = null;
+  const open = () => {
+    if (dialog) return;
+    dialog = openCommunityPlanningPreview({ project, collaborationState });
+    const originalDispose = dialog.dispose;
+    dialog.dispose = () => {
+      originalDispose();
+      dialog = null;
+    };
+  };
+  button.addEventListener('click', open);
+  (panel.querySelector('.scene-panel-inner') || panel).appendChild(button);
+  return () => {
+    button.removeEventListener('click', open);
+    button.remove();
+    dialog?.dispose();
+  };
+}

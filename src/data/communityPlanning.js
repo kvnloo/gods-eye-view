@@ -141,7 +141,8 @@ export function listPlanningAlternatives(project, collaborationState) {
     .map(([key, entry]) => {
       const candidate = entry?.fields?.proposal?.value;
       const id = key.slice(prefix.length);
-      if (!candidate || candidate.projectId !== project.id ||
+      if (!candidate || candidate.schemaVersion !== COMMUNITY_PLANNING_SCHEMA_VERSION ||
+          candidate.projectId !== project.id ||
           candidate.alternativeId !== id ||
           candidate.baselineRevision !== project.baseline.revision ||
           candidate.state !== 'hypothesis' ||

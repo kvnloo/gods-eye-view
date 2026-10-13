@@ -40,8 +40,11 @@ into the main application.
   read-only additional-file). All three signals **must report the expected
   active program**: `experiment-fixed` or `experiment-actuated`. Wrong,
   missing or mixed programs withhold comparison even if vehicle delays look good.
-  The raw `*.tls-switches.xml` files and hashes remain in the artifacts;
-  the stable controller-plan file and its revision are not altered by logging.
+  Each controller must report multiple distinct phases, ordered finite times,
+  an initial event in the first 5% of the 30-minute run, and an event within
+  its final 5%. One event per controller is **not** full-run evidence.
+  The raw `*.tls-switches.xml` files, hashes and per-controller first/last
+  event times remain in the artifacts; the signal-plan bytes stay unchanged.
 - An additional real run ends after 30 seconds: its partial receipt must
   contain no performance metrics. This is a negative control, not a fourth
   controller comparison.

@@ -83,7 +83,8 @@ export function normalizeDisasterAccessSegment(input) {
 export function evaluateDisasterRouteSupport(route, accessSegments = []) {
   const routeId = nonEmptyText(route?.id) || 'candidate-route';
   const segmentIds = uniqueIds(route?.segmentIds);
-  const normalizedSegments = (Array.isArray(accessSegments) ? accessSegments : [])
+  const inputSegments = Array.isArray(accessSegments) ? accessSegments : [];
+  const normalizedSegments = inputSegments
     .map(normalizeDisasterAccessSegment)
     .filter(Boolean);
   const byId = new Map();

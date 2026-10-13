@@ -78,3 +78,17 @@ test('no network or location lookup occurs during adaptation', () => {
   assert.equal('geometry' in normalized, false);
   assert.equal(normalized.freshness, 'unknown');
 });
+
+test('status normalization retains the original declared text', () => {
+  const original = '  partial_open  ';
+  const normalized = adaptDorRoadStatusRecord({
+    ...DOR_FIXTURE,
+    closureType: original,
+  });
+  assert.equal(normalized.state, 'degraded');
+  assert.equal(normalized.provenance.closureTypeRaw, original);
+  assert.equal(
+    adaptDorRoadStatusRecord({ ...DOR_FIXTURE, closureType: null }).state,
+    'unknown',
+  );
+});

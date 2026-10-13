@@ -71,6 +71,28 @@ export function directionsRouteIdentity(route) {
   return `osrm:${fnv1a32(canonical).toString(16).padStart(8, '0')}`;
 }
 
+function unverifiedAccessReasons(segmentIds, accessSegments) {
+  if (!Array.isArray(segmentIds) || !Array.isArray(accessSegments))
+    return [];
+  const mapped = new Set(segmentIds);
+  const reasons = new Set();
+  for (const record of accessSegments) {
+    const id = nonEmptyText(record?.id);
+    if (!id || !mapped.has(id)) continue;
+    if (!['observed', 'declared'].includes(record?.determination))
+      reasons.add(`unverified-access-basis:${id}`);
+    const provenance = record?.provenance;
+    if (
+      !nonEmptyText(record?.observedAt) ||
+      !nonEmptyText(record?.receivedAt) ||
+      !(nonEmptyText(provenance?.source) ||
+        nonEmptyText(provenance?.authority))
+    )
+      reasons.add(`unattributed-access:${id}`);
+  }
+  return [...reasons].sort();
+}
+
 /**
  * Evaluate a Directions candidate against explicit disaster-access evidence.
  *
@@ -119,6 +141,10 @@ export function evaluateDirectionsDisasterAccess({
     { id: routeId, segmentIds },
     accessSegments,
   );
+  const unverified = unverifiedAccessReasons(
+    evaluation.segmentIds,
+    accessSegments,
+  );
 
   return Object.freeze({
     schemaVersion: DIRECTIONS_ACCESS_SCHEMA_VERSION,
@@ -130,9 +156,9 @@ export function evaluateDirectionsDisasterAccess({
       durationS: finiteNumber(route?.durationS),
     }),
     accessRevision: revision,
-    support: evaluation.support,
+    support: unverified.length ? 'unknown' : evaluation.support,
     segmentIds: evaluation.segmentIds,
-    reasons: evaluation.reasons,
+    reasons: Object.freeze([...evaluation.reasons, ...unverified]),
   });
 }
 

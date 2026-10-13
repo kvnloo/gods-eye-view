@@ -109,7 +109,7 @@ function validate(input) {
     const zoneId = ident(entry?.zoneId, 'route zoneId');
     if (!vehicleIds.has(vehicleId) || !zoneIds.has(zoneId))
       throw new TypeError('route endpoints unknown');
-    const key = `${vehicleId}\\0${zoneId}`;
+    const key = `${vehicleId}\0${zoneId}`;
     if (routes.has(key)) throw new TypeError('duplicate route');
     if (!ACCESS.has(entry?.status)) throw new TypeError('unsupported route status');
     const travelMinutes = entry.status === 'supported'
@@ -127,7 +127,7 @@ function validate(input) {
 function routeCandidates(data, vehicle) {
   const options = [];
   for (const zone of data.zones) {
-    const route = data.routes.get(`${vehicle.id}\\0${zone.id}`);
+    const route = data.routes.get(`${vehicle.id}\0${zone.id}`);
     if (route.status !== 'supported') continue;
     // Single-stop, one-way travel model: wait until the zone window opens.
     const deliveryMinute = Math.max(vehicle.earliestMinute + route.travelMinutes, zone.earliestMinute);

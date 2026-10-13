@@ -141,6 +141,44 @@ test('unknown imported schema revisions cannot be rebranded as local v1', () => 
   );
 });
 
+test('co-op projection preserves recorded actor credits without identity claims', () => {
+  const first = proposal('trees-first', 'alice', 'alice-op', 'oak');
+  const second = proposal('play-first', 'bob', 'bob-op', 'play', 'play-area');
+  const merged = applyCollaborationOperations(
+    createCollaborationState(), [first, second],
+  );
+  const alternatives = listPlanningAlternatives(project(), merged.state);
+  const byId = Object.fromEntries(
+    alternatives.map((entry) => [entry.alternativeId, entry]),
+  );
+  assert.deepEqual(byId['trees-first'].authorship, {
+    status: 'recorded', actorId: 'alice',
+    operationId: 'alice-op', counter: 1,
+  });
+  assert.deepEqual(byId['play-first'].authorship, {
+    status: 'recorded', actorId: 'bob',
+    operationId: 'bob-op', counter: 1,
+  });
+  assert.equal(Object.isFrozen(alternatives[0].authorship), true);
+
+  const noProof = listPlanningAlternatives(project(), {
+    authored: projection([first]),
+  });
+  assert.deepEqual(noProof[0].authorship, {
+    status: 'unknown', actorId: null,
+    operationId: null, counter: null,
+  });
+  const tampered = applyCollaborationOperation(
+    createCollaborationState(), first,
+  ).state;
+  const key = `draft-scenario:${first.targetId}`;
+  tampered.authored[key].fields.proposal.clock.actorId = '<script>';
+  assert.equal(
+    listPlanningAlternatives(project(), tampered)[0].authorship.status,
+    'unknown',
+  );
+});
+
 test('invalid remote side effects cannot be authored by the planning API', () => {
   assert.throws(() => createPlanningAlternativeOperation(project(), {
     alternativeId: 'illegal', operationId: 'op', actorId: 'alice', counter: 0,

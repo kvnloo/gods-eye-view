@@ -190,7 +190,9 @@ function totals(data, items) {
   let minutes = 0;
   for (const item of items) { served[item.zoneId] += item.units; minutes += item.travelMinutes; }
   const servedUnits = Object.values(served).reduce((a, b) => a + b, 0);
-  return { servedUnits, totalOneWayTravelMinutes: minutes,
+  const priorityWeightedServedUnits = data.zones.reduce(
+    (sum, zone) => sum + served[zone.id] * zone.priorityWeight, 0);
+  return { servedUnits, priorityWeightedServedUnits, totalOneWayTravelMinutes: minutes,
     unmetNeed: data.zones.map(z => ({ zoneId: z.id, needUnits: z.needUnits,
       servedUnits: served[z.id], unmetUnits: z.needUnits - served[z.id] })),
     assignments: items };

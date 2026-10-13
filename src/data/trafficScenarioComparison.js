@@ -62,17 +62,29 @@ function validateRun(run) {
 /** Reject censored SUMO statistics before consulting any apparent delay gain. */
 function coverageIssue(run) {
   const quality = run.quality;
-  if (quality === undefined) {
-    const hasSumoMetrics = Object.keys(run.metrics || {}).some(
-      (key) =>
-        key.startsWith('meanVehicle') || key.startsWith('totalVehicle'),
-    );
-    return hasSumoMetrics ? 'missing-sumo-coverage' : null;
-  }
+  const hasVehicleMetrics = Object.keys(run.metrics || {}).some(
+    (key) =>
+      key.startsWith('meanVehicle') || key.startsWith('totalVehicle'),
+  );
+  if (quality === undefined)
+    return hasVehicleMetrics ? 'missing-sumo-coverage' : null;
   if (!quality || quality.coverage !== 'complete')
     return 'incomplete-simulation-coverage';
-  if (quality.sourceFormat !== 'sumo-statistics') return null;
+  // Both sides claiming an alternate format is not proof that SUMO-derived
+  // vehicle metrics have valid coverage or safety evidence. Future providers
+  // need their own explicit validation contract before these can be compared.
+  if (quality.sourceFormat !== 'sumo-statistics')
+    return hasVehicleMetrics ? 'unverified-vehicle-metrics' : null;
   const counts = quality.vehicleCounts;
+  const safety = quality.safety;
+  if (
+    !safety ||
+    !Number.isSafeInteger(safety.collisions) ||
+    !Number.isSafeInteger(safety.emergencyStops) ||
+    safety.collisions !== 0 ||
+    safety.emergencyStops !== 0
+  )
+    return 'incomplete-simulation-coverage';
   if (
     !counts ||
     !Number.isSafeInteger(counts.loaded) ||

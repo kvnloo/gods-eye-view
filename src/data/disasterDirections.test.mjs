@@ -282,3 +282,70 @@ test('one invalid interior vertex makes the full candidate unavailable', () => {
     assert.deepEqual(receipt.reasons, ['directions-route-unavailable']);
   }
 });
+
+test('simulated access cannot establish operational support', () => {
+  for (const state of ['open', 'blocked', 'degraded']) {
+    const result = evaluateDirectionsDisasterAccess({
+      route: route(),
+      segmentIds: ['a'],
+      accessSegments: [
+        { ...segment('a', state), determination: 'simulated' },
+      ],
+      accessRevision: 'access-r1',
+    });
+    assert.equal(result.support, 'unknown');
+    assert.deepEqual(
+      result.reasons,
+      [
+        ...(state === 'open' ? [] : [`${state === 'blocked' ? 'blocked' : 'degraded'}:a`]),
+        'unverified-access-basis:a',
+      ],
+    );
+  }
+});
+
+test('derived or missing evidence determination remains unknown', () => {
+  for (const determination of ['derived', null]) {
+    const result = evaluateDirectionsDisasterAccess({
+      route: route(),
+      segmentIds: ['a'],
+      accessSegments: [{ ...segment('a'), determination }],
+      accessRevision: 'access-r1',
+    });
+    assert.equal(result.support, 'unknown');
+    assert.deepEqual(result.reasons, ['unverified-access-basis:a']);
+  }
+});
+
+test('evidence without timestamps or source attribution fails closed', () => {
+  const records = [
+    { ...segment('a'), observedAt: null },
+    { ...segment('a'), receivedAt: null },
+    { ...segment('a'), provenance: null },
+  ];
+  for (const evidence of records) {
+    const result = evaluateDirectionsDisasterAccess({
+      route: route(),
+      segmentIds: ['a'],
+      accessSegments: [evidence],
+      accessRevision: 'access-r1',
+    });
+    assert.equal(result.support, 'unknown');
+    assert.deepEqual(result.reasons, ['unattributed-access:a']);
+  }
+});
+
+test('attributed declared evidence retains its degraded status', () => {
+  const result = evaluateDirectionsDisasterAccess({
+    route: route(),
+    segmentIds: ['a'],
+    accessSegments: [{
+      ...segment('a', 'degraded'),
+      determination: 'declared',
+      provenance: { authority: 'fixture transport agency' },
+    }],
+    accessRevision: 'access-r1',
+  });
+  assert.equal(result.support, 'degraded');
+  assert.deepEqual(result.reasons, ['degraded:a']);
+});

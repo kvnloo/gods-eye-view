@@ -147,6 +147,42 @@ def write_plan(network, output, mode):
     write_xml(output, root)
 
 
+def write_trace_request(path, destination):
+    """Request active TLS-program IDs without modifying signal-plan bytes."""
+    root = ET.Element('additional')
+    ET.SubElement(root, 'timedEvent', type='SaveTLSSwitchStates',
+                  dest=str(Path(destination).resolve()))
+    write_xml(path, root)
+
+
+def verify_active_signal_programs(path, mode):
+    """Require the executed program, not just the requested additional file."""
+    try:
+        root = ET.parse(path).getroot()
+    except (ET.ParseError, OSError) as exc:
+        raise ValueError('missing or invalid traffic-light execution trace') from exc
+    if root.tag != 'tlsStates':
+        raise ValueError('traffic-light execution trace has unexpected root')
+    required_ids = {'J1', 'J2', 'J3'}
+    expected_program = f'experiment-{mode}'
+    seen = set()
+    records = 0
+    for event in root.findall('tlsState'):
+        ident = event.get('id')
+        if ident not in required_ids:
+            raise ValueError('unexpected traffic-light controller in trace')
+        if event.get('programID') != expected_program:
+            raise ValueError('wrong active traffic-light program; comparison withheld')
+        if not event.get('time') or not event.get('state'):
+            raise ValueError('traffic-light trace lacks time or phase state')
+        seen.add(ident)
+        records += 1
+    if seen != required_ids:
+        raise ValueError('missing traffic-light execution evidence for corridor')
+    return {'programId': expected_program, 'controllers': sorted(seen),
+            'switchRecords': records}
+
+
 def require_coverage(receipt, statistics, expected_count):
     """Abort on lost demand or simulation safety faults, without a 'win' score."""
     quality = receipt.get('quality', {})
@@ -202,12 +238,17 @@ def main(argv=None):
                        'evaluationRevision': digest(__file__), 'randomSeed': seed,
                        'windowStartMs': 0, 'windowEndMs': END_SECONDS * 1000}
             paths = {}
+            proofs = {}
             for mode, plan in plans.items():
                 prefix = out / f'{mode}-{seed}'
                 statistics = Path(f'{prefix}.statistics.xml')
+                trace_file = Path(f'{prefix}.tls-switches.xml')
+                trace_request = Path(f'{prefix}.trace.add.xml')
+                write_trace_request(trace_request, trace_file)
                 plan_revision = digest(plan)
                 command = [sumo, '--net-file', network, '--route-files', demand,
-                           '--additional-files', plan, '--begin', '0', '--end', str(END_SECONDS),
+                           '--additional-files', f'{plan},{trace_request}',
+                           '--begin', '0', '--end', str(END_SECONDS),
                            '--seed', str(seed), '--time-to-teleport', '-1', '--no-step-log', 'true',
                            '--duration-log.statistics', 'true', '--tripinfo-output.write-unfinished',
                            'true', '--statistic-output', statistics]
@@ -215,6 +256,8 @@ def main(argv=None):
                 report['completedSimulationRuns'] += 1
                 if digest(plan) != plan_revision:
                     raise ValueError('signal plan changed during simulation')
+                proof = verify_active_signal_programs(trace_file, mode)
+                proofs[mode] = {**proof, 'sourceRef': digest(trace_file)}
                 metadata = {'runId': f'{mode}-{seed}', 'planRevision': plan_revision,
                             'sumoOptions': {'tripinfoOutputWriteUnfinished': True,
                                             'durationLogStatistics': True}, 'context': context}
@@ -233,7 +276,7 @@ def main(argv=None):
                 raise ValueError('GEV withheld comparison')
             write_json(out / f'comparison-{seed}.json', comparison)
             report['pairs'].append({'seed': seed, 'vehicleCount': expected_count,
-                                    'comparison': comparison})
+                                    'signalProofs': proofs, 'comparison': comparison})
         # Real failed-run control: stop the same demand early; do not fabricate XML.
         prefix = out / 'incomplete-control'
         run_command([sumo, '--net-file', network, '--route-files', demand,

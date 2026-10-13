@@ -11,6 +11,7 @@ import copy
 import hashlib
 import importlib.util
 import json
+import math
 import os
 from pathlib import Path
 import random
@@ -156,16 +157,19 @@ def write_trace_request(path, destination):
 
 
 def verify_active_signal_programs(path, mode):
-    """Require the executed program, not just the requested additional file."""
+    """Require expected active programs across the full simulation window."""
     try:
-        root = ET.parse(path).getroot()
+        trace_path = Path(path)
+        if trace_path.stat().st_size > 2_000_000:
+            raise ValueError('traffic-light execution trace exceeds size limit')
+        root = ET.parse(trace_path).getroot()
     except (ET.ParseError, OSError) as exc:
         raise ValueError('missing or invalid traffic-light execution trace') from exc
     if root.tag != 'tlsStates':
         raise ValueError('traffic-light execution trace has unexpected root')
     required_ids = {'J1', 'J2', 'J3'}
     expected_program = f'experiment-{mode}'
-    seen = set()
+    observed = {}
     records = 0
     for event in root.findall('tlsState'):
         ident = event.get('id')
@@ -173,14 +177,43 @@ def verify_active_signal_programs(path, mode):
             raise ValueError('unexpected traffic-light controller in trace')
         if event.get('programID') != expected_program:
             raise ValueError('wrong active traffic-light program; comparison withheld')
-        if not event.get('time') or not event.get('state'):
+        raw_time = event.get('time')
+        state = event.get('state')
+        if not raw_time or not state:
             raise ValueError('traffic-light trace lacks time or phase state')
-        seen.add(ident)
+        try:
+            timestamp = float(raw_time)
+        except ValueError as exc:
+            raise ValueError('invalid traffic-light trace timestamp') from exc
+        if not math.isfinite(timestamp) or not 0 <= timestamp <= END_SECONDS:
+            raise ValueError('traffic-light trace timestamp outside run window')
+        current = observed.get(ident)
+        if current is None:
+            observed[ident] = {'first': timestamp, 'last': timestamp,
+                               'count': 1, 'states': {state}}
+        else:
+            if timestamp < current['last']:
+                raise ValueError('traffic-light trace timestamps out of order')
+            current['last'] = timestamp
+            current['count'] += 1
+            current['states'].add(state)
         records += 1
-    if seen != required_ids:
+    if set(observed) != required_ids:
         raise ValueError('missing traffic-light execution evidence for corridor')
-    return {'programId': expected_program, 'controllers': sorted(seen),
-            'switchRecords': records}
+    # A single event per controller is not evidence of a 30-minute run.
+    # Both static and gap-actuated plans here switch repeatedly; require phase
+    # changes through at least the first and last 5% of the window.
+    for proof in observed.values():
+        if (proof['count'] < 3 or len(proof['states']) < 2 or
+            proof['first'] > END_SECONDS * 0.05 or
+            proof['last'] < END_SECONDS * 0.95):
+            raise ValueError('incomplete traffic-light execution coverage')
+    return {'programId': expected_program,
+            'controllers': sorted(observed), 'switchRecords': records,
+            'perController': {ident: {'events': observed[ident]['count'],
+                                      'firstTime': observed[ident]['first'],
+                                      'lastTime': observed[ident]['last']}
+                              for ident in sorted(observed)}}
 
 
 def require_coverage(receipt, statistics, expected_count):

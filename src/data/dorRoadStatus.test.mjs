@@ -13,7 +13,7 @@ const DOR_FIXTURE = Object.freeze({
   lastUpdatedBy: 'Road Division Doti',
 });
 
-test('public DoR fixture preserves section identity, source and unknown freshness', () => {
+test('DoR fixture preserves source and unknown freshness', () => {
   const result = adaptDorRoadStatusRecord(DOR_FIXTURE);
   assert.equal(result.id, 'nepal-dor:NH03-084');
   assert.equal(result.state, 'degraded');
@@ -28,7 +28,7 @@ test('public DoR fixture preserves section identity, source and unknown freshnes
   assert.ok(Object.isFrozen(result) && Object.isFrozen(result.provenance));
 });
 
-test('historical partial-open or open declarations never imply current route support', () => {
+test('past DoR declarations do not prove route access', () => {
   for (const closureType of ['PARTIAL_OPEN', 'OPEN', 'CLOSED']) {
     const segment = adaptDorRoadStatusRecord({ ...DOR_FIXTURE, closureType });
     const result = evaluateDisasterRouteSupport(
@@ -48,7 +48,7 @@ test('unknown status stays unknown; no optimistic state coercion', () => {
   assert.equal(result.state, 'unknown');
 });
 
-test('wrong or missing section identity and publisher reject the record', () => {
+test('invalid section identity or publisher rejects the record', () => {
   for (const overrides of [
     { roadRefNumber: 'NH02' },
     { linkCode: 'NH03' },
@@ -56,7 +56,10 @@ test('wrong or missing section identity and publisher reject the record', () => 
     { id: null },
     { lastUpdatedBy: '' },
   ]) {
-    assert.equal(adaptDorRoadStatusRecord({ ...DOR_FIXTURE, ...overrides }), null);
+    assert.equal(
+      adaptDorRoadStatusRecord({ ...DOR_FIXTURE, ...overrides }),
+      null,
+    );
   }
 });
 

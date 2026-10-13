@@ -5,6 +5,7 @@ on:
     branches:
       - infra/sumo-corridor-ab-20261012
       - infra/sumo-safety-receipt-gate-20261012
+      - infra/sumo-tls-program-proof-20261013
     paths:
       - '.github/workflows/traffic-sumo-corridor.yml'
       - 'scripts/traffic-scenarios/**'
@@ -16,6 +17,7 @@ on:
     types: [opened, synchronize, reopened]
     branches:
       - infra/sumo-corridor-ab-20261012
+      - infra/sumo-safety-receipt-gate-20261012
     paths:
       - '.github/workflows/traffic-sumo-corridor.yml'
       - 'scripts/traffic-scenarios/**'

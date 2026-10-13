@@ -66,6 +66,80 @@ class CorridorTests(unittest.TestCase):
                 self.assertEqual(left[1].attrib, right[1].attrib)
                 self.assertEqual(left[2].attrib, right[2].attrib)
 
+    def test_trace_request_keeps_program_files_unchanged(self):
+        with tempfile.TemporaryDirectory() as directory:
+            out = Path(directory)
+            plan = out / 'fixed.add.xml'
+            plan.write_text('<additional/>')
+            before = plan.read_bytes()
+            request = out / 'trace.add.xml'
+            destination = out / 'switches.xml'
+            module.write_trace_request(request, destination)
+            self.assertEqual(plan.read_bytes(), before)
+            root = ET.parse(request).getroot()
+            events = root.findall('timedEvent')
+            self.assertEqual(len(events), 1)
+            self.assertEqual(events[0].get('type'), 'SaveTLSSwitchStates')
+            self.assertEqual(events[0].get('dest'), str(destination.resolve()))
+
+    def test_controller_trace_is_execution_evidence_not_plan_intent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            trace = Path(directory) / 'switches.xml'
+            full = [(0, 'Gr'), (30, 'rG'), (900, 'Gr'), (1730, 'rG')]
+
+            def save(ids=('J1', 'J2', 'J3'), program='experiment-actuated',
+                     steps=None):
+                root = ET.Element('tlsStates')
+                for ident in ids:
+                    for timestamp, state in full if steps is None else steps:
+                        ET.SubElement(root, 'tlsState', id=ident,
+                                      time=str(timestamp), state=state,
+                                      programID=program, phase='1')
+                module.write_xml(trace, root)
+
+            save()
+            proof = module.verify_active_signal_programs(trace, 'actuated')
+            self.assertEqual(proof['controllers'], ['J1', 'J2', 'J3'])
+            self.assertEqual(proof['programId'], 'experiment-actuated')
+            self.assertEqual(proof['switchRecords'], 12)
+            self.assertEqual(proof['perController']['J1']['firstTime'], 0)
+            self.assertEqual(proof['perController']['J3']['lastTime'], 1730)
+
+            for ids, program in [
+                (('J1', 'J2'), 'experiment-actuated'),
+                (('J1', 'J2', 'J3'), 'experiment-fixed'),
+                (('J1', 'J2', 'J4'), 'experiment-actuated'),
+                ((), 'experiment-actuated'),
+            ]:
+                with self.subTest(ids=ids, program=program):
+                    save(ids, program)
+                    with self.assertRaises(ValueError):
+                        module.verify_active_signal_programs(trace, 'actuated')
+
+            # A spoofed three-line log used to pass, despite no evidence
+            # beyond the first phase of a thirty-minute simulation.
+            for steps in [
+                [(21, 'Gr')],
+                [(0, 'Gr'), (30, 'rG'), (60, 'Gr')],
+                [(300, 'Gr'), (900, 'rG'), (1780, 'Gr')],
+                [(0, 'Gr'), (900, 'rG'), (1801, 'Gr')],
+                [(0, 'Gr'), (900, 'rG'), (400, 'Gr'), (1740, 'rG')],
+                [(0, 'Gr'), (900, 'Gr'), (1740, 'Gr')],
+                [(0, 'Gr'), ('nan', 'rG'), (1740, 'Gr')],
+                [(0, 'Gr'), ('oops', 'rG'), (1740, 'Gr')],
+            ]:
+                with self.subTest(steps=steps):
+                    save(steps=steps)
+                    with self.assertRaises(ValueError):
+                        module.verify_active_signal_programs(trace, 'actuated')
+
+            trace.write_text('<bad/>')
+            with self.assertRaises(ValueError):
+                module.verify_active_signal_programs(trace, 'actuated')
+            trace.unlink()
+            with self.assertRaises(ValueError):
+                module.verify_active_signal_programs(trace, 'actuated')
+
     def test_lost_vehicles_collisions_and_missing_safety_withhold_scores(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'stats.xml'

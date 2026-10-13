@@ -36,6 +36,15 @@ into the main application.
 - Loaded/inserted/completed counts must account for every authored vehicle.
   Unfinished/waiting vehicles, teleports, collisions, emergency stops or missing
   safety evidence withhold the affected comparison.
+- Each paired run requests SUMO `SaveTLSSwitchStates` output (a separate
+  read-only additional-file). All three signals **must report the expected
+  active program**: `experiment-fixed` or `experiment-actuated`. Wrong,
+  missing or mixed programs withhold comparison even if vehicle delays look good.
+  Each controller must report multiple distinct phases, ordered finite times,
+  an initial event in the first 5% of the 30-minute run, and an event within
+  its final 5%. One event per controller is **not** full-run evidence.
+  The raw `*.tls-switches.xml` files, hashes and per-controller first/last
+  event times remain in the artifacts; the signal-plan bytes stay unchanged.
 - An additional real run ends after 30 seconds: its partial receipt must
   contain no performance metrics. This is a negative control, not a fourth
   controller comparison.
@@ -71,3 +80,6 @@ Eclipse SUMO contributors; no novel control algorithm is claimed.
   https://sumo.dlr.de/docs/Simulation/Output/StatisticOutput.html
 - Pinned simulator release (not a claim of latest version):
   https://pypi.org/project/eclipse-sumo/1.24.0/
+
+- SUMO documented traffic-light switch-state format and `programID` field:
+  https://sumo.dlr.de/docs/Simulation/Output/Traffic_Lights.html

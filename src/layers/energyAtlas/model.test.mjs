@@ -178,6 +178,15 @@ test('unsafe or invalid source URLs are refused', () => {
   }
 });
 
+test('source URL must be a string, not a coercible object', () => {
+  assert.equal(normalizeEnergyObservation({
+    ...BASE, source: {
+      ...BASE.source,
+      url: { toString: () => BASE.source.url },
+    },
+  }), null);
+});
+
 test('source publication requires real ISO calendar date', () => {
   for (const releasedAt of ['2024-02-30', '2026-2-7', 'garbage', null]) {
     assert.equal(normalizeEnergyObservation({
@@ -238,6 +247,9 @@ test('only same-year, same-source, same-level, complete coverage compares', () =
     source: { ...BASE.source, datasetVersion: '2027-01-01' },
   })), false);
   assert.equal(sameComparableMetric(BASE, another({ geographyCoverage: 'partial' })), false);
+  assert.equal(sameComparableMetric(BASE, another({
+    source: { ...BASE.source, url: 'https://example.com/another-dataset' },
+  })), false);
 });
 
 test('different administrative levels or geography vintages do not compare', () => {

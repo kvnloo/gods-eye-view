@@ -21,8 +21,10 @@ const external = [];
 try {
   const inputPath = join(temp, 'synthetic-replay.json');
   const badPath = join(temp, 'invalid-replay.json');
+  const oversizedPath = join(temp, 'oversized-replay.json');
   await writeFile(inputPath, JSON.stringify(createSyntheticReliefDemoReplay()), 'utf8');
   await writeFile(badPath, '{bad json', 'utf8');
+  await writeFile(oversizedPath, 'x'.repeat(65537), 'utf8');
   const page = await browser.newPage();
   page.on('pageerror', (error) => errors.push(error.message));
   await page.setRequestInterception(true);
@@ -76,6 +78,62 @@ try {
   assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 0);
   await page.click('#field-demo');
   assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 2);
+  // Exercise the real browser's async File.text path, not only a unit mock.
+  // A slower, older receipt must never overwrite a later user action.
+  await page.evaluate(() => {
+    const readText = File.prototype.text;
+    window.__deferFieldRead = false;
+    window.__releaseFieldRead = null;
+    File.prototype.text = function (...args) {
+      if (!window.__deferFieldRead) return readText.apply(this, args);
+      window.__deferFieldRead = false;
+      const read = readText.apply(this, args);
+      return new Promise((resolve, reject) => {
+        window.__releaseFieldRead = async () => {
+          try {
+            resolve(await read);
+          } catch (error) {
+            reject(error);
+          }
+        };
+      });
+    };
+  });
+  const completeDeferredRead = async () => {
+    await page.evaluate(async () => {
+      await window.__releaseFieldRead();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+  };
+
+  await page.evaluate(() => {
+    window.__deferFieldRead = true;
+  });
+  await input.uploadFile(inputPath);
+  await page.waitForFunction(() => typeof window.__releaseFieldRead === 'function');
+  await page.click('#field-demo');
+  await completeDeferredRead();
+  assert.equal(
+    await page.$eval('#field-feedback', (e) => e.textContent),
+    'Restored fictional example.',
+  );
+  assert.equal(await page.$eval('.field-card', (cards) => cards.length), 2);
+
+  // An oversized newest selection must keep the old pending import revoked.
+  await page.evaluate(() => {
+    window.__deferFieldRead = true;
+    window.__releaseFieldRead = null;
+  });
+  await input.uploadFile(inputPath);
+  await page.waitForFunction(() => typeof window.__releaseFieldRead === 'function');
+  await input.uploadFile(oversizedPath);
+  await completeDeferredRead();
+  assert.match(
+    await page.$eval('#field-feedback', (e) => e.textContent),
+    /at most 64 KiB/,
+  );
+  assert.equal(await page.$eval('.field-card', (cards) => cards.length), 0);
+
   const mobile = await checkViewport(390, 844);
   await page.screenshot({ path: 'qa-artifacts/field-lite-mobile.png', fullPage: true });
   assert.deepEqual(errors, []);

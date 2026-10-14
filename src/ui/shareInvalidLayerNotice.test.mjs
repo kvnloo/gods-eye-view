@@ -125,8 +125,7 @@ test('share-follow startup notices ignore superseded tracking results', async (t
   const priorGetComputedStyle = globalThis.getComputedStyle;
   globalThis.getComputedStyle = () => ({ visibility: 'visible' });
   t.after(() => {
-    if (priorGetComputedStyle === undefined)
-      delete globalThis.getComputedStyle;
+    if (priorGetComputedStyle === undefined) delete globalThis.getComputedStyle;
     else globalThis.getComputedStyle = priorGetComputedStyle;
   });
 
@@ -159,21 +158,30 @@ test('share-follow startup notices ignore superseded tracking results', async (t
 // Keep the production owner and UiLifetime intact: only the browser clock,
 // cover and external share application are controlled by this fixture.
 function scheduledOwner(t, seam, visibility = 'visible') {
-  const keys = ['window', 'document', 'getComputedStyle',
-    'requestAnimationFrame', 'cancelAnimationFrame'];
-  const prior = new Map(keys.map((key) => [key,
-    Object.getOwnPropertyDescriptor(globalThis, key)]));
+  const keys = [
+    'window',
+    'document',
+    'getComputedStyle',
+    'requestAnimationFrame',
+    'cancelAnimationFrame',
+  ];
+  const prior = new Map(
+    keys.map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)]),
+  );
   const cover = new EventTarget();
   const frames = new Map();
   let nextFrame = 0;
   const notices = [];
   let applyState;
   let completed = 0;
-  const applied = new Promise((resolve) => { applyState = resolve; });
+  const applied = new Promise((resolve) => {
+    applyState = resolve;
+  });
   t.mock.timers.enable({ apis: ['setTimeout'] });
   globalThis.window = new EventTarget();
   globalThis.document = {
-    getElementById: (id) => id === 'loading-screen' && visibility !== 'absent' ? cover : null,
+    getElementById: (id) =>
+      id === 'loading-screen' && visibility !== 'absent' ? cover : null,
   };
   globalThis.getComputedStyle = () => ({ visibility });
   globalThis.requestAnimationFrame = (callback) => {
@@ -184,7 +192,9 @@ function scheduledOwner(t, seam, visibility = 'visible') {
   const owner = createOwner({ layerStateInvalid: seam === 'invalid' }, notices);
   owner.navigation._reassertNavigationHandoff = () => true;
   owner.shareLinkManager.applyState = () => applied;
-  owner.shareLinkManager.completeInitialRestore = () => { completed += 1; };
+  owner.shareLinkManager.completeInitialRestore = () => {
+    completed += 1;
+  };
   t.after(() => {
     owner.destroy();
     for (const [key, descriptor] of prior) {
@@ -194,21 +204,44 @@ function scheduledOwner(t, seam, visibility = 'visible') {
   });
   owner.start();
   const terminal = (classification = 'expired', targetId = 'first') =>
-    owner._handleShareTrackingRestoreStatus({ classification, targetId, label: 'flight' });
+    owner._handleShareTrackingRestoreStatus({
+      classification,
+      targetId,
+      label: 'flight',
+    });
   if (seam === 'follow') terminal();
   return {
-    owner, cover, notices, frames, terminal,
-    message: seam === 'invalid' ? 'Shared layer selection could not be restored' : 'Shared flight follow expired',
+    owner,
+    cover,
+    notices,
+    frames,
+    terminal,
+    message:
+      seam === 'invalid'
+        ? 'Shared layer selection could not be restored'
+        : 'Shared flight follow expired',
     async settle(expectedFrames = 1) {
       t.mock.timers.tick(1500);
       assert.equal(completed, 0, 'restoration must still await applyState');
-      assert.equal(frames.size, 0, 'neither seam may schedule before restoration');
+      assert.equal(
+        frames.size,
+        0,
+        'neither seam may schedule before restoration',
+      );
       assert.deepEqual(notices, []);
       applyState({ camera: 'skipped' });
       await owner.initialRestorePromise;
       await flushDeferredNotice();
-      assert.equal(completed, 1, 'the production restore transaction completed');
-      assert.equal(frames.size, expectedFrames, 'presentation is deferred to an owned frame');
+      assert.equal(
+        completed,
+        1,
+        'the production restore transaction completed',
+      );
+      assert.equal(
+        frames.size,
+        expectedFrames,
+        'presentation is deferred to an owned frame',
+      );
       assert.deepEqual(notices, []);
     },
     frame() {
@@ -240,15 +273,24 @@ for (const seam of ['invalid', 'follow']) {
       assert.equal(h.owner._lifetime.removers.size, 1);
       assert.equal(h.owner._lifetime.timers.size, 1);
       t.mock.timers.tick(999);
-      assert.deepEqual(h.notices, [], 'fallback must retain the full 1000ms wait');
-      if (trigger === 'transition') h.cover.dispatchEvent(new Event('transitionend'));
+      assert.deepEqual(
+        h.notices,
+        [],
+        'fallback must retain the full 1000ms wait',
+      );
+      if (trigger === 'transition')
+        h.cover.dispatchEvent(new Event('transitionend'));
       else t.mock.timers.tick(1);
       assert.deepEqual(h.notices, [h.message]);
       assert.equal(h.owner._lifetime.removers.size, 0);
       assert.equal(h.owner._lifetime.timers.size, 0);
       h.cover.dispatchEvent(new Event('transitionend'));
       t.mock.timers.tick(1000);
-      assert.deepEqual(h.notices, [h.message], 'no replay from the other completion path');
+      assert.deepEqual(
+        h.notices,
+        [h.message],
+        'no replay from the other completion path',
+      );
     });
   }
   for (const phase of ['restore', 'frame', 'cover']) {
@@ -286,7 +328,11 @@ for (const phase of ['frame', 'cover']) {
     assert.deepEqual(h.notices, ['ACQUIRING']);
     h.terminal('followed', 'second');
     h.frame();
-    assert.deepEqual(h.notices, ['ACQUIRING'], 'successful follow adds no terminal error');
+    assert.deepEqual(
+      h.notices,
+      ['ACQUIRING'],
+      'successful follow adds no terminal error',
+    );
   });
 }
 
@@ -299,12 +345,19 @@ for (const trigger of ['transition', 'fallback']) {
     h.terminal('source-unavailable', 'second');
     h.frame();
     assert.deepEqual(h.notices, []);
-    if (trigger === 'transition') h.cover.dispatchEvent(new Event('transitionend'));
+    if (trigger === 'transition')
+      h.cover.dispatchEvent(new Event('transitionend'));
     else t.mock.timers.tick(1000);
-    assert.deepEqual(h.notices, [h.message,
-      'Shared flight could not be restored — feed unavailable']);
+    assert.deepEqual(h.notices, [
+      h.message,
+      'Shared flight could not be restored — feed unavailable',
+    ]);
     h.cover.dispatchEvent(new Event('transitionend'));
     t.mock.timers.tick(1000);
-    assert.equal(h.notices.length, 2, 'independent layer notice survives, stale follow notice does not');
+    assert.equal(
+      h.notices.length,
+      2,
+      'independent layer notice survives, stale follow notice does not',
+    );
   });
 }

@@ -7,7 +7,7 @@
  * No real humanitarian data or external HTTP requests are required or allowed.
  */
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import puppeteer from 'puppeteer';
@@ -62,6 +62,9 @@ try {
   }
 
   const desktop = await checkViewport(1280, 900);
+  // Real preview screenshots are audit evidence only; the page has synthetic data.
+  await mkdir('qa-artifacts', { recursive: true });
+  await page.screenshot({ path: 'qa-artifacts/field-lite-desktop.png', fullPage: true });
   const input = await page.$('#field-local-file');
   await input.uploadFile(inputPath);
   await page.waitForFunction(() =>
@@ -74,6 +77,7 @@ try {
   await page.click('#field-demo');
   assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 2);
   const mobile = await checkViewport(390, 844);
+  await page.screenshot({ path: 'qa-artifacts/field-lite-mobile.png', fullPage: true });
   assert.deepEqual(errors, []);
   assert.deepEqual(external, []);
   console.log(JSON.stringify({ status: 'PASS', desktop, mobile, externalRequests: 0 }));

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Field Lite · Synthetic Relief Replay · God's Eye View</title>
+  <link rel="stylesheet" href="/src/fieldLite/fieldLite.css" />
+</head>
+<body>
+  <main>
+    <nav aria-label="Primary" class="field-nav">
+      <a href="/">God's Eye View</a>
+      <span>Field Lite experiment</span>
+    </nav>
+    <header>
+      <p class="field-kicker">Civic resilience · training example</p>
+      <h1>Relief scenario replay</h1>
+      <p>A read-only comparison of fictional aid allocation before and after one changed road-access assumption.</p>
+    </header>
+    <p class="field-alert"><strong>Synthetic training only.</strong> No live roads, real-world access evidence or aid dispatch. The earlier result is superseded within the scenario.</p>
+    <section aria-label="Local synthetic replay controls" class="field-controls">
+      <div>
+        <label for="field-local-file">Open a local synthetic replay receipt (JSON, ≤64 KiB)</label>
+        <input type="file" id="field-local-file" accept="application/json,.json" />
+      </div>
+      <button type="button" id="field-demo">Restore example</button>
+      <p id="field-feedback" role="status" aria-live="polite"></p>
+    </section>
+    <div id="field-results" aria-live="polite" aria-atomic="true"></div>
+    <footer>Research-only GEV Math372 prototype. No Cesium, external feeds or identity data. Code and provenance are inspectable.</footer>
+  </main>
+  <script type="module" src="/src/fieldLite/main.js"></script>
+</body>
+</html>

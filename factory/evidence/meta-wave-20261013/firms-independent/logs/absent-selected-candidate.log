@@ -1,0 +1,32 @@
+{"command": ["fnm", "exec", "--using=24.14.0", "node", ".//firms-independent/absent-selected-candidate.mjs", "--fixtures", "--url", "http://127.0.0.1:4192"], "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent"}
+
+FIRMS fixture proof (no live-source acceptance)
+  App URL : http://127.0.0.1:4192
+
+(i) FIXTURE — loading synthetic fires through the source adapter...
+  [[32mPASS[0m] FIXTURE: >1000 detections, no error, LIVE label  — count=1600 error=null label="LIVE · updated <1m ago"
+
+(ii) CARDS — tactical card overlay ink at both LODs...
+  [[32mPASS[0m] CARDS: detections-LOD cards drawn (host source + canvas ink)  — entries=17 candidates=17 projected=16 painted=14 inkPx=44250 @ strongest fire FRP 141
+  [[32mPASS[0m] CARDS: global-LOD cell cards drawn (host source + canvas ink)  — entries=1 candidates=1 projected=1 painted=1 inkPx=5108
+  [[32mPASS[0m] CARDS: aggregate cells expose no FIRMS action target  — actionButtons=0
+
+(iii) KEYLESS — intercepted 503 no_key...
+  [[32mPASS[0m] KEYLESS: error "KEY REQUIRED", zero fires, no crash  — error="KEY REQUIRED" count=0 label="KEY REQUIRED"
+
+(iv) STALE — intercepted stale:true payload...
+  [[32mPASS[0m] STALE: stats.stale, "STALE · cached" error, fires still render  — stale=true error="STALE · cached 2h" count=3
+
+(v) ACTION — synthetic intercepted fire card through shared camera policy...
+REVIEW_CLICK {"at":17176.40000000596,"holdMs":60000}
+REVIEW_DELAY_PUBLICATION {"at":17505.29999998212,"until":77176.40000000596,"key":"firms\u0000selected-fire:firms:61.9500:-122.8000:1791933720000:N20"}
+REVIEW_DELAY_PUBLICATION {"at":18069.59999999404,"until":77176.40000000596,"key":"firms\u0000selected-fire:firms:61.9500:-122.8000:1791933720000:N20"}
+REVIEW_DELAY_PUBLICATION {"at":19915.59999999404,"until":77176.40000000596,"key":"firms\u0000selected-fire:firms:61.9500:-122.8000:1791933720000:N20"}
+  [[31mFAIL[0m] ACTION (synthetic): stable fire selects once and shared policy owns flight  — clicked=true flights=1 trackedAtFlight=null generation=1->2 request={"kind":"fire","id":"firms:61.9500:-122.8000:1791933720000:N20"} selected="firms:61.9500:-122.8000:1791933720000:N20" selectedActions=0
+  [[32mPASS[0m] REFRESH: selected detection survives without another selection event  — {"before":{"id":"firms:61.9500:-122.8000:1791933720000:N20","label":"Fire · FRP 45 MW","latitude":61.95,"longitude":-122.8,"frp":45,"confidencePct":60,"observedAt":1791933720000,"source":"VIIRS"},"after":{"id":"firms:61.9500:-122.8000:1791933720000:N20","label":"Fire · FRP 45 MW","latitude":61.95,"longitude":-122.8,"frp":45,"confidencePct":60,"observedAt":1791933720000,"source":"VIIRS"},"selections":0,"contextId":"firms:61.9500:-122.8000:1791933720000:N20"}
+
+────────────────────────────────────────────────────────────
+  RESULT: 7 passed, 1 failed
+  Shots : .//firms-independent/probes/absent-selected-candidate/qa-shots/firms-*.png
+────────────────────────────────────────────────────────────
+

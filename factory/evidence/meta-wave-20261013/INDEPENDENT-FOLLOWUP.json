@@ -1,0 +1,98 @@
+{
+  "firms_commit": "fccd3b163d30f8a991bb7e58aaccb41b5124ac67",
+  "firms_pr": "https://github.com/kvnloo/gods-eye-view/pull/235",
+  "firms_review_passed": true,
+  "reviewed_tree_equals_committed_tree": "4cd40e8b769c495853c9b6a0c5f7f578b3076aee",
+  "radio_review_passed": false,
+  "radio_narrow_overlap_proof": "CLOSED",
+  "radio_overall": "HOLD unresolved full-gate non-regression",
+  "source_results_are_bound_to_original_cohorts": true,
+  "files": [
+    {
+      "path": "firms-independent/verdict.json",
+      "original_sha256": "dcf69ede91068b11cf8dbf097349bbd82549a3a5f977e461bae6d452da563c42",
+      "public_sha256": "71baff024eb07d837a3d5109973a37606c8543257d8f08c1f7a3989b970120d6"
+    },
+    {
+      "path": "firms-independent/tested-overlay.json",
+      "original_sha256": "f85d7da1c6ea2b5a0501ca4d96a4168ea30760fd6d97e9fb6499c665a2647e0c",
+      "public_sha256": "f85d7da1c6ea2b5a0501ca4d96a4168ea30760fd6d97e9fb6499c665a2647e0c"
+    },
+    {
+      "path": "radio-independent/verdict.json",
+      "original_sha256": "7fd619c169303d4267395e51de46d8a9a6b772cc2d7ad8a0658da1ff16eaefc8",
+      "public_sha256": "7fd619c169303d4267395e51de46d8a9a6b772cc2d7ad8a0658da1ff16eaefc8"
+    },
+    {
+      "path": "radio-independent/REPORT.md",
+      "original_sha256": "f0a28601523c8c835b63717f2d83ee94c563c46b9b5fbf434272a81192196c4b",
+      "public_sha256": "cec9284001ce5391d24dea7cd4340e59f34f30a924398f60205fe66f79043138"
+    },
+    {
+      "path": "radio-independent/full-gate-comparison.json",
+      "original_sha256": "5107ac14477cab0b83b81d7e68be07e4cbb096688544d9956235b1790d98e763",
+      "public_sha256": "79ae69b1a6dac3c9832103397316e47ba691857c849984043e977c606f78e3ee"
+    },
+    {
+      "path": "radio-independent/browser-proof-summary.json",
+      "original_sha256": "9aee4d4451eb8583ccbdad53a5cf3d21b168c504a4ce4ce5e6513110cd67241d",
+      "public_sha256": "9aee4d4451eb8583ccbdad53a5cf3d21b168c504a4ce4ce5e6513110cd67241d"
+    },
+    {
+      "path": "firms-independent/logs/baseline-browser.log",
+      "original_sha256": "2bfd1bad64270e0ee3d218941fbf7a750a164260fb5c2835a2bba74491941343",
+      "public_sha256": "31a8c470417e28b37783e44bd9cf7ee31ded3f4bfb26b2e4416ee4a723857f54"
+    },
+    {
+      "path": "firms-independent/logs/baseline-browser-repeat.log",
+      "original_sha256": "66a0ce4c4179b6f06a5e4ba42472627c83818efbb4e2ecdc885630af111156f5",
+      "public_sha256": "d0d1590b2fb85440e0ed53b1463a3255c45522678a6155e27f8c7d7318fcbd07"
+    },
+    {
+      "path": "firms-independent/logs/candidate-browser.log",
+      "original_sha256": "4166b5df57554226d882a6c2f06db2f6b6284cd1bf4e4d6f586f77ea3a498b24",
+      "public_sha256": "f61e1bdbfd20a9adc0f635212e5aecff93f1cc4cecdd73bc246e35dcb47b0170"
+    },
+    {
+      "path": "firms-independent/logs/delayed-candidate.log",
+      "original_sha256": "f8918382e179e6fc03a1ff552a9479ddedb4d5be521c10f451a693b712aadfb8",
+      "public_sha256": "0727dd6ee747ed8b1b1fad48b8bcd5c2702ce88d49635fcbc7833ab8af769033"
+    },
+    {
+      "path": "firms-independent/logs/delayed-callsite-reverted.log",
+      "original_sha256": "9fe91526a2ec40cb87009713c171531a194cd46bb857230fb2bdd4bcf91311b6",
+      "public_sha256": "bf6d9c6605a625208b67718ccada673150aabd25f9096f5e4abd293de0dcf5b4"
+    },
+    {
+      "path": "firms-independent/logs/absent-selected-candidate.log",
+      "original_sha256": "8e0e08f9228107b0b3e1bd46c68fd7a3fdea4309e33e1ab3dae1fcf55f447958",
+      "public_sha256": "7d331754c3ef0e6921dfce70c5d7b01535a3ef26099077600a2cee019de1dcb5"
+    },
+    {
+      "path": "radio-independent/full-radio.log",
+      "original_sha256": "305ae5435e255de36ff1cdfaa5c1119f6ce640257b8f04619dbdddb626c7fd3d",
+      "public_sha256": "305ae5435e255de36ff1cdfaa5c1119f6ce640257b8f04619dbdddb626c7fd3d"
+    },
+    {
+      "path": "radio-independent/baseline-radio.log",
+      "original_sha256": "2e05cc8288cfd9015986727dfe5d20e764f7582dfbb254021886a0eab4640b8d",
+      "public_sha256": "2e05cc8288cfd9015986727dfe5d20e764f7582dfbb254021886a0eab4640b8d"
+    },
+    {
+      "path": "radio-independent/candidate-repeat-radio.log",
+      "original_sha256": "6084afc50174df1fb996dd9bb550e1ce8ef0b08ccf6ba2442b485ab58096227f",
+      "public_sha256": "6084afc50174df1fb996dd9bb550e1ce8ef0b08ccf6ba2442b485ab58096227f"
+    },
+    {
+      "path": "radio-independent/callback-negative.log",
+      "original_sha256": "d832ae177e47dd4ad1538e43644284cb275061334698611fe0b829970de156f1",
+      "public_sha256": "5080a153caa93e0a3fdd46d7b837a32045382deba463f42f1c5d9b40a557971e"
+    },
+    {
+      "path": "radio-independent/restored-green.log",
+      "original_sha256": "d6a61f4f5cc09246e2b7536433dbc1cff50328c2e5df58f2e253ad002a0f03b0",
+      "public_sha256": "60dbdbe7bf1dba956906d51f3485c3e74da13409e9108c55b2012291b961b1ca"
+    }
+  ],
+  "public_normalization": "Operator paths normalized; public Markdown hard-break spaces expressed as blank lines. Original local files and hashes unchanged."
+}

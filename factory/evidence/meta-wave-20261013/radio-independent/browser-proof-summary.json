@@ -1,0 +1,198 @@
+{
+  "callback-negative": {
+    "settled": {
+      "theme": "minimal",
+      "owner": {
+        "x": 1058,
+        "y": 542.296875,
+        "width": 330,
+        "height": 122.890625,
+        "top": 542.296875,
+        "right": 1388,
+        "bottom": 665.1875,
+        "left": 1058
+      },
+      "mini": {
+        "x": 1112,
+        "y": 605.296875,
+        "width": 244,
+        "height": 135.6875,
+        "top": 605.296875,
+        "right": 1356,
+        "bottom": 740.984375,
+        "left": 1112
+      },
+      "classes": "panel-collapsible",
+      "expanded": "false"
+    },
+    "overlap_owner": {
+      "width": 244,
+      "height": 59.890625,
+      "area": 14613.3125
+    },
+    "controls": [
+      {
+        "id": "global-context-flights-btn",
+        "text": "radar\n            CONTACTS",
+        "overlap": {
+          "width": 100,
+          "height": 30.0,
+          "area": 3000.0
+        }
+      },
+      {
+        "id": "global-context-missions-btn",
+        "text": "rocket_launch\n            SPACE MISSIONS",
+        "overlap": {
+          "width": 137,
+          "height": 30.0,
+          "area": 4110.0
+        }
+      }
+    ],
+    "after_open_event_counts": {
+      "pointerdown": 0,
+      "click": 0,
+      "keydown": 64,
+      "change": 1
+    },
+    "all_after_open_events_trusted": true,
+    "final_events": [
+      {
+        "type": "keydown",
+        "id": "hud-layout-select",
+        "key": "ArrowUp",
+        "trusted": true,
+        "value": "cyber"
+      },
+      {
+        "type": "change",
+        "id": "hud-layout-select",
+        "trusted": true,
+        "value": "minimal"
+      },
+      {
+        "type": "keydown",
+        "id": "hud-layout-select",
+        "key": "Tab",
+        "trusted": true,
+        "value": "minimal"
+      }
+    ],
+    "pageerrors": [],
+    "console_errors": [
+      {
+        "kind": "console-error",
+        "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "location": {
+          "url": "http://127.0.0.1:4191/api/google/tiles-token"
+        }
+      },
+      {
+        "kind": "console-error",
+        "text": "Failed to load resource: the server responded with a status of 504 (Outdated Optimize Dep)",
+        "location": {
+          "url": "http://127.0.0.1:4191/node_modules/.vite/deps/egm96-universal.js?v=ae8aa250"
+        }
+      }
+    ]
+  },
+  "restored-green": {
+    "settled": {
+      "theme": "minimal",
+      "owner": {
+        "x": 1058,
+        "y": 542.296875,
+        "width": 330,
+        "height": 122.890625,
+        "top": 542.296875,
+        "right": 1388,
+        "bottom": 665.1875,
+        "left": 1058
+      },
+      "mini": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "classes": "panel-collapsible",
+      "expanded": "false"
+    },
+    "overlap_owner": {
+      "width": 0,
+      "height": 0,
+      "area": 0
+    },
+    "controls": [
+      {
+        "id": "global-context-flights-btn",
+        "text": "radar\n            CONTACTS",
+        "overlap": {
+          "width": 0,
+          "height": 0,
+          "area": 0
+        }
+      },
+      {
+        "id": "global-context-missions-btn",
+        "text": "rocket_launch\n            SPACE MISSIONS",
+        "overlap": {
+          "width": 0,
+          "height": 0,
+          "area": 0
+        }
+      }
+    ],
+    "after_open_event_counts": {
+      "pointerdown": 0,
+      "click": 0,
+      "keydown": 64,
+      "change": 1
+    },
+    "all_after_open_events_trusted": true,
+    "final_events": [
+      {
+        "type": "keydown",
+        "id": "hud-layout-select",
+        "key": "ArrowUp",
+        "trusted": true,
+        "value": "cyber"
+      },
+      {
+        "type": "change",
+        "id": "hud-layout-select",
+        "trusted": true,
+        "value": "minimal"
+      },
+      {
+        "type": "keydown",
+        "id": "hud-layout-select",
+        "key": "Tab",
+        "trusted": true,
+        "value": "minimal"
+      }
+    ],
+    "pageerrors": [],
+    "console_errors": [
+      {
+        "kind": "console-error",
+        "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "location": {
+          "url": "http://127.0.0.1:4191/api/google/tiles-token"
+        }
+      },
+      {
+        "kind": "console-error",
+        "text": "Failed to load resource: the server responded with a status of 504 (Outdated Optimize Dep)",
+        "location": {
+          "url": "http://127.0.0.1:4191/node_modules/.vite/deps/egm96-universal.js?v=ae8aa250"
+        }
+      }
+    ]
+  }
+}

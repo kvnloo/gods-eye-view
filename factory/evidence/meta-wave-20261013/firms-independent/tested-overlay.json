@@ -1,0 +1,14 @@
+{
+  "base": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+  "patch_sha256": "5802a4956d3f76cd75d81f8f4401ba88e6c5de7336c0509acec7b2d06d91047f",
+  "files": {
+    "scripts/format-scope.json": "c1dedcc978e70b3b5d9357ed4a0c7c970abbce6d084d687f1b57b94ef9f3ce8f",
+    "scripts/qa-firms.mjs": "211d3595d3cb10524d6792793ac604d653cb15d105ca4a7d42e023707eea4e71",
+    "src/qaFirmsActions.test.mjs": "c059d38a3a6c1daa34bbeee42f063407f8e6b4b8e76b0a8a1b64ae05a9640a8a"
+  },
+  "commit": null,
+  "commit_note": "No configured Git author identity; not invented or globally configured.",
+  "tree": "4cd40e8b769c495853c9b6a0c5f7f578b3076aee",
+  "head": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+  "index_note": "isolated artifact index; reviewer and original worktree indexes not staged"
+}

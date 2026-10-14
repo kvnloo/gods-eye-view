@@ -1,0 +1,1064 @@
+{
+  "passed": true,
+  "security_concerns": [],
+  "logic_errors": [],
+  "suggestions": [
+    {
+      "severity": "non-blocking",
+      "topic": "durable call-site regression",
+      "detail": "The three shipped tests lock the helper, not its browser wiring: they still pass when only the new call site is reverted. This review separately proves wiring with an actual-browser delayed-publication control; consider retaining that control in a future reusable browser-gate test."
+    },
+    {
+      "severity": "non-blocking",
+      "topic": "timeout terminology",
+      "detail": "Describe timeoutMs as a polling budget, not a hard cancellation deadline: the inherited Date.now loop may overshoot by one 175ms sleep plus browser-evaluation time, and it does not abort an in-flight evaluation."
+    }
+  ],
+  "summary": "PASS for the exact three-file local QA-only overlay: selected-action synchronization preserves every existing assertion, survives delayed real browser publication, and fails closed on absence; suitable for parent local commit/fork-draft preparation, not origin authorization.",
+  "observed_at": "2026-10-14T01:29:54.331382+00:00",
+  "independence": "Reviewer did not implement or repair the patch. Fresh detached worktree; original owner worktree read-only and unchanged before/after. No commits or remote actions.",
+  "base_commit": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+  "base_tree": "610ab176698e40c416dd79f9bd2c47a0cae611d7",
+  "tested_overlay_tree": "4cd40e8b769c495853c9b6a0c5f7f578b3076aee",
+  "patch_sha256": "5802a4956d3f76cd75d81f8f4401ba88e6c5de7336c0509acec7b2d06d91047f",
+  "candidate_file_sha256": {
+    "scripts/format-scope.json": "c1dedcc978e70b3b5d9357ed4a0c7c970abbce6d084d687f1b57b94ef9f3ce8f",
+    "scripts/qa-firms.mjs": "211d3595d3cb10524d6792793ac604d653cb15d105ca4a7d42e023707eea4e71",
+    "src/qaFirmsActions.test.mjs": "c059d38a3a6c1daa34bbeee42f063407f8e6b4b8e76b0a8a1b64ae05a9640a8a"
+  },
+  "candidate_commit": null,
+  "original_worktree": "<operator-worktrees>/gev-meta-wave/ci-qa",
+  "review_worktree": "<operator-worktrees>/gev-meta-wave/firms-independent",
+  "artifact_root": ".//firms-independent",
+  "original_worktree_integrity": {
+    "before": ".//firms-independent/owner-before.json",
+    "after": ".//firms-independent/owner-after.json",
+    "identical": true
+  },
+  "static_review": {
+    "three_file_scope": [
+      "scripts/format-scope.json",
+      "scripts/qa-firms.mjs",
+      "src/qaFirmsActions.test.mjs"
+    ],
+    "qa_changes_exactly_reconstruct_base": true,
+    "all_existing_action_and_refresh_assertions_byte_identical": true,
+    "early_exit_1064_mechanism_untouched": true,
+    "format_manifest_only_adds_new_test": true,
+    "no_production_app_change": true,
+    "static_added_line_scan": {
+      "secret_literal": [],
+      "shell_injection": [],
+      "eval_exec": [],
+      "unsafe_deserialization": []
+    },
+    "vm_note": "vm.runInNewContext executes a bounded slice of trusted local QA source inside the new test; no untrusted input or network path added"
+  },
+  "browser_execution": [
+    {
+      "label": "baseline-browser",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=24.14.0",
+        "node",
+        "scripts/qa-firms.mjs",
+        "--fixtures",
+        "--url",
+        "http://127.0.0.1:4192"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 46.244,
+      "log": ".//firms-independent/logs/baseline-browser.log",
+      "passed": 8,
+      "failed": 0,
+      "failed_assertions": [],
+      "page_errors": []
+    },
+    {
+      "label": "baseline-browser-repeat",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=24.14.0",
+        "node",
+        "scripts/qa-firms.mjs",
+        "--fixtures",
+        "--url",
+        "http://127.0.0.1:4192"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 97.672,
+      "log": ".//firms-independent/logs/baseline-browser-repeat.log",
+      "passed": 8,
+      "failed": 0,
+      "failed_assertions": [],
+      "page_errors": []
+    },
+    {
+      "label": "candidate-browser",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=24.14.0",
+        "node",
+        "scripts/qa-firms.mjs",
+        "--fixtures",
+        "--url",
+        "http://127.0.0.1:4192"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 63.309,
+      "log": ".//firms-independent/logs/candidate-browser.log",
+      "passed": 8,
+      "failed": 0,
+      "failed_assertions": [],
+      "page_errors": []
+    },
+    {
+      "label": "delayed-candidate",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=24.14.0",
+        "node",
+        ".//firms-independent/delayed-candidate.mjs",
+        "--fixtures",
+        "--url",
+        "http://127.0.0.1:4192"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 62.857,
+      "log": ".//firms-independent/logs/delayed-candidate.log",
+      "passed": 8,
+      "failed": 0,
+      "failed_assertions": [],
+      "page_errors": []
+    },
+    {
+      "label": "delayed-callsite-reverted",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=24.14.0",
+        "node",
+        ".//firms-independent/delayed-callsite-reverted.mjs",
+        "--fixtures",
+        "--url",
+        "http://127.0.0.1:4192"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 1,
+      "seconds": 87.253,
+      "log": ".//firms-independent/logs/delayed-callsite-reverted.log",
+      "passed": 7,
+      "failed": 1,
+      "failed_assertions": [
+        "ACTION (synthetic): stable fire selects once and shared policy owns flight  \u2014 clicked=true flights=1 trackedAtFlight=null generation=1->2 request={\"kind\":\"fire\",\"id\":\"firms:61.9500:-122.8000:1791933660000:N20\"} selected=\"firms:61.9500:-122.8000:1791933660000:N20\" selectedActions=0"
+      ],
+      "page_errors": []
+    },
+    {
+      "label": "absent-selected-candidate",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=24.14.0",
+        "node",
+        ".//firms-independent/absent-selected-candidate.mjs",
+        "--fixtures",
+        "--url",
+        "http://127.0.0.1:4192"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 1,
+      "seconds": 93.546,
+      "log": ".//firms-independent/logs/absent-selected-candidate.log",
+      "passed": 7,
+      "failed": 1,
+      "failed_assertions": [
+        "ACTION (synthetic): stable fire selects once and shared policy owns flight  \u2014 clicked=true flights=1 trackedAtFlight=null generation=1->2 request={\"kind\":\"fire\",\"id\":\"firms:61.9500:-122.8000:1791933720000:N20\"} selected=\"firms:61.9500:-122.8000:1791933720000:N20\" selectedActions=0"
+      ],
+      "page_errors": []
+    }
+  ],
+  "unit_execution": [
+    {
+      "label": "focused-node24.14.0",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=24.14.0",
+        "node",
+        "--test",
+        "src/qaFirmsActions.test.mjs"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 0.164,
+      "log": ".//firms-independent/logs/focused-node24.14.0.log",
+      "counts": {
+        "tests": 3,
+        "pass": 3,
+        "fail": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "label": "helper-controls-node24.14.0",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=24.14.0",
+        "node",
+        "--test",
+        ".//firms-independent/helper-controls.mjs"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 0.166,
+      "log": ".//firms-independent/logs/helper-controls-node24.14.0.log",
+      "counts": {
+        "tests": 11,
+        "pass": 11,
+        "fail": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "label": "baseline-helper-node24.14.0",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=24.14.0",
+        "node",
+        "--test",
+        ".//firms-independent/unit-mutants/baseline-helper/src/qaFirmsActions.test.mjs"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 1,
+      "seconds": 0.265,
+      "log": ".//firms-independent/logs/baseline-helper-node24.14.0.log",
+      "counts": {
+        "tests": 3,
+        "pass": 1,
+        "fail": 2,
+        "skipped": 0
+      }
+    },
+    {
+      "label": "reverted-callsite-helper-node24.14.0",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=24.14.0",
+        "node",
+        "--test",
+        ".//firms-independent/unit-mutants/reverted-callsite-helper/src/qaFirmsActions.test.mjs"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 0.164,
+      "log": ".//firms-independent/logs/reverted-callsite-helper-node24.14.0.log",
+      "counts": {
+        "tests": 3,
+        "pass": 3,
+        "fail": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "label": "focused-node26.5.0",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=26.5.0",
+        "node",
+        "--test",
+        "src/qaFirmsActions.test.mjs"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 0.164,
+      "log": ".//firms-independent/logs/focused-node26.5.0.log",
+      "counts": {
+        "tests": 3,
+        "pass": 3,
+        "fail": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "label": "helper-controls-node26.5.0",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=26.5.0",
+        "node",
+        "--test",
+        ".//firms-independent/helper-controls.mjs"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 0.164,
+      "log": ".//firms-independent/logs/helper-controls-node26.5.0.log",
+      "counts": {
+        "tests": 11,
+        "pass": 11,
+        "fail": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "label": "baseline-helper-node26.5.0",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=26.5.0",
+        "node",
+        "--test",
+        ".//firms-independent/unit-mutants/baseline-helper/src/qaFirmsActions.test.mjs"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 1,
+      "seconds": 0.164,
+      "log": ".//firms-independent/logs/baseline-helper-node26.5.0.log",
+      "counts": {
+        "tests": 3,
+        "pass": 1,
+        "fail": 2,
+        "skipped": 0
+      }
+    },
+    {
+      "label": "reverted-callsite-helper-node26.5.0",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=26.5.0",
+        "node",
+        "--test",
+        ".//firms-independent/unit-mutants/reverted-callsite-helper/src/qaFirmsActions.test.mjs"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 0.164,
+      "log": ".//firms-independent/logs/reverted-callsite-helper-node26.5.0.log",
+      "counts": {
+        "tests": 3,
+        "pass": 3,
+        "fail": 0,
+        "skipped": 0
+      }
+    }
+  ],
+  "format_and_boundaries": {
+    "format": {
+      "label": "format",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=24.14.0",
+        "npm",
+        "run",
+        "format:check"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 32.506,
+      "log": ".//firms-independent/logs/format.log"
+    },
+    "boundaries": {
+      "label": "boundaries",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=24.14.0",
+        "npm",
+        "run",
+        "check:boundaries"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 35.514,
+      "log": ".//firms-independent/logs/boundaries.log"
+    },
+    "format-node26": {
+      "label": "format-node26",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=26.5.0",
+        "npm",
+        "run",
+        "format:check"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 27.439,
+      "log": ".//firms-independent/logs/format-node26.log"
+    },
+    "boundaries-node26": {
+      "label": "boundaries-node26",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=26.5.0",
+        "npm",
+        "run",
+        "check:boundaries"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 23.485,
+      "log": ".//firms-independent/logs/boundaries-node26.log"
+    },
+    "diff-check": {
+      "label": "diff-check",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 1.167,
+      "log": ".//firms-independent/logs/diff-check.log"
+    },
+    "unit-adoption": {
+      "label": "unit-adoption",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=24.14.0",
+        "node",
+        "--input-type=module",
+        "-e",
+        "import assert from 'node:assert/strict'; import {discoverUnitTestFiles,buildUnitTestPlan} from './scripts/run-unit-tests.mjs'; const target='src/qaFirmsActions.test.mjs'; const plan=buildUnitTestPlan(discoverUnitTestFiles()); assert.equal(plan.parallel.filter(p=>p===target).length,1); console.log('New test discovered exactly once in ordinary suite:',target);"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 0.266,
+      "log": ".//firms-independent/logs/unit-adoption.log"
+    }
+  },
+  "behavioral_analysis": {
+    "selected_wait": "selectedOnly:true uses selectedCount === 1, not count === 1; the independent tape keeps count at 1 while selectedCount is 0 then 2, and only resolves at selectedCount 1 with count 2.",
+    "bounded_absence": "The shipped 350ms tape terminates at 350ms with selectedCount 0. The independent default-budget tape terminates at 12075ms after 70 reads; zero-budget and non-multiple budgets retain the last snapshot.",
+    "error_propagation": "Independent probes show initial snapshot, subsequent snapshot, render request and sleep rejections propagate as the exact original Error. The unchanged browser outer catch converts errors to exitCode 3, rather than a green result.",
+    "consumer_fail_closed": "Returned timeout snapshots do not create success: the real post-wait proof resamples DOM and retains selectedActionCount === 1 alongside click/flight/tracking/generation/request identity conditions. A 60000ms publication hold beyond the default wait returns 7 PASS/1 ACTION FAIL and exit 1.",
+    "aggregate_preservation": "Default selectedOnly:false retains all-action counting. Existing aggregateActions.count === 0 assertion is byte-identical, passes in every browser run, and default-aggregate helper tapes still wait for all buttons to disappear.",
+    "assertion_integrity": "Reverse only the four intended source edits and qa-firms.mjs is byte-identical to base. actionOk, refreshOk, post-proof handling and early-exit code are unchanged. Existing tests are not edited; one new test file is adopted in format-scope and discovered exactly once by the ordinary unit plan.",
+    "callsite_control": "Review-only scripts run the entire real QA gate and application. After the original real button click, a browser Node.appendChild wrapper defers aria-pressed publication for actual selected FIRMS buttons. With identical injected delay/assertions, candidate yields 8/0; reverting only post-click wait to sleep(250) yields 7/1. No selection, flight, generation or assertion result is fabricated."
+  },
+  "natural_reproduction": {
+    "fresh_unchanged_baseline_runs": 2,
+    "fresh_baseline_selected_failures": 0,
+    "statement": "Both fresh unchanged baselines passed 8/8. This review did NOT independently reproduce the natural historical timing flake and makes no measured flake-rate claim.",
+    "historical_owner_log": ".//ci-qa/logs/main-browser-firms-fixtures.log",
+    "historical_owner_log_sha256": "9f8452badcc6e5fd24cc3e7cf33c87879ad018d57082ebda48366a3b139a0e99",
+    "historical_result": "Owner-supplied historical log records 7 passes/1 selectedActions=0 failure; reviewed as prior evidence only.",
+    "mutation_result": "The fresh 7/1 result uses explicitly instrumented browser publication or the reverted call-site script. It is mutation/call-site sensitivity, not unchanged-baseline reproduction."
+  },
+  "ownership": {
+    "candidate": "Original ci-qa worker owns the selected-action wait patch; this worker provides independent review receipts only.",
+    "1064": "quanticsoul4772 owns the early QA exit repair at 1fb09561ee378c96bebdbda2e74615f6d1983bb1. Candidate leaves those early-exit lines byte-identical to main; no duplicate implementation, adoption or independent Windows claim.",
+    "1061": "Pinned saved overlap snapshot at 57a05f81579f800771dc8116dc566205286b1659 owns shared Chrome discovery/adoption. It does not edit qa-firms.mjs in that snapshot; its format-manifest additions are distinct. This candidate claims no browser-discovery fix.",
+    "freshness": "Ownership comparison uses the parent-provided pinned artifacts; no live remote ownership refresh performed by reviewer."
+  },
+  "environment": {
+    "node_versions": [
+      "24.14.0",
+      "26.5.0"
+    ],
+    "browser": "<operator-home>/.cache/puppeteer/chrome/linux-152.0.7977.75/chrome-linux64/chrome",
+    "browser_version_log": ".//firms-independent/logs/chrome-version.log",
+    "host_log": ".//firms-independent/logs/host.log",
+    "headless": true,
+    "cores_disabled": true,
+    "port": 4192,
+    "server_stopped_port_free": true,
+    "TMPDIR": "<operator-home>/.hermes/profiles/clean/cache/scratch/gfi",
+    "QA_FAIL_ON_RETRY": "1",
+    "helper_controls_REVIEW_SOURCE": "<operator-worktrees>/gev-meta-wave/firms-independent/scripts/qa-firms.mjs",
+    "overlay_GIT_INDEX_FILE": ".//firms-independent/overlay.index",
+    "verification_retry": "Initial final-overlay-diff used the ordinary unstaged index, so Git treated the new untracked test as deleted. Its actual SHA256 was unchanged. Repeated exact-tree diff with the isolated overlay index; raw initial receipt retained.",
+    "dependencies": "Private reflink-capable copy of installed dependencies, only after exact package.json and package-lock.json equality; no shared dependency edits.",
+    "provider_keys": "No .env copied; provider API keys/tokens excluded from child environment; FIRMS fixture interception, not live-feed acceptance.",
+    "screenshots": "Actual app screenshot shows FIRE 45 MW card and application UI; white globe imagery is not a claim of live imagery correctness."
+  },
+  "not_rerun": [
+    "full unit/allocation suite",
+    "build",
+    "tracking regression",
+    "native Windows",
+    "live FIRMS provider"
+  ],
+  "prior_full_suite_receipts": {
+    "path": ".//ci-qa/RESULTS.json",
+    "note": "Parent/owner receipts retained as historical, not represented as independent fresh full-suite execution; user explicitly scoped this review to focused tests."
+  },
+  "authorization": {
+    "local_readiness": "READY_FOR_PARENT_LOCAL_COMMIT_OR_FORK_DRAFT_PREPARATION",
+    "origin": "HELD: mandatory Linear origin gate unavailable; this verdict grants no origin authorization",
+    "reviewer_remote_writes": 0,
+    "reviewer_commits": 0,
+    "reviewer_fixes": 0
+  },
+  "issues_encountered": [
+    "Natural timing RED did not recur in two unchanged baseline runs; explicitly separated from mutation proof.",
+    "Repository-index service became unavailable for targeted lookups; bounded local source searches used instead.",
+    "Saved PR metadata used a list envelope; initial metadata-only parse failed, then was corrected without affecting tests."
+  ],
+  "raw_commands": [
+    {
+      "label": "create-worktree",
+      "command": [
+        "git",
+        "worktree",
+        "add",
+        "--detach",
+        "<operator-worktrees>/gev-meta-wave/firms-independent",
+        "132b9e96dc1491e5db8bf949b1560f4561c925c3"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/source",
+      "exit_code": 0,
+      "seconds": 0.364,
+      "log": ".//firms-independent/logs/create-worktree.log"
+    },
+    {
+      "label": "copy-dependencies",
+      "command": [
+        "cp",
+        "-a",
+        "--reflink=auto",
+        "<operator-worktrees>/gev-meta-wave/source/node_modules",
+        "<operator-worktrees>/gev-meta-wave/firms-independent/node_modules"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 0.466,
+      "log": ".//firms-independent/logs/copy-dependencies.log"
+    },
+    {
+      "label": "baseline-browser",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=24.14.0",
+        "node",
+        "scripts/qa-firms.mjs",
+        "--fixtures",
+        "--url",
+        "http://127.0.0.1:4192"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 46.244,
+      "log": ".//firms-independent/logs/baseline-browser.log"
+    },
+    {
+      "label": "baseline-browser-repeat",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=24.14.0",
+        "node",
+        "scripts/qa-firms.mjs",
+        "--fixtures",
+        "--url",
+        "http://127.0.0.1:4192"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 97.672,
+      "log": ".//firms-independent/logs/baseline-browser-repeat.log"
+    },
+    {
+      "label": "patch-check",
+      "command": [
+        "git",
+        "apply",
+        "--check",
+        ".//ci-qa/candidate.patch"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 0.016,
+      "log": ".//firms-independent/logs/patch-check.log"
+    },
+    {
+      "label": "patch-apply",
+      "command": [
+        "git",
+        "apply",
+        ".//ci-qa/candidate.patch"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 0.004,
+      "log": ".//firms-independent/logs/patch-apply.log"
+    },
+    {
+      "label": "overlay-index-base",
+      "command": [
+        "git",
+        "read-tree",
+        "132b9e96dc1491e5db8bf949b1560f4561c925c3"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 0.008,
+      "log": ".//firms-independent/logs/overlay-index-base.log"
+    },
+    {
+      "label": "overlay-index-files",
+      "command": [
+        "git",
+        "add",
+        "--",
+        "scripts/format-scope.json",
+        "scripts/qa-firms.mjs",
+        "src/qaFirmsActions.test.mjs"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 0.016,
+      "log": ".//firms-independent/logs/overlay-index-files.log"
+    },
+    {
+      "label": "overlay-write-tree",
+      "command": [
+        "git",
+        "write-tree"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 0.016,
+      "log": ".//firms-independent/logs/overlay-write-tree.log"
+    },
+    {
+      "label": "focused-node24.14.0",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=24.14.0",
+        "node",
+        "--test",
+        "src/qaFirmsActions.test.mjs"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 0.164,
+      "log": ".//firms-independent/logs/focused-node24.14.0.log"
+    },
+    {
+      "label": "helper-controls-node24.14.0",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=24.14.0",
+        "node",
+        "--test",
+        ".//firms-independent/helper-controls.mjs"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 0.166,
+      "log": ".//firms-independent/logs/helper-controls-node24.14.0.log"
+    },
+    {
+      "label": "focused-node26.5.0",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=26.5.0",
+        "node",
+        "--test",
+        "src/qaFirmsActions.test.mjs"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 0.164,
+      "log": ".//firms-independent/logs/focused-node26.5.0.log"
+    },
+    {
+      "label": "helper-controls-node26.5.0",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=26.5.0",
+        "node",
+        "--test",
+        ".//firms-independent/helper-controls.mjs"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 0.164,
+      "log": ".//firms-independent/logs/helper-controls-node26.5.0.log"
+    },
+    {
+      "label": "format",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=24.14.0",
+        "npm",
+        "run",
+        "format:check"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 32.506,
+      "log": ".//firms-independent/logs/format.log"
+    },
+    {
+      "label": "boundaries",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=24.14.0",
+        "npm",
+        "run",
+        "check:boundaries"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 35.514,
+      "log": ".//firms-independent/logs/boundaries.log"
+    },
+    {
+      "label": "diff-check",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 1.167,
+      "log": ".//firms-independent/logs/diff-check.log"
+    },
+    {
+      "label": "candidate-browser",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=24.14.0",
+        "node",
+        "scripts/qa-firms.mjs",
+        "--fixtures",
+        "--url",
+        "http://127.0.0.1:4192"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 63.309,
+      "log": ".//firms-independent/logs/candidate-browser.log"
+    },
+    {
+      "label": "delayed-candidate",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=24.14.0",
+        "node",
+        ".//firms-independent/delayed-candidate.mjs",
+        "--fixtures",
+        "--url",
+        "http://127.0.0.1:4192"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 62.857,
+      "log": ".//firms-independent/logs/delayed-candidate.log"
+    },
+    {
+      "label": "baseline-helper-node24.14.0",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=24.14.0",
+        "node",
+        "--test",
+        ".//firms-independent/unit-mutants/baseline-helper/src/qaFirmsActions.test.mjs"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 1,
+      "seconds": 0.265,
+      "log": ".//firms-independent/logs/baseline-helper-node24.14.0.log"
+    },
+    {
+      "label": "baseline-helper-node26.5.0",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=26.5.0",
+        "node",
+        "--test",
+        ".//firms-independent/unit-mutants/baseline-helper/src/qaFirmsActions.test.mjs"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 1,
+      "seconds": 0.164,
+      "log": ".//firms-independent/logs/baseline-helper-node26.5.0.log"
+    },
+    {
+      "label": "reverted-callsite-helper-node24.14.0",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=24.14.0",
+        "node",
+        "--test",
+        ".//firms-independent/unit-mutants/reverted-callsite-helper/src/qaFirmsActions.test.mjs"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 0.164,
+      "log": ".//firms-independent/logs/reverted-callsite-helper-node24.14.0.log"
+    },
+    {
+      "label": "reverted-callsite-helper-node26.5.0",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=26.5.0",
+        "node",
+        "--test",
+        ".//firms-independent/unit-mutants/reverted-callsite-helper/src/qaFirmsActions.test.mjs"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 0.164,
+      "log": ".//firms-independent/logs/reverted-callsite-helper-node26.5.0.log"
+    },
+    {
+      "label": "owner1064-firms-diff",
+      "command": [
+        "git",
+        "diff",
+        "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+        "1fb09561ee378c96bebdbda2e74615f6d1983bb1",
+        "--",
+        "scripts/qa-firms.mjs"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 0.008,
+      "log": ".//firms-independent/logs/owner1064-firms-diff.log"
+    },
+    {
+      "label": "delayed-callsite-reverted",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=24.14.0",
+        "node",
+        ".//firms-independent/delayed-callsite-reverted.mjs",
+        "--fixtures",
+        "--url",
+        "http://127.0.0.1:4192"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 1,
+      "seconds": 87.253,
+      "log": ".//firms-independent/logs/delayed-callsite-reverted.log"
+    },
+    {
+      "label": "absent-selected-candidate",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=24.14.0",
+        "node",
+        ".//firms-independent/absent-selected-candidate.mjs",
+        "--fixtures",
+        "--url",
+        "http://127.0.0.1:4192"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 1,
+      "seconds": 93.546,
+      "log": ".//firms-independent/logs/absent-selected-candidate.log"
+    },
+    {
+      "label": "format-node26",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=26.5.0",
+        "npm",
+        "run",
+        "format:check"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 27.439,
+      "log": ".//firms-independent/logs/format-node26.log"
+    },
+    {
+      "label": "boundaries-node26",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=26.5.0",
+        "npm",
+        "run",
+        "check:boundaries"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 23.485,
+      "log": ".//firms-independent/logs/boundaries-node26.log"
+    },
+    {
+      "label": "node24-version",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=24.14.0",
+        "node",
+        "--version"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 0.114,
+      "log": ".//firms-independent/logs/node24-version.log"
+    },
+    {
+      "label": "node26-version",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=26.5.0",
+        "node",
+        "--version"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 0.114,
+      "log": ".//firms-independent/logs/node26-version.log"
+    },
+    {
+      "label": "chrome-version",
+      "command": [
+        "<operator-home>/.cache/puppeteer/chrome/linux-152.0.7977.75/chrome-linux64/chrome",
+        "--version"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 0.115,
+      "log": ".//firms-independent/logs/chrome-version.log"
+    },
+    {
+      "label": "host",
+      "command": [
+        "uname",
+        "-srm"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 0.002,
+      "log": ".//firms-independent/logs/host.log"
+    },
+    {
+      "label": "dev-server",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=24.14.0",
+        "node",
+        "node_modules/vite/bin/vite.js",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "4192",
+        "--strictPort"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": -15,
+      "seconds": 769.837,
+      "log": ".//firms-independent/logs/dev-server.log"
+    },
+    {
+      "label": "unit-adoption",
+      "command": [
+        "fnm",
+        "exec",
+        "--using=24.14.0",
+        "node",
+        "--input-type=module",
+        "-e",
+        "import assert from 'node:assert/strict'; import {discoverUnitTestFiles,buildUnitTestPlan} from './scripts/run-unit-tests.mjs'; const target='src/qaFirmsActions.test.mjs'; const plan=buildUnitTestPlan(discoverUnitTestFiles()); assert.equal(plan.parallel.filter(p=>p===target).length,1); console.log('New test discovered exactly once in ordinary suite:',target);"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 0.266,
+      "log": ".//firms-independent/logs/unit-adoption.log"
+    },
+    {
+      "label": "port-cleanup",
+      "command": [
+        "ss",
+        "-ltnp",
+        "sport = :4192"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 0.064,
+      "log": ".//firms-independent/logs/port-cleanup.log"
+    },
+    {
+      "label": "final-overlay-diff",
+      "command": [
+        "git",
+        "diff",
+        "4cd40e8b769c495853c9b6a0c5f7f578b3076aee",
+        "--exit-code",
+        "--",
+        "scripts/format-scope.json",
+        "scripts/qa-firms.mjs",
+        "src/qaFirmsActions.test.mjs"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 1,
+      "seconds": 1.465,
+      "log": ".//firms-independent/logs/final-overlay-diff.log"
+    },
+    {
+      "label": "final-overlay-diff-with-index",
+      "command": [
+        "git",
+        "diff",
+        "4cd40e8b769c495853c9b6a0c5f7f578b3076aee",
+        "--exit-code",
+        "--",
+        "scripts/format-scope.json",
+        "scripts/qa-firms.mjs",
+        "src/qaFirmsActions.test.mjs"
+      ],
+      "cwd": "<operator-worktrees>/gev-meta-wave/firms-independent",
+      "exit_code": 0,
+      "seconds": 0.008,
+      "log": ".//firms-independent/logs/final-overlay-diff-with-index.log"
+    }
+  ],
+  "evidence_files": {
+    "command_journal": ".//firms-independent/commands.jsonl",
+    "browser_probe_provenance": ".//firms-independent/probe-provenance.jsonl",
+    "dependency_integrity": ".//firms-independent/dependency-integrity.json",
+    "scripts": [
+      "review_driver.py",
+      "qualify.py",
+      "browser_controls.py",
+      "static_and_mutations.py",
+      "helper-controls.mjs",
+      "finalize_review.py"
+    ]
+  }
+}

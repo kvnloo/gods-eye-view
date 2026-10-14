@@ -1,0 +1,16 @@
+{
+  "passed": false,
+  "security_concerns": [],
+  "logic_errors": [
+    "BLOCKING unresolved non-regression failure: matched pinned-main Radio gate passed the HUD-off-to-Tactical ownership assertion, but candidate repeat failed it with contextHiddenWhileDisplayOwnsLane=false. See candidate-repeat-radio.log and full-gate-comparison.json; source causality is not established and this is not waived as inherited.",
+    "BLOCKING unresolved non-regression failure: matched pinned-main passed temporary sibling restoration, but candidate repeat failed with dataExpanded=false, dataAutoMarkerCleared=false, contextExpanded=false and contextAutoMarkerCleared=false. See candidate-repeat-radio.log. The initial candidate run instead exposed sparse-label/manual-takeover failures plus stale-optimizer 504s; all attempts are retained. No deterministic production root cause is claimed."
+  ],
+  "suggestions": [
+    "Keep the narrow ownership/visual finding CLOSED, but full-gate and overall readiness HELD. Initial candidate full Radio was 102/107; matched main was 105/106; candidate repeat was 104/107. All retained the unweakened console assertion, and the keyless tiles-token 404 is independently baseline-confirmed.",
+    "Describe setup accurately: page.select dispatches synthetic changes for actual supported native-select options; compact opening and the decisive Cyber-to-Minimal keyboard restoration are trusted. The browser helper does not seed disclosure classes, DOM fixtures or production state.",
+    "Do not claim clean-console coverage from the helper's separate browser context: it asserts pageerror only. Independent observations retain console errors without adding allowances or changing existing assertions.",
+    "Do not certify historical strict test-first order: original production commit a4ce738 precedes test commit b79ab84, and the rail fix and its unit control share d9e2c8a. Fresh unchanged-helper callback-negative/restore-positive runs establish sensitivity, not historical RED-first provenance.",
+    "Use the settled after-helper review screenshots/geometry for visual claims. The shipped helper's immediate rectangle sample can precede completion of rail movement; its source was not changed."
+  ],
+  "summary": "FAIL CLOSED for independent candidate non-regression qualification: ancestry, upstream preservation, original production fix, reachable keyboard restoration and callback-negative control are verified, but candidate full-gate failures absent from the matched baseline remain unresolved; ownership evidence is closed, overall readiness is held."
+}

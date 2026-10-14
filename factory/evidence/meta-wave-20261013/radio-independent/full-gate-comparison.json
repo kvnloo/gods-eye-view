@@ -1,0 +1,35 @@
+{
+  "full-radio": {
+    "passed": 102,
+    "failed": 5,
+    "skipped": 0,
+    "failures": [
+      "[FAIL] sparse Radio filters paint bounded individual labels through the shared ambient lane \u2014 [{\"category\":\"news\",\"view\":\"global\",\"singletonCount\":8,\"painted\":8,\"pickable\":8},{\"category\":\"news\",\"view\":\"near\",\"singletonCount\":7,\"painted\":0,\"pickable\":0},{\"category\":\"public-safety\",\"view\":\"global\",\"singletonCount\":15,\"painted\":8,\"pickable\":8},{\"category\":\"public-safety\",\"view\":\"near\",\"singletonCount\":12,\"painted\":1,\"pickable\":1},{\"category\":\"weather\",\"view\":\"global\",\"singletonCount\":8,\"painted\":8,\"pickable\":8},{\"category\":\"weather\",\"view\":\"near\",\"singletonCount\":7,\"painted\":1,\"pickable\":1}]",
+      "[FAIL] manual voice takeover targets the visible compact Radio Play control \u2014 {\"visible\":false,\"enabled\":true,\"rect\":{\"width\":0,\"height\":0}}",
+      "[FAIL] confirmed manual Radio Play closes active voice and preserves playback \u2014 {\"audioState\":\"paused\",\"voiceStatus\":\"listening\",\"voiceDucked\":true}",
+      "[FAIL] runtime console remains clean \u2014 Failed to load resource: the server responded with a status of 404 (Not Found) [http://127.0.0.1:4191/api/google/tiles-token] | Failed to load resource: the server responded with a status of 504 (Outdated Optimize Dep) [http://127.0.0.1:4191/node_modules/.vite/deps/egm96-universal.js?v=ae8aa250]",
+      "[FAIL] runtime has no HTTP 5xx responses \u2014 HTTP 504 http://127.0.0.1:4191/node_modules/.vite/deps/egm96-universal.js?v=ae8aa250"
+    ],
+    "receipt": ".//radio-independent/full-radio.json"
+  },
+  "baseline-radio": {
+    "passed": 105,
+    "failed": 1,
+    "skipped": 0,
+    "failures": [
+      "[FAIL] runtime console remains clean \u2014 Failed to load resource: the server responded with a status of 404 (Not Found) [http://127.0.0.1:4191/api/google/tiles-token]"
+    ],
+    "receipt": ".//radio-independent/baseline-radio.json"
+  },
+  "candidate-repeat-radio": {
+    "passed": 104,
+    "failed": 3,
+    "skipped": 0,
+    "failures": [
+      "[FAIL] HUD-off to Tactical preserves the latest-opened Scenes panel and hides its collapsed Data competitor \u2014 {\"latestOpenedPanel\":\"scene-panel\",\"scenesExpanded\":true,\"dataCollapsed\":true,\"dataHiddenWhileScenesOwnsLane\":true,\"dataAriaExpanded\":\"false\",\"displayExpanded\":true,\"contextCollapsed\":true,\"contextHiddenWhileDisplayOwnsLane\":false,\"contextAriaExpanded\":\"false\"}",
+      "[FAIL] closing Tactical lane owners restores eligible temporary siblings without changing disclosure truth \u2014 {\"dataExpanded\":false,\"dataAutoMarkerCleared\":false,\"dataAriaExpanded\":\"false\",\"contextExpanded\":false,\"contextAutoMarkerCleared\":false,\"contextAriaExpanded\":\"false\"}",
+      "[FAIL] runtime console remains clean \u2014 Failed to load resource: the server responded with a status of 404 (Not Found) [http://127.0.0.1:4191/api/google/tiles-token]"
+    ],
+    "receipt": ".//radio-independent/candidate-repeat-radio.json"
+  }
+}

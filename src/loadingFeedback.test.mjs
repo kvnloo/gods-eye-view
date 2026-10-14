@@ -93,13 +93,20 @@ test('deferred terminal notices lose ownership to newer acquisition epochs and d
 });
 
 test('share-follow failures use the universal top-center status instead of the bottom toast', () => {
-  const ui = readShellSource();
   const handler = shellMethod('_handleShareTrackingRestoreStatus').toString();
-  assert.match(handler, /this\.showStatus\(message\)/);
-  assert.match(handler, /this\.initialRestorePromise\.then\(showAfterStartupCover\)/);
-  assert.match(handler, /this\._lifetime\.frame\(\(\) => \{/);
-  assert.match(handler, /this\._lifetime\.listen\(\s*startupCover,\s*'transitionend',\s*showOnce,\s*\{ once: true \},?\s*\)/);
-  assert.match(handler, /fallbackTimer = this\._lifetime\.timeout\(showOnce, 1000\)/);
+  const scheduler = ShareRestoration.prototype._showDeferredStatusNotice.toString();
+  // Both entry points retain the same lifetime-owned scheduler. Behavioral
+  // coverage in ui/shareInvalidLayerNotice.test.mjs exercises the restore,
+  // frame, transition and fallback callbacks through the production owner.
+  assert.match(ShareRestoration.prototype.start.toString(), /if \(savedState\.layerStateInvalid\) \{\s*this\._showDeferredStatusNotice\(/);
+  assert.match(handler, /this\._showDeferredStatusNotice\(message, \(\) =>\s*canPresentDeferredStatusNotice\(/);
+  assert.match(scheduler, /this\.showStatus\(message\)/);
+  assert.match(scheduler, /this\.initialRestorePromise\.then\(showAfterStartupCover\)/);
+  assert.match(scheduler, /this\._lifetime\.frame\(\(\) => \{/);
+  assert.match(scheduler, /this\._lifetime\.listen\(\s*startupCover,\s*'transitionend',\s*showOnce,\s*\{ once: true \},?\s*\)/);
+  assert.match(scheduler, /fallbackTimer = this\._lifetime\.timeout\(showOnce, 1000\)/);
+  assert.doesNotMatch(scheduler, /this\._showToast\(message\)/);
+  assert.doesNotMatch(scheduler, /pushCockpitSignal/);
   assert.doesNotMatch(handler, /this\._showToast\(message\)/);
   assert.doesNotMatch(handler, /pushCockpitSignal/);
   assert.match(handler, /result\.classification === 'pending'/);

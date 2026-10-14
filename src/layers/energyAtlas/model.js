@@ -99,6 +99,7 @@ function validSource(source) {
     !text(source.datasetVersion) ||
     !text(source.licence) ||
     !text(source.attribution) ||
+    typeof source.url !== 'string' ||
     !validIsoDay(text(source.releasedAt))
   )
     return false;
@@ -205,6 +206,7 @@ export function sameComparableMetric(a, b) {
     left.area.boundaryDataset === right.area.boundaryDataset &&
     left.area.boundaryRevision === right.area.boundaryRevision &&
     left.source.publisher === right.source.publisher &&
+    left.source.url === right.source.url &&
     left.source.datasetVersion === right.source.datasetVersion
   );
 }

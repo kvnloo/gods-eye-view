@@ -1034,7 +1034,10 @@ A Context expansion, whether through a repeated panel-owner call or a right
 rail restore after tactical auto-collapse, dismisses any open compact Radio
 disclosure before revealing Context content. The compact launcher still works
 while Context remains collapsed. This is an ownership invariant, not a
-z-index workaround (#804).
+z-index workaround (#804). The Radio browser gate exercises the real Cyber
+accordion path: open compact Radio on passively collapsed Context, then use
+Shift-Tab to reach the Display HUD selector and ArrowUp to return to Minimal.
+Context restoration must dismiss the mini without relying on outside pointerdown.
 
 ## Surface keyboard lifecycle
 

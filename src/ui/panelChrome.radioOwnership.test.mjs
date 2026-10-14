@@ -78,8 +78,8 @@ test('adaptive rail restore hides compact Radio before revealing Context', (t) =
     globalThis.requestAnimationFrame = priorRaf;
   });
 
-  // Valid starting state: the tactical rail automatically collapsed Context,
-  // and the user opened the compact Radio controls from its header.
+  // Isolated scheduler control for tactical restoration. The Radio browser
+  // gate separately proves a reachable Cyber accordion path without seeding DOM.
   const contextPanel = {
     id: 'global-context-panel',
     classList: classList(['collapsed', 'layout-auto-collapsed']),

@@ -15,6 +15,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer';
+import { checkCompactRadioRestoration } from './qa-radio-ownership.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
@@ -118,6 +119,12 @@ async function main() {
   });
 
   try {
+    try {
+      await checkCompactRadioRestoration(browser, APP_URL, SHOTS_DIR);
+      check('Cyber-to-Minimal rail restoration dismisses compact Radio', true);
+    } catch (error) {
+      check('Cyber-to-Minimal rail restoration dismisses compact Radio', false, error.message);
+    }
     const page = await browser.newPage();
     await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
     await page.evaluateOnNewDocument(() => {

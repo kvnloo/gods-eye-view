@@ -24,6 +24,8 @@
   "src/data/reliefCapacityBenchmark.test.mjs",
   "src/data/reliefOutageReplay.test.mjs",
   "src/data/reliefReplayFieldPacket.test.mjs",
+  "src/fieldLite/reliefView.test.mjs",
+  "src/fieldLite/fieldLite.css",
   "src/data/reliefReplayFieldPacket.js",
   "src/data/reliefOutageReplay.js",
   "docs/experiments/math120-synthetic-relief-matching.md",
@@ -44,6 +46,7 @@
   "docs/experiments/math120-relief-capacity-benchmark.md",
   "docs/experiments/math120-relief-outage-replay.md",
   "docs/experiments/relief-replay-field-packet.md",
+  "docs/experiments/relief-field-lite-native-page.md",
   "src/main.js",
   "docs/APPLICATION.md",
   "scripts/qa-application.mjs",
@@ -979,5 +982,6 @@
   "src/tools/views.test.mjs",
   "src/app/embed.test.mjs",
   "src/tools/globePanel.test.mjs",
-  "src/costEndpointThrottle.test.mjs"
+  "src/costEndpointThrottle.test.mjs",
+  "field-lite/index.html"
 ]

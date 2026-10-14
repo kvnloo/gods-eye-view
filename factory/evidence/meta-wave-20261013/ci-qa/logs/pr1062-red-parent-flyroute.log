@@ -1,0 +1,46 @@
+{"head": "591f299d11f38a612629a274463196d57ae3862e", "command": ["fnm", "exec", "--using=24.14.0", "node", "scripts/qa-flyroute-mutations.mjs"]}
+
+fly_route pin strength — 19 individual reverts
+
+  [32mRED  [0m interrupt leaves the horizon tilted (round-1 behaviour)
+         caught by: an interrupt MID-BANK stops the dolly and puts the horizon back level
+  [32mRED  [0m completion freezes a bank into the final frame
+         caught by: a completed dolly lands on the last waypoint
+  [31mSTALE[0m heading lerps in Cartesian space and cannot cross a U-turn
+  [31mSTALE[0m the exact-180° bank direction becomes a floating-point coin toss
+  [31mSTALE[0m a cold cell is read as sea level (the 1.3 km underground bug)
+  [32mRED  [0m the flight never warms its own corridor
+         caught by: a flight warms its own corridor instead of waiting for contact traffic
+  [31mSTALE[0m the dolly races the fire-and-forget warm instead of arming for it
+  [31mSTALE[0m no mesh probe, so a permanently cold DEM is flown blind
+  [32mRED  [0m the launch-altitude hold is dropped and the eye descends blind
+         caught by: a PARTIALLY warm corridor is unresolved, and probes only the cold cells; floor data arriving mid-flight blends down, and never arriving holds
+  [32mRED  [0m releasing the hold onto late data drops the eye without a limit
+         caught by: floor data arriving mid-flight blends down, and never arriving holds
+  [32mRED  [0m a late mid-flight floor is taken whole and snaps the eye
+         caught by: floor data arriving mid-flight blends down, and never arriving holds
+  [32mRED  [0m the lookahead floor read is dropped (clearance only underfoot)
+         caught by: a rise is cleared BEFORE the camera reaches it, not as it arrives
+  [32mRED  [0m the shaping floor adopts rises instantly and pops at cell edges
+         caught by: the shaping floor is smoothed both ways, and the CLAMP reads the raw sample
+  [31mSTALE[0m the mesh probe fires every arming frame instead of once per route
+  [32mRED  [0m one warm cell resolves a corridor whose other cells are unknown
+         caught by: a PARTIALLY warm corridor is unresolved, and probes only the cold cells
+  [32mRED  [0m the probe re-reads cells the cache already answered
+         caught by: a PARTIALLY warm corridor is unresolved, and probes only the cold cells
+  [31mSTALE[0m the hard clearance clamp reads the SMOOTHED floor, not the raw sample
+  [31mSTALE[0m levelling also RE-FRAMES the camera (destination passed with the HPR)
+  [32mRED  [0m the OS reduced-motion preference is never consulted
+         caught by: the reduced-motion PREFERENCE reaches a real flight, not just the flag
+
+  11/19 defects caught by the pins
+
+  uncovered:
+    - heading lerps in Cartesian space and cannot cross a U-turn (ANCHOR MISSING — the mutation no longer applies)
+    - the exact-180° bank direction becomes a floating-point coin toss (ANCHOR MISSING — the mutation no longer applies)
+    - a cold cell is read as sea level (the 1.3 km underground bug) (ANCHOR MISSING — the mutation no longer applies)
+    - the dolly races the fire-and-forget warm instead of arming for it (ANCHOR MISSING — the mutation no longer applies)
+    - no mesh probe, so a permanently cold DEM is flown blind (ANCHOR MISSING — the mutation no longer applies)
+    - the mesh probe fires every arming frame instead of once per route (ANCHOR MISSING — the mutation no longer applies)
+    - the hard clearance clamp reads the SMOOTHED floor, not the raw sample (ANCHOR MISSING — the mutation no longer applies)
+    - levelling also RE-FRAMES the camera (destination passed with the HPR) (ANCHOR MISSING — the mutation no longer applies)

@@ -1,0 +1,126 @@
+{"head": "123bf55f39a7dc12cad6215b362da0acc91c6c23", "command": ["fnm", "exec", "--using=24.14.0", "node", "scripts/qa-floorhold-mutations.mjs"]}
+baseline: 0 failing
+  [RED]   the display hold is gone — a cold cell clamps nothing (the original bug) — 19 failing
+            ↳ display floor: a cold cell HOLDS the last floor that resolved for this contact
+            ↳ display floor: a fresh contact on a cold cell adopts a resolved NEIGHBOUR
+            ↳ display floor: a hold released onto a LOWER floor eases down, never snaps
+            ↳ display floor: a hold released onto a HIGHER floor rises immediately
+            ↳ display floor: a STATIONARY unresolved contact still adopts a floor that arrives later
+            ↳ display floor: a stationary contact FOLLOWS the neighbourhood as it fills in
+            ↳ display floor: an on_ground FLAP mid-takeoff-roll never dips below the runway
+            ↳ display floor: the rehydration seed EXPIRES on its own age, with NO calls in between
+            ↳ display floor: a rehydrated seed ranks BELOW fresh neighbour evidence
+            ↳ display floor: with nothing fresh to contradict it, the seed still answers
+            ↳ display floor: re-measuring its own cell makes a seeded contact authoritative again
+            ↳ display floor: taking off and landing elsewhere does NOT inherit the old field floor
+            ↳ display floor: a model handoff back onto a COLD cell takes the neighbourhood, not the seed
+            ↳ display floor: every grounded contact is floored on the tick it asks
+            ↳ display floor: a re-probe that finds a LOWER neighbour eases down, never snaps
+            ↳ display floor: a SECOND lower re-latch mid-approach retargets without a jump
+            ↳ display floor: a DELAYED tick cannot close more of the gap than a prompt one
+            ↳ display floor: a floor rising MID-APPROACH is taken whole, on that tick
+            ↳ display floor: a held floor is dropped once the contact leaves the ground it describes
+  [RED]   the adjacent-cell tier is gone — 13 failing
+            ↳ display floor: a fresh contact on a cold cell adopts a resolved NEIGHBOUR
+            ↳ display floor: a hold released onto a LOWER floor eases down, never snaps
+            ↳ display floor: a hold released onto a HIGHER floor rises immediately
+            ↳ display floor: a STATIONARY unresolved contact still adopts a floor that arrives later
+            ↳ display floor: a stationary contact FOLLOWS the neighbourhood as it fills in
+            ↳ display floor: the rehydration seed EXPIRES on its own age, with NO calls in between
+            ↳ display floor: a rehydrated seed ranks BELOW fresh neighbour evidence
+            ↳ display floor: a model handoff back onto a COLD cell takes the neighbourhood, not the seed
+            ↳ display floor: every grounded contact is floored on the tick it asks
+            ↳ display floor: a re-probe that finds a LOWER neighbour eases down, never snaps
+            ↳ display floor: a SECOND lower re-latch mid-approach retargets without a jump
+            ↳ display floor: a DELAYED tick cannot close more of the gap than a prompt one
+            ↳ display floor: a floor rising MID-APPROACH is taken whole, on that tick
+  [RED]   a borrowed floor is owned forever — no upgrade when a better one warms — 3 failing
+            ↳ display floor: a stationary contact FOLLOWS the neighbourhood as it fills in
+            ↳ display floor: a re-probe that finds a LOWER neighbour eases down, never snaps
+            ↳ display floor: a SECOND lower re-latch mid-approach retargets without a jump
+  [RED]   a stationary unresolved contact memo-returns before the chain can retry — 5 failing
+            ↳ display floor: a hold released onto a LOWER floor eases down, never snaps
+            ↳ display floor: a STATIONARY unresolved contact still adopts a floor that arrives later
+            ↳ display floor: a stationary contact FOLLOWS the neighbourhood as it fills in
+            ↳ display floor: a re-probe that finds a LOWER neighbour eases down, never snaps
+            ↳ display floor: a SECOND lower re-latch mid-approach retargets without a jump
+  [RED]   the hold survives an airborne / model-owned interval — 6 failing
+            ↳ display floor: the rehydration seed EXPIRES on its own age, with NO calls in between
+            ↳ display floor: the seed expires the same way when the contact keeps reporting
+            ↳ display floor: a rehydrated seed ranks BELOW fresh neighbour evidence
+            ↳ display floor: taking off and landing elsewhere does NOT inherit the old field floor
+            ↳ display floor: a model-owned interval retires the hold too
+            ↳ display floor: a model handoff back onto a COLD cell takes the neighbourhood, not the seed
+  [RED]   the held floor is stretched without bound (no drift limit) — 1 failing
+            ↳ display floor: a held floor is dropped once the contact leaves the ground it describes
+  [RED]   a hold release SNAPS instead of easing — 5 failing
+            ↳ display floor: a hold released onto a LOWER floor eases down, never snaps
+            ↳ display floor: a re-probe that finds a LOWER neighbour eases down, never snaps
+            ↳ display floor: a SECOND lower re-latch mid-approach retargets without a jump
+            ↳ display floor: a DELAYED tick cannot close more of the gap than a prompt one
+            ↳ display floor: a floor rising MID-APPROACH is taken whole, on that tick
+  [RED]   rises are eased too — time spent under the mesh — 1 failing
+            ↳ display floor: a floor rising MID-APPROACH is taken whole, on that tick
+  [RED]   the ease escapes its release scope — every floor drop eased — 5 failing
+            ↳ display floor: a rehydrated seed ranks BELOW fresh neighbour evidence
+            ↳ display floor: taking off and landing elsewhere does NOT inherit the old field floor
+            ↳ display floor: a model-owned interval retires the hold too
+            ↳ display floor: a model handoff back onto a COLD cell takes the neighbourhood, not the seed
+            ↳ display floor: an ordinary cell-to-cell floor DROP keeps its existing timing
+  [RED]   the neighbour lean takes the HIGHEST cell and floats a contact onto a roof — 14 failing
+            ↳ display floor: a fresh contact on a cold cell adopts a resolved NEIGHBOUR
+            ↳ display floor: a hold released onto a LOWER floor eases down, never snaps
+            ↳ display floor: a hold released onto a HIGHER floor rises immediately
+            ↳ display floor: a STATIONARY unresolved contact still adopts a floor that arrives later
+            ↳ display floor: a stationary contact FOLLOWS the neighbourhood as it fills in
+            ↳ display floor: the rehydration seed EXPIRES on its own age, with NO calls in between
+            ↳ display floor: a rehydrated seed ranks BELOW fresh neighbour evidence
+            ↳ display floor: a model handoff back onto a COLD cell takes the neighbourhood, not the seed
+            ↳ display floor: every grounded contact is floored on the tick it asks
+            ↳ display floor: a re-probe that finds a LOWER neighbour eases down, never snaps
+            ↳ display floor: a SECOND lower re-latch mid-approach retargets without a jump
+            ↳ neighborFloorM leans to the LOWEST resolved neighbour
+            ↳ neighborFloorM takes the apron, not the roof, at a structure edge
+            ↳ neighborFloorM refuses a LONE neighbour — one reading cannot be checked
+  [RED]   a LONE neighbour is borrowed, with nothing to check it against — 1 failing
+            ↳ neighborFloorM refuses a LONE neighbour — one reading cannot be checked
+  [RED]   the geoid guess outranks a held render height again (the poll-step bug) — 1 failing
+            ↳ geoid last resort: a contact that already has a render height HOLDS it
+  [RED]   a re-probe onto a LOWER neighbour re-latches with a snap — 2 failing
+            ↳ display floor: a re-probe that finds a LOWER neighbour eases down, never snaps
+            ↳ display floor: a SECOND lower re-latch mid-approach retargets without a jump
+  [RED]   the approach interpolates a fixed anchor, so a mid-approach retarget is a seam — 4 failing
+            ↳ display floor: a hold released onto a LOWER floor eases down, never snaps
+            ↳ display floor: a stationary contact FOLLOWS the neighbourhood as it fills in
+            ↳ display floor: a re-probe that finds a LOWER neighbour eases down, never snaps
+            ↳ display floor: a SECOND lower re-latch mid-approach retargets without a jump
+  [RED]   a global per-tick probe budget is reintroduced over the per-contact throttle — 8 failing
+            ↳ display floor: the rehydration seed EXPIRES on its own age, with NO calls in between
+            ↳ display floor: a rehydrated seed ranks BELOW fresh neighbour evidence
+            ↳ display floor: a model handoff back onto a COLD cell takes the neighbourhood, not the seed
+            ↳ display floor: every grounded contact is floored on the tick it asks
+            ↳ display floor: a re-probe that finds a LOWER neighbour eases down, never snaps
+            ↳ display floor: a SECOND lower re-latch mid-approach retargets without a jump
+            ↳ display floor: a DELAYED tick cannot close more of the gap than a prompt one
+            ↳ display floor: a floor rising MID-APPROACH is taken whole, on that tick
+  [RED]   the per-tick step is unclamped, so a delayed tick snaps — 1 failing
+            ↳ display floor: a DELAYED tick cannot close more of the gap than a prompt one
+  [RED]   retiring the hold DELETES it, so an on_ground flap cold-starts — 2 failing
+            ↳ display floor: an on_ground FLAP mid-takeoff-roll never dips below the runway
+            ↳ display floor: with nothing fresh to contradict it, the seed still answers
+  [RED]   the rehydration seed never expires — an hour-old floor still answers — 2 failing
+            ↳ display floor: the rehydration seed EXPIRES on its own age, with NO calls in between
+            ↳ display floor: the seed expires the same way when the contact keeps reporting
+  [RED]   seed age is never validated at rehydration, only while still retired — 1 failing
+            ↳ display floor: the rehydration seed EXPIRES on its own age, with NO calls in between
+  [RED]   a rehydrated seed outranks fresh neighbour evidence — 2 failing
+            ↳ display floor: a rehydrated seed ranks BELOW fresh neighbour evidence
+            ↳ display floor: a model handoff back onto a COLD cell takes the neighbourhood, not the seed
+  [RED]   a parked floor is not marked as a memory, so nothing can demote it — 2 failing
+            ↳ display floor: a rehydrated seed ranks BELOW fresh neighbour evidence
+            ↳ display floor: a model handoff back onto a COLD cell takes the neighbourhood, not the seed
+  [RED]   the seed flag survives a live reading, so a measured floor stays demoted — 1 failing
+            ↳ display floor: re-measuring its own cell makes a seeded contact authoritative again
+
+restored: 0 failing (must be 0)
+RESULT: 22/22 defects pinned

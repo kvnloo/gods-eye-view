@@ -1,0 +1,1224 @@
+[
+  {
+    "id": "816:P1",
+    "pr": 816,
+    "state": "open",
+    "finding": "Real current-main auto-collapse/restoration before/after screenshot or clip is still required; source fixture is insufficient.",
+    "routing_owner": "feedback",
+    "comment_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/816#issuecomment-6127264887",
+    "author_role": "asturksever (COLLABORATOR; feedback author, not formal approval)",
+    "head": "19372875e21266caebe54976c9be73f1d36a73b8",
+    "evidence": [
+      "diffs/816.diff"
+    ]
+  },
+  {
+    "id": "816:P2",
+    "pr": 816,
+    "state": "addressed-needs-rerun",
+    "finding": "Changelog bullet added at exact head; current-main doc conflict remains.",
+    "routing_owner": "feedback",
+    "comment_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/816#issuecomment-6127264887",
+    "author_role": "asturksever (COLLABORATOR; feedback author, not formal approval)",
+    "head": "19372875e21266caebe54976c9be73f1d36a73b8",
+    "evidence": [
+      "diffs/816.diff"
+    ]
+  },
+  {
+    "id": "816:P3",
+    "pr": 816,
+    "state": "addressed-needs-rerun",
+    "finding": "Optional direct rail-restoration seam now calls Radio ownership cleanup.",
+    "routing_owner": "feedback",
+    "comment_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/816#issuecomment-6127264887",
+    "author_role": "asturksever (COLLABORATOR; feedback author, not formal approval)",
+    "head": "19372875e21266caebe54976c9be73f1d36a73b8",
+    "evidence": [
+      "diffs/816.diff"
+    ]
+  },
+  {
+    "id": "834:docs",
+    "pr": 834,
+    "state": "addressed-needs-rerun",
+    "finding": "Both requested runtime docs are in head; must reconcile main and rerun.",
+    "routing_owner": "feedback",
+    "comment_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/834#issuecomment-6126167630",
+    "author_role": "asturksever (COLLABORATOR; feedback author, not formal approval)",
+    "head": "3a3a1ed1c04a5873f8b7b9244e278ba08042ce8e",
+    "evidence": [
+      "diffs/834.diff"
+    ]
+  },
+  {
+    "id": "834:format",
+    "pr": 834,
+    "state": "addressed-needs-rerun",
+    "finding": "shareInvalidLayerNotice.test.mjs is in formatting scope.",
+    "routing_owner": "feedback",
+    "comment_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/834#issuecomment-6126167630",
+    "author_role": "asturksever (COLLABORATOR; feedback author, not formal approval)",
+    "head": "3a3a1ed1c04a5873f8b7b9244e278ba08042ce8e",
+    "evidence": [
+      "diffs/834.diff"
+    ]
+  },
+  {
+    "id": "834:scheduler",
+    "pr": 834,
+    "state": "addressed-needs-rerun",
+    "finding": "Shared deferred scheduler preserves caller-specific generation/disposal guard; native/browser rerun outstanding.",
+    "routing_owner": "feedback",
+    "comment_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/834#issuecomment-6126167630",
+    "author_role": "asturksever (COLLABORATOR; feedback author, not formal approval)",
+    "head": "3a3a1ed1c04a5873f8b7b9244e278ba08042ce8e",
+    "evidence": [
+      "diffs/834.diff"
+    ]
+  },
+  {
+    "id": "917:workflow",
+    "pr": 917,
+    "state": "addressed-needs-rerun",
+    "finding": "Branch-only proof workflow removed; complete PR diff is one script.",
+    "routing_owner": "feedback",
+    "comment_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/917#issuecomment-6127280758",
+    "author_role": "asturksever (COLLABORATOR; feedback author, not formal approval)",
+    "head": "76b003bc959bca612e9749b9341f4baa32c2f075",
+    "evidence": [
+      "diffs/917.diff"
+    ]
+  },
+  {
+    "id": "917:thresholds",
+    "pr": 917,
+    "state": "addressed-needs-rerun",
+    "finding": "Default 2s/1.2s preserved; only explicit slow flag uses 4s/0.8s; current browser rerun outstanding.",
+    "routing_owner": "feedback",
+    "comment_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/917#issuecomment-6127280758",
+    "author_role": "asturksever (COLLABORATOR; feedback author, not formal approval)",
+    "head": "76b003bc959bca612e9749b9341f4baa32c2f075",
+    "evidence": [
+      "diffs/917.diff"
+    ]
+  },
+  {
+    "id": "835:837",
+    "pr": 835,
+    "state": "open",
+    "finding": "Requested current-main rebase and crop-aware reason codes are not present; runtime merge conflict confirms drift.",
+    "routing_owner": "feedback",
+    "comment_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/835#issuecomment-6062582085",
+    "author_role": "asturksever (COLLABORATOR; feedback author, not formal approval)",
+    "head": "cacbbc972bf8ada8314a2a62b7cdae1abefa6c0c",
+    "evidence": [
+      "diffs/835.diff"
+    ]
+  },
+  {
+    "id": "851:837",
+    "pr": 851,
+    "state": "addressed-needs-rerun",
+    "finding": "Current pure projection includes user-speech precedence and successful-barge-only semantics; reviewer did not formally approve it.",
+    "routing_owner": "feedback",
+    "comment_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/851#issuecomment-6062571843",
+    "author_role": "asturksever (COLLABORATOR; feedback author, not formal approval)",
+    "head": "6cfd879bd87798790ff499846840960abd70c796",
+    "evidence": [
+      "diffs/851.diff"
+    ]
+  },
+  {
+    "id": "918:exact-head-proof",
+    "pr": 918,
+    "state": "addressed-needs-rerun",
+    "finding": "Author source-level regression claims match actual narrow filter; live browser composition still needed.",
+    "routing_owner": "feedback",
+    "comment_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/918#issuecomment-6129337923",
+    "author_role": "kvnloo (PR author, NONE; self-report)",
+    "head": "a24b1cde3dcd13d29e5beb84111f61093f12b05e",
+    "evidence": [
+      "diffs/918.diff"
+    ]
+  },
+  {
+    "id": "943:current-main-conflicts",
+    "pr": 943,
+    "state": "open",
+    "finding": "Resolve exact-main conflicts: CHANGELOG.md",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "f06755cdbfb80b877740af0916069643c3b13aa0",
+    "evidence": [
+      "merge/943.json",
+      "merge/943.stdout"
+    ]
+  },
+  {
+    "id": "943:workflow-admission",
+    "pr": 943,
+    "state": "blocked-external",
+    "finding": "No executed current-head upstream CI verdict: latest current-head workflow action_required with zero jobs. Workflow approval is not review approval.",
+    "routing_owner": "upstream maintainer with Actions approval rights; parent owns authorized request",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "f06755cdbfb80b877740af0916069643c3b13aa0",
+    "evidence": [
+      "ci/943.json",
+      "ci/943-checks.json"
+    ]
+  },
+  {
+    "id": "918:runtime-documentation",
+    "pr": 918,
+    "state": "open",
+    "finding": "Both CHANGELOG.md and docs/CURRENT-STATE.md are absent from a runtime-changing diff; add required documentation or obtain explicit exemption.",
+    "routing_owner": "feedback",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "a24b1cde3dcd13d29e5beb84111f61093f12b05e",
+    "evidence": [
+      "diffs/918.diff"
+    ]
+  },
+  {
+    "id": "918:workflow-admission",
+    "pr": 918,
+    "state": "blocked-external",
+    "finding": "No executed current-head upstream CI verdict: latest current-head workflow action_required with zero jobs. Workflow approval is not review approval.",
+    "routing_owner": "upstream maintainer with Actions approval rights; parent owns authorized request",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "a24b1cde3dcd13d29e5beb84111f61093f12b05e",
+    "evidence": [
+      "ci/918.json",
+      "ci/918-checks.json"
+    ]
+  },
+  {
+    "id": "917:workflow-admission",
+    "pr": 917,
+    "state": "blocked-external",
+    "finding": "No executed current-head upstream CI verdict: latest current-head workflow action_required with zero jobs. Workflow approval is not review approval.",
+    "routing_owner": "upstream maintainer with Actions approval rights; parent owns authorized request",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "76b003bc959bca612e9749b9341f4baa32c2f075",
+    "evidence": [
+      "ci/917.json",
+      "ci/917-checks.json"
+    ]
+  },
+  {
+    "id": "889:current-main-conflicts",
+    "pr": 889,
+    "state": "open",
+    "finding": "Resolve exact-main conflicts: CHANGELOG.md",
+    "routing_owner": "architecture",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "62159fd3546f41a54f7518ddf75c4c9170aacb86",
+    "evidence": [
+      "merge/889.json",
+      "merge/889.stdout"
+    ]
+  },
+  {
+    "id": "889:test-format-adoption",
+    "pr": 889,
+    "state": "open",
+    "finding": "New tests not adopted by exact-head format-scope: src/services/singleflight.test.mjs",
+    "routing_owner": "architecture",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "62159fd3546f41a54f7518ddf75c4c9170aacb86",
+    "evidence": [
+      "structural-audit.json",
+      "CONTRIBUTING.md (pinned source)"
+    ]
+  },
+  {
+    "id": "889:workflow-admission",
+    "pr": 889,
+    "state": "blocked-external",
+    "finding": "No executed current-head upstream CI verdict: latest current-head workflow action_required with zero jobs. Workflow approval is not review approval.",
+    "routing_owner": "upstream maintainer with Actions approval rights; parent owns authorized request",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "62159fd3546f41a54f7518ddf75c4c9170aacb86",
+    "evidence": [
+      "ci/889.json",
+      "ci/889-checks.json"
+    ]
+  },
+  {
+    "id": "888:workflow-admission",
+    "pr": 888,
+    "state": "blocked-external",
+    "finding": "No executed current-head upstream CI verdict: latest current-head workflow action_required with zero jobs. Workflow approval is not review approval.",
+    "routing_owner": "upstream maintainer with Actions approval rights; parent owns authorized request",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "c141a805147d450f3e599f391fa8ec1469e62ee8",
+    "evidence": [
+      "ci/888.json",
+      "ci/888-checks.json"
+    ]
+  },
+  {
+    "id": "882:test-format-adoption",
+    "pr": 882,
+    "state": "open",
+    "finding": "New tests not adopted by exact-head format-scope: src/data/disasterAccess.test.mjs",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "264764676538b67ce67c9e5d199637e107dacf59",
+    "evidence": [
+      "structural-audit.json",
+      "CONTRIBUTING.md (pinned source)"
+    ]
+  },
+  {
+    "id": "882:workflow-admission",
+    "pr": 882,
+    "state": "blocked-external",
+    "finding": "No executed current-head upstream CI verdict: latest current-head workflow action_required with zero jobs. Workflow approval is not review approval.",
+    "routing_owner": "upstream maintainer with Actions approval rights; parent owns authorized request",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "264764676538b67ce67c9e5d199637e107dacf59",
+    "evidence": [
+      "ci/882.json",
+      "ci/882-checks.json"
+    ]
+  },
+  {
+    "id": "881:current-main-conflicts",
+    "pr": 881,
+    "state": "open",
+    "finding": "Resolve exact-main conflicts: CHANGELOG.md, src/layers/recentImagery/thumbnails.test.mjs",
+    "routing_owner": "architecture",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "85227cca9dc0fa74055c5f4e9490fea932f86875",
+    "evidence": [
+      "merge/881.json",
+      "merge/881.stdout"
+    ]
+  },
+  {
+    "id": "881:workflow-admission",
+    "pr": 881,
+    "state": "blocked-external",
+    "finding": "No executed current-head upstream CI verdict: latest current-head workflow action_required with zero jobs. Workflow approval is not review approval.",
+    "routing_owner": "upstream maintainer with Actions approval rights; parent owns authorized request",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "85227cca9dc0fa74055c5f4e9490fea932f86875",
+    "evidence": [
+      "ci/881.json",
+      "ci/881-checks.json"
+    ]
+  },
+  {
+    "id": "880:current-main-conflicts",
+    "pr": 880,
+    "state": "open",
+    "finding": "Resolve exact-main conflicts: package.json, scripts/package-boundaries.json, src/voice/gevActions.js",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "2b7f832f456c933811c8dc0faa75caf111816718",
+    "evidence": [
+      "merge/880.json",
+      "merge/880.stdout"
+    ]
+  },
+  {
+    "id": "880:test-format-adoption",
+    "pr": 880,
+    "state": "open",
+    "finding": "New tests not adopted by exact-head format-scope: src/agent/worldPacket.test.mjs",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "2b7f832f456c933811c8dc0faa75caf111816718",
+    "evidence": [
+      "structural-audit.json",
+      "CONTRIBUTING.md (pinned source)"
+    ]
+  },
+  {
+    "id": "880:runtime-documentation",
+    "pr": 880,
+    "state": "open",
+    "finding": "Both CHANGELOG.md and docs/CURRENT-STATE.md are absent from a runtime-changing diff; add required documentation or obtain explicit exemption.",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "2b7f832f456c933811c8dc0faa75caf111816718",
+    "evidence": [
+      "diffs/880.diff"
+    ]
+  },
+  {
+    "id": "880:workflow-admission",
+    "pr": 880,
+    "state": "blocked-external",
+    "finding": "No executed current-head upstream CI verdict: latest current-head workflow action_required with zero jobs. Workflow approval is not review approval.",
+    "routing_owner": "upstream maintainer with Actions approval rights; parent owns authorized request",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "2b7f832f456c933811c8dc0faa75caf111816718",
+    "evidence": [
+      "ci/880.json",
+      "ci/880-checks.json"
+    ]
+  },
+  {
+    "id": "879:current-main-conflicts",
+    "pr": 879,
+    "state": "open",
+    "finding": "Resolve exact-main conflicts: CHANGELOG.md, src/layers/recentImagery/thumbnails.test.mjs",
+    "routing_owner": "architecture",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "f96cd157f8f7f0c1b8dbf3440e638ba4c78820d3",
+    "evidence": [
+      "merge/879.json",
+      "merge/879.stdout"
+    ]
+  },
+  {
+    "id": "879:workflow-admission",
+    "pr": 879,
+    "state": "blocked-external",
+    "finding": "No executed current-head upstream CI verdict: latest current-head workflow action_required with zero jobs. Workflow approval is not review approval.",
+    "routing_owner": "upstream maintainer with Actions approval rights; parent owns authorized request",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "f96cd157f8f7f0c1b8dbf3440e638ba4c78820d3",
+    "evidence": [
+      "ci/879.json",
+      "ci/879-checks.json"
+    ]
+  },
+  {
+    "id": "874:current-main-conflicts",
+    "pr": 874,
+    "state": "open",
+    "finding": "Resolve exact-main conflicts: CHANGELOG.md",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "424bd3b66b3463dacb2384f619dadef7eb558029",
+    "evidence": [
+      "merge/874.json",
+      "merge/874.stdout"
+    ]
+  },
+  {
+    "id": "874:workflow-admission",
+    "pr": 874,
+    "state": "blocked-external",
+    "finding": "No executed current-head upstream CI verdict: latest current-head workflow action_required with zero jobs. Workflow approval is not review approval.",
+    "routing_owner": "upstream maintainer with Actions approval rights; parent owns authorized request",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "424bd3b66b3463dacb2384f619dadef7eb558029",
+    "evidence": [
+      "ci/874.json",
+      "ci/874-checks.json"
+    ]
+  },
+  {
+    "id": "851:test-format-adoption",
+    "pr": 851,
+    "state": "open",
+    "finding": "New tests not adopted by exact-head format-scope: src/voice/realtimeInputPolicy.test.mjs",
+    "routing_owner": "feedback",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "6cfd879bd87798790ff499846840960abd70c796",
+    "evidence": [
+      "structural-audit.json",
+      "CONTRIBUTING.md (pinned source)"
+    ]
+  },
+  {
+    "id": "851:workflow-admission",
+    "pr": 851,
+    "state": "blocked-external",
+    "finding": "No executed current-head upstream CI verdict: latest current-head workflow action_required with zero jobs. Workflow approval is not review approval.",
+    "routing_owner": "upstream maintainer with Actions approval rights; parent owns authorized request",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "6cfd879bd87798790ff499846840960abd70c796",
+    "evidence": [
+      "ci/851.json",
+      "ci/851-checks.json"
+    ]
+  },
+  {
+    "id": "848:current-main-conflicts",
+    "pr": 848,
+    "state": "open",
+    "finding": "Resolve exact-main conflicts: CHANGELOG.md, docs/CURRENT-STATE.md, src/app/constructCatalog.js",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "e9236f7a58c5b3f1b076a67aff8c849867bb08a0",
+    "evidence": [
+      "merge/848.json",
+      "merge/848.stdout"
+    ]
+  },
+  {
+    "id": "848:test-format-adoption",
+    "pr": 848,
+    "state": "open",
+    "finding": "New tests not adopted by exact-head format-scope: src/layers/cctv/trafficObservations.test.mjs, src/layers/traffic/observed.test.mjs",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "e9236f7a58c5b3f1b076a67aff8c849867bb08a0",
+    "evidence": [
+      "structural-audit.json",
+      "CONTRIBUTING.md (pinned source)"
+    ]
+  },
+  {
+    "id": "848:workflow-admission",
+    "pr": 848,
+    "state": "blocked-external",
+    "finding": "No executed current-head upstream CI verdict: latest current-head workflow action_required with zero jobs. Workflow approval is not review approval.",
+    "routing_owner": "upstream maintainer with Actions approval rights; parent owns authorized request",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "e9236f7a58c5b3f1b076a67aff8c849867bb08a0",
+    "evidence": [
+      "ci/848.json",
+      "ci/848-checks.json"
+    ]
+  },
+  {
+    "id": "847:runtime-documentation",
+    "pr": 847,
+    "state": "open",
+    "finding": "Both CHANGELOG.md and docs/CURRENT-STATE.md are absent from a runtime-changing diff; add required documentation or obtain explicit exemption.",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "28f3243090fe2aa766d9df2f096e095811f04ac0",
+    "evidence": [
+      "diffs/847.diff"
+    ]
+  },
+  {
+    "id": "847:workflow-admission",
+    "pr": 847,
+    "state": "blocked-external",
+    "finding": "No executed current-head upstream CI verdict: latest current-head workflow action_required with zero jobs. Workflow approval is not review approval.",
+    "routing_owner": "upstream maintainer with Actions approval rights; parent owns authorized request",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "28f3243090fe2aa766d9df2f096e095811f04ac0",
+    "evidence": [
+      "ci/847.json",
+      "ci/847-checks.json"
+    ]
+  },
+  {
+    "id": "845:current-main-conflicts",
+    "pr": 845,
+    "state": "open",
+    "finding": "Resolve exact-main conflicts: .env.example, CHANGELOG.md, DATA_SOURCES.md, README.md, docs/CURRENT-STATE.md, src/layers/traffic/controls.js, src/layers/traffic/lifecycle.js",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "c232419cc401756671244cea263f64f9edaedbab",
+    "evidence": [
+      "merge/845.json",
+      "merge/845.stdout"
+    ]
+  },
+  {
+    "id": "845:test-format-adoption",
+    "pr": 845,
+    "state": "open",
+    "finding": "New tests not adopted by exact-head format-scope: src/credentialSources.test.mjs",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "c232419cc401756671244cea263f64f9edaedbab",
+    "evidence": [
+      "structural-audit.json",
+      "CONTRIBUTING.md (pinned source)"
+    ]
+  },
+  {
+    "id": "845:workflow-admission",
+    "pr": 845,
+    "state": "blocked-external",
+    "finding": "No executed current-head upstream CI verdict: no pull_request run at this exact head; refreshed API total_count=0. Workflow approval is not review approval.",
+    "routing_owner": "upstream maintainer with Actions approval rights; parent owns authorized request",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "c232419cc401756671244cea263f64f9edaedbab",
+    "evidence": [
+      "ci/845.json",
+      "ci/845-checks.json"
+    ]
+  },
+  {
+    "id": "844:current-main-conflicts",
+    "pr": 844,
+    "state": "open",
+    "finding": "Resolve exact-main conflicts: CHANGELOG.md, docs/CURRENT-STATE.md",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "98e39bc16153f62f5cb1f17526a18be4c04009a3",
+    "evidence": [
+      "merge/844.json",
+      "merge/844.stdout"
+    ]
+  },
+  {
+    "id": "844:test-format-adoption",
+    "pr": 844,
+    "state": "open",
+    "finding": "New tests not adopted by exact-head format-scope: src/layers/traffic/observed.test.mjs",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "98e39bc16153f62f5cb1f17526a18be4c04009a3",
+    "evidence": [
+      "structural-audit.json",
+      "CONTRIBUTING.md (pinned source)"
+    ]
+  },
+  {
+    "id": "844:workflow-admission",
+    "pr": 844,
+    "state": "blocked-external",
+    "finding": "No executed current-head upstream CI verdict: latest current-head workflow action_required with zero jobs. Workflow approval is not review approval.",
+    "routing_owner": "upstream maintainer with Actions approval rights; parent owns authorized request",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "98e39bc16153f62f5cb1f17526a18be4c04009a3",
+    "evidence": [
+      "ci/844.json",
+      "ci/844-checks.json"
+    ]
+  },
+  {
+    "id": "836:current-main-conflicts",
+    "pr": 836,
+    "state": "open",
+    "finding": "Resolve exact-main conflicts: scripts/package-boundaries.json",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "47e47653704239a49c9419ee19daa835d2ddc469",
+    "evidence": [
+      "merge/836.json",
+      "merge/836.stdout"
+    ]
+  },
+  {
+    "id": "836:workflow-admission",
+    "pr": 836,
+    "state": "blocked-external",
+    "finding": "No executed current-head upstream CI verdict: latest current-head workflow action_required with zero jobs. Workflow approval is not review approval.",
+    "routing_owner": "upstream maintainer with Actions approval rights; parent owns authorized request",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "47e47653704239a49c9419ee19daa835d2ddc469",
+    "evidence": [
+      "ci/836.json",
+      "ci/836-checks.json"
+    ]
+  },
+  {
+    "id": "835:current-main-conflicts",
+    "pr": 835,
+    "state": "open",
+    "finding": "Resolve exact-main conflicts: src/voice/realtimeViewport.js",
+    "routing_owner": "feedback",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "cacbbc972bf8ada8314a2a62b7cdae1abefa6c0c",
+    "evidence": [
+      "merge/835.json",
+      "merge/835.stdout"
+    ]
+  },
+  {
+    "id": "835:runtime-documentation",
+    "pr": 835,
+    "state": "open",
+    "finding": "Both CHANGELOG.md and docs/CURRENT-STATE.md are absent from a runtime-changing diff; add required documentation or obtain explicit exemption.",
+    "routing_owner": "feedback",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "cacbbc972bf8ada8314a2a62b7cdae1abefa6c0c",
+    "evidence": [
+      "diffs/835.diff"
+    ]
+  },
+  {
+    "id": "835:workflow-admission",
+    "pr": 835,
+    "state": "blocked-external",
+    "finding": "No executed current-head upstream CI verdict: latest current-head workflow action_required with zero jobs. Workflow approval is not review approval.",
+    "routing_owner": "upstream maintainer with Actions approval rights; parent owns authorized request",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "cacbbc972bf8ada8314a2a62b7cdae1abefa6c0c",
+    "evidence": [
+      "ci/835.json",
+      "ci/835-checks.json"
+    ]
+  },
+  {
+    "id": "834:current-main-conflicts",
+    "pr": 834,
+    "state": "open",
+    "finding": "Resolve exact-main conflicts: CHANGELOG.md",
+    "routing_owner": "feedback",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "3a3a1ed1c04a5873f8b7b9244e278ba08042ce8e",
+    "evidence": [
+      "merge/834.json",
+      "merge/834.stdout"
+    ]
+  },
+  {
+    "id": "834:workflow-admission",
+    "pr": 834,
+    "state": "blocked-external",
+    "finding": "No executed current-head upstream CI verdict: latest current-head workflow action_required with zero jobs. Workflow approval is not review approval.",
+    "routing_owner": "upstream maintainer with Actions approval rights; parent owns authorized request",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "3a3a1ed1c04a5873f8b7b9244e278ba08042ce8e",
+    "evidence": [
+      "ci/834.json",
+      "ci/834-checks.json"
+    ]
+  },
+  {
+    "id": "833:workflow-admission",
+    "pr": 833,
+    "state": "blocked-external",
+    "finding": "No executed current-head upstream CI verdict: latest current-head workflow action_required with zero jobs. Workflow approval is not review approval.",
+    "routing_owner": "upstream maintainer with Actions approval rights; parent owns authorized request",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "bd3829a54d53a65e4263b2e73b71a8bbc624b6ca",
+    "evidence": [
+      "ci/833.json",
+      "ci/833-checks.json"
+    ]
+  },
+  {
+    "id": "832:workflow-admission",
+    "pr": 832,
+    "state": "blocked-external",
+    "finding": "No executed current-head upstream CI verdict: latest current-head workflow action_required with zero jobs. Workflow approval is not review approval.",
+    "routing_owner": "upstream maintainer with Actions approval rights; parent owns authorized request",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "07ac22af158e39f597e3f34551cd943cc59a2f72",
+    "evidence": [
+      "ci/832.json",
+      "ci/832-checks.json"
+    ]
+  },
+  {
+    "id": "827:workflow-admission",
+    "pr": 827,
+    "state": "blocked-external",
+    "finding": "No executed current-head upstream CI verdict: latest current-head workflow action_required with zero jobs. Workflow approval is not review approval.",
+    "routing_owner": "upstream maintainer with Actions approval rights; parent owns authorized request",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "a874e850c630945c5cd005b077662f689782e149",
+    "evidence": [
+      "ci/827.json",
+      "ci/827-checks.json"
+    ]
+  },
+  {
+    "id": "818:current-main-conflicts",
+    "pr": 818,
+    "state": "open",
+    "finding": "Resolve exact-main conflicts: .env.example, CHANGELOG.md",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "f8d44552fb7d6ae7daf1990148ee1f219e8f628f",
+    "evidence": [
+      "merge/818.json",
+      "merge/818.stdout"
+    ]
+  },
+  {
+    "id": "818:test-format-adoption",
+    "pr": 818,
+    "state": "open",
+    "finding": "New tests not adopted by exact-head format-scope: src/credentialSources.test.mjs",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "f8d44552fb7d6ae7daf1990148ee1f219e8f628f",
+    "evidence": [
+      "structural-audit.json",
+      "CONTRIBUTING.md (pinned source)"
+    ]
+  },
+  {
+    "id": "818:workflow-admission",
+    "pr": 818,
+    "state": "blocked-external",
+    "finding": "No executed current-head upstream CI verdict: latest current-head workflow action_required with zero jobs. Workflow approval is not review approval.",
+    "routing_owner": "upstream maintainer with Actions approval rights; parent owns authorized request",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "f8d44552fb7d6ae7daf1990148ee1f219e8f628f",
+    "evidence": [
+      "ci/818.json",
+      "ci/818-checks.json"
+    ]
+  },
+  {
+    "id": "816:current-main-conflicts",
+    "pr": 816,
+    "state": "open",
+    "finding": "Resolve exact-main conflicts: CHANGELOG.md",
+    "routing_owner": "feedback",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "19372875e21266caebe54976c9be73f1d36a73b8",
+    "evidence": [
+      "merge/816.json",
+      "merge/816.stdout"
+    ]
+  },
+  {
+    "id": "816:workflow-admission",
+    "pr": 816,
+    "state": "blocked-external",
+    "finding": "No executed current-head upstream CI verdict: latest current-head workflow action_required with zero jobs. Workflow approval is not review approval.",
+    "routing_owner": "upstream maintainer with Actions approval rights; parent owns authorized request",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "19372875e21266caebe54976c9be73f1d36a73b8",
+    "evidence": [
+      "ci/816.json",
+      "ci/816-checks.json"
+    ]
+  },
+  {
+    "id": "811:runtime-documentation",
+    "pr": 811,
+    "state": "open",
+    "finding": "Both CHANGELOG.md and docs/CURRENT-STATE.md are absent from a runtime-changing diff; add required documentation or obtain explicit exemption.",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "7a7df9e11188cb837c225e0d6d3b297ca14573e8",
+    "evidence": [
+      "diffs/811.diff"
+    ]
+  },
+  {
+    "id": "811:workflow-admission",
+    "pr": 811,
+    "state": "blocked-external",
+    "finding": "No executed current-head upstream CI verdict: latest current-head workflow action_required with zero jobs. Workflow approval is not review approval.",
+    "routing_owner": "upstream maintainer with Actions approval rights; parent owns authorized request",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "7a7df9e11188cb837c225e0d6d3b297ca14573e8",
+    "evidence": [
+      "ci/811.json",
+      "ci/811-checks.json"
+    ]
+  },
+  {
+    "id": "808:runtime-documentation",
+    "pr": 808,
+    "state": "open",
+    "finding": "Both CHANGELOG.md and docs/CURRENT-STATE.md are absent from a runtime-changing diff; add required documentation or obtain explicit exemption.",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "2863bd89511ca08936d4da905a3d56a63b333168",
+    "evidence": [
+      "diffs/808.diff"
+    ]
+  },
+  {
+    "id": "808:workflow-admission",
+    "pr": 808,
+    "state": "blocked-external",
+    "finding": "No executed current-head upstream CI verdict: latest current-head workflow action_required with zero jobs. Workflow approval is not review approval.",
+    "routing_owner": "upstream maintainer with Actions approval rights; parent owns authorized request",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "2863bd89511ca08936d4da905a3d56a63b333168",
+    "evidence": [
+      "ci/808.json",
+      "ci/808-checks.json"
+    ]
+  },
+  {
+    "id": "806:runtime-documentation",
+    "pr": 806,
+    "state": "open",
+    "finding": "Both CHANGELOG.md and docs/CURRENT-STATE.md are absent from a runtime-changing diff; add required documentation or obtain explicit exemption.",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "28c7f46deed42e24cee472fa0560f41dd3eea9c7",
+    "evidence": [
+      "diffs/806.diff"
+    ]
+  },
+  {
+    "id": "806:workflow-admission",
+    "pr": 806,
+    "state": "blocked-external",
+    "finding": "No executed current-head upstream CI verdict: latest current-head workflow action_required with zero jobs. Workflow approval is not review approval.",
+    "routing_owner": "upstream maintainer with Actions approval rights; parent owns authorized request",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "28c7f46deed42e24cee472fa0560f41dd3eea9c7",
+    "evidence": [
+      "ci/806.json",
+      "ci/806-checks.json"
+    ]
+  },
+  {
+    "id": "789:workflow-admission",
+    "pr": 789,
+    "state": "blocked-external",
+    "finding": "No executed current-head upstream CI verdict: latest current-head workflow action_required with zero jobs. Workflow approval is not review approval.",
+    "routing_owner": "upstream maintainer with Actions approval rights; parent owns authorized request",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "4ab530b8a83c6f56b34612c1ea5c9bc07c34e3ea",
+    "evidence": [
+      "ci/789.json",
+      "ci/789-checks.json"
+    ]
+  },
+  {
+    "id": "833:source-probe",
+    "pr": 833,
+    "state": "open",
+    "finding": "Absent/blank coordinates become authored zero coordinates",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "bd3829a54d53a65e4263b2e73b71a8bbc624b6ca",
+    "evidence": [
+      "probes.mjs",
+      "probe-results.json",
+      "probe.stdout"
+    ]
+  },
+  {
+    "id": "836:source-probe",
+    "pr": 836,
+    "state": "open",
+    "finding": "Typed-action args accept a string and an unbounded 1MiB string",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "47e47653704239a49c9419ee19daa835d2ddc469",
+    "evidence": [
+      "probes.mjs",
+      "probe-results.json",
+      "probe.stdout"
+    ]
+  },
+  {
+    "id": "844:source-probe",
+    "pr": 844,
+    "state": "open",
+    "finding": "Observed traffic missing coordinates normalize to zero",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "98e39bc16153f62f5cb1f17526a18be4c04009a3",
+    "evidence": [
+      "probes.mjs",
+      "probe-results.json",
+      "probe.stdout"
+    ]
+  },
+  {
+    "id": "848:source-probe",
+    "pr": 848,
+    "state": "open",
+    "finding": "Observed traffic missing coordinates normalize to zero",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "e9236f7a58c5b3f1b076a67aff8c849867bb08a0",
+    "evidence": [
+      "probes.mjs",
+      "probe-results.json",
+      "probe.stdout"
+    ]
+  },
+  {
+    "id": "882:source-probe",
+    "pr": 882,
+    "state": "open",
+    "finding": "Conflicting duplicate IDs use array order, allowing a fresh blockage to be overwritten; known issue already has held fork #198. This is independent replication, not a new finding/patch.",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "264764676538b67ce67c9e5d199637e107dacf59",
+    "evidence": [
+      "probes.mjs",
+      "probe-results.json",
+      "probe.stdout"
+    ]
+  },
+  {
+    "id": "943:source-probe",
+    "pr": 943,
+    "state": "open",
+    "finding": "Cold all-window failure loses retry cooldown; immediate request refetches",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "f06755cdbfb80b877740af0916069643c3b13aa0",
+    "evidence": [
+      "probes.mjs",
+      "probe-results.json",
+      "probe.stdout"
+    ]
+  },
+  {
+    "id": "888:source-probe",
+    "pr": 888,
+    "state": "open",
+    "finding": "Catalog accepts empty target despite canonical minLength=1",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "c141a805147d450f3e599f391fa8ec1469e62ee8",
+    "evidence": [
+      "probes.mjs",
+      "probe-results.json",
+      "probe.stdout"
+    ]
+  },
+  {
+    "id": "808:source-probe",
+    "pr": 808,
+    "state": "open",
+    "finding": "Explicit WGS84 point silently accepts null/blank coordinates",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "2863bd89511ca08936d4da905a3d56a63b333168",
+    "evidence": [
+      "probes.mjs",
+      "probe-results.json",
+      "probe.stdout"
+    ]
+  },
+  {
+    "id": "844:lifetime-seam",
+    "pr": 844,
+    "state": "open",
+    "finding": "resetObservedTraffic exists but no production lifecycle caller is added; late refresh can survive layer disable/destroy unless ownership is explicitly external. Wire or prove the lifetime contract.",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "98e39bc16153f62f5cb1f17526a18be4c04009a3",
+    "evidence": [
+      "source-traffic.txt"
+    ]
+  },
+  {
+    "id": "848:parent",
+    "pr": 848,
+    "state": "blocked-external",
+    "finding": "Exact parent #844 must settle and its input/lifetime fixes must be replayed before child UI qualification.",
+    "routing_owner": "existing #844/#848 author; parent coordinates",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "e9236f7a58c5b3f1b076a67aff8c849867bb08a0",
+    "evidence": [
+      "ancestry.json",
+      "diffs/848-parent-relative.diff"
+    ]
+  },
+  {
+    "id": "845:unrelated-credentials",
+    "pr": 845,
+    "state": "open",
+    "finding": "Credential resolver and standalone injection duplicate #818 byte-for-byte although current #818 head is not an ancestor. Narrow the traffic carrier; file-name overlap is not the evidence.",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "c232419cc401756671244cea263f64f9edaedbab",
+    "evidence": [
+      "source-traffic.txt",
+      "source-performance.txt",
+      "ancestry.json"
+    ]
+  },
+  {
+    "id": "845:world-label-owner",
+    "pr": 845,
+    "state": "open",
+    "finding": "New traffic renderer constructs Cesium entity text labels; pinned CODE-BOUNDARIES requires new world labels through world-overlay host.",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "c232419cc401756671244cea263f64f9edaedbab",
+    "evidence": [
+      "source-traffic.txt",
+      "docs/CODE-BOUNDARIES.md (pinned source)"
+    ]
+  },
+  {
+    "id": "845:inference-provenance",
+    "pr": 845,
+    "state": "open",
+    "finding": "Frame-difference blob class/confidence is heuristic, yet rendered record provenance uses observed/cctv-observed. Require explicit derived/experimental quality and live-versus-historical frame provenance; source #1118 is adjacent, not adoption.",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "c232419cc401756671244cea263f64f9edaedbab",
+    "evidence": [
+      "source-traffic.txt",
+      "competitors/1118/files.json"
+    ]
+  },
+  {
+    "id": "835:pre-crop-path",
+    "pr": 835,
+    "state": "stale/superseded",
+    "finding": "Original viewport-only send-path context was superseded by merged #837. Preserve its crop and retained-image guards; do not restore the old owner.",
+    "routing_owner": "feedback",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "cacbbc972bf8ada8314a2a62b7cdae1abefa6c0c",
+    "evidence": [
+      "competitors/837-pr.json",
+      "competitors/837-files-pages.json",
+      "diffs/835.diff"
+    ]
+  },
+  {
+    "id": "943:old-mergeable-claim",
+    "pr": 943,
+    "state": "stale/superseded",
+    "finding": "Author prior mergeable claim predates current-main drift; reuse existing held fork #230 recut, not another carrier.",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/943#issuecomment-6043743525",
+    "author_role": "kvnloo (PR author, NONE)",
+    "head": "f06755cdbfb80b877740af0916069643c3b13aa0",
+    "evidence": [
+      "fork-230/pr.json",
+      "merge/943.json"
+    ]
+  },
+  {
+    "id": "943:coordinate-carrier",
+    "pr": 943,
+    "state": "blocked-external",
+    "finding": "Fork #231 has event-boundary plus shared FIRMS CSV repair. Existing upstream #1044 owns the CSV admission mechanism; narrow to unique event-model delta or compose with that owner.",
+    "routing_owner": "parent + existing #943/#231 author; rudycelekli owns #1044",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "f06755cdbfb80b877740af0916069643c3b13aa0",
+    "evidence": [
+      "fork-231/files.json",
+      "competitors/1044/files.json"
+    ]
+  },
+  {
+    "id": "882:fork-198-repair",
+    "pr": 882,
+    "state": "addressed-needs-rerun",
+    "finding": "Existing fork #198 has conflicting-ID and malformed-collection repair code; historical V8 claims are not fresh supported-Node tests, and upstream #882 remains unchanged.",
+    "routing_owner": "existing fork #198 author; parent coordinates native qualification",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "264764676538b67ce67c9e5d199637e107dacf59",
+    "evidence": [
+      "fork-198/pr.json",
+      "fork-198/files.json"
+    ]
+  },
+  {
+    "id": "943:fork-230-recut",
+    "pr": 943,
+    "state": "addressed-needs-rerun",
+    "finding": "Existing fork #230 recuts #943 onto pinned current main; body claims byte-identical core files. Native baseline and ancestry preservation still need independent qualification before any same-PR delivery.",
+    "routing_owner": "existing fork #230 author; parent controls authorized delivery",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "f06755cdbfb80b877740af0916069643c3b13aa0",
+    "evidence": [
+      "fork-230/pr.json",
+      "fork-230/files.json"
+    ]
+  },
+  {
+    "id": "882:contract",
+    "pr": 882,
+    "state": "blocked-external",
+    "finding": "Fork #198 explicitly holds duplicate-evidence policy until maintainer agreement and native Node qualification. Do not promote independently; simulation support is not observed access.",
+    "routing_owner": "parent + existing #882/#198 author + upstream maintainer decision",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "264764676538b67ce67c9e5d199637e107dacf59",
+    "evidence": [
+      "fork-198/pr.json"
+    ]
+  },
+  {
+    "id": "833:product-overlap",
+    "pr": 833,
+    "state": "blocked-external",
+    "finding": "Saved-location #358 stores full camera pose/map stack under a different key; #833 stores typed action args. Related product, incompatible persistence, not byte-equivalent adoption; choose accepted schema/owner.",
+    "routing_owner": "parent + kvnloo + gietabhi10 + upstream product maintainer",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "bd3829a54d53a65e4263b2e73b71a8bbc624b6ca",
+    "evidence": [
+      "competitors/358/files.json",
+      "diffs/833.diff"
+    ]
+  },
+  {
+    "id": "880:current-state-extraction",
+    "pr": 880,
+    "state": "open",
+    "finding": "Old get_current_view_state extraction conflicts with current gevActions and package surfaces; prove no loss of current state fields before extracting or superseding.",
+    "routing_owner": "portfolio-to-existing-author",
+    "comment_url": null,
+    "author_role": "independent audit",
+    "head": "2b7f832f456c933811c8dc0faa75caf111816718",
+    "evidence": [
+      "merge/880.stdout",
+      "diffs/880.diff"
+    ]
+  }
+]

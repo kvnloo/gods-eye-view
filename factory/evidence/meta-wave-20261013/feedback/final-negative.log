@@ -1,0 +1,19 @@
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: restored Context must dismiss compact Radio
+
+true !== false
+
+    at checkCompactRadioRestoration (file:///mnt/zer0models<operator-worktrees>/gev-meta-wave/feedback/scripts/qa-radio-ownership.mjs:109:12)
+    at async file:///mnt/zer0models.//feedback/run-ownership.mjs:9:6 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: true,
+  expected: false,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v26.5.0

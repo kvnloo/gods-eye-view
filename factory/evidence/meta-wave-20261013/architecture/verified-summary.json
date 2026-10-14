@@ -1,0 +1,437 @@
+{
+  "probes": {
+    "main": {
+      "defaultLive": 16,
+      "customBudgetLive": 16,
+      "intentRequests": 18,
+      "intentAborted": 0,
+      "firstNewRequestMs": 495.27799400000004,
+      "retainedBlobsAfterIntent": 16,
+      "terrainBurstRequests": 12,
+      "terrainBurstMs": 310.4465760000003,
+      "terrainWarmRequests": 0,
+      "cacheReleased": true
+    },
+    "head-879": {
+      "defaultLive": 16,
+      "customBudgetLive": 2,
+      "intentRequests": 18,
+      "intentAborted": 0,
+      "firstNewRequestMs": 501.0914160000011,
+      "retainedBlobsAfterIntent": 16,
+      "terrainBurstRequests": 12,
+      "terrainBurstMs": 308.35010299999885,
+      "terrainWarmRequests": 0,
+      "cacheReleased": true
+    },
+    "head-881": {
+      "defaultLive": 16,
+      "customBudgetLive": 16,
+      "intentRequests": 13,
+      "intentAborted": 2,
+      "firstNewRequestMs": 14.194367000000057,
+      "retainedBlobsAfterIntent": 11,
+      "terrainBurstRequests": 12,
+      "terrainBurstMs": 307.83259,
+      "terrainWarmRequests": 0,
+      "cacheReleased": true
+    },
+    "head-889": {
+      "defaultLive": 16,
+      "customBudgetLive": 16,
+      "intentRequests": 18,
+      "intentAborted": 0,
+      "firstNewRequestMs": 494.2876960000003,
+      "retainedBlobsAfterIntent": 16,
+      "terrainBurstRequests": 1,
+      "terrainBurstMs": 302.942094,
+      "terrainWarmRequests": 0,
+      "cacheReleased": true
+    },
+    "integration": {
+      "defaultLive": 16,
+      "customBudgetLive": 2,
+      "intentRequests": 13,
+      "intentAborted": 2,
+      "firstNewRequestMs": 7.243594000000485,
+      "retainedBlobsAfterIntent": 11,
+      "terrainBurstRequests": 1,
+      "terrainBurstMs": 303.90859699999965,
+      "terrainWarmRequests": 0,
+      "cacheReleased": true
+    }
+  },
+  "browser": {
+    "browser-main-qualified": {
+      "fixtureRequests": 83,
+      "aborted": 0,
+      "thumbnailRequests": 78,
+      "catalogRequests": 5,
+      "tileRequests": 0,
+      "disabledHeaps": [
+        53204084,
+        53550656,
+        53989260,
+        54026140,
+        54192844
+      ],
+      "disabledNodes": [
+        4525,
+        4513,
+        4514,
+        4521,
+        4521
+      ],
+      "disabledListeners": [
+        520,
+        520,
+        520,
+        520,
+        520
+      ],
+      "destroyedListeners": 19,
+      "destroyedBlobURLs": 0
+    },
+    "browser-integration": {
+      "fixtureRequests": 31,
+      "aborted": 1,
+      "thumbnailRequests": 26,
+      "catalogRequests": 5,
+      "tileRequests": 0,
+      "disabledHeaps": [
+        53407740,
+        53954932,
+        54039584,
+        54100444,
+        54209240
+      ],
+      "disabledNodes": [
+        4558,
+        4521,
+        4559,
+        4514,
+        4520
+      ],
+      "disabledListeners": [
+        519,
+        519,
+        519,
+        519,
+        519
+      ],
+      "destroyedListeners": 18,
+      "destroyedBlobURLs": 0
+    },
+    "browser-main-scene": {
+      "fixtureRequests": 111,
+      "aborted": 6,
+      "thumbnailRequests": 76,
+      "catalogRequests": 5,
+      "tileRequests": 30,
+      "disabledHeaps": [
+        55391744,
+        56534868,
+        58624212,
+        58584236,
+        59033956
+      ],
+      "disabledNodes": [
+        4236,
+        4238,
+        4325,
+        4238,
+        4238
+      ],
+      "disabledListeners": [
+        430,
+        447,
+        500,
+        453,
+        445
+      ],
+      "destroyedListeners": 36,
+      "destroyedBlobURLs": 0
+    }
+  },
+  "tests": {
+    "main-unit": {
+      "exit": 1,
+      "seconds": 41.116028785705566,
+      "counts": [
+        "\u2139 tests 6344",
+        "\u2139 pass 6341",
+        "\u2139 fail 2",
+        "\u2139 skipped 1"
+      ],
+      "browserPass": 0,
+      "browserFail": 0
+    },
+    "main-build": {
+      "exit": 0,
+      "seconds": 10.07196044921875,
+      "counts": [],
+      "browserPass": 0,
+      "browserFail": 0
+    },
+    "main-scene": {
+      "exit": 0,
+      "seconds": 79.74477863311768,
+      "counts": [],
+      "browserPass": 24,
+      "browserFail": 0
+    },
+    "main-unit-polling": {
+      "exit": 0,
+      "seconds": 337.985111951828,
+      "counts": [
+        "\u2139 tests 6344",
+        "\u2139 pass 6343",
+        "\u2139 fail 0",
+        "\u2139 skipped 1",
+        "\u2139 tests 1",
+        "\u2139 pass 1",
+        "\u2139 fail 0",
+        "\u2139 skipped 0",
+        "\u2139 tests 13",
+        "\u2139 pass 13",
+        "\u2139 fail 0",
+        "\u2139 skipped 0"
+      ],
+      "browserPass": 0,
+      "browserFail": 0
+    },
+    "main-boundaries": {
+      "exit": 0,
+      "seconds": 54.93073391914368,
+      "counts": [],
+      "browserPass": 0,
+      "browserFail": 0
+    },
+    "main-imagery": {
+      "exit": 1,
+      "seconds": 271.5181963443756,
+      "counts": [],
+      "browserPass": 91,
+      "browserFail": 16
+    },
+    "head-879-focused": {
+      "exit": 0,
+      "seconds": 0.32152771949768066,
+      "counts": [
+        "\u2139 tests 9",
+        "\u2139 pass 9",
+        "\u2139 fail 0",
+        "\u2139 skipped 0"
+      ],
+      "browserPass": 0,
+      "browserFail": 0
+    },
+    "head-881-focused": {
+      "exit": 1,
+      "seconds": 0.168290376663208,
+      "counts": [
+        "\u2139 tests 10",
+        "\u2139 pass 9",
+        "\u2139 fail 1",
+        "\u2139 skipped 0"
+      ],
+      "browserPass": 0,
+      "browserFail": 0
+    },
+    "head-889-focused": {
+      "exit": 0,
+      "seconds": 0.46907639503479004,
+      "counts": [
+        "\u2139 tests 11",
+        "\u2139 pass 11",
+        "\u2139 fail 0",
+        "\u2139 skipped 0"
+      ],
+      "browserPass": 0,
+      "browserFail": 0
+    },
+    "head-881-focused-installed": {
+      "exit": 0,
+      "seconds": 2.6341981887817383,
+      "counts": [
+        "\u2139 tests 53",
+        "\u2139 pass 53",
+        "\u2139 fail 0",
+        "\u2139 skipped 0"
+      ],
+      "browserPass": 0,
+      "browserFail": 0
+    },
+    "head-889-consumer": {
+      "exit": 0,
+      "seconds": 5.792396545410156,
+      "counts": [
+        "\u2139 tests 28",
+        "\u2139 pass 28",
+        "\u2139 fail 0",
+        "\u2139 skipped 0"
+      ],
+      "browserPass": 0,
+      "browserFail": 0
+    },
+    "browser-main": {
+      "exit": 1,
+      "seconds": 8.882976055145264,
+      "counts": [],
+      "browserPass": 0,
+      "browserFail": 0
+    },
+    "browser-main-fixed": {
+      "exit": 1,
+      "seconds": 7.273040294647217,
+      "counts": [],
+      "browserPass": 0,
+      "browserFail": 0
+    },
+    "browser-main-native": {
+      "exit": 1,
+      "seconds": 6.171549320220947,
+      "counts": [],
+      "browserPass": 0,
+      "browserFail": 0
+    },
+    "browser-main-final": {
+      "exit": 1,
+      "seconds": 20.687476873397827,
+      "counts": [],
+      "browserPass": 0,
+      "browserFail": 0
+    },
+    "browser-main-qualified": {
+      "exit": 0,
+      "seconds": 47.90975570678711,
+      "counts": [],
+      "browserPass": 0,
+      "browserFail": 0
+    },
+    "integration-focused": {
+      "exit": 1,
+      "seconds": 6.241720199584961,
+      "counts": [
+        "\u2139 tests 110",
+        "\u2139 pass 109",
+        "\u2139 fail 1",
+        "\u2139 skipped 0"
+      ],
+      "browserPass": 0,
+      "browserFail": 0
+    },
+    "integration-focused-adopted": {
+      "exit": 0,
+      "seconds": 7.1242454051971436,
+      "counts": [
+        "\u2139 tests 115",
+        "\u2139 pass 115",
+        "\u2139 fail 0",
+        "\u2139 skipped 0"
+      ],
+      "browserPass": 0,
+      "browserFail": 0
+    },
+    "browser-integration": {
+      "exit": 0,
+      "seconds": 45.1581346988678,
+      "counts": [],
+      "browserPass": 0,
+      "browserFail": 0
+    },
+    "integration-build": {
+      "exit": 0,
+      "seconds": 17.19571852684021,
+      "counts": [],
+      "browserPass": 0,
+      "browserFail": 0
+    },
+    "integration-boundaries": {
+      "exit": 1,
+      "seconds": 26.474023580551147,
+      "counts": [],
+      "browserPass": 0,
+      "browserFail": 0
+    },
+    "browser-main-scene": {
+      "exit": 0,
+      "seconds": 42.75097155570984,
+      "counts": [],
+      "browserPass": 0,
+      "browserFail": 0
+    }
+  },
+  "document": {
+    "lines": 5194,
+    "sha256": "fae18df20c7418d3c05f28113a374583882847b71ad0da448637f087e1990c38",
+    "readCoverage": "1-5194 via paginated read_file, plus untruncated long-line remainders above 1900 characters"
+  },
+  "worktree": {
+    "head": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+    "status": ""
+  },
+  "sceneVerified": {
+    "imported": true,
+    "seeks": [
+      {
+        "progress": 0,
+        "ok": true,
+        "camera": {
+          "lat": 30.267199999999992,
+          "lon": -97.74309999999998,
+          "alt": 600.0000000013205,
+          "heading": 15.000000000000034,
+          "pitch": -30.000000000000068,
+          "roll": 360
+        },
+        "pending": 0
+      },
+      {
+        "progress": 0.99,
+        "ok": true,
+        "camera": {
+          "lat": 30.267199999999992,
+          "lon": -97.7231,
+          "alt": 599.9999999999087,
+          "heading": 15.000000000000034,
+          "pitch": -30.000000000000068,
+          "roll": 359.99999999999994
+        },
+        "pending": 0
+      },
+      {
+        "progress": 0.25,
+        "ok": true,
+        "camera": {
+          "lat": 30.267199999999992,
+          "lon": -97.74309999999998,
+          "alt": 600.0000000013205,
+          "heading": 15.000000000000034,
+          "pitch": -30.000000000000068,
+          "roll": 360
+        },
+        "pending": 0
+      }
+    ],
+    "afterStop": {
+      "lat": 30.267199999999992,
+      "lon": -97.74309999999998,
+      "alt": 600.0000000013205,
+      "heading": 14.999999999999982,
+      "pitch": -30.000000000000092,
+      "roll": 359.99999999999994
+    },
+    "afterDelay": {
+      "lat": 30.267199999999992,
+      "lon": -97.74309999999998,
+      "alt": 600.0000000013205,
+      "heading": 14.999999999999982,
+      "pitch": -30.000000000000092,
+      "roll": 359.99999999999994
+    },
+    "superseded": false,
+    "running": false,
+    "pending": 0
+  }
+}

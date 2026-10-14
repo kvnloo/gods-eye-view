@@ -1,0 +1,999 @@
+{
+  "selected_count": 3,
+  "generated_at": "2026-10-14T00:39:54.611988+00:00",
+  "entries": [
+    {
+      "pr": 1046,
+      "author": "rudycelekli",
+      "title": "fix(director): reject cancellation during the final asset stream read",
+      "head": "62ca2904b2b6dee865fb4e7949f3b0f4cacb532b",
+      "base": "8b8ccc9a81379e8b40d4be67610570ee5b159512",
+      "raw_opening_snapshot": "1046/snapshot.json",
+      "raw_closing_snapshot": "1046/closing-snapshot.json",
+      "unit_node26": {
+        "tests": 6246,
+        "pass": 6245,
+        "fail": 0,
+        "skipped": 1
+      },
+      "focused_node24": {
+        "tests": 13,
+        "pass": 13,
+        "fail": 0,
+        "skipped": 0
+      },
+      "receipts": [
+        {
+          "label": "boundaries",
+          "argv": [
+            "npm",
+            "run",
+            "check:boundaries"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1046",
+          "head": "62ca2904b2b6dee865fb4e7949f3b0f4cacb532b",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:19:43.794794+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": 0,
+          "seconds": 46.487958669662476,
+          "log": ".//collaboration/1046/boundaries.log",
+          "after_status": "",
+          "receipt": "1046/boundaries.receipt.json",
+          "log_sha256": "834c89560e1c97b371356a850fa77d2fe9e24c709ab1d0e8dec0a470270159a9"
+        },
+        {
+          "label": "browser-stream",
+          "argv": [
+            "node",
+            ".//collaboration/browser-stream.mjs"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1046",
+          "head": "62ca2904b2b6dee865fb4e7949f3b0f4cacb532b",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:24:14.322878+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": 0,
+          "seconds": 2.8518106937408447,
+          "log": ".//collaboration/1046/browser-stream.log",
+          "after_status": "",
+          "receipt": "1046/browser-stream.receipt.json",
+          "log_sha256": "70d2c4b52e72fe21901e6d4e7bd22337c08297b187b6f9401a4af3b8c11e0f2b"
+        },
+        {
+          "label": "build",
+          "argv": [
+            "npm",
+            "run",
+            "build"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1046",
+          "head": "62ca2904b2b6dee865fb4e7949f3b0f4cacb532b",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:18:36.857820+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": 0,
+          "seconds": 25.147939443588257,
+          "log": ".//collaboration/1046/build.log",
+          "after_status": "",
+          "receipt": "1046/build.receipt.json",
+          "log_sha256": "c1a0d8932a64ed4f2d76b2c371fe64f0c0cd16bfbd06eeb47de9181e6c07cb47"
+        },
+        {
+          "label": "focused-node24",
+          "argv": [
+            "fnm",
+            "exec",
+            "--using=24.14.0",
+            "node",
+            "--test",
+            "src/director/packs/asset-stream-cancellation.test.mjs",
+            "src/director/packs/packs.test.mjs"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1046",
+          "head": "62ca2904b2b6dee865fb4e7949f3b0f4cacb532b",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:24:17.205076+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": 0,
+          "seconds": 6.9536662101745605,
+          "log": ".//collaboration/1046/focused-node24.log",
+          "after_status": "",
+          "receipt": "1046/focused-node24.receipt.json",
+          "log_sha256": "8900da833b5972b532f83f426a757885e33c56a4224a9e389a83eef44ada0aea"
+        },
+        {
+          "label": "format",
+          "argv": [
+            "npm",
+            "run",
+            "format:check"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1046",
+          "head": "62ca2904b2b6dee865fb4e7949f3b0f4cacb532b",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:19:02.090707+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": 0,
+          "seconds": 41.45446467399597,
+          "log": ".//collaboration/1046/format.log",
+          "after_status": "",
+          "receipt": "1046/format.receipt.json",
+          "log_sha256": "5bcf5b24251d17fff00e23f506e1d7f9aa1e4e40093543e039678e055b043e08"
+        },
+        {
+          "label": "install",
+          "argv": [
+            "npm",
+            "ci",
+            "--ignore-scripts",
+            "--no-audit",
+            "--no-fund"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1046",
+          "head": "62ca2904b2b6dee865fb4e7949f3b0f4cacb532b",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:16:47.332142+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": 0,
+          "seconds": 8.29250431060791,
+          "log": ".//collaboration/1046/install.log",
+          "after_status": "",
+          "receipt": "1046/install.receipt.json",
+          "log_sha256": "e839215fe73d3fc620b27aeb7f9b2a53c1f2967b6afda47a5fb40b303eae5b54"
+        },
+        {
+          "label": "new-test-format-explicit",
+          "argv": [
+            "node",
+            "node_modules/prettier/bin/prettier.cjs",
+            "--check",
+            "src/director/packs/asset-stream-cancellation.test.mjs"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1046",
+          "head": "62ca2904b2b6dee865fb4e7949f3b0f4cacb532b",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:27:24.763887+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": 0,
+          "seconds": 0.5459342002868652,
+          "log": ".//collaboration/1046/new-test-format-explicit.log",
+          "after_status": "",
+          "receipt": "1046/new-test-format-explicit.receipt.json",
+          "log_sha256": "17aa973d3f004560237d9a95171210b0671deff23d61628eecf7322ff5938f20"
+        },
+        {
+          "label": "node24-version",
+          "argv": [
+            "fnm",
+            "exec",
+            "--using=24.14.0",
+            "node",
+            "--version"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1046",
+          "head": "62ca2904b2b6dee865fb4e7949f3b0f4cacb532b",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:27:25.342636+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": 0,
+          "seconds": 0.05233621597290039,
+          "log": ".//collaboration/1046/node24-version.log",
+          "after_status": "",
+          "receipt": "1046/node24-version.receipt.json",
+          "log_sha256": "66067cd148ad9719b8fd48e9e233a4dcfa29b9a5e449f9463f9f6b0fb2c58ada"
+        },
+        {
+          "label": "probe-base",
+          "argv": [
+            "node",
+            ".//collaboration/probes.mjs",
+            "1046",
+            "base"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1046",
+          "head": "62ca2904b2b6dee865fb4e7949f3b0f4cacb532b",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:20:39.565475+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": 1,
+          "seconds": 0.4621312618255615,
+          "log": ".//collaboration/1046/probe-base.log",
+          "after_status": "",
+          "receipt": "1046/probe-base.receipt.json",
+          "log_sha256": "940900b3b6437c3be801c914d7df4d16a89bcc2b30d692bc33e9001eb121cd6d"
+        },
+        {
+          "label": "probe-head",
+          "argv": [
+            "node",
+            ".//collaboration/probes.mjs",
+            "1046",
+            "head"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1046",
+          "head": "62ca2904b2b6dee865fb4e7949f3b0f4cacb532b",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:20:39.056894+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": 0,
+          "seconds": 0.40381789207458496,
+          "log": ".//collaboration/1046/probe-head.log",
+          "after_status": "",
+          "receipt": "1046/probe-head.receipt.json",
+          "log_sha256": "66fd8d1545947626561413323af960bb6543bb0eae371e475c9a1cbdc115c74b"
+        },
+        {
+          "label": "probe-mutant",
+          "argv": [
+            "node",
+            ".//collaboration/probes.mjs",
+            "1046",
+            "mutant"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1046",
+          "head": "62ca2904b2b6dee865fb4e7949f3b0f4cacb532b",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:20:40.081943+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": 1,
+          "seconds": 0.45267152786254883,
+          "log": ".//collaboration/1046/probe-mutant.log",
+          "after_status": "",
+          "receipt": "1046/probe-mutant.receipt.json",
+          "log_sha256": "821e298e982a7b0f63b8038b61a723022669038743f70f2314b81d2a66dd6bfd"
+        },
+        {
+          "label": "track",
+          "argv": [
+            "npm",
+            "run",
+            "test:track",
+            "--",
+            "--url",
+            "http://127.0.0.1:4186",
+            "--offline-imagery"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1046",
+          "head": "62ca2904b2b6dee865fb4e7949f3b0f4cacb532b",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:23:08.903201+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": "TIMEOUT",
+          "seconds": 480.04696822166443,
+          "log": ".//collaboration/1046/track.log",
+          "after_status": "",
+          "receipt": "1046/track.receipt.json",
+          "log_sha256": "e3f16a8e61e6f1d33f123f0bb7567554b6ab8d36682a538121650e47d2d128b3"
+        },
+        {
+          "label": "unit",
+          "argv": [
+            "npm",
+            "test"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1046",
+          "head": "62ca2904b2b6dee865fb4e7949f3b0f4cacb532b",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:16:55.496284+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": 0,
+          "seconds": 101.18300700187683,
+          "log": ".//collaboration/1046/unit.log",
+          "after_status": "",
+          "receipt": "1046/unit.receipt.json",
+          "log_sha256": "67c53799c6f45d535047d5e93c67fce6bbfd4e7967b2bfd4265acd92a4fbd33e"
+        }
+      ]
+    },
+    {
+      "pr": 1097,
+      "author": "Rohilalala",
+      "title": "fix(overpass): read failure phrases from the remark, not element tags",
+      "head": "59e45a218c37a193f4d1e9a8bc16af1429909c88",
+      "base": "8b8ccc9a81379e8b40d4be67610570ee5b159512",
+      "raw_opening_snapshot": "1097/snapshot.json",
+      "raw_closing_snapshot": "1097/closing-snapshot.json",
+      "unit_node26": {
+        "tests": 6246,
+        "pass": 6245,
+        "fail": 0,
+        "skipped": 1
+      },
+      "focused_node24": {
+        "tests": 8,
+        "pass": 8,
+        "fail": 0,
+        "skipped": 0
+      },
+      "receipts": [
+        {
+          "label": "boundaries",
+          "argv": [
+            "npm",
+            "run",
+            "check:boundaries"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1097",
+          "head": "59e45a218c37a193f4d1e9a8bc16af1429909c88",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:16:06.210356+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": 0,
+          "seconds": 36.520352840423584,
+          "log": ".//collaboration/1097/boundaries.log",
+          "after_status": "",
+          "receipt": "1097/boundaries.receipt.json",
+          "log_sha256": "834c89560e1c97b371356a850fa77d2fe9e24c709ab1d0e8dec0a470270159a9"
+        },
+        {
+          "label": "build",
+          "argv": [
+            "npm",
+            "run",
+            "build"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1097",
+          "head": "59e45a218c37a193f4d1e9a8bc16af1429909c88",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:15:18.243813+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": 0,
+          "seconds": 12.205385684967041,
+          "log": ".//collaboration/1097/build.log",
+          "after_status": "",
+          "receipt": "1097/build.receipt.json",
+          "log_sha256": "9dd7f20da10f074f7d8ef4c10e06df398af5050656e187db34cb7b060a11e120"
+        },
+        {
+          "label": "focused-node24",
+          "argv": [
+            "fnm",
+            "exec",
+            "--using=24.14.0",
+            "node",
+            "--test",
+            "src/overpassProxy.test.mjs"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1097",
+          "head": "59e45a218c37a193f4d1e9a8bc16af1429909c88",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:24:24.265913+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": 0,
+          "seconds": 1.7845005989074707,
+          "log": ".//collaboration/1097/focused-node24.log",
+          "after_status": "",
+          "receipt": "1097/focused-node24.receipt.json",
+          "log_sha256": "70de67621eb1dfde93b395c6aa86a2ceb11568be32e7521098969fa038931de7"
+        },
+        {
+          "label": "format",
+          "argv": [
+            "npm",
+            "run",
+            "format:check"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1097",
+          "head": "59e45a218c37a193f4d1e9a8bc16af1429909c88",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:15:30.543192+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": 0,
+          "seconds": 35.46995258331299,
+          "log": ".//collaboration/1097/format.log",
+          "after_status": "",
+          "receipt": "1097/format.receipt.json",
+          "log_sha256": "5bcf5b24251d17fff00e23f506e1d7f9aa1e4e40093543e039678e055b043e08"
+        },
+        {
+          "label": "install",
+          "argv": [
+            "npm",
+            "ci",
+            "--ignore-scripts",
+            "--no-audit",
+            "--no-fund"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1097",
+          "head": "59e45a218c37a193f4d1e9a8bc16af1429909c88",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:14:24.441284+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": 0,
+          "seconds": 7.2261130809783936,
+          "log": ".//collaboration/1097/install.log",
+          "after_status": "",
+          "receipt": "1097/install.receipt.json",
+          "log_sha256": "42af562b5a89f155ddf58e5a7493d97ab551493883c4f9ac5ee8ab188770177a"
+        },
+        {
+          "label": "probe-base",
+          "argv": [
+            "node",
+            ".//collaboration/probes.mjs",
+            "1097",
+            "base"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1097",
+          "head": "59e45a218c37a193f4d1e9a8bc16af1429909c88",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:20:41.582875+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": 1,
+          "seconds": 0.9465088844299316,
+          "log": ".//collaboration/1097/probe-base.log",
+          "after_status": "",
+          "receipt": "1097/probe-base.receipt.json",
+          "log_sha256": "673cc0d1e4c2c6e138ae61f81e3eabbdc58b1fcbe6b8135099106734dfa61299"
+        },
+        {
+          "label": "probe-head",
+          "argv": [
+            "node",
+            ".//collaboration/probes.mjs",
+            "1097",
+            "head"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1097",
+          "head": "59e45a218c37a193f4d1e9a8bc16af1429909c88",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:20:40.669941+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": 0,
+          "seconds": 0.8617053031921387,
+          "log": ".//collaboration/1097/probe-head.log",
+          "after_status": "",
+          "receipt": "1097/probe-head.receipt.json",
+          "log_sha256": "d222b86d27d14fb86d1ec6befb6fb32f8e7c80aa6cc5502278014e7dfdc29584"
+        },
+        {
+          "label": "probe-mutant",
+          "argv": [
+            "node",
+            ".//collaboration/probes.mjs",
+            "1097",
+            "mutant"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1097",
+          "head": "59e45a218c37a193f4d1e9a8bc16af1429909c88",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:20:42.585868+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": 1,
+          "seconds": 0.600445032119751,
+          "log": ".//collaboration/1097/probe-mutant.log",
+          "after_status": "",
+          "receipt": "1097/probe-mutant.receipt.json",
+          "log_sha256": "c1a2adddbb66ffaea50ce9eb2d230ac1929bc12c1cdf3dcf664d5b0c58bde28a"
+        },
+        {
+          "label": "track",
+          "argv": [
+            "npm",
+            "run",
+            "test:track",
+            "--",
+            "--url",
+            "http://127.0.0.1:4186",
+            "--offline-imagery"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1097",
+          "head": "59e45a218c37a193f4d1e9a8bc16af1429909c88",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:33:03.318869+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "timeout_owned_pids": [
+            3287403,
+            3287416,
+            3287474,
+            3287481,
+            3287482,
+            3287504,
+            3287507,
+            3287524,
+            3287590,
+            3288297,
+            3288910,
+            3289715
+          ],
+          "exit": "TIMEOUT",
+          "deadline_seconds": 180,
+          "seconds": 181.96347546577454,
+          "log": ".//collaboration/1097/track.log",
+          "after_status": "",
+          "receipt": "1097/track.receipt.json",
+          "log_sha256": "d7104ca5dfce685b6639abf8ba3a781ec461504a6a43c030e629fab6f06a08d3"
+        },
+        {
+          "label": "unit",
+          "argv": [
+            "npm",
+            "test"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1097",
+          "head": "59e45a218c37a193f4d1e9a8bc16af1429909c88",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:14:31.748619+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": 0,
+          "seconds": 46.423449993133545,
+          "log": ".//collaboration/1097/unit.log",
+          "after_status": "",
+          "receipt": "1097/unit.receipt.json",
+          "log_sha256": "7b426b3c6600d24cc544bd4428ce91c722371a88dd2cbbf4e40c5fa4e08a3706"
+        }
+      ]
+    },
+    {
+      "pr": 1106,
+      "author": "AkashBhat14",
+      "title": "fix(satellites): decode Alpha-5 catalog numbers instead of collapsing to NaN",
+      "head": "729f8f339cfecc9e96612f0e297caeaadfa67ac2",
+      "base": "9beadbda6333b83f79aa03047e2d851830f01f6b",
+      "raw_opening_snapshot": "1106/snapshot.json",
+      "raw_closing_snapshot": "1106/closing-snapshot.json",
+      "unit_node26": {
+        "tests": 6335,
+        "pass": 6334,
+        "fail": 0,
+        "skipped": 1
+      },
+      "focused_node24": {
+        "tests": 7,
+        "pass": 7,
+        "fail": 0,
+        "skipped": 0
+      },
+      "receipts": [
+        {
+          "label": "boundaries",
+          "argv": [
+            "npm",
+            "run",
+            "check:boundaries"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1106",
+          "head": "729f8f339cfecc9e96612f0e297caeaadfa67ac2",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:24:11.426706+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": 0,
+          "seconds": 52.95280075073242,
+          "log": ".//collaboration/1106/boundaries.log",
+          "after_status": "",
+          "receipt": "1106/boundaries.receipt.json",
+          "log_sha256": "a6637c5cfdb7770a6965e2e118f7feebae68cb33cb9aa2f34029311bd62010c1"
+        },
+        {
+          "label": "build",
+          "argv": [
+            "npm",
+            "run",
+            "build"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1106",
+          "head": "729f8f339cfecc9e96612f0e297caeaadfa67ac2",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:21:51.445527+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": 0,
+          "seconds": 38.38754892349243,
+          "log": ".//collaboration/1106/build.log",
+          "after_status": "",
+          "receipt": "1106/build.receipt.json",
+          "log_sha256": "96f1ca0d72cdfc7e62557bdb7fc8d6ed86e5ec1502f957b99ba32110d12e2937"
+        },
+        {
+          "label": "focused-node24",
+          "argv": [
+            "fnm",
+            "exec",
+            "--using=24.14.0",
+            "node",
+            "--test",
+            "src/layers/satellites/norad.test.mjs",
+            "src/layers/satellites/source.test.mjs"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1106",
+          "head": "729f8f339cfecc9e96612f0e297caeaadfa67ac2",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:24:26.095086+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": 0,
+          "seconds": 2.6826868057250977,
+          "log": ".//collaboration/1106/focused-node24.log",
+          "after_status": "",
+          "receipt": "1106/focused-node24.receipt.json",
+          "log_sha256": "11291be324c54fa456e0d86ff5b7116260b417de2e9dec20280bdd3e04803f6d"
+        },
+        {
+          "label": "format",
+          "argv": [
+            "npm",
+            "run",
+            "format:check"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1106",
+          "head": "729f8f339cfecc9e96612f0e297caeaadfa67ac2",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:22:30.103804+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": 0,
+          "seconds": 101.00786471366882,
+          "log": ".//collaboration/1106/format.log",
+          "after_status": "",
+          "receipt": "1106/format.receipt.json",
+          "log_sha256": "6626621c28ec4e4d969a812f8ec2179a308d16197442fbc297ad371c41f89c5b"
+        },
+        {
+          "label": "new-test-format-explicit",
+          "argv": [
+            "node",
+            "node_modules/prettier/bin/prettier.cjs",
+            "--check",
+            "src/layers/satellites/norad.test.mjs"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1106",
+          "head": "729f8f339cfecc9e96612f0e297caeaadfa67ac2",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:27:24.214847+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": 1,
+          "seconds": 0.4565541744232178,
+          "log": ".//collaboration/1106/new-test-format-explicit.log",
+          "after_status": "",
+          "receipt": "1106/new-test-format-explicit.receipt.json",
+          "log_sha256": "273681799032d4f92d912f2914a5de396541d9d11aed7861a0f821c59a579ab2"
+        },
+        {
+          "label": "probe-base",
+          "argv": [
+            "node",
+            ".//collaboration/probes.mjs",
+            "1106",
+            "base"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1106",
+          "head": "729f8f339cfecc9e96612f0e297caeaadfa67ac2",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:20:46.960037+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": 1,
+          "seconds": 4.951645851135254,
+          "log": ".//collaboration/1106/probe-base.log",
+          "after_status": "",
+          "receipt": "1106/probe-base.receipt.json",
+          "log_sha256": "b5cb6ce275dcd78b224457c7e0aff987290b95fe256be969386a423d9acad408"
+        },
+        {
+          "label": "probe-head",
+          "argv": [
+            "node",
+            ".//collaboration/probes.mjs",
+            "1106",
+            "head"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1106",
+          "head": "729f8f339cfecc9e96612f0e297caeaadfa67ac2",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:20:43.241072+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": 0,
+          "seconds": 3.6481385231018066,
+          "log": ".//collaboration/1106/probe-head.log",
+          "after_status": "",
+          "receipt": "1106/probe-head.receipt.json",
+          "log_sha256": "d5f94d4db3bfeddf070d886c59d5a36e679753f2a1cc2676338e969fa610c514"
+        },
+        {
+          "label": "probe-mutant",
+          "argv": [
+            "node",
+            ".//collaboration/probes.mjs",
+            "1106",
+            "mutant"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1106",
+          "head": "729f8f339cfecc9e96612f0e297caeaadfa67ac2",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:20:51.979918+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": 1,
+          "seconds": 5.404252290725708,
+          "log": ".//collaboration/1106/probe-mutant.log",
+          "after_status": "",
+          "receipt": "1106/probe-mutant.receipt.json",
+          "log_sha256": "71a9cec7ec53d55dc87129a3bcd902329c7eba8c8c359e336cab7bcd1e16e3ff"
+        },
+        {
+          "label": "track",
+          "argv": [
+            "npm",
+            "run",
+            "test:track",
+            "--",
+            "--url",
+            "http://127.0.0.1:4186",
+            "--offline-imagery"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1106",
+          "head": "729f8f339cfecc9e96612f0e297caeaadfa67ac2",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:36:09.132731+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "timeout_owned_pids": [
+            3296505,
+            3296523,
+            3296566,
+            3296579,
+            3296580,
+            3296605,
+            3296608,
+            3296619,
+            3296659,
+            3298124,
+            3298262,
+            3298690
+          ],
+          "exit": "TIMEOUT",
+          "deadline_seconds": 180,
+          "seconds": 181.9423327445984,
+          "log": ".//collaboration/1106/track.log",
+          "after_status": "",
+          "receipt": "1106/track.receipt.json",
+          "log_sha256": "a4f90d3c538a9bd437f6ceb478b5232a6e68ffa061a19f7cd5e3883b3d9328c4"
+        },
+        {
+          "label": "unit",
+          "argv": [
+            "npm",
+            "test"
+          ],
+          "cwd": "<operator-worktrees>/gev-meta-wave/collaboration-1106",
+          "head": "729f8f339cfecc9e96612f0e297caeaadfa67ac2",
+          "node": "v26.5.0",
+          "started": "2026-10-14T00:20:33.880310+00:00",
+          "environment_overrides": {
+            "PATH": "<operator-specific path omitted in public copy>",
+            "TMPDIR": "<operator-specific path omitted in public copy>",
+            "PUPPETEER_SKIP_DOWNLOAD": "1",
+            "GEV_REQUIRE_ALLOCATION_GATE": "0",
+            "npm_config_cache": "<operator-specific path omitted in public copy>"
+          },
+          "before_status": "",
+          "exit": 0,
+          "seconds": 77.3747673034668,
+          "log": ".//collaboration/1106/unit.log",
+          "after_status": "",
+          "receipt": "1106/unit.receipt.json",
+          "log_sha256": "2173be56cefaa41455edb3cc3916e86dffada7fbf21fd34d2900c7d1574437ae"
+        }
+      ]
+    }
+  ]
+}

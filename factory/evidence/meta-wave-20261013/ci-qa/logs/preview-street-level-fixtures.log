@@ -1,0 +1,46 @@
+{"command": ["fnm", "exec", "--using=24.14.0", "npm", "run", "qa:street-level:fixtures", "--", "--strict", "--url", "http://127.0.0.1:4182"], "base": "132b9e96dc1491e5db8bf949b1560f4561c925c3", "source": "current-main runtime plus test-only candidate.patch", "env": {"MAPILLARY_CLIENT_TOKEN": "MLY|0|qa-fixture", "TMPDIR": "<operator-home>/.hermes/profiles/clean/cache/scratch/gci", "PUPPETEER_EXECUTABLE_PATH": "<operator-home>/.cache/puppeteer/chrome/linux-152.0.7977.75/chrome-linux64/chrome", "QA_FAIL_ON_RETRY": "1"}}
+
+> gods-eye-view@0.2.1 qa:street-level:fixtures
+> node scripts/qa-street-level.mjs --fixtures --strict --url http://127.0.0.1:4182
+
+  (server status: configured=true)
+ok 1 the server registers the real Mapillary status route
+ok 2 panel is a collapsed right-rail strip at 1440×900
+ok 3 panel is a collapsed right-rail strip at 1280×800
+ok 4 expanding the strip shows the body, one chip per provider and the legend
+ok 5 enabling draws coverage and registers the on-globe credit
+ok 6 the header ON/OFF pill switches the layer off and on
+ok 7 the only lit provider chip switches the whole layer off, credit and all
+ok 8 lighting the chip turns the layer back on with coverage
+ok 9 the 360° filter keeps at most the unfiltered sequence count
+ok 10 the SINCE slider narrows coverage and names its cut-off date
+ok 11 the MapillaryJS viewer loads ahead of the first photo
+ok 12 a key Mapillary rejects reads KEY REJECTED, stops asking (a pan that asks while accepted asks nothing while rejected), and clears when switched off
+ok 13 a click on a coverage line selects its sequence and draws its cones
+ok 14 opening the nearest image shows the viewer with a caption
+ok 15 a click on a neighbouring cone steps the viewer to that photo (360° and flat)
+  (Google 3D unavailable here: only the disabled path ran)
+skip (no Google 3D) 16 FOLLOW is offered only on the Google 3D map
+ok 17 closing a photo stops the framing flight toward it
+  (Google 3D unavailable here: only the draped path ran)
+skip (no Google 3D) 18 coverage sits on the bare earth on Google 3D and drapes elsewhere
+ok 19 EXPAND opens a modal dialog (the rest of <body> inert) and Esc returns focus to the button
+ok 20 × closes the image and deselects it on the globe
+ok 21 the panel floats on a header drag, resizes, and the viewer takes the room
+ok 22 SHRINK after EXPAND docks the window back in the rail at its default size, viewer inside the panel
+note: retry 1/2: the press missed the street-level-panel header (on canvas.mapillary-canvas); pre-press hit check passed; stillness held; panel box at hit check 1058,382 330x471 -> at press 1058,266 330x425; retrying
+::warning title=Panel press retried::retry 1/2: the press missed the street-level-panel header (on canvas.mapillary-canvas); pre-press hit check passed; stillness held; panel box at hit check 1058,382 330x471 -> at press 1058,266 330x425
+ok 23 a header double-click docks a floating window
+note: retry 1/2: the press missed the street-level-panel header (on canvas.mapillary-canvas); pre-press hit check passed; stillness held; panel box at hit check 1058,382 330x471 -> at press 1058,266 330x425; retrying
+::warning title=Panel press retried::retry 1/2: the press missed the street-level-panel header (on canvas.mapillary-canvas); pre-press hit check passed; stillness held; panel box at hit check 1058,382 330x471 -> at press 1058,266 330x425
+ok 24 collapsing a floating window docks it as the rail strip
+ok 25 on a phone the whole photo fits in the docked panel
+ok 26 Street View starts off, appears only on the Google 3D map, and travels in the share link
+skip (no Google key) 27 on Google 3D a click on a street opens Google Street View where it is, captioned and linked, and its view drives the pose
+ok 28 a reload with the layer on keeps a collapsed panel collapsed, and the share link carries its ui token
+ok 29 keyless install (a second page, no key on the server) gates the controls and reports KEY REQUIRED
+  (answered: GET graph.mapillary.com/image_ids?sequence_id | GET graph.mapillary.com/images?fields&image_ids | GET graph.mapillary.com/images?fields&lat&limit&lng&radius | GET graph.mapillary.com/images?fields&limit&sequence_ids | GET graph.mapillary.com/images?fields&s2 | GET graph.mapillary.com/{imageId}/tiles?fields&z | GET qa-fixture.mapillary.com/thumb/{imageId}.jpg | OPTIONS graph.mapillary.com/image_ids?sequence_id | OPTIONS graph.mapillary.com/images?fields&image_ids | OPTIONS graph.mapillary.com/images?fields&s2 | OPTIONS graph.mapillary.com/{imageId}/tiles?fields&z)
+ok 30 every Mapillary request was answered from a fixture
+ok 31 no page errors and no Cesium render-loop errors
+ok 32 strict: no skips beyond the documented ones
+32 steps: 29 ok, 3 skipped

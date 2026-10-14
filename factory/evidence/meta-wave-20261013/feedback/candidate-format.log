@@ -1,0 +1,3 @@
+npm notice run gods-eye-view@0.2.1 format:check
+npm notice run node scripts/format.mjs --check
+Checked 1322 source files.

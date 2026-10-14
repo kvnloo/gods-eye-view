@@ -1,0 +1,421 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 032c6fe..e9c33c2 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -1,5 +1,10 @@
+ # Changelog
+ 
++- Prevent a compact Radio disclosure from covering Space Missions when the
++  adaptive right rail restores Context without calling the panel owner.
++  Repeated Context-open calls and rail-driven expansion both close the mini,
++  with a regression for auto-collapse restoration (raysung-2026, #804).
++
+ - GBFS v3 station names use English translations when available, then the first
+   usable translation or short name. Empty or malformed names no longer appear as
+   `[object Object]` or interrupt station loading; legacy string names remain
+diff --git a/docs/CURRENT-STATE.md b/docs/CURRENT-STATE.md
+index 0d3ef31..17561fd 100644
+--- a/docs/CURRENT-STATE.md
++++ b/docs/CURRENT-STATE.md
+@@ -1030,6 +1030,15 @@ panel, and honors keyboard focus on the right. Mobile layout still releases
+ desktop allocation styles. Stable Display allocation avoids unnecessary style
+ writes. This extraction does not change panel positions or layout defaults.
+ 
++A Context expansion, whether through a repeated panel-owner call or a right
++rail restore after tactical auto-collapse, dismisses any open compact Radio
++disclosure before revealing Context content. The compact launcher still works
++while Context remains collapsed. This is an ownership invariant, not a
++z-index workaround (#804). The Radio browser gate exercises the real Cyber
++accordion path: open compact Radio on passively collapsed Context, then use
++Shift-Tab to reach the Display HUD selector and ArrowUp to return to Minimal.
++Context restoration must dismiss the mini without relying on outside pointerdown.
++
+ ## Surface keyboard lifecycle
+ 
+ `ui/surfaces` owns the capture-phase keyboard listener, Tab cycling and return
+diff --git a/scripts/format-scope.json b/scripts/format-scope.json
+index 662d33a..dafbbf0 100644
+--- a/scripts/format-scope.json
++++ b/scripts/format-scope.json
+@@ -40,6 +40,7 @@
+   "scripts/qa-voice-auth-focus.mjs",
+   "src/codexOauthRealtime.test.mjs",
+   "src/voice/cloudVoiceAuth.test.mjs",
++  "scripts/qa-radio-ownership.mjs",
+   "scripts/qa-panel-resize.mjs",
+   "scripts/qa-panelDrag.mjs",
+   "src/tooling/panelResizeQa.test.mjs",
+@@ -670,6 +671,7 @@
+   "src/ui/shareRestoration.js",
+   "src/ui/visualSettings.js",
+   "src/ui/panelChrome.js",
++  "src/ui/panelChrome.radioOwnership.test.mjs",
+   "src/testSupport/readShellSource.mjs",
+   "src/ui/stateOwners.test.mjs",
+   "src/layers/flights/records.js",
+diff --git a/scripts/qa-radio-ownership.mjs b/scripts/qa-radio-ownership.mjs
+new file mode 100644
+index 0000000..a0b25cd
+--- /dev/null
++++ b/scripts/qa-radio-ownership.mjs
+@@ -0,0 +1,132 @@
++import assert from 'node:assert/strict';
++import fs from 'node:fs';
++import path from 'node:path';
++
++/** Exercise compact Radio ownership through real controls, without DOM fixtures. */
++export async function checkCompactRadioRestoration(browser, url, shotsDir) {
++  const context = await browser.createBrowserContext();
++  const page = await context.newPage();
++  const errors = [];
++  page.on('pageerror', (error) => errors.push(error.message));
++  const states = [];
++  try {
++    await page.setViewport({ width: 1440, height: 900 });
++    const target = new URL(url);
++    target.searchParams.set('welcome', '0');
++    await page.goto(target.href, { waitUntil: 'domcontentloaded' });
++    await page.waitForFunction(
++      () =>
++        window.__godsEyeView?.styleManager &&
++        document.getElementById('loading-screen')?.classList.contains('hidden'),
++      { timeout: 90_000 },
++    );
++    await page.evaluate(() => {
++      window.__radioOwnershipEvents = [];
++      for (const type of ['click', 'keydown', 'change']) {
++        document.addEventListener(
++          type,
++          (event) => {
++            window.__radioOwnershipEvents.push({
++              type,
++              id: event.target.id,
++              key: event.key,
++              trusted: event.isTrusted,
++            });
++          },
++          true,
++        );
++      }
++    });
++    const capture = async (name) => {
++      const state = await page.evaluate(() => {
++        const owner = document.getElementById('global-context-panel');
++        const mini = document.getElementById('context-radio-mini');
++        const rect = mini.getBoundingClientRect();
++        return {
++          ownerClasses: owner.className,
++          ownerRect: owner.getBoundingClientRect().toJSON(),
++          miniRect: rect.toJSON(),
++          miniVisible: rect.width > 0 && rect.height > 0,
++          disclosure: document
++            .getElementById('context-radio-toggle-btn')
++            .getAttribute('aria-expanded'),
++          focus: document.activeElement.id,
++        };
++      });
++      states.push({ name, ...state });
++      await page.screenshot({
++        path: path.join(shotsDir, `ownership-${name}.png`),
++        fullPage: true,
++      });
++      return state;
++    };
++    await page.click('[data-collapse-target="pp-toggles"]');
++    await page.select('#hud-layout-select', 'minimal');
++    await page.click('[data-collapse-target="global-context-panel"]');
++    // Display is the preferred panel when Cyber passively collapses Context.
++    await page.click('[data-collapse-target="pp-toggles"]');
++    await page.click('[data-collapse-target="pp-toggles"]');
++    await page.select('#hud-layout-select', 'cyber');
++    await page.waitForFunction(() =>
++      document
++        .getElementById('global-context-panel')
++        .classList.contains('cyber-accordion-collapsed'),
++    );
++    await page.click('#context-radio-toggle-btn');
++    const compact = await capture('compact');
++    assert.equal(
++      compact.miniVisible,
++      true,
++      'the real compact control must open first',
++    );
++    assert.equal(compact.disclosure, 'true');
++    // Pointerdown outside Radio correctly dismisses it. Use the supported
++    // keyboard path to change theme without that unrelated dismissal masking it.
++    for (let step = 0; step < 100; step++) {
++      if (
++        await page.evaluate(
++          () => document.activeElement.id === 'hud-layout-select',
++        )
++      )
++        break;
++      await page.keyboard.down('Shift');
++      await page.keyboard.press('Tab');
++      await page.keyboard.up('Shift');
++    }
++    assert.equal(
++      await page.evaluate(() => document.activeElement.id),
++      'hud-layout-select',
++    );
++    await page.keyboard.press('ArrowUp');
++    await page.keyboard.press('Tab');
++    await page.waitForFunction(
++      () =>
++        !document
++          .getElementById('global-context-panel')
++          .classList.contains('collapsed'),
++    );
++    const restored = await capture('restored');
++    assert.equal(
++      restored.miniVisible,
++      false,
++      'restored Context must dismiss compact Radio',
++    );
++    assert.deepEqual(errors, []);
++  } finally {
++    fs.writeFileSync(
++      path.join(shotsDir, 'ownership.json'),
++      JSON.stringify(
++        {
++          states,
++          errors,
++          events: await page
++            .evaluate(() => window.__radioOwnershipEvents || [])
++            .catch(() => []),
++        },
++        null,
++        2,
++      ),
++    );
++    await context.close();
++  }
++}
+diff --git a/scripts/qa-radio.mjs b/scripts/qa-radio.mjs
+index adbbfdf..a089b0a 100644
+--- a/scripts/qa-radio.mjs
++++ b/scripts/qa-radio.mjs
+@@ -15,6 +15,7 @@ import fs from 'node:fs';
+ import path from 'node:path';
+ import { fileURLToPath } from 'node:url';
+ import puppeteer from 'puppeteer';
++import { checkCompactRadioRestoration } from './qa-radio-ownership.mjs';
+ 
+ const __dirname = path.dirname(fileURLToPath(import.meta.url));
+ const REPO_ROOT = path.resolve(__dirname, '..');
+@@ -118,6 +119,12 @@ async function main() {
+   });
+ 
+   try {
++    try {
++      await checkCompactRadioRestoration(browser, APP_URL, SHOTS_DIR);
++      check('Cyber-to-Minimal rail restoration dismisses compact Radio', true);
++    } catch (error) {
++      check('Cyber-to-Minimal rail restoration dismisses compact Radio', false, error.message);
++    }
+     const page = await browser.newPage();
+     await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
+     await page.evaluateOnNewDocument(() => {
+diff --git a/src/ui/panelChrome.js b/src/ui/panelChrome.js
+index 284d2b1..757d7e0 100644
+--- a/src/ui/panelChrome.js
++++ b/src/ui/panelChrome.js
+@@ -71,7 +71,8 @@ export class PanelChrome {
+         variant: this.hud.getVariant(),
+       }),
+       scheduleCockpitLayout: () => this.cockpitView?.scheduleContextLayout(),
+-      syncPanelCollapseButton: (panel) => this._syncPanelCollapseButton(panel),
++      syncPanelCollapseButton: (panel) =>
++        this._syncRailPanelCollapseButton(panel),
+       readDisplayScrollTop: () =>
+         this._displayPortalScrollRestoreOwner === 'standard'
+           ? this._standardDisplayScrollTop
+@@ -286,6 +287,19 @@ export class PanelChrome {
+     return this._panelLayout._scheduleLeftPanelLayout(options0);
+   }
+ 
++  _syncRailPanelCollapseButton(panelEl) {
++    // Adaptive rail layout may directly restore an auto-collapsed Context
++    // without invoking setPanelCollapsed(). Enforce Radio ownership there too.
++    if (
++      panelEl?.id === 'global-context-panel' &&
++      !panelEl.classList.contains('collapsed') &&
++      this._contextRadioDock?.classList.contains('disclosure-open')
++    ) {
++      this._setRadioDisclosure?.(false);
++    }
++    this._syncPanelCollapseButton(panelEl);
++  }
++
+   _syncPanelCollapseButton(panelEl) {
+     const isRightRail = [
+       'pp-toggles',
+@@ -487,6 +501,15 @@ export class PanelChrome {
+         syncShare,
+       });
+     }
++    // A repeated Context-open request must clear a stale compact Radio mini
++    // even when no collapsed class changes.
++    if (
++      !nextCollapsed &&
++      panelId === 'global-context-panel' &&
++      this._contextRadioDock?.classList.contains('disclosure-open')
++    ) {
++      this._setRadioDisclosure?.(false);
++    }
+     if (
+       panelEl.classList.contains('collapsed') === nextCollapsed &&
+       !wasAutoCollapsed
+@@ -515,13 +538,6 @@ export class PanelChrome {
+         this.cockpitView.setContextCollapsed(true);
+       }
+     }
+-    if (
+-      !nextCollapsed &&
+-      panelId === 'global-context-panel' &&
+-      this._contextRadioDock?.classList.contains('disclosure-open')
+-    ) {
+-      this._setRadioDisclosure?.(false);
+-    }
+     if (
+       !nextCollapsed &&
+       panelId === 'radio-panel' &&
+diff --git a/src/ui/panelChrome.radioOwnership.test.mjs b/src/ui/panelChrome.radioOwnership.test.mjs
+new file mode 100644
+index 0000000..83e06cb
+--- /dev/null
++++ b/src/ui/panelChrome.radioOwnership.test.mjs
+@@ -0,0 +1,133 @@
++import assert from 'node:assert/strict';
++import test from 'node:test';
++
++import { PanelChrome } from './panelChrome.js';
++import { PanelLayoutController } from './panelLayoutController.js';
++
++function classList(initial = []) {
++  const values = new Set(initial);
++  return {
++    contains: (value) => values.has(value),
++    add: (...items) => items.forEach((item) => values.add(item)),
++    remove: (...items) => items.forEach((item) => values.delete(item)),
++    toggle(value, force) {
++      if (force === true) values.add(value);
++      else if (force === false) values.delete(value);
++      else if (values.has(value)) values.delete(value);
++      else values.add(value);
++      return values.has(value);
++    },
++  };
++}
++
++test('opening an already-open Context still closes a stale compact Radio disclosure', (t) => {
++  const priorDocument = globalThis.document;
++  const contextPanel = {
++    id: 'global-context-panel',
++    classList: classList(),
++  };
++  globalThis.document = {
++    documentElement: { dataset: { uiTheme: 'tactical' } },
++    getElementById(id) {
++      return id === 'global-context-panel' ? contextPanel : null;
++    },
++  };
++  t.after(() => {
++    globalThis.document = priorDocument;
++  });
++
++  const radioDock = { classList: classList(['disclosure-open']) };
++  const calls = [];
++  const owner = {
++    _contextRadioDock: radioDock,
++    _setRadioDisclosure(open) {
++      calls.push(open);
++      radioDock.classList.toggle('disclosure-open', open);
++    },
++    _leftPanelStack: null,
++    _rightPanelStack: null,
++    _panelLayout: {
++      _leftStackPreferredPanelId: null,
++      _rightStackPreferredPanelId: null,
++    },
++    _syncPanelCollapseButton() {},
++    _scheduleLeftPanelLayout() {},
++    _scheduleRightPanelLayout() {},
++    shareLinkManager: null,
++    cockpitView: null,
++  };
++
++  PanelChrome.prototype.setPanelCollapsed.call(
++    owner,
++    'global-context-panel',
++    false,
++  );
++
++  assert.deepEqual(calls, [false]);
++  assert.equal(radioDock.classList.contains('disclosure-open'), false);
++});
++
++test('adaptive rail restore hides compact Radio before revealing Context', (t) => {
++  const priorRaf = globalThis.requestAnimationFrame;
++  let nextFrame;
++  globalThis.requestAnimationFrame = (callback) => {
++    nextFrame = callback;
++    return 1;
++  };
++  t.after(() => {
++    globalThis.requestAnimationFrame = priorRaf;
++  });
++
++  // Isolated scheduler control for tactical restoration. The Radio browser
++  // gate separately proves a reachable Cyber accordion path without seeding DOM.
++  const contextPanel = {
++    id: 'global-context-panel',
++    classList: classList(['collapsed', 'layout-auto-collapsed']),
++  };
++  const radioDock = { classList: classList(['disclosure-open']) };
++  const radioMini = { hidden: false };
++  const calls = [];
++  const chrome = {
++    _contextRadioDock: radioDock,
++    _setRadioDisclosure(open) {
++      calls.push(`disclosure:${open}`);
++      radioDock.classList.toggle('disclosure-open', open);
++      radioMini.hidden = !open;
++    },
++    _syncPanelCollapseButton(panel) {
++      calls.push(`button:${panel.id}`);
++    },
++  };
++  const layout = {
++    destroyed: false,
++    _rightStackLayoutFrame: null,
++    _rightStackReconsiderAutoCollapse: false,
++    _rightPanelStack: {
++      querySelectorAll: (selector) =>
++        selector === '.layout-auto-collapsed' ? [contextPanel] : [],
++    },
++    _syncPanelCollapseButton(panel) {
++      PanelChrome.prototype._syncRailPanelCollapseButton.call(chrome, panel);
++    },
++    _syncRightPanelAdaptiveLayout() {
++      calls.push('layout');
++    },
++  };
++
++  PanelLayoutController.prototype._scheduleRightPanelLayout.call(layout, {
++    reconsiderAutoCollapse: true,
++  });
++  assert.equal(contextPanel.classList.contains('collapsed'), true);
++  assert.equal(radioMini.hidden, false);
++  nextFrame();
++
++  assert.equal(contextPanel.classList.contains('collapsed'), false);
++  assert.equal(contextPanel.classList.contains('layout-auto-collapsed'), false);
++  assert.equal(radioDock.classList.contains('disclosure-open'), false);
++  assert.equal(radioMini.hidden, true);
++  assert.deepEqual(calls, [
++    'disclosure:false',
++    'button:global-context-panel',
++    'layout',
++  ]);
++});

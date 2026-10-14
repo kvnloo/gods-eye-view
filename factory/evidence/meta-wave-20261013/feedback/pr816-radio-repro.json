@@ -1,0 +1,1217 @@
+{
+  "label": "pr816",
+  "head": "19372875e21266caebe54976c9be73f1d36a73b8",
+  "steps": [
+    {
+      "name": "minimal-display",
+      "layout": "minimal",
+      "active": "",
+      "nodes": {
+        "pp-toggles": {
+          "classes": "panel-collapsible",
+          "rect": {
+            "x": 1116,
+            "y": 234,
+            "width": 272,
+            "height": 237.1875,
+            "top": 234,
+            "right": 1388,
+            "bottom": 471.1875,
+            "left": 1116
+          },
+          "display": "flex",
+          "visibility": "visible",
+          "expanded": null
+        },
+        "global-context-panel": {
+          "classes": "panel-collapsible collapsed",
+          "rect": {
+            "x": 1212,
+            "y": 595.1875,
+            "width": 176,
+            "height": 50,
+            "top": 595.1875,
+            "right": 1388,
+            "bottom": 645.1875,
+            "left": 1212
+          },
+          "display": "block",
+          "visibility": "visible",
+          "expanded": null
+        },
+        "context-radio-dock": {
+          "classes": "context-radio-dock",
+          "rect": {
+            "x": 1313.8125,
+            "y": 606.1875,
+            "width": 28,
+            "height": 28,
+            "top": 606.1875,
+            "right": 1341.8125,
+            "bottom": 634.1875,
+            "left": 1313.8125
+          },
+          "display": "flex",
+          "visibility": "visible",
+          "expanded": null
+        },
+        "context-radio-mini": {
+          "classes": "context-radio-mini",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "display": "none",
+          "visibility": "visible",
+          "expanded": null
+        },
+        "context-mode-missions": null,
+        "hud-layout-select": {
+          "classes": "pp-select",
+          "rect": {
+            "x": 1176.8125,
+            "y": 325,
+            "width": 191.1875,
+            "height": 24,
+            "top": 325,
+            "right": 1368,
+            "bottom": 349,
+            "left": 1176.8125
+          },
+          "display": "block",
+          "visibility": "visible",
+          "expanded": null
+        }
+      }
+    },
+    {
+      "name": "both-expanded",
+      "layout": "minimal",
+      "active": "",
+      "nodes": {
+        "pp-toggles": {
+          "classes": "panel-collapsible",
+          "rect": {
+            "x": 1116,
+            "y": 234,
+            "width": 272,
+            "height": 184.296875,
+            "top": 234,
+            "right": 1388,
+            "bottom": 418.296875,
+            "left": 1116
+          },
+          "display": "flex",
+          "visibility": "visible",
+          "expanded": null
+        },
+        "global-context-panel": {
+          "classes": "panel-collapsible",
+          "rect": {
+            "x": 1058,
+            "y": 542.296875,
+            "width": 330,
+            "height": 122.890625,
+            "top": 542.296875,
+            "right": 1388,
+            "bottom": 665.1875,
+            "left": 1058
+          },
+          "display": "block",
+          "visibility": "visible",
+          "expanded": null
+        },
+        "context-radio-dock": {
+          "classes": "context-radio-dock",
+          "rect": {
+            "x": 1290,
+            "y": 557.296875,
+            "width": 28,
+            "height": 28,
+            "top": 557.296875,
+            "right": 1318,
+            "bottom": 585.296875,
+            "left": 1290
+          },
+          "display": "flex",
+          "visibility": "visible",
+          "expanded": null
+        },
+        "context-radio-mini": {
+          "classes": "context-radio-mini",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "display": "none",
+          "visibility": "visible",
+          "expanded": null
+        },
+        "context-mode-missions": null,
+        "hud-layout-select": {
+          "classes": "pp-select",
+          "rect": {
+            "x": 1176.8125,
+            "y": 325,
+            "width": 191.1875,
+            "height": 24,
+            "top": 325,
+            "right": 1368,
+            "bottom": 349,
+            "left": 1176.8125
+          },
+          "display": "block",
+          "visibility": "visible",
+          "expanded": null
+        }
+      }
+    },
+    {
+      "name": "cyber-context-passive",
+      "theme": "cyber",
+      "layout": "cyber",
+      "active": "",
+      "nodes": {
+        "pp-toggles": {
+          "classes": "panel-collapsible",
+          "rect": {
+            "x": 1066,
+            "y": 220,
+            "width": 312,
+            "height": 326.796875,
+            "top": 220,
+            "right": 1378,
+            "bottom": 546.796875,
+            "left": 1066
+          },
+          "display": "flex",
+          "visibility": "visible",
+          "expanded": null
+        },
+        "global-context-panel": {
+          "classes": "panel-collapsible collapsed cyber-accordion-collapsed",
+          "rect": {
+            "x": 1178,
+            "y": 670.796875,
+            "width": 200,
+            "height": 50,
+            "top": 670.796875,
+            "right": 1378,
+            "bottom": 720.796875,
+            "left": 1178
+          },
+          "display": "block",
+          "visibility": "visible",
+          "expanded": null
+        },
+        "context-radio-dock": {
+          "classes": "context-radio-dock",
+          "rect": {
+            "x": 1300,
+            "y": 681.796875,
+            "width": 28,
+            "height": 28,
+            "top": 681.796875,
+            "right": 1328,
+            "bottom": 709.796875,
+            "left": 1300
+          },
+          "display": "flex",
+          "visibility": "visible",
+          "expanded": null
+        },
+        "context-radio-mini": {
+          "classes": "context-radio-mini",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "display": "none",
+          "visibility": "visible",
+          "expanded": null
+        },
+        "context-mode-missions": null,
+        "hud-layout-select": {
+          "classes": "pp-select",
+          "rect": {
+            "x": 1126.5625,
+            "y": 311,
+            "width": 231.4375,
+            "height": 24,
+            "top": 311,
+            "right": 1358,
+            "bottom": 335,
+            "left": 1126.5625
+          },
+          "display": "block",
+          "visibility": "visible",
+          "expanded": null
+        }
+      }
+    },
+    {
+      "name": "compact-open",
+      "theme": "cyber",
+      "layout": "cyber",
+      "active": "context-radio-toggle-btn",
+      "nodes": {
+        "pp-toggles": {
+          "classes": "panel-collapsible",
+          "rect": {
+            "x": 1066,
+            "y": 220,
+            "width": 312,
+            "height": 201.796875,
+            "top": 220,
+            "right": 1378,
+            "bottom": 421.796875,
+            "left": 1066
+          },
+          "display": "flex",
+          "visibility": "visible",
+          "expanded": null
+        },
+        "global-context-panel": {
+          "classes": "panel-collapsible collapsed cyber-accordion-collapsed",
+          "rect": {
+            "x": 1178,
+            "y": 545.796875,
+            "width": 200,
+            "height": 50,
+            "top": 545.796875,
+            "right": 1378,
+            "bottom": 595.796875,
+            "left": 1178
+          },
+          "display": "block",
+          "visibility": "visible",
+          "expanded": null
+        },
+        "context-radio-dock": {
+          "classes": "context-radio-dock disclosure-open",
+          "rect": {
+            "x": 1300,
+            "y": 556.796875,
+            "width": 28,
+            "height": 28,
+            "top": 556.796875,
+            "right": 1328,
+            "bottom": 584.796875,
+            "left": 1300
+          },
+          "display": "flex",
+          "visibility": "visible",
+          "expanded": null
+        },
+        "context-radio-mini": {
+          "classes": "context-radio-mini",
+          "rect": {
+            "x": 1122,
+            "y": 604.796875,
+            "width": 244,
+            "height": 135.6875,
+            "top": 604.796875,
+            "right": 1366,
+            "bottom": 740.484375,
+            "left": 1122
+          },
+          "display": "grid",
+          "visibility": "visible",
+          "expanded": null
+        },
+        "context-mode-missions": null,
+        "hud-layout-select": {
+          "classes": "pp-select",
+          "rect": {
+            "x": 1126.5625,
+            "y": 311,
+            "width": 231.4375,
+            "height": 24,
+            "top": 311,
+            "right": 1358,
+            "bottom": 335,
+            "left": 1126.5625
+          },
+          "display": "block",
+          "visibility": "visible",
+          "expanded": null
+        }
+      }
+    },
+    {
+      "name": "after-keyboard-theme-exit",
+      "layout": "minimal",
+      "active": "detection-toggle",
+      "nodes": {
+        "pp-toggles": {
+          "classes": "panel-collapsible",
+          "rect": {
+            "x": 1116,
+            "y": 220,
+            "width": 272,
+            "height": 184.296875,
+            "top": 220,
+            "right": 1388,
+            "bottom": 404.296875,
+            "left": 1116
+          },
+          "display": "flex",
+          "visibility": "visible",
+          "expanded": null
+        },
+        "global-context-panel": {
+          "classes": "panel-collapsible",
+          "rect": {
+            "x": 1058,
+            "y": 528.296875,
+            "width": 330,
+            "height": 122.890625,
+            "top": 528.296875,
+            "right": 1388,
+            "bottom": 651.1875,
+            "left": 1058
+          },
+          "display": "block",
+          "visibility": "visible",
+          "expanded": null
+        },
+        "context-radio-dock": {
+          "classes": "context-radio-dock",
+          "rect": {
+            "x": 1290,
+            "y": 543.296875,
+            "width": 28,
+            "height": 28,
+            "top": 543.296875,
+            "right": 1318,
+            "bottom": 571.296875,
+            "left": 1290
+          },
+          "display": "flex",
+          "visibility": "visible",
+          "expanded": null
+        },
+        "context-radio-mini": {
+          "classes": "context-radio-mini",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "display": "none",
+          "visibility": "visible",
+          "expanded": null
+        },
+        "context-mode-missions": null,
+        "hud-layout-select": {
+          "classes": "pp-select",
+          "rect": {
+            "x": 1176.8125,
+            "y": 311,
+            "width": 191.1875,
+            "height": 24,
+            "top": 311,
+            "right": 1368,
+            "bottom": 335,
+            "left": 1176.8125
+          },
+          "display": "block",
+          "visibility": "visible",
+          "expanded": null
+        }
+      }
+    }
+  ],
+  "errors": [],
+  "events": [
+    {
+      "type": "pointerdown",
+      "id": "",
+      "trusted": true,
+      "time": 6700.899999976158
+    },
+    {
+      "type": "focusin",
+      "id": "",
+      "trusted": true,
+      "time": 6701.899999976158
+    },
+    {
+      "type": "click",
+      "id": "",
+      "trusted": true,
+      "time": 6702.199999988079
+    },
+    {
+      "type": "change",
+      "id": "hud-layout-select",
+      "trusted": false,
+      "time": 6717.699999988079
+    },
+    {
+      "type": "pointerdown",
+      "id": "",
+      "trusted": true,
+      "time": 12599
+    },
+    {
+      "type": "focusin",
+      "id": "",
+      "trusted": true,
+      "time": 12599.5
+    },
+    {
+      "type": "click",
+      "id": "",
+      "trusted": true,
+      "time": 12599.699999988079
+    },
+    {
+      "type": "mutation",
+      "classes": "panel-collapsible",
+      "time": 12600
+    },
+    {
+      "type": "pointerdown",
+      "id": "",
+      "trusted": true,
+      "time": 12989.59999999404
+    },
+    {
+      "type": "focusin",
+      "id": "",
+      "trusted": true,
+      "time": 12990.399999976158
+    },
+    {
+      "type": "click",
+      "id": "",
+      "trusted": true,
+      "time": 12990.59999999404
+    },
+    {
+      "type": "pointerdown",
+      "id": "",
+      "trusted": true,
+      "time": 13379
+    },
+    {
+      "type": "click",
+      "id": "",
+      "trusted": true,
+      "time": 13379.59999999404
+    },
+    {
+      "type": "change",
+      "id": "hud-layout-select",
+      "trusted": false,
+      "time": 17425.79999998212
+    },
+    {
+      "type": "mutation",
+      "classes": "panel-collapsible collapsed cyber-accordion-collapsed",
+      "time": 17528.59999999404
+    },
+    {
+      "type": "pointerdown",
+      "id": "",
+      "trusted": true,
+      "time": 29001.899999976158
+    },
+    {
+      "type": "focusin",
+      "id": "context-radio-toggle-btn",
+      "trusted": true,
+      "time": 29006.5
+    },
+    {
+      "type": "click",
+      "id": "",
+      "trusted": true,
+      "time": 29006.69999998808
+    },
+    {
+      "type": "keydown",
+      "id": "context-radio-toggle-btn",
+      "key": "Shift",
+      "trusted": true,
+      "time": 35615.59999999404
+    },
+    {
+      "type": "keydown",
+      "id": "context-radio-toggle-btn",
+      "key": "Tab",
+      "trusted": true,
+      "time": 35624.69999998808
+    },
+    {
+      "type": "focusin",
+      "id": "",
+      "trusted": true,
+      "time": 35625.39999997616
+    },
+    {
+      "type": "keydown",
+      "id": "",
+      "key": "Shift",
+      "trusted": true,
+      "time": 35627.19999998808
+    },
+    {
+      "type": "keydown",
+      "id": "",
+      "key": "Tab",
+      "trusted": true,
+      "time": 35627.5
+    },
+    {
+      "type": "focusin",
+      "id": "",
+      "trusted": true,
+      "time": 35635.59999999404
+    },
+    {
+      "type": "keydown",
+      "id": "",
+      "key": "Shift",
+      "trusted": true,
+      "time": 35638.5
+    },
+    {
+      "type": "keydown",
+      "id": "",
+      "key": "Tab",
+      "trusted": true,
+      "time": 35639
+    },
+    {
+      "type": "focusin",
+      "id": "sharpen-intensity-slider",
+      "trusted": true,
+      "time": 35894.5
+    },
+    {
+      "type": "keydown",
+      "id": "sharpen-intensity-slider",
+      "key": "Shift",
+      "trusted": true,
+      "time": 37505.5
+    },
+    {
+      "type": "keydown",
+      "id": "sharpen-intensity-slider",
+      "key": "Tab",
+      "trusted": true,
+      "time": 37506.19999998808
+    },
+    {
+      "type": "focusin",
+      "id": "sharpen-toggle",
+      "trusted": true,
+      "time": 37506.59999999404
+    },
+    {
+      "type": "keydown",
+      "id": "sharpen-toggle",
+      "key": "Shift",
+      "trusted": true,
+      "time": 37508.79999998212
+    },
+    {
+      "type": "keydown",
+      "id": "sharpen-toggle",
+      "key": "Tab",
+      "trusted": true,
+      "time": 37509.19999998808
+    },
+    {
+      "type": "focusin",
+      "id": "bloom-toggle",
+      "trusted": true,
+      "time": 37509.5
+    },
+    {
+      "type": "keydown",
+      "id": "bloom-toggle",
+      "key": "Shift",
+      "trusted": true,
+      "time": 37510.59999999404
+    },
+    {
+      "type": "keydown",
+      "id": "bloom-toggle",
+      "key": "Tab",
+      "trusted": true,
+      "time": 37510.89999997616
+    },
+    {
+      "type": "focusin",
+      "id": "clean-view-toggle",
+      "trusted": true,
+      "time": 38209.5
+    },
+    {
+      "type": "keydown",
+      "id": "clean-view-toggle",
+      "key": "Shift",
+      "trusted": true,
+      "time": 40259
+    },
+    {
+      "type": "keydown",
+      "id": "clean-view-toggle",
+      "key": "Tab",
+      "trusted": true,
+      "time": 40261.69999998808
+    },
+    {
+      "type": "focusin",
+      "id": "draw-toggle",
+      "trusted": true,
+      "time": 40866.89999997616
+    },
+    {
+      "type": "keydown",
+      "id": "draw-toggle",
+      "key": "Shift",
+      "trusted": true,
+      "time": 42828.19999998808
+    },
+    {
+      "type": "keydown",
+      "id": "draw-toggle",
+      "key": "Tab",
+      "trusted": true,
+      "time": 42829.09999999404
+    },
+    {
+      "type": "focusin",
+      "id": "scope-feather-slider",
+      "trusted": true,
+      "time": 42829.5
+    },
+    {
+      "type": "keydown",
+      "id": "scope-feather-slider",
+      "key": "Shift",
+      "trusted": true,
+      "time": 42844.5
+    },
+    {
+      "type": "keydown",
+      "id": "scope-feather-slider",
+      "key": "Tab",
+      "trusted": true,
+      "time": 42845.69999998808
+    },
+    {
+      "type": "focusin",
+      "id": "scope-toggle",
+      "trusted": true,
+      "time": 43476.39999997616
+    },
+    {
+      "type": "keydown",
+      "id": "scope-toggle",
+      "key": "Shift",
+      "trusted": true,
+      "time": 45281
+    },
+    {
+      "type": "keydown",
+      "id": "scope-toggle",
+      "key": "Tab",
+      "trusted": true,
+      "time": 45283.19999998808
+    },
+    {
+      "type": "focusin",
+      "id": "models3d-mode-all",
+      "trusted": true,
+      "time": 45817.19999998808
+    },
+    {
+      "type": "keydown",
+      "id": "models3d-mode-all",
+      "key": "Shift",
+      "trusted": true,
+      "time": 47707.09999999404
+    },
+    {
+      "type": "keydown",
+      "id": "models3d-mode-all",
+      "key": "Tab",
+      "trusted": true,
+      "time": 47707.69999998808
+    },
+    {
+      "type": "focusin",
+      "id": "models3d-mode-proximity",
+      "trusted": true,
+      "time": 47708.09999999404
+    },
+    {
+      "type": "keydown",
+      "id": "models3d-mode-proximity",
+      "key": "Shift",
+      "trusted": true,
+      "time": 47709.5
+    },
+    {
+      "type": "keydown",
+      "id": "models3d-mode-proximity",
+      "key": "Tab",
+      "trusted": true,
+      "time": 47709.79999998212
+    },
+    {
+      "type": "focusin",
+      "id": "models3d-toggle",
+      "trusted": true,
+      "time": 47709.89999997616
+    },
+    {
+      "type": "keydown",
+      "id": "models3d-toggle",
+      "key": "Shift",
+      "trusted": true,
+      "time": 47711.09999999404
+    },
+    {
+      "type": "keydown",
+      "id": "models3d-toggle",
+      "key": "Tab",
+      "trusted": true,
+      "time": 47711.5
+    },
+    {
+      "type": "focusin",
+      "id": "",
+      "trusted": true,
+      "time": 48338.69999998808
+    },
+    {
+      "type": "keydown",
+      "id": "",
+      "key": "Shift",
+      "trusted": true,
+      "time": 50772.59999999404
+    },
+    {
+      "type": "keydown",
+      "id": "",
+      "key": "Tab",
+      "trusted": true,
+      "time": 50794
+    },
+    {
+      "type": "focusin",
+      "id": "",
+      "trusted": true,
+      "time": 50794.29999998212
+    },
+    {
+      "type": "keydown",
+      "id": "",
+      "key": "Shift",
+      "trusted": true,
+      "time": 50796.79999998212
+    },
+    {
+      "type": "keydown",
+      "id": "",
+      "key": "Tab",
+      "trusted": true,
+      "time": 50797.19999998808
+    },
+    {
+      "type": "focusin",
+      "id": "",
+      "trusted": true,
+      "time": 50797.39999997616
+    },
+    {
+      "type": "keydown",
+      "id": "",
+      "key": "Shift",
+      "trusted": true,
+      "time": 50799
+    },
+    {
+      "type": "keydown",
+      "id": "",
+      "key": "Tab",
+      "trusted": true,
+      "time": 50799.29999998212
+    },
+    {
+      "type": "focusin",
+      "id": "",
+      "trusted": true,
+      "time": 50799.5
+    },
+    {
+      "type": "keydown",
+      "id": "",
+      "key": "Shift",
+      "trusted": true,
+      "time": 50800.89999997616
+    },
+    {
+      "type": "keydown",
+      "id": "",
+      "key": "Tab",
+      "trusted": true,
+      "time": 50801.19999998808
+    },
+    {
+      "type": "focusin",
+      "id": "",
+      "trusted": true,
+      "time": 50814.79999998212
+    },
+    {
+      "type": "keydown",
+      "id": "",
+      "key": "Shift",
+      "trusted": true,
+      "time": 52630.39999997616
+    },
+    {
+      "type": "keydown",
+      "id": "",
+      "key": "Tab",
+      "trusted": true,
+      "time": 52632.5
+    },
+    {
+      "type": "focusin",
+      "id": "param-panel-collapse-btn",
+      "trusted": true,
+      "time": 52634.29999998212
+    },
+    {
+      "type": "keydown",
+      "id": "param-panel-collapse-btn",
+      "key": "Shift",
+      "trusted": true,
+      "time": 52635.79999998212
+    },
+    {
+      "type": "keydown",
+      "id": "param-panel-collapse-btn",
+      "key": "Tab",
+      "trusted": true,
+      "time": 52636.09999999404
+    },
+    {
+      "type": "focusin",
+      "id": "detection-opacity-slider",
+      "trusted": true,
+      "time": 53191.89999997616
+    },
+    {
+      "type": "keydown",
+      "id": "detection-opacity-slider",
+      "key": "Shift",
+      "trusted": true,
+      "time": 55030.79999998212
+    },
+    {
+      "type": "keydown",
+      "id": "detection-opacity-slider",
+      "key": "Tab",
+      "trusted": true,
+      "time": 55031.79999998212
+    },
+    {
+      "type": "focusin",
+      "id": "detection-fade-slider",
+      "trusted": true,
+      "time": 55032.19999998808
+    },
+    {
+      "type": "keydown",
+      "id": "detection-fade-slider",
+      "key": "Shift",
+      "trusted": true,
+      "time": 55034.09999999404
+    },
+    {
+      "type": "keydown",
+      "id": "detection-fade-slider",
+      "key": "Tab",
+      "trusted": true,
+      "time": 55035.39999997616
+    },
+    {
+      "type": "focusin",
+      "id": "detection-allocation-weighted",
+      "trusted": true,
+      "time": 55036.09999999404
+    },
+    {
+      "type": "keydown",
+      "id": "detection-allocation-weighted",
+      "key": "Shift",
+      "trusted": true,
+      "time": 55038.39999997616
+    },
+    {
+      "type": "keydown",
+      "id": "detection-allocation-weighted",
+      "key": "Tab",
+      "trusted": true,
+      "time": 55038.79999998212
+    },
+    {
+      "type": "focusin",
+      "id": "detection-allocation-elastic",
+      "trusted": true,
+      "time": 55039.29999998212
+    },
+    {
+      "type": "keydown",
+      "id": "detection-allocation-elastic",
+      "key": "Shift",
+      "trusted": true,
+      "time": 55046.5
+    },
+    {
+      "type": "keydown",
+      "id": "detection-allocation-elastic",
+      "key": "Tab",
+      "trusted": true,
+      "time": 55048.89999997616
+    },
+    {
+      "type": "focusin",
+      "id": "detection-density-slider",
+      "trusted": true,
+      "time": 55580.69999998808
+    },
+    {
+      "type": "keydown",
+      "id": "detection-density-slider",
+      "key": "Shift",
+      "trusted": true,
+      "time": 57398.29999998212
+    },
+    {
+      "type": "keydown",
+      "id": "detection-density-slider",
+      "key": "Tab",
+      "trusted": true,
+      "time": 57399.29999998212
+    },
+    {
+      "type": "focusin",
+      "id": "detection-toggle",
+      "trusted": true,
+      "time": 57400
+    },
+    {
+      "type": "keydown",
+      "id": "detection-toggle",
+      "key": "Shift",
+      "trusted": true,
+      "time": 57403.19999998808
+    },
+    {
+      "type": "keydown",
+      "id": "detection-toggle",
+      "key": "Tab",
+      "trusted": true,
+      "time": 57403.59999999404
+    },
+    {
+      "type": "focusin",
+      "id": "cyber-sonar-sector",
+      "trusted": true,
+      "time": 57404.09999999404
+    },
+    {
+      "type": "keydown",
+      "id": "cyber-sonar-sector",
+      "key": "Shift",
+      "trusted": true,
+      "time": 57405.69999998808
+    },
+    {
+      "type": "keydown",
+      "id": "cyber-sonar-sector",
+      "key": "Tab",
+      "trusted": true,
+      "time": 57406
+    },
+    {
+      "type": "focusin",
+      "id": "cyber-sonar-opacity",
+      "trusted": true,
+      "time": 58016.09999999404
+    },
+    {
+      "type": "keydown",
+      "id": "cyber-sonar-opacity",
+      "key": "Shift",
+      "trusted": true,
+      "time": 59827
+    },
+    {
+      "type": "keydown",
+      "id": "cyber-sonar-opacity",
+      "key": "Tab",
+      "trusted": true,
+      "time": 59831.79999998212
+    },
+    {
+      "type": "focusin",
+      "id": "cyber-sonar-intensity",
+      "trusted": true,
+      "time": 59831.89999997616
+    },
+    {
+      "type": "keydown",
+      "id": "cyber-sonar-intensity",
+      "key": "Shift",
+      "trusted": true,
+      "time": 59869.69999998808
+    },
+    {
+      "type": "keydown",
+      "id": "cyber-sonar-intensity",
+      "key": "Tab",
+      "trusted": true,
+      "time": 59881.79999998212
+    },
+    {
+      "type": "focusin",
+      "id": "cyber-sonar-range",
+      "trusted": true,
+      "time": 59882.09999999404
+    },
+    {
+      "type": "keydown",
+      "id": "cyber-sonar-range",
+      "key": "Shift",
+      "trusted": true,
+      "time": 59884
+    },
+    {
+      "type": "keydown",
+      "id": "cyber-sonar-range",
+      "key": "Tab",
+      "trusted": true,
+      "time": 59884.39999997616
+    },
+    {
+      "type": "focusin",
+      "id": "cyber-sonar-rings",
+      "trusted": true,
+      "time": 60355.89999997616
+    },
+    {
+      "type": "keydown",
+      "id": "cyber-sonar-rings",
+      "key": "Shift",
+      "trusted": true,
+      "time": 62150.79999998212
+    },
+    {
+      "type": "keydown",
+      "id": "cyber-sonar-rings",
+      "key": "Tab",
+      "trusted": true,
+      "time": 62172.09999999404
+    },
+    {
+      "type": "focusin",
+      "id": "cyber-sonar-toggle",
+      "trusted": true,
+      "time": 62834.79999998212
+    },
+    {
+      "type": "keydown",
+      "id": "cyber-sonar-toggle",
+      "key": "Shift",
+      "trusted": true,
+      "time": 64723.39999997616
+    },
+    {
+      "type": "keydown",
+      "id": "cyber-sonar-toggle",
+      "key": "Tab",
+      "trusted": true,
+      "time": 64724.39999997616
+    },
+    {
+      "type": "focusin",
+      "id": "hud-layout-select",
+      "trusted": true,
+      "time": 64739.09999999404
+    },
+    {
+      "type": "keydown",
+      "id": "hud-layout-select",
+      "key": "ArrowUp",
+      "trusted": true,
+      "time": 64855.79999998212
+    },
+    {
+      "type": "change",
+      "id": "hud-layout-select",
+      "trusted": true,
+      "time": 64857.19999998808
+    },
+    {
+      "type": "keydown",
+      "id": "hud-layout-select",
+      "key": "Tab",
+      "trusted": true,
+      "time": 64924
+    },
+    {
+      "type": "focusin",
+      "id": "detection-toggle",
+      "trusted": true,
+      "time": 64924.5
+    },
+    {
+      "type": "mutation",
+      "classes": "panel-collapsible",
+      "time": 65269.59999999404
+    }
+  ],
+  "overlap": {
+    "expanded": true,
+    "miniVisible": false,
+    "intersection": {
+      "width": 0,
+      "height": 0
+    },
+    "miniText": "\n              \n                RADIO\n                RADIO READY\n                \n                  \n                    open_in_full\n                  \n                  \n                    close\n                  \n                \n              \n              ENABLE\n              \n                ◀◀\n                ▶\n                ▶▶\n              \n              \n                VOLUME\n                \n                80%\n              \n            "
+  }
+}

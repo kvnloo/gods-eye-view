@@ -1,0 +1,389 @@
+{
+  "currentMain": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+  "candidate": "34e6516161de5bdc52f19aea746f42f53ef2b5f8",
+  "coverage": [
+    {
+      "pr": 816,
+      "head": "19372875e21266caebe54976c9be73f1d36a73b8",
+      "baseAtSnapshot": "8b8ccc9a81379e8b40d4be67610570ee5b159512",
+      "conversation": 2,
+      "reviews": 0,
+      "inline": 0,
+      "mergeableAtSnapshot": false
+    },
+    {
+      "pr": 834,
+      "head": "3a3a1ed1c04a5873f8b7b9244e278ba08042ce8e",
+      "baseAtSnapshot": "8b8ccc9a81379e8b40d4be67610570ee5b159512",
+      "conversation": 3,
+      "reviews": 0,
+      "inline": 0,
+      "mergeableAtSnapshot": false
+    },
+    {
+      "pr": 835,
+      "head": "cacbbc972bf8ada8314a2a62b7cdae1abefa6c0c",
+      "baseAtSnapshot": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "conversation": 1,
+      "reviews": 0,
+      "inline": 0,
+      "mergeableAtSnapshot": false
+    },
+    {
+      "pr": 917,
+      "head": "76b003bc959bca612e9749b9341f4baa32c2f075",
+      "baseAtSnapshot": "8b8ccc9a81379e8b40d4be67610570ee5b159512",
+      "conversation": 2,
+      "reviews": 0,
+      "inline": 0,
+      "mergeableAtSnapshot": true
+    },
+    {
+      "pr": 918,
+      "head": "a24b1cde3dcd13d29e5beb84111f61093f12b05e",
+      "baseAtSnapshot": "8b8ccc9a81379e8b40d4be67610570ee5b159512",
+      "conversation": 3,
+      "reviews": 0,
+      "inline": 0,
+      "mergeableAtSnapshot": true
+    },
+    {
+      "pr": 851,
+      "head": "6cfd879bd87798790ff499846840960abd70c796",
+      "baseAtSnapshot": "6be25595b16491ce01ffd8d81e66921f321ee200",
+      "conversation": 2,
+      "reviews": 0,
+      "inline": 0,
+      "mergeableAtSnapshot": true
+    }
+  ],
+  "commentCoverage": 13,
+  "findings": [
+    {
+      "pr": 816,
+      "source": "https://github.com/bilawalsidhu/gods-eye-view/pull/816#issuecomment-6127264887",
+      "author": "asturksever",
+      "authorRole": "COLLABORATOR reviewer (not one of the two maintainers named in CONTRIBUTING)",
+      "finding": "P1: demonstrate reachable current-main compact Radio overlap, before/after",
+      "state": "stale/superseded",
+      "evidence": "Independent full-app main-stable-radio-repro.json: expanded Context + visible mini, 244 x 59.890625 px intersection; original pr816-radio-repro.json: expanded Context, hidden mini, 0 intersection. Matching full-app PNGs and native key events. No page errors. New existing-gate helper mutation fails named assertion and passes restored.",
+      "remaining": "P1 independently verified, not an overall readiness verdict; main/candidate full gates tracked separately",
+      "head": "19372875e21266caebe54976c9be73f1d36a73b8"
+    },
+    {
+      "pr": 816,
+      "source": "https://github.com/bilawalsidhu/gods-eye-view/pull/816#issuecomment-6127264887",
+      "author": "asturksever",
+      "authorRole": "COLLABORATOR reviewer (not one of the two maintainers named in CONTRIBUTING)",
+      "finding": "P2: top CHANGELOG bullet",
+      "state": "stale/superseded",
+      "evidence": "Original head top bullet verified; local merge bfa20e5 preserves both Radio and current-main GBFS bullets.",
+      "remaining": "none for this narrow finding",
+      "head": "19372875e21266caebe54976c9be73f1d36a73b8"
+    },
+    {
+      "pr": 816,
+      "source": "https://github.com/bilawalsidhu/gods-eye-view/pull/816#issuecomment-6127264887",
+      "author": "asturksever",
+      "authorRole": "COLLABORATOR reviewer (not one of the two maintainers named in CONTRIBUTING)",
+      "finding": "P3 optional: close at direct rail restoration seam",
+      "state": "stale/superseded",
+      "evidence": "Original panelChrome callback delegates _syncRailPanelCollapseButton; 40 focused tests pass. Full-app Cyber restoration passes original head. Reverting callback wiring produces genuine overlap and fails same gate helper.",
+      "remaining": "none for this narrow finding",
+      "head": "19372875e21266caebe54976c9be73f1d36a73b8"
+    },
+    {
+      "pr": 816,
+      "source": "https://github.com/bilawalsidhu/gods-eye-view/pull/816#issuecomment-6127736083",
+      "author": "kvnloo",
+      "authorRole": "NONE / PR author self-report",
+      "finding": "Author claimed tactical path, admitted missing browser/full CI",
+      "state": "stale/superseded",
+      "evidence": "New reachable Cyber keyboard path supersedes unproved tactical starting-state claim. Tactical unit test comment corrected; original code unchanged. Exact-head visual evidence now exists.",
+      "remaining": "Do not repeat historical tactical reachability as proven; full CI admission remains separate",
+      "head": "19372875e21266caebe54976c9be73f1d36a73b8"
+    },
+    {
+      "pr": 834,
+      "source": "https://github.com/bilawalsidhu/gods-eye-view/pull/834#issuecomment-6126167630",
+      "author": "asturksever",
+      "authorRole": "COLLABORATOR reviewer (not one of the two maintainers named in CONTRIBUTING)",
+      "finding": "P2: CHANGELOG + CURRENT-STATE visible notice docs",
+      "state": "stale/superseded",
+      "evidence": "Both requested doc paths present in exact 3a3a1ed diff; notice matches existing deferred-status wording.",
+      "remaining": "none for this narrow finding",
+      "head": "3a3a1ed1c04a5873f8b7b9244e278ba08042ce8e"
+    },
+    {
+      "pr": 834,
+      "source": "https://github.com/bilawalsidhu/gods-eye-view/pull/834#issuecomment-6126167630",
+      "author": "asturksever",
+      "authorRole": "COLLABORATOR reviewer (not one of the two maintainers named in CONTRIBUTING)",
+      "finding": "P2: adopt shareInvalidLayerNotice test in formatter",
+      "state": "stale/superseded",
+      "evidence": "Exact head scripts/format-scope.json contains src/ui/shareInvalidLayerNotice.test.mjs.",
+      "remaining": "none for this narrow finding",
+      "head": "3a3a1ed1c04a5873f8b7b9244e278ba08042ce8e"
+    },
+    {
+      "pr": 834,
+      "source": "https://github.com/bilawalsidhu/gods-eye-view/pull/834#issuecomment-6126167630",
+      "author": "asturksever",
+      "authorRole": "COLLABORATOR reviewer (not one of the two maintainers named in CONTRIBUTING)",
+      "finding": "P2: deduplicate startup-cover scheduler",
+      "state": "addressed-needs-rerun",
+      "evidence": "Exact head has shared scheduler used by both notice paths; three real imported-owner tests pass (invalid deferred, valid/disposed quiet, superseded share-follow result).",
+      "remaining": "Full exact-head gates and current-main conflict repair still required; do not treat focused tests as final readiness",
+      "head": "3a3a1ed1c04a5873f8b7b9244e278ba08042ce8e"
+    },
+    {
+      "pr": 834,
+      "source": "https://github.com/bilawalsidhu/gods-eye-view/pull/834#issuecomment-6074471830",
+      "author": "kvnloo",
+      "authorRole": "NONE / PR author self-report",
+      "finding": "Author earlier refreshed head 3a09a828; requested Actions approval",
+      "state": "stale/superseded",
+      "evidence": "Historical head is superseded by 3a3a1ed; approval remains separately blocked-external.",
+      "remaining": "none for this narrow finding",
+      "head": "3a3a1ed1c04a5873f8b7b9244e278ba08042ce8e"
+    },
+    {
+      "pr": 834,
+      "source": "https://github.com/bilawalsidhu/gods-eye-view/pull/834#issuecomment-6127174859",
+      "author": "kvnloo",
+      "authorRole": "NONE / PR author self-report",
+      "finding": "Author says all P2 fixed and full repo gates pending",
+      "state": "addressed-needs-rerun",
+      "evidence": "Independent focused suite passes 3 tests on exact 3a3a1ed; static docs/formatter/helper checks recorded.",
+      "remaining": "Full browser share-restore behavior and current-main reconciliation remain",
+      "head": "3a3a1ed1c04a5873f8b7b9244e278ba08042ce8e"
+    },
+    {
+      "pr": 835,
+      "source": "https://github.com/bilawalsidhu/gods-eye-view/pull/835#issuecomment-6062582085",
+      "author": "asturksever",
+      "authorRole": "COLLABORATOR reviewer (not one of the two maintainers named in CONTRIBUTING)",
+      "finding": "Reconcile #837 owner and reason codes on crop path",
+      "state": "open",
+      "evidence": "Merged #837 = 208814a094104c9a3d6f1af75635d2d5be5fbfbc, author Bilawal Sidhu. Current src/voice/realtimeViewport.js owns crop dispatch, fresh-camera/age/scale, retained-frame and ring. Exact cacbbc9 old tests pass 9, but unchanged supplemental city bare-ground pointer probe fails (didSend false, cropCaptures 0); current main passes same probe, sends client.pointer_crop/ring semantics.",
+      "remaining": "Preserve current owner and reapply diagnostics around both paths, not wholesale old-method merge. Reason codes must distinguish crop request/result, selected pointer, stale camera, wrong scale and superseded capture; no local #835 production patch claimed",
+      "head": "cacbbc972bf8ada8314a2a62b7cdae1abefa6c0c"
+    },
+    {
+      "pr": 917,
+      "source": "https://github.com/bilawalsidhu/gods-eye-view/pull/917#issuecomment-6127280758",
+      "author": "asturksever",
+      "authorRole": "COLLABORATOR reviewer (not one of the two maintainers named in CONTRIBUTING)",
+      "finding": "P0: remove branch-only proof workflow",
+      "state": "stale/superseded",
+      "evidence": "Exact 76b003bc diff is only scripts/qa-recent-imagery.mjs; .github/workflows/recent-imagery-gate-repair-proof.yml absent.",
+      "remaining": "none for this narrow finding",
+      "head": "76b003bc959bca612e9749b9341f4baa32c2f075"
+    },
+    {
+      "pr": 917,
+      "source": "https://github.com/bilawalsidhu/gods-eye-view/pull/917#issuecomment-6127280758",
+      "author": "asturksever",
+      "authorRole": "COLLABORATOR reviewer (not one of the two maintainers named in CONTRIBUTING)",
+      "finding": "P2: preserve strict defaults; opt into slow renderer thresholds",
+      "state": "addressed-needs-rerun",
+      "evidence": "Exact script defines default 2000 ms / last 12 samples, explicit QA_RECENT_IMAGERY_SLOW_RENDER=1 => 4000 ms / last 8 samples; label reports active timeout. 15 recent-imagery unit tests pass (not browser gate).",
+      "remaining": "Full Recent Imagery browser gate/default+slow execution not yet qualified",
+      "head": "76b003bc959bca612e9749b9341f4baa32c2f075"
+    },
+    {
+      "pr": 917,
+      "source": "https://github.com/bilawalsidhu/gods-eye-view/pull/917#issuecomment-6127280758",
+      "author": "asturksever",
+      "authorRole": "COLLABORATOR reviewer (not one of the two maintainers named in CONTRIBUTING)",
+      "finding": "Coordinate same-file #1061 launcher ownership",
+      "state": "open",
+      "evidence": "Opening full inventory retains #1061 open at 57a05f81579f800771dc8116dc566205286b1659 by quanticsoul4772; its described mechanism is browser executable resolution, not relative geometry.",
+      "remaining": "Preserve separate launcher carrier; do not duplicate its changes. No exact-head composed browser receipt claimed",
+      "head": "76b003bc959bca612e9749b9341f4baa32c2f075"
+    },
+    {
+      "pr": 917,
+      "source": "https://github.com/bilawalsidhu/gods-eye-view/pull/917#issuecomment-6129267155",
+      "author": "kvnloo",
+      "authorRole": "NONE / PR author self-report",
+      "finding": "Author current reconciliation claims and pending full browser run",
+      "state": "addressed-needs-rerun",
+      "evidence": "One-script diff and thresholds verified; 15 component tests pass. Historical fork run not relabelled.",
+      "remaining": "Live gate pending; source-level relative coordinates alone not sufficient",
+      "head": "76b003bc959bca612e9749b9341f4baa32c2f075"
+    },
+    {
+      "pr": 918,
+      "source": "https://github.com/bilawalsidhu/gods-eye-view/pull/918#issuecomment-6043685263",
+      "author": "kvnloo",
+      "authorRole": "NONE / PR author self-report",
+      "finding": "Historical author base refresh and workflow admission note",
+      "state": "stale/superseded",
+      "evidence": "Older heads superseded by a24b1cde; current exact-head 35 panel rail tests pass. No maintainer comment/review/inline findings in complete snapshot.",
+      "remaining": "none for this narrow finding",
+      "head": "a24b1cde3dcd13d29e5beb84111f61093f12b05e"
+    },
+    {
+      "pr": 918,
+      "source": "https://github.com/bilawalsidhu/gods-eye-view/pull/918#issuecomment-6084755023",
+      "author": "kvnloo",
+      "authorRole": "NONE / PR author self-report",
+      "finding": "Historical author base refresh and workflow admission note",
+      "state": "stale/superseded",
+      "evidence": "Older heads superseded by a24b1cde; current exact-head 35 panel rail tests pass. No maintainer comment/review/inline findings in complete snapshot.",
+      "remaining": "none for this narrow finding",
+      "head": "a24b1cde3dcd13d29e5beb84111f61093f12b05e"
+    },
+    {
+      "pr": 918,
+      "source": "https://github.com/bilawalsidhu/gods-eye-view/pull/918#issuecomment-6129337923",
+      "author": "kvnloo",
+      "authorRole": "NONE / PR author self-report",
+      "finding": "Current CSS-hidden rail fix source-only claim needs native rerun",
+      "state": "addressed-needs-rerun",
+      "evidence": "35 actual Node panel rail tests pass at a24b1cde, including CSS-hidden expanded panel ignores exclusivity; intended diff only rightPanelRail.js and panelRails.test.mjs.",
+      "remaining": "Dedicated live browser invariant and full exact-head gates not completed",
+      "head": "a24b1cde3dcd13d29e5beb84111f61093f12b05e"
+    },
+    {
+      "pr": 851,
+      "source": "https://github.com/bilawalsidhu/gods-eye-view/pull/851#issuecomment-6062571843",
+      "author": "asturksever",
+      "authorRole": "COLLABORATOR reviewer (not one of the two maintainers named in CONTRIBUTING)",
+      "finding": "Rebase and compare projection with #837 card / Space barge-in",
+      "state": "stale/superseded",
+      "evidence": "Exact 6cfd879 includes #837; 20 focused ownership/crop/projection tests pass; additional gevRealtime + voiceCard + projection suite passes at same SHA. Covers successful/refused Space, retained audio, user turn precedence.",
+      "remaining": "This is a pure unused projection helper, not wired live HUD behavior. No paid voice or provider session was run",
+      "head": "6cfd879bd87798790ff499846840960abd70c796"
+    },
+    {
+      "pr": 851,
+      "source": "https://github.com/bilawalsidhu/gods-eye-view/pull/851#issuecomment-6074532576",
+      "author": "kvnloo",
+      "authorRole": "NONE / PR author self-report",
+      "finding": "Author completion claim for card and Space precedence",
+      "state": "stale/superseded",
+      "evidence": "Independent imported production-owner/adjacent suites corroborate narrow compatibility; no production callers of resolveVoicePresentationState outside definition/tests.",
+      "remaining": "Full release/CI requirements remain independent",
+      "head": "6cfd879bd87798790ff499846840960abd70c796"
+    },
+    {
+      "pr": 834,
+      "source": "https://github.com/bilawalsidhu/gods-eye-view/pull/834#issuecomment-6126167630",
+      "author": "asturksever",
+      "authorRole": "COLLABORATOR reviewer (not one of the two maintainers named in CONTRIBUTING)",
+      "finding": "P2 helper extraction breaks existing unit-suite source contract",
+      "state": "open",
+      "evidence": "Exact-head full npm test exits 1: src/loadingFeedback.test.mjs:95 expects inline showStatus/startup frame/listener/timer in _handleShareTrackingRestoreStatus; extraction moved them to helper. Focused 3 tests still pass. Raw pr834-full-test.log records the mismatch.",
+      "remaining": "Reconcile the shared-scheduler extraction with the existing source contract and behavioral guards without merely weakening coverage; rerun full suite",
+      "head": "3a3a1ed1c04a5873f8b7b9244e278ba08042ce8e"
+    },
+    {
+      "pr": 834,
+      "source": "https://github.com/bilawalsidhu/gods-eye-view/pull/834#issuecomment-6126167630",
+      "author": "asturksever",
+      "authorRole": "COLLABORATOR reviewer (not one of the two maintainers named in CONTRIBUTING)",
+      "finding": "P2 newly adopted notice test is not formatted",
+      "state": "open",
+      "evidence": "Exact-head npm run format:check exits 1: Needs formatting: src/ui/shareInvalidLayerNotice.test.mjs. Build and boundaries pass on the same head.",
+      "remaining": "Run project formatter in a narrow follow-up; keep mechanical formatting separate",
+      "head": "3a3a1ed1c04a5873f8b7b9244e278ba08042ce8e"
+    },
+    {
+      "pr": 834,
+      "source": "https://github.com/bilawalsidhu/gods-eye-view/pull/834#issuecomment-6127174859",
+      "author": "kvnloo",
+      "authorRole": "NONE / PR author self-report",
+      "finding": "Current-main changelog merge conflict",
+      "state": "open",
+      "evidence": "git merge-tree --write-tree of exact 3a3a1ed and pinned main 132b9e9 exits 1; only CHANGELOG.md conflicts. Raw pr834-merge-tree.log retained.",
+      "remaining": "Resolve both changelog entries on an ancestry-preserving existing-carrier preparation branch, then rerun its gates",
+      "head": "3a3a1ed1c04a5873f8b7b9244e278ba08042ce8e"
+    },
+    {
+      "pr": 816,
+      "source": "https://github.com/bilawalsidhu/gods-eye-view/pull/816#issuecomment-6127736083",
+      "author": "kvnloo",
+      "authorRole": "NONE / PR author self-report",
+      "finding": "Current-main merge conflict in existing carrier",
+      "state": "addressed-needs-rerun",
+      "evidence": "Original carrier conflicted only in CHANGELOG.md. Local bfa20e576b477452c37b1ba094c5f2baaa09452b preserves both entries; candidate 34e6516161de5bdc52f19aea746f42f53ef2b5f8 contains original head and current main as ancestors.",
+      "remaining": "Local repair only; remote head unchanged; full baseline/publication holds remain",
+      "head": "19372875e21266caebe54976c9be73f1d36a73b8"
+    },
+    {
+      "pr": 816,
+      "source": "https://github.com/bilawalsidhu/gods-eye-view/pull/816",
+      "author": "GitHub Actions",
+      "authorRole": "workflow admission, not a submitted reviewer",
+      "finding": "Exact-head hosted checks/workflow admission",
+      "state": "blocked-external",
+      "head": "19372875e21266caebe54976c9be73f1d36a73b8",
+      "evidence": "Opening checks.json contains no checks. Raw exact-head pr-runs.json retained; CI lane separately verified action_required admission / zero jobs. Local test results are not hosted CI.",
+      "remaining": "Maintainer workflow admission plus exact Linear origin-action authorization; feedback lane made no remote write"
+    },
+    {
+      "pr": 834,
+      "source": "https://github.com/bilawalsidhu/gods-eye-view/pull/834",
+      "author": "GitHub Actions",
+      "authorRole": "workflow admission, not a submitted reviewer",
+      "finding": "Exact-head hosted checks/workflow admission",
+      "state": "blocked-external",
+      "head": "3a3a1ed1c04a5873f8b7b9244e278ba08042ce8e",
+      "evidence": "Opening checks.json contains no checks. Raw exact-head pr-runs.json retained; CI lane separately verified action_required admission / zero jobs. Local test results are not hosted CI.",
+      "remaining": "Maintainer workflow admission plus exact Linear origin-action authorization; feedback lane made no remote write"
+    },
+    {
+      "pr": 835,
+      "source": "https://github.com/bilawalsidhu/gods-eye-view/pull/835",
+      "author": "GitHub Actions",
+      "authorRole": "workflow admission, not a submitted reviewer",
+      "finding": "Exact-head hosted checks/workflow admission",
+      "state": "blocked-external",
+      "head": "cacbbc972bf8ada8314a2a62b7cdae1abefa6c0c",
+      "evidence": "Opening checks.json contains no checks. Raw exact-head pr-runs.json retained; CI lane separately verified action_required admission / zero jobs. Local test results are not hosted CI.",
+      "remaining": "Maintainer workflow admission plus exact Linear origin-action authorization; feedback lane made no remote write"
+    },
+    {
+      "pr": 917,
+      "source": "https://github.com/bilawalsidhu/gods-eye-view/pull/917",
+      "author": "GitHub Actions",
+      "authorRole": "workflow admission, not a submitted reviewer",
+      "finding": "Exact-head hosted checks/workflow admission",
+      "state": "blocked-external",
+      "head": "76b003bc959bca612e9749b9341f4baa32c2f075",
+      "evidence": "Opening checks.json contains no checks. Raw exact-head pr-runs.json retained; CI lane separately verified action_required admission / zero jobs. Local test results are not hosted CI.",
+      "remaining": "Maintainer workflow admission plus exact Linear origin-action authorization; feedback lane made no remote write"
+    },
+    {
+      "pr": 918,
+      "source": "https://github.com/bilawalsidhu/gods-eye-view/pull/918",
+      "author": "GitHub Actions",
+      "authorRole": "workflow admission, not a submitted reviewer",
+      "finding": "Exact-head hosted checks/workflow admission",
+      "state": "blocked-external",
+      "head": "a24b1cde3dcd13d29e5beb84111f61093f12b05e",
+      "evidence": "Opening checks.json contains no checks. Raw exact-head pr-runs.json retained; CI lane separately verified action_required admission / zero jobs. Local test results are not hosted CI.",
+      "remaining": "Maintainer workflow admission plus exact Linear origin-action authorization; feedback lane made no remote write"
+    },
+    {
+      "pr": 851,
+      "source": "https://github.com/bilawalsidhu/gods-eye-view/pull/851",
+      "author": "GitHub Actions",
+      "authorRole": "workflow admission, not a submitted reviewer",
+      "finding": "Exact-head hosted checks/workflow admission",
+      "state": "blocked-external",
+      "head": "6cfd879bd87798790ff499846840960abd70c796",
+      "evidence": "Opening checks.json contains no checks. Raw exact-head pr-runs.json retained; CI lane separately verified action_required admission / zero jobs. Local test results are not hosted CI.",
+      "remaining": "Maintainer workflow admission plus exact Linear origin-action authorization; feedback lane made no remote write"
+    }
+  ],
+  "stateCounts": {
+    "stale/superseded": 12,
+    "addressed-needs-rerun": 6,
+    "open": 5,
+    "blocked-external": 6
+  },
+  "caveat": "stale/superseded with independent verification means no remaining action on that narrow finding, NOT PR approval. Opening snapshots are authoritative to their recorded capture, not perpetual live-state claims."
+}

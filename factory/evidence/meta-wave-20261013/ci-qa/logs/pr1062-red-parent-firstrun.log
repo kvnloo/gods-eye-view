@@ -1,0 +1,143 @@
+{"head": "591f299d11f38a612629a274463196d57ae3862e", "command": ["fnm", "exec", "--using=24.14.0", "node", "scripts/qa-firstrun-mutations.mjs"]}
+
+First-run launcher pin strength — 67 individual reverts
+
+  [32mRED  [0m dismissing writes the DURABLE key, so the launcher never returns
+         caught by: dismissal is session-scoped; only the checkbox suppresses durably
+  [32mRED  [0m the checkbox is ignored, so nothing can ever suppress the launcher
+         caught by: the checkbox writes and clears durable suppression, and a storage reset undoes it; a refused write takes the tick back instead of promising "never again"
+  [32mRED  [0m unticking the box cannot take the suppression back
+         caught by: the checkbox writes and clears durable suppression, and a storage reset undoes it; a refused write takes the tick back instead of promising "never again"
+  [31mSTALE[0m the session flag is never read, so it re-nags on every reload
+  [31mSTALE[0m the durable flag is never read, so the checkbox does nothing
+  [32mRED  [0m ?welcome=1 no longer outranks suppression, so demos cannot replay it
+         caught by: welcome params work in both directions and outrank both suppressions
+  [32mRED  [0m ?welcome=0 stops suppressing
+         caught by: welcome params work in both directions and outrank both suppressions
+  [32mRED  [0m a share link gets the launcher over the view its author chose
+         caught by: welcome params work in both directions and outrank both suppressions; a share link never sees the launcher — its author already chose the view
+  [32mRED  [0m storage is read from a DEFAULT PARAMETER, outside every guard
+         caught by: a THROWING storage getter still fails open — Safari private mode; no storage is touched from a default parameter position
+  [32mRED  [0m shouldShowFirstRun resolves storage in its parameter list again
+         caught by: a THROWING storage getter still fails open — Safari private mode; no storage is touched from a default parameter position
+  [31mSTALE[0m the guarded resolver stops catching, so a hostile getter escapes
+  [32mRED  [0m a blocked getItem throws instead of reading as "nothing stored"
+         caught by: privacy-restricted storage fails open and every write stays best-effort
+  [32mRED  [0m the key handler trusts the CLASS, so an invisible card eats ESC
+         caught by: the key handler refuses to act for a card that is not really on screen
+  [32mRED  [0m the launcher stops yielding and fights Cockpit/Scenes for ESC
+         caught by: the launcher yields on engage and waits when a surface is already up
+  [31mSTALE[0m nothing watches for another surface taking the screen
+  [32mRED  [0m cockpit drops off the exclusive list and can stack with the launcher
+         caught by: the JS and CSS lists of screen-claiming surfaces stay in step
+  [31mSTALE[0m a scene hides the launcher in CSS but the JS never learns of it
+  [32mRED  [0m yielding steals focus back from the surface that just took over
+         caught by: the launcher yields on engage and waits when a surface is already up
+  [31mSTALE[0m isTopmost stops hit-testing, so an unclassed overlay buries the card again
+  [32mRED  [0m an inconclusive hit test reads as COVERED, so ESC quietly stops working
+         caught by: an overlay with NO class to watch still disarms the launcher
+  [32mRED  [0m the launcher stops honouring a key another surface already claimed
+         caught by: one ESC does one thing — the radio disclosure stops the launcher outright
+  [31mSTALE[0m the radio disclosure returns to stopPropagation, so one ESC does two things
+  [32mRED  [0m the "no timer" decision is deleted, so the next editor re-litigates it blind
+         caught by: a surface class that never clears is an ACCEPTED no-show, not a timer
+  [32mRED  [0m a bounded reveal timer punches the card through a recording in progress
+         caught by: a surface class that never clears is an ACCEPTED no-show, not a timer
+  [32mRED  [0m the accepted no-show vanishes from CURRENT-STATE and reads as a bug
+         caught by: a surface class that never clears is an ACCEPTED no-show, not a timer
+  [32mRED  [0m a refused write leaves the box ticked, promising a suppression nobody stored
+         caught by: a refused write takes the tick back instead of promising "never again"
+  [32mRED  [0m a missing storage area reports the write as saved
+         caught by: a refused write takes the tick back instead of promising "never again"
+  [32mRED  [0m the scroll fade promises more list on a card where everything fits
+         caught by: the scroll fade only appears when the list really overflows
+  [31mSTALE[0m the DISPLAY rail opens on first run again, stealing the impression
+  [31mSTALE[0m the first-run rail default overrides a stored user choice
+  [32mRED  [0m the removed INFRASTRUCTURE tile comes back as a one-click globe dump
+         caught by: the menu is the four owner-ordered missions
+  [32mRED  [0m ENVIRONMENTAL drops the keyless earthquakes that carry it without a key
+         caught by: Environmental enables BOTH its feeds and pulls out to the globe; the tile is the FULLY CONFIGURED experience: quakes and fires together
+  [32mRED  [0m FIRMS is dropped again from the tile whose subcopy promises it
+         caught by: Environmental enables BOTH its feeds and pulls out to the globe; the tile is the FULLY CONFIGURED experience: quakes and fires together
+  [31mSTALE[0m the tile stops promising the fires it actually turns on
+  [31mSTALE[0m the owner-authored first-run line is quietly rewritten
+  [32mRED  [0m the ledgered global-chip defect loses its pointer to the real fix
+         caught by: the tile is the FULLY CONFIGURED experience: quakes and fires together
+  [32mRED  [0m the globe missions never pull the camera out
+         caught by: Environmental enables BOTH its feeds and pulls out to the globe
+  [32mRED  [0m a refused layer is reported as a successful mission
+         caught by: a refused layer fails the mission by name, and a stalled flight never does
+  [32mRED  [0m a cancelled globe flight fails the whole mission
+         caught by: a refused layer fails the mission by name, and a stalled flight never does
+  [32mRED  [0m Explore manually quietly runs a mission instead of nothing
+         caught by: Explore manually touches nothing at all, and an unknown choice is inert
+  [32mRED  [0m an unknown choice is treated as a success
+         caught by: Explore manually touches nothing at all, and an unknown choice is inert
+  [32mRED  [0m the fires/quakes tile name stops being switchable from one constant
+         caught by: the fires/quakes tile name is switchable from one constant
+  [32mRED  [0m mission layer enables stop persisting, unlike the clicks they stand for
+         caught by: no mission writes a preference the visitor did not choose by picking it
+  [32mRED  [0m a mission hand-edits detection and kills the style auto-preset contract
+         caught by: no mission writes a preference the visitor did not choose by picking it
+  [32mRED  [0m a mission persists a 3D-models choice nobody made
+         caught by: no mission writes a preference the visitor did not choose by picking it
+  [31mSTALE[0m the Context panel is left collapsed, hiding the mode that just started
+  [32mRED  [0m the decision table is deleted, so the next editor re-litigates it blind
+         caught by: the decision table is written down where the next editor will read it
+  [31mSTALE[0m disabling the focused tile drops the keyboard to <body> mid-flight
+  [32mRED  [0m Tab escapes into an app the visitor has not seen yet
+         caught by: the launcher keeps focus, restores it, and never disables the focused button
+  [32mRED  [0m ESC no longer dismisses the launcher
+         caught by: the launcher keeps focus, restores it, and never disables the focused button
+  [32mRED  [0m focus is never returned to where the visitor left it
+         caught by: the launcher keeps focus, restores it, and never disables the focused button
+  [32mRED  [0m app hotkeys eat the launcher keys (bubble instead of capture)
+         caught by: the launcher keeps focus, restores it, and never disables the focused button
+  [31mSTALE[0m the card stays clickable through its fade-out (double-launch)
+  [31mSTALE[0m the launcher survives Clean-UI and recording mode
+  [31mSTALE[0m the flex card defeats [hidden] and sits in the a11y tree pre-reveal
+  [31mSTALE[0m the card loses its viewport cap and clips on a short landscape phone
+  [31mSTALE[0m the mission list stops scrolling, so tiles overflow the capped card
+  [31mSTALE[0m the launcher's reduced-motion opt-out is dropped
+  [31mSTALE[0m a mission tile is dropped from the menu
+  [31mSTALE[0m the menu order stops matching the owner's
+  [31mSTALE[0m the "don't show again" checkbox is removed
+  [31mSTALE[0m the status line stops being a polite live region
+  [31mSTALE[0m the launcher is no longer announced as a dialog
+  [31mSTALE[0m the launcher is revealed before the loading cover yields
+  [31mSTALE[0m the globe missions lose their DataManager and cannot enable layers
+  [31mSTALE[0m the voice TOOL SCHEMA is edited (a Realtime prompt-cache bust)
+  [32mRED  [0m the instruction mapping is dropped, so voice cannot reach the modes
+         caught by: the voice TOOL SCHEMA matches the pinned contract — the mission mapping is instructions only
+
+  40/67 defects caught by the pins
+
+  uncovered:
+    - the session flag is never read, so it re-nags on every reload (ANCHOR MISSING — the mutation no longer applies)
+    - the durable flag is never read, so the checkbox does nothing (ANCHOR MISSING — the mutation no longer applies)
+    - the guarded resolver stops catching, so a hostile getter escapes (ANCHOR MISSING — the mutation no longer applies)
+    - nothing watches for another surface taking the screen (ANCHOR MISSING — the mutation no longer applies)
+    - a scene hides the launcher in CSS but the JS never learns of it (ANCHOR MISSING — the mutation no longer applies)
+    - isTopmost stops hit-testing, so an unclassed overlay buries the card again (ANCHOR MISSING — the mutation no longer applies)
+    - the radio disclosure returns to stopPropagation, so one ESC does two things (ANCHOR MISSING — the mutation no longer applies)
+    - the DISPLAY rail opens on first run again, stealing the impression (ANCHOR MISSING — the mutation no longer applies)
+    - the first-run rail default overrides a stored user choice (ANCHOR MISSING — the mutation no longer applies)
+    - the tile stops promising the fires it actually turns on (ANCHOR MISSING — the mutation no longer applies)
+    - the owner-authored first-run line is quietly rewritten (ANCHOR MISSING — the mutation no longer applies)
+    - the Context panel is left collapsed, hiding the mode that just started (ANCHOR MISSING — the mutation no longer applies)
+    - disabling the focused tile drops the keyboard to <body> mid-flight (ANCHOR MISSING — the mutation no longer applies)
+    - the card stays clickable through its fade-out (double-launch) (ANCHOR MISSING — the mutation no longer applies)
+    - the launcher survives Clean-UI and recording mode (ANCHOR MISSING — the mutation no longer applies)
+    - the flex card defeats [hidden] and sits in the a11y tree pre-reveal (ANCHOR MISSING — the mutation no longer applies)
+    - the card loses its viewport cap and clips on a short landscape phone (ANCHOR MISSING — the mutation no longer applies)
+    - the mission list stops scrolling, so tiles overflow the capped card (ANCHOR MISSING — the mutation no longer applies)
+    - the launcher's reduced-motion opt-out is dropped (ANCHOR MISSING — the mutation no longer applies)
+    - a mission tile is dropped from the menu (ANCHOR MISSING — the mutation no longer applies)
+    - the menu order stops matching the owner's (ANCHOR MISSING — the mutation no longer applies)
+    - the "don't show again" checkbox is removed (ANCHOR MISSING — the mutation no longer applies)
+    - the status line stops being a polite live region (ANCHOR MISSING — the mutation no longer applies)
+    - the launcher is no longer announced as a dialog (ANCHOR MISSING — the mutation no longer applies)
+    - the launcher is revealed before the loading cover yields (ANCHOR MISSING — the mutation no longer applies)
+    - the globe missions lose their DataManager and cannot enable layers (ANCHOR MISSING — the mutation no longer applies)
+    - the voice TOOL SCHEMA is edited (a Realtime prompt-cache bust) (ANCHOR MISSING — the mutation no longer applies)
+

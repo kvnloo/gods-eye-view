@@ -1,0 +1,12 @@
+{"command": ["fnm", "exec", "--using=24.14.0", "npm", "run", "qa:panel-resize", "--", "--url", "http://127.0.0.1:4182"], "base": "132b9e96dc1491e5db8bf949b1560f4561c925c3", "source": "current-main runtime plus test-only candidate.patch", "env": {"MAPILLARY_CLIENT_TOKEN": "MLY|0|qa-fixture", "TMPDIR": "<operator-home>/.hermes/profiles/clean/cache/scratch/gci", "PUPPETEER_EXECUTABLE_PATH": "<operator-home>/.cache/puppeteer/chrome/linux-152.0.7977.75/chrome-linux64/chrome", "QA_FAIL_ON_RETRY": "1"}}
+
+> gods-eye-view@0.2.1 qa:panel-resize
+> node scripts/qa-panel-resize.mjs --url http://127.0.0.1:4182
+
+PASS: header drag lifts CCTV out of the rail
+PASS: eight resize handles keep the opposite edge pinned
+PASS: minimum size holds from both corners
+PASS: reload restores position and size
+PASS: a collapsed window keeps its height through a drag and a reload
+PASS: header double-click returns the panel to the rail
+PASS: no page errors and no render-loop errors

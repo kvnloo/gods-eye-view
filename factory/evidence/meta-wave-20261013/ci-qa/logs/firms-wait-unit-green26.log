@@ -1,0 +1,11 @@
+✔ FIRMS gate waits for selected action publication, not an ambient action (5.088685ms)
+✔ FIRMS selected-action wait remains bounded and cannot turn absence into success (0.646639ms)
+✔ FIRMS aggregate wait still checks all action buttons by default (0.549795ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 54.828953

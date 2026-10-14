@@ -1,0 +1,40 @@
+{
+  "didSend": true,
+  "fullCaptures": 0,
+  "cropCaptures": 1,
+  "sent": [
+    {
+      "event": {
+        "type": "conversation.item.create",
+        "item": {
+          "id": "msg_mv7e7903_lrersn",
+          "type": "message",
+          "role": "user",
+          "content": [
+            {
+              "type": "input_text",
+              "text": "Crop of the map around the user's pointer; the ring marks the exact spot they mean by this or here. Describe only what is clearly visible."
+            },
+            {
+              "type": "input_image",
+              "image_url": "data:image/jpeg;base64,CROP",
+              "detail": "high"
+            }
+          ]
+        }
+      },
+      "label": "client.pointer_crop"
+    }
+  ],
+  "retainedFrame": {
+    "kind": "crop",
+    "rect": {
+      "x": 0,
+      "y": 0,
+      "w": 0.5,
+      "h": 0.5
+    },
+    "cameraKey": "pose-A"
+  }
+}
+PASS crop ownership and ringed-pointer semantic contract

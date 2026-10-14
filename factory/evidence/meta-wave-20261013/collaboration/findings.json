@@ -1,0 +1,57 @@
+{
+  "scope": "Local preparation only; no remote writes, reviews, pushes, workflow actions or new implementation carriers",
+  "selected": [1046, 1097, 1106],
+  "ranked": [
+    {
+      "rank": 1,
+      "pr": 1046,
+      "author": "rudycelekli",
+      "head": "62ca2904b2b6dee865fb4e7949f3b0f4cacb532b",
+      "base": "8b8ccc9a81379e8b40d4be67610570ee5b159512",
+      "disposition": "READY_NARROW_QUALIFICATION_AWAITING_PARENT",
+      "merge_ready": false,
+      "classification": "addressed-needs-rerun -> independently qualified for exported-source cancellation and reviewer doc/scope correction",
+      "reviewer": "asturksever (Said), GitHub COLLABORATOR; not asserted to be final merge authority",
+      "review_request_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/1046#issuecomment-6126517460",
+      "author_fix_reply_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/1046#issuecomment-6127767035",
+      "evidence": "Real native ReadableStream final-read cancellation rejects the identical caller-owned reason and releases the lock in Node 26 and Chrome 152. Base-source overlay and post-read-check removal return bytes incorrectly. Healthy, chunk-abort and oversized controls pass.",
+      "novelty": "New independent real-native-stream and real-Chrome execution, with reason identity and cleanup controls; not a new bug claim. Confirms the author's already-addressed review blocker.",
+      "draft": "1046/UNSENT.md",
+      "holds": ["No exact-origin publication authorization", "Full test:track did not finish within the 480-second local deadline; no broad browser acceptance claim", "Allocation microbenchmarks and native Windows/macOS not run", "Local receipt links must become attachable/durable before any upstream posting"]
+    },
+    {
+      "rank": 2,
+      "pr": 1097,
+      "author": "Rohilalala",
+      "head": "59e45a218c37a193f4d1e9a8bc16af1429909c88",
+      "base": "8b8ccc9a81379e8b40d4be67610570ee5b159512",
+      "disposition": "READY_NARROW_QUALIFICATION_AWAITING_PARENT",
+      "merge_ready": false,
+      "classification": "additional qualification of author's fixed transport blocker; no residual bug retained",
+      "evidence": "Real loopback HTTP and production fetch/capped body reader accept tag-bearing data, classify JSON-escaped rate_limited remarks, skip requests during Retry-After cooldown, retry after expiry and continue a two-endpoint chain. Four head cases pass; original transport fails three; removing remark classification fails the escaped-remark control.",
+      "novelty": "Escaped remark over real HTTP plus cooldown-expiry and configured-chain integration; extends author's injected Response coverage without repeating their known offload-harness limitation.",
+      "draft": "1097/UNSENT.md",
+      "holds": ["No exact-origin publication authorization", "Full application browser/Overpass-offload acceptance not established", "No live configured Overpass or paid provider calls", "Allocation microbenchmarks and native Windows/macOS not run", "Local receipt links must become attachable/durable before any upstream posting"]
+    },
+    {
+      "rank": 3,
+      "pr": 1106,
+      "author": "AkashBhat14",
+      "head": "729f8f339cfecc9e96612f0e297caeaadfa67ac2",
+      "base": "9beadbda6333b83f79aa03047e2d851830f01f6b",
+      "disposition": "HELD_DUPLICATE_EXISTING_OWNER",
+      "merge_ready": false,
+      "classification": "independently qualified source mechanism; public feedback suppressed",
+      "evidence": "Real satellite.js propagation and Cesium numeric orbit records keep six distinct Alpha-5/numeric identities, with 181 positions per orbit. Base-source overlay and reverting the production orbit callsite fail. This does not establish ingestion/catalog browser rendering.",
+      "existing_owner": "hneogy: original issue #751 and still-open PR #767; SM-26 independently confirmed the original issue",
+      "existing_owner_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/767",
+      "original_issue_url": "https://github.com/bilawalsidhu/gods-eye-view/issues/751",
+      "suppressed": ["Alpha-5 collapse and all three callsites already described and independently tested in #751/#767", "Satellite-tools coverage omission already covered by #767's stated scope; do not create a competing implementation", "Formatting adoption issue was already raised/fixed on #767; this head's norad.test.mjs is unadopted and explicit Prettier check fails, but no duplicate public request drafted", "No docs CHANGELOG/CURRENT-STATE edits despite runtime delta; kept as local readiness fact rather than generic feedback"],
+      "draft": null,
+      "holds": ["Existing contributor ownership/duplicate carrier", "New test is outside format manifest and explicit check fails", "Runtime documentation gate missing", "Full application/satellite browser acceptance not established", "No exact-origin publication authorization"]
+    }
+  ],
+  "protected_reviewers": ["bilawalsidhu", "samehkhamis"],
+  "factory_overlap": "factory-overlap.json reconciles all 27 factory-owned open PR changed-file totals; zero runtime-file overlap with selected changes, shared documentation only. No ownership reassignment.",
+  "raw_receipts": "Each PR directory contains opening snapshot.json + pr/comments/reviews/inline/files JSON, full.diff, source-pin.json, complete closing GraphQL connections and source-integrity.json. execution-index.json records exact argv/cwd/exit/log hashes."
+}

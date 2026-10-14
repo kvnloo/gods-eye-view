@@ -1,0 +1,3147 @@
+[
+  {
+    "number": 943,
+    "title": "feat(fire-history): continue Historic Fires from #609",
+    "head": "f06755cdbfb80b877740af0916069643c3b13aa0",
+    "draft": true,
+    "file_count": 11,
+    "files": [
+      "CHANGELOG.md",
+      "DATA_SOURCES.md",
+      "docs/CURRENT-STATE.md",
+      "scripts/format-scope.json",
+      "server/providers/fireHistory.js",
+      "server/providers/local.js",
+      "src/data/fireHistoryEvents.js",
+      "src/data/fireHistoryEvents.test.mjs",
+      "src/data/local_data/fire_events/README.md",
+      "src/data/local_data/fire_events/fire_events.json",
+      "src/tooling/fireHistoryProvider.test.mjs"
+    ],
+    "new_tests_missing_format": [],
+    "runtime_files": [
+      "server/providers/fireHistory.js",
+      "server/providers/local.js",
+      "src/data/fireHistoryEvents.js",
+      "src/data/local_data/fire_events/README.md",
+      "src/data/local_data/fire_events/fire_events.json"
+    ],
+    "docs_present": {
+      "CHANGELOG.md": true,
+      "docs/CURRENT-STATE.md": true
+    },
+    "author": "kvnloo",
+    "author_association": "NONE",
+    "group": "fires",
+    "upstream_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/943",
+    "original_main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+    "api_base_sha": "591f299d11f38a612629a274463196d57ae3862e",
+    "merge_base_sha": "591f299d11f38a612629a274463196d57ae3862e",
+    "commits_behind_current_main": 24,
+    "commits_ahead_merge_base": 11,
+    "routing_owner": "portfolio-to-existing-author",
+    "disposition": "hold-existing-recut-and-provider-gap",
+    "ready_now": false,
+    "mechanism": "Narrow #609 continuation: registered archive catalog, date windows, definition-keyed cache and failed-window retry metadata; no layer renderer/UI yet.",
+    "next_action": "Reuse fork #230 current-main recut, not a second rewrite. Fix cold all-window cooldown loss; reconcile #231 coordinate slice with existing #1044 CSV owner; keep #175-179 presentation/source/replay stack held.",
+    "related_carriers": [
+      609,
+      1044,
+      1043,
+      852
+    ],
+    "merge": {
+      "number": 943,
+      "head": "f06755cdbfb80b877740af0916069643c3b13aa0",
+      "api_base": "591f299d11f38a612629a274463196d57ae3862e",
+      "merge_base": "591f299d11f38a612629a274463196d57ae3862e",
+      "main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+      "behind": 24,
+      "ahead": 11,
+      "returncode": 1,
+      "conflict_paths": [
+        "CHANGELOG.md"
+      ],
+      "tree": "1007f887969254ec064cfa93a0d033f58d003a56",
+      "stderr": ""
+    },
+    "counterfactual": {
+      "number": 943,
+      "head": "f06755cdbfb80b877740af0916069643c3b13aa0",
+      "synthetic_analysis_commit": "f4cceda1bf60275463789bdc321704e37792f12a",
+      "synthetic_tree": "beeeb95f35f81d5b0273190cdabba453bebf5d5f",
+      "removed_paths": [
+        "CHANGELOG.md",
+        "docs/CURRENT-STATE.md"
+      ],
+      "remaining_conflict_paths": [],
+      "returncode": 0
+    },
+    "review": {
+      "formal_reviews": 0,
+      "review_threads": 0,
+      "unresolved_threads": 0,
+      "review_decision": null,
+      "conversation_feedback": "no external actionable review in saved conversation",
+      "approval": false
+    },
+    "ci": {
+      "current_head_runs": [
+        {
+          "run_id": 38053736392,
+          "attempt": 1,
+          "conclusion": "action_required",
+          "job_count": 0
+        }
+      ],
+      "verdict": "NOT_EXECUTED",
+      "formal_required_contexts": "UNKNOWN: branch protection read returned HTTP404; workflow names are not proof of configured branch protection"
+    },
+    "required_validation": [
+      "Node 24.14 / 26 supported toolchain",
+      "npm run doctor -- --json",
+      "npm run format:check",
+      "npm run check:boundaries",
+      "npm test",
+      "npm run build",
+      "npm run test:track with live server",
+      "affected feature browser gate; see next_action"
+    ],
+    "finding_ids": [
+      "943:current-main-conflicts",
+      "943:workflow-admission",
+      "943:source-probe",
+      "943:old-mergeable-claim",
+      "943:coordinate-carrier",
+      "943:fork-230-recut"
+    ],
+    "finding_states": [
+      "addressed-needs-rerun",
+      "blocked-external",
+      "open",
+      "stale/superseded"
+    ],
+    "source_evidence": [
+      "diffs/943.diff",
+      "threads/943.json",
+      "timeline/943.json"
+    ]
+  },
+  {
+    "number": 918,
+    "title": "fix(ui): ignore CSS-hidden panels in right rail layout",
+    "head": "a24b1cde3dcd13d29e5beb84111f61093f12b05e",
+    "draft": false,
+    "file_count": 2,
+    "files": [
+      "src/ui/panelRails.test.mjs",
+      "src/ui/rightPanelRail.js"
+    ],
+    "new_tests_missing_format": [],
+    "runtime_files": [
+      "src/ui/rightPanelRail.js"
+    ],
+    "docs_present": {
+      "CHANGELOG.md": false,
+      "docs/CURRENT-STATE.md": false
+    },
+    "author": "kvnloo",
+    "author_association": "NONE",
+    "group": "UI/rail",
+    "upstream_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/918",
+    "original_main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+    "api_base_sha": "8b8ccc9a81379e8b40d4be67610570ee5b159512",
+    "merge_base_sha": "8b8ccc9a81379e8b40d4be67610570ee5b159512",
+    "commits_behind_current_main": 18,
+    "commits_ahead_merge_base": 3,
+    "routing_owner": "feedback",
+    "disposition": "conditional-frontier-3",
+    "ready_now": false,
+    "mechanism": "Rail candidate filter excludes computed display:none in addition to hidden and floating.",
+    "next_action": "Add required runtime documentation or obtain explicit exemption; run real tactical rail, hidden-panel, portable-panel and Radio composition gates.",
+    "related_carriers": [
+      816,
+      1054
+    ],
+    "merge": {
+      "number": 918,
+      "head": "a24b1cde3dcd13d29e5beb84111f61093f12b05e",
+      "api_base": "8b8ccc9a81379e8b40d4be67610570ee5b159512",
+      "merge_base": "8b8ccc9a81379e8b40d4be67610570ee5b159512",
+      "main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+      "behind": 18,
+      "ahead": 3,
+      "returncode": 0,
+      "conflict_paths": [],
+      "tree": "231bec488907ed7075a69bb13f84531b23d6340b",
+      "stderr": ""
+    },
+    "counterfactual": {
+      "number": 918,
+      "head": "a24b1cde3dcd13d29e5beb84111f61093f12b05e",
+      "synthetic_analysis_commit": "d8261289c303bf579fa303944a7d002d9e61c1b9",
+      "synthetic_tree": "7d3864eae60678670977af53474d02a2dce3a536",
+      "removed_paths": [
+        "CHANGELOG.md",
+        "docs/CURRENT-STATE.md"
+      ],
+      "remaining_conflict_paths": [],
+      "returncode": 0
+    },
+    "review": {
+      "formal_reviews": 0,
+      "review_threads": 0,
+      "unresolved_threads": 0,
+      "review_decision": null,
+      "conversation_feedback": "present; see finding URLs",
+      "approval": false
+    },
+    "ci": {
+      "current_head_runs": [
+        {
+          "run_id": 38284748813,
+          "attempt": 1,
+          "conclusion": "action_required",
+          "job_count": 0
+        }
+      ],
+      "verdict": "NOT_EXECUTED",
+      "formal_required_contexts": "UNKNOWN: branch protection read returned HTTP404; workflow names are not proof of configured branch protection"
+    },
+    "required_validation": [
+      "Node 24.14 / 26 supported toolchain",
+      "npm run doctor -- --json",
+      "npm run format:check",
+      "npm run check:boundaries",
+      "npm test",
+      "npm run build",
+      "npm run test:track with live server",
+      "affected feature browser gate; see next_action"
+    ],
+    "finding_ids": [
+      "918:exact-head-proof",
+      "918:runtime-documentation",
+      "918:workflow-admission"
+    ],
+    "finding_states": [
+      "addressed-needs-rerun",
+      "blocked-external",
+      "open"
+    ],
+    "source_evidence": [
+      "diffs/918.diff",
+      "threads/918.json",
+      "timeline/918.json"
+    ]
+  },
+  {
+    "number": 917,
+    "title": "test: make Recent Imagery live gate rail-reflow safe",
+    "head": "76b003bc959bca612e9749b9341f4baa32c2f075",
+    "draft": false,
+    "file_count": 1,
+    "files": [
+      "scripts/qa-recent-imagery.mjs"
+    ],
+    "new_tests_missing_format": [],
+    "runtime_files": [],
+    "docs_present": {
+      "CHANGELOG.md": false,
+      "docs/CURRENT-STATE.md": false
+    },
+    "author": "kvnloo",
+    "author_association": "NONE",
+    "group": "imagery/performance",
+    "upstream_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/917",
+    "original_main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+    "api_base_sha": "8b8ccc9a81379e8b40d4be67610570ee5b159512",
+    "merge_base_sha": "8b8ccc9a81379e8b40d4be67610570ee5b159512",
+    "commits_behind_current_main": 18,
+    "commits_ahead_merge_base": 6,
+    "routing_owner": "feedback",
+    "disposition": "conditional-frontier-1",
+    "ready_now": false,
+    "mechanism": "QA measures panel-relative rectangles; slow-render flag alone widens zoom and stability thresholds.",
+    "next_action": "Rerun actual Recent Imagery gate on current composition, default and slow mode; verify assertions execute rather than NASA skip; compose launcher-only #1061.",
+    "related_carriers": [
+      1061
+    ],
+    "merge": {
+      "number": 917,
+      "head": "76b003bc959bca612e9749b9341f4baa32c2f075",
+      "api_base": "8b8ccc9a81379e8b40d4be67610570ee5b159512",
+      "merge_base": "8b8ccc9a81379e8b40d4be67610570ee5b159512",
+      "main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+      "behind": 18,
+      "ahead": 6,
+      "returncode": 0,
+      "conflict_paths": [],
+      "tree": "7f2ce521b762c2c937bba0b8f0d30bae04dc8b15",
+      "stderr": ""
+    },
+    "counterfactual": {
+      "number": 917,
+      "head": "76b003bc959bca612e9749b9341f4baa32c2f075",
+      "synthetic_analysis_commit": "63ee5d2d5076d7101b236e7e66cf198a944f6a67",
+      "synthetic_tree": "44b28b8f2702a432b2a79de0885e3a7bfa7be947",
+      "removed_paths": [
+        "CHANGELOG.md",
+        "docs/CURRENT-STATE.md"
+      ],
+      "remaining_conflict_paths": [],
+      "returncode": 0
+    },
+    "review": {
+      "formal_reviews": 0,
+      "review_threads": 0,
+      "unresolved_threads": 0,
+      "review_decision": null,
+      "conversation_feedback": "present; see finding URLs",
+      "approval": false
+    },
+    "ci": {
+      "current_head_runs": [
+        {
+          "run_id": 38284767154,
+          "attempt": 1,
+          "conclusion": "action_required",
+          "job_count": 0
+        }
+      ],
+      "verdict": "NOT_EXECUTED",
+      "formal_required_contexts": "UNKNOWN: branch protection read returned HTTP404; workflow names are not proof of configured branch protection"
+    },
+    "required_validation": [
+      "Node 24.14 / 26 supported toolchain",
+      "npm run doctor -- --json",
+      "npm run format:check",
+      "npm run check:boundaries",
+      "npm test",
+      "npm run build",
+      "npm run test:track with live server",
+      "affected feature browser gate; see next_action"
+    ],
+    "finding_ids": [
+      "917:workflow",
+      "917:thresholds",
+      "917:workflow-admission"
+    ],
+    "finding_states": [
+      "addressed-needs-rerun",
+      "blocked-external"
+    ],
+    "source_evidence": [
+      "diffs/917.diff",
+      "threads/917.json",
+      "timeline/917.json"
+    ]
+  },
+  {
+    "number": 889,
+    "title": "perf: coalesce identical terrain height requests",
+    "head": "62159fd3546f41a54f7518ddf75c4c9170aacb86",
+    "draft": false,
+    "file_count": 8,
+    "files": [
+      "CHANGELOG.md",
+      "docs/CURRENT-STATE.md",
+      "scripts/package-boundaries.json",
+      "src/data/militaryInstallations.test.mjs",
+      "src/services/requests.js",
+      "src/services/requests.test.mjs",
+      "src/services/singleflight.js",
+      "src/services/singleflight.test.mjs"
+    ],
+    "new_tests_missing_format": [
+      "src/services/singleflight.test.mjs"
+    ],
+    "runtime_files": [
+      "src/services/requests.js",
+      "src/services/singleflight.js"
+    ],
+    "docs_present": {
+      "CHANGELOG.md": true,
+      "docs/CURRENT-STATE.md": true
+    },
+    "author": "kvnloo",
+    "author_association": "NONE",
+    "group": "imagery/performance",
+    "upstream_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/889",
+    "original_main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+    "api_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "merge_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "commits_behind_current_main": 324,
+    "commits_ahead_merge_base": 9,
+    "routing_owner": "architecture",
+    "disposition": "conditional-after-independent-qualification",
+    "ready_now": false,
+    "mechanism": "Per-instance singleflight keys identical terrain requests; shared abort follows final waiter, not first caller.",
+    "next_action": "Resolve changelog conflict; adopt new singleflight test in format scope; test cancellation/replacement and caller isolation; compare server cache and warm-cache work without replacing those authors.",
+    "related_carriers": [
+      686,
+      1039,
+      1040
+    ],
+    "merge": {
+      "number": 889,
+      "head": "62159fd3546f41a54f7518ddf75c4c9170aacb86",
+      "api_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "merge_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+      "behind": 324,
+      "ahead": 9,
+      "returncode": 1,
+      "conflict_paths": [
+        "CHANGELOG.md"
+      ],
+      "tree": "a624c3f49a08741549c3902fef28fed406050fda",
+      "stderr": ""
+    },
+    "counterfactual": {
+      "number": 889,
+      "head": "62159fd3546f41a54f7518ddf75c4c9170aacb86",
+      "synthetic_analysis_commit": "c9e2f8b8e8a34f554bc81eee6291187ec0852ad8",
+      "synthetic_tree": "57ba5e068266209182177b3c0daf3c85c7225763",
+      "removed_paths": [
+        "CHANGELOG.md",
+        "docs/CURRENT-STATE.md"
+      ],
+      "remaining_conflict_paths": [],
+      "returncode": 0
+    },
+    "review": {
+      "formal_reviews": 0,
+      "review_threads": 0,
+      "unresolved_threads": 0,
+      "review_decision": null,
+      "conversation_feedback": "no external actionable review in saved conversation",
+      "approval": false
+    },
+    "ci": {
+      "current_head_runs": [
+        {
+          "run_id": 36932023886,
+          "attempt": 1,
+          "conclusion": "action_required",
+          "job_count": 0
+        }
+      ],
+      "verdict": "NOT_EXECUTED",
+      "formal_required_contexts": "UNKNOWN: branch protection read returned HTTP404; workflow names are not proof of configured branch protection"
+    },
+    "required_validation": [
+      "Node 24.14 / 26 supported toolchain",
+      "npm run doctor -- --json",
+      "npm run format:check",
+      "npm run check:boundaries",
+      "npm test",
+      "npm run build",
+      "npm run test:track with live server",
+      "affected feature browser gate; see next_action"
+    ],
+    "finding_ids": [
+      "889:current-main-conflicts",
+      "889:test-format-adoption",
+      "889:workflow-admission"
+    ],
+    "finding_states": [
+      "blocked-external",
+      "open"
+    ],
+    "source_evidence": [
+      "diffs/889.diff",
+      "threads/889.json",
+      "timeline/889.json"
+    ]
+  },
+  {
+    "number": 888,
+    "title": "feat(ui): add schema-validated command catalog",
+    "head": "c141a805147d450f3e599f391fa8ec1469e62ee8",
+    "draft": false,
+    "file_count": 4,
+    "files": [
+      "scripts/format-scope.json",
+      "scripts/package-boundaries.json",
+      "src/ui/commandCatalog.js",
+      "src/ui/commandCatalog.test.mjs"
+    ],
+    "new_tests_missing_format": [],
+    "runtime_files": [
+      "src/ui/commandCatalog.js"
+    ],
+    "docs_present": {
+      "CHANGELOG.md": false,
+      "docs/CURRENT-STATE.md": false
+    },
+    "author": "kvnloo",
+    "author_association": "NONE",
+    "group": "UI/rail",
+    "upstream_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/888",
+    "original_main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+    "api_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "merge_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "commits_behind_current_main": 324,
+    "commits_ahead_merge_base": 8,
+    "routing_owner": "portfolio-to-existing-author",
+    "disposition": "hold-schema-validation-gap",
+    "ready_now": false,
+    "mechanism": "Catalog/search has no DOM or execution authority; recursive validator duplicates a subset of canonical schema validation.",
+    "next_action": "Fix missing canonical string length validation; align with existing validator rather than another parallel implementation; test default catalog against current schemas.",
+    "related_carriers": [
+      976,
+      1026,
+      846
+    ],
+    "merge": {
+      "number": 888,
+      "head": "c141a805147d450f3e599f391fa8ec1469e62ee8",
+      "api_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "merge_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+      "behind": 324,
+      "ahead": 8,
+      "returncode": 0,
+      "conflict_paths": [],
+      "tree": "66ffbf060c07c450e8bfcb69595f87148ea9e91e",
+      "stderr": ""
+    },
+    "counterfactual": {
+      "number": 888,
+      "head": "c141a805147d450f3e599f391fa8ec1469e62ee8",
+      "synthetic_analysis_commit": "8b236d759a47ef6677f5bc7aa53fda0ff7aedf69",
+      "synthetic_tree": "d4d8cd2778b3ef2478c4ee7bfa8b414bb105394e",
+      "removed_paths": [
+        "CHANGELOG.md",
+        "docs/CURRENT-STATE.md"
+      ],
+      "remaining_conflict_paths": [],
+      "returncode": 0
+    },
+    "review": {
+      "formal_reviews": 0,
+      "review_threads": 0,
+      "unresolved_threads": 0,
+      "review_decision": null,
+      "conversation_feedback": "no external actionable review in saved conversation",
+      "approval": false
+    },
+    "ci": {
+      "current_head_runs": [
+        {
+          "run_id": 36932010522,
+          "attempt": 1,
+          "conclusion": "action_required",
+          "job_count": 0
+        }
+      ],
+      "verdict": "NOT_EXECUTED",
+      "formal_required_contexts": "UNKNOWN: branch protection read returned HTTP404; workflow names are not proof of configured branch protection"
+    },
+    "required_validation": [
+      "Node 24.14 / 26 supported toolchain",
+      "npm run doctor -- --json",
+      "npm run format:check",
+      "npm run check:boundaries",
+      "npm test",
+      "npm run build",
+      "npm run test:track with live server",
+      "affected feature browser gate; see next_action"
+    ],
+    "finding_ids": [
+      "888:workflow-admission",
+      "888:source-probe"
+    ],
+    "finding_states": [
+      "blocked-external",
+      "open"
+    ],
+    "source_evidence": [
+      "diffs/888.diff",
+      "threads/888.json",
+      "timeline/888.json"
+    ]
+  },
+  {
+    "number": 882,
+    "title": "exp(disaster): add model-free access support kernel",
+    "head": "264764676538b67ce67c9e5d199637e107dacf59",
+    "draft": false,
+    "file_count": 2,
+    "files": [
+      "src/data/disasterAccess.js",
+      "src/data/disasterAccess.test.mjs"
+    ],
+    "new_tests_missing_format": [
+      "src/data/disasterAccess.test.mjs"
+    ],
+    "runtime_files": [
+      "src/data/disasterAccess.js"
+    ],
+    "docs_present": {
+      "CHANGELOG.md": false,
+      "docs/CURRENT-STATE.md": false
+    },
+    "author": "kvnloo",
+    "author_association": "NONE",
+    "group": "disasters",
+    "upstream_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/882",
+    "original_main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+    "api_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "merge_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "commits_behind_current_main": 324,
+    "commits_ahead_merge_base": 5,
+    "routing_owner": "portfolio-to-existing-author",
+    "disposition": "hold-existing-fork-contract-decision",
+    "ready_now": false,
+    "mechanism": "Access support is model-free and data-only; duplicate IDs currently collapse by last row, so input order can invent support.",
+    "next_action": "Reuse held fork #198 rather than another patch; agree duplicate evidence precedence and simulated-versus-observed output contract; native qualification still missing; adopt test format scope.",
+    "related_carriers": [
+      857,
+      838
+    ],
+    "merge": {
+      "number": 882,
+      "head": "264764676538b67ce67c9e5d199637e107dacf59",
+      "api_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "merge_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+      "behind": 324,
+      "ahead": 5,
+      "returncode": 0,
+      "conflict_paths": [],
+      "tree": "fbac3d97e29c7d02d2f8199112f5242769277394",
+      "stderr": ""
+    },
+    "counterfactual": {
+      "number": 882,
+      "head": "264764676538b67ce67c9e5d199637e107dacf59",
+      "synthetic_analysis_commit": "66b9009d5f43cb7eaa599160176f16169ac582e3",
+      "synthetic_tree": "ad750adf54387fe8a9ae843edc127c08708a6587",
+      "removed_paths": [
+        "CHANGELOG.md",
+        "docs/CURRENT-STATE.md"
+      ],
+      "remaining_conflict_paths": [],
+      "returncode": 0
+    },
+    "review": {
+      "formal_reviews": 0,
+      "review_threads": 0,
+      "unresolved_threads": 0,
+      "review_decision": null,
+      "conversation_feedback": "no external actionable review in saved conversation",
+      "approval": false
+    },
+    "ci": {
+      "current_head_runs": [
+        {
+          "run_id": 36830448434,
+          "attempt": 1,
+          "conclusion": "action_required",
+          "job_count": 0
+        }
+      ],
+      "verdict": "NOT_EXECUTED",
+      "formal_required_contexts": "UNKNOWN: branch protection read returned HTTP404; workflow names are not proof of configured branch protection"
+    },
+    "required_validation": [
+      "Node 24.14 / 26 supported toolchain",
+      "npm run doctor -- --json",
+      "npm run format:check",
+      "npm run check:boundaries",
+      "npm test",
+      "npm run build",
+      "npm run test:track with live server",
+      "affected feature browser gate; see next_action"
+    ],
+    "finding_ids": [
+      "882:test-format-adoption",
+      "882:workflow-admission",
+      "882:source-probe",
+      "882:fork-198-repair",
+      "882:contract"
+    ],
+    "finding_states": [
+      "addressed-needs-rerun",
+      "blocked-external",
+      "open"
+    ],
+    "source_evidence": [
+      "diffs/882.diff",
+      "threads/882.json",
+      "timeline/882.json"
+    ]
+  },
+  {
+    "number": 881,
+    "title": "perf: cancel superseded Recent Imagery thumbnail work",
+    "head": "85227cca9dc0fa74055c5f4e9490fea932f86875",
+    "draft": false,
+    "file_count": 7,
+    "files": [
+      "CHANGELOG.md",
+      "docs/CURRENT-STATE.md",
+      "src/layers/recentImagery/index.js",
+      "src/layers/recentImagery/index.test.mjs",
+      "src/layers/recentImagery/testDoubles.mjs",
+      "src/layers/recentImagery/thumbnails.js",
+      "src/layers/recentImagery/thumbnails.test.mjs"
+    ],
+    "new_tests_missing_format": [],
+    "runtime_files": [
+      "src/layers/recentImagery/index.js",
+      "src/layers/recentImagery/thumbnails.js"
+    ],
+    "docs_present": {
+      "CHANGELOG.md": true,
+      "docs/CURRENT-STATE.md": true
+    },
+    "author": "kvnloo",
+    "author_association": "NONE",
+    "group": "imagery/performance",
+    "upstream_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/881",
+    "original_main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+    "api_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "merge_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "commits_behind_current_main": 324,
+    "commits_ahead_merge_base": 14,
+    "routing_owner": "architecture",
+    "disposition": "hold-test-conflict-and-qualification",
+    "ready_now": false,
+    "mechanism": "requestOrdered returns wanted keys; retain aborts superseded queued/in-flight work while keeping assigned images.",
+    "next_action": "Resolve thumbnail test conflict; exercise actual cancellation with delayed loads, selected A/B retention and no obsolete callbacks; combine with #879 only after independent tests.",
+    "related_carriers": [
+      879,
+      1041,
+      1008
+    ],
+    "merge": {
+      "number": 881,
+      "head": "85227cca9dc0fa74055c5f4e9490fea932f86875",
+      "api_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "merge_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+      "behind": 324,
+      "ahead": 14,
+      "returncode": 1,
+      "conflict_paths": [
+        "CHANGELOG.md",
+        "src/layers/recentImagery/thumbnails.test.mjs"
+      ],
+      "tree": "809924ffd9541fa3f25a6dab3ba5d81cb7a97695",
+      "stderr": ""
+    },
+    "counterfactual": {
+      "number": 881,
+      "head": "85227cca9dc0fa74055c5f4e9490fea932f86875",
+      "synthetic_analysis_commit": "9f4a63638d97ad761776291c82a3d1b86dbfa35f",
+      "synthetic_tree": "28374a8183b25b914d4f419047b69ac5da5c71da",
+      "removed_paths": [
+        "CHANGELOG.md",
+        "docs/CURRENT-STATE.md"
+      ],
+      "remaining_conflict_paths": [
+        "src/layers/recentImagery/thumbnails.test.mjs"
+      ],
+      "returncode": 1
+    },
+    "review": {
+      "formal_reviews": 0,
+      "review_threads": 0,
+      "unresolved_threads": 0,
+      "review_decision": null,
+      "conversation_feedback": "no external actionable review in saved conversation",
+      "approval": false
+    },
+    "ci": {
+      "current_head_runs": [
+        {
+          "run_id": 36830444874,
+          "attempt": 1,
+          "conclusion": "action_required",
+          "job_count": 0
+        }
+      ],
+      "verdict": "NOT_EXECUTED",
+      "formal_required_contexts": "UNKNOWN: branch protection read returned HTTP404; workflow names are not proof of configured branch protection"
+    },
+    "required_validation": [
+      "Node 24.14 / 26 supported toolchain",
+      "npm run doctor -- --json",
+      "npm run format:check",
+      "npm run check:boundaries",
+      "npm test",
+      "npm run build",
+      "npm run test:track with live server",
+      "affected feature browser gate; see next_action"
+    ],
+    "finding_ids": [
+      "881:current-main-conflicts",
+      "881:workflow-admission"
+    ],
+    "finding_states": [
+      "blocked-external",
+      "open"
+    ],
+    "source_evidence": [
+      "diffs/881.diff",
+      "threads/881.json",
+      "timeline/881.json"
+    ]
+  },
+  {
+    "number": 880,
+    "title": "feat(agent): extract model-free World Packet boundary",
+    "head": "2b7f832f456c933811c8dc0faa75caf111816718",
+    "draft": false,
+    "file_count": 5,
+    "files": [
+      "package.json",
+      "scripts/package-boundaries.json",
+      "src/agent/worldPacket.js",
+      "src/agent/worldPacket.test.mjs",
+      "src/voice/gevActions.js"
+    ],
+    "new_tests_missing_format": [
+      "src/agent/worldPacket.test.mjs"
+    ],
+    "runtime_files": [
+      "src/agent/worldPacket.js",
+      "src/voice/gevActions.js"
+    ],
+    "docs_present": {
+      "CHANGELOG.md": false,
+      "docs/CURRENT-STATE.md": false
+    },
+    "author": "kvnloo",
+    "author_association": "NONE",
+    "group": "voice/actions",
+    "upstream_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/880",
+    "original_main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+    "api_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "merge_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "commits_behind_current_main": 324,
+    "commits_ahead_merge_base": 15,
+    "routing_owner": "portfolio-to-existing-author",
+    "disposition": "hold-stale-extraction",
+    "ready_now": false,
+    "mechanism": "World Packet extracts old get_current_view_state output and adds semantic fingerprint; imports Cesium, so model-free is not renderer-free.",
+    "next_action": "Port only missing model-free boundary against current tool/view owners; preserve new payload fields and update package export/ownership; adopt test scope and runtime docs. Avoid parallel state aggregation with #976/#1065.",
+    "related_carriers": [
+      976,
+      846,
+      1065
+    ],
+    "merge": {
+      "number": 880,
+      "head": "2b7f832f456c933811c8dc0faa75caf111816718",
+      "api_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "merge_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+      "behind": 324,
+      "ahead": 15,
+      "returncode": 1,
+      "conflict_paths": [
+        "package.json",
+        "scripts/package-boundaries.json",
+        "src/voice/gevActions.js"
+      ],
+      "tree": "a893713fb13962f9264778108c1cbbdef6af7f8a",
+      "stderr": ""
+    },
+    "counterfactual": {
+      "number": 880,
+      "head": "2b7f832f456c933811c8dc0faa75caf111816718",
+      "synthetic_analysis_commit": "e30e1b213f4f62c63ab2da339df2d7394651effa",
+      "synthetic_tree": "f2fbc59223b499c739603877814a49c26f033f02",
+      "removed_paths": [
+        "CHANGELOG.md",
+        "docs/CURRENT-STATE.md"
+      ],
+      "remaining_conflict_paths": [
+        "package.json",
+        "scripts/package-boundaries.json",
+        "src/voice/gevActions.js"
+      ],
+      "returncode": 1
+    },
+    "review": {
+      "formal_reviews": 0,
+      "review_threads": 0,
+      "unresolved_threads": 0,
+      "review_decision": null,
+      "conversation_feedback": "no external actionable review in saved conversation",
+      "approval": false
+    },
+    "ci": {
+      "current_head_runs": [
+        {
+          "run_id": 36830441586,
+          "attempt": 1,
+          "conclusion": "action_required",
+          "job_count": 0
+        }
+      ],
+      "verdict": "NOT_EXECUTED",
+      "formal_required_contexts": "UNKNOWN: branch protection read returned HTTP404; workflow names are not proof of configured branch protection"
+    },
+    "required_validation": [
+      "Node 24.14 / 26 supported toolchain",
+      "npm run doctor -- --json",
+      "npm run format:check",
+      "npm run check:boundaries",
+      "npm test",
+      "npm run build",
+      "npm run test:track with live server",
+      "affected feature browser gate; see next_action"
+    ],
+    "finding_ids": [
+      "880:current-main-conflicts",
+      "880:test-format-adoption",
+      "880:runtime-documentation",
+      "880:workflow-admission",
+      "880:current-state-extraction"
+    ],
+    "finding_states": [
+      "blocked-external",
+      "open"
+    ],
+    "source_evidence": [
+      "diffs/880.diff",
+      "threads/880.json",
+      "timeline/880.json"
+    ]
+  },
+  {
+    "number": 879,
+    "title": "perf: byte-bound Recent Imagery thumbnail residency",
+    "head": "f96cd157f8f7f0c1b8dbf3440e638ba4c78820d3",
+    "draft": false,
+    "file_count": 4,
+    "files": [
+      "CHANGELOG.md",
+      "docs/CURRENT-STATE.md",
+      "src/layers/recentImagery/thumbnails.js",
+      "src/layers/recentImagery/thumbnails.test.mjs"
+    ],
+    "new_tests_missing_format": [],
+    "runtime_files": [
+      "src/layers/recentImagery/thumbnails.js"
+    ],
+    "docs_present": {
+      "CHANGELOG.md": true,
+      "docs/CURRENT-STATE.md": true
+    },
+    "author": "kvnloo",
+    "author_association": "NONE",
+    "group": "imagery/performance",
+    "upstream_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/879",
+    "original_main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+    "api_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "merge_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "commits_behind_current_main": 324,
+    "commits_ahead_merge_base": 6,
+    "routing_owner": "architecture",
+    "disposition": "hold-test-conflict-and-qualification",
+    "ready_now": false,
+    "mechanism": "Decoded residency is estimated as requested size squared times four; byte budget supplements count-LRU.",
+    "next_action": "Resolve thumbnail test conflict with current main; prove real byte accounting versus estimated texture residency, eviction/revocation and oversize images; retain #1041 presence proof.",
+    "related_carriers": [
+      881,
+      1041
+    ],
+    "merge": {
+      "number": 879,
+      "head": "f96cd157f8f7f0c1b8dbf3440e638ba4c78820d3",
+      "api_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "merge_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+      "behind": 324,
+      "ahead": 6,
+      "returncode": 1,
+      "conflict_paths": [
+        "CHANGELOG.md",
+        "src/layers/recentImagery/thumbnails.test.mjs"
+      ],
+      "tree": "d1236cae26f98a0f1af04e512ce23299b664f746",
+      "stderr": ""
+    },
+    "counterfactual": {
+      "number": 879,
+      "head": "f96cd157f8f7f0c1b8dbf3440e638ba4c78820d3",
+      "synthetic_analysis_commit": "42edd519a5c9984ea96f2dc93d3259936d18594b",
+      "synthetic_tree": "5577d45bb0f4f8a005423246ab3268892b5d9103",
+      "removed_paths": [
+        "CHANGELOG.md",
+        "docs/CURRENT-STATE.md"
+      ],
+      "remaining_conflict_paths": [
+        "src/layers/recentImagery/thumbnails.test.mjs"
+      ],
+      "returncode": 1
+    },
+    "review": {
+      "formal_reviews": 0,
+      "review_threads": 0,
+      "unresolved_threads": 0,
+      "review_decision": null,
+      "conversation_feedback": "no external actionable review in saved conversation",
+      "approval": false
+    },
+    "ci": {
+      "current_head_runs": [
+        {
+          "run_id": 36830437866,
+          "attempt": 1,
+          "conclusion": "action_required",
+          "job_count": 0
+        }
+      ],
+      "verdict": "NOT_EXECUTED",
+      "formal_required_contexts": "UNKNOWN: branch protection read returned HTTP404; workflow names are not proof of configured branch protection"
+    },
+    "required_validation": [
+      "Node 24.14 / 26 supported toolchain",
+      "npm run doctor -- --json",
+      "npm run format:check",
+      "npm run check:boundaries",
+      "npm test",
+      "npm run build",
+      "npm run test:track with live server",
+      "affected feature browser gate; see next_action"
+    ],
+    "finding_ids": [
+      "879:current-main-conflicts",
+      "879:workflow-admission"
+    ],
+    "finding_states": [
+      "blocked-external",
+      "open"
+    ],
+    "source_evidence": [
+      "diffs/879.diff",
+      "threads/879.json",
+      "timeline/879.json"
+    ]
+  },
+  {
+    "number": 874,
+    "title": "feat(first-run): add wildfire perimeters to Environmental",
+    "head": "424bd3b66b3463dacb2384f619dadef7eb558029",
+    "draft": false,
+    "file_count": 8,
+    "files": [
+      "CHANGELOG.md",
+      "docs/CURRENT-STATE.md",
+      "scripts/qa-firstrun-mutations.mjs",
+      "scripts/qa-firstrun.mjs",
+      "server/providers/openai/instructions.js",
+      "src/firstRunExperience.js",
+      "src/firstRunExperience.test.mjs",
+      "src/ui/templates/welcome.html"
+    ],
+    "new_tests_missing_format": [],
+    "runtime_files": [
+      "server/providers/openai/instructions.js",
+      "src/firstRunExperience.js",
+      "src/ui/templates/welcome.html"
+    ],
+    "docs_present": {
+      "CHANGELOG.md": true,
+      "docs/CURRENT-STATE.md": true
+    },
+    "author": "kvnloo",
+    "author_association": "NONE",
+    "group": "fires",
+    "upstream_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/874",
+    "original_main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+    "api_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "merge_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "commits_behind_current_main": 324,
+    "commits_ahead_merge_base": 1,
+    "routing_owner": "portfolio-to-existing-author",
+    "disposition": "conditional-after-first-run-gates",
+    "ready_now": false,
+    "mechanism": "Environmental tile and named voice view enable fire-perimeters alongside earthquakes/FIRMS; test and welcome copy updated.",
+    "next_action": "Resolve changelog drift; run first-run mutation and browser gates with keyless and declared fixtures; no paid voice calls; preserve distinction live detection/perimeter extent.",
+    "related_carriers": [
+      852,
+      1089
+    ],
+    "merge": {
+      "number": 874,
+      "head": "424bd3b66b3463dacb2384f619dadef7eb558029",
+      "api_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "merge_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+      "behind": 324,
+      "ahead": 1,
+      "returncode": 1,
+      "conflict_paths": [
+        "CHANGELOG.md"
+      ],
+      "tree": "db64a87cedc2db21f3aa61edc9286e75f335e6b9",
+      "stderr": ""
+    },
+    "counterfactual": {
+      "number": 874,
+      "head": "424bd3b66b3463dacb2384f619dadef7eb558029",
+      "synthetic_analysis_commit": "95aee5a3ef568faa442347b848dc93602ab4d718",
+      "synthetic_tree": "48b3b4dd26d56a3cf88c5851cf685683b018e569",
+      "removed_paths": [
+        "CHANGELOG.md",
+        "docs/CURRENT-STATE.md"
+      ],
+      "remaining_conflict_paths": [],
+      "returncode": 0
+    },
+    "review": {
+      "formal_reviews": 0,
+      "review_threads": 0,
+      "unresolved_threads": 0,
+      "review_decision": null,
+      "conversation_feedback": "no external actionable review in saved conversation",
+      "approval": false
+    },
+    "ci": {
+      "current_head_runs": [
+        {
+          "run_id": 36810295492,
+          "attempt": 1,
+          "conclusion": "action_required",
+          "job_count": 0
+        }
+      ],
+      "verdict": "NOT_EXECUTED",
+      "formal_required_contexts": "UNKNOWN: branch protection read returned HTTP404; workflow names are not proof of configured branch protection"
+    },
+    "required_validation": [
+      "Node 24.14 / 26 supported toolchain",
+      "npm run doctor -- --json",
+      "npm run format:check",
+      "npm run check:boundaries",
+      "npm test",
+      "npm run build",
+      "npm run test:track with live server",
+      "affected feature browser gate; see next_action"
+    ],
+    "finding_ids": [
+      "874:current-main-conflicts",
+      "874:workflow-admission"
+    ],
+    "finding_states": [
+      "blocked-external",
+      "open"
+    ],
+    "source_evidence": [
+      "diffs/874.diff",
+      "threads/874.json",
+      "timeline/874.json"
+    ]
+  },
+  {
+    "number": 851,
+    "title": "feat(voice): add truthful presentation-state projection",
+    "head": "6cfd879bd87798790ff499846840960abd70c796",
+    "draft": false,
+    "file_count": 2,
+    "files": [
+      "src/voice/realtimeInputPolicy.js",
+      "src/voice/realtimeInputPolicy.test.mjs"
+    ],
+    "new_tests_missing_format": [
+      "src/voice/realtimeInputPolicy.test.mjs"
+    ],
+    "runtime_files": [
+      "src/voice/realtimeInputPolicy.js"
+    ],
+    "docs_present": {
+      "CHANGELOG.md": false,
+      "docs/CURRENT-STATE.md": false
+    },
+    "author": "kvnloo",
+    "author_association": "NONE",
+    "group": "voice/actions",
+    "upstream_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/851",
+    "original_main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+    "api_base_sha": "6be25595b16491ce01ffd8d81e66921f321ee200",
+    "merge_base_sha": "6be25595b16491ce01ffd8d81e66921f321ee200",
+    "commits_behind_current_main": 47,
+    "commits_ahead_merge_base": 2,
+    "routing_owner": "feedback",
+    "disposition": "conditional-after-policy-tests",
+    "ready_now": false,
+    "mechanism": "Presentation projection differentiates ready/listening/working/executing/speaking; post-barge user ownership outranks lingering audio/tools.",
+    "next_action": "Rerun #837 compatibility on exact source/current composition, including Radio-refused takeover and draining audio; add test to formatting scope. Remains pure projection, not live HUD integration.",
+    "related_carriers": [
+      837,
+      843
+    ],
+    "merge": {
+      "number": 851,
+      "head": "6cfd879bd87798790ff499846840960abd70c796",
+      "api_base": "6be25595b16491ce01ffd8d81e66921f321ee200",
+      "merge_base": "6be25595b16491ce01ffd8d81e66921f321ee200",
+      "main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+      "behind": 47,
+      "ahead": 2,
+      "returncode": 0,
+      "conflict_paths": [],
+      "tree": "bec84f208a13cf42ac498bb53b19aa3b49001784",
+      "stderr": ""
+    },
+    "counterfactual": {
+      "number": 851,
+      "head": "6cfd879bd87798790ff499846840960abd70c796",
+      "synthetic_analysis_commit": "d366e6197d905d89d11a80430ead3d43af7b5c58",
+      "synthetic_tree": "d8e1914592a54f1d3adb551e366bee0264863393",
+      "removed_paths": [
+        "CHANGELOG.md",
+        "docs/CURRENT-STATE.md"
+      ],
+      "remaining_conflict_paths": [],
+      "returncode": 0
+    },
+    "review": {
+      "formal_reviews": 0,
+      "review_threads": 0,
+      "unresolved_threads": 0,
+      "review_decision": null,
+      "conversation_feedback": "present; see finding URLs",
+      "approval": false
+    },
+    "ci": {
+      "current_head_runs": [
+        {
+          "run_id": 37885970281,
+          "attempt": 1,
+          "conclusion": "action_required",
+          "job_count": 0
+        }
+      ],
+      "verdict": "NOT_EXECUTED",
+      "formal_required_contexts": "UNKNOWN: branch protection read returned HTTP404; workflow names are not proof of configured branch protection"
+    },
+    "required_validation": [
+      "Node 24.14 / 26 supported toolchain",
+      "npm run doctor -- --json",
+      "npm run format:check",
+      "npm run check:boundaries",
+      "npm test",
+      "npm run build",
+      "npm run test:track with live server",
+      "affected feature browser gate; see next_action"
+    ],
+    "finding_ids": [
+      "851:837",
+      "851:test-format-adoption",
+      "851:workflow-admission"
+    ],
+    "finding_states": [
+      "addressed-needs-rerun",
+      "blocked-external",
+      "open"
+    ],
+    "source_evidence": [
+      "diffs/851.diff",
+      "threads/851.json",
+      "timeline/851.json"
+    ]
+  },
+  {
+    "number": 848,
+    "title": "feat(cctv): surface optional observed traffic summaries",
+    "head": "e9236f7a58c5b3f1b076a67aff8c849867bb08a0",
+    "draft": false,
+    "file_count": 27,
+    "files": [
+      "CHANGELOG.md",
+      "docs/CURRENT-STATE.md",
+      "scripts/package-boundaries.json",
+      "src/app/constructCatalog.js",
+      "src/app/layers/cctv.js",
+      "src/app/layers/traffic.js",
+      "src/data/cctvCards.js",
+      "src/data/cctvCards.test.mjs",
+      "src/data/traffic.js",
+      "src/data/traffic.test.mjs",
+      "src/layers/cctv/cards.js",
+      "src/layers/cctv/lifecycle.js",
+      "src/layers/cctv/presentation.js",
+      "src/layers/cctv/state.js",
+      "src/layers/cctv/trafficObservations.js",
+      "src/layers/cctv/trafficObservations.test.mjs",
+      "src/layers/traffic/controls.js",
+      "src/layers/traffic/index.js",
+      "src/layers/traffic/observed.js",
+      "src/layers/traffic/observed.test.mjs",
+      "src/layers/traffic/state.js",
+      "src/ui/applicationShell.js",
+      "src/ui/cctvControls.test.mjs",
+      "src/ui/cctvPresentation.js",
+      "src/ui/shellElements.js",
+      "src/ui/styles/cctv.css",
+      "src/ui/templates/layer-panels.html"
+    ],
+    "new_tests_missing_format": [
+      "src/layers/cctv/trafficObservations.test.mjs",
+      "src/layers/traffic/observed.test.mjs"
+    ],
+    "runtime_files": [
+      "src/app/constructCatalog.js",
+      "src/app/layers/cctv.js",
+      "src/app/layers/traffic.js",
+      "src/data/cctvCards.js",
+      "src/data/traffic.js",
+      "src/layers/cctv/cards.js",
+      "src/layers/cctv/lifecycle.js",
+      "src/layers/cctv/presentation.js",
+      "src/layers/cctv/state.js",
+      "src/layers/cctv/trafficObservations.js",
+      "src/layers/traffic/controls.js",
+      "src/layers/traffic/index.js",
+      "src/layers/traffic/observed.js",
+      "src/layers/traffic/state.js",
+      "src/ui/applicationShell.js",
+      "src/ui/cctvPresentation.js",
+      "src/ui/shellElements.js",
+      "src/ui/styles/cctv.css",
+      "src/ui/templates/layer-panels.html"
+    ],
+    "docs_present": {
+      "CHANGELOG.md": true,
+      "docs/CURRENT-STATE.md": true
+    },
+    "author": "kvnloo",
+    "author_association": "NONE",
+    "group": "traffic/CCTV",
+    "upstream_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/848",
+    "original_main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+    "api_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "merge_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "commits_behind_current_main": 324,
+    "commits_ahead_merge_base": 63,
+    "routing_owner": "portfolio-to-existing-author",
+    "disposition": "hold-parent-and-composition",
+    "ready_now": false,
+    "mechanism": "Exact descendant of #844: adds subscriptions, per-camera latest-record presentation, panel/card summaries and source wiring.",
+    "next_action": "Fix #844 once then replay child delta; resolve constructCatalog conflict; adopt two test files; prove subscription disposal, time-based stale updates and no duplicate observed truth.",
+    "related_carriers": [
+      844,
+      845,
+      991,
+      1054,
+      1069
+    ],
+    "merge": {
+      "number": 848,
+      "head": "e9236f7a58c5b3f1b076a67aff8c849867bb08a0",
+      "api_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "merge_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+      "behind": 324,
+      "ahead": 63,
+      "returncode": 1,
+      "conflict_paths": [
+        "CHANGELOG.md",
+        "docs/CURRENT-STATE.md",
+        "src/app/constructCatalog.js"
+      ],
+      "tree": "2ab67c0528968838b542c7745ae8956bea50f9ab",
+      "stderr": ""
+    },
+    "counterfactual": {
+      "number": 848,
+      "head": "e9236f7a58c5b3f1b076a67aff8c849867bb08a0",
+      "synthetic_analysis_commit": "9e611b648810e14138daa613758206aa7aaa27bc",
+      "synthetic_tree": "6774be00d69ce22da5b8398b6761a44178394a16",
+      "removed_paths": [
+        "CHANGELOG.md",
+        "docs/CURRENT-STATE.md"
+      ],
+      "remaining_conflict_paths": [
+        "src/app/constructCatalog.js"
+      ],
+      "returncode": 1
+    },
+    "review": {
+      "formal_reviews": 0,
+      "review_threads": 0,
+      "unresolved_threads": 0,
+      "review_decision": null,
+      "conversation_feedback": "no external actionable review in saved conversation",
+      "approval": false
+    },
+    "ci": {
+      "current_head_runs": [
+        {
+          "run_id": 36525746537,
+          "attempt": 1,
+          "conclusion": "action_required",
+          "job_count": 0
+        }
+      ],
+      "verdict": "NOT_EXECUTED",
+      "formal_required_contexts": "UNKNOWN: branch protection read returned HTTP404; workflow names are not proof of configured branch protection"
+    },
+    "required_validation": [
+      "Node 24.14 / 26 supported toolchain",
+      "npm run doctor -- --json",
+      "npm run format:check",
+      "npm run check:boundaries",
+      "npm test",
+      "npm run build",
+      "npm run test:track with live server",
+      "affected feature browser gate; see next_action"
+    ],
+    "finding_ids": [
+      "848:current-main-conflicts",
+      "848:test-format-adoption",
+      "848:workflow-admission",
+      "848:source-probe",
+      "848:parent"
+    ],
+    "finding_states": [
+      "blocked-external",
+      "open"
+    ],
+    "source_evidence": [
+      "diffs/848.diff",
+      "threads/848.json",
+      "timeline/848.json"
+    ]
+  },
+  {
+    "number": 847,
+    "title": "feat(cyclones): publish explicit storm selection to shared context",
+    "head": "28f3243090fe2aa766d9df2f096e095811f04ac0",
+    "draft": false,
+    "file_count": 5,
+    "files": [
+      "scripts/package-boundaries.json",
+      "src/app/constructCatalog.js",
+      "src/app/layers/cyclones.js",
+      "src/layers/cyclones/index.js",
+      "src/layers/cyclones/index.test.mjs"
+    ],
+    "new_tests_missing_format": [],
+    "runtime_files": [
+      "src/app/constructCatalog.js",
+      "src/app/layers/cyclones.js",
+      "src/layers/cyclones/index.js"
+    ],
+    "docs_present": {
+      "CHANGELOG.md": false,
+      "docs/CURRENT-STATE.md": false
+    },
+    "author": "kvnloo",
+    "author_association": "NONE",
+    "group": "disasters",
+    "upstream_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/847",
+    "original_main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+    "api_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "merge_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "commits_behind_current_main": 324,
+    "commits_ahead_merge_base": 1,
+    "routing_owner": "portfolio-to-existing-author",
+    "disposition": "conditional-after-runtime-gates",
+    "ready_now": false,
+    "mechanism": "Explicit cyclone selection publishes context; automatic first storm selection does not announce; refresh clears vanished selected storm.",
+    "next_action": "Add runtime docs; prove all explicit selection entrypoints use the shared publication path and disposal clears it; protect current constructCatalog ownership.",
+    "related_carriers": [
+      857,
+      838
+    ],
+    "merge": {
+      "number": 847,
+      "head": "28f3243090fe2aa766d9df2f096e095811f04ac0",
+      "api_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "merge_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+      "behind": 324,
+      "ahead": 1,
+      "returncode": 0,
+      "conflict_paths": [],
+      "tree": "6a56a5b275bdf9472bbdd17b8ca865095fc333d0",
+      "stderr": ""
+    },
+    "counterfactual": {
+      "number": 847,
+      "head": "28f3243090fe2aa766d9df2f096e095811f04ac0",
+      "synthetic_analysis_commit": "abd7dcff19c3babc7715a84bd813b6433a1eb624",
+      "synthetic_tree": "5a0a1f597738d9bc4dd886bfc59e0d1ddbf051b0",
+      "removed_paths": [
+        "CHANGELOG.md",
+        "docs/CURRENT-STATE.md"
+      ],
+      "remaining_conflict_paths": [],
+      "returncode": 0
+    },
+    "review": {
+      "formal_reviews": 0,
+      "review_threads": 0,
+      "unresolved_threads": 0,
+      "review_decision": null,
+      "conversation_feedback": "no external actionable review in saved conversation",
+      "approval": false
+    },
+    "ci": {
+      "current_head_runs": [
+        {
+          "run_id": 36525734015,
+          "attempt": 1,
+          "conclusion": "action_required",
+          "job_count": 0
+        }
+      ],
+      "verdict": "NOT_EXECUTED",
+      "formal_required_contexts": "UNKNOWN: branch protection read returned HTTP404; workflow names are not proof of configured branch protection"
+    },
+    "required_validation": [
+      "Node 24.14 / 26 supported toolchain",
+      "npm run doctor -- --json",
+      "npm run format:check",
+      "npm run check:boundaries",
+      "npm test",
+      "npm run build",
+      "npm run test:track with live server",
+      "affected feature browser gate; see next_action"
+    ],
+    "finding_ids": [
+      "847:runtime-documentation",
+      "847:workflow-admission"
+    ],
+    "finding_states": [
+      "blocked-external",
+      "open"
+    ],
+    "source_evidence": [
+      "diffs/847.diff",
+      "threads/847.json",
+      "timeline/847.json"
+    ]
+  },
+  {
+    "number": 845,
+    "title": "feat: project anonymous CCTV vehicle observations into traffic",
+    "head": "c232419cc401756671244cea263f64f9edaedbab",
+    "draft": false,
+    "file_count": 34,
+    "files": [
+      ".env.example",
+      "CHANGELOG.md",
+      "DATA_SOURCES.md",
+      "README.md",
+      "SECURITY.md",
+      "docs/CURRENT-STATE.md",
+      "server/credentials/resolve.mjs",
+      "server/standalone/vite.config.js",
+      "src/credentialSources.test.mjs",
+      "src/data/cctv.js",
+      "src/data/cctv.test.mjs",
+      "src/data/traffic.js",
+      "src/data/traffic.test.mjs",
+      "src/layers/cctv/controls.js",
+      "src/layers/cctv/frames.js",
+      "src/layers/cctv/geometry.js",
+      "src/layers/cctv/index.js",
+      "src/layers/cctv/lifecycle.js",
+      "src/layers/cctv/model.js",
+      "src/layers/cctv/presentation.js",
+      "src/layers/cctv/projection.js",
+      "src/layers/cctv/selection.js",
+      "src/layers/cctv/state.js",
+      "src/layers/traffic/controls.js",
+      "src/layers/traffic/index.js",
+      "src/layers/traffic/lifecycle.js",
+      "src/layers/traffic/rendering.js",
+      "src/layers/traffic/state.js",
+      "src/ui/applicationShell.js",
+      "src/ui/cctvBindings.js",
+      "src/ui/cctvPresentation.js",
+      "src/ui/shellElements.js",
+      "src/ui/styles/cctv.css",
+      "src/ui/templates/layer-panels.html"
+    ],
+    "new_tests_missing_format": [
+      "src/credentialSources.test.mjs"
+    ],
+    "runtime_files": [
+      "server/credentials/resolve.mjs",
+      "server/standalone/vite.config.js",
+      "src/data/cctv.js",
+      "src/data/traffic.js",
+      "src/layers/cctv/controls.js",
+      "src/layers/cctv/frames.js",
+      "src/layers/cctv/geometry.js",
+      "src/layers/cctv/index.js",
+      "src/layers/cctv/lifecycle.js",
+      "src/layers/cctv/model.js",
+      "src/layers/cctv/presentation.js",
+      "src/layers/cctv/projection.js",
+      "src/layers/cctv/selection.js",
+      "src/layers/cctv/state.js",
+      "src/layers/traffic/controls.js",
+      "src/layers/traffic/index.js",
+      "src/layers/traffic/lifecycle.js",
+      "src/layers/traffic/rendering.js",
+      "src/layers/traffic/state.js",
+      "src/ui/applicationShell.js",
+      "src/ui/cctvBindings.js",
+      "src/ui/cctvPresentation.js",
+      "src/ui/shellElements.js",
+      "src/ui/styles/cctv.css",
+      "src/ui/templates/layer-panels.html"
+    ],
+    "docs_present": {
+      "CHANGELOG.md": true,
+      "docs/CURRENT-STATE.md": true
+    },
+    "author": "kvnloo",
+    "author_association": "NONE",
+    "group": "traffic/CCTV",
+    "upstream_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/845",
+    "original_main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+    "api_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "merge_base_sha": "81eb44340d90feda5b5283438f6e5fdad5cabbdd",
+    "commits_behind_current_main": 326,
+    "commits_ahead_merge_base": 54,
+    "routing_owner": "portfolio-to-existing-author",
+    "disposition": "hold-narrowing-and-architecture",
+    "ready_now": false,
+    "mechanism": "Frame differencing projects vehicle-shaped blobs to nearby roads; optional renderer labels them as observation-only. Also carries byte-identical credential resolver from #818.",
+    "next_action": "Remove unrelated credential-manager baggage from this carrier; align with #844 contract, world-overlay label rule and frame provenance; independently qualify lifetime/calibration/false-positive controls. No current-head CI run found.",
+    "related_carriers": [
+      818,
+      844,
+      848,
+      1118,
+      1069
+    ],
+    "merge": {
+      "number": 845,
+      "head": "c232419cc401756671244cea263f64f9edaedbab",
+      "api_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "merge_base": "81eb44340d90feda5b5283438f6e5fdad5cabbdd",
+      "main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+      "behind": 326,
+      "ahead": 54,
+      "returncode": 1,
+      "conflict_paths": [
+        ".env.example",
+        "CHANGELOG.md",
+        "DATA_SOURCES.md",
+        "README.md",
+        "docs/CURRENT-STATE.md",
+        "src/layers/traffic/controls.js",
+        "src/layers/traffic/lifecycle.js"
+      ],
+      "tree": "9d0e387521c7714e0f8ae8fb69cacd99da675e21",
+      "stderr": ""
+    },
+    "counterfactual": {
+      "number": 845,
+      "head": "c232419cc401756671244cea263f64f9edaedbab",
+      "synthetic_analysis_commit": "357d2b5ee32b06e47743311f3420d39d9809748e",
+      "synthetic_tree": "b678d969604d4c98ac87d6fba88541594b408289",
+      "removed_paths": [
+        "CHANGELOG.md",
+        "docs/CURRENT-STATE.md"
+      ],
+      "remaining_conflict_paths": [
+        ".env.example",
+        "DATA_SOURCES.md",
+        "README.md",
+        "src/layers/traffic/controls.js",
+        "src/layers/traffic/lifecycle.js"
+      ],
+      "returncode": 1
+    },
+    "review": {
+      "formal_reviews": 0,
+      "review_threads": 0,
+      "unresolved_threads": 0,
+      "review_decision": null,
+      "conversation_feedback": "no external actionable review in saved conversation",
+      "approval": false
+    },
+    "ci": {
+      "current_head_runs": [],
+      "verdict": "NOT_EXECUTED",
+      "formal_required_contexts": "UNKNOWN: branch protection read returned HTTP404; workflow names are not proof of configured branch protection"
+    },
+    "required_validation": [
+      "Node 24.14 / 26 supported toolchain",
+      "npm run doctor -- --json",
+      "npm run format:check",
+      "npm run check:boundaries",
+      "npm test",
+      "npm run build",
+      "npm run test:track with live server",
+      "affected feature browser gate; see next_action"
+    ],
+    "finding_ids": [
+      "845:current-main-conflicts",
+      "845:test-format-adoption",
+      "845:workflow-admission",
+      "845:unrelated-credentials",
+      "845:world-label-owner",
+      "845:inference-provenance"
+    ],
+    "finding_states": [
+      "blocked-external",
+      "open"
+    ],
+    "source_evidence": [
+      "diffs/845.diff",
+      "threads/845.json",
+      "timeline/845.json"
+    ]
+  },
+  {
+    "number": 844,
+    "title": "feat(traffic): add provider-neutral observed traffic source contract",
+    "head": "98e39bc16153f62f5cb1f17526a18be4c04009a3",
+    "draft": false,
+    "file_count": 11,
+    "files": [
+      "CHANGELOG.md",
+      "docs/CURRENT-STATE.md",
+      "scripts/package-boundaries.json",
+      "src/app/layers/traffic.js",
+      "src/data/traffic.js",
+      "src/data/traffic.test.mjs",
+      "src/layers/traffic/controls.js",
+      "src/layers/traffic/index.js",
+      "src/layers/traffic/observed.js",
+      "src/layers/traffic/observed.test.mjs",
+      "src/layers/traffic/state.js"
+    ],
+    "new_tests_missing_format": [
+      "src/layers/traffic/observed.test.mjs"
+    ],
+    "runtime_files": [
+      "src/app/layers/traffic.js",
+      "src/data/traffic.js",
+      "src/layers/traffic/controls.js",
+      "src/layers/traffic/index.js",
+      "src/layers/traffic/observed.js",
+      "src/layers/traffic/state.js"
+    ],
+    "docs_present": {
+      "CHANGELOG.md": true,
+      "docs/CURRENT-STATE.md": true
+    },
+    "author": "kvnloo",
+    "author_association": "NONE",
+    "group": "traffic/CCTV",
+    "upstream_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/844",
+    "original_main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+    "api_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "merge_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "commits_behind_current_main": 324,
+    "commits_ahead_merge_base": 26,
+    "routing_owner": "portfolio-to-existing-author",
+    "disposition": "hold-source-boundary-gap",
+    "ready_now": false,
+    "mechanism": "Provider-neutral observed snapshot is separate from TomTom/simulated traffic; no detector or renderer added.",
+    "next_action": "Reject absent coordinates; wire reset/abort into lifecycle or prove externally owned lifetime; adopt test format scope. Parent of #848, not a competing detector.",
+    "related_carriers": [
+      848,
+      845
+    ],
+    "merge": {
+      "number": 844,
+      "head": "98e39bc16153f62f5cb1f17526a18be4c04009a3",
+      "api_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "merge_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+      "behind": 324,
+      "ahead": 26,
+      "returncode": 1,
+      "conflict_paths": [
+        "CHANGELOG.md",
+        "docs/CURRENT-STATE.md"
+      ],
+      "tree": "86923dacf3de7fa4d4d5b7677c4e7e2dd97e610c",
+      "stderr": ""
+    },
+    "counterfactual": {
+      "number": 844,
+      "head": "98e39bc16153f62f5cb1f17526a18be4c04009a3",
+      "synthetic_analysis_commit": "acf8074ac4576303446ed751b3d91d2f4598f0fa",
+      "synthetic_tree": "d76a9049959754fa7277bfd6f19cab4cae051e7a",
+      "removed_paths": [
+        "CHANGELOG.md",
+        "docs/CURRENT-STATE.md"
+      ],
+      "remaining_conflict_paths": [],
+      "returncode": 0
+    },
+    "review": {
+      "formal_reviews": 0,
+      "review_threads": 0,
+      "unresolved_threads": 0,
+      "review_decision": null,
+      "conversation_feedback": "no external actionable review in saved conversation",
+      "approval": false
+    },
+    "ci": {
+      "current_head_runs": [
+        {
+          "run_id": 36520461895,
+          "attempt": 1,
+          "conclusion": "action_required",
+          "job_count": 0
+        }
+      ],
+      "verdict": "NOT_EXECUTED",
+      "formal_required_contexts": "UNKNOWN: branch protection read returned HTTP404; workflow names are not proof of configured branch protection"
+    },
+    "required_validation": [
+      "Node 24.14 / 26 supported toolchain",
+      "npm run doctor -- --json",
+      "npm run format:check",
+      "npm run check:boundaries",
+      "npm test",
+      "npm run build",
+      "npm run test:track with live server",
+      "affected feature browser gate; see next_action"
+    ],
+    "finding_ids": [
+      "844:current-main-conflicts",
+      "844:test-format-adoption",
+      "844:workflow-admission",
+      "844:source-probe",
+      "844:lifetime-seam"
+    ],
+    "finding_states": [
+      "blocked-external",
+      "open"
+    ],
+    "source_evidence": [
+      "diffs/844.diff",
+      "threads/844.json",
+      "timeline/844.json"
+    ]
+  },
+  {
+    "number": 836,
+    "title": "feat(actions): add verified action episode policy",
+    "head": "47e47653704239a49c9419ee19daa835d2ddc469",
+    "draft": false,
+    "file_count": 4,
+    "files": [
+      "scripts/format-scope.json",
+      "scripts/package-boundaries.json",
+      "src/data/actionEpisodes.js",
+      "src/data/actionEpisodes.test.mjs"
+    ],
+    "new_tests_missing_format": [],
+    "runtime_files": [
+      "src/data/actionEpisodes.js"
+    ],
+    "docs_present": {
+      "CHANGELOG.md": false,
+      "docs/CURRENT-STATE.md": false
+    },
+    "author": "kvnloo",
+    "author_association": "NONE",
+    "group": "voice/actions",
+    "upstream_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/836",
+    "original_main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+    "api_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "merge_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "commits_behind_current_main": 324,
+    "commits_ahead_merge_base": 11,
+    "routing_owner": "portfolio-to-existing-author",
+    "disposition": "hold-boundedness-gap",
+    "ready_now": false,
+    "mechanism": "Normalizes verified action episodes and exact repetition candidates; no executor or learning runtime is integrated.",
+    "next_action": "Require args plain object and bound depth/string/collection sizes before calling episodes bounded; reconcile ownership manifest conflict; do not treat success labels as external authorization.",
+    "related_carriers": [
+      976,
+      1065
+    ],
+    "merge": {
+      "number": 836,
+      "head": "47e47653704239a49c9419ee19daa835d2ddc469",
+      "api_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "merge_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+      "behind": 324,
+      "ahead": 11,
+      "returncode": 1,
+      "conflict_paths": [
+        "scripts/package-boundaries.json"
+      ],
+      "tree": "235c892c1eb3c627777dce9cba7946514ff69e6a",
+      "stderr": ""
+    },
+    "counterfactual": {
+      "number": 836,
+      "head": "47e47653704239a49c9419ee19daa835d2ddc469",
+      "synthetic_analysis_commit": "773969b5666d33d837ea059e7f4c816cba673d05",
+      "synthetic_tree": "2bdc81405a8a7846219d54465c9efddbd07611f3",
+      "removed_paths": [
+        "CHANGELOG.md",
+        "docs/CURRENT-STATE.md"
+      ],
+      "remaining_conflict_paths": [
+        "scripts/package-boundaries.json"
+      ],
+      "returncode": 1
+    },
+    "review": {
+      "formal_reviews": 0,
+      "review_threads": 0,
+      "unresolved_threads": 0,
+      "review_decision": null,
+      "conversation_feedback": "no external actionable review in saved conversation",
+      "approval": false
+    },
+    "ci": {
+      "current_head_runs": [
+        {
+          "run_id": 36511058716,
+          "attempt": 1,
+          "conclusion": "action_required",
+          "job_count": 0
+        }
+      ],
+      "verdict": "NOT_EXECUTED",
+      "formal_required_contexts": "UNKNOWN: branch protection read returned HTTP404; workflow names are not proof of configured branch protection"
+    },
+    "required_validation": [
+      "Node 24.14 / 26 supported toolchain",
+      "npm run doctor -- --json",
+      "npm run format:check",
+      "npm run check:boundaries",
+      "npm test",
+      "npm run build",
+      "npm run test:track with live server",
+      "affected feature browser gate; see next_action"
+    ],
+    "finding_ids": [
+      "836:current-main-conflicts",
+      "836:workflow-admission",
+      "836:source-probe"
+    ],
+    "finding_states": [
+      "blocked-external",
+      "open"
+    ],
+    "source_evidence": [
+      "diffs/836.diff",
+      "threads/836.json",
+      "timeline/836.json"
+    ]
+  },
+  {
+    "number": 835,
+    "title": "feat(voice): reason-code viewport context escalation",
+    "head": "cacbbc972bf8ada8314a2a62b7cdae1abefa6c0c",
+    "draft": false,
+    "file_count": 4,
+    "files": [
+      "scripts/format-scope.json",
+      "src/voice/realtimeController.js",
+      "src/voice/realtimeViewport.js",
+      "src/voice/realtimeViewportPolicy.test.mjs"
+    ],
+    "new_tests_missing_format": [],
+    "runtime_files": [
+      "src/voice/realtimeController.js",
+      "src/voice/realtimeViewport.js"
+    ],
+    "docs_present": {
+      "CHANGELOG.md": false,
+      "docs/CURRENT-STATE.md": false
+    },
+    "author": "kvnloo",
+    "author_association": "NONE",
+    "group": "voice/actions",
+    "upstream_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/835",
+    "original_main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+    "api_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "merge_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "commits_behind_current_main": 324,
+    "commits_ahead_merge_base": 7,
+    "routing_owner": "feedback",
+    "disposition": "hold-stale-mechanism",
+    "ready_now": false,
+    "mechanism": "Instrumentation wraps pre-#837 viewport-only send path; current main has pointer crop, retained-image sequencing and camera freshness.",
+    "next_action": "Reconcile onto merged #837 with reason codes for both crop and viewport; preserve captureSeq/generation/current-camera checks; test keyless fixtures through actual owner.",
+    "related_carriers": [
+      837,
+      846
+    ],
+    "merge": {
+      "number": 835,
+      "head": "cacbbc972bf8ada8314a2a62b7cdae1abefa6c0c",
+      "api_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "merge_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+      "behind": 324,
+      "ahead": 7,
+      "returncode": 1,
+      "conflict_paths": [
+        "src/voice/realtimeViewport.js"
+      ],
+      "tree": "cff8729abf7f9b17a76c68930deebc3214324874",
+      "stderr": ""
+    },
+    "counterfactual": {
+      "number": 835,
+      "head": "cacbbc972bf8ada8314a2a62b7cdae1abefa6c0c",
+      "synthetic_analysis_commit": "d451296d00c94dee240fe5fe02e096ae227c0e64",
+      "synthetic_tree": "465d035b8f49f8342a2fd5150f49c317d8482fa4",
+      "removed_paths": [
+        "CHANGELOG.md",
+        "docs/CURRENT-STATE.md"
+      ],
+      "remaining_conflict_paths": [
+        "src/voice/realtimeViewport.js"
+      ],
+      "returncode": 1
+    },
+    "review": {
+      "formal_reviews": 0,
+      "review_threads": 0,
+      "unresolved_threads": 0,
+      "review_decision": null,
+      "conversation_feedback": "present; see finding URLs",
+      "approval": false
+    },
+    "ci": {
+      "current_head_runs": [
+        {
+          "run_id": 36510827671,
+          "attempt": 1,
+          "conclusion": "action_required",
+          "job_count": 0
+        }
+      ],
+      "verdict": "NOT_EXECUTED",
+      "formal_required_contexts": "UNKNOWN: branch protection read returned HTTP404; workflow names are not proof of configured branch protection"
+    },
+    "required_validation": [
+      "Node 24.14 / 26 supported toolchain",
+      "npm run doctor -- --json",
+      "npm run format:check",
+      "npm run check:boundaries",
+      "npm test",
+      "npm run build",
+      "npm run test:track with live server",
+      "affected feature browser gate; see next_action"
+    ],
+    "finding_ids": [
+      "835:837",
+      "835:current-main-conflicts",
+      "835:runtime-documentation",
+      "835:workflow-admission",
+      "835:pre-crop-path"
+    ],
+    "finding_states": [
+      "blocked-external",
+      "open",
+      "stale/superseded"
+    ],
+    "source_evidence": [
+      "diffs/835.diff",
+      "threads/835.json",
+      "timeline/835.json"
+    ]
+  },
+  {
+    "number": 834,
+    "title": "fix(share): surface invalid shared layer state",
+    "head": "3a3a1ed1c04a5873f8b7b9244e278ba08042ce8e",
+    "draft": false,
+    "file_count": 5,
+    "files": [
+      "CHANGELOG.md",
+      "docs/CURRENT-STATE.md",
+      "scripts/format-scope.json",
+      "src/ui/shareInvalidLayerNotice.test.mjs",
+      "src/ui/shareRestoration.js"
+    ],
+    "new_tests_missing_format": [],
+    "runtime_files": [
+      "src/ui/shareRestoration.js"
+    ],
+    "docs_present": {
+      "CHANGELOG.md": true,
+      "docs/CURRENT-STATE.md": true
+    },
+    "author": "kvnloo",
+    "author_association": "NONE",
+    "group": "UI/rail",
+    "upstream_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/834",
+    "original_main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+    "api_base_sha": "8b8ccc9a81379e8b40d4be67610570ee5b159512",
+    "merge_base_sha": "8b8ccc9a81379e8b40d4be67610570ee5b159512",
+    "commits_behind_current_main": 18,
+    "commits_ahead_merge_base": 5,
+    "routing_owner": "feedback",
+    "disposition": "conditional-frontier-2",
+    "ready_now": false,
+    "mechanism": "Invalid decoded layer selection uses deferred banner; share-follow and invalid-layer notices share one lifetime/generation scheduler.",
+    "next_action": "Resolve shared-doc drift without undoing current main; run deferred-cover, generation, valid-input and disposal controls plus shared-link browser gate.",
+    "related_carriers": [
+      957
+    ],
+    "merge": {
+      "number": 834,
+      "head": "3a3a1ed1c04a5873f8b7b9244e278ba08042ce8e",
+      "api_base": "8b8ccc9a81379e8b40d4be67610570ee5b159512",
+      "merge_base": "8b8ccc9a81379e8b40d4be67610570ee5b159512",
+      "main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+      "behind": 18,
+      "ahead": 5,
+      "returncode": 1,
+      "conflict_paths": [
+        "CHANGELOG.md"
+      ],
+      "tree": "4a7cd2a14b4145e759839ba5b4840dc3b1081d78",
+      "stderr": ""
+    },
+    "counterfactual": {
+      "number": 834,
+      "head": "3a3a1ed1c04a5873f8b7b9244e278ba08042ce8e",
+      "synthetic_analysis_commit": "30f2fedcac431132f7ec3cff29894b98fe3c5734",
+      "synthetic_tree": "3ed29d0d0fe1885c617a4f3f85d1841241bf1474",
+      "removed_paths": [
+        "CHANGELOG.md",
+        "docs/CURRENT-STATE.md"
+      ],
+      "remaining_conflict_paths": [],
+      "returncode": 0
+    },
+    "review": {
+      "formal_reviews": 0,
+      "review_threads": 0,
+      "unresolved_threads": 0,
+      "review_decision": null,
+      "conversation_feedback": "present; see finding URLs",
+      "approval": false
+    },
+    "ci": {
+      "current_head_runs": [
+        {
+          "run_id": 38268493268,
+          "attempt": 1,
+          "conclusion": "action_required",
+          "job_count": 0
+        }
+      ],
+      "verdict": "NOT_EXECUTED",
+      "formal_required_contexts": "UNKNOWN: branch protection read returned HTTP404; workflow names are not proof of configured branch protection"
+    },
+    "required_validation": [
+      "Node 24.14 / 26 supported toolchain",
+      "npm run doctor -- --json",
+      "npm run format:check",
+      "npm run check:boundaries",
+      "npm test",
+      "npm run build",
+      "npm run test:track with live server",
+      "affected feature browser gate; see next_action"
+    ],
+    "finding_ids": [
+      "834:docs",
+      "834:format",
+      "834:scheduler",
+      "834:current-main-conflicts",
+      "834:workflow-admission"
+    ],
+    "finding_states": [
+      "addressed-needs-rerun",
+      "blocked-external",
+      "open"
+    ],
+    "source_evidence": [
+      "diffs/834.diff",
+      "threads/834.json",
+      "timeline/834.json"
+    ]
+  },
+  {
+    "number": 833,
+    "title": "feat(location): persist saved places as typed navigation actions",
+    "head": "bd3829a54d53a65e4263b2e73b71a8bbc624b6ca",
+    "draft": false,
+    "file_count": 4,
+    "files": [
+      "scripts/format-scope.json",
+      "scripts/package-boundaries.json",
+      "src/ui/savedLocations.js",
+      "src/ui/savedLocations.test.mjs"
+    ],
+    "new_tests_missing_format": [],
+    "runtime_files": [
+      "src/ui/savedLocations.js"
+    ],
+    "docs_present": {
+      "CHANGELOG.md": false,
+      "docs/CURRENT-STATE.md": false
+    },
+    "author": "kvnloo",
+    "author_association": "NONE",
+    "group": "UI/rail",
+    "upstream_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/833",
+    "original_main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+    "api_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "merge_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "commits_behind_current_main": 324,
+    "commits_ahead_merge_base": 4,
+    "routing_owner": "portfolio-to-existing-author",
+    "disposition": "hold-input-gap-and-product-overlap",
+    "ready_now": false,
+    "mechanism": "Stores bounded typed fly_to_location actions rather than camera snapshots; local storage only, no UI wiring.",
+    "next_action": "Reject absent/blank/boolean coordinates before Number coercion; reconcile storage schema and product ownership with #358 instead of shipping two incompatible saved-place systems.",
+    "related_carriers": [
+      358
+    ],
+    "merge": {
+      "number": 833,
+      "head": "bd3829a54d53a65e4263b2e73b71a8bbc624b6ca",
+      "api_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "merge_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+      "behind": 324,
+      "ahead": 4,
+      "returncode": 0,
+      "conflict_paths": [],
+      "tree": "dc1d16964deff9328d8e270d8c5a64d9332dd5ec",
+      "stderr": ""
+    },
+    "counterfactual": {
+      "number": 833,
+      "head": "bd3829a54d53a65e4263b2e73b71a8bbc624b6ca",
+      "synthetic_analysis_commit": "088aaa08c45ec48e36ae7ee93bf5adc934445f6a",
+      "synthetic_tree": "0158f57929e65b1e36ce79332237a8b2abcafe8b",
+      "removed_paths": [
+        "CHANGELOG.md",
+        "docs/CURRENT-STATE.md"
+      ],
+      "remaining_conflict_paths": [],
+      "returncode": 0
+    },
+    "review": {
+      "formal_reviews": 0,
+      "review_threads": 0,
+      "unresolved_threads": 0,
+      "review_decision": null,
+      "conversation_feedback": "no external actionable review in saved conversation",
+      "approval": false
+    },
+    "ci": {
+      "current_head_runs": [
+        {
+          "run_id": 36509203358,
+          "attempt": 1,
+          "conclusion": "action_required",
+          "job_count": 0
+        }
+      ],
+      "verdict": "NOT_EXECUTED",
+      "formal_required_contexts": "UNKNOWN: branch protection read returned HTTP404; workflow names are not proof of configured branch protection"
+    },
+    "required_validation": [
+      "Node 24.14 / 26 supported toolchain",
+      "npm run doctor -- --json",
+      "npm run format:check",
+      "npm run check:boundaries",
+      "npm test",
+      "npm run build",
+      "npm run test:track with live server",
+      "affected feature browser gate; see next_action"
+    ],
+    "finding_ids": [
+      "833:workflow-admission",
+      "833:source-probe",
+      "833:product-overlap"
+    ],
+    "finding_states": [
+      "blocked-external",
+      "open"
+    ],
+    "source_evidence": [
+      "diffs/833.diff",
+      "threads/833.json",
+      "timeline/833.json"
+    ]
+  },
+  {
+    "number": 832,
+    "title": "feat(ui): add deterministic attention disposition policy",
+    "head": "07ac22af158e39f597e3f34551cd943cc59a2f72",
+    "draft": false,
+    "file_count": 4,
+    "files": [
+      "scripts/format-scope.json",
+      "scripts/package-boundaries.json",
+      "src/ui/attentionPolicy.js",
+      "src/ui/attentionPolicy.test.mjs"
+    ],
+    "new_tests_missing_format": [],
+    "runtime_files": [
+      "src/ui/attentionPolicy.js"
+    ],
+    "docs_present": {
+      "CHANGELOG.md": false,
+      "docs/CURRENT-STATE.md": false
+    },
+    "author": "kvnloo",
+    "author_association": "NONE",
+    "group": "UI/rail",
+    "upstream_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/832",
+    "original_main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+    "api_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "merge_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "commits_behind_current_main": 324,
+    "commits_ahead_merge_base": 4,
+    "routing_owner": "portfolio-to-existing-author",
+    "disposition": "kernel-only-no-live-integration",
+    "ready_now": false,
+    "mechanism": "Pure attention priority maps blocking/source/quiet/repeated state to dispositions; no runtime caller added.",
+    "next_action": "Keep as policy kernel, not shipped attention UI. Require deterministic edge cases and an accepted integration consumer before expanding scope.",
+    "related_carriers": [
+      976,
+      1065
+    ],
+    "merge": {
+      "number": 832,
+      "head": "07ac22af158e39f597e3f34551cd943cc59a2f72",
+      "api_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "merge_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+      "behind": 324,
+      "ahead": 4,
+      "returncode": 0,
+      "conflict_paths": [],
+      "tree": "3109574d3a56b15176936c4463f64efcff925ddb",
+      "stderr": ""
+    },
+    "counterfactual": {
+      "number": 832,
+      "head": "07ac22af158e39f597e3f34551cd943cc59a2f72",
+      "synthetic_analysis_commit": "1fbaa41bf8793b11fa0808a9fe511f29e0a8061b",
+      "synthetic_tree": "c364750c7f58fba8897125ec67ec9c59e29c73b7",
+      "removed_paths": [
+        "CHANGELOG.md",
+        "docs/CURRENT-STATE.md"
+      ],
+      "remaining_conflict_paths": [],
+      "returncode": 0
+    },
+    "review": {
+      "formal_reviews": 0,
+      "review_threads": 0,
+      "unresolved_threads": 0,
+      "review_decision": null,
+      "conversation_feedback": "no external actionable review in saved conversation",
+      "approval": false
+    },
+    "ci": {
+      "current_head_runs": [
+        {
+          "run_id": 36509192312,
+          "attempt": 1,
+          "conclusion": "action_required",
+          "job_count": 0
+        }
+      ],
+      "verdict": "NOT_EXECUTED",
+      "formal_required_contexts": "UNKNOWN: branch protection read returned HTTP404; workflow names are not proof of configured branch protection"
+    },
+    "required_validation": [
+      "Node 24.14 / 26 supported toolchain",
+      "npm run doctor -- --json",
+      "npm run format:check",
+      "npm run check:boundaries",
+      "npm test",
+      "npm run build",
+      "npm run test:track with live server",
+      "affected feature browser gate; see next_action"
+    ],
+    "finding_ids": [
+      "832:workflow-admission"
+    ],
+    "finding_states": [
+      "blocked-external"
+    ],
+    "source_evidence": [
+      "diffs/832.diff",
+      "threads/832.json",
+      "timeline/832.json"
+    ]
+  },
+  {
+    "number": 827,
+    "title": "feat(voice): add minimum-sufficient perception tier policy",
+    "head": "a874e850c630945c5cd005b077662f689782e149",
+    "draft": false,
+    "file_count": 4,
+    "files": [
+      "scripts/format-scope.json",
+      "scripts/package-boundaries.json",
+      "src/voice/perceptionPolicy.js",
+      "src/voice/perceptionPolicy.test.mjs"
+    ],
+    "new_tests_missing_format": [],
+    "runtime_files": [
+      "src/voice/perceptionPolicy.js"
+    ],
+    "docs_present": {
+      "CHANGELOG.md": false,
+      "docs/CURRENT-STATE.md": false
+    },
+    "author": "kvnloo",
+    "author_association": "NONE",
+    "group": "voice/actions",
+    "upstream_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/827",
+    "original_main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+    "api_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "merge_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "commits_behind_current_main": 324,
+    "commits_ahead_merge_base": 4,
+    "routing_owner": "portfolio-to-existing-author",
+    "disposition": "kernel-only-no-live-integration",
+    "ready_now": false,
+    "mechanism": "Pure minimum-sufficient tier selector and choice classifier; sufficiency is supplied, never inferred.",
+    "next_action": "Retain as kernel; reconcile abstain classification semantics and any future integration with existing cropped-context path, not a second viewport authority.",
+    "related_carriers": [
+      835,
+      843,
+      846,
+      1065
+    ],
+    "merge": {
+      "number": 827,
+      "head": "a874e850c630945c5cd005b077662f689782e149",
+      "api_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "merge_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+      "behind": 324,
+      "ahead": 4,
+      "returncode": 0,
+      "conflict_paths": [],
+      "tree": "5e88c023ec5c91b5eae43f3591c2ea483015f032",
+      "stderr": ""
+    },
+    "counterfactual": {
+      "number": 827,
+      "head": "a874e850c630945c5cd005b077662f689782e149",
+      "synthetic_analysis_commit": "1b2909d26dc720348ecaadf266f54d15da1247b6",
+      "synthetic_tree": "d39467d5e882d287a0e9075e1a392e34999ddc2f",
+      "removed_paths": [
+        "CHANGELOG.md",
+        "docs/CURRENT-STATE.md"
+      ],
+      "remaining_conflict_paths": [],
+      "returncode": 0
+    },
+    "review": {
+      "formal_reviews": 0,
+      "review_threads": 0,
+      "unresolved_threads": 0,
+      "review_decision": null,
+      "conversation_feedback": "no external actionable review in saved conversation",
+      "approval": false
+    },
+    "ci": {
+      "current_head_runs": [
+        {
+          "run_id": 36505657719,
+          "attempt": 1,
+          "conclusion": "action_required",
+          "job_count": 0
+        }
+      ],
+      "verdict": "NOT_EXECUTED",
+      "formal_required_contexts": "UNKNOWN: branch protection read returned HTTP404; workflow names are not proof of configured branch protection"
+    },
+    "required_validation": [
+      "Node 24.14 / 26 supported toolchain",
+      "npm run doctor -- --json",
+      "npm run format:check",
+      "npm run check:boundaries",
+      "npm test",
+      "npm run build",
+      "npm run test:track with live server",
+      "affected feature browser gate; see next_action"
+    ],
+    "finding_ids": [
+      "827:workflow-admission"
+    ],
+    "finding_states": [
+      "blocked-external"
+    ],
+    "source_evidence": [
+      "diffs/827.diff",
+      "threads/827.json",
+      "timeline/827.json"
+    ]
+  },
+  {
+    "number": 818,
+    "title": "feat: resolve API keys from Proton Pass and Bitwarden Secrets Manager",
+    "head": "f8d44552fb7d6ae7daf1990148ee1f219e8f628f",
+    "draft": false,
+    "file_count": 8,
+    "files": [
+      ".env.example",
+      "CHANGELOG.md",
+      "README.md",
+      "SECURITY.md",
+      "docs/CURRENT-STATE.md",
+      "server/credentials/resolve.mjs",
+      "server/standalone/vite.config.js",
+      "src/credentialSources.test.mjs"
+    ],
+    "new_tests_missing_format": [
+      "src/credentialSources.test.mjs"
+    ],
+    "runtime_files": [
+      "server/credentials/resolve.mjs",
+      "server/standalone/vite.config.js"
+    ],
+    "docs_present": {
+      "CHANGELOG.md": true,
+      "docs/CURRENT-STATE.md": true
+    },
+    "author": "kvnloo",
+    "author_association": "NONE",
+    "group": "infrastructure",
+    "upstream_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/818",
+    "original_main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+    "api_base_sha": "81eb44340d90feda5b5283438f6e5fdad5cabbdd",
+    "merge_base_sha": "81eb44340d90feda5b5283438f6e5fdad5cabbdd",
+    "commits_behind_current_main": 326,
+    "commits_ahead_merge_base": 10,
+    "routing_owner": "portfolio-to-existing-author",
+    "disposition": "hold-credential-policy-and-portability",
+    "ready_now": false,
+    "mechanism": "Optional Proton Pass/BWS CLI resolver runs server-side after env load; literal values outrank reference/project hydration.",
+    "next_action": "Resolve .env conflict; test mock CLI output/timeout/redaction and Windows invocation without touching real credentials; adopt test scope; remove duplicate from #845. Keep any product/policy choice explicit.",
+    "related_carriers": [
+      843,
+      852,
+      845
+    ],
+    "merge": {
+      "number": 818,
+      "head": "f8d44552fb7d6ae7daf1990148ee1f219e8f628f",
+      "api_base": "81eb44340d90feda5b5283438f6e5fdad5cabbdd",
+      "merge_base": "81eb44340d90feda5b5283438f6e5fdad5cabbdd",
+      "main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+      "behind": 326,
+      "ahead": 10,
+      "returncode": 1,
+      "conflict_paths": [
+        ".env.example",
+        "CHANGELOG.md"
+      ],
+      "tree": "427bd6f238499ec481bf142ffb952f61b5f9a434",
+      "stderr": ""
+    },
+    "counterfactual": {
+      "number": 818,
+      "head": "f8d44552fb7d6ae7daf1990148ee1f219e8f628f",
+      "synthetic_analysis_commit": "f6e5f586da843429c15209e1246b6e63d59b8e9c",
+      "synthetic_tree": "85863c1274dd47da6376d705c965afef6e703013",
+      "removed_paths": [
+        "CHANGELOG.md",
+        "docs/CURRENT-STATE.md"
+      ],
+      "remaining_conflict_paths": [
+        ".env.example"
+      ],
+      "returncode": 1
+    },
+    "review": {
+      "formal_reviews": 0,
+      "review_threads": 0,
+      "unresolved_threads": 0,
+      "review_decision": null,
+      "conversation_feedback": "no external actionable review in saved conversation",
+      "approval": false
+    },
+    "ci": {
+      "current_head_runs": [
+        {
+          "run_id": 36499319495,
+          "attempt": 1,
+          "conclusion": "action_required",
+          "job_count": 0
+        }
+      ],
+      "verdict": "NOT_EXECUTED",
+      "formal_required_contexts": "UNKNOWN: branch protection read returned HTTP404; workflow names are not proof of configured branch protection"
+    },
+    "required_validation": [
+      "Node 24.14 / 26 supported toolchain",
+      "npm run doctor -- --json",
+      "npm run format:check",
+      "npm run check:boundaries",
+      "npm test",
+      "npm run build",
+      "npm run test:track with live server",
+      "affected feature browser gate; see next_action"
+    ],
+    "finding_ids": [
+      "818:current-main-conflicts",
+      "818:test-format-adoption",
+      "818:workflow-admission"
+    ],
+    "finding_states": [
+      "blocked-external",
+      "open"
+    ],
+    "source_evidence": [
+      "diffs/818.diff",
+      "threads/818.json",
+      "timeline/818.json"
+    ]
+  },
+  {
+    "number": 816,
+    "title": "fix(ui): dismiss compact Radio on Context rail restoration",
+    "head": "19372875e21266caebe54976c9be73f1d36a73b8",
+    "draft": false,
+    "file_count": 5,
+    "files": [
+      "CHANGELOG.md",
+      "docs/CURRENT-STATE.md",
+      "scripts/format-scope.json",
+      "src/ui/panelChrome.js",
+      "src/ui/panelChrome.radioOwnership.test.mjs"
+    ],
+    "new_tests_missing_format": [],
+    "runtime_files": [
+      "src/ui/panelChrome.js"
+    ],
+    "docs_present": {
+      "CHANGELOG.md": true,
+      "docs/CURRENT-STATE.md": true
+    },
+    "author": "kvnloo",
+    "author_association": "NONE",
+    "group": "UI/rail",
+    "upstream_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/816",
+    "original_main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+    "api_base_sha": "8b8ccc9a81379e8b40d4be67610570ee5b159512",
+    "merge_base_sha": "8b8ccc9a81379e8b40d4be67610570ee5b159512",
+    "commits_behind_current_main": 18,
+    "commits_ahead_merge_base": 5,
+    "routing_owner": "feedback",
+    "disposition": "conditional-after-visual-proof",
+    "ready_now": false,
+    "mechanism": "Compact Radio disclosure cleanup precedes Context no-op; rail restore callback closes the bypass too.",
+    "next_action": "Keep existing carrier. Reconcile shared docs; reproduce the actual auto-collapse/restore path on main and candidate with before/after Chrome evidence; then baseline, panel/Radio gates.",
+    "related_carriers": [
+      918,
+      1054
+    ],
+    "merge": {
+      "number": 816,
+      "head": "19372875e21266caebe54976c9be73f1d36a73b8",
+      "api_base": "8b8ccc9a81379e8b40d4be67610570ee5b159512",
+      "merge_base": "8b8ccc9a81379e8b40d4be67610570ee5b159512",
+      "main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+      "behind": 18,
+      "ahead": 5,
+      "returncode": 1,
+      "conflict_paths": [
+        "CHANGELOG.md"
+      ],
+      "tree": "1303f6507deb68ef7e26422ffaa9720b9a0757fb",
+      "stderr": ""
+    },
+    "counterfactual": {
+      "number": 816,
+      "head": "19372875e21266caebe54976c9be73f1d36a73b8",
+      "synthetic_analysis_commit": "875b58b495c66d72b93773f74dae84eb1c5ad2bb",
+      "synthetic_tree": "9e55b7fcf2885ef8d85bfc20215dd1335e41500f",
+      "removed_paths": [
+        "CHANGELOG.md",
+        "docs/CURRENT-STATE.md"
+      ],
+      "remaining_conflict_paths": [],
+      "returncode": 0
+    },
+    "review": {
+      "formal_reviews": 0,
+      "review_threads": 0,
+      "unresolved_threads": 0,
+      "review_decision": null,
+      "conversation_feedback": "present; see finding URLs",
+      "approval": false
+    },
+    "ci": {
+      "current_head_runs": [
+        {
+          "run_id": 38272297462,
+          "attempt": 1,
+          "conclusion": "action_required",
+          "job_count": 0
+        }
+      ],
+      "verdict": "NOT_EXECUTED",
+      "formal_required_contexts": "UNKNOWN: branch protection read returned HTTP404; workflow names are not proof of configured branch protection"
+    },
+    "required_validation": [
+      "Node 24.14 / 26 supported toolchain",
+      "npm run doctor -- --json",
+      "npm run format:check",
+      "npm run check:boundaries",
+      "npm test",
+      "npm run build",
+      "npm run test:track with live server",
+      "affected feature browser gate; see next_action"
+    ],
+    "finding_ids": [
+      "816:P1",
+      "816:P2",
+      "816:P3",
+      "816:current-main-conflicts",
+      "816:workflow-admission"
+    ],
+    "finding_states": [
+      "addressed-needs-rerun",
+      "blocked-external",
+      "open"
+    ],
+    "source_evidence": [
+      "diffs/816.diff",
+      "threads/816.json",
+      "timeline/816.json"
+    ]
+  },
+  {
+    "number": 811,
+    "title": "feat(earthquakes): publish quake clicks to shared context",
+    "head": "7a7df9e11188cb837c225e0d6d3b297ca14573e8",
+    "draft": false,
+    "file_count": 3,
+    "files": [
+      "src/app/layers/earthquakes.js",
+      "src/layers/earthquakes/index.js",
+      "src/layers/earthquakes/ownership.test.mjs"
+    ],
+    "new_tests_missing_format": [],
+    "runtime_files": [
+      "src/app/layers/earthquakes.js",
+      "src/layers/earthquakes/index.js"
+    ],
+    "docs_present": {
+      "CHANGELOG.md": false,
+      "docs/CURRENT-STATE.md": false
+    },
+    "author": "kvnloo",
+    "author_association": "NONE",
+    "group": "disasters",
+    "upstream_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/811",
+    "original_main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+    "api_base_sha": "81eb44340d90feda5b5283438f6e5fdad5cabbdd",
+    "merge_base_sha": "81eb44340d90feda5b5283438f6e5fdad5cabbdd",
+    "commits_behind_current_main": 326,
+    "commits_ahead_merge_base": 9,
+    "routing_owner": "portfolio-to-existing-author",
+    "disposition": "conditional-after-runtime-gates",
+    "ready_now": false,
+    "mechanism": "Explicit earthquake picks publish context; source refresh keeps selection current; disable/destroy remove handlers/context.",
+    "next_action": "Add runtime docs; run actual pick/context lifecycle and current shared-context tests; EMSC/GDACS are source additions, not this selection mechanism.",
+    "related_carriers": [
+      857,
+      1059,
+      838
+    ],
+    "merge": {
+      "number": 811,
+      "head": "7a7df9e11188cb837c225e0d6d3b297ca14573e8",
+      "api_base": "81eb44340d90feda5b5283438f6e5fdad5cabbdd",
+      "merge_base": "81eb44340d90feda5b5283438f6e5fdad5cabbdd",
+      "main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+      "behind": 326,
+      "ahead": 9,
+      "returncode": 0,
+      "conflict_paths": [],
+      "tree": "1b5802859a1b7049b1b759f6425040185e95a2db",
+      "stderr": ""
+    },
+    "counterfactual": {
+      "number": 811,
+      "head": "7a7df9e11188cb837c225e0d6d3b297ca14573e8",
+      "synthetic_analysis_commit": "57ec55554f1f813ae0dfb0f0af5f35ccacbd8920",
+      "synthetic_tree": "393d328f425636d5c974f971306304a364635d13",
+      "removed_paths": [
+        "CHANGELOG.md",
+        "docs/CURRENT-STATE.md"
+      ],
+      "remaining_conflict_paths": [],
+      "returncode": 0
+    },
+    "review": {
+      "formal_reviews": 0,
+      "review_threads": 0,
+      "unresolved_threads": 0,
+      "review_decision": null,
+      "conversation_feedback": "no external actionable review in saved conversation",
+      "approval": false
+    },
+    "ci": {
+      "current_head_runs": [
+        {
+          "run_id": 36494168894,
+          "attempt": 1,
+          "conclusion": "action_required",
+          "job_count": 0
+        }
+      ],
+      "verdict": "NOT_EXECUTED",
+      "formal_required_contexts": "UNKNOWN: branch protection read returned HTTP404; workflow names are not proof of configured branch protection"
+    },
+    "required_validation": [
+      "Node 24.14 / 26 supported toolchain",
+      "npm run doctor -- --json",
+      "npm run format:check",
+      "npm run check:boundaries",
+      "npm test",
+      "npm run build",
+      "npm run test:track with live server",
+      "affected feature browser gate; see next_action"
+    ],
+    "finding_ids": [
+      "811:runtime-documentation",
+      "811:workflow-admission"
+    ],
+    "finding_states": [
+      "blocked-external",
+      "open"
+    ],
+    "source_evidence": [
+      "diffs/811.diff",
+      "threads/811.json",
+      "timeline/811.json"
+    ]
+  },
+  {
+    "number": 808,
+    "title": "feat(cctv): focus nearest camera to an explicit point",
+    "head": "2863bd89511ca08936d4da905a3d56a63b333168",
+    "draft": false,
+    "file_count": 4,
+    "files": [
+      "scripts/format-scope.json",
+      "src/layers/cctv/controls.js",
+      "src/layers/cctv/navigation.js",
+      "src/layers/cctv/navigation.test.mjs"
+    ],
+    "new_tests_missing_format": [],
+    "runtime_files": [
+      "src/layers/cctv/controls.js",
+      "src/layers/cctv/navigation.js"
+    ],
+    "docs_present": {
+      "CHANGELOG.md": false,
+      "docs/CURRENT-STATE.md": false
+    },
+    "author": "kvnloo",
+    "author_association": "NONE",
+    "group": "traffic/CCTV",
+    "upstream_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/808",
+    "original_main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+    "api_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "merge_base_sha": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+    "commits_behind_current_main": 324,
+    "commits_ahead_merge_base": 1,
+    "routing_owner": "portfolio-to-existing-author",
+    "disposition": "hold-coordinate-gap-and-composition",
+    "ready_now": false,
+    "mechanism": "Adds explicit-point nearest-camera operation; existing viewer-nearest delegates to it.",
+    "next_action": "Reject null/blank coordinates; preserve explicit-point API while composing screen-centre nearest/history work from #991/#1054 and map-follow discovery #671.",
+    "related_carriers": [
+      991,
+      1054,
+      671
+    ],
+    "merge": {
+      "number": 808,
+      "head": "2863bd89511ca08936d4da905a3d56a63b333168",
+      "api_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "merge_base": "e7707d9a0f34d9fbffc300023c319f95caa5be30",
+      "main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+      "behind": 324,
+      "ahead": 1,
+      "returncode": 0,
+      "conflict_paths": [],
+      "tree": "5fcf1c52ee41b1da3ddd9ebe46b65e1d30780a7a",
+      "stderr": ""
+    },
+    "counterfactual": {
+      "number": 808,
+      "head": "2863bd89511ca08936d4da905a3d56a63b333168",
+      "synthetic_analysis_commit": "60c9855074012e11e70dbc79445b86ec4bea4730",
+      "synthetic_tree": "b6ea87ff5d19396184c9820285099b181c2f4ba0",
+      "removed_paths": [
+        "CHANGELOG.md",
+        "docs/CURRENT-STATE.md"
+      ],
+      "remaining_conflict_paths": [],
+      "returncode": 0
+    },
+    "review": {
+      "formal_reviews": 0,
+      "review_threads": 0,
+      "unresolved_threads": 0,
+      "review_decision": null,
+      "conversation_feedback": "no external actionable review in saved conversation",
+      "approval": false
+    },
+    "ci": {
+      "current_head_runs": [
+        {
+          "run_id": 36531174186,
+          "attempt": 1,
+          "conclusion": "action_required",
+          "job_count": 0
+        }
+      ],
+      "verdict": "NOT_EXECUTED",
+      "formal_required_contexts": "UNKNOWN: branch protection read returned HTTP404; workflow names are not proof of configured branch protection"
+    },
+    "required_validation": [
+      "Node 24.14 / 26 supported toolchain",
+      "npm run doctor -- --json",
+      "npm run format:check",
+      "npm run check:boundaries",
+      "npm test",
+      "npm run build",
+      "npm run test:track with live server",
+      "affected feature browser gate; see next_action"
+    ],
+    "finding_ids": [
+      "808:runtime-documentation",
+      "808:workflow-admission",
+      "808:source-probe"
+    ],
+    "finding_states": [
+      "blocked-external",
+      "open"
+    ],
+    "source_evidence": [
+      "diffs/808.diff",
+      "threads/808.json",
+      "timeline/808.json"
+    ]
+  },
+  {
+    "number": 806,
+    "title": "feat(perimeters): publish selected wildfire incidents to shared context",
+    "head": "28c7f46deed42e24cee472fa0560f41dd3eea9c7",
+    "draft": false,
+    "file_count": 3,
+    "files": [
+      "src/app/layers/perimeters.js",
+      "src/layers/perimeters/index.js",
+      "src/layers/perimeters/ownership.test.mjs"
+    ],
+    "new_tests_missing_format": [],
+    "runtime_files": [
+      "src/app/layers/perimeters.js",
+      "src/layers/perimeters/index.js"
+    ],
+    "docs_present": {
+      "CHANGELOG.md": false,
+      "docs/CURRENT-STATE.md": false
+    },
+    "author": "kvnloo",
+    "author_association": "NONE",
+    "group": "fires",
+    "upstream_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/806",
+    "original_main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+    "api_base_sha": "81eb44340d90feda5b5283438f6e5fdad5cabbdd",
+    "merge_base_sha": "81eb44340d90feda5b5283438f6e5fdad5cabbdd",
+    "commits_behind_current_main": 326,
+    "commits_ahead_merge_base": 4,
+    "routing_owner": "portfolio-to-existing-author",
+    "disposition": "conditional-after-runtime-gates",
+    "ready_now": false,
+    "mechanism": "Selected WFIGS incident publishes one shared-context record while existing overlay card remains owner; cleanup clears selection.",
+    "next_action": "Add runtime docs; prove selected-record refresh, sibling picks, disable/destroy and no duplicate handlers on current main; preserve reporter/designer credit.",
+    "related_carriers": [
+      609,
+      852
+    ],
+    "merge": {
+      "number": 806,
+      "head": "28c7f46deed42e24cee472fa0560f41dd3eea9c7",
+      "api_base": "81eb44340d90feda5b5283438f6e5fdad5cabbdd",
+      "merge_base": "81eb44340d90feda5b5283438f6e5fdad5cabbdd",
+      "main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+      "behind": 326,
+      "ahead": 4,
+      "returncode": 0,
+      "conflict_paths": [],
+      "tree": "0375346302e94fca24c760b25d3d1d1dba15f612",
+      "stderr": ""
+    },
+    "counterfactual": {
+      "number": 806,
+      "head": "28c7f46deed42e24cee472fa0560f41dd3eea9c7",
+      "synthetic_analysis_commit": "24ae5a7d0cfd725133550467c1776f1e1b9b313d",
+      "synthetic_tree": "d81410bcc529f2045f194843061a9c0f3a9d1e51",
+      "removed_paths": [
+        "CHANGELOG.md",
+        "docs/CURRENT-STATE.md"
+      ],
+      "remaining_conflict_paths": [],
+      "returncode": 0
+    },
+    "review": {
+      "formal_reviews": 0,
+      "review_threads": 0,
+      "unresolved_threads": 0,
+      "review_decision": null,
+      "conversation_feedback": "no external actionable review in saved conversation",
+      "approval": false
+    },
+    "ci": {
+      "current_head_runs": [
+        {
+          "run_id": 36466705831,
+          "attempt": 1,
+          "conclusion": "action_required",
+          "job_count": 0
+        }
+      ],
+      "verdict": "NOT_EXECUTED",
+      "formal_required_contexts": "UNKNOWN: branch protection read returned HTTP404; workflow names are not proof of configured branch protection"
+    },
+    "required_validation": [
+      "Node 24.14 / 26 supported toolchain",
+      "npm run doctor -- --json",
+      "npm run format:check",
+      "npm run check:boundaries",
+      "npm test",
+      "npm run build",
+      "npm run test:track with live server",
+      "affected feature browser gate; see next_action"
+    ],
+    "finding_ids": [
+      "806:runtime-documentation",
+      "806:workflow-admission"
+    ],
+    "finding_states": [
+      "blocked-external",
+      "open"
+    ],
+    "source_evidence": [
+      "diffs/806.diff",
+      "threads/806.json",
+      "timeline/806.json"
+    ]
+  },
+  {
+    "number": 789,
+    "title": "docs(pinokio): distinguish embedded-browser stutter from hardware limits",
+    "head": "4ab530b8a83c6f56b34612c1ea5c9bc07c34e3ea",
+    "draft": false,
+    "file_count": 2,
+    "files": [
+      "README.md",
+      "docs/PERFORMANCE.md"
+    ],
+    "new_tests_missing_format": [],
+    "runtime_files": [],
+    "docs_present": {
+      "CHANGELOG.md": false,
+      "docs/CURRENT-STATE.md": false
+    },
+    "author": "kvnloo",
+    "author_association": "NONE",
+    "group": "infrastructure",
+    "upstream_url": "https://github.com/bilawalsidhu/gods-eye-view/pull/789",
+    "original_main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+    "api_base_sha": "81eb44340d90feda5b5283438f6e5fdad5cabbdd",
+    "merge_base_sha": "81eb44340d90feda5b5283438f6e5fdad5cabbdd",
+    "commits_behind_current_main": 326,
+    "commits_ahead_merge_base": 2,
+    "routing_owner": "portfolio-to-existing-author",
+    "disposition": "conditional-docs-reserve",
+    "ready_now": false,
+    "mechanism": "README/performance docs distinguish embedded Chromium throttling from a measured hardware ceiling; no runtime edits.",
+    "next_action": "Verify wording against current launcher advice and docs policy; existing candidate only, no claim of measured benchmark improvement.",
+    "related_carriers": [],
+    "merge": {
+      "number": 789,
+      "head": "4ab530b8a83c6f56b34612c1ea5c9bc07c34e3ea",
+      "api_base": "81eb44340d90feda5b5283438f6e5fdad5cabbdd",
+      "merge_base": "81eb44340d90feda5b5283438f6e5fdad5cabbdd",
+      "main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+      "behind": 326,
+      "ahead": 2,
+      "returncode": 0,
+      "conflict_paths": [],
+      "tree": "5b7bcf1dbb7bb9cfff7669f26626ae38a07cb0f9",
+      "stderr": ""
+    },
+    "counterfactual": {
+      "number": 789,
+      "head": "4ab530b8a83c6f56b34612c1ea5c9bc07c34e3ea",
+      "synthetic_analysis_commit": "3c72b7654d2ec80f6b0ffdd018864b7c9515e659",
+      "synthetic_tree": "a4f1a8ab0249cea6c8100951215e55873d41c4c5",
+      "removed_paths": [
+        "CHANGELOG.md",
+        "docs/CURRENT-STATE.md"
+      ],
+      "remaining_conflict_paths": [],
+      "returncode": 0
+    },
+    "review": {
+      "formal_reviews": 0,
+      "review_threads": 0,
+      "unresolved_threads": 0,
+      "review_decision": null,
+      "conversation_feedback": "no external actionable review in saved conversation",
+      "approval": false
+    },
+    "ci": {
+      "current_head_runs": [
+        {
+          "run_id": 36373939827,
+          "attempt": 1,
+          "conclusion": "action_required",
+          "job_count": 0
+        }
+      ],
+      "verdict": "NOT_EXECUTED",
+      "formal_required_contexts": "UNKNOWN: branch protection read returned HTTP404; workflow names are not proof of configured branch protection"
+    },
+    "required_validation": [
+      "Node 24.14 / 26 supported toolchain",
+      "npm run doctor -- --json",
+      "npm run format:check",
+      "npm run check:boundaries",
+      "npm test",
+      "npm run build",
+      "npm run test:track with live server",
+      "affected feature browser gate; see next_action"
+    ],
+    "finding_ids": [
+      "789:workflow-admission"
+    ],
+    "finding_states": [
+      "blocked-external"
+    ],
+    "source_evidence": [
+      "diffs/789.diff",
+      "threads/789.json",
+      "timeline/789.json"
+    ]
+  }
+]

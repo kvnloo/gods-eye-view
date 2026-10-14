@@ -1,0 +1,296 @@
+{
+  "scope": "preparation-only; independent qualification, no remote writes and no candidate implementation",
+  "observed_at_utc": "2026-10-14T00:37:33.851988+00:00",
+  "pins": {
+    "main": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+    "787": "1d409adf91f666a7b32e7af6640ffeb1d89d1ee7",
+    "957": "84fb493258d48a5b179b41e9319b954577859b88"
+  },
+  "closing_refs_raw": "132b9e96dc1491e5db8bf949b1560f4561c925c3\trefs/heads/main\n1d409adf91f666a7b32e7af6640ffeb1d89d1ee7\trefs/pull/787/head\n84fb493258d48a5b179b41e9319b954577859b88\trefs/pull/957/head\n",
+  "final_worktree_status": {
+    "<operator-worktrees>/gev-meta-wave/workflow": "",
+    "<operator-home>/.hermes/profiles/clean/cache/scratch/wf-current-ohbx5_om": ""
+  },
+  "787": {
+    "owner": "daikaginza",
+    "verdict": "NORMAL_PATH_QUALIFIED; KNOWN_INTERRUPTION_EDGE_REPRODUCED; OWNER_FIX_NOT_PRESENT",
+    "assembler_last_change": "114b0eeaba1d3cb9cb142e4521c79b396d3e439d",
+    "assembler_git_blob": "8f3e854eff9d11c94c4c5e0c232c4ca0b36f2379",
+    "novelty": "Already reported twice by kvnloo; suppress duplicate feedback and competing implementation",
+    "severity": "Later existing comment calls it non-blocking release hardening; no new maintainer blocker asserted",
+    "feedback": [
+      {
+        "url": "https://github.com/bilawalsidhu/gods-eye-view/pull/787#issuecomment-5861942204",
+        "author": "kvnloo",
+        "role": "independent reviewer; association NONE",
+        "disposition": "open"
+      },
+      {
+        "url": "https://github.com/bilawalsidhu/gods-eye-view/pull/787#issuecomment-5862817863",
+        "author": "kvnloo",
+        "role": "independent reviewer; association NONE",
+        "disposition": "open",
+        "note": "latest severity non-blocking"
+      }
+    ],
+    "tests": {
+      "author_fragment_tests": {
+        "pass": 13,
+        "fail": 0
+      },
+      "npm_test": {
+        "tests": 5397,
+        "pass": 5396,
+        "fail": 0,
+        "skipped": 1
+      },
+      "format_check": 0,
+      "check_boundaries": 0,
+      "build": 0,
+      "track": {
+        "pass": 109,
+        "fail": 0,
+        "skip": 0,
+        "exit": 0
+      },
+      "l9_A7": {
+        "pass": 1,
+        "passWithSkips": 0,
+        "fail": 0,
+        "harnessCrash": 0,
+        "skipped": 0,
+        "selected": 1
+      },
+      "release_faults": [
+        {
+          "node": "24.14.0",
+          "scenarios": 6,
+          "retry_invariant_pass": 3,
+          "retry_invariant_fail": 3,
+          "preservation_controls_pass": 6,
+          "check_readonly_pass": 6,
+          "injected_exit_codes": {
+            "healthy-repeat": 0,
+            "before-write": 1,
+            "after-write": 1,
+            "second-remove": 1,
+            "after-first-remove": 1,
+            "invalid-batch": 1
+          }
+        },
+        {
+          "node": "26.5.0",
+          "scenarios": 6,
+          "retry_invariant_pass": 3,
+          "retry_invariant_fail": 3,
+          "preservation_controls_pass": 6,
+          "check_readonly_pass": 6,
+          "injected_exit_codes": {
+            "healthy-repeat": 0,
+            "before-write": 1,
+            "after-write": 1,
+            "second-remove": 1,
+            "after-first-remove": 1,
+            "invalid-batch": 1
+          }
+        }
+      ]
+    },
+    "current_main_conflicts": [
+      "docs/MAINTAINER_WORKFLOW.md",
+      "scripts/format-scope.json"
+    ],
+    "hosted_checks": [
+      {
+        "bucket": "pass",
+        "link": "https://github.com/bilawalsidhu/gods-eye-view/actions/runs/36990098095/job/110784050165",
+        "name": "Node 24.14.0",
+        "state": "SUCCESS"
+      },
+      {
+        "bucket": "pass",
+        "link": "https://github.com/bilawalsidhu/gods-eye-view/actions/runs/36990098095/job/110784050465",
+        "name": "Node 26.x",
+        "state": "SUCCESS"
+      },
+      {
+        "bucket": "pass",
+        "link": "https://github.com/bilawalsidhu/gods-eye-view/actions/runs/36990098095/job/110784050440",
+        "name": "Windows onboarding",
+        "state": "SUCCESS"
+      }
+    ]
+  },
+  "957": {
+    "owner": "asturksever",
+    "verdict": "SOURCE_QUALIFIED_DOCS_ONLY",
+    "source_qualification": {
+      "exact_head": "84fb493258d48a5b179b41e9319b954577859b88",
+      "latest_base": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+      "changed_files": [
+        ".github/pull_request_template.md",
+        "CONTRIBUTING.md"
+      ],
+      "required_fields_present": [
+        "**Screenshots**",
+        "**Recording**",
+        "**Proposed category**",
+        "**Data source and licence**",
+        "Source (provider and endpoint)",
+        "Licence or terms (link)",
+        "Attribution shown in the app",
+        "Needs a key?",
+        "Fetched at runtime, or bundled",
+        "DATA_SOURCES.md",
+        "src/data/dataCredits.js",
+        "npm run layer-token:next",
+        "npm run build",
+        "npm test",
+        "npm run test:track"
+      ],
+      "category_names_match_both": true,
+      "screenshot_and_recording_requirements_are_conditional_on_new_layer": true,
+      "no_new_license_or_dataset": true,
+      "video_host_limit_independently_verified": false,
+      "template_enforcement": "prose/checklist only, no new CI enforcement",
+      "format_scope_adopted": false,
+      "template_sha256": "951f32109339393a6b993558c4d1245087c271982c8c5caa3aa7e45b4c39bc75"
+    },
+    "current_main_merge_exit": 0,
+    "thread_novelty": "no comments/reviews/inline findings; optional wording improvement only; no patch or post",
+    "hosted_checks": [
+      {
+        "bucket": "pass",
+        "link": "https://github.com/bilawalsidhu/gods-eye-view/actions/runs/37617903981/job/112780626518",
+        "name": "Node 24.14.0",
+        "state": "SUCCESS"
+      },
+      {
+        "bucket": "pass",
+        "link": "https://github.com/bilawalsidhu/gods-eye-view/actions/runs/37617903981/job/112780626239",
+        "name": "Windows onboarding",
+        "state": "SUCCESS"
+      },
+      {
+        "bucket": "pass",
+        "link": "https://github.com/bilawalsidhu/gods-eye-view/actions/runs/37617903981/job/112780626482",
+        "name": "Node 26.x",
+        "state": "SUCCESS"
+      }
+    ]
+  },
+  "token_rules": {
+    "base": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+    "published_reservations": 29,
+    "new_published_reservations": 0,
+    "next_provisional_token": "3",
+    "two_character_00_published": false,
+    "node24_tests": {
+      "pass": 72,
+      "fail": 0
+    },
+    "node26_tests": {
+      "pass": 72,
+      "fail": 0
+    },
+    "published_owner_helper_refusal": {
+      "layer": "street-level",
+      "token": "0",
+      "exit": 1,
+      "expected": true
+    },
+    "negative_control": {
+      "mutation": "remove published-assignment equality guard",
+      "exit": 1,
+      "tests_failed": 4,
+      "restored_pass": 72,
+      "final_tree_clean": true
+    },
+    "browser_attempts": [
+      {
+        "browser": "Chromium 153.0.8010.52",
+        "receipt": [
+          {
+            "head": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+            "command": [
+              "fnm",
+              "exec",
+              "--using=24.14.0",
+              "node",
+              "scripts/qa-layer-token-twochar.mjs"
+            ],
+            "exit": 1,
+            "seconds": 153.352,
+            "log": "/mnt/zer0models.//workflow/token-browser-current-0.log"
+          }
+        ],
+        "passed_checkpoint_messages": 5,
+        "failure": "60-second navigation timeout loading legacy f link at qa-layer-token-twochar.mjs:285"
+      },
+      {
+        "browser": "Chrome for Testing 152.0.7977.75",
+        "receipt": [
+          {
+            "head": "132b9e96dc1491e5db8bf949b1560f4561c925c3",
+            "command": [
+              "fnm",
+              "exec",
+              "--using=24.14.0",
+              "node",
+              "scripts/qa-layer-token-twochar.mjs"
+            ],
+            "exit": 1,
+            "seconds": 194.217,
+            "log": "/mnt/zer0models.//workflow/token-browser-current-retry-0.log"
+          }
+        ],
+        "passed_checkpoint_messages": 5,
+        "failure": "same 60-second legacy-page navigation timeout"
+      }
+    ],
+    "browser_verdict": "INCOMPLETE: 00 enable/share/cold restore/reload/OFF exercised; legacy/mixed/malformed/repeated/session-completeness gates not established. Cause unqualified; no source fix inferred."
+  },
+  "conflict_measurement": {
+    "sample_size": 27,
+    "original_conflicting_prs": 14,
+    "changelog_conflict_incidents_removed": 11,
+    "fully_unblocked_prs": [
+      943,
+      889,
+      874,
+      834,
+      816
+    ],
+    "scope": "Only changelog conflicts are migrated. CURRENT-STATE and every production path unchanged. Synthetic analysis objects are not candidate implementations; no branch/ref or remote writes.",
+    "source_sha256": "fc31ed5a12ff345c946a8db5962a2957edc5ce779154e752df681e61c655fd83",
+    "main": "132b9e96dc1491e5db8bf949b1560f4561c925c3"
+  },
+  "local_commits": [],
+  "analysis_objects": "11 synthetic lossless-migration commits only, not implementation/delivery; identities in fragment-counterfactual.json",
+  "artifacts": {
+    "report": "REPORT.md",
+    "draft_feedback": "DRAFT-FEEDBACK.md",
+    "release_probe": "qualify-release.py",
+    "fault_hook": "release-fault-hook.mjs",
+    "fixtures": "release-fixtures.tar.gz",
+    "fixtures_sha256": "f2e41685a384a0b56285bf31bc38df56565daffa56ce153f667502f266bb61e7"
+  },
+  "limitations": [
+    "No production/owned published token changes; no duplicate crash-safety implementation.",
+    "No formal review or origin/fork writes; all authorization/HITL holds retained.",
+    "Initial L9 A attempt used wrong default port and exited 2; actual owned-port A7 rerun passed, not full A.",
+    "Browser wrapper cleanup race caused EADDRINUSE after first runs; ss confirmed no listener, bounded cleanup check fixed and failure-propagation control returned 1. Child-gate exits are authoritative.",
+    "Main-token browser did not complete on either of two Chrome versions. No minutes-saved extrapolation.",
+    "No new local implementation commits or bundle; original source heads remain in durable common Git store. Fixture archive and probes are durable."
+  ],
+  "credit": {
+    "maintainers": [
+      "Bilawal Sidhu",
+      "Sameh Khamis"
+    ],
+    "fragment_measurement_design_implementation": "daikaginza",
+    "prior_consumer_audit_design_and_interruption_report": "kvnloo",
+    "template": "asturksever",
+    "this_lane": "Hermes AI-assisted independent test and analysis; no original-author claim"
+  }
+}

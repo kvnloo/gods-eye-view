@@ -1,0 +1,47 @@
+✖ FIRMS gate waits for selected action publication, not an ambient action (3.077426ms)
+✖ FIRMS selected-action wait remains bounded and cannot turn absence into success (2.756648ms)
+✔ FIRMS aggregate wait still checks all action buttons by default (0.915917ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 1
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 90.308021
+
+✖ failing tests:
+
+test at src/qaFirmsActions.test.mjs:29:1
+✖ FIRMS gate waits for selected action publication, not an ambient action (3.077426ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///mnt/zer0models<operator-worktrees>/gev-meta-wave/ci-qa/src/qaFirmsActions.test.mjs:36:10)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at src/qaFirmsActions.test.mjs:40:1
+✖ FIRMS selected-action wait remains bounded and cannot turn absence into success (2.756648ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 350
+  
+      at TestContext.<anonymous> (file:///mnt/zer0models<operator-worktrees>/gev-meta-wave/ci-qa/src/qaFirmsActions.test.mjs:44:10)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 350,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

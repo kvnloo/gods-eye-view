@@ -1,0 +1,13 @@
+diff --git i/src/ui/panelChrome.js w/src/ui/panelChrome.js
+index 757d7e0..640ddd8 100644
+--- i/src/ui/panelChrome.js
++++ w/src/ui/panelChrome.js
+@@ -72,7 +72,7 @@ export class PanelChrome {
+       }),
+       scheduleCockpitLayout: () => this.cockpitView?.scheduleContextLayout(),
+       syncPanelCollapseButton: (panel) =>
+-        this._syncRailPanelCollapseButton(panel),
++        this._syncPanelCollapseButton(panel),
+       readDisplayScrollTop: () =>
+         this._displayPortalScrollRestoreOwner === 'standard'
+           ? this._standardDisplayScrollTop

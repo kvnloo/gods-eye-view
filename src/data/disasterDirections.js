@@ -28,9 +28,10 @@ function rounded(value, digits) {
 
 function normalizedGeometry(geometry) {
   if (!Array.isArray(geometry)) return [];
+  // Validate raw bounds before rounding: 180.0000001 is invalid.
   const points = geometry.map((pair) => [
-    rounded(pair?.[0], 6),
-    rounded(pair?.[1], 6),
+    finiteNumber(pair?.[0]),
+    finiteNumber(pair?.[1]),
   ]);
   // Dropping an invalid point would silently change the route under review.
   if (
@@ -43,7 +44,7 @@ function normalizedGeometry(geometry) {
     )
   )
     return [];
-  return points;
+  return points.map(([lon, lat]) => [rounded(lon, 6), rounded(lat, 6)]);
 }
 
 function fnv1a64(value) {
@@ -85,6 +86,28 @@ export function directionsRouteIdentity(route) {
   return `osrm:${fnv1a64(canonical).toString(16).padStart(16, '0')}`;
 }
 
+function accessTimestampMs(value) {
+  const text = nonEmptyText(value);
+  const match = text?.match(
+    /^([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(?:\.[0-9]{1,3})?(?:Z|[+-][0-9]{2}:[0-9]{2})$/,
+  );
+  if (!match) return null;
+  const [year, month, day, hour, minute, second] = match
+    .slice(1, 7)
+    .map(Number);
+  const calendarDay = new Date(Date.UTC(year, month - 1, day));
+  if (
+    calendarDay.getUTCFullYear() !== year ||
+    calendarDay.getUTCMonth() + 1 !== month ||
+    calendarDay.getUTCDate() !== day ||
+    hour > 23 ||
+    minute > 59 ||
+    second > 59
+  ) return null;
+  const ms = Date.parse(text);
+  return Number.isFinite(ms) ? ms : null;
+}
+
 function unverifiedAccessReasons(segmentIds, accessSegments) {
   if (!Array.isArray(segmentIds) || !Array.isArray(accessSegments))
     return [];
@@ -96,13 +119,24 @@ function unverifiedAccessReasons(segmentIds, accessSegments) {
     if (!['observed', 'declared'].includes(record?.determination))
       reasons.add(`unverified-access-basis:${id}`);
     const provenance = record?.provenance;
+    const observedAt = nonEmptyText(record?.observedAt);
+    const receivedAt = nonEmptyText(record?.receivedAt);
     if (
-      !nonEmptyText(record?.observedAt) ||
-      !nonEmptyText(record?.receivedAt) ||
+      !observedAt ||
+      !receivedAt ||
       !(nonEmptyText(provenance?.source) ||
         nonEmptyText(provenance?.authority))
-    )
+    ) {
       reasons.add(`unattributed-access:${id}`);
+    } else {
+      const observedMs = accessTimestampMs(observedAt);
+      const receivedMs = accessTimestampMs(receivedAt);
+      if (
+        observedMs === null ||
+        receivedMs === null ||
+        observedMs > receivedMs
+      ) reasons.add(`invalid-access-time:${id}`);
+    }
   }
   return [...reasons].sort();
 }

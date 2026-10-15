@@ -433,3 +433,55 @@ test('zero-length and finite decimal-string metadata remain accepted', () => {
     distanceM: 0, durationS: 0,
   })), /^osrm:[0-9a-f]{16}$/);
 });
+
+test('out-of-range raw coordinates are rejected before identity rounding', () => {
+  const invalid = [
+    [[180.0000001, 20], [180, 20.1]],
+    [[80, 90.0000001], [80.1, 90]],
+    [[-180.0000001, 20], [-180, 20.1]],
+  ];
+  for (const geometry of invalid) {
+    const candidate = route({ geometry });
+    assert.equal(directionsRouteIdentity(candidate), null);
+    const receipt = evaluateDirectionsDisasterAccess({
+      route: candidate, segmentIds: ['bridge'],
+      accessSegments: [segment('bridge')], accessRevision: 'r1',
+    });
+    assert.equal(receipt.support, 'unknown');
+    assert.deepEqual(receipt.reasons, ['directions-route-unavailable']);
+  }
+  assert.match(directionsRouteIdentity(route({
+    geometry: [[180, 90], [179.9999, 89.9999]],
+  })), /^osrm:[0-9a-f]{16}$/);
+});
+
+test('malformed or chronologically impossible access times stay unknown', () => {
+  const invalid = [
+    { observedAt: 'not a timestamp' },
+    { observedAt: '2026-02-30T08:00:00Z' },
+    { observedAt: '2026-02-29T08:00:00Z' },
+    { observedAt: '2026-08-26T08:00:61Z' },
+    { observedAt: '2026-08-26T09:00:00Z' },
+    { receivedAt: 'tomorrow' },
+  ];
+  for (const overrides of invalid) {
+    const receipt = evaluateDirectionsDisasterAccess({
+      route: route(), segmentIds: ['bridge'],
+      accessSegments: [{ ...segment('bridge'), ...overrides }],
+      accessRevision: 'r1',
+    });
+    assert.equal(receipt.support, 'unknown');
+    assert.deepEqual(receipt.reasons, ['invalid-access-time:bridge']);
+  }
+  for (const observedAt of [
+    '2026-08-26T13:30:00+05:30', '2026-08-26T08:00:00Z',
+  ]) {
+    const receipt = evaluateDirectionsDisasterAccess({
+      route: route(), segmentIds: ['bridge'],
+      accessSegments: [{ ...segment('bridge'), observedAt }],
+      accessRevision: 'r1',
+    });
+    assert.equal(receipt.support, 'supported');
+    assert.deepEqual(receipt.reasons, []);
+  }
+});

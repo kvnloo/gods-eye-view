@@ -11,6 +11,10 @@ function finiteNumber(value) {
   // Number(null), Number('') and Number(false) are zero, not coordinates.
   if (typeof value !== 'number' && (typeof value !== 'string' || !value.trim()))
     return null;
+  // Number() also accepts hexadecimal, binary and octal strings.
+  if (typeof value === 'string' &&
+      !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(value.trim()))
+    return null;
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
 }
@@ -61,7 +65,16 @@ function fnv1a64(value) {
  */
 export function directionsRouteIdentity(route) {
   const geometry = normalizedGeometry(route?.geometry);
-  if (geometry.length < 2) return null;
+  const distanceM = finiteNumber(route?.distanceM);
+  const durationS = finiteNumber(route?.durationS);
+  // OSRM geometry without finite, nonnegative route metrics is not admissible.
+  if (
+    geometry.length < 2 ||
+    distanceM === null || distanceM < 0 ||
+    durationS === null || durationS < 0 ||
+    !Number.isFinite(rounded(distanceM, 3)) ||
+    !Number.isFinite(rounded(durationS, 3))
+  ) return null;
   const canonical = JSON.stringify({
     source: 'osrm',
     mode: nonEmptyText(route?.mode),

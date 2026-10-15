@@ -390,3 +390,46 @@ test('distinct routes sharing a legacy 32-bit ID cannot reuse an access receipt'
     false,
   );
 });
+
+test('missing, non-finite, negative, or overflowed route metrics cannot support relief access', () => {
+  for (const overrides of [
+    { distanceM: undefined }, { durationS: undefined },
+    { distanceM: null }, { durationS: null },
+    { distanceM: '' }, { durationS: '' },
+    { distanceM: -1 }, { durationS: -1 },
+    { distanceM: Number.MAX_VALUE }, { durationS: Number.MAX_VALUE },
+    { distanceM: NaN }, { durationS: NaN },
+  ]) {
+    const candidate = route(overrides);
+    assert.equal(directionsRouteIdentity(candidate), null);
+    const receipt = evaluateDirectionsDisasterAccess({
+      route: candidate, segmentIds: ['bridge'],
+      accessSegments: [segment('bridge')], accessRevision: 'r1',
+    });
+    assert.equal(receipt.support, 'unknown');
+    assert.deepEqual(receipt.reasons, ['directions-route-unavailable']);
+  }
+});
+
+test('nondecimal numeric strings cannot manufacture OSRM route coordinates or metrics', () => {
+  for (const overrides of [
+    { distanceM: '0x10' }, { durationS: '0b10' },
+    { distanceM: '0o10' }, { geometry: [['0x10', 0], [1, 1]] },
+  ]) {
+    const candidate = route(overrides);
+    assert.equal(directionsRouteIdentity(candidate), null);
+    assert.equal(evaluateDirectionsDisasterAccess({
+      route: candidate, segmentIds: ['bridge'],
+      accessSegments: [segment('bridge')], accessRevision: 'r1',
+    }).support, 'unknown');
+  }
+});
+
+test('zero-length and finite decimal-string metadata remain accepted', () => {
+  assert.match(directionsRouteIdentity(route({
+    distanceM: '1234.5', durationS: '3.21e2',
+  })), /^osrm:[0-9a-f]{16}$/);
+  assert.match(directionsRouteIdentity(route({
+    distanceM: 0, durationS: 0,
+  })), /^osrm:[0-9a-f]{16}$/);
+});

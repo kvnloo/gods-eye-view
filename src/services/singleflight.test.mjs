@@ -132,3 +132,22 @@ test('late abandoned transport cannot evict a replacement under the same key', a
   assert.equal(await second, 'current');
   assert.equal(lane.getInFlightCount(), 0);
 });
+
+test('immediate cancellation prevents a not-yet-started loader from running', async () => {
+  const lane = createSingleflight();
+  const caller = new AbortController();
+  let loaderCalls = 0;
+  const pending = lane.run(
+    'cancel-before-microtask',
+    () => {
+      loaderCalls += 1;
+      return 'unexpected work';
+    },
+    { signal: caller.signal },
+  );
+  caller.abort();
+  await assert.rejects(pending, { name: 'AbortError' });
+  await Promise.resolve();
+  assert.equal(loaderCalls, 0);
+  assert.equal(lane.getInFlightCount(), 0);
+});

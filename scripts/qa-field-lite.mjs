@@ -81,7 +81,10 @@ try {
   const desktop = await checkViewport(1280, 900);
   // Real preview screenshots are audit evidence only; the page has synthetic data.
   await mkdir('qa-artifacts', { recursive: true });
-  await page.screenshot({ path: 'qa-artifacts/field-lite-desktop.png', fullPage: true });
+  await page.screenshot({
+    path: 'qa-artifacts/field-lite-desktop.png',
+    fullPage: true,
+  });
   const input = await page.$('#field-local-file');
   await input.uploadFile(inputPath);
   await page.waitForFunction(() =>
@@ -203,7 +206,10 @@ try {
   assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 0);
 
   const mobile = await checkViewport(390, 844);
-  await page.screenshot({ path: 'qa-artifacts/field-lite-mobile.png', fullPage: true });
+  await page.screenshot({
+    path: 'qa-artifacts/field-lite-mobile.png',
+    fullPage: true,
+  });
   assert.deepEqual(errors, []);
   assert.deepEqual(external, []);
   console.log(JSON.stringify({ status: 'PASS', desktop, mobile, externalRequests: 0 }));

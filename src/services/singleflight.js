@@ -25,6 +25,9 @@ export function createSingleflight() {
         if (settled) return;
         cleanup();
         if (entry.waiters.size === 0 && !entry.controller.signal.aborted) {
+          // A transport may ignore abort and never settle. Its abandoned key
+          // must not occupy the singleflight map indefinitely.
+          if (inFlight.get(entry.key) === entry) inFlight.delete(entry.key);
           entry.controller.abort(signal?.reason);
         }
         reject(signal?.reason);
@@ -60,6 +63,7 @@ export function createSingleflight() {
       if (!entry) {
         const controller = new AbortController();
         entry = {
+          key,
           controller,
           waiters: new Set(),
           promise: null,

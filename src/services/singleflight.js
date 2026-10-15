@@ -68,9 +68,11 @@ export function createSingleflight() {
           waiters: new Set(),
           promise: null,
         };
-        entry.promise = Promise.resolve().then(() =>
-          loader({ signal: controller.signal }),
-        );
+        entry.promise = Promise.resolve().then(() => {
+          // Cancellation may arrive before this microtask runs.
+          controller.signal.throwIfAborted();
+          return loader({ signal: controller.signal });
+        });
         inFlight.set(key, entry);
         entry.promise
           .finally(() => {

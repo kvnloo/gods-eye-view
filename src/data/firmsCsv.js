@@ -103,12 +103,13 @@ export function parseFirmsCsv(text) {
     if (!line) continue;
     const parts = line.split(',');
     if (parts.length < header.length) continue; // malformed row — skip
-    const latText = cell(parts, iLat);
-    const lonText = cell(parts, iLon);
-    if (!latText || !lonText) continue;
-    const lat = Number(latText);
-    const lon = Number(lonText);
+    const lat = Number(parts[iLat]);
+    const lon = Number(parts[iLon]);
+    // Blank or out-of-range positions are dropped, never read as 0 (see
+    // hasCoordinateValue in firmsAdapt.js for the proxy-record side).
     if (
+      !parts[iLat].trim() ||
+      !parts[iLon].trim() ||
       !Number.isFinite(lat) ||
       !Number.isFinite(lon) ||
       Math.abs(lat) > 90 ||

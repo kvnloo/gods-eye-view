@@ -20,6 +20,7 @@ const browser = await puppeteer.launch({ headless: true });
 const temp = await mkdtemp(join(tmpdir(), 'gev-field-lite-'));
 const errors = [];
 const external = [];
+const unexpectedLocalRequests = [];
 try {
   const inputPath = join(temp, 'synthetic-replay.json');
   const badPath = join(temp, 'invalid-replay.json');
@@ -49,6 +50,16 @@ try {
     const requestUrl = new URL(request.url());
     if (requestUrl.origin !== base.origin) {
       external.push(request.url());
+      request.abort('blockedbyclient');
+    } else if (
+      /^\/api(?:\/|$)/.test(requestUrl.pathname) ||
+      ['fetch', 'xhr', 'eventsource', 'ping'].includes(request.resourceType()) ||
+      !['GET', 'HEAD'].includes(request.method())
+    ) {
+      // This fixture must not quietly access local providers or post telemetry.
+      unexpectedLocalRequests.push(
+        `${request.method()} ${request.resourceType()} ${requestUrl.pathname}`,
+      );
       request.abort('blockedbyclient');
     } else {
       request.continue();
@@ -312,8 +323,15 @@ try {
   });
   assert.deepEqual(errors, []);
   assert.deepEqual(external, []);
+  assert.deepEqual(unexpectedLocalRequests, []);
   console.log(
-    JSON.stringify({ status: 'PASS', desktop, mobile, externalRequests: 0 }),
+    JSON.stringify({
+      status: 'PASS',
+      desktop,
+      mobile,
+      externalRequests: 0,
+      sameOriginProviderRequests: 0,
+    }),
   );
 } finally {
   await browser.close();

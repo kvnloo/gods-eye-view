@@ -21,8 +21,23 @@ const external = [];
 try {
   const inputPath = join(temp, 'synthetic-replay.json');
   const badPath = join(temp, 'invalid-replay.json');
+  const newestPath = join(temp, 'newest-replay.json');
+  const emptyPath = join(temp, 'empty-replay.json');
   const oversizedPath = join(temp, 'oversized-replay.json');
-  await writeFile(inputPath, JSON.stringify(createSyntheticReliefDemoReplay()), 'utf8');
+  const sampleReplay = createSyntheticReliefDemoReplay();
+  await writeFile(inputPath, JSON.stringify(sampleReplay), 'utf8');
+  await writeFile(
+    newestPath,
+    JSON.stringify({
+      ...sampleReplay,
+      inputIdentities: {
+        ...sampleReplay.inputIdentities,
+        studyId: 'browser-newest',
+      },
+    }),
+    'utf8',
+  );
+  await writeFile(emptyPath, '', 'utf8');
   await writeFile(badPath, '{bad json', 'utf8');
   await writeFile(oversizedPath, 'x'.repeat(65537), 'utf8');
   const page = await browser.newPage();
@@ -131,6 +146,59 @@ try {
   assert.match(
     await page.$eval('#field-feedback', (e) => e.textContent),
     /at most 64 KiB/,
+  );
+  assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 0);
+
+  // The newest valid file wins even when the earlier read finishes afterward.
+  await page.click('#field-demo');
+  await page.evaluate(() => {
+    window.__deferFieldRead = true;
+    window.__releaseFieldRead = null;
+  });
+  await input.uploadFile(inputPath);
+  await page.waitForFunction(() => typeof window.__releaseFieldRead === 'function');
+  await input.uploadFile(newestPath);
+  await page.waitForFunction(() =>
+    document.querySelector('.field-status')?.textContent.includes('Study browser-newest'),
+  );
+  await completeDeferredRead();
+  assert.match(
+    await page.$eval('.field-status', (e) => e.textContent),
+    /Study browser-newest/,
+  );
+  assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 2);
+
+  // A newer malformed JSON file cannot be replaced by stale valid input.
+  await page.evaluate(() => {
+    window.__deferFieldRead = true;
+    window.__releaseFieldRead = null;
+  });
+  await input.uploadFile(inputPath);
+  await page.waitForFunction(() => typeof window.__releaseFieldRead === 'function');
+  await input.uploadFile(badPath);
+  await page.waitForFunction(() =>
+    document.querySelector('#field-feedback')?.textContent.includes('rejected'),
+  );
+  await completeDeferredRead();
+  assert.match(
+    await page.$eval('#field-feedback', (e) => e.textContent),
+    /File rejected/,
+  );
+  assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 0);
+
+  // An empty newer file also revokes the pending valid read.
+  await page.click('#field-demo');
+  await page.evaluate(() => {
+    window.__deferFieldRead = true;
+    window.__releaseFieldRead = null;
+  });
+  await input.uploadFile(inputPath);
+  await page.waitForFunction(() => typeof window.__releaseFieldRead === 'function');
+  await input.uploadFile(emptyPath);
+  await completeDeferredRead();
+  assert.match(
+    await page.$eval('#field-feedback', (e) => e.textContent),
+    /nonempty JSON/,
   );
   assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 0);
 

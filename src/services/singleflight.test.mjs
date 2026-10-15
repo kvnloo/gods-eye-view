@@ -151,3 +151,25 @@ test('immediate cancellation prevents a not-yet-started loader from running', as
   assert.equal(loaderCalls, 0);
   assert.equal(lane.getInFlightCount(), 0);
 });
+
+test('immediate abort of one caller retains a loader needed by a surviving caller', async () => {
+  const lane = createSingleflight();
+  const caller = new AbortController();
+  const gate = deferred();
+  let loaderCalls = 0;
+  const loader = () => {
+    loaderCalls += 1;
+    return gate.promise;
+  };
+  const discarded = lane.run('shared-before-microtask', loader, {
+    signal: caller.signal,
+  });
+  const retained = lane.run('shared-before-microtask', loader);
+  caller.abort();
+  await assert.rejects(discarded, { name: 'AbortError' });
+  assert.equal(loaderCalls, 1);
+  assert.equal(lane.getInFlightCount(), 1);
+  gate.resolve('retained');
+  assert.equal(await retained, 'retained');
+  assert.equal(lane.getInFlightCount(), 0);
+});

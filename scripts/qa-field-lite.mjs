@@ -11,7 +11,9 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import puppeteer from 'puppeteer';
-import { createSyntheticReliefDemoReplay } from '../src/fieldLite/demoFixture.js';
+import {
+  createSyntheticReliefDemoReplay,
+} from '../src/fieldLite/demoFixture.js';
 
 const base = new URL(process.env.QA_BASE_URL || 'http://127.0.0.1:4173');
 const browser = await puppeteer.launch({ headless: true });
@@ -56,12 +58,16 @@ try {
   async function checkViewport(width, height) {
     await page.setViewport({ width, height, deviceScaleFactor: 1 });
     const documentUrl = new URL('field-lite/', base);
-    const result = await page.goto(documentUrl.href, { waitUntil: 'networkidle0' });
+    const result = await page.goto(documentUrl.href, {
+      waitUntil: 'networkidle0',
+    });
     assert.equal(result.status(), 200);
     await page.waitForSelector('.field-card');
     const view = await page.evaluate(() => ({
       cards: document.querySelectorAll('.field-card').length,
-      values: [...document.querySelectorAll('.field-number')].map((e) => e.textContent),
+      values: [...document.querySelectorAll('.field-number')].map(
+        (e) => e.textContent,
+      ),
       overflow: document.documentElement.scrollWidth > window.innerWidth + 1,
       warning: document.querySelector('.field-alert')?.textContent,
       delta: document.querySelector('.field-delta')?.textContent,
@@ -88,7 +94,10 @@ try {
   const input = await page.$('#field-local-file');
   await input.uploadFile(inputPath);
   await page.waitForFunction(() =>
-    document.querySelector('#field-feedback').textContent.includes('Local synthetic replay loaded'));
+    document
+      .querySelector('#field-feedback')
+      .textContent.includes('Local synthetic replay loaded'),
+  );
   assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 2);
   await input.uploadFile(badPath);
   await page.waitForFunction(() =>
@@ -108,7 +117,8 @@ try {
       window.__deferFieldRead = false;
       const read = readText.apply(this, args);
       return new Promise((resolve, reject) => {
-        window.__rejectFieldRead = () => reject(new Error('Synthetic File.text failure'));
+        window.__rejectFieldRead = () =>
+          reject(new Error('Synthetic File.text failure'));
         window.__releaseFieldRead = async () => {
           try {
             resolve(await read);
@@ -130,7 +140,9 @@ try {
     window.__deferFieldRead = true;
   });
   await input.uploadFile(inputPath);
-  await page.waitForFunction(() => typeof window.__releaseFieldRead === 'function');
+  await page.waitForFunction(
+    () => typeof window.__releaseFieldRead === 'function',
+  );
   await page.click('#field-demo');
   await completeDeferredRead();
   assert.equal(
@@ -145,7 +157,9 @@ try {
     window.__releaseFieldRead = null;
   });
   await input.uploadFile(inputPath);
-  await page.waitForFunction(() => typeof window.__releaseFieldRead === 'function');
+  await page.waitForFunction(
+    () => typeof window.__releaseFieldRead === 'function',
+  );
   await input.uploadFile(oversizedPath);
   await completeDeferredRead();
   assert.match(
@@ -161,11 +175,14 @@ try {
     window.__releaseFieldRead = null;
   });
   await input.uploadFile(inputPath);
-  await page.waitForFunction(() => typeof window.__releaseFieldRead === 'function');
-  await input.uploadFile(newestPath);
-  await page.waitForFunction(() =>
-    document.querySelector('.field-status')?.textContent.includes('Study browser-newest'),
+  await page.waitForFunction(
+    () => typeof window.__releaseFieldRead === 'function',
   );
+  await input.uploadFile(newestPath);
+  await page.waitForFunction(() => {
+    const status = document.querySelector('.field-status')?.textContent;
+    return status?.includes('Study browser-newest');
+  });
   await completeDeferredRead();
   assert.match(
     await page.$eval('.field-status', (e) => e.textContent),
@@ -179,7 +196,9 @@ try {
     window.__releaseFieldRead = null;
   });
   await input.uploadFile(inputPath);
-  await page.waitForFunction(() => typeof window.__releaseFieldRead === 'function');
+  await page.waitForFunction(
+    () => typeof window.__releaseFieldRead === 'function',
+  );
   await input.uploadFile(badPath);
   await page.waitForFunction(() =>
     document.querySelector('#field-feedback')?.textContent.includes('rejected'),
@@ -198,7 +217,9 @@ try {
     window.__releaseFieldRead = null;
   });
   await input.uploadFile(inputPath);
-  await page.waitForFunction(() => typeof window.__releaseFieldRead === 'function');
+  await page.waitForFunction(
+    () => typeof window.__releaseFieldRead === 'function',
+  );
   await input.uploadFile(emptyPath);
   await completeDeferredRead();
   assert.match(
@@ -215,14 +236,18 @@ try {
     window.__releaseFieldRead = null;
   });
   await input.uploadFile(inputPath);
-  await page.waitForFunction(() => typeof window.__releaseFieldRead === 'function');
+  await page.waitForFunction(
+    () => typeof window.__releaseFieldRead === 'function',
+  );
   await page.evaluate(() => {
     window.__releaseOlderFieldRead = window.__releaseFieldRead;
     window.__deferFieldRead = true;
     window.__releaseFieldRead = null;
   });
   await input.uploadFile(newestPath);
-  await page.waitForFunction(() => typeof window.__releaseFieldRead === 'function');
+  await page.waitForFunction(
+    () => typeof window.__releaseFieldRead === 'function',
+  );
   await completeDeferredRead();
   await page.evaluate(async () => {
     await window.__releaseOlderFieldRead();
@@ -238,9 +263,12 @@ try {
   await page.evaluate(() => {
     window.__deferFieldRead = true;
     window.__releaseFieldRead = null;
+    window.__rejectFieldRead = null;
   });
   await input.uploadFile(inputPath);
-  await page.waitForFunction(() => typeof window.__rejectFieldRead === 'function');
+  await page.waitForFunction(
+    () => typeof window.__rejectFieldRead === 'function',
+  );
   await page.click('#field-demo');
   await page.evaluate(async () => {
     window.__rejectFieldRead();
@@ -259,11 +287,14 @@ try {
     window.__rejectFieldRead = null;
   });
   await input.uploadFile(inputPath);
-  await page.waitForFunction(() => typeof window.__rejectFieldRead === 'function');
-  await input.uploadFile(newestPath);
-  await page.waitForFunction(() =>
-    document.querySelector('.field-status')?.textContent.includes('Study browser-newest'),
+  await page.waitForFunction(
+    () => typeof window.__rejectFieldRead === 'function',
   );
+  await input.uploadFile(newestPath);
+  await page.waitForFunction(() => {
+    const status = document.querySelector('.field-status')?.textContent;
+    return status?.includes('Study browser-newest');
+  });
   await page.evaluate(async () => {
     window.__rejectFieldRead();
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -281,7 +312,9 @@ try {
   });
   assert.deepEqual(errors, []);
   assert.deepEqual(external, []);
-  console.log(JSON.stringify({ status: 'PASS', desktop, mobile, externalRequests: 0 }));
+  console.log(
+    JSON.stringify({ status: 'PASS', desktop, mobile, externalRequests: 0 }),
+  );
 } finally {
   await browser.close();
   await rm(temp, { recursive: true, force: true });

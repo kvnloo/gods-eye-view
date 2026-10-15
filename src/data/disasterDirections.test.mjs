@@ -485,3 +485,51 @@ test('malformed or chronologically impossible access times stay unknown', () => 
     assert.deepEqual(receipt.reasons, []);
   }
 });
+
+test('route receipts reject non-tuple geometry instead of manufacturing vertices', () => {
+  for (const geometry of [
+    ['85.1', '86.2'],
+    [{ 0: 85.1, 1: 27.9 }, [85.2, 28]],
+  ]) {
+    const candidate = route({ geometry });
+    assert.equal(directionsRouteIdentity(candidate), null);
+    const receipt = evaluateDirectionsDisasterAccess({
+      route: candidate,
+      segmentIds: ['bridge'],
+      accessSegments: [segment('bridge')],
+      accessRevision: 'r1',
+    });
+    assert.equal(receipt.support, 'unknown');
+    assert.deepEqual(receipt.reasons, ['directions-route-unavailable']);
+  }
+});
+
+test('route receipts reject sparse geometry without silently bridging gaps', () => {
+  const candidate = route({ geometry: [[85.1, 27.9], , [85.2, 28]] });
+  assert.equal(directionsRouteIdentity(candidate), null);
+  const receipt = evaluateDirectionsDisasterAccess({
+    route: candidate,
+    segmentIds: ['bridge'],
+    accessSegments: [segment('bridge')],
+    accessRevision: 'r1',
+  });
+  assert.equal(receipt.support, 'unknown');
+  assert.deepEqual(receipt.reasons, ['directions-route-unavailable']);
+});
+
+test('valid tuple geometry preserves real zero and decimal-string coordinates', () => {
+  for (const geometry of [
+    [[85.1, 27.9], [85.2, 28]],
+    [['85.1', '27.9'], ['85.2', '28']],
+    [[0, 0], [1, 1]],
+  ]) {
+    const candidate = route({ geometry });
+    assert.match(directionsRouteIdentity(candidate), /^osrm:[0-9a-f]{16}$/);
+    assert.equal(evaluateDirectionsDisasterAccess({
+      route: candidate,
+      segmentIds: ['bridge'],
+      accessSegments: [segment('bridge')],
+      accessRevision: 'r1',
+    }).support, 'supported');
+  }
+});

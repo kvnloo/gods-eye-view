@@ -29,10 +29,13 @@ function rounded(value, digits) {
 function normalizedGeometry(geometry) {
   if (!Array.isArray(geometry)) return [];
   // Validate raw bounds before rounding: 180.0000001 is invalid.
-  const points = geometry.map((pair) => [
-    finiteNumber(pair?.[0]),
-    finiteNumber(pair?.[1]),
-  ]);
+  // Array.from visits sparse holes; map/some otherwise skips invalid vertices.
+  // Only actual coordinate tuples may describe a verified candidate route.
+  const points = Array.from(geometry, (pair) =>
+    Array.isArray(pair)
+      ? [finiteNumber(pair[0]), finiteNumber(pair[1])]
+      : [null, null],
+  );
   // Dropping an invalid point would silently change the route under review.
   if (
     points.some(

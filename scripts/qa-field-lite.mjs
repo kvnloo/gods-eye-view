@@ -102,11 +102,13 @@ try {
     const readText = File.prototype.text;
     window.__deferFieldRead = false;
     window.__releaseFieldRead = null;
+    window.__rejectFieldRead = null;
     File.prototype.text = function (...args) {
       if (!window.__deferFieldRead) return readText.apply(this, args);
       window.__deferFieldRead = false;
       const read = readText.apply(this, args);
       return new Promise((resolve, reject) => {
+        window.__rejectFieldRead = () => reject(new Error('Synthetic File.text failure'));
         window.__releaseFieldRead = async () => {
           try {
             resolve(await read);
@@ -204,6 +206,73 @@ try {
     /nonempty JSON/,
   );
   assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 0);
+
+  // Two pending file reads must be ordered by selection, not completion.
+  // Releasing the newest read first is the case a stale implementation loses.
+  await page.click('#field-demo');
+  await page.evaluate(() => {
+    window.__deferFieldRead = true;
+    window.__releaseFieldRead = null;
+  });
+  await input.uploadFile(inputPath);
+  await page.waitForFunction(() => typeof window.__releaseFieldRead === 'function');
+  await page.evaluate(() => {
+    window.__releaseOlderFieldRead = window.__releaseFieldRead;
+    window.__deferFieldRead = true;
+    window.__releaseFieldRead = null;
+  });
+  await input.uploadFile(newestPath);
+  await page.waitForFunction(() => typeof window.__releaseFieldRead === 'function');
+  await completeDeferredRead();
+  await page.evaluate(async () => {
+    await window.__releaseOlderFieldRead();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  assert.match(
+    await page.$eval('.field-status', (e) => e.textContent),
+    /Study browser-newest/,
+  );
+
+  // A rejected superseded read must not erase a newer restored example.
+  await page.click('#field-demo');
+  await page.evaluate(() => {
+    window.__deferFieldRead = true;
+    window.__releaseFieldRead = null;
+  });
+  await input.uploadFile(inputPath);
+  await page.waitForFunction(() => typeof window.__rejectFieldRead === 'function');
+  await page.click('#field-demo');
+  await page.evaluate(async () => {
+    window.__rejectFieldRead();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  assert.equal(
+    await page.$eval('#field-feedback', (e) => e.textContent),
+    'Restored fictional example.',
+  );
+  assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 2);
+
+  // Likewise, an old failed read cannot wipe a newer valid local receipt.
+  await page.evaluate(() => {
+    window.__deferFieldRead = true;
+    window.__releaseFieldRead = null;
+    window.__rejectFieldRead = null;
+  });
+  await input.uploadFile(inputPath);
+  await page.waitForFunction(() => typeof window.__rejectFieldRead === 'function');
+  await input.uploadFile(newestPath);
+  await page.waitForFunction(() =>
+    document.querySelector('.field-status')?.textContent.includes('Study browser-newest'),
+  );
+  await page.evaluate(async () => {
+    window.__rejectFieldRead();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  assert.match(
+    await page.$eval('.field-status', (e) => e.textContent),
+    /Study browser-newest/,
+  );
+  assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 2);
 
   const mobile = await checkViewport(390, 844);
   await page.screenshot({

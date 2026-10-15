@@ -138,3 +138,24 @@ test('missing detections do not become equatorial zero-coordinate fires', () => 
   ]);
   assert.deepEqual(filterRecordsToEvent([...bad, ...valid], event), valid);
 });
+
+test('nondecimal coordinate encodings do not become fire locations', () => {
+  const event = normalizeFireEvent({ ...VALID, bbox: [-20, -20, 20, 20] });
+  const admitted = [
+    { lat: 0, lon: 0, acqDate: '2018-11-10' },
+    { lat: '1.5e1', lon: '0', acqDate: '2018-11-10' },
+  ];
+  for (const coordinate of ['0x10', '0b10', '0o10', 'Infinity']) {
+    assert.equal(
+      normalizeFireEvent({ ...VALID, bbox: [coordinate, -20, 20, 20] }),
+      null,
+    );
+    assert.deepEqual(
+      filterRecordsToEvent(
+        [{ lat: coordinate, lon: 0, acqDate: '2018-11-10' }, ...admitted],
+        event,
+      ),
+      admitted,
+    );
+  }
+});

@@ -117,7 +117,7 @@ try {
     await page.$eval('#field-feedback', (e) => e.textContent),
     'Restored fictional example.',
   );
-  assert.equal(await page.$eval('.field-card', (cards) => cards.length), 2);
+  assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 2);
 
   // An oversized newest selection must keep the old pending import revoked.
   await page.evaluate(() => {
@@ -132,7 +132,7 @@ try {
     await page.$eval('#field-feedback', (e) => e.textContent),
     /at most 64 KiB/,
   );
-  assert.equal(await page.$eval('.field-card', (cards) => cards.length), 0);
+  assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 0);
 
   const mobile = await checkViewport(390, 844);
   await page.screenshot({ path: 'qa-artifacts/field-lite-mobile.png', fullPage: true });

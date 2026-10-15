@@ -11,18 +11,38 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import puppeteer from 'puppeteer';
-import { createSyntheticReliefDemoReplay } from '../src/fieldLite/demoFixture.js';
+import {
+  createSyntheticReliefDemoReplay,
+} from '../src/fieldLite/demoFixture.js';
 
 const base = new URL(process.env.QA_BASE_URL || 'http://127.0.0.1:4173');
 const browser = await puppeteer.launch({ headless: true });
 const temp = await mkdtemp(join(tmpdir(), 'gev-field-lite-'));
 const errors = [];
 const external = [];
+const unexpectedLocalRequests = [];
 try {
   const inputPath = join(temp, 'synthetic-replay.json');
   const badPath = join(temp, 'invalid-replay.json');
-  await writeFile(inputPath, JSON.stringify(createSyntheticReliefDemoReplay()), 'utf8');
+  const newestPath = join(temp, 'newest-replay.json');
+  const emptyPath = join(temp, 'empty-replay.json');
+  const oversizedPath = join(temp, 'oversized-replay.json');
+  const sampleReplay = createSyntheticReliefDemoReplay();
+  await writeFile(inputPath, JSON.stringify(sampleReplay), 'utf8');
+  await writeFile(
+    newestPath,
+    JSON.stringify({
+      ...sampleReplay,
+      inputIdentities: {
+        ...sampleReplay.inputIdentities,
+        studyId: 'browser-newest',
+      },
+    }),
+    'utf8',
+  );
+  await writeFile(emptyPath, '', 'utf8');
   await writeFile(badPath, '{bad json', 'utf8');
+  await writeFile(oversizedPath, 'x'.repeat(65537), 'utf8');
   const page = await browser.newPage();
   page.on('pageerror', (error) => errors.push(error.message));
   await page.setRequestInterception(true);
@@ -30,6 +50,16 @@ try {
     const requestUrl = new URL(request.url());
     if (requestUrl.origin !== base.origin) {
       external.push(request.url());
+      request.abort('blockedbyclient');
+    } else if (
+      /^\/api(?:\/|$)/.test(requestUrl.pathname) ||
+      ['fetch', 'xhr', 'eventsource', 'ping'].includes(request.resourceType()) ||
+      !['GET', 'HEAD'].includes(request.method())
+    ) {
+      // This fixture must not quietly access local providers or post telemetry.
+      unexpectedLocalRequests.push(
+        `${request.method()} ${request.resourceType()} ${requestUrl.pathname}`,
+      );
       request.abort('blockedbyclient');
     } else {
       request.continue();
@@ -39,12 +69,16 @@ try {
   async function checkViewport(width, height) {
     await page.setViewport({ width, height, deviceScaleFactor: 1 });
     const documentUrl = new URL('field-lite/', base);
-    const result = await page.goto(documentUrl.href, { waitUntil: 'networkidle0' });
+    const result = await page.goto(documentUrl.href, {
+      waitUntil: 'networkidle0',
+    });
     assert.equal(result.status(), 200);
     await page.waitForSelector('.field-card');
     const view = await page.evaluate(() => ({
       cards: document.querySelectorAll('.field-card').length,
-      values: [...document.querySelectorAll('.field-number')].map((e) => e.textContent),
+      values: [...document.querySelectorAll('.field-number')].map(
+        (e) => e.textContent,
+      ),
       overflow: document.documentElement.scrollWidth > window.innerWidth + 1,
       warning: document.querySelector('.field-alert')?.textContent,
       delta: document.querySelector('.field-delta')?.textContent,
@@ -71,7 +105,10 @@ try {
   const input = await page.$('#field-local-file');
   await input.uploadFile(inputPath);
   await page.waitForFunction(() =>
-    document.querySelector('#field-feedback').textContent.includes('Local synthetic replay loaded'));
+    document
+      .querySelector('#field-feedback')
+      .textContent.includes('Local synthetic replay loaded'),
+  );
   assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 2);
   await input.uploadFile(badPath);
   await page.waitForFunction(() =>
@@ -79,6 +116,206 @@ try {
   assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 0);
   await page.click('#field-demo');
   assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 2);
+  // Exercise the real browser's async File.text path, not only a unit mock.
+  // A slower, older receipt must never overwrite a later user action.
+  await page.evaluate(() => {
+    const readText = File.prototype.text;
+    window.__deferFieldRead = false;
+    window.__releaseFieldRead = null;
+    window.__rejectFieldRead = null;
+    File.prototype.text = function (...args) {
+      if (!window.__deferFieldRead) return readText.apply(this, args);
+      window.__deferFieldRead = false;
+      const read = readText.apply(this, args);
+      return new Promise((resolve, reject) => {
+        window.__rejectFieldRead = () =>
+          reject(new Error('Synthetic File.text failure'));
+        window.__releaseFieldRead = async () => {
+          try {
+            resolve(await read);
+          } catch (error) {
+            reject(error);
+          }
+        };
+      });
+    };
+  });
+  const completeDeferredRead = async () => {
+    await page.evaluate(async () => {
+      await window.__releaseFieldRead();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+  };
+
+  await page.evaluate(() => {
+    window.__deferFieldRead = true;
+  });
+  await input.uploadFile(inputPath);
+  await page.waitForFunction(
+    () => typeof window.__releaseFieldRead === 'function',
+  );
+  await page.click('#field-demo');
+  await completeDeferredRead();
+  assert.equal(
+    await page.$eval('#field-feedback', (e) => e.textContent),
+    'Restored fictional example.',
+  );
+  assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 2);
+
+  // An oversized newest selection must keep the old pending import revoked.
+  await page.evaluate(() => {
+    window.__deferFieldRead = true;
+    window.__releaseFieldRead = null;
+  });
+  await input.uploadFile(inputPath);
+  await page.waitForFunction(
+    () => typeof window.__releaseFieldRead === 'function',
+  );
+  await input.uploadFile(oversizedPath);
+  await completeDeferredRead();
+  assert.match(
+    await page.$eval('#field-feedback', (e) => e.textContent),
+    /at most 64 KiB/,
+  );
+  assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 0);
+
+  // The newest valid file wins even when the earlier read finishes afterward.
+  await page.click('#field-demo');
+  await page.evaluate(() => {
+    window.__deferFieldRead = true;
+    window.__releaseFieldRead = null;
+  });
+  await input.uploadFile(inputPath);
+  await page.waitForFunction(
+    () => typeof window.__releaseFieldRead === 'function',
+  );
+  await input.uploadFile(newestPath);
+  await page.waitForFunction(() => {
+    const status = document.querySelector('.field-status')?.textContent;
+    return status?.includes('Study browser-newest');
+  });
+  await completeDeferredRead();
+  assert.match(
+    await page.$eval('.field-status', (e) => e.textContent),
+    /Study browser-newest/,
+  );
+  assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 2);
+
+  // A newer malformed JSON file cannot be replaced by stale valid input.
+  await page.evaluate(() => {
+    window.__deferFieldRead = true;
+    window.__releaseFieldRead = null;
+  });
+  await input.uploadFile(inputPath);
+  await page.waitForFunction(
+    () => typeof window.__releaseFieldRead === 'function',
+  );
+  await input.uploadFile(badPath);
+  await page.waitForFunction(() =>
+    document.querySelector('#field-feedback')?.textContent.includes('rejected'),
+  );
+  await completeDeferredRead();
+  assert.match(
+    await page.$eval('#field-feedback', (e) => e.textContent),
+    /File rejected/,
+  );
+  assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 0);
+
+  // An empty newer file also revokes the pending valid read.
+  await page.click('#field-demo');
+  await page.evaluate(() => {
+    window.__deferFieldRead = true;
+    window.__releaseFieldRead = null;
+  });
+  await input.uploadFile(inputPath);
+  await page.waitForFunction(
+    () => typeof window.__releaseFieldRead === 'function',
+  );
+  await input.uploadFile(emptyPath);
+  await completeDeferredRead();
+  assert.match(
+    await page.$eval('#field-feedback', (e) => e.textContent),
+    /nonempty JSON/,
+  );
+  assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 0);
+
+  // Two pending file reads must be ordered by selection, not completion.
+  // Releasing the newest read first is the case a stale implementation loses.
+  await page.click('#field-demo');
+  await page.evaluate(() => {
+    window.__deferFieldRead = true;
+    window.__releaseFieldRead = null;
+  });
+  await input.uploadFile(inputPath);
+  await page.waitForFunction(
+    () => typeof window.__releaseFieldRead === 'function',
+  );
+  await page.evaluate(() => {
+    window.__releaseOlderFieldRead = window.__releaseFieldRead;
+    window.__deferFieldRead = true;
+    window.__releaseFieldRead = null;
+  });
+  await input.uploadFile(newestPath);
+  await page.waitForFunction(
+    () => typeof window.__releaseFieldRead === 'function',
+  );
+  await completeDeferredRead();
+  await page.evaluate(async () => {
+    await window.__releaseOlderFieldRead();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  assert.match(
+    await page.$eval('.field-status', (e) => e.textContent),
+    /Study browser-newest/,
+  );
+
+  // A rejected superseded read must not erase a newer restored example.
+  await page.click('#field-demo');
+  await page.evaluate(() => {
+    window.__deferFieldRead = true;
+    window.__releaseFieldRead = null;
+    window.__rejectFieldRead = null;
+  });
+  await input.uploadFile(inputPath);
+  await page.waitForFunction(
+    () => typeof window.__rejectFieldRead === 'function',
+  );
+  await page.click('#field-demo');
+  await page.evaluate(async () => {
+    window.__rejectFieldRead();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  assert.equal(
+    await page.$eval('#field-feedback', (e) => e.textContent),
+    'Restored fictional example.',
+  );
+  assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 2);
+
+  // Likewise, an old failed read cannot wipe a newer valid local receipt.
+  await page.evaluate(() => {
+    window.__deferFieldRead = true;
+    window.__releaseFieldRead = null;
+    window.__rejectFieldRead = null;
+  });
+  await input.uploadFile(inputPath);
+  await page.waitForFunction(
+    () => typeof window.__rejectFieldRead === 'function',
+  );
+  await input.uploadFile(newestPath);
+  await page.waitForFunction(() => {
+    const status = document.querySelector('.field-status')?.textContent;
+    return status?.includes('Study browser-newest');
+  });
+  await page.evaluate(async () => {
+    window.__rejectFieldRead();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  assert.match(
+    await page.$eval('.field-status', (e) => e.textContent),
+    /Study browser-newest/,
+  );
+  assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 2);
+
   const mobile = await checkViewport(390, 844);
   await page.screenshot({
     path: 'qa-artifacts/field-lite-mobile.png',
@@ -86,7 +323,16 @@ try {
   });
   assert.deepEqual(errors, []);
   assert.deepEqual(external, []);
-  console.log(JSON.stringify({ status: 'PASS', desktop, mobile, externalRequests: 0 }));
+  assert.deepEqual(unexpectedLocalRequests, []);
+  console.log(
+    JSON.stringify({
+      status: 'PASS',
+      desktop,
+      mobile,
+      externalRequests: 0,
+      sameOriginProviderRequests: 0,
+    }),
+  );
 } finally {
   await browser.close();
   await rm(temp, { recursive: true, force: true });

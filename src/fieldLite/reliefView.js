@@ -20,6 +20,7 @@ export function reliefViewModel(packet) {
   const validStage = (s) => s && typeof s.accessRevision === 'string' &&
     ['evaluated', 'limited'].includes(s.status) &&
     Number.isSafeInteger(s.unknownRoutes) && s.unknownRoutes >= 0 &&
+    (s.status === 'limited' ? s.unknownRoutes > 0 : s.unknownRoutes === 0) &&
     s.knownOnlyExact && s.knownOnlyNearestFirst &&
     Number.isSafeInteger(s.knownOnlyExact.servedUnits) && s.knownOnlyExact.servedUnits >= 0 &&
     Number.isSafeInteger(s.knownOnlyNearestFirst.servedUnits) &&
@@ -30,6 +31,24 @@ export function reliefViewModel(packet) {
       before.accessRevision === after.accessRevision ||
       after.knownOnlyExact.servedUnits - before.knownOnlyExact.servedUnits !==
         packet.delta.knownOnlyServedUnits) return null;
+  // Every presentation row must describe the stage it supplies evidence for.
+  // Otherwise a valid receipt could render a closure reference as baseline proof.
+  const matchesStage = (row, stage) =>
+    row.phase === stage.phase &&
+    row.accessRevision === stage.accessRevision &&
+    row.exactKnownOnlyServedUnits === stage.knownOnlyExact.servedUnits &&
+    row.nearestFirstKnownOnlyServedUnits ===
+      stage.knownOnlyNearestFirst.servedUnits &&
+    row.unknownRoutes === stage.unknownRoutes;
+  const expectedStatus =
+    before.status === 'limited' || after.status === 'limited'
+      ? 'limited'
+      : 'evaluated';
+  if (
+    !matchesStage(packet.fieldLite.rows[0], before) ||
+    !matchesStage(packet.fieldLite.rows[1], after) ||
+    packet.status !== expectedStatus
+  ) return null;
   return {
     studyId: packet.source?.studyId || 'unknown',
     sourceRef: packet.source?.sourceRef || 'unknown',

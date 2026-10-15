@@ -200,3 +200,13 @@ test('malformed route collection cannot produce unreviewed candidates', () => {
   assert.deepEqual(packet.routes, []);
   assert.deepEqual(packet.gaps, ['invalid-route-collection']);
 });
+
+test('unmapped route receipt keeps its segment identifiers immutable', () => {
+  const result = evaluateDisasterRouteSupport(
+    { id: 'relief-a', segmentIds: [] },
+    [],
+  );
+  assert.equal(Object.isFrozen(result.segmentIds), true);
+  assert.throws(() => result.segmentIds.push('invented-segment'), TypeError);
+  assert.deepEqual(result.segmentIds, []);
+});

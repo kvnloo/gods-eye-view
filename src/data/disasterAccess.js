@@ -112,7 +112,7 @@ export function evaluateDisasterRouteSupport(route, accessSegments = []) {
     return Object.freeze({
       routeId,
       support: 'unknown',
-      segmentIds,
+      segmentIds: Object.freeze(segmentIds),
       reasons: Object.freeze(
         invalidRouteRefs
           ? ['route-segments-not-mapped', 'invalid-route-segment-refs']

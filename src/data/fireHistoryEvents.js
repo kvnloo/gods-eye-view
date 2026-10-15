@@ -61,15 +61,18 @@ export function normalizeFirePerimeter(raw) {
   return Object.freeze(out);
 }
 
+const DECIMAL_COORDINATE = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i;
+
 function finiteCoordinate(value) {
-  // Number(null), Number('') and Number(false) invent zero coordinates.
-  if (
-    typeof value !== 'number' &&
-    (typeof value !== 'string' || !value.trim())
-  )
+  // Number() also accepts hex/binary/octal literals, not valid geo CSV text.
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!DECIMAL_COORDINATE.test(trimmed)) return NaN;
+    value = Number(trimmed);
+  } else if (typeof value !== 'number') {
     return NaN;
-  const number = Number(value);
-  return Number.isFinite(number) ? number : NaN;
+  }
+  return Number.isFinite(value) ? value : NaN;
 }
 
 export function normalizeFireEvent(raw) {

@@ -89,3 +89,46 @@ test('a settled key may load again', async () => {
   assert.equal(await lane.run('again', loader), 1);
   assert.equal(await lane.run('again', loader), 2);
 });
+
+test('the last abandoned waiter evicts keys even when a loader ignores abort', async () => {
+  const lane = createSingleflight();
+  for (let i = 0; i < 12; i += 1) {
+    const caller = new AbortController();
+    const pending = lane.run(
+      'stalled-' + i,
+      () => new Promise(() => {}),
+      { signal: caller.signal },
+    );
+    await Promise.resolve();
+    caller.abort();
+    await assert.rejects(pending, { name: 'AbortError' });
+    assert.equal(lane.getInFlightCount(), 0);
+  }
+});
+
+test('late abandoned transport cannot evict a replacement under the same key', async () => {
+  const lane = createSingleflight();
+  const caller = new AbortController();
+  const abandoned = deferred();
+  const first = lane.run('reused-key', () => abandoned.promise, {
+    signal: caller.signal,
+  });
+  await Promise.resolve();
+  caller.abort();
+  await assert.rejects(first, { name: 'AbortError' });
+  assert.equal(lane.getInFlightCount(), 0);
+
+  const replacement = deferred();
+  const second = lane.run('reused-key', () => replacement.promise);
+  await Promise.resolve();
+  assert.equal(lane.getInFlightCount(), 1);
+
+  abandoned.resolve('stale');
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(lane.getInFlightCount(), 1);
+
+  replacement.resolve('current');
+  assert.equal(await second, 'current');
+  assert.equal(lane.getInFlightCount(), 0);
+});

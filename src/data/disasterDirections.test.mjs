@@ -45,7 +45,7 @@ test('Directions route identity is deterministic and changes with route geometry
     }),
   );
 
-  assert.match(first, /^osrm:[0-9a-f]{8}$/);
+  assert.match(first, /^osrm:[0-9a-f]{16}$/);
   assert.equal(same, first);
   assert.notEqual(changed, first);
 });
@@ -254,7 +254,7 @@ test('malformed coordinates cannot invent an OSRM candidate at zero latitude', (
   );
   assert.match(
     directionsRouteIdentity(route({ geometry: [[0, 0], [1, 1]] })),
-    /^osrm:[0-9a-f]{8}$/,
+    /^osrm:[0-9a-f]{16}$/,
   );
 });
 
@@ -262,7 +262,7 @@ test('one invalid interior vertex makes the full candidate unavailable', () => {
   const valid = route({
     geometry: [[85.1, 27.9], [85.11, 27.91], [85.12, 27.92]],
   });
-  assert.match(directionsRouteIdentity(valid), /^osrm:[0-9a-f]{8}$/);
+  assert.match(directionsRouteIdentity(valid), /^osrm:[0-9a-f]{16}$/);
 
   const broken = [
     [[85.1, 27.9], [null, null], [85.12, 27.92]],
@@ -364,4 +364,29 @@ test('invalid evidence collection returns unknown instead of throwing', () => {
       'invalid-access-collection',
     ]);
   }
+});
+
+test('distinct routes sharing a legacy 32-bit ID cannot reuse an access receipt', () => {
+  const a = route({
+    geometry: [[85.1, 27.9], [85.248725, 27.917841], [85.12, 27.92]],
+  });
+  const b = route({
+    geometry: [[85.1, 27.9], [85.333471, 27.916722], [85.12, 27.92]],
+  });
+  assert.notEqual(directionsRouteIdentity(a), directionsRouteIdentity(b));
+  const receipt = evaluateDirectionsDisasterAccess({
+    route: a,
+    segmentIds: ['bridge'],
+    accessSegments: [segment('bridge')],
+    accessRevision: 'access-r1',
+  });
+  assert.equal(receipt.support, 'supported');
+  assert.equal(
+    isDirectionsDisasterAccessCurrent(receipt, {
+      route: b,
+      segmentIds: ['bridge'],
+      accessRevision: 'access-r1',
+    }),
+    false,
+  );
 });

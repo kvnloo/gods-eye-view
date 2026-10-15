@@ -42,13 +42,14 @@ function normalizedGeometry(geometry) {
   return points;
 }
 
-function fnv1a32(value) {
-  let hash = 2166136261;
+function fnv1a64(value) {
+  // Reduce receipt-identity collisions for distinct route geometries.
+  let hash = 0xcbf29ce484222325n;
   for (const char of value) {
-    hash ^= char.charCodeAt(0);
-    hash = Math.imul(hash, 16777619);
+    hash ^= BigInt(char.charCodeAt(0));
+    hash = BigInt.asUintN(64, hash * 0x100000001b3n);
   }
-  return hash >>> 0;
+  return hash;
 }
 
 /**
@@ -68,7 +69,7 @@ export function directionsRouteIdentity(route) {
     durationS: rounded(route?.durationS, 3),
     geometry,
   });
-  return `osrm:${fnv1a32(canonical).toString(16).padStart(8, '0')}`;
+  return `osrm:${fnv1a64(canonical).toString(16).padStart(16, '0')}`;
 }
 
 function unverifiedAccessReasons(segmentIds, accessSegments) {

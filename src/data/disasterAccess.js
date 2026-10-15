@@ -83,28 +83,55 @@ export function normalizeDisasterAccessSegment(input) {
 export function evaluateDisasterRouteSupport(route, accessSegments = []) {
   const routeId = nonEmptyText(route?.id) || 'candidate-route';
   const segmentIds = uniqueIds(route?.segmentIds);
-  const normalizedSegments = accessSegments
+  // Dropping malformed references must not create a fully supported route.
+  // Keep checking valid refs so a known blockage still wins.
+  const invalidRouteRefs =
+    Array.isArray(route?.segmentIds) &&
+    route.segmentIds.some((id) => !nonEmptyText(id));
+  const inputSegments = Array.isArray(accessSegments) ? accessSegments : [];
+  const normalizedSegments = inputSegments
     .map(normalizeDisasterAccessSegment)
     .filter(Boolean);
-  const byId = new Map(
-    normalizedSegments.map((segment) => [segment.id, segment]),
-  );
+  const byId = new Map();
+  const conflictingIds = new Set();
+  for (const segment of normalizedSegments) {
+    const previous = byId.get(segment.id);
+    if (!previous) {
+      byId.set(segment.id, segment);
+    } else if (
+      previous.state !== segment.state ||
+      previous.freshness !== segment.freshness ||
+      previous.determination !== segment.determination
+    ) {
+      // Resolving independent reports belongs to the access evidence owner.
+      conflictingIds.add(segment.id);
+    }
+  }
 
   if (segmentIds.length === 0) {
     return Object.freeze({
       routeId,
       support: 'unknown',
-      segmentIds,
-      reasons: Object.freeze(['route-segments-not-mapped']),
+      segmentIds: Object.freeze(segmentIds),
+      reasons: Object.freeze(
+        invalidRouteRefs
+          ? ['route-segments-not-mapped', 'invalid-route-segment-refs']
+          : ['route-segments-not-mapped'],
+      ),
     });
   }
 
-  const reasons = [];
+  const reasons = invalidRouteRefs ? ['invalid-route-segment-refs'] : [];
   let blocked = false;
-  let unknown = false;
+  let unknown = invalidRouteRefs;
   let degraded = false;
 
   for (const segmentId of segmentIds) {
+    if (conflictingIds.has(segmentId)) {
+      unknown = true;
+      reasons.push(`conflicting-access:${segmentId}`);
+      continue;
+    }
     const segment = byId.get(segmentId);
     if (!segment) {
       unknown = true;
@@ -164,22 +191,25 @@ export function buildDisasterAccessPacket({
   accessSegments = [],
   candidateRoutes = [],
 } = {}) {
-  const normalizedSegments = accessSegments
+  const inputSegments = Array.isArray(accessSegments) ? accessSegments : [];
+  const normalizedSegments = inputSegments
     .map(normalizeDisasterAccessSegment)
     .filter(Boolean);
   const invalidAccessRecordCount = Math.max(
     0,
-    accessSegments.length - normalizedSegments.length,
+    inputSegments.length - normalizedSegments.length,
   );
 
   const gaps = [];
+  if (!Array.isArray(accessSegments)) gaps.push('invalid-access-collection');
+  if (!Array.isArray(candidateRoutes)) gaps.push('invalid-route-collection');
   if (normalizedSegments.length === 0) gaps.push('access-not-assessed');
   if (invalidAccessRecordCount > 0)
     gaps.push(`invalid-access-records:${invalidAccessRecordCount}`);
 
   const eventId = nonEmptyText(event?.id);
-  const routes = candidateRoutes.map((route) =>
-    evaluateDisasterRouteSupport(route, normalizedSegments),
+  const routes = (Array.isArray(candidateRoutes) ? candidateRoutes : []).map(
+    (route) => evaluateDisasterRouteSupport(route, normalizedSegments),
   );
 
   return Object.freeze({

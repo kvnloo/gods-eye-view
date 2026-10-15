@@ -130,3 +130,83 @@ test('packet results use evidence-support language, never a safety verdict', () 
   assert.equal(packet.routes[0].support, 'supported');
   assert.equal(JSON.stringify(packet).toLowerCase().includes('safe'), false);
 });
+
+test('conflicting segment states fail closed in either order', () => {
+  const route = { id: 'relief-bridge', segmentIds: ['bridge'] };
+  const observations = [
+    segment('bridge', 'open'),
+    segment('bridge', 'blocked'),
+  ];
+  for (const ordered of [observations, [...observations].reverse()]) {
+    const result = evaluateDisasterRouteSupport(route, ordered);
+    assert.equal(result.support, 'unknown');
+    assert.deepEqual(result.reasons, ['conflicting-access:bridge']);
+  }
+});
+
+test('matching duplicates preserve support; stale conflicts do not', () => {
+  const route = { id: 'relief-bridge', segmentIds: ['bridge'] };
+  const same = [segment('bridge'), segment('bridge')];
+  assert.equal(evaluateDisasterRouteSupport(route, same).support, 'supported');
+
+  const mixed = [segment('bridge'), segment('bridge', 'open', 'stale')];
+  for (const ordered of [mixed, [...mixed].reverse()]) {
+    const result = evaluateDisasterRouteSupport(route, ordered);
+    assert.equal(result.support, 'unknown');
+    assert.deepEqual(result.reasons, ['conflicting-access:bridge']);
+  }
+});
+
+test('mixed observed and simulated declarations remain unknown', () => {
+  const route = { id: 'relief-bridge', segmentIds: ['bridge'] };
+  const observed = segment('bridge');
+  const simulated = { ...segment('bridge'), determination: 'simulated' };
+  for (const ordered of [[observed, simulated], [simulated, observed]]) {
+    const result = evaluateDisasterRouteSupport(route, ordered);
+    assert.equal(result.support, 'unknown');
+    assert.deepEqual(result.reasons, ['conflicting-access:bridge']);
+  }
+});
+
+test('malformed access collections remain unknown without throwing', () => {
+  const route = { id: 'relief-a', segmentIds: ['a'] };
+  for (const accessSegments of [null, {}, 'open']) {
+    const evaluation = evaluateDisasterRouteSupport(route, accessSegments);
+    assert.equal(evaluation.support, 'unknown');
+    assert.deepEqual(evaluation.reasons, ['missing-access:a']);
+  }
+});
+
+test('invalid packet collections are reported as evidence gaps', () => {
+  const route = { id: 'relief-a', segmentIds: ['a'] };
+  for (const accessSegments of [null, {}]) {
+    const packet = buildDisasterAccessPacket({
+      accessSegments,
+      candidateRoutes: [route],
+    });
+    assert.equal(packet.routes[0].support, 'unknown');
+    assert.deepEqual(packet.gaps, [
+      'invalid-access-collection',
+      'access-not-assessed',
+    ]);
+  }
+});
+
+test('malformed route collection cannot produce unreviewed candidates', () => {
+  const packet = buildDisasterAccessPacket({
+    accessSegments: [segment('a')],
+    candidateRoutes: null,
+  });
+  assert.deepEqual(packet.routes, []);
+  assert.deepEqual(packet.gaps, ['invalid-route-collection']);
+});
+
+test('unmapped route receipt keeps its segment identifiers immutable', () => {
+  const result = evaluateDisasterRouteSupport(
+    { id: 'relief-a', segmentIds: [] },
+    [],
+  );
+  assert.equal(Object.isFrozen(result.segmentIds), true);
+  assert.throws(() => result.segmentIds.push('invented-segment'), TypeError);
+  assert.deepEqual(result.segmentIds, []);
+});

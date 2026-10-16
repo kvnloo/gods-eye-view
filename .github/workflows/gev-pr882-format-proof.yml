@@ -1,0 +1,49 @@
+name: GEV PR882 pinned-format proof
+on:
+  push:
+    branches: ['proof/gev-pr882-format-20261016']
+    paths: ['.github/workflows/gev-pr882-format-proof.yml']
+permissions:
+  contents: read
+jobs:
+  format-proof:
+    if: github.repository == 'kvnloo/gods-eye-view'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PUPPETEER_SKIP_DOWNLOAD: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24.14.0'
+          cache: npm
+      - name: Install locked dependencies without package lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Print exact pinned formatter output and narrow diff
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { readFile, writeFile } from 'node:fs/promises';
+          import * as prettier from 'prettier';
+          assert.equal(prettier.version, '3.9.6');
+          const file = 'src/data/disasterAccess.test.mjs';
+          const source = await readFile(file, 'utf8');
+          const formatted = await prettier.format(source, {
+            ...(await prettier.resolveConfig(file)), filepath: file,
+          });
+          await writeFile(file, formatted);
+          console.log('FORMATTER_VERSION=' + prettier.version);
+          console.log('FORMATTED_JSON=' + JSON.stringify(formatted));
+          JS
+          test "$(git diff --name-only)" = 'src/data/disasterAccess.test.mjs'
+          git diff -- src/data/disasterAccess.test.mjs
+          git hash-object src/data/disasterAccess.test.mjs
+      - name: Native supported-runtime regression tests
+        run: node --test src/data/disasterAccess.test.mjs
+      - name: Full adopted formatting gate
+        run: npm run format:check
+      - name: Package boundaries
+        run: npm run check:boundaries

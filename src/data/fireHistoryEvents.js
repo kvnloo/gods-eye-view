@@ -63,8 +63,8 @@ export function normalizeFirePerimeter(raw) {
 
 const DECIMAL_COORDINATE = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i;
 
-function finiteCoordinate(value) {
-  // Number() also accepts hex/binary/octal literals, not valid geo CSV text.
+function finiteDecimalNumber(value) {
+  // Number() accepts nondecimal literals and coerced objects, but source\n  // coordinates and area measurements require finite decimal numbers.
   if (typeof value === 'string') {
     const trimmed = value.trim();
     if (!DECIMAL_COORDINATE.test(trimmed)) return NaN;
@@ -86,7 +86,7 @@ export function normalizeFireEvent(raw) {
   if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs < startMs)
     return null;
   if (!Array.isArray(raw.bbox) || raw.bbox.length !== 4) return null;
-  const [west, south, east, north] = raw.bbox.map(finiteCoordinate);
+  const [west, south, east, north] = raw.bbox.map(finiteDecimalNumber);
   if (
     ![west, south, east, north].every(Number.isFinite) ||
     west < -180 ||
@@ -103,7 +103,7 @@ export function normalizeFireEvent(raw) {
   if (!sources.length) return null;
   const perimeter = raw.perimeter == null ? null : normalizeFirePerimeter(raw.perimeter);
   if (raw.perimeter != null && !perimeter) return null;
-  const burnedHa = Number(raw.burnedHa);
+  const burnedHa = finiteDecimalNumber(raw.burnedHa);
   const references = Array.isArray(raw.references)
     ? raw.references
         .filter(
@@ -184,8 +184,8 @@ export function filterRecordsToEvent(records, event) {
   if (!Array.isArray(records) || !event) return [];
   const [west, south, east, north] = event.bbox;
   return records.filter((record) => {
-    const lat = finiteCoordinate(record?.lat);
-    const lon = finiteCoordinate(record?.lon);
+    const lat = finiteDecimalNumber(record?.lat);
+    const lon = finiteDecimalNumber(record?.lon);
     if (
       !Number.isFinite(lat) ||
       !Number.isFinite(lon) ||

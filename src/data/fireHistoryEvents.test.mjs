@@ -159,3 +159,23 @@ test('nondecimal coordinate encodings do not become fire locations', () => {
     );
   }
 });
+
+test('historic burned area rejects coerced values but retains decimal hectares', () => {
+  for (const invalid of [true, false, ['18'], '0x10', '0b10', '']) {
+    assert.equal(
+      normalizeFireEvent({ ...VALID, burnedHa: invalid })?.burnedHa,
+      null,
+    );
+  }
+  for (const [raw, expected] of [
+    [0, null],
+    [62053, 62053],
+    ['12.5', 12.5],
+    ['1e3', 1000],
+  ]) {
+    assert.equal(
+      normalizeFireEvent({ ...VALID, burnedHa: raw })?.burnedHa,
+      expected,
+    );
+  }
+});

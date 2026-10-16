@@ -1,7 +1,7 @@
 name: GEV PR882 pinned-format proof
 on:
-  push:
-    branches: ['proof/gev-pr882-format-20261016']
+  pull_request:
+    branches: ['exp/disaster-access-kernel-131']
     paths: ['.github/workflows/gev-pr882-format-proof.yml']
 permissions:
   contents: read

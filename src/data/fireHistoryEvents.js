@@ -61,6 +61,20 @@ export function normalizeFirePerimeter(raw) {
   return Object.freeze(out);
 }
 
+const DECIMAL_COORDINATE = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i;
+
+function finiteDecimalNumber(value) {
+  // Number() accepts nondecimal literals and coerced objects, but source\n  // coordinates and area measurements require finite decimal numbers.
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!DECIMAL_COORDINATE.test(trimmed)) return NaN;
+    value = Number(trimmed);
+  } else if (typeof value !== 'number') {
+    return NaN;
+  }
+  return Number.isFinite(value) ? value : NaN;
+}
+
 export function normalizeFireEvent(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const id = typeof raw.id === 'string' ? raw.id.trim() : '';
@@ -72,7 +86,7 @@ export function normalizeFireEvent(raw) {
   if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs < startMs)
     return null;
   if (!Array.isArray(raw.bbox) || raw.bbox.length !== 4) return null;
-  const [west, south, east, north] = raw.bbox.map(Number);
+  const [west, south, east, north] = raw.bbox.map(finiteDecimalNumber);
   if (
     ![west, south, east, north].every(Number.isFinite) ||
     west < -180 ||
@@ -89,7 +103,7 @@ export function normalizeFireEvent(raw) {
   if (!sources.length) return null;
   const perimeter = raw.perimeter == null ? null : normalizeFirePerimeter(raw.perimeter);
   if (raw.perimeter != null && !perimeter) return null;
-  const burnedHa = Number(raw.burnedHa);
+  const burnedHa = finiteDecimalNumber(raw.burnedHa);
   const references = Array.isArray(raw.references)
     ? raw.references
         .filter(
@@ -170,9 +184,17 @@ export function filterRecordsToEvent(records, event) {
   if (!Array.isArray(records) || !event) return [];
   const [west, south, east, north] = event.bbox;
   return records.filter((record) => {
-    const lat = Number(record?.lat);
-    const lon = Number(record?.lon);
-    if (lat < south || lat > north || lon < west || lon > east) return false;
+    const lat = finiteDecimalNumber(record?.lat);
+    const lon = finiteDecimalNumber(record?.lon);
+    if (
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lon) ||
+      lat < south ||
+      lat > north ||
+      lon < west ||
+      lon > east
+    )
+      return false;
     const dayMs = parseUtcDay(record?.acqDate);
     return (
       Number.isFinite(dayMs) && dayMs >= event.startMs && dayMs < event.endMs

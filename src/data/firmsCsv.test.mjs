@@ -182,7 +182,7 @@ for (const fixture of contractCases) {
   });
 }
 
-test('blank, out-of-bounds and nondecimal FIRMS coordinates are skipped', () => {
+test('FIRMS skips blank, out-of-range and nondecimal coordinates', () => {
   const row = (lat, lon) =>
     `${lat},${lon},303.6,0.39,0.36,2026-07-16,1006,N20,VIIRS,n,2.0NRT,290.73,0.53,N`;
   const csv = [

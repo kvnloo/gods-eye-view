@@ -10,7 +10,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import puppeteer from 'puppeteer';
-import { summarizeFrameTrace } from './frame-pacing-metrics.mjs';
+import { summarizeFrameTrace, isSoftwareRenderer } from './frame-pacing-metrics.mjs';
 import { redact } from './qa-browserEvidence.mjs';
 
 const argv = process.argv.slice(2);
@@ -88,8 +88,17 @@ try {
     const gev = window.__godsEyeView;
     const scene = gev.viewer.scene;
     const gl = scene.context?._gl;
-    const ext = gl?.getExtension('WEBGL_debug_renderer_info');
-    const renderer = gl ? gl.getParameter(ext?.UNMASKED_RENDERER_WEBGL ?? gl.RENDERER) : 'unknown';
+    // A masked 'WebKit WebGL' string is not proof of a hardware GPU.
+    let renderer = null;
+    let rendererVerified = false;
+    try {
+      const info = gl?.getExtension?.('WEBGL_debug_renderer_info');
+      const unmasked = info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : null;
+      if (typeof unmasked === 'string' && unmasked.trim()) {
+        renderer = unmasked;
+        rendererVerified = true;
+      }
+    } catch { /* unknown GPU identity cannot be claimed as hardware */ }
     const counts = {};
     for (const [id, entry] of gev.dataManager.layers) {
       if (!entry.enabled) continue;
@@ -100,8 +109,8 @@ try {
     return {
       mode, style: gev.styleManager.activeStyle,
       viewport: innerWidth + 'x' + innerHeight, dpr: devicePixelRatio,
-      canvas: scene.canvas.width + 'x' + scene.canvas.height, renderer,
-      softwareRenderer: /swiftshader|llvmpipe|softpipe|software/i.test(renderer),
+      canvas: scene.canvas.width + 'x' + scene.canvas.height, renderer, rendererVerified,
+      softwareRenderer: /swiftshader|llvmpipe|softpipe|software|basic render driver|d3d11 warp/i.test(renderer ?? ''),
       sourceCounts: counts,
       profile: new URL(location.href).searchParams.get('performance') || 'standard',
       userAgent: navigator.userAgent,
@@ -122,6 +131,10 @@ try {
     let tasks = null;
     let frames = null;
     let rafId = 0;
+    const renderErrors = [];
+    const removeRenderError = scene.renderError?.addEventListener?.(
+      (_scene, error) => renderErrors.push(String(error?.message || error)),
+    ) || (() => {});
     const observers = { longtask: false, longAnimationFrame: false };
     const start = performance.now();
     const signature = () => {
@@ -173,6 +186,7 @@ try {
         running = false;
         cancelAnimationFrame(rafId);
         remove();
+        removeRenderError();
         canvas.removeEventListener('pointermove', onPointer, true);
         tasks?.disconnect();
         frames?.disconnect();
@@ -180,7 +194,7 @@ try {
           mode, durationMs: performance.now() - start,
           sceneTimestampsMs: timestamps, rafTimestampsMs: rafs, inputSamples,
           longTaskDurationsMs: longTasks, longAnimationFrameDurationsMs: longFrames,
-          observerSupport: observers, cameraChangedFrames,
+          observerSupport: observers, cameraChangedFrames, renderErrors,
         };
       },
     };
@@ -225,21 +239,30 @@ try {
       await setPose();
       await sleep(1000);
       const before = await getEnvironment();
-      if (flag('--require-hardware') && (before.softwareRenderer || before.renderer === 'unknown'))
-        throw new Error('hardware renderer required; observed: ' + before.renderer);
+      if (flag('--require-hardware') && (!before.rendererVerified || isSoftwareRenderer(before.renderer)))
+        throw new Error('hardware renderer required; unmasked GPU identity unavailable or software: ' + (before.renderer ?? 'unknown'));
+      const errorCursor = errors.length;
       await startTrace();
       if (mode === 'motion') await driveMotion();
       else if (mode === 'drag') await driveDrag();
       else await sleep(ms);
       const trace = await page.evaluate(() => window.__gevFrameTrace.stop());
+      trace.renderErrors = trace.renderErrors.map((error) => redact(error).slice(0, 350));
+      const runErrors = errors.slice(errorCursor);
       const after = await getEnvironment();
       const summary = summarizeFrameTrace(trace);
+      const knownPopulations = Object.values(before.sourceCounts).every(
+        (count) => Number.isFinite(count) && count >= 0,
+      );
       const stable = before.canvas === after.canvas && before.renderer === after.renderer
+        && before.rendererVerified && after.rendererVerified
         && before.visible && after.visible && before.focused && after.focused
-        && JSON.stringify(before.sourceCounts) === JSON.stringify(after.sourceCounts);
+        && before.canvas !== '0x0' && knownPopulations
+        && JSON.stringify(before.sourceCounts) === JSON.stringify(after.sourceCounts)
+        && trace.renderErrors.length === 0 && runErrors.length === 0;
       samples.push({
         style, run, trace, summary, environment: before,
-        comparableEnvironment: stable, errors: [...errors],
+        comparableEnvironment: stable, errors: runErrors,
       });
       console.log('[' + (summary.valid && stable ? 'CAPTURE' : 'INVALID') + '] '
         + style + ' #' + run + ': scene p95='

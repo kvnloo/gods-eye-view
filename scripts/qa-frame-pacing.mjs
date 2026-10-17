@@ -126,6 +126,8 @@ try {
     const inputSamples = [];
     const longTasks = [];
     const longFrames = [];
+    const scriptCosts = new Map();
+    let unclassifiedScripts = 0;
     let cameraChangedFrames = 0;
     let running = true;
     let tasks = null;
@@ -161,17 +163,40 @@ try {
         inputSamples.push({ atMs: performance.now() - start, firstChangedSceneAtMs: null });
     };
     canvas.addEventListener('pointermove', onPointer, { capture: true, passive: true });
+    const ingestTasks = (records) => {
+      for (const entry of records) longTasks.push(entry.duration);
+    };
+    const ingestLongFrames = (records) => {
+      for (const entry of records) {
+        longFrames.push(entry.duration);
+        for (const script of entry.scripts ?? []) {
+          // No full paths, hosts, search strings or unbounded per-script rows.
+          let name = '(anonymous)';
+          try {
+            name = script.sourceURL
+              ? new URL(script.sourceURL, location.href).pathname.split('/').at(-1) || name
+              : name;
+          } catch { /* keep anonymized source */ }
+          name = name.replace(/[^a-z0-9_.-]/gi, '_').slice(0, 64);
+          if (!scriptCosts.has(name) && scriptCosts.size >= 64) {
+            unclassifiedScripts++;
+            continue;
+          }
+          const previous = scriptCosts.get(name) ?? { calls: 0, totalMs: 0, forcedLayoutMs: 0 };
+          previous.calls++;
+          previous.totalMs += Number(script.duration) || 0;
+          previous.forcedLayoutMs += Number(script.forcedStyleAndLayoutDuration) || 0;
+          scriptCosts.set(name, previous);
+        }
+      }
+    };
     try {
-      tasks = new PerformanceObserver((list) => {
-        for (const entry of list.getEntries()) longTasks.push(entry.duration);
-      });
+      tasks = new PerformanceObserver((list) => ingestTasks(list.getEntries()));
       tasks.observe({ type: 'longtask', buffered: false });
       observers.longtask = true;
     } catch { tasks = null; }
     try {
-      frames = new PerformanceObserver((list) => {
-        for (const entry of list.getEntries()) longFrames.push(entry.duration);
-      });
+      frames = new PerformanceObserver((list) => ingestLongFrames(list.getEntries()));
       frames.observe({ type: 'long-animation-frame', buffered: false });
       observers.longAnimationFrame = true;
     } catch { frames = null; }
@@ -188,6 +213,10 @@ try {
         remove();
         removeRenderError();
         canvas.removeEventListener('pointermove', onPointer, true);
+        // Flush records queued immediately before stop; disconnect alone
+        // can discard the hitch that ended this capture.
+        if (tasks) ingestTasks(tasks.takeRecords());
+        if (frames) ingestLongFrames(frames.takeRecords());
         tasks?.disconnect();
         frames?.disconnect();
         return {
@@ -195,6 +224,9 @@ try {
           sceneTimestampsMs: timestamps, rafTimestampsMs: rafs, inputSamples,
           longTaskDurationsMs: longTasks, longAnimationFrameDurationsMs: longFrames,
           observerSupport: observers, cameraChangedFrames, renderErrors,
+          slowScripts: [...scriptCosts].map(([name, stats]) => ({ name, ...stats }))
+            .sort((a, b) => b.totalMs - a.totalMs).slice(0, 8),
+          unclassifiedScripts,
         };
       },
     };

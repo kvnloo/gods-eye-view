@@ -135,3 +135,40 @@ test('quick sensor lens can clear creative grade without changing selected style
   assert.equal(f.selections.length, before);
   f.controller.destroy();
 });
+
+
+test('single-pass grade comparison can reveal the base lens without new GPU work', () => {
+  const f = fixture();
+  f.controller.apply('storybook-wilds');
+  const stage = [...f.owned][0];
+  assert.equal(f.controller.reveal, 1);
+  assert.equal(stage.uniforms.reveal, 1);
+  assert.equal(f.controller.setReveal(0.5), true);
+  assert.equal(stage.uniforms.reveal, 0.5);
+  assert.equal(stage.enabled, true);
+  assert.equal(f.controller.setReveal(0), true);
+  assert.equal(stage.enabled, false, 'no grade pass when fully unrevealed');
+  assert.equal(f.controller.activeId, 'storybook-wilds');
+  assert.equal(f.controller.setReveal(1), true);
+  assert.equal(stage.enabled, true);
+  assert.equal(f.created, 1);
+  f.controller.apply('cinematic-earth');
+  assert.equal(f.controller.reveal, 1, 'changing looks restores full creative view');
+  assert.equal(stage.uniforms.reveal, 1);
+  assert.equal(f.controller.setReveal(NaN), false);
+  assert.equal(f.controller.setReveal(-0.1), false);
+  assert.equal(f.controller.setReveal(1.01), false);
+  assert.equal(stage.uniforms.reveal, 1);
+  f.controller.apply('original');
+  assert.equal(f.controller.setReveal(0.5), false);
+  assert.equal(stage.enabled, false);
+  f.controller.destroy();
+});
+
+test('comparison shader uses same source texture and preserves input alpha', () => {
+  assert.match(COLOR_GRADE_SHADER, /uniform float reveal;/);
+  assert.match(COLOR_GRADE_SHADER, /step\(uv\.x, reveal\)/);
+  assert.match(COLOR_GRADE_SHADER, /mix\(source\.rgb, graded, mask\)/);
+  assert.match(COLOR_GRADE_SHADER, /source\.a/);
+  assert.doesNotMatch(COLOR_GRADE_SHADER, /depthTexture|framebuffer|historyTexture/);
+});

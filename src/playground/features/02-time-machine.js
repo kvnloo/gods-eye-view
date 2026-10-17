@@ -67,6 +67,10 @@ export const feature = {
       progress.textContent = slider.value + '% · authored scene clock';
     });
     seek.addEventListener('click', async () => {
+      if (services.sceneDirector.running && !playbackOwned) {
+        notice.textContent = 'A scene is already playing. Stop it before seeking.';
+        return;
+      }
       const generation = ++seekCounter;
       notice.textContent = 'Seeking…';
       try {

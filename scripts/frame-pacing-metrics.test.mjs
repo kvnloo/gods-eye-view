@@ -67,3 +67,28 @@ test('matched captures report descriptive deltas without inventing a CI speedup'
   assert.equal(result.comparable, true);
   assert.equal(result.p95SceneIntervalDeltaMs, -184);
 });
+
+test('pointerless drag cannot pass on unrelated scene motion', () => {
+  const trace = { ...fixture('render-starvation'), mode: 'drag', inputSamples: [] };
+  const result = summarizeFrameTrace(trace);
+  assert.equal(result.valid, false);
+  assert.match(result.invalidReason, /drag missing/);
+});
+
+test('drag input matched to a changed postRender is measurable, not photons', () => {
+  const trace = { ...fixture('render-starvation'), mode: 'drag' };
+  const result = summarizeFrameTrace(trace);
+  assert.equal(result.valid, true);
+  assert.equal(result.inputToChangedSceneRenderMs.p95, 187);
+  assert.match(result.measurement, /not photons/);
+});
+
+test('A/B refuses missing focus and browser identity even when both are absent', () => {
+  const before = fixture('render-starvation');
+  const after = structuredClone(before);
+  delete before.environment.focused;
+  delete after.environment.focused;
+  delete before.environment.userAgent;
+  delete after.environment.userAgent;
+  assert.deepEqual(compareFrameTraces(before, after).mismatches, ['userAgent', 'focused']);
+});

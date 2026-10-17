@@ -59,6 +59,7 @@ export const feature = {
         for (const card of gallery.querySelectorAll('[data-look-pack]'))
           card.setAttribute('aria-pressed', 'false');
         styleManager.setStyle(id, { applyPreset: true, userInitiated: true });
+        syncComparison();
         readout.textContent = label + ' lens active.';
       });
       looks.append(button);
@@ -86,10 +87,40 @@ export const feature = {
           : 'This creative look is unavailable on the current renderer.';
         for (const option of gallery.querySelectorAll('[data-look-pack]'))
           option.setAttribute('aria-pressed', String(applied && option === card));
+        syncComparison();
       });
       card.setAttribute('aria-pressed', String(services.lookPacks?.activeId === pack.id));
       gallery.append(card);
     }
+    const comparison = doc.createElement('div');
+    comparison.className = 'gev-playground-compare';
+    const compareLabel = doc.createElement('label');
+    compareLabel.textContent = 'Compare creative grade vs base lens';
+    const compareValue = doc.createElement('span');
+    const compareSlider = doc.createElement('input');
+    compareSlider.type = 'range';
+    compareSlider.min = '0';
+    compareSlider.max = '100';
+    compareSlider.step = '1';
+    compareSlider.setAttribute('aria-label', 'Creative image reveal percentage');
+    compareLabel.append(compareSlider, compareValue);
+    comparison.append(compareLabel);
+    function syncComparison() {
+      const selected = LOOK_PACKS.find((pack) => pack.id === services.lookPacks?.activeId);
+      comparison.hidden = !selected?.grade;
+      const percentage = Math.round((services.lookPacks?.reveal ?? 1) * 100);
+      compareSlider.value = String(percentage);
+      compareValue.textContent = percentage + '% creative on left';
+    }
+    compareSlider.addEventListener('input', () => {
+      const percent = Number(compareSlider.value);
+      if (services.lookPacks?.setReveal(percent / 100)) {
+        syncComparison();
+        readout.textContent = percent + '% creative on left; right shows the ungraded ' +
+          styleManager.activeStyle + ' base lens.';
+      }
+    });
+    syncComparison();
     const actions = doc.createElement('div');
     actions.className = 'gev-playground-actions';
     const surprise = doc.createElement('button');
@@ -129,7 +160,7 @@ export const feature = {
       });
       readout.textContent = 'Returning to your starting view.';
     });
-    root.append(title, description, galleryTitle, gallery, lookTitle, looks, actions, readout);
+    root.append(title, description, galleryTitle, gallery, comparison, lookTitle, looks, actions, readout);
     const currentPack = LOOK_PACKS.find((pack) => pack.id === services.lookPacks?.activeId);
     readout.textContent = currentPack
       ? 'Creative look: ' + currentPack.title + ' (reset any time).'

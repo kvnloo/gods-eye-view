@@ -82,6 +82,22 @@ try {
     await page.screenshot({ path: 'qa-shots/visual-universe/' + id + '.png' });
   }
 
+  for (const [percentage, expectedEnabled] of [[0, false], [50, true], [100, true]]) {
+    await page.$eval('.gev-playground-compare input[type="range"]', (input, value) => {
+      input.value = String(value);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }, percentage);
+    const comparison = await page.evaluate(() => {
+      const stage = window.__godsEyeView.viewer.scene.postProcessStages
+        .getStageByName('godsEyeView_creativeGrade');
+      return { enabled: stage?.enabled, reveal: stage?.uniforms?.reveal };
+    });
+    assert.equal(comparison.enabled, expectedEnabled, 'pass state at ' + percentage);
+    assert.equal(comparison.reveal, percentage / 100, 'split at ' + percentage);
+    if (percentage === 50)
+      await page.screenshot({ path: 'qa-shots/visual-universe/compare-half.png' });
+  }
+
   await page.click('.gev-playground-close');
   const persistent = await page.evaluate(() => {
     const chip = document.querySelector('.gev-playground-creative-chip');

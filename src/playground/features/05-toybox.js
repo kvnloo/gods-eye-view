@@ -1,4 +1,9 @@
 import { LOOK_PACKS } from '../lookPacks.js';
+import {
+  createLookManifest,
+  parseLookManifest,
+  serializeLookManifest,
+} from '../lookManifest.js';
 
 /**
  * A thin joy layer over GEV's existing shader engine and Cesium camera.
@@ -106,7 +111,7 @@ export const feature = {
     compareLabel.append(compareSlider, compareValue);
     comparison.append(compareLabel);
     function syncComparison() {
-      const selected = LOOK_PACKS.find((pack) => pack.id === services.lookPacks?.activeId);
+      const selected = services.lookPacks?.activePack;
       comparison.hidden = !selected?.grade;
       const percentage = Math.round((services.lookPacks?.reveal ?? 1) * 100);
       compareSlider.value = String(percentage);
@@ -121,6 +126,70 @@ export const feature = {
       }
     });
     syncComparison();
+    const lab = doc.createElement('details');
+    lab.className = 'gev-playground-look-lab';
+    const labTitle = doc.createElement('summary');
+    labTitle.textContent = 'Local Look Lab · remix and share JSON';
+    const labNote = doc.createElement('p');
+    labNote.textContent = 'Data-only creative presets. Nothing is uploaded or executed.';
+    const authorLabel = doc.createElement('label');
+    authorLabel.textContent = 'Author credit for a new remix';
+    const authorInput = doc.createElement('input');
+    authorInput.type = 'text';
+    authorInput.maxLength = 80;
+    authorInput.placeholder = 'Your display name';
+    authorInput.setAttribute('aria-label', 'Look author credit');
+    authorLabel.append(authorInput);
+    const fileLabel = doc.createElement('label');
+    fileLabel.textContent = 'Editable local JSON (4 KB maximum)';
+    const jsonArea = doc.createElement('textarea');
+    jsonArea.rows = 6;
+    jsonArea.maxLength = 4096;
+    jsonArea.spellcheck = false;
+    jsonArea.setAttribute('aria-label', 'Look manifest JSON');
+    fileLabel.append(jsonArea);
+    const labActions = doc.createElement('div');
+    labActions.className = 'gev-playground-actions';
+    const exportButton = doc.createElement('button');
+    exportButton.type = 'button';
+    exportButton.textContent = 'Export current';
+    const importButton = doc.createElement('button');
+    importButton.type = 'button';
+    importButton.textContent = 'Apply local JSON';
+    exportButton.addEventListener('click', () => {
+      try {
+        const selected = services.lookPacks?.activePack;
+        if (!selected?.grade) {
+          readout.textContent = 'Choose a creative look before exporting.';
+          return;
+        }
+        const manifest = selected.author
+          ? selected
+          : createLookManifest(selected, authorInput.value.trim());
+        jsonArea.value = serializeLookManifest(manifest);
+        jsonArea.focus();
+        jsonArea.select();
+        readout.textContent = 'Local look JSON ready to copy. Author credit preserved.';
+      } catch {
+        readout.textContent = 'Enter an author name to create a credited remix.';
+      }
+    });
+    importButton.addEventListener('click', () => {
+      try {
+        const manifest = parseLookManifest(jsonArea.value);
+        if (!services.lookPacks?.applyVerifiedManifest(manifest))
+          throw new TypeError('Unsupported base lens');
+        for (const card of gallery.querySelectorAll('[data-look-pack]'))
+          card.setAttribute('aria-pressed', 'false');
+        syncComparison();
+        readout.textContent = 'Creative remix "' + manifest.title + '" by ' +
+          manifest.author.name + ' active. Original Earth resets it.';
+      } catch {
+        readout.textContent = 'Look JSON was rejected; current view is unchanged.';
+      }
+    });
+    labActions.append(exportButton, importButton);
+    lab.append(labTitle, labNote, authorLabel, fileLabel, labActions);
     const actions = doc.createElement('div');
     actions.className = 'gev-playground-actions';
     const surprise = doc.createElement('button');
@@ -160,8 +229,8 @@ export const feature = {
       });
       readout.textContent = 'Returning to your starting view.';
     });
-    root.append(title, description, galleryTitle, gallery, comparison, lookTitle, looks, actions, readout);
-    const currentPack = LOOK_PACKS.find((pack) => pack.id === services.lookPacks?.activeId);
+    root.append(title, description, galleryTitle, gallery, comparison, lab, lookTitle, looks, actions, readout);
+    const currentPack = services.lookPacks?.activePack;
     readout.textContent = currentPack
       ? 'Creative look: ' + currentPack.title + ' (reset any time).'
       : 'Current lens: ' + (styleManager.activeStyle || 'normal') + '.';

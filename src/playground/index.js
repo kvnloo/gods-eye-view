@@ -48,6 +48,11 @@ export function mountPlanetPlayground(services) {
       lookPacks.clearGrade();
   };
   eventWindow?.addEventListener('gev:style-change', onExternalStyleChange);
+  const onDirectStyleSelection = (event) => {
+    if (lookPacks.activeId && event.target?.closest?.('.style-btn'))
+      lookPacks.clearGrade();
+  };
+  doc.addEventListener('click', onDirectStyleSelection, true);
 
   const launcher = doc.createElement('button');
   launcher.id = 'planet-playground-launcher';
@@ -154,6 +159,7 @@ export function mountPlanetPlayground(services) {
     launcher.remove();
     creativeChip.remove();
     eventWindow?.removeEventListener('gev:style-change', onExternalStyleChange);
+    doc.removeEventListener('click', onDirectStyleSelection, true);
     lookPacks.destroy();
   };
 }

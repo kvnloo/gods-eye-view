@@ -172,7 +172,7 @@ export const COLOR_GRADE_SHADER = /* glsl */ `
  * Own a single optional grade stage for the whole Playground lifetime.
  * No persistent GPU work until the first creative grade is selected.
  */
-export function createLookPackController({ viewer, Cesium, styleManager }) {
+export function createLookPackController({ viewer, Cesium, styleManager, onChange = () => {} }) {
   let stage = null;
   let destroyed = false;
   let active = null;
@@ -207,6 +207,7 @@ export function createLookPackController({ viewer, Cesium, styleManager }) {
         stage.enabled = Boolean(pack.grade);
       }
       active = pack.id;
+      onChange(active);
       render();
       return true;
     },
@@ -214,6 +215,7 @@ export function createLookPackController({ viewer, Cesium, styleManager }) {
       if (destroyed) return;
       if (stage) stage.enabled = false;
       active = null;
+      onChange(active);
       render();
     },
     destroy() {
@@ -222,6 +224,7 @@ export function createLookPackController({ viewer, Cesium, styleManager }) {
       if (stage) stages.remove(stage);
       stage = null;
       active = null;
+      onChange(active);
     },
   };
 }

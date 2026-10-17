@@ -95,10 +95,12 @@ export function summarizeFrameTrace(trace) {
   };
   // Never return a plausible '0 ms' for a renderer that failed to draw.
   const enoughMotion = scene.samples.length >= 2 && cameraChangedFrames >= 1;
-  summary.valid = summary.invalidSamples === 0 && (!active || enoughMotion);
+  const enoughDrag = mode !== 'drag' || (inputSamples.length > 0 && latency.length > 0);
+  summary.valid = summary.invalidSamples === 0 && (!active || enoughMotion) && enoughDrag;
   summary.invalidReason = summary.valid ? null : summary.invalidSamples
     ? 'invalid timestamp/input samples'
-    : 'motion missing scene frames or changed camera';
+    : !enoughMotion && active ? 'motion missing scene frames or changed camera'
+    : 'drag missing responsive pointer-to-scene samples';
   return summary;
 }
 
@@ -108,7 +110,9 @@ export function compareFrameTraces(before, after) {
     'mode', 'style', 'viewport', 'dpr', 'canvas', 'renderer',
     'softwareRenderer', 'sourceCounts', 'profile', 'userAgent', 'focused',
   ];
-  const mismatches = keys.filter((key) => JSON.stringify(before.environment?.[key]) !== JSON.stringify(after.environment?.[key]));
+  const mismatches = keys.filter((key) =>
+    before.environment?.[key] === undefined || after.environment?.[key] === undefined ||
+    JSON.stringify(before.environment[key]) !== JSON.stringify(after.environment[key]));
   const b = summarizeFrameTrace(before);
   const a = summarizeFrameTrace(after);
   if (!b.valid || !a.valid) mismatches.push('invalid trace');

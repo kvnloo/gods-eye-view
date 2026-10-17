@@ -1,0 +1,1475 @@
+{
+  "head": "75d59cb3d86c2a53618e3bf1389f734760ac4cf7",
+  "browser": "Chrome/152.0.7977.75",
+  "acceptInsecureCerts": true,
+  "fixture": "Empty USGS FeatureCollection",
+  "cases": [
+    {
+      "name": "baseline",
+      "errors": [],
+      "fixtureRequests": 0,
+      "url": "http://127.0.0.1:4175/?welcome=0&lang=en#v=2&lat=30.2672&lon=-97.7431&alt=120000&heading=0&pitch=-90&map=esri-imagery",
+      "state": {
+        "enabled": [],
+        "initialLayerStateInvalid": false,
+        "noticeText": "LOADING LIVE DATA",
+        "noticeVisible": false,
+        "noticeRect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "noticeRole": "status",
+        "noticeLive": "polite",
+        "coverVisibility": "hidden",
+        "earthquakeToggle": {
+          "text": "OFF",
+          "pressed": null,
+          "active": false,
+          "visible": true
+        },
+        "trace": {
+          "settled": {
+            "at": 12452.700000000186,
+            "result": {
+              "status": "settled",
+              "share": {
+                "succeeded": true,
+                "camera": "applied",
+                "visual": "applied",
+                "map": "applied",
+                "panels": "skipped"
+              },
+              "layers": [],
+              "tracking": {
+                "status": "skipped",
+                "reason": "no-shared-target"
+              }
+            }
+          },
+          "notices": []
+        }
+      },
+      "pass": true,
+      "console": [
+        {
+          "type": "debug",
+          "text": "[vite] connecting..."
+        },
+        {
+          "type": "debug",
+          "text": "[vite] connected."
+        },
+        {
+          "type": "warn",
+          "text": "[]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader flag to opt in to lower security guarantees for trusted content."
+        },
+        {
+          "type": "warn",
+          "text": "[Init] Google 3D Tiles unavailable, using the keyless globe: Error: Google 3D tokens are not offered"
+        },
+        {
+          "type": "log",
+          "text": "[Detection] Initialized"
+        },
+        {
+          "type": "log",
+          "text": "[TrackedReadout] Initialized"
+        },
+        {
+          "type": "log",
+          "text": "[Detection] Mode: DENSE"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "log",
+          "text": "[Detection] Mode: OFF"
+        }
+      ],
+      "failedRequests": []
+    },
+    {
+      "name": "unknown",
+      "errors": [],
+      "fixtureRequests": 0,
+      "url": "http://127.0.0.1:4175/?welcome=0&lang=en#v=2&lat=30.2672&lon=-97.7431&alt=120000&heading=0&pitch=-90&map=esri-imagery&l=unknown",
+      "state": {
+        "enabled": [],
+        "initialLayerStateInvalid": true,
+        "noticeText": "Shared layer selection could not be restored",
+        "noticeVisible": true,
+        "noticeRect": {
+          "x": 581.046875,
+          "y": 74,
+          "width": 277.90625,
+          "height": 34
+        },
+        "noticeRole": "status",
+        "noticeLive": "polite",
+        "coverVisibility": "hidden",
+        "earthquakeToggle": {
+          "text": "OFF",
+          "pressed": null,
+          "active": false,
+          "visible": false
+        },
+        "trace": {
+          "settled": {
+            "at": 12355.300000000745,
+            "result": {
+              "status": "settled",
+              "share": {
+                "succeeded": true,
+                "camera": "applied",
+                "visual": "applied",
+                "map": "applied",
+                "panels": "skipped"
+              },
+              "layers": [],
+              "tracking": {
+                "status": "skipped",
+                "reason": "no-shared-target"
+              }
+            }
+          },
+          "notices": [
+            {
+              "at": 13249.400000000373,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            },
+            {
+              "at": 13294.5,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            },
+            {
+              "at": 13354.400000000373,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            },
+            {
+              "at": 13362.600000000559,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            },
+            {
+              "at": 13414.400000000373,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            },
+            {
+              "at": 13474.300000000745,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            },
+            {
+              "at": 13536.400000000373,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            },
+            {
+              "at": 13594.400000000373,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            },
+            {
+              "at": 13654.400000000373,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            },
+            {
+              "at": 13715.900000000373,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            },
+            {
+              "at": 13774.300000000745,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            },
+            {
+              "at": 13834.5,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            },
+            {
+              "at": 13862.400000000373,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            },
+            {
+              "at": 13894.400000000373,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            },
+            {
+              "at": 13931.800000000745,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            },
+            {
+              "at": 13954.300000000745,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            }
+          ]
+        }
+      },
+      "pass": true,
+      "console": [
+        {
+          "type": "info",
+          "text": "Slow network is detected. See https://www.chromestatus.com/feature/5636954674692096 for more details. Fallback font will be used while loading: https://fonts.gstatic.com/l/font?kit=kJF1BvYX7BgnkSrUwT8OhrdQw4oELdPIeeII9v6oDMzByHX9rA6RzaxHMPdY43zj-jCxv3fzvRNU22ZXGJpEpjC_1p-p_4MrImHCIJIZrDCvHOejdcMkzUJPvbB--NyU9cW9D-I3cSFCBNDtTy7ky-Q6bMLNaQhBVNxbF_cugDfkhWSPsWHsWikadr2-HtT9W3M5QEeiT1zRYdXV&skey=b8dc2088854b122f&v=v377"
+        },
+        {
+          "type": "debug",
+          "text": "[vite] connecting..."
+        },
+        {
+          "type": "debug",
+          "text": "[vite] connected."
+        },
+        {
+          "type": "warn",
+          "text": "[]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader flag to opt in to lower security guarantees for trusted content."
+        },
+        {
+          "type": "warn",
+          "text": "[Init] Google 3D Tiles unavailable, using the keyless globe: Error: Google 3D tokens are not offered"
+        },
+        {
+          "type": "log",
+          "text": "[Detection] Initialized"
+        },
+        {
+          "type": "log",
+          "text": "[TrackedReadout] Initialized"
+        },
+        {
+          "type": "log",
+          "text": "[Detection] Mode: DENSE"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "log",
+          "text": "[Detection] Mode: OFF"
+        }
+      ],
+      "failedRequests": []
+    },
+    {
+      "name": "mixed",
+      "errors": [],
+      "fixtureRequests": 0,
+      "url": "http://127.0.0.1:4175/?welcome=0&lang=en#v=2&lat=30.2672&lon=-97.7431&alt=120000&heading=0&pitch=-90&map=esri-imagery&l=e.unknown",
+      "state": {
+        "enabled": [],
+        "initialLayerStateInvalid": true,
+        "noticeText": "Shared layer selection could not be restored",
+        "noticeVisible": true,
+        "noticeRect": {
+          "x": 585.2109375,
+          "y": 74,
+          "width": 269.578125,
+          "height": 34
+        },
+        "noticeRole": "status",
+        "noticeLive": "polite",
+        "coverVisibility": "hidden",
+        "earthquakeToggle": {
+          "text": "OFF",
+          "pressed": null,
+          "active": false,
+          "visible": false
+        },
+        "trace": {
+          "settled": {
+            "at": 11831.099999999627,
+            "result": {
+              "status": "settled",
+              "share": {
+                "succeeded": true,
+                "camera": "applied",
+                "visual": "applied",
+                "map": "applied",
+                "panels": "skipped"
+              },
+              "layers": [],
+              "tracking": {
+                "status": "skipped",
+                "reason": "no-shared-target"
+              }
+            }
+          },
+          "notices": [
+            {
+              "at": 12820.399999999441,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            },
+            {
+              "at": 12828.299999999814,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            },
+            {
+              "at": 12861.099999999627,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            },
+            {
+              "at": 12921,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            },
+            {
+              "at": 12981.200000000186,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            },
+            {
+              "at": 13041.099999999627,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            },
+            {
+              "at": 13101,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            },
+            {
+              "at": 13161.099999999627,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            },
+            {
+              "at": 13221.099999999627,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            },
+            {
+              "at": 13281.200000000186,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            },
+            {
+              "at": 13341,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            },
+            {
+              "at": 13400.899999999441,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            },
+            {
+              "at": 13401,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            },
+            {
+              "at": 13462.399999999441,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            },
+            {
+              "at": 13502.399999999441,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            },
+            {
+              "at": 13521.299999999814,
+              "label": "Shared layer selection could not be restored",
+              "settled": true,
+              "visible": true
+            }
+          ]
+        }
+      },
+      "pass": true,
+      "console": [
+        {
+          "type": "debug",
+          "text": "[vite] connecting..."
+        },
+        {
+          "type": "info",
+          "text": "Slow network is detected. See https://www.chromestatus.com/feature/5636954674692096 for more details. Fallback font will be used while loading: https://fonts.gstatic.com/l/font?kit=kJF1BvYX7BgnkSrUwT8OhrdQw4oELdPIeeII9v6oDMzByHX9rA6RzaxHMPdY43zj-jCxv3fzvRNU22ZXGJpEpjC_1p-p_4MrImHCIJIZrDCvHOejdcMkzUJPvbB--NyU9cW9D-I3cSFCBNDtTy7ky-Q6bMLNaQhBVNxbF_cugDfkhWSPsWHsWikadr2-HtT9W3M5QEeiT1zRYdXV&skey=b8dc2088854b122f&v=v377"
+        },
+        {
+          "type": "debug",
+          "text": "[vite] connected."
+        },
+        {
+          "type": "warn",
+          "text": "[]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader flag to opt in to lower security guarantees for trusted content."
+        },
+        {
+          "type": "warn",
+          "text": "[Init] Google 3D Tiles unavailable, using the keyless globe: Error: Google 3D tokens are not offered"
+        },
+        {
+          "type": "log",
+          "text": "[Detection] Initialized"
+        },
+        {
+          "type": "log",
+          "text": "[TrackedReadout] Initialized"
+        },
+        {
+          "type": "log",
+          "text": "[Detection] Mode: DENSE"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "log",
+          "text": "[Detection] Mode: OFF"
+        }
+      ],
+      "failedRequests": []
+    },
+    {
+      "name": "valid",
+      "errors": [],
+      "fixtureRequests": 1,
+      "url": "http://127.0.0.1:4175/?welcome=0&lang=en#v=2&lat=30.2672&lon=-97.7431&alt=120000&heading=0&pitch=-90&map=esri-imagery&l=e&lo=f.e.1_k.o.n",
+      "state": {
+        "enabled": [
+          "earthquakes"
+        ],
+        "initialLayerStateInvalid": false,
+        "noticeText": "LOAD COMPLETE",
+        "noticeVisible": false,
+        "noticeRect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "noticeRole": "status",
+        "noticeLive": "polite",
+        "coverVisibility": "hidden",
+        "earthquakeToggle": {
+          "text": "ON",
+          "pressed": null,
+          "active": true,
+          "visible": true
+        },
+        "trace": {
+          "settled": {
+            "at": 10292.199999999255,
+            "result": {
+              "status": "settled",
+              "share": {
+                "succeeded": true,
+                "camera": "applied",
+                "visual": "applied",
+                "map": "applied",
+                "panels": "skipped"
+              },
+              "layers": [
+                {
+                  "layerId": "air-quality",
+                  "targetEnabled": false,
+                  "origin": "share-restore",
+                  "phase": "queued",
+                  "completionPhase": "queued",
+                  "settledEnabled": false,
+                  "lifecycleState": "disabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {},
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": false,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                },
+                {
+                  "layerId": "ais-live-vessels",
+                  "targetEnabled": false,
+                  "origin": "share-restore",
+                  "phase": "queued",
+                  "completionPhase": "queued",
+                  "settledEnabled": false,
+                  "lifecycleState": "disabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {},
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": false,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                },
+                {
+                  "layerId": "alpr-cameras",
+                  "targetEnabled": false,
+                  "origin": "share-restore",
+                  "phase": "queued",
+                  "completionPhase": "queued",
+                  "settledEnabled": false,
+                  "lifecycleState": "disabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {},
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": false,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                },
+                {
+                  "layerId": "bhote-koshi-2026",
+                  "targetEnabled": false,
+                  "origin": "share-restore",
+                  "phase": "queued",
+                  "completionPhase": "queued",
+                  "settledEnabled": false,
+                  "lifecycleState": "disabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {},
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": false,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                },
+                {
+                  "layerId": "bhote-koshi-locator",
+                  "targetEnabled": false,
+                  "origin": "share-restore",
+                  "phase": "queued",
+                  "completionPhase": "queued",
+                  "settledEnabled": false,
+                  "lifecycleState": "disabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {},
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": false,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                },
+                {
+                  "layerId": "bikeshare",
+                  "targetEnabled": false,
+                  "origin": "share-restore",
+                  "phase": "queued",
+                  "completionPhase": "queued",
+                  "settledEnabled": false,
+                  "lifecycleState": "disabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {},
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": false,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                },
+                {
+                  "layerId": "cctv",
+                  "targetEnabled": false,
+                  "origin": "share-restore",
+                  "phase": "queued",
+                  "completionPhase": "queued",
+                  "settledEnabled": false,
+                  "lifecycleState": "disabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {
+                    "coverageMode": "on",
+                    "showProjection": true,
+                    "autoHop": false
+                  },
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": false,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                },
+                {
+                  "layerId": "directions",
+                  "targetEnabled": false,
+                  "origin": "share-restore",
+                  "phase": "queued",
+                  "completionPhase": "queued",
+                  "settledEnabled": false,
+                  "lifecycleState": "disabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {},
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": false,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                },
+                {
+                  "layerId": "earthquakes",
+                  "targetEnabled": true,
+                  "origin": "share-restore",
+                  "phase": "settle",
+                  "completionPhase": "settle",
+                  "settledEnabled": true,
+                  "lifecycleState": "enabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {},
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": true,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                },
+                {
+                  "layerId": "fire-perimeters",
+                  "targetEnabled": false,
+                  "origin": "share-restore",
+                  "phase": "queued",
+                  "completionPhase": "queued",
+                  "settledEnabled": false,
+                  "lifecycleState": "disabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {},
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": false,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                },
+                {
+                  "layerId": "flights",
+                  "targetEnabled": false,
+                  "origin": "share-restore",
+                  "phase": "queued",
+                  "completionPhase": "queued",
+                  "settledEnabled": false,
+                  "lifecycleState": "disabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {
+                    "models3d": true,
+                    "models3dMode": "proximity"
+                  },
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": false,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                },
+                {
+                  "layerId": "gnss-integrity",
+                  "targetEnabled": false,
+                  "origin": "share-restore",
+                  "phase": "queued",
+                  "completionPhase": "queued",
+                  "settledEnabled": false,
+                  "lifecycleState": "disabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {},
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": false,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                },
+                {
+                  "layerId": "local-dams",
+                  "targetEnabled": false,
+                  "origin": "share-restore",
+                  "phase": "queued",
+                  "completionPhase": "queued",
+                  "settledEnabled": false,
+                  "lifecycleState": "disabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {},
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": false,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                },
+                {
+                  "layerId": "local-datacenters",
+                  "targetEnabled": false,
+                  "origin": "share-restore",
+                  "phase": "queued",
+                  "completionPhase": "queued",
+                  "settledEnabled": false,
+                  "lifecycleState": "disabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {},
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": false,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                },
+                {
+                  "layerId": "local-firms",
+                  "targetEnabled": false,
+                  "origin": "share-restore",
+                  "phase": "queued",
+                  "completionPhase": "queued",
+                  "settledEnabled": false,
+                  "lifecycleState": "disabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {},
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": false,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                },
+                {
+                  "layerId": "military",
+                  "targetEnabled": false,
+                  "origin": "share-restore",
+                  "phase": "queued",
+                  "completionPhase": "queued",
+                  "settledEnabled": false,
+                  "lifecycleState": "disabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {
+                    "models3d": true,
+                    "models3dMode": "proximity"
+                  },
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": false,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                },
+                {
+                  "layerId": "military-awareness",
+                  "targetEnabled": false,
+                  "origin": "share-restore",
+                  "phase": "queued",
+                  "completionPhase": "queued",
+                  "settledEnabled": false,
+                  "lifecycleState": "disabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {},
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": false,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                },
+                {
+                  "layerId": "military-installations",
+                  "targetEnabled": false,
+                  "origin": "share-restore",
+                  "phase": "queued",
+                  "completionPhase": "queued",
+                  "settledEnabled": false,
+                  "lifecycleState": "disabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {},
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": false,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                },
+                {
+                  "layerId": "radio",
+                  "targetEnabled": false,
+                  "origin": "share-restore",
+                  "phase": "queued",
+                  "completionPhase": "queued",
+                  "settledEnabled": false,
+                  "lifecycleState": "disabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {
+                    "filter": "all",
+                    "volume": 0.8
+                  },
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": false,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                },
+                {
+                  "layerId": "recent-imagery",
+                  "targetEnabled": false,
+                  "origin": "share-restore",
+                  "phase": "queued",
+                  "completionPhase": "queued",
+                  "settledEnabled": false,
+                  "lifecycleState": "disabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {
+                    "west": null,
+                    "south": null,
+                    "east": null,
+                    "north": null,
+                    "a": null,
+                    "b": null,
+                    "mode": 0,
+                    "split": 50,
+                    "viirs": false
+                  },
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": false,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                },
+                {
+                  "layerId": "rocket-launches",
+                  "targetEnabled": false,
+                  "origin": "share-restore",
+                  "phase": "queued",
+                  "completionPhase": "queued",
+                  "settledEnabled": false,
+                  "lifecycleState": "disabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {},
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": false,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                },
+                {
+                  "layerId": "satellites",
+                  "targetEnabled": false,
+                  "origin": "share-restore",
+                  "phase": "queued",
+                  "completionPhase": "queued",
+                  "settledEnabled": false,
+                  "lifecycleState": "disabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {
+                    "catalog": "core"
+                  },
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": false,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                },
+                {
+                  "layerId": "street-level",
+                  "targetEnabled": false,
+                  "origin": "share-restore",
+                  "phase": "queued",
+                  "completionPhase": "queued",
+                  "settledEnabled": false,
+                  "lifecycleState": "disabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {
+                    "mapillary": true,
+                    "providerSwitches": "",
+                    "pano": "all",
+                    "sinceDays": 0
+                  },
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": false,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                },
+                {
+                  "layerId": "telegeography-submarine-cables",
+                  "targetEnabled": false,
+                  "origin": "share-restore",
+                  "phase": "queued",
+                  "completionPhase": "queued",
+                  "settledEnabled": false,
+                  "lifecycleState": "disabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {},
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": false,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                },
+                {
+                  "layerId": "traffic",
+                  "targetEnabled": false,
+                  "origin": "share-restore",
+                  "phase": "queued",
+                  "completionPhase": "queued",
+                  "settledEnabled": false,
+                  "lifecycleState": "disabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {
+                    "roadMode": null
+                  },
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": false,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                },
+                {
+                  "layerId": "transit",
+                  "targetEnabled": false,
+                  "origin": "share-restore",
+                  "phase": "queued",
+                  "completionPhase": "queued",
+                  "settledEnabled": false,
+                  "lifecycleState": "disabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {},
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": false,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                },
+                {
+                  "layerId": "weather-cyclones",
+                  "targetEnabled": false,
+                  "origin": "share-restore",
+                  "phase": "queued",
+                  "completionPhase": "queued",
+                  "settledEnabled": false,
+                  "lifecycleState": "disabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {},
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": false,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                },
+                {
+                  "layerId": "weather-lightning",
+                  "targetEnabled": false,
+                  "origin": "share-restore",
+                  "phase": "queued",
+                  "completionPhase": "queued",
+                  "settledEnabled": false,
+                  "lifecycleState": "disabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {
+                    "opacity": "strong"
+                  },
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": false,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                },
+                {
+                  "layerId": "weather-radar",
+                  "targetEnabled": false,
+                  "origin": "share-restore",
+                  "phase": "queued",
+                  "completionPhase": "queued",
+                  "settledEnabled": false,
+                  "lifecycleState": "disabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {
+                    "opacity": "strong"
+                  },
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": false,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                },
+                {
+                  "layerId": "weather-satellite",
+                  "targetEnabled": false,
+                  "origin": "share-restore",
+                  "phase": "queued",
+                  "completionPhase": "queued",
+                  "settledEnabled": false,
+                  "lifecycleState": "disabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {
+                    "infrared": 100,
+                    "opacity": "strong",
+                    "product": "clouds-regional"
+                  },
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": false,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                },
+                {
+                  "layerId": "wind",
+                  "targetEnabled": false,
+                  "origin": "share-restore",
+                  "phase": "queued",
+                  "completionPhase": "queued",
+                  "settledEnabled": false,
+                  "lifecycleState": "disabled",
+                  "lifecycleUncertain": false,
+                  "appliedOptions": {
+                    "model": "gfs",
+                    "overlay": "none",
+                    "units": "km/h",
+                    "paused": false
+                  },
+                  "intentEpoch": 1,
+                  "authoritativeIntentEpoch": 1,
+                  "authoritativeEnabled": false,
+                  "authoritativeOrigin": "share-restore",
+                  "paramsIntentEpoch": null,
+                  "cancellationReason": null,
+                  "successorIntentEpoch": null,
+                  "successorEnabled": null,
+                  "successorOrigin": null,
+                  "errorClass": null,
+                  "persistenceWrite": false,
+                  "succeeded": true
+                }
+              ],
+              "tracking": {
+                "status": "skipped",
+                "reason": "no-shared-target"
+              }
+            }
+          },
+          "notices": []
+        }
+      },
+      "pass": true,
+      "console": [
+        {
+          "type": "debug",
+          "text": "[vite] connecting..."
+        },
+        {
+          "type": "debug",
+          "text": "[vite] connected."
+        },
+        {
+          "type": "warn",
+          "text": "[]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader flag to opt in to lower security guarantees for trusted content."
+        },
+        {
+          "type": "warn",
+          "text": "[Init] Google 3D Tiles unavailable, using the keyless globe: Error: Google 3D tokens are not offered"
+        },
+        {
+          "type": "log",
+          "text": "[Detection] Initialized"
+        },
+        {
+          "type": "log",
+          "text": "[TrackedReadout] Initialized"
+        },
+        {
+          "type": "log",
+          "text": "[Detection] Mode: DENSE"
+        },
+        {
+          "type": "log",
+          "text": "[Data:Earthquakes] Initialized"
+        },
+        {
+          "type": "log",
+          "text": "[Data:Earthquakes] Updated: 0 events (M2.5+)"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "verbose",
+          "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o"
+        },
+        {
+          "type": "log",
+          "text": "[Detection] Mode: OFF"
+        }
+      ],
+      "failedRequests": []
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "runtime_head": "75d59cb3d86c2a53618e3bf1389f734760ac4cf7",
+  "runtime_tree": "c244df75939d397080fcfbd78e284013275db90b",
+  "captured_at_utc": "2026-10-17T04:27:27.347950+00:00",
+  "browser": "Chrome/152.0.7977.75",
+  "node": "24.14.0",
+  "pass_count": 4,
+  "case_count": 4,
+  "runtime_files_unchanged": true,
+  "artifact_note": "After the passing run, unused row-crop capture code was removed. Reviewed full viewport and notice captures and all behavioral assertions are preserved.",
+  "files": [
+    {
+      "path": "scripts/qa-share-invalid-layer-notice.mjs",
+      "bytes": 12567,
+      "sha256": "dc4c4318aaf7d8fa5440e70b64fca68f71ea5ebd4262051a6b0c9764b801610e",
+      "git_blob_sha": "c8cc60212321ee47083642086481e3189ae93eb7"
+    },
+    {
+      "path": "qa-evidence/share-invalid-layer-notice-20261017/README.md",
+      "bytes": 5247,
+      "sha256": "549d3dc55d91469d1900c96ccc07a38438afd757bce076af72ca39ab4bf4cd22",
+      "git_blob_sha": "0af32b57a9e9a04d9181c81fc764019b416d7880"
+    },
+    {
+      "path": "qa-evidence/share-invalid-layer-notice-20261017/evidence.json",
+      "bytes": 55056,
+      "sha256": "d2a8fbe6d0f485502efffe705f5ec95332c65a7c6fc96c91b56ae4938abf3ba3",
+      "git_blob_sha": "8347bf08c4c12fe0d96123d26d49710659b48da0"
+    },
+    {
+      "path": "qa-evidence/share-invalid-layer-notice-20261017/baseline.png",
+      "bytes": 1421743,
+      "sha256": "ed8098261642c8ef5eeeac93970221e912fbe6eb7a30e3e2ec55d70e2eb022bd",
+      "git_blob_sha": "b9d73cee49b9fc9a9101aae65d9cbc7572a7e2ca"
+    },
+    {
+      "path": "qa-evidence/share-invalid-layer-notice-20261017/unknown.png",
+      "bytes": 289456,
+      "sha256": "bb5fdc699cb1a639b858999ab64056cfbeea48d18be0baab626728c105bfdc41",
+      "git_blob_sha": "8a083289c041dfdfeb0732a35e33171cf80ab1cd"
+    },
+    {
+      "path": "qa-evidence/share-invalid-layer-notice-20261017/unknown-notice.png",
+      "bytes": 2369,
+      "sha256": "d8e88bc18ceb41bb6f52df30510bc3440811b2b7a400abcf7a1eb0a04f65a0ac",
+      "git_blob_sha": "099081bb98f2180d25b33b8c5fc7c58cf7f88538"
+    },
+    {
+      "path": "qa-evidence/share-invalid-layer-notice-20261017/mixed.png",
+      "bytes": 289456,
+      "sha256": "bb5fdc699cb1a639b858999ab64056cfbeea48d18be0baab626728c105bfdc41",
+      "git_blob_sha": "8a083289c041dfdfeb0732a35e33171cf80ab1cd"
+    },
+    {
+      "path": "qa-evidence/share-invalid-layer-notice-20261017/mixed-notice.png",
+      "bytes": 2369,
+      "sha256": "d8e88bc18ceb41bb6f52df30510bc3440811b2b7a400abcf7a1eb0a04f65a0ac",
+      "git_blob_sha": "099081bb98f2180d25b33b8c5fc7c58cf7f88538"
+    },
+    {
+      "path": "qa-evidence/share-invalid-layer-notice-20261017/valid.png",
+      "bytes": 318558,
+      "sha256": "3bd804760c176b551644fb191c6cc76b04f99be4708cf2dcce540c5175e399a6",
+      "git_blob_sha": "8c5747e832bc51a8bc8da288f3f46c03ada969eb"
+    }
+  ]
+}

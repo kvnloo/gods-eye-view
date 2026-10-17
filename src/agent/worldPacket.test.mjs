@@ -58,13 +58,21 @@ function harness() {
   return { viewer, dataManager, styleManager };
 }
 
+function withoutVoicePresentation(result) {
+  const packet = { ...result };
+  delete packet.say;
+  delete packet.display;
+  delete packet.schedule;
+  return packet;
+}
+
 test('World Packet preserves get_current_view_state parity', async () => {
   const { viewer, dataManager, styleManager } = harness();
   const packet = getWorldPacket({ viewer, dataManager, styleManager });
   const runner = createGevActionRunner({ viewer, dataManager, styleManager });
   const voice = await runner('get_current_view_state');
 
-  assert.deepEqual(voice, packet);
+  assert.deepEqual(withoutVoicePresentation(voice), packet);
   assert.equal(packet.context.mode, 'contacts');
   assert.equal(packet.context.modeInternal, 'flights');
   assert.equal(packet.layers[0].feedState, 'nominal');
@@ -134,7 +142,7 @@ test('World Packet and voice preserve enabled-only payload and count disabled la
 
   const runner = createGevActionRunner({ viewer, dataManager, styleManager });
   const voice = await runner('get_current_view_state');
-  assert.deepEqual(voice, packet);
+  assert.deepEqual(withoutVoicePresentation(voice), packet);
 });
 
 test('World Packet fingerprints distinguish enabled state but ignore narrative churn', () => {
@@ -152,4 +160,60 @@ test('World Packet fingerprints distinguish enabled state but ignore narrative c
     semanticWorldPacketFingerprint(first),
     semanticWorldPacketFingerprint(hidden),
   );
+});
+
+test('fingerprint excludes feed age churn but retains real provenance changes', () => {
+  const { viewer, dataManager, styleManager } = harness();
+  const packet = getWorldPacket({ viewer, dataManager, styleManager });
+  const base = semanticWorldPacketFingerprint(packet);
+  const aged = structuredClone(packet);
+  aged.feedProvenance.layers[0].ageSec = 300;
+  aged.feedProvenance.layers[0].ageLabel = '5 minutes ago';
+  assert.equal(semanticWorldPacketFingerprint(aged), base);
+
+  const refreshed = structuredClone(packet);
+  refreshed.feedProvenance.layers[0].lastUpdate = 1_730_000_000_000;
+  assert.notEqual(semanticWorldPacketFingerprint(refreshed), base);
+
+  const evidenceA = { ...packet, observed: { note: 'supported' } };
+  const evidenceB = { ...packet, observed: { note: 'rejected' } };
+  assert.notEqual(
+    semanticWorldPacketFingerprint(evidenceA),
+    semanticWorldPacketFingerprint(evidenceB),
+  );
+});
+
+test('fingerprint preserves own prototype-like keys and fails closed on exotic data', () => {
+  const a = { observed: JSON.parse('{"__proto__":{"kind":"a"}}') };
+  const b = { observed: JSON.parse('{"__proto__":{"kind":"b"}}') };
+  assert.notEqual(
+    semanticWorldPacketFingerprint(a),
+    semanticWorldPacketFingerprint(b),
+  );
+  // Own prototype-like keys at the root and nested values must be data,
+  // never keys resolved through a prototype-chain lookup.
+  const rootA = JSON.parse('{"__proto__":{"state":"a"}}');
+  const rootB = JSON.parse('{"__proto__":{"state":"b"}}');
+  assert.notEqual(
+    semanticWorldPacketFingerprint(rootA),
+    semanticWorldPacketFingerprint(rootB),
+  );
+  const constructorA = { constructor: { state: 'a' } };
+  const constructorB = { constructor: { state: 'b' } };
+  assert.notEqual(
+    semanticWorldPacketFingerprint(constructorA),
+    semanticWorldPacketFingerprint(constructorB),
+  );
+  assert.throws(
+    () => semanticWorldPacketFingerprint({ observed: new Date(0) }),
+    /plain-data/,
+  );
+  assert.throws(
+    () => semanticWorldPacketFingerprint({ observed: new Map([['a', 1]]) }),
+    /plain-data/,
+  );
+});
+
+test('null World Packet options give the intended camera error', () => {
+  assert.throws(() => getWorldPacket(null), /requires a viewer camera/);
 });

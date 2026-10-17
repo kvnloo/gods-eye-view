@@ -24,15 +24,28 @@ const NESTED_CONTEXT_RESULT_FIELDS = Object.freeze([
   'contextRollback',
 ]);
 
-const NON_SEMANTIC_PACKET_KEYS = new Set(['note', 'ageLabel', 'generatedAt']);
+// Presentation-only churn is excluded at its known source path, not at
+// unrelated keys that could carry observation or provenance evidence.
+const NON_SEMANTIC_PACKET_FIELDS = new Map([
+  ['', new Set(['generatedAt'])],
+  ['feedProvenance', new Set(['note'])],
+  ['feedProvenance.layers[]', new Set(['ageSec', 'ageLabel'])],
+]);
 
-function semanticPacketValue(value) {
-  if (Array.isArray(value)) return value.map(semanticPacketValue);
+function semanticPacketValue(value, path = '') {
+  if (Array.isArray(value))
+    return value.map((entry) => semanticPacketValue(entry, `${path}[]`));
   if (!value || typeof value !== 'object') return value;
-  const out = {};
+  if (
+    Object.getPrototypeOf(value) !== Object.prototype &&
+    Object.getPrototypeOf(value) !== null
+  ) {
+    throw new TypeError('World Packet fingerprint requires plain-data values');
+  }
+  const out = Object.create(null);
   for (const key of Object.keys(value).sort()) {
-    if (NON_SEMANTIC_PACKET_KEYS.has(key)) continue;
-    out[key] = semanticPacketValue(value[key]);
+    if (NON_SEMANTIC_PACKET_FIELDS.get(path)?.has(key)) continue;
+    out[key] = semanticPacketValue(value[key], path ? `${path}.${key}` : key);
   }
   return out;
 }
@@ -124,13 +137,14 @@ export function activeContactsWindow(dataManager) {
  * This performs no network requests and intentionally mirrors the historical
  * get_current_view_state payload so voice can delegate without behavior drift.
  */
-export function getWorldPacket({
-  viewer,
-  styleManager,
-  dataManager,
-  sceneDirector = null,
-  now = Date.now(),
-} = {}) {
+export function getWorldPacket(options = {}) {
+  const {
+    viewer,
+    styleManager,
+    dataManager,
+    sceneDirector = null,
+    now = Date.now(),
+  } = options ?? {};
   if (!viewer?.camera?.positionWC)
     throw new TypeError('World Packet requires a viewer camera');
   if (!dataManager || typeof dataManager.getAll !== 'function')

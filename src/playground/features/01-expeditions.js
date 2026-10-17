@@ -48,7 +48,7 @@ export const feature = {
     status.textContent = 'Ready for launch.';
     root.append(heading, intro);
     let alive = true;
-    let ownedScene = false;
+    let activeSceneRun = null;
     let ownedFlight = false;
     const choices = availableExpeditions(MISSIONS, services.sceneDirector);
     for (const mission of choices) {
@@ -67,19 +67,29 @@ export const feature = {
         status.textContent = 'Opening ' + mission.title + '…';
         try {
           if (mission.sceneId) {
-            ownedScene = true;
-            const outcome = await services.sceneDirector.startScene(mission.sceneId, {
-              single: true,
-              preview: false,
-            });
-            if (alive)
-              status.textContent = outcome.started
-                ? 'Expedition complete. Explore the evidence in the scene panel.'
-                : 'Scene did not start: ' + (outcome.reason || 'unavailable');
+            if (activeSceneRun && services.sceneDirector.running) {
+              if (alive)
+                status.textContent = 'A scene is already playing. Stop it before switching.';
+              return;
+            }
+            const sceneRun = {};
+            activeSceneRun = sceneRun;
+            try {
+              const outcome = await services.sceneDirector.startScene(mission.sceneId, {
+                single: true,
+                preview: false,
+              });
+              if (alive)
+                status.textContent = outcome.started
+                  ? 'Expedition complete. Explore the evidence in the scene panel.'
+                  : 'Scene did not start: ' + (outcome.reason || 'unavailable');
+            } finally {
+              if (activeSceneRun === sceneRun) activeSceneRun = null;
+            }
           } else {
-            if (ownedScene && services.sceneDirector.running)
+            if (activeSceneRun && services.sceneDirector.running)
               services.sceneDirector.stopScene('Switching expedition');
-            ownedScene = false;
+            activeSceneRun = null;
             services.viewer.trackedEntity = undefined;
             ownedFlight = true;
             services.viewer.camera.flyTo({
@@ -119,8 +129,9 @@ export const feature = {
     root.append(status);
     return () => {
       alive = false;
-      if (ownedScene && services.sceneDirector.running)
+      if (activeSceneRun && services.sceneDirector.running)
         services.sceneDirector.stopScene('Expedition view closed');
+      activeSceneRun = null;
       if (ownedFlight) services.viewer.camera.cancelFlight();
     };
   },

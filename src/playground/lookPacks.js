@@ -176,11 +176,13 @@ export function createLookPackController({ viewer, Cesium, styleManager, onChang
   let stage = null;
   let destroyed = false;
   let active = null;
+  let applyingBaseStyle = false;
   const stages = viewer.scene.postProcessStages;
   const render = () => viewer.scene.requestRender?.();
 
   return {
     get activeId() { return active; },
+    get applyingBaseStyle() { return applyingBaseStyle; },
     apply(id) {
       if (destroyed) return false;
       const pack = LOOK_PACKS.find((entry) => entry.id === id);
@@ -197,11 +199,16 @@ export function createLookPackController({ viewer, Cesium, styleManager, onChang
         stage.enabled = false;
         stages.add(stage);
       }
-      styleManager.setStyle(pack.style, {
-        applyPreset: false,
-        revealParameters: false,
-        userInitiated: true,
-      });
+      applyingBaseStyle = true;
+      try {
+        styleManager.setStyle(pack.style, {
+          applyPreset: false,
+          revealParameters: false,
+          userInitiated: true,
+        });
+      } finally {
+        applyingBaseStyle = false;
+      }
       if (stage) {
         Object.assign(stage.uniforms, GRADE_DEFAULTS, pack.grade || {});
         stage.enabled = Boolean(pack.grade);

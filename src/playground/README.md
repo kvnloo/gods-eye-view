@@ -62,3 +62,19 @@ Community submissions should be curated signed/data-only manifests with author
 credit, explicit asset rights, compatibility/performance receipts, rollback, and
 unmodified Earth comparison; do not permit arbitrary downloaded GLSL or runtime
 code from catalog listings.
+
+
+## Authored look manifests (draft v1)
+
+`lookManifest.js` is a **pure JSON boundary**, not an installation service.
+It accepts a bounded `gev.visual-look.v1` record with `creative: true`,
+a recognized base renderer style, seven bounded grade controls, and required
+`author.name` / `author.basedOn` provenance. Imported documents can contain
+neither shaders nor JavaScript, external URLs, unknown properties or license
+claims. Export normalizes every control and serializes it deterministically.
+A future UI will call these functions and preserve the author metadata;
+**this branch does not yet connect import/export buttons, remote stores,
+persistent sharing, or shader execution to this data shape**.
+
+The focused contract is `node --test src/playground/lookManifest.test.mjs`.
+After source-only V8 verification, a real Node 24 run remains in #72.

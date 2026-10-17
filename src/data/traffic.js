@@ -1,7 +1,10 @@
 import { createApplicationTraffic } from '../app/layers/traffic.js';
 import { createSourceSlot } from '../sources/sourceSlot.js';
 import { createTrafficSource } from '../layers/traffic/source.js';
-import { createObservedTrafficSource } from '../layers/traffic/observed.js';
+import {
+  createObservedTrafficSource,
+  emptyObservedTrafficSnapshot,
+} from '../layers/traffic/observed.js';
 
 const sourceSlot = createSourceSlot(
   createTrafficSource(),
@@ -18,6 +21,7 @@ const observedSourceSlot = createSourceSlot(
   createObservedTrafficSource(),
   ['request'],
   'Observed traffic source',
+  { request: async () => emptyObservedTrafficSnapshot() },
 );
 export const configureObservedTrafficSource = observedSourceSlot.configure;
 

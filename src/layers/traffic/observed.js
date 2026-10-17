@@ -22,16 +22,26 @@ function finiteTimestamp(value) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function finiteDecimalNumber(value) {
+  if (typeof value === 'number')
+    return Number.isFinite(value) ? value : null;
+  if (typeof value !== 'string') return null;
+  const text = value.trim();
+  if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(text))
+    return null;
+  const number = Number(text);
+  return Number.isFinite(number) ? number : null;
+}
+
 function nonNegativeNumber(value) {
-  if (value === null || value === undefined || value === '') return null;
-  const number = Number(value);
-  return Number.isFinite(number) && number >= 0 ? number : null;
+  const number = finiteDecimalNumber(value);
+  return number !== null && number >= 0 ? number : null;
 }
 
 function normalizedCoordinate(value) {
   if (!Array.isArray(value) || value.length < 2) return null;
-  const lon = Number(value[0]);
-  const lat = Number(value[1]);
+  const lon = finiteDecimalNumber(value[0]);
+  const lat = finiteDecimalNumber(value[1]);
   if (
     !Number.isFinite(lon) ||
     !Number.isFinite(lat) ||
@@ -60,7 +70,7 @@ function normalizeGeometry(value) {
     value.coordinates.length > MAX_GEOMETRY_POINTS
   )
     return null;
-  const coordinates = value.coordinates.map(normalizedCoordinate);
+  const coordinates = Array.from(value.coordinates, normalizedCoordinate);
   if (coordinates.some((point) => point === null)) return null;
   return { type, coordinates };
 }
@@ -106,10 +116,7 @@ function normalizeMovement(value) {
 function normalizeQuality(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const status = safeString(value.status, 64);
-  const rawScore =
-    value.score === null || value.score === undefined || value.score === ''
-      ? null
-      : Number(value.score);
+  const rawScore = finiteDecimalNumber(value.score);
   const normalizedScore =
     Number.isFinite(rawScore) && rawScore >= 0 && rawScore <= 1
       ? rawScore
@@ -270,6 +277,7 @@ export function normalizeObservedTrafficSnapshot(
     accepted: records.length,
     dropped,
     staleCount,
+    staleAfterMs: staleLimit,
     partial,
     stale: staleCount > 0,
     error,

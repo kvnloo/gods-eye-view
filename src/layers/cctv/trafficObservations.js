@@ -147,7 +147,10 @@ export function summarizeCameraTrafficObservation(
   if (!Number.isFinite(observedAt)) return unknownSummary(id, snapshot);
 
   const ageMs = Math.max(0, Number(now) - observedAt);
-  const staleLimit = Math.max(0, Number(staleAfterMs) || 0);
+  const staleLimit = Math.max(
+    0,
+    Number(snapshot.staleAfterMs ?? staleAfterMs) || 0,
+  );
   const stale =
     Boolean(snapshot.error || snapshot.state === 'stale') || ageMs > staleLimit;
   const partial = Boolean(snapshot.partial);

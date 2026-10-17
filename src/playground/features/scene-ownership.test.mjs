@@ -133,3 +133,43 @@ test('Time Machine still stops owned playback and unlocks Play', async () => {
   dispose();
   assert.equal(stops, 1);
 });
+
+
+test('Time Machine seek never interrupts a scene owned elsewhere', async () => {
+  const ui = createHarness();
+  let seeks = 0;
+  const sceneDirector = {
+    listScenes: () => [{ id: 'nepal', title: 'Bhote Koshi', shots: 5 }],
+    get running() { return true; },
+    async seekScene() { seeks++; return true; },
+  };
+  const dispose = timeMachine.mount({ root: ui.root, services: { sceneDirector } });
+  await ui.button('Jump to beat').dispatch('click');
+  assert.equal(seeks, 0);
+  dispose();
+});
+
+test('Time Machine seek still interrupts playback it owns', async () => {
+  const ui = createHarness();
+  let running = false;
+  let seeks = 0;
+  let finish;
+  const pending = new Promise((resolve) => { finish = resolve; });
+  const sceneDirector = {
+    listScenes: () => [{ id: 'nepal', title: 'Bhote Koshi', shots: 5 }],
+    get running() { return running; },
+    startScene() { running = true; return pending; },
+    async seekScene() {
+      seeks++;
+      running = false;
+      finish({ started: false, reason: 'seeking' });
+      return true;
+    },
+  };
+  const dispose = timeMachine.mount({ root: ui.root, services: { sceneDirector } });
+  const play = ui.button('Play scene').dispatch('click');
+  await ui.button('Jump to beat').dispatch('click');
+  await play;
+  assert.equal(seeks, 1);
+  dispose();
+});

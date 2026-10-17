@@ -243,6 +243,7 @@ export function createThumbnailLoader({
       }
       for (const entry of [...entries.values()]) {
         if (!entry.loading || wanted.has(entry.key)) continue;
+        if (entry.controller?.signal.aborted) continue;
         entry.controller?.abort();
         supersededInFlight += 1;
         if (entry.status === 'unknown') entries.delete(entry.key);

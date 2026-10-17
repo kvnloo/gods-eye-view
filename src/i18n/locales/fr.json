@@ -3690,5 +3690,10 @@
   "Confirm: remove every added entry from Data Layers": "Confirmer : retirer des Couches de données toutes les entrées ajoutées",
   "Remove every added entry from Data Layers": "Retirer des Couches de données toutes les entrées ajoutées",
   "Showing {shown} of {total}": "{shown} sur {total} affichés",
-  "BROWSE DATA LIBRARY": "PARCOURIR LA BIBLIOTHÈQUE DE DONNÉES"
+  "BROWSE DATA LIBRARY": "PARCOURIR LA BIBLIOTHÈQUE DE DONNÉES",
+  "NOAA SWPC solar wind": "Vent solaire NOAA SWPC",
+  "extrapolated": "extrapolé",
+  "Solar wind feed unavailable": "Flux de vent solaire indisponible",
+  "Field lines not re-traced · previous lines kept": "Lignes de champ non retracées · lignes précédentes conservées",
+  "Magnetosphere": "Magnétosphère"
 }

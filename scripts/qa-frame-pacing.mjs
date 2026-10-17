@@ -11,6 +11,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import puppeteer from 'puppeteer';
 import { summarizeFrameTrace } from './frame-pacing-metrics.mjs';
+import { redact } from './qa-browserEvidence.mjs';
 
 const argv = process.argv.slice(2);
 const option = (name, fallback) => {
@@ -49,7 +50,7 @@ const samples = [];
 try {
   const page = await browser.newPage();
   const errors = [];
-  page.on('pageerror', (e) => errors.push(String(e.message).slice(0, 300)));
+  page.on('pageerror', (e) => errors.push(redact(String(e.message)).slice(0, 300)));
   await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
   await page.goto(url.href, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.waitForFunction(() => window.__godsEyeView?.viewer?.scene, { timeout: 120000 });
@@ -121,6 +122,7 @@ try {
     let tasks = null;
     let frames = null;
     let rafId = 0;
+    const observers = { longtask: false, longAnimationFrame: false };
     const start = performance.now();
     const signature = () => {
       const c = scene.camera;
@@ -151,12 +153,14 @@ try {
         for (const entry of list.getEntries()) longTasks.push(entry.duration);
       });
       tasks.observe({ type: 'longtask', buffered: false });
+      observers.longtask = true;
     } catch { tasks = null; }
     try {
       frames = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) longFrames.push(entry.duration);
       });
       frames.observe({ type: 'long-animation-frame', buffered: false });
+      observers.longAnimationFrame = true;
     } catch { frames = null; }
     const tick = (now) => {
       if (!running) return;
@@ -176,7 +180,7 @@ try {
           mode, durationMs: performance.now() - start,
           sceneTimestampsMs: timestamps, rafTimestampsMs: rafs, inputSamples,
           longTaskDurationsMs: longTasks, longAnimationFrameDurationsMs: longFrames,
-          cameraChangedFrames,
+          observerSupport: observers, cameraChangedFrames,
         };
       },
     };
@@ -231,7 +235,7 @@ try {
       const after = await getEnvironment();
       const summary = summarizeFrameTrace(trace);
       const stable = before.canvas === after.canvas && before.renderer === after.renderer
-        && before.visible && after.visible && before.focused === after.focused
+        && before.visible && after.visible && before.focused && after.focused
         && JSON.stringify(before.sourceCounts) === JSON.stringify(after.sourceCounts);
       samples.push({
         style, run, trace, summary, environment: before,

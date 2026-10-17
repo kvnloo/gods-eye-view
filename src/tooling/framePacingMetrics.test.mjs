@@ -141,3 +141,29 @@ test('software WARP, SwiftShader, llvmpipe fail hardware identity classification
     assert.equal(isSoftwareRenderer(renderer), true, renderer);
   assert.equal(isSoftwareRenderer('ANGLE (NVIDIA GeForce RTX 3080 Ti Direct3D11)'), false);
 });
+
+test('terminal render starvation remains visible when completed intervals look smooth', () => {
+  const stalled = fixture('render-starvation');
+  stalled.sceneTimestampsMs = [0, 16, 32];
+  stalled.cameraChangedFrames = 2;
+  const summary = summarizeFrameTrace(stalled);
+  assert.equal(summary.sceneFrameIntervalMs.p95, 16);
+  assert.equal(summary.sceneFrameIntervalMs.unfinishedTailMs, 968);
+  assert.equal(summary.sceneFrameIntervalMs.worstObservedGapMs, 968);
+  assert.equal(summary.sceneFrameIntervalMs.unresolvedTailOver100ms, true);
+});
+
+test('large performance traces do not overflow Math.max argument limits', () => {
+  const timestamps = Array.from({ length: 150000 }, (_, i) => i * 16);
+  const trace = {
+    mode: 'motion',
+    durationMs: 150000 * 16,
+    sceneTimestampsMs: timestamps,
+    rafTimestampsMs: [],
+    cameraChangedFrames: 1,
+  };
+  const s = summarizeFrameTrace(trace);
+  assert.equal(s.valid, true);
+  assert.equal(s.sceneFrameIntervalMs.worst, 16);
+  assert.equal(s.sceneFrameIntervalMs.worstObservedGapMs, 16);
+});

@@ -62,7 +62,9 @@ test('A/B disallows different resolution, renderer, style, source population, or
 test('matched captures report descriptive deltas without inventing a CI speedup', () => {
   const original = fixture('render-starvation');
   const candidate = structuredClone(original);
-  candidate.sceneTimestampsMs = [0, 16, 32, 48, 64, 80];
+  candidate.sceneTimestampsMs = Array.from({ length: 20 }, (_, i) => i * 16);
+  candidate.inputSamples[0].firstChangedSceneAtMs = 48;
+  candidate.inputSamples[1].firstChangedSceneAtMs = 256;
   const result = compareFrameTraces(original, candidate);
   assert.equal(result.comparable, true);
   assert.equal(result.p95SceneIntervalDeltaMs, -184);
@@ -90,5 +92,52 @@ test('A/B refuses missing focus and browser identity even when both are absent',
   delete after.environment.focused;
   delete before.environment.userAgent;
   delete after.environment.userAgent;
-  assert.deepEqual(compareFrameTraces(before, after).mismatches, ['userAgent', 'focused']);
+  assert.deepEqual(compareFrameTraces(before, after).mismatches, ['userAgent', 'focused', 'unfocused']);
+});
+
+test('A/B rejects different measurement windows even with matched display and source', () => {
+  const a = fixture('render-starvation');
+  const b = structuredClone(a);
+  b.durationMs = 5000;
+  assert.equal(compareFrameTraces(a, b).comparable, false);
+  assert.ok(compareFrameTraces(a, b).mismatches.includes('window duration'));
+});
+
+test('A/B rejects unverified renderer and unfocused runs', () => {
+  const a = fixture('render-starvation');
+  const b = structuredClone(a);
+  a.environment.rendererVerified = false;
+  b.environment.rendererVerified = false;
+  a.environment.focused = false;
+  b.environment.focused = false;
+  const r = compareFrameTraces(a, b);
+  assert.equal(r.comparable, false);
+  assert.ok(r.mismatches.includes('unverified renderer'));
+  assert.ok(r.mismatches.includes('unfocused'));
+});
+
+test('A/B never calls unknown enabled-layer populations equivalent', () => {
+  const a = fixture('render-starvation');
+  const b = structuredClone(a);
+  a.environment.sourceCounts = { vessels: null };
+  b.environment.sourceCounts = { vessels: null };
+  const r = compareFrameTraces(a, b);
+  assert.equal(r.comparable, false);
+  assert.ok(r.mismatches.includes('unknown source population'));
+});
+
+test('timestamps outside the trace and impossible input responses invalidate a capture', () => {
+  const a = fixture('render-starvation');
+  a.sceneTimestampsMs = [0, 16, 1010];
+  assert.equal(summarizeFrameTrace(a).valid, false);
+  const b = fixture('render-starvation');
+  b.inputSamples[0].firstChangedSceneAtMs = 345;
+  assert.equal(summarizeFrameTrace(b).valid, false);
+});
+
+test('software WARP, SwiftShader, llvmpipe fail hardware identity classification', async () => {
+  const { isSoftwareRenderer } = await import('../../scripts/frame-pacing-metrics.mjs');
+  for (const renderer of ['ANGLE (Microsoft Basic Render Driver, D3D11 WARP)', 'Google SwiftShader', 'Mesa llvmpipe', 'Software Rasterizer'])
+    assert.equal(isSoftwareRenderer(renderer), true, renderer);
+  assert.equal(isSoftwareRenderer('ANGLE (NVIDIA GeForce RTX 3080 Ti Direct3D11)'), false);
 });

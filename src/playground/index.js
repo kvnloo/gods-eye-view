@@ -2,10 +2,12 @@
  * Small, opt-in exploration surface. Features are deliberately loaded from
  * independent modules so experimental work never owns global app state.
  */
-import './playground.css';
 import * as Cesium from 'cesium';
 
-const discovered = import.meta.glob('./features/*.js', { eager: true });
+// Node ESM consumers must not invoke the Vite-only glob hook.
+const discovered = import.meta.env
+  ? import.meta.glob('./features/*.js', { eager: true })
+  : {};
 
 export function mountPlanetPlayground(services) {
   const features = Object.entries(discovered)

@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, qa/playground-254-node24-26]
 
 permissions:
   contents: read

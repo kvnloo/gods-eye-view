@@ -103,6 +103,23 @@ try {
   assert.equal(reset.style, 'normal');
   assert.equal(reset.enabled, false);
   assert.equal(reset.chipHidden, true);
+
+  // Selecting the same underlying native shader must still cancel the
+  // creative grade; it cannot stay invisible behind the normal preset UI.
+  await page.click('#planet-playground-launcher');
+  await page.evaluate(() => {
+    [...document.querySelectorAll('.gev-playground-tabs [role="tab"]')]
+      .find((node) => node.textContent === 'Toybox')?.click();
+  });
+  await page.click('[data-look-pack="storybook-wilds"]');
+  await page.$eval('.style-btn[data-style="anime"]', (button) => button.click());
+  const superseded = await page.evaluate(() => ({
+    hidden: document.querySelector('.gev-playground-creative-chip')?.hidden,
+    enabled: window.__godsEyeView.viewer.scene.postProcessStages
+      .getStageByName('godsEyeView_creativeGrade')?.enabled,
+  }));
+  assert.equal(superseded.hidden, true);
+  assert.equal(superseded.enabled, false);
   assert.deepEqual(errors, [], 'no browser page errors');
   console.log('[PASS] Visual Universe gallery, grade ownership, persistent disclosure and reset');
   console.log('[INFO] Screenshots: qa-shots/visual-universe/ (not GPU-performance evidence)');

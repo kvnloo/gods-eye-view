@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createCyclonesLayer } from './index.js';
+import * as sharedContext from '../../data/contextStore.js';
 import {
   claimPointer,
   releasePointer,
@@ -402,31 +403,22 @@ function harness(
     },
   };
 }
-test('explicit cyclone selection publishes shared context without auto-claiming it', async () => {
+test('explicit cyclone selection replaces the prior shared record without auto-claiming it', async (t) => {
   let next = snapshot([storm(), storm('ep162026')]);
-  const records = new Map();
-  let selectedContext = null;
-  let selectedEvents = 0;
-  const context = {
-    registerEntityContext(entity, metadata) {
-      entity.__gevContextId = metadata.id;
-      const record = { ...metadata, entity };
-      records.set(metadata.id, record);
-      return record;
-    },
-    selectEntityContext(entity) {
-      selectedContext = records.get(entity.__gevContextId) || null;
-      selectedEvents += 1;
-      return selectedContext;
-    },
-    removeEntityContextsForLayer(layerId) {
-      for (const [id, record] of records) {
-        if (record.layerId === layerId) records.delete(id);
-      }
-      if (selectedContext?.layerId === layerId) selectedContext = null;
-    },
-  };
+  const originalWindow = globalThis.window;
+  const host = (globalThis.window = new EventTarget());
+  const context = sharedContext;
   const h = harness({ getSnapshot: async () => next }, { context });
+  t.after(() => {
+    h.layer.destroy();
+    globalThis.window = originalWindow;
+  });
+  const store = context.getContextStore();
+  const records = store.entities;
+  let selectedEvents = 0;
+  let clearedEvents = 0;
+  host.addEventListener('gev:entity-selected', () => selectedEvents++);
+  host.addEventListener('gev:entity-selection-cleared', () => clearedEvents++);
   h.layer.enable();
   await h.layer.update();
 
@@ -437,8 +429,17 @@ test('explicit cyclone selection publishes shared context without auto-claiming 
   );
   assert.equal(records.size, 0);
 
-  h.layer.setParams({ stormId: 'ep162026' });
+  h.layer.setParams({ stormId: 'ep152026' });
   assert.equal(selectedEvents, 1);
+  assert.equal(context.getSelectedEntityContext()?.id, 'cyclone:ep152026');
+  h.layer.setParams({ stormId: 'ep162026' });
+  assert.equal(selectedEvents, 2);
+  assert.deepEqual(
+    [...records.keys()],
+    ['cyclone:ep162026'],
+    'switching storms removes the old coordinates from the shared scan',
+  );
+  const selectedContext = context.getSelectedEntityContext();
   assert.equal(selectedContext?.layerId, 'weather-cyclones');
   assert.equal(selectedContext?.source, 'NOAA NHC / CPHC');
   assert.equal(selectedContext?.label, 'Cyclone · Another system');
@@ -446,29 +447,75 @@ test('explicit cyclone selection publishes shared context without auto-claiming 
   assert.equal(selectedContext?.longitude, -125.8);
   assert.equal(selectedContext?.properties.advisoryNumber, '10');
 
+  const carrier = selectedContext.entity;
+  const clearsBeforeRefresh = clearedEvents;
+  store.selectedAt = 1234;
+  next = snapshot([
+    storm(),
+    { ...storm('ep162026'), position: { latitude: 16, longitude: -126 } },
+  ]);
   await h.layer.update();
   assert.equal(
     selectedEvents,
-    1,
+    2,
     'refresh updates the selected record without re-announcing the click',
   );
+  assert.equal(clearedEvents, clearsBeforeRefresh);
+  assert.equal(store.selectedAt, 1234, 'refresh preserves selection recency');
+  assert.equal(context.getSelectedEntityContext()?.entity, carrier);
+  assert.equal(context.getSelectedEntityContext()?.latitude, 16);
+  assert.equal(records.size, 1);
 
   next = snapshot([storm()]);
   await h.layer.update();
   assert.equal(
-    selectedContext,
+    context.getSelectedEntityContext(),
     null,
     'a vanished user-selected storm must clear instead of transferring context to the fallback row',
   );
   assert.equal(records.size, 0);
 
   h.layer.setParams({ stormId: 'ep152026' });
-  assert.equal(selectedEvents, 2);
+  assert.equal(selectedEvents, 3);
   h.layer.setParams({ clear: true });
-  assert.equal(selectedContext, null);
+  assert.equal(context.getSelectedEntityContext(), null);
   assert.equal(records.size, 0);
+});
 
-  h.layer.destroy();
+test('cyclone refresh and teardown preserve another layer shared selection', async () => {
+  for (const action of ['clear', 'disable', 'destroy']) {
+    const originalWindow = globalThis.window;
+    globalThis.window = new EventTarget();
+    const h = harness(
+      { getSnapshot: async () => snapshot() },
+      { context: sharedContext },
+    );
+    try {
+      h.layer.enable();
+      await h.layer.update();
+      h.layer.setParams({ stormId: 'ep152026' });
+      const other = sharedContext.registerEntityContext(
+        {},
+        {
+          id: 'quake:1',
+          layerId: 'earthquakes',
+        },
+      );
+      sharedContext.selectEntityContext(other.entity);
+      await h.layer.update();
+      assert.equal(sharedContext.getSelectedEntityContext(), other);
+      if (action === 'clear') h.layer.setParams({ clear: true });
+      else h.layer[action]();
+      assert.equal(sharedContext.getSelectedEntityContext(), other);
+      assert.deepEqual(
+        [...sharedContext.getContextStore().entities.keys()],
+        ['quake:1'],
+      );
+    } finally {
+      h.layer.destroy();
+      globalThis.window = originalWindow;
+    }
+  }
 });
 
 test('refresh preserves selection intent, including explicit clears and missing storms', async () => {
@@ -635,7 +682,9 @@ test('advisory selection uses accessible row descriptors and shared camera hando
     1,
   );
   assert.equal(controls.summary.status, 'Track/cone awaiting advisory 10');
-  assert.match(controls.info, /09-16 03:00 UTC/);
+  // No line break inside the date: a word joiner holds the hyphen.
+  assert.match(controls.info, /issued 09-\u206016\u00a003:00\u00a0UTC/);
+  assert.match(controls.info, /: 25\u00a0kt · .*: 1006\u00a0hPa/);
   assert.match(controls.infoTitle, /not storm size/);
   assert.match(controls.infoTitle, /follows the surface/);
   assert.equal(controls.list.items[1].params.focus, true);

@@ -72,9 +72,15 @@ a recognized base renderer style, seven bounded grade controls, and required
 `author.name` / `author.basedOn` provenance. Imported documents can contain
 neither shaders nor JavaScript, external URLs, unknown properties or license
 claims. Export normalizes every control and serializes it deterministically.
-A future UI will call these functions and preserve the author metadata;
-**this branch does not yet connect import/export buttons, remote stores,
-persistent sharing, or shader execution to this data shape**.
+The optional **Local Look Lab** inside the Toybox exports a credited curated
+creative look into a manually copyable JSON text area and applies validated
+local JSON to the same owned grade stage. Imported titles and author names
+are rendered as text, never HTML. Invalid JSON leaves the previous look
+unchanged; the persistent CREATIVE indicator carries the imported author.
+
+**No remote packs, code execution, automatic clipboard, persistent storage, or
+share-link integration** is introduced. Grade comparison is temporary preview
+state, not part of exported manifests.
 
 The focused contract is `node --test src/playground/lookManifest.test.mjs`.
 After source-only V8 verification, a real Node 24 run remains in #72.
@@ -90,3 +96,8 @@ is disabled. Choosing another look resets the split to 100%; closing the
 Toybox retains the split until the user changes or clears the look. For
 anime/snow/surveillance, the right side is that *base lens*, **not** raw
 Original Earth. The browser acceptance script also captures a 50/50 frame.
+
+The browser QA for this slice confirms a named author, one changed grade
+parameter, persistent CREATIVE disclosure, and fail-closed rejection of
+`fragmentShader` injection. See [downstream task #72](https://github.com/kvnloo/gods-eye-view/issues/72)
+for native runtime and GPU acceptance before origin promotion.

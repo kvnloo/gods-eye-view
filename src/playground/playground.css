@@ -136,3 +136,33 @@
 @media (max-width: 410px) {
   .gev-playground-look-gallery { grid-template-columns: 1fr; }
 }
+
+/* Persistent disclosure outside the panel while a creative grade is active. */
+.gev-playground-creative-chip {
+  position: fixed;
+  inset: auto auto 16px 126px;
+  z-index: 1800;
+  max-width: min(390px, calc(100vw - 144px));
+  background: rgba(14, 25, 39, 0.97);
+  border: 1px solid #a5e8c4;
+  border-radius: 6px;
+  padding: 10px;
+  color: #ebf9f3;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.gev-playground-creative-chip[hidden] { display: none !important; }
+.gev-playground-creative-chip:focus-visible {
+  outline: 2px solid #a6ffdc;
+  outline-offset: 2px;
+}
+@media (max-width: 700px) {
+  .gev-playground-creative-chip {
+    inset: auto auto 12px 122px;
+    max-width: calc(100vw - 132px);
+  }
+}

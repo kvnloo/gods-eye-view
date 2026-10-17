@@ -184,70 +184,81 @@ export const COLOR_GRADE_SHADER = /* glsl */ `
 export function createLookPackController({ viewer, Cesium, styleManager, onChange = () => {} }) {
   let stage = null;
   let destroyed = false;
-  let active = null;
+  let activePack = null;
   let reveal = 1;
   let applyingBaseStyle = false;
   const stages = viewer.scene.postProcessStages;
   const render = () => viewer.scene.requestRender?.();
 
+  const applyPack = (pack) => {
+    if (destroyed || !pack ||
+        (pack.style !== 'normal' && !styleManager.stages?.[pack.style]))
+      return false;
+    if (pack.grade && !stage) {
+      stage = new Cesium.PostProcessStage({
+        name: 'godsEyeView_creativeGrade',
+        fragmentShader: COLOR_GRADE_SHADER,
+        uniforms: { ...GRADE_DEFAULTS, reveal: 1 },
+      });
+      stage.enabled = false;
+      stages.add(stage);
+    }
+    applyingBaseStyle = true;
+    try {
+      styleManager.setStyle(pack.style, {
+        applyPreset: false,
+        revealParameters: false,
+        userInitiated: true,
+      });
+    } finally {
+      applyingBaseStyle = false;
+    }
+    reveal = 1;
+    if (stage) {
+      Object.assign(stage.uniforms, GRADE_DEFAULTS, pack.grade || {}, { reveal });
+      stage.enabled = Boolean(pack.grade);
+    }
+    activePack = pack;
+    onChange(activePack.id, activePack);
+    render();
+    return true;
+  };
+
   return {
-    get activeId() { return active; },
+    get activeId() { return activePack?.id ?? null; },
+    get activePack() { return activePack; },
     get reveal() { return reveal; },
     get applyingBaseStyle() { return applyingBaseStyle; },
     /** Wipe left-side grade vs right-side current GEV base lens. */
     setReveal(value) {
-      if (destroyed || !stage || !active || active === 'original' ||
+      if (destroyed || !stage || !activePack?.grade ||
           !Number.isFinite(value) || value < 0 || value > 1)
         return false;
       reveal = value;
       stage.uniforms.reveal = value;
       stage.enabled = value > 0;
-      onChange(active);
+      onChange(activePack.id, activePack);
       render();
       return true;
     },
     apply(id) {
-      if (destroyed) return false;
-      const pack = LOOK_PACKS.find((entry) => entry.id === id);
-      if (!pack || (pack.style !== 'normal' && !styleManager.stages?.[pack.style]))
+      return applyPack(LOOK_PACKS.find((pack) => pack.id === id));
+    },
+    /** Only pass a manifest returned by the local parseLookManifest boundary. */
+    applyVerifiedManifest(manifest) {
+      if (manifest?.creative !== true ||
+          !isValidLookPack(manifest) ||
+          typeof manifest.author?.name !== 'string' ||
+          !LOOK_PACKS.some((pack) => pack.id === manifest.author?.basedOn))
         return false;
-      // Construct before changing the user's chosen GEV style, so a
-      // shader-creation failure cannot leave the selector in a false state.
-      if (pack.grade && !stage) {
-        stage = new Cesium.PostProcessStage({
-          name: 'godsEyeView_creativeGrade',
-          fragmentShader: COLOR_GRADE_SHADER,
-          uniforms: { ...GRADE_DEFAULTS, reveal: 1 },
-        });
-        stage.enabled = false;
-        stages.add(stage);
-      }
-      applyingBaseStyle = true;
-      try {
-        styleManager.setStyle(pack.style, {
-          applyPreset: false,
-          revealParameters: false,
-          userInitiated: true,
-        });
-      } finally {
-        applyingBaseStyle = false;
-      }
-      reveal = 1;
-      if (stage) {
-        Object.assign(stage.uniforms, GRADE_DEFAULTS, pack.grade || {}, { reveal });
-        stage.enabled = Boolean(pack.grade);
-      }
-      active = pack.id;
-      onChange(active);
-      render();
-      return true;
+      return applyPack(manifest);
     },
     clearGrade() {
       if (destroyed) return;
       if (stage) stage.enabled = false;
       reveal = 1;
-      active = null;
-      onChange(active);
+      activePack = null;
+      onChange(null, null);
       render();
     },
     destroy() {
@@ -255,8 +266,8 @@ export function createLookPackController({ viewer, Cesium, styleManager, onChang
       destroyed = true;
       if (stage) stages.remove(stage);
       stage = null;
-      active = null;
-      onChange(active);
+      activePack = null;
+      onChange(null, null);
     },
   };
 }

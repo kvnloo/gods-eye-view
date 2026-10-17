@@ -172,3 +172,51 @@ test('comparison shader uses same source texture and preserves input alpha', () 
   assert.match(COLOR_GRADE_SHADER, /source\.a/);
   assert.doesNotMatch(COLOR_GRADE_SHADER, /depthTexture|framebuffer|historyTexture/);
 });
+
+
+test('verified user look preserves author and reuses the curated GPU grade pass', () => {
+  const f = fixture();
+  const custom = {
+    id: 'community-storybook-wilds',
+    title: 'My forest remix',
+    family: 'Fantasy',
+    description: 'An original color-only variation.',
+    style: 'anime',
+    creative: true,
+    author: { name: 'Community Artist', basedOn: 'storybook-wilds' },
+    grade: { ...GRADE_DEFAULTS, warmth: 0.22, saturation: 1.3 },
+  };
+  assert.equal(f.controller.applyVerifiedManifest(custom), true);
+  assert.equal(f.controller.activeId, custom.id);
+  assert.equal(f.controller.activePack.author.name, 'Community Artist');
+  assert.equal(f.selections.at(-1).name, 'anime');
+  assert.equal([...f.owned][0].uniforms.warmth, 0.22);
+  assert.equal(f.created, 1);
+  assert.equal(f.controller.apply('cinematic-earth'), true);
+  assert.equal(f.created, 1);
+  assert.equal(f.controller.activePack.author, undefined);
+  assert.equal(f.controller.apply('original'), true);
+  assert.equal([...f.owned][0].enabled, false);
+  f.controller.destroy();
+  assert.equal(f.owned.size, 0);
+});
+
+test('invalid community look cannot mutate current lens', () => {
+  const f = fixture();
+  f.controller.apply('neon-nocturne');
+  const before = f.selections.length;
+  const unsafe = {
+    id: 'community-evil',
+    title: 'Bad',
+    family: 'Sci-fi',
+    description: 'Not a graded look.',
+    style: 'normal',
+    creative: true,
+    author: { name: 'Untrusted', basedOn: 'neon-nocturne' },
+    grade: { fragmentShader: 'void main() {}' },
+  };
+  assert.equal(f.controller.applyVerifiedManifest(unsafe), false);
+  assert.equal(f.selections.length, before);
+  assert.equal(f.controller.activeId, 'neon-nocturne');
+  f.controller.destroy();
+});

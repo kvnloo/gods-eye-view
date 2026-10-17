@@ -3,7 +3,7 @@
  * independent modules so experimental work never owns global app state.
  */
 import * as Cesium from 'cesium';
-import { createLookPackController, LOOK_PACKS } from './lookPacks.js';
+import { createLookPackController } from './lookPacks.js';
 
 // Node ESM consumers must not invoke the Vite-only glob hook.
 const discovered = import.meta.env
@@ -33,10 +33,12 @@ export function mountPlanetPlayground(services) {
     viewer: services.viewer,
     Cesium,
     styleManager: services.styleManager,
-    onChange: (id) => {
-      const pack = LOOK_PACKS.find((entry) => entry.id === id);
-      creativeChip.hidden = !pack || id === 'original';
-      creativeChip.textContent = pack ? 'CREATIVE · ' + pack.title + ' · Reset' : '';
+    onChange: (id, pack) => {
+      creativeChip.hidden = !pack?.grade || id === 'original';
+      creativeChip.textContent = pack
+        ? 'CREATIVE · ' + pack.title +
+          (pack.author ? ' · by ' + pack.author.name : '') + ' · Reset'
+        : '';
     },
   });
   creativeChip.addEventListener('click', () => lookPacks.apply('original'));

@@ -183,3 +183,30 @@
   color: #a9bac5;
   font-size: 11px;
 }
+.gev-playground-look-lab {
+  margin: 0 0 13px;
+  padding: 9px 10px;
+  border: 1px solid rgba(123, 211, 181, 0.25);
+  border-radius: 6px;
+}
+.gev-playground-look-lab summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.gev-playground-look-lab label {
+  display: grid;
+  gap: 6px;
+  margin: 9px 0;
+}
+.gev-playground-look-lab textarea {
+  width: 100%;
+  min-height: 100px;
+  resize: vertical;
+  box-sizing: border-box;
+  font: 11px/1.5 monospace;
+  color: #eff7fa;
+  background: #132735;
+  border: 1px solid #708993;
+  border-radius: 4px;
+  padding: 8px;
+}

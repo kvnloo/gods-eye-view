@@ -70,8 +70,12 @@ function normalizeGeometry(value) {
     value.coordinates.length > MAX_GEOMETRY_POINTS
   )
     return null;
-  const coordinates = Array.from(value.coordinates, normalizedCoordinate);
-  if (coordinates.some((point) => point === null)) return null;
+  const coordinates = new Array(value.coordinates.length);
+  for (let index = 0; index < coordinates.length; index += 1) {
+    const point = normalizedCoordinate(value.coordinates[index]);
+    if (point === null) return null;
+    coordinates[index] = point;
+  }
   return { type, coordinates };
 }
 

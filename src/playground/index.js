@@ -3,6 +3,7 @@
  * independent modules so experimental work never owns global app state.
  */
 import * as Cesium from 'cesium';
+import { createLookPackController, LOOK_PACKS } from './lookPacks.js';
 
 // Node ESM consumers must not invoke the Vite-only glob hook.
 const discovered = import.meta.env
@@ -20,6 +21,38 @@ export function mountPlanetPlayground(services) {
   // An embedded globe is controlled by its host; it must not acquire a second UI.
   if (new URLSearchParams(services.window?.location?.search || '').get('embed') === '1')
     return () => {};
+
+  // An opt-in creative filter must remain visibly labeled even after the
+  // Playground tray closes or an evidence-oriented tab is selected.
+  const creativeChip = doc.createElement('button');
+  creativeChip.type = 'button';
+  creativeChip.className = 'gev-playground-creative-chip';
+  creativeChip.setAttribute('aria-label', 'Return to original Earth view');
+  creativeChip.hidden = true;
+  const lookPacks = createLookPackController({
+    viewer: services.viewer,
+    Cesium,
+    styleManager: services.styleManager,
+    onChange: (id) => {
+      const pack = LOOK_PACKS.find((entry) => entry.id === id);
+      creativeChip.hidden = !pack || id === 'original';
+      creativeChip.textContent = pack ? 'CREATIVE · ' + pack.title + ' · Reset' : '';
+    },
+  });
+  creativeChip.addEventListener('click', () => lookPacks.apply('original'));
+  // Direct changes through the original GEV style controls supersede a creative
+  // grade. Internal changes made by the look pack are explicitly exempt.
+  const eventWindow = services.window || doc.defaultView;
+  const onExternalStyleChange = () => {
+    if (lookPacks.activeId && !lookPacks.applyingBaseStyle)
+      lookPacks.clearGrade();
+  };
+  eventWindow?.addEventListener('gev:style-change', onExternalStyleChange);
+  const onDirectStyleSelection = (event) => {
+    if (lookPacks.activeId && event.target?.closest?.('.style-btn'))
+      lookPacks.clearGrade();
+  };
+  doc.addEventListener('click', onDirectStyleSelection, true);
 
   const launcher = doc.createElement('button');
   launcher.id = 'planet-playground-launcher';
@@ -73,7 +106,7 @@ export function mountPlanetPlayground(services) {
     try {
       disposeFeature = feature.mount({
         root: body,
-        services: { ...services, Cesium },
+        services: { ...services, Cesium, lookPacks },
       }) || null;
     } catch (error) {
       const problem = doc.createElement('p');
@@ -118,11 +151,15 @@ export function mountPlanetPlayground(services) {
     }
   };
   doc.addEventListener('keydown', onKeydown);
-  doc.body.append(launcher, panel);
+  doc.body.append(launcher, panel, creativeChip);
   return () => {
     doc.removeEventListener('keydown', onKeydown);
     disposeFeature?.();
     panel.remove();
     launcher.remove();
+    creativeChip.remove();
+    eventWindow?.removeEventListener('gev:style-change', onExternalStyleChange);
+    doc.removeEventListener('click', onDirectStyleSelection, true);
+    lookPacks.destroy();
   };
 }

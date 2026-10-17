@@ -1,0 +1,128 @@
+#!/usr/bin/env node
+/**
+ * Rendered acceptance for the opt-in Visual Universe experiment.
+ * Requires a running GEV dev server. This is functional WebGL proof, NOT a
+ * GPU frame-time benchmark (SwiftShader is only software validation).
+ *
+ * QA_BASE_URL=http://127.0.0.1:4173 node scripts/qa-playground-looks.mjs
+ */
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import puppeteer from 'puppeteer';
+
+const browser = await puppeteer.launch({
+  headless: true,
+  args: [
+    '--no-sandbox',
+    ...(process.platform === 'darwin'
+      ? ['--use-angle=metal', '--enable-gpu']
+      : ['--use-gl=angle', '--use-angle=swiftshader']),
+  ],
+});
+const page = await browser.newPage();
+const errors = [];
+page.on('pageerror', (error) => errors.push(error.message));
+
+try {
+  await page.setViewport({ width: 1440, height: 900 });
+  const url = new URL(process.env.QA_BASE_URL || 'http://127.0.0.1:4173');
+  url.searchParams.set('welcome', '0');
+  await page.goto(url.href, { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(
+    () => window.__godsEyeView?.viewer?.scene &&
+      document.querySelector('#planet-playground-launcher') &&
+      document.querySelector('#loading-screen')?.classList.contains('hidden'),
+    { timeout: 60_000 },
+  );
+
+  await page.click('#planet-playground-launcher');
+  const toyboxOpened = await page.evaluate(() => {
+    const tab = [...document.querySelectorAll('.gev-playground-tabs [role="tab"]')]
+      .find((node) => node.textContent === 'Toybox');
+    tab?.click();
+    return Boolean(tab && document.querySelector('[data-look-pack="original"]'));
+  });
+  assert.ok(toyboxOpened, 'Toybox catalog must be reachable in EXPLORE');
+
+  fs.mkdirSync('qa-shots/visual-universe', { recursive: true });
+  let firstStage = null;
+  for (const [id, expectedStyle] of [
+    ['cinematic-earth', 'normal'],
+    ['storybook-wilds', 'anime'],
+    ['neon-nocturne', 'normal'],
+    ['arcade-racer', 'anime'],
+  ]) {
+    await page.click('[data-look-pack="' + id + '"]');
+    await page.waitForFunction(
+      () => window.__godsEyeView.styleManager.transitions.size === 0,
+      { timeout: 10_000 },
+    );
+    const sample = await page.evaluate(() => {
+      const viewer = window.__godsEyeView.viewer;
+      viewer.scene.requestRender();
+      const stage = viewer.scene.postProcessStages.getStageByName(
+        'godsEyeView_creativeGrade',
+      );
+      const chip = document.querySelector('.gev-playground-creative-chip');
+      return {
+        style: window.__godsEyeView.styleManager.activeStyle,
+        enabled: stage?.enabled,
+        stage: stage?.name,
+        chipVisible: Boolean(chip && !chip.hidden),
+        chipLabel: chip?.textContent,
+      };
+    });
+    assert.equal(sample.style, expectedStyle, id + ' base style');
+    assert.equal(sample.stage, 'godsEyeView_creativeGrade');
+    assert.equal(sample.enabled, true, id + ' grade is active');
+    assert.equal(sample.chipVisible, true, id + ' creative disclosure remains visible');
+    assert.ok(sample.chipLabel.includes('Reset'));
+    if (firstStage !== null) assert.equal(sample.stage, firstStage);
+    firstStage = sample.stage;
+    await page.screenshot({ path: 'qa-shots/visual-universe/' + id + '.png' });
+  }
+
+  await page.click('.gev-playground-close');
+  const persistent = await page.evaluate(() => {
+    const chip = document.querySelector('.gev-playground-creative-chip');
+    const stage = window.__godsEyeView.viewer.scene.postProcessStages
+      .getStageByName('godsEyeView_creativeGrade');
+    return { chipVisible: Boolean(chip && !chip.hidden), stageEnabled: stage?.enabled };
+  });
+  assert.equal(persistent.chipVisible, true, 'disclosure survives closing tray');
+  assert.equal(persistent.stageEnabled, true, 'creative grade intentionally persists');
+
+  await page.click('.gev-playground-creative-chip');
+  const reset = await page.evaluate(() => {
+    const chip = document.querySelector('.gev-playground-creative-chip');
+    const manager = window.__godsEyeView.styleManager;
+    const stage = window.__godsEyeView.viewer.scene.postProcessStages
+      .getStageByName('godsEyeView_creativeGrade');
+    return { style: manager.activeStyle, enabled: stage?.enabled, chipHidden: chip?.hidden };
+  });
+  assert.equal(reset.style, 'normal');
+  assert.equal(reset.enabled, false);
+  assert.equal(reset.chipHidden, true);
+
+  // Selecting the same underlying native shader must still cancel the
+  // creative grade; it cannot stay invisible behind the normal preset UI.
+  await page.click('#planet-playground-launcher');
+  await page.evaluate(() => {
+    [...document.querySelectorAll('.gev-playground-tabs [role="tab"]')]
+      .find((node) => node.textContent === 'Toybox')?.click();
+  });
+  await page.click('[data-look-pack="storybook-wilds"]');
+  await page.$eval('.style-btn[data-style="anime"]', (button) => button.click());
+  const superseded = await page.evaluate(() => ({
+    hidden: document.querySelector('.gev-playground-creative-chip')?.hidden,
+    enabled: window.__godsEyeView.viewer.scene.postProcessStages
+      .getStageByName('godsEyeView_creativeGrade')?.enabled,
+  }));
+  assert.equal(superseded.hidden, true);
+  assert.equal(superseded.enabled, false);
+  assert.deepEqual(errors, [], 'no browser page errors');
+  console.log('[PASS] Visual Universe gallery, grade ownership, persistent disclosure and reset');
+  console.log('[INFO] Screenshots: qa-shots/visual-universe/ (not GPU-performance evidence)');
+} finally {
+  await browser.close();
+}

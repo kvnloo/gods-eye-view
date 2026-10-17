@@ -1,0 +1,10 @@
+{
+  "mode": "motion",
+  "durationMs": 1000,
+  "sceneTimestampsMs": [0, 16, 32, 232, 248, 264],
+  "rafTimestampsMs": [0, 16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240, 256, 272],
+  "cameraChangedFrames": 5,
+  "longTaskDurationsMs": [10, 51, 101],
+  "inputSamples": [{"atMs": 45, "firstChangedSceneAtMs": 232}, {"atMs": 241, "firstChangedSceneAtMs": 248}, {"atMs": 280, "firstChangedSceneAtMs": null}],
+  "environment": { "mode": "motion", "style": "normal", "viewport": "1440x900", "dpr": 1, "canvas": "1440x900", "renderer": "fixture", "softwareRenderer": true, "sourceCounts": {}, "profile": "standard" }
+}

@@ -16,7 +16,7 @@ server on port 4173, run:
 - node scripts/qa-frame-pacing.mjs --mode motion --layers flights --headful
 - node scripts/qa-frame-pacing.mjs --mode motion --require-hardware --headful
 - node scripts/compare-frame-pacing.mjs baseline/results.json candidate/results.json
-- node --test scripts/frame-pacing-metrics.test.mjs
+- node --test src/tooling/framePacingMetrics.test.mjs
 
 Results are saved at qa-shots/frame-pacing/results.json; use --out with a separate
 path per build. The scripted route moves the camera at a clock-based angular

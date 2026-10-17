@@ -336,3 +336,30 @@ test('unsafe minimum occurrence settings are rejected explicitly', () => {
     );
   }
 });
+
+
+test('timestamps must be observed numbers, never coerced placeholders', () => {
+  const base = episode({ startedAt: 0, completedAt: 0 });
+  assert.ok(normalizeActionEpisode(base));
+  for (const value of [null, undefined, '', '0', false, true, {}]) {
+    assert.equal(
+      normalizeActionEpisode({ ...base, startedAt: value }),
+      null,
+      `invalid startedAt ${String(value)} must be rejected`,
+    );
+    assert.equal(
+      normalizeActionEpisode({ ...base, completedAt: value }),
+      null,
+      `invalid completedAt ${String(value)} must be rejected`,
+    );
+  }
+});
+
+test('missing episode start cannot invent an independent successful run', () => {
+  const valid = episode({ startedAt: 100, completedAt: 200 });
+  const missing = { ...valid, startedAt: null };
+  assert.deepEqual(
+    detectReflexCandidates([missing, valid], { minOccurrences: 2 }),
+    [],
+  );
+});

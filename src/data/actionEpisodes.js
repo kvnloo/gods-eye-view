@@ -124,8 +124,9 @@ export function normalizeActionEpisode(value) {
     Array.isArray(value.actions) && value.actions.length <= 32
       ? value.actions.map(normalizeActionEpisodeStep)
       : [];
-  const startedAt = Number(value.startedAt);
-  const completedAt = Number(value.completedAt);
+  // Keep observation timestamps typed; missing values must not become epoch records.
+  const startedAt = value.startedAt;
+  const completedAt = value.completedAt;
   if (
     !contextFingerprint ||
     actions.length === 0 ||

@@ -11,6 +11,7 @@ import {
 function fixture() {
   const owned = new Set();
   const selections = [];
+  const notifications = [];
   const activeStages = {};
   for (const name of ['retro', 'surveillance', 'thermal', 'anime', 'noir', 'snow'])
     activeStages[name] = { uniforms: {} };
@@ -30,13 +31,14 @@ function fixture() {
         Object.assign(this, options);
       }
     } },
+    onChange(id) { notifications.push(id); },
     styleManager: {
       stages: activeStages,
       setStyle(name, options) { selections.push({ name, options }); },
     },
   });
   return {
-    controller, owned, selections, activeStages,
+    controller, owned, selections, notifications, activeStages,
     get renders() { return renders; },
     get created() { return created; },
   };
@@ -80,6 +82,7 @@ test('creative styles reuse one owned stage and can be reset to original', () =>
   assert.equal(f.selections[0].name, 'normal');
   assert.equal(f.selections[0].options.applyPreset, false);
   assert.equal(f.controller.activeId, 'cinematic-earth');
+  assert.deepEqual(f.notifications, ['cinematic-earth']);
 
   assert.equal(f.controller.apply('storybook-wilds'), true);
   assert.equal(f.created, 1);
@@ -92,10 +95,14 @@ test('creative styles reuse one owned stage and can be reset to original', () =>
   assert.equal(stage.enabled, false);
   assert.equal(f.controller.activeId, 'original');
   assert.equal(f.selections.at(-1).name, 'normal');
+  assert.deepEqual(f.notifications.slice(0, 3), [
+    'cinematic-earth', 'storybook-wilds', 'original',
+  ]);
   assert.ok(f.renders >= 3);
   f.controller.destroy();
   f.controller.destroy();
   assert.equal(f.owned.size, 0);
+  assert.equal(f.notifications.at(-1), null);
   assert.equal(f.controller.apply('storybook-wilds'), false);
 });
 

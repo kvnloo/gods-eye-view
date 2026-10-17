@@ -3,6 +3,7 @@
  * independent modules so experimental work never owns global app state.
  */
 import * as Cesium from 'cesium';
+import { createLookPackController } from './lookPacks.js';
 
 // Node ESM consumers must not invoke the Vite-only glob hook.
 const discovered = import.meta.env
@@ -20,6 +21,12 @@ export function mountPlanetPlayground(services) {
   // An embedded globe is controlled by its host; it must not acquire a second UI.
   if (new URLSearchParams(services.window?.location?.search || '').get('embed') === '1')
     return () => {};
+
+  const lookPacks = createLookPackController({
+    viewer: services.viewer,
+    Cesium,
+    styleManager: services.styleManager,
+  });
 
   const launcher = doc.createElement('button');
   launcher.id = 'planet-playground-launcher';
@@ -73,7 +80,7 @@ export function mountPlanetPlayground(services) {
     try {
       disposeFeature = feature.mount({
         root: body,
-        services: { ...services, Cesium },
+        services: { ...services, Cesium, lookPacks },
       }) || null;
     } catch (error) {
       const problem = doc.createElement('p');
@@ -124,5 +131,6 @@ export function mountPlanetPlayground(services) {
     disposeFeature?.();
     panel.remove();
     launcher.remove();
+    lookPacks.destroy();
   };
 }

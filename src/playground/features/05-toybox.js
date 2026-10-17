@@ -56,6 +56,8 @@ export const feature = {
       button.textContent = label;
       button.addEventListener('click', () => {
         services.lookPacks?.clearGrade();
+        for (const card of gallery.querySelectorAll('[data-look-pack]'))
+          card.setAttribute('aria-pressed', 'false');
         styleManager.setStyle(id, { applyPreset: true, userInitiated: true });
         readout.textContent = label + ' lens active.';
       });

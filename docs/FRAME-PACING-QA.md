@@ -48,6 +48,22 @@ sourceRevision to null rather than guessing.
   renderer, browser identity, viewport, DPR, canvas or focus. An unknown layer
   count is recorded as null, not silently invented.
 
+**Capture validity:** A/B now refuses unverified/masked GPU strings, software
+fallbacks presented as hardware, hidden/unfocused tabs, source populations that
+are `null` instead of real counts, and different measurement windows. With an
+unknown enabled-layer cohort, the raw trace is still useful for diagnosis but
+cannot substantiate a matched performance comparison. Use `--require-hardware`
+to fail early if the unmasked WebGL GPU identity is absent or indicates a
+software rasterizer. Even an identified renderer does not independently prove
+real display scanout.
+
+The harness flushes pending Long Tasks / Long Animation Frames at stop and
+records observer API support explicitly. A zero count with unsupported API is
+**unknown**, not evidence of zero work. LoAF script attribution is capped to
+eight reported files and 64 distinct internal filenames, omits host/query/full
+paths, and includes forced style/layout cost. Attribution is approximate and
+not a JS flame graph. See [Chrome's LoAF specification](https://developer.chrome.com/docs/web-platform/long-animation-frames/).
+
 No absolute GPU timing thresholds belong in generic SwiftShader CI. The
 deterministic fixtures detect rAF/scene divergence, a 200 ms hitch, silent idle,
 unmatched input, invalid samples and incompatible A/B. A speedup claim requires

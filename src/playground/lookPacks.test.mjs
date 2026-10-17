@@ -106,6 +106,14 @@ test('creative styles reuse one owned stage and can be reset to original', () =>
   assert.equal(f.controller.apply('storybook-wilds'), false);
 });
 
+test('base-style mutation is marked internal during look application', () => {
+  const f = fixture();
+  assert.equal(f.controller.applyingBaseStyle, false);
+  f.controller.apply('cinematic-earth');
+  assert.equal(f.controller.applyingBaseStyle, false);
+  f.controller.destroy();
+});
+
 test('unknown pack and missing base shader do not alter rendering', () => {
   const f = fixture();
   assert.equal(f.controller.apply('made-up'), false);

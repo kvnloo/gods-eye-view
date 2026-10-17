@@ -78,3 +78,15 @@ persistent sharing, or shader execution to this data shape**.
 
 The focused contract is `node --test src/playground/lookManifest.test.mjs`.
 After source-only V8 verification, a real Node 24 run remains in #72.
+
+
+## Creative grade comparison
+
+The Toybox Compare slider is a one-pass split of the **same** Cesium scene:
+the left side shows the creative grade and the right side retains the
+selected native GEV base lens. It does not render another scene, create a
+history buffer or change map picking, and at 0% the optional grade stage
+is disabled. Choosing another look resets the split to 100%; closing the
+Toybox retains the split until the user changes or clears the look. For
+anime/snow/surveillance, the right side is that *base lens*, **not** raw
+Original Earth. The browser acceptance script also captures a 50/50 frame.

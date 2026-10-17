@@ -146,6 +146,7 @@ export const COLOR_GRADE_SHADER = /* glsl */ `
   uniform float tint;
   uniform float vignette;
   uniform float grain;
+  uniform float reveal;
   in vec2 v_textureCoordinates;
 
   float filmNoise(vec2 p) {
@@ -164,7 +165,16 @@ export const COLOR_GRADE_SHADER = /* glsl */ `
     vec2 centered = uv * 2.0 - 1.0;
     rgb *= 1.0 - vignette * smoothstep(0.08, 1.6, dot(centered, centered)) * 0.42;
     rgb += (filmNoise(uv * colorTextureDimensions) - 0.5) * grain * 0.055;
-    out_FragColor = vec4(clamp(rgb, 0.0, 1.0), source.a);
+    vec3 graded = clamp(rgb, 0.0, 1.0);
+    float mask = step(uv.x, reveal);
+    vec3 outputColor = mix(source.rgb, graded, mask);
+    // A soft guide makes the split legible without an extra framebuffer.
+    float guide = 1.0 - smoothstep(
+      0.0, 2.0 / colorTextureDimensions.x, abs(uv.x - reveal)
+    );
+    if (reveal > 0.01 && reveal < 0.99)
+      outputColor = mix(outputColor, vec3(0.92), guide * 0.5);
+    out_FragColor = vec4(outputColor, source.a);
   }
 `;
 
@@ -176,13 +186,27 @@ export function createLookPackController({ viewer, Cesium, styleManager, onChang
   let stage = null;
   let destroyed = false;
   let active = null;
+  let reveal = 1;
   let applyingBaseStyle = false;
   const stages = viewer.scene.postProcessStages;
   const render = () => viewer.scene.requestRender?.();
 
   return {
     get activeId() { return active; },
+    get reveal() { return reveal; },
     get applyingBaseStyle() { return applyingBaseStyle; },
+    /** Wipe left-side grade vs right-side current GEV base lens. */
+    setReveal(value) {
+      if (destroyed || !stage || !active || active === 'original' ||
+          !Number.isFinite(value) || value < 0 || value > 1)
+        return false;
+      reveal = value;
+      stage.uniforms.reveal = value;
+      stage.enabled = value > 0;
+      onChange(active);
+      render();
+      return true;
+    },
     apply(id) {
       if (destroyed) return false;
       const pack = LOOK_PACKS.find((entry) => entry.id === id);
@@ -194,7 +218,7 @@ export function createLookPackController({ viewer, Cesium, styleManager, onChang
         stage = new Cesium.PostProcessStage({
           name: 'godsEyeView_creativeGrade',
           fragmentShader: COLOR_GRADE_SHADER,
-          uniforms: { ...GRADE_DEFAULTS },
+          uniforms: { ...GRADE_DEFAULTS, reveal: 1 },
         });
         stage.enabled = false;
         stages.add(stage);
@@ -209,8 +233,9 @@ export function createLookPackController({ viewer, Cesium, styleManager, onChang
       } finally {
         applyingBaseStyle = false;
       }
+      reveal = 1;
       if (stage) {
-        Object.assign(stage.uniforms, GRADE_DEFAULTS, pack.grade || {});
+        Object.assign(stage.uniforms, GRADE_DEFAULTS, pack.grade || {}, { reveal });
         stage.enabled = Boolean(pack.grade);
       }
       active = pack.id;
@@ -221,6 +246,7 @@ export function createLookPackController({ viewer, Cesium, styleManager, onChang
     clearGrade() {
       if (destroyed) return;
       if (stage) stage.enabled = false;
+      reveal = 1;
       active = null;
       onChange(active);
       render();

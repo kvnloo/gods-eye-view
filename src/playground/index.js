@@ -40,6 +40,14 @@ export function mountPlanetPlayground(services) {
     },
   });
   creativeChip.addEventListener('click', () => lookPacks.apply('original'));
+  // Direct changes through the original GEV style controls supersede a creative
+  // grade. Internal changes made by the look pack are explicitly exempt.
+  const eventWindow = services.window || doc.defaultView;
+  const onExternalStyleChange = () => {
+    if (lookPacks.activeId && !lookPacks.applyingBaseStyle)
+      lookPacks.clearGrade();
+  };
+  eventWindow?.addEventListener('gev:style-change', onExternalStyleChange);
 
   const launcher = doc.createElement('button');
   launcher.id = 'planet-playground-launcher';
@@ -145,6 +153,7 @@ export function mountPlanetPlayground(services) {
     panel.remove();
     launcher.remove();
     creativeChip.remove();
+    eventWindow?.removeEventListener('gev:style-change', onExternalStyleChange);
     lookPacks.destroy();
   };
 }

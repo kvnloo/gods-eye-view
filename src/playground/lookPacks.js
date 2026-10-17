@@ -168,7 +168,6 @@ export const COLOR_GRADE_SHADER = /* glsl */ `
     vec3 graded = clamp(rgb, 0.0, 1.0);
     float mask = step(uv.x, reveal);
     vec3 outputColor = mix(source.rgb, graded, mask);
-    // A soft guide makes the split legible without an extra framebuffer.
     float guide = 1.0 - smoothstep(
       0.0, 2.0 / colorTextureDimensions.x, abs(uv.x - reveal)
     );

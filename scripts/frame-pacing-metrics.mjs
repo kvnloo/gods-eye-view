@@ -76,6 +76,13 @@ export function summarizeFrameTrace(trace) {
   }
   const active = mode !== 'idle';
   const sceneP95 = active ? percentile(scene.samples, 0.95) : null;
+  const maxCompleteGap = scene.samples.reduce((max, gap) => Math.max(max, gap), 0);
+  // In-flight/terminal gaps are censored lower bounds. Without these, a renderer
+  // that stops after three 16ms frames appears perfectly smooth at p95.
+  const firstRender = sceneTimestampsMs[0];
+  const lastRender = sceneTimestampsMs.at(-1);
+  const leadingSilenceMs = finite(firstRender) ? Math.max(0, firstRender) : durationMs;
+  const unfinishedTailMs = finite(lastRender) ? Math.max(0, durationMs - lastRender) : durationMs;
   const summary = {
     measurement: 'browser-to-Cesium-postRender; not photons, compositor, or GPU busy',
     mode,
@@ -89,7 +96,11 @@ export function summarizeFrameTrace(trace) {
       p50: round(percentile(scene.samples, 0.5)),
       p95: round(sceneP95),
       p99: round(percentile(scene.samples, 0.99)),
-      worst: round(scene.samples.length ? Math.max(...scene.samples) : null),
+      worst: round(scene.samples.length ? maxCompleteGap : null),
+      leadingSilenceMs: round(leadingSilenceMs),
+      unfinishedTailMs: round(unfinishedTailMs),
+      worstObservedGapMs: round(Math.max(maxCompleteGap, leadingSilenceMs, unfinishedTailMs)),
+      unresolvedTailOver100ms: unfinishedTailMs > 100,
       over33ms: scene.samples.filter((ms) => ms > 33.333).length,
       over50ms: scene.samples.filter((ms) => ms > 50).length,
       over100ms: scene.samples.filter((ms) => ms > 100).length,

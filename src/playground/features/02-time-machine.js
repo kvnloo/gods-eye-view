@@ -87,6 +87,7 @@ export const feature = {
         return;
       }
       playbackOwned = true;
+      play.disabled = true;
       notice.textContent = 'Playing authored scene…';
       try {
         const result = await services.sceneDirector.startScene(select.value, {
@@ -97,9 +98,16 @@ export const feature = {
           notice.textContent = result.started ? 'Playback complete.' : 'Playback ended: ' + (result.reason || 'cancelled');
       } catch (error) {
         if (alive) notice.textContent = 'Playback failed: ' + String(error.message || error);
+      } finally {
+        playbackOwned = false;
+        if (alive) play.disabled = false;
       }
     });
     stop.addEventListener('click', () => {
+      if (!playbackOwned) {
+        notice.textContent = 'No Time Machine playback is active.';
+        return;
+      }
       services.sceneDirector.stopScene('Stopped from Time Machine');
       playbackOwned = false;
       notice.textContent = 'Stopped.';
@@ -111,6 +119,7 @@ export const feature = {
       seekCounter++;
       if (playbackOwned && services.sceneDirector.running)
         services.sceneDirector.stopScene('Time Machine closed');
+      playbackOwned = false;
     };
   },
 };

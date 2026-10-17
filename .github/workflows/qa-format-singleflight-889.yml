@@ -1,0 +1,23 @@
+name: Local formatting proof for GEV 889
+on:
+  push:
+    branches:
+      - qa/format-singleflight-889
+jobs:
+  formatter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install locked formatter
+        run: npm ci --ignore-scripts
+      - name: Print exact formatting difference without committing
+        run: |
+          ./node_modules/.bin/prettier --write src/services/singleflight.test.mjs
+          echo '=== PRETTIER_DIFF_BEGIN ==='
+          git diff -- src/services/singleflight.test.mjs
+          echo '=== PRETTIER_DIFF_END ==='

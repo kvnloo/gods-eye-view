@@ -34,8 +34,11 @@ sourceRevision to null rather than guessing.
 ## Metrics
 
 - sceneFps counts Cesium postRender callbacks; rAF Hz does **not** prove a render.
-- sceneFrameIntervalMs reports p50/p95/p99/worst and >33/>50/>100 ms **gaps
+- sceneFrameIntervalMs reports p50/p95/p99/worst and >33/>50/>100 ms **completed gaps
   between postRender callbacks during motion**, not GPU time or display cadence.
+  `leadingSilenceMs`, `unfinishedTailMs` and `worstObservedGapMs` also
+  expose a renderer that draws a few quick frames and then stops; the tail
+  is a **censored lower bound**, not a completed GPU frame or display timestamp.
 - requestRenderMode idle intentionally has no frame interval percentile.
 - inputToChangedSceneRenderMs is delivered canvas pointermove to the next
   postRender where the camera pose changed. Unmatched inputs remain unmatched.

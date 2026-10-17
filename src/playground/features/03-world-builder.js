@@ -64,6 +64,8 @@ export const feature = {
       typeSelect.append(option);
     }
     controlRow.append(scenarioSelect, typeSelect);
+    scenarioSelect.value = 'A';
+    typeSelect.value = 'park';
     const buttons = doc.createElement('div');
     buttons.className = 'gev-playground-actions';
     function button(label) {
@@ -152,8 +154,10 @@ export const feature = {
       const link = doc.createElement('a');
       link.href = url;
       link.download = 'gev-what-if.json';
+      doc.body.append(link);
       link.click();
-      URL.revokeObjectURL(url);
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
       status.textContent = 'Exported hypothetical proposals. No predictions included.';
     });
     root.append(title, intro, controlRow, buttons, count, status);

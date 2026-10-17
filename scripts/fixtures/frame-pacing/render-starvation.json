@@ -60,6 +60,7 @@
     "sourceCounts": {},
     "profile": "standard",
     "userAgent": "fixture-agent",
-    "focused": true
+    "focused": true,
+    "rendererVerified": true
   }
 }

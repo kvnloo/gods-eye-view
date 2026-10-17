@@ -28,6 +28,10 @@ npm run build
 npm run dev
 ```
 
+Run `node scripts/qa-playground-looks.mjs` with the dev server running to
+check the creative gallery, GLSL stage reuse, persistent disclosure, reset and
+comparison screenshots. Software WebGL proof is **not** a GPU performance result.
+
 In a browser, select EXPLORE, visit all five tabs, launch the Nepal scene,
 seek its authored timeline, add/undo a hypothetical marker, join the same room
 in two same-origin tabs (no automatic camera sharing), and choose a sensor look.

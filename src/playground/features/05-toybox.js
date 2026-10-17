@@ -130,7 +130,10 @@ export const feature = {
       readout.textContent = 'Returning to your starting view.';
     });
     root.append(title, description, galleryTitle, gallery, lookTitle, looks, actions, readout);
-    readout.textContent = 'Current lens: ' + (styleManager.activeStyle || 'normal') + '.';
+    const currentPack = LOOK_PACKS.find((pack) => pack.id === services.lookPacks?.activeId);
+    readout.textContent = currentPack
+      ? 'Creative look: ' + currentPack.title + ' (reset any time).'
+      : 'Current lens: ' + (styleManager.activeStyle || 'normal') + '.';
     return () => {
       if (ownedFlight) viewer.camera.cancelFlight();
     };

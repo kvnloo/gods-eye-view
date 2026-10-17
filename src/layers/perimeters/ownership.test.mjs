@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import * as contextStore from '../../data/contextStore.js';
 import { createFirePerimetersLayer } from './index.js';
 
 function harness(
   source,
   {
     pick = () => null,
+    context = null,
     inciwebIndex = null,
     cardHit = () => null,
     publication = async () => ({
@@ -67,7 +69,7 @@ function harness(
       unregisterPickOwner: (layerId) => owners.delete(layerId),
     },
     pointer: { isPointerFree: () => true },
-    context: {
+    context: context ?? {
       registerEntityContext(entity, metadata) {
         entity.__gevContextId = metadata.id;
         const record = { ...metadata, entity };
@@ -79,12 +81,17 @@ function harness(
         contexts.selectedEvents += 1;
         return contexts.selected;
       },
-      removeEntityContextsForLayer(layerId) {
+      removeEntityContextsForLayer(layerId, { retainIds } = {}) {
         contexts.removals += 1;
         for (const [id, record] of contexts.records) {
-          if (record.layerId === layerId) contexts.records.delete(id);
+          if (record.layerId === layerId && !retainIds?.has(id))
+            contexts.records.delete(id);
         }
-        if (contexts.selected?.layerId === layerId) contexts.selected = null;
+        if (
+          contexts.selected?.layerId === layerId &&
+          !retainIds?.has(contexts.selected.id)
+        )
+          contexts.selected = null;
       },
     },
     inciwebSource: inciwebIndex
@@ -253,6 +260,125 @@ test('refresh eviction clears the shared perimeter context with the card', async
   assert.equal(h.contexts.selected, null);
   assert.equal(h.contexts.records.size, 0);
   h.layer.destroy(h.viewer);
+});
+
+test('switching incidents evicts old context without disrupting refresh or sibling selection', async () => {
+  const previousWindow = globalThis.window;
+  const host = new EventTarget();
+  globalThis.window = host;
+  let h;
+  try {
+    let rows = [row, { ...row, stableId: 'other', name: 'Second Fire' }];
+    let pickResult = { id: `fire-perimeter:${row.stableId}:0` };
+    const selectedEvents = [];
+    host.addEventListener('gev:entity-selected', (event) => {
+      selectedEvents.push(event.detail.id);
+    });
+    h = harness(
+      { getSnapshot: async () => rows },
+      { pick: () => pickResult, context: contextStore },
+    );
+    await h.layer.update(h.viewer);
+    const sibling = contextStore.registerEntityContext(
+      { show: true },
+      {
+        id: 'quake:other',
+        layerId: 'earthquakes',
+      },
+    );
+
+    h.clicks.handler({ position: { x: 10, y: 10 } });
+    pickResult = { id: 'fire-perimeter:other:0' };
+    h.clicks.handler({ position: { x: 10, y: 10 } });
+    const store = contextStore.getContextStore();
+    assert.deepEqual(
+      [...store.entities.keys()],
+      ['quake:other', 'fire-perimeter:other'],
+    );
+    const selected = contextStore.getSelectedEntityContext();
+    const selectedAt = store.selectedAt;
+    assert.equal(selected.id, 'fire-perimeter:other');
+    assert.equal(selected.label, 'Wildfire · Second Fire');
+    assert.deepEqual(selectedEvents, [
+      `fire-perimeter:${row.stableId}`,
+      'fire-perimeter:other',
+    ]);
+
+    rows = [row, { ...rows[1], containedPct: 75 }];
+    await h.layer.update(h.viewer);
+    assert.equal(
+      contextStore.getSelectedEntityContext()?.properties.containedPct,
+      75,
+    );
+    assert.equal(
+      contextStore.getSelectedEntityContext()?.entity,
+      selected.entity,
+    );
+    assert.equal(store.selectedAt, selectedAt);
+    assert.equal(
+      selectedEvents.length,
+      2,
+      'refresh must not announce a new selection',
+    );
+
+    contextStore.selectEntityContext(sibling.entity);
+    await h.layer.update(h.viewer);
+    assert.equal(contextStore.getSelectedEntityContext()?.id, 'quake:other');
+    assert.equal(
+      selectedEvents.length,
+      3,
+      'refresh must not reclaim the shared selection',
+    );
+
+    pickResult = null;
+    h.clicks.handler({ position: { x: 10, y: 10 } });
+    assert.deepEqual([...store.entities.keys()], ['quake:other']);
+    assert.equal(contextStore.getSelectedEntityContext()?.id, 'quake:other');
+  } finally {
+    h?.layer.destroy(h.viewer);
+    globalThis.window = previousWindow;
+  }
+});
+
+test('disable and destroy remove perimeter context while preserving sibling selection', async () => {
+  const previousWindow = globalThis.window;
+  try {
+    for (const action of ['disable', 'destroy']) {
+      globalThis.window = new EventTarget();
+      const h = harness(
+        { getSnapshot: async () => [row] },
+        {
+          pick: () => ({ id: `fire-perimeter:${row.stableId}:0` }),
+          context: contextStore,
+        },
+      );
+      try {
+        await h.layer.update(h.viewer);
+        const sibling = contextStore.registerEntityContext(
+          { show: true },
+          {
+            id: 'quake:other',
+            layerId: 'earthquakes',
+          },
+        );
+        h.clicks.handler({ position: { x: 10, y: 10 } });
+        contextStore.selectEntityContext(sibling.entity);
+        h.layer[action](h.viewer);
+        assert.equal(
+          contextStore.getSelectedEntityContext()?.id,
+          'quake:other',
+        );
+        assert.deepEqual(
+          [...contextStore.getContextStore().entities.keys()],
+          ['quake:other'],
+        );
+      } finally {
+        h.layer.destroy(h.viewer);
+      }
+    }
+  } finally {
+    globalThis.window = previousWindow;
+  }
 });
 
 test('disable removes the click handler, pick ownership, and any card', async () => {

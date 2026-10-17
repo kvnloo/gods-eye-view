@@ -9,6 +9,7 @@ import {
   validTerrainResult,
 } from '../../src/data/terrainHeightsProxy.js';
 import { makeRateLimiter, clientKey } from './common/rate-limit.js';
+import { admitSameSite } from './common/same-site.js';
 
 /**
  * Re:Earth terrain point-height proxy: batched lon/lat → ellipsoidal height
@@ -91,6 +92,7 @@ export function terrainHeightsProxy(options = {}) {
    */
   function evictOverflow() {
     if (mem.size <= CACHE_MAX_ENTRIES) return;
+    diskDirty = true;
     const byAge = [...mem.entries()].sort((a, b) => a[1].at - b[1].at);
     for (let i = 0; i < byAge.length && mem.size > CACHE_MAX_ENTRIES; i += 1)
       mem.delete(byAge[i][0]);
@@ -98,6 +100,7 @@ export function terrainHeightsProxy(options = {}) {
   /** @type {Map<string, Promise<Array<object>>>} single-flight per missing-point subset. */
   const inflight = new Map();
   let diskLoaded = false;
+  let diskLoadPromise = null;
   let diskDirty = false;
 
   /** Load the on-disk cache into memory once, lazily (first request only). */
@@ -231,6 +234,7 @@ export function terrainHeightsProxy(options = {}) {
 
   const installMiddleware = (server) => {
     server.middlewares.use('/api/terrain/heights', async (req, res) => {
+      if (admitSameSite(req, res)) return;
       const send = (status, bodyObj) => {
         if (res.headersSent) return;
         res.writeHead(status, { 'Content-Type': 'application/json' });
@@ -245,7 +249,8 @@ export function terrainHeightsProxy(options = {}) {
           res.end(JSON.stringify({ error: 'Rate limit exceeded' }));
           return;
         }
-        await loadDiskOnce();
+        diskLoadPromise ??= loadDiskOnce();
+        await diskLoadPromise;
         const parsedUrl = new URL(req.url || '', 'http://internal');
         const rawPoints = parsedUrl.searchParams.get('points');
         const points = parseTerrainPoints(rawPoints);

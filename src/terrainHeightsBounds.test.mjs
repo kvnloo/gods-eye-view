@@ -10,8 +10,9 @@
 //
 // Run with: npm test
 import { test } from 'node:test';
+import { promises as fsp } from 'node:fs';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { parseTerrainPoints } from './data/terrainHeightsProxy.js';
@@ -229,4 +230,134 @@ test('a second client keeps its own quota', async (t) => {
     remoteAddress: '198.51.100.8',
   });
   assert.notEqual(neighbour.statusCode, 429);
+});
+
+// Runs on the actual PR #686 terrain proxy; no network and no browser assumed.
+// Regression: a second cold-start request must await disk hydration instead
+// of spawning an unnecessary upstream terrain request.
+test('concurrent cold-start hits wait for the same hydrated point cache', async (t) => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'gev-terrain-warmup-'));
+  const cachePath = path.join(dir, 'terrain-heights.json');
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  const point = '-97.74000,30.26000';
+  await writeFile(
+    cachePath,
+    JSON.stringify({
+      version: 2,
+      points: {
+        [point]: { at: Date.now(), result: { ellipsoid: 150 } },
+      },
+    }),
+    'utf8',
+  );
+
+  let announceRead;
+  let releaseRead;
+  const readEntered = new Promise((resolve) => { announceRead = resolve; });
+  const holdRead = new Promise((resolve) => { releaseRead = resolve; });
+  const originalReadFile = fsp.readFile;
+  t.mock.method(fsp, 'readFile', async (...args) => {
+    if (args[0] === cachePath) {
+      announceRead();
+      await holdRead;
+    }
+    return originalReadFile(...args);
+  });
+  let upstream = 0;
+  stubFetch(t, async () => {
+    upstream += 1;
+    return Response.json({ results: [{ ellipsoid: 999 }] });
+  });
+
+  const route = install(terrainHeightsProxy({ cachePath })).get('/api/terrain/heights');
+  const url = '/?points=-97.74,30.26';
+  const first = request(route, { url });
+  await readEntered; // First caller is paused before disk-cache hydration.
+  const second = request(route, { url });
+  let upstreamBeforeRelease;
+  try {
+    await new Promise((resolve) => setImmediate(resolve));
+    upstreamBeforeRelease = upstream;
+  } finally {
+    releaseRead();
+  }
+  const [one, two] = await Promise.all([first, second]);
+  assert.equal(upstreamBeforeRelease, 0, 'disk hits must not be fetched while disk read is pending');
+  assert.equal(upstream, 0, 'cold start must not issue any upstream request for this cached point');
+  assert.equal(one.statusCode, 200);
+  assert.equal(two.statusCode, 200);
+  assert.equal(one.body.results[0].ellipsoid, 150);
+  assert.equal(two.body.results[0].ellipsoid, 150);
+});
+
+// Appends to src/terrainHeightsBounds.test.mjs at the audited PR #686 blob.
+// This drives the real terrain route, its v2 disk hydration, and its flush.
+test('oversized v2 hydration persists eviction without an upstream miss', async (t) => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'gev-terrain-trim-'));
+  const cachePath = path.join(dir, 'terrain-heights.json');
+  t.after(() => rm(dir, { recursive: true, force: true }));
+
+  const points = Object.fromEntries(
+    [1, 2, 3, 4].map((i) => [
+      `-97.${String(i).padStart(5, '0')},30.26000`,
+      { at: Date.now() - (4 - i) * 1000, result: { ellipsoid: 150 } },
+    ]),
+  );
+  await writeFile(cachePath, JSON.stringify({ version: 2, points }), 'utf8');
+
+  let flush = null;
+  // Capture the exact callback for this route's 15-second periodic cache flush,
+  // without delaying the test or replacing the storage implementation.
+  t.mock.method(globalThis, 'setInterval', (fn) => {
+    flush = fn;
+    return { unref() {} };
+  });
+  stubFetch(t, async () => {
+    throw new Error('an already-cached point must not hit the network');
+  });
+
+  const route = install(
+    terrainHeightsProxy({ cachePath, cacheMaxEntries: 2 }),
+  ).get('/api/terrain/heights');
+  const response = await request(route, { url: '/?points=-97.00004,30.26' });
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.body.results[0].ellipsoid, 150);
+  assert.equal(typeof flush, 'function');
+
+  await flush();
+  const persisted = JSON.parse(await readFile(cachePath, 'utf8'));
+  assert.equal(persisted.version, 2);
+  assert.deepEqual(Object.keys(persisted.points), [
+    '-97.00003,30.26000',
+    '-97.00004,30.26000',
+  ]);
+});
+
+
+test('single-overflow eviction retains newer disk entry even if saved out of age order', async (t) => {
+  const asked = stubTerrainUpstream(t);
+  const dir = await mkdtemp(path.join(tmpdir(), 'gev-terrain-age-'));
+  const cachePath = path.join(dir, 'terrain-heights.json');
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  const newer = '-97.74000,30.26000';
+  const older = '-97.75000,30.26000';
+  const added = '-97.76000,30.26000';
+  const now = Date.now();
+  // Deliberately persist newer *before* older: eviction is based on `at`,
+  // and an insertion-order-only implementation would discard the wrong point.
+  await writeFile(cachePath, JSON.stringify({
+    version: 2,
+    points: {
+      [newer]: { at: now - 200, result: { ellipsoid: 150 } },
+      [older]: { at: now - 1000, result: { ellipsoid: 151 } },
+    },
+  }), 'utf8');
+  const route = install(terrainHeightsProxy({ cachePath, cacheMaxEntries: 2 }))
+    .get('/api/terrain/heights');
+  await request(route, { url: `/?points=${added}` });
+  assert.deepEqual(asked, [added]);
+  await request(route, { url: `/?points=${newer}` });
+  assert.deepEqual(asked, [added], 'newer cached point survives');
+  await request(route, { url: `/?points=${older}` });
+  assert.deepEqual(asked, [added, older], 'older disk point was evicted');
 });

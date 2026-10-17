@@ -1,0 +1,8 @@
+{
+  "mode": "idle",
+  "durationMs": 1000,
+  "sceneTimestampsMs": [],
+  "rafTimestampsMs": [0, 16, 32, 48, 64, 80],
+  "cameraChangedFrames": 0,
+  "environment": { "mode": "idle", "style": "normal", "viewport": "1440x900", "dpr": 1, "canvas": "1440x900", "renderer": "fixture", "softwareRenderer": true, "sourceCounts": {}, "profile": "standard" }
+}

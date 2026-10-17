@@ -137,3 +137,67 @@ test('upsert and remove preserve stable ids and normalize persisted rows', () =>
     ['a'],
   );
 });
+
+test('saved location arguments use numeric schema types without coercion', () => {
+  const invalid = [
+    ['latitude', null],
+    ['latitude', ''],
+    ['latitude', true],
+    ['latitude', '30.2'],
+    ['longitude', null],
+    ['longitude', ''],
+    ['longitude', false],
+    ['longitude', '-97.7'],
+    ['rangeM', '1200'],
+    ['rangeM', true],
+  ];
+  for (const [key, value] of invalid) {
+    const item = { ...record(), args: { ...record().args, [key]: value } };
+    assert.equal(normalizeSavedLocation(item), null, `${key}: ${String(value)}`);
+  }
+  assert.deepEqual(normalizeSavedLocation(record()), record());
+});
+
+test('load, persist, upsert and remove collapse duplicate ids deterministically', () => {
+  const store = memoryStorage({
+    [SAVED_LOCATIONS_STORAGE_KEY]: JSON.stringify([
+      record('a'),
+      { ...record('a'), label: 'Duplicate' },
+      record('b'),
+    ]),
+  });
+  const loaded = loadSavedLocations(store);
+  assert.deepEqual(loaded.map((item) => item.id), ['a', 'b']);
+  assert.equal(loaded[0].label, 'Austin');
+  const upserted = upsertSavedLocation(
+    [record('a'), record('a'), record('b')],
+    record('c'),
+  );
+  assert.deepEqual(upserted.map((item) => item.id), ['c', 'a', 'b']);
+  assert.deepEqual(
+    removeSavedLocation([record('a'), record('a'), record('b')], 'b').map(
+      (item) => item.id,
+    ),
+    ['a'],
+  );
+  assert.equal(
+    persistSavedLocations([record('a'), record('a'), record('b')], store),
+    true,
+  );
+  assert.deepEqual(
+    loadSavedLocations(store).map((item) => item.id),
+    ['a', 'b'],
+  );
+});
+
+
+test('blocked storage method lookup fails closed without throwing', () => {
+  const blocked = {
+    getItem: () => null,
+    get setItem() {
+      throw new DOMException('not allowed', 'SecurityError');
+    },
+  };
+  assert.equal(persistSavedLocations([record('a')], blocked), false);
+  assert.deepEqual(loadSavedLocations(blocked), []);
+});

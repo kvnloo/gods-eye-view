@@ -2,6 +2,12 @@
 
 const finite = (value) => typeof value === 'number' && Number.isFinite(value);
 
+/** Report software fallback explicitly; a masked WebGL string is not GPU proof. */
+export function isSoftwareRenderer(renderer) {
+  return typeof renderer === 'string' &&
+    /swiftshader|llvmpipe|softpipe|software|basic render driver|d3d11 warp/i.test(renderer);
+}
+
 export function percentile(values, p) {
   const sorted = values.filter(finite).sort((a, b) => a - b);
   if (!sorted.length) return null;
@@ -51,10 +57,18 @@ export function summarizeFrameTrace(trace) {
   const latency = [];
   let unmatchedInputs = 0;
   let invalidInputs = 0;
+  // Invalid capture times or responses that never occurred on a scene frame
+  // must not turn into apparently good percentile measurements.
+  const invalidTiming = [...sceneTimestampsMs, ...rafTimestampsMs].filter(
+    (ms) => !finite(ms) || ms < 0 || ms > durationMs + 1,
+  ).length + [...longTaskDurationsMs, ...longAnimationFrameDurationsMs].filter(
+    (ms) => !finite(ms) || ms < 0,
+  ).length;
   for (const { atMs, firstChangedSceneAtMs } of inputSamples) {
-    if (!finite(atMs)) { invalidInputs++; continue; }
+    if (!finite(atMs) || atMs < 0 || atMs > durationMs + 1) { invalidInputs++; continue; }
     if (firstChangedSceneAtMs == null) { unmatchedInputs++; continue; }
-    if (!finite(firstChangedSceneAtMs) || firstChangedSceneAtMs < atMs) {
+    if (!finite(firstChangedSceneAtMs) || firstChangedSceneAtMs < atMs ||
+      !sceneTimestampsMs.some((sceneMs) => finite(sceneMs) && Math.abs(sceneMs - firstChangedSceneAtMs) < 0.5)) {
       invalidInputs++;
       continue;
     }
@@ -91,7 +105,7 @@ export function summarizeFrameTrace(trace) {
       worst: round(percentile(latency, 1)),
       unmatched: unmatchedInputs,
     },
-    invalidSamples: scene.invalid + raf.invalid + invalidInputs,
+    invalidSamples: scene.invalid + raf.invalid + invalidInputs + invalidTiming,
   };
   // Never return a plausible '0 ms' for a renderer that failed to draw.
   const enoughMotion = scene.samples.length >= 2 && cameraChangedFrames >= 1;
@@ -108,11 +122,25 @@ export function summarizeFrameTrace(trace) {
 export function compareFrameTraces(before, after) {
   const keys = [
     'mode', 'style', 'viewport', 'dpr', 'canvas', 'renderer',
-    'softwareRenderer', 'sourceCounts', 'profile', 'userAgent', 'focused',
+    'softwareRenderer', 'rendererVerified', 'sourceCounts', 'profile', 'userAgent', 'focused',
   ];
   const mismatches = keys.filter((key) =>
     before.environment?.[key] === undefined || after.environment?.[key] === undefined ||
     JSON.stringify(before.environment[key]) !== JSON.stringify(after.environment[key]));
+  // Matching displays cannot rescue mismatched sampling windows or missing
+  // source populations. In particular null !== a verified zero records.
+  if (!before.environment?.rendererVerified || !after.environment?.rendererVerified)
+    mismatches.push('unverified renderer');
+  if (!before.environment?.focused || !after.environment?.focused)
+    mismatches.push('unfocused');
+  const unknownPopulation = (env) => Object.values(env?.sourceCounts ?? {}).some(
+    (count) => !Number.isFinite(count) || count < 0,
+  );
+  if (unknownPopulation(before.environment) || unknownPopulation(after.environment))
+    mismatches.push('unknown source population');
+  if (!finite(before.durationMs) || !finite(after.durationMs) ||
+      Math.abs(before.durationMs - after.durationMs) > Math.max(100, 0.05 * Math.max(before.durationMs, after.durationMs)))
+    mismatches.push('window duration');
   const b = summarizeFrameTrace(before);
   const a = summarizeFrameTrace(after);
   if (!b.valid || !a.valid) mismatches.push('invalid trace');

@@ -166,3 +166,20 @@
     max-width: calc(100vw - 132px);
   }
 }
+
+
+.gev-playground-compare {
+  margin: 4px 0 15px;
+  padding: 10px;
+  border: 1px solid rgba(123, 211, 181, 0.25);
+  border-radius: 6px;
+}
+.gev-playground-compare[hidden] { display: none !important; }
+.gev-playground-compare label {
+  display: grid;
+  gap: 5px;
+}
+.gev-playground-compare span {
+  color: #a9bac5;
+  font-size: 11px;
+}

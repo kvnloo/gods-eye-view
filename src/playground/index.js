@@ -3,7 +3,7 @@
  * independent modules so experimental work never owns global app state.
  */
 import * as Cesium from 'cesium';
-import { createLookPackController } from './lookPacks.js';
+import { createLookPackController, LOOK_PACKS } from './lookPacks.js';
 
 // Node ESM consumers must not invoke the Vite-only glob hook.
 const discovered = import.meta.env
@@ -22,11 +22,24 @@ export function mountPlanetPlayground(services) {
   if (new URLSearchParams(services.window?.location?.search || '').get('embed') === '1')
     return () => {};
 
+  // An opt-in creative filter must remain visibly labeled even after the
+  // Playground tray closes or an evidence-oriented tab is selected.
+  const creativeChip = doc.createElement('button');
+  creativeChip.type = 'button';
+  creativeChip.className = 'gev-playground-creative-chip';
+  creativeChip.setAttribute('aria-label', 'Return to original Earth view');
+  creativeChip.hidden = true;
   const lookPacks = createLookPackController({
     viewer: services.viewer,
     Cesium,
     styleManager: services.styleManager,
+    onChange: (id) => {
+      const pack = LOOK_PACKS.find((entry) => entry.id === id);
+      creativeChip.hidden = !pack || id === 'original';
+      creativeChip.textContent = pack ? 'CREATIVE · ' + pack.title + ' · Reset' : '';
+    },
   });
+  creativeChip.addEventListener('click', () => lookPacks.apply('original'));
 
   const launcher = doc.createElement('button');
   launcher.id = 'planet-playground-launcher';
@@ -125,12 +138,13 @@ export function mountPlanetPlayground(services) {
     }
   };
   doc.addEventListener('keydown', onKeydown);
-  doc.body.append(launcher, panel);
+  doc.body.append(launcher, panel, creativeChip);
   return () => {
     doc.removeEventListener('keydown', onKeydown);
     disposeFeature?.();
     panel.remove();
     launcher.remove();
+    creativeChip.remove();
     lookPacks.destroy();
   };
 }

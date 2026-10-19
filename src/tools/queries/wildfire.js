@@ -42,7 +42,10 @@ const missing = (source, reason) => ({
 function evidenceSection(source, result) {
   const data = result?.data;
   if (!Array.isArray(data?.rows) || !Number.isInteger(data?.total))
-    throw new ToolError('malformed', source.provider + ' returned malformed evidence');
+    throw new ToolError(
+      'malformed',
+      source.provider + ' returned malformed evidence',
+    );
   const issues = [];
   if (data.stale === true) issues.push('stale_cache');
   if (data.missing_sources?.length) issues.push('missing_satellite_sources');
@@ -51,7 +54,8 @@ function evidenceSection(source, result) {
     provider: source.provider,
     source_tool: source.tool,
     meaning: source.meaning,
-    status: data.stale === true ? 'stale' : issues.length ? 'partial' : 'available',
+    status:
+      data.stale === true ? 'stale' : issues.length ? 'partial' : 'available',
     issues,
     total: data.total,
     returned: data.rows.length,
@@ -114,7 +118,9 @@ export const getWildfireIntelligence = defineTool({
     const area = await resolveArea(args.area, { services, signal });
     const sections = {};
     const rows = await Promise.all(
-      SOURCES.map((source) => readSource(source, args.area, args.limit ?? 10, tools)),
+      SOURCES.map((source) =>
+        readSource(source, args.area, args.limit ?? 10, tools),
+      ),
     );
     signal?.throwIfAborted();
     for (let index = 0; index < SOURCES.length; index += 1)
@@ -144,8 +150,14 @@ export const getWildfireIntelligence = defineTool({
           'Absence of records is not evidence that an area is safe.',
         ],
         next_checks: [
-          { tool: 'get_recent_imagery', purpose: 'Inspect dated imagery if available' },
-          { tool: 'get_cctv_snapshot', purpose: 'Inspect a selected camera and its frame provenance' },
+          {
+            tool: 'get_recent_imagery',
+            purpose: 'Inspect dated imagery if available',
+          },
+          {
+            tool: 'get_cctv_snapshot',
+            purpose: 'Inspect a selected camera and its frame provenance',
+          },
         ],
         action_authority: 'none',
       },

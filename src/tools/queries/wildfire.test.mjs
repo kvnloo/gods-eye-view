@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { AREA_SCHEMA, composeCatalog, coreTools, defineTool, ToolError } from '../index.js';
+import {
+  AREA_SCHEMA,
+  composeCatalog,
+  coreTools,
+  defineTool,
+  ToolError,
+} from '../index.js';
 import { toolsForSurface } from '../surfaces.js';
 import { getWildfireIntelligence } from './wildfire.js';
 
@@ -31,7 +37,7 @@ const response = (rows, extra = {}) => ({
   data: { rows, total: rows.length, truncated: false, ...extra },
 });
 
-test('fuses source-owned records without claiming a smoke detection', async () => {
+test('keeps source records separate without claiming smoke', async () => {
   const calls = [];
   const catalog = catalogWith(
     {
@@ -43,10 +49,10 @@ test('fuses source-owned records without claiming a smoke detection', async () =
       get_fire_perimeters: async () =>
         response([{ id: 'wfigs-1', updated: '2026-10-19T16:00:00Z' }]),
       find_cctv_cameras: async () =>
-        response([{ id: 'cam-1', lat: 36.01, lon: -120.02, heading_deg: null }], {
-          complete: true,
-          catalog_trimmed: [],
-        }),
+        response(
+          [{ id: 'cam-1', lat: 36.01, lon: -120.02, heading_deg: null }],
+          { complete: true, catalog_trimmed: [] },
+        ),
     },
     [(call, next) => {
       calls.push(call.tool.name);
@@ -60,11 +66,18 @@ test('fuses source-owned records without claiming a smoke detection', async () =
     'get_fire_perimeters',
     'find_cctv_cameras',
   ]);
-  assert.deepEqual(result.data.view.layers, ['local-firms', 'fire-perimeters', 'cctv']);
+  assert.deepEqual(result.data.view.layers, [
+    'local-firms',
+    'fire-perimeters',
+    'cctv',
+  ]);
   assert.equal(result.data.sections.detections.provider, 'NASA FIRMS');
   assert.equal(result.data.sections.detections.total, 1);
   assert.equal(result.data.sections.detections.rows[0].frp_mw, 25);
-  assert.equal(result.data.sections.detections.fetched_at, '2026-10-19T17:00:00Z');
+  assert.equal(
+    result.data.sections.detections.fetched_at,
+    '2026-10-19T17:00:00Z',
+  );
   assert.equal(result.data.sections.perimeters.rows[0].id, 'wfigs-1');
   assert.equal(result.data.sections.cameras.rows[0].id, 'cam-1');
   assert.equal(result.data.action_authority, 'none');
@@ -81,14 +94,17 @@ test('a missing FIRMS key does not suppress official perimeters', async () => {
   });
   const result = await catalog.call('get_wildfire_intelligence', { area });
   assert.equal(result.data.sections.detections.status, 'unavailable');
-  assert.equal(result.data.sections.detections.reason, 'NASA FIRMS key required');
+  assert.equal(
+    result.data.sections.detections.reason,
+    'NASA FIRMS key required',
+  );
   assert.equal(result.data.sections.detections.total, null);
   assert.equal(result.data.sections.perimeters.status, 'available');
   assert.equal(result.data.sections.cameras.status, 'unavailable');
   assert.deepEqual(result.data.view.layers, ['fire-perimeters']);
 });
 
-test('partial and stale data remain distinguishable, including zero records', async () => {
+test('distinguishes stale and partial evidence from zero rows', async () => {
   const catalog = catalogWith({
     get_active_fires: async () =>
       response([], { stale: true, missing_sources: ['VIIRS_SNPP_NRT'] }),
@@ -99,7 +115,10 @@ test('partial and stale data remain distinguishable, including zero records', as
   const result = await catalog.call('get_wildfire_intelligence', { area });
   const { detections, perimeters, cameras } = result.data.sections;
   assert.equal(detections.status, 'stale');
-  assert.deepEqual(detections.issues, ['stale_cache', 'missing_satellite_sources']);
+  assert.deepEqual(detections.issues, [
+    'stale_cache',
+    'missing_satellite_sources',
+  ]);
   assert.deepEqual(detections.missing_sources, ['VIIRS_SNPP_NRT']);
   assert.equal(perimeters.status, 'available');
   assert.equal(perimeters.total, 0);
@@ -108,11 +127,14 @@ test('partial and stale data remain distinguishable, including zero records', as
   assert.match(result.data.caveats.at(-1), /not evidence/);
 });
 
-test('missing sources and unexpected errors remain bounded and do not leak details', async () => {
+test('missing sources and failures preserve safe reasons', async () => {
   const none = await catalogWith().call('get_wildfire_intelligence', { area });
   assert.deepEqual(none.data.view.layers, []);
   assert.equal(none.data.sections.detections.total, null);
-  assert.equal(none.data.sections.perimeters.reason, 'Source is not configured');
+  assert.equal(
+    none.data.sections.perimeters.reason,
+    'Source is not configured',
+  );
 
   const catalog = catalogWith({
     get_active_fires: async () => {
@@ -121,12 +143,15 @@ test('missing sources and unexpected errors remain bounded and do not leak detai
     get_fire_perimeters: async () => ({ summary: 'bad', data: { rows: null } }),
   });
   const result = await catalog.call('get_wildfire_intelligence', { area });
-  assert.equal(result.data.sections.detections.reason, 'Source unavailable right now');
+  assert.equal(
+    result.data.sections.detections.reason,
+    'Source unavailable right now',
+  );
   assert.equal(result.data.sections.perimeters.status, 'unavailable');
   assert.doesNotMatch(JSON.stringify(result), /secret/);
 });
 
-test('limits reach sources and cancellation prevents a misleading result', async () => {
+test('passes limits and preserves cancellation', async () => {
   const seen = [];
   const catalog = catalogWith({
     get_active_fires: async (args) => {
@@ -143,17 +168,26 @@ test('limits reach sources and cancellation prevents a misleading result', async
   const controller = new AbortController();
   controller.abort();
   await assert.rejects(
-    catalog.call('get_wildfire_intelligence', { area, limit: 3 }, { signal: controller.signal }),
+    catalog.call(
+      'get_wildfire_intelligence',
+      { area, limit: 3 },
+      { signal: controller.signal },
+    ),
     { name: 'AbortError' },
   );
   assert.deepEqual(seen, [3, 3]);
-  await assert.rejects(catalog.call('get_wildfire_intelligence', { area, limit: 26 }), {
-    code: 'invalid_arguments',
-  });
+  await assert.rejects(
+    catalog.call('get_wildfire_intelligence', { area, limit: 26 }),
+    { code: 'invalid_arguments' },
+  );
 });
 
-test('MCP exposes the composite; voice does not add redundant feed calls', () => {
+test('exposes MCP without redundant voice calls', () => {
   assert.ok(coreTools.includes(getWildfireIntelligence));
-  assert.ok(toolsForSurface(coreTools, 'mcp').includes(getWildfireIntelligence));
-  assert.ok(!toolsForSurface(coreTools, 'voice').includes(getWildfireIntelligence));
+  assert.ok(
+    toolsForSurface(coreTools, 'mcp').includes(getWildfireIntelligence),
+  );
+  assert.ok(
+    !toolsForSurface(coreTools, 'voice').includes(getWildfireIntelligence),
+  );
 });

@@ -79,14 +79,17 @@ function evidenceSection(source, result) {
  * states. Never infer smoke, line-of-sight, containment or a safe route.
  */
 async function readSource(source, area, limit, tools) {
-  if (!tools.has(source.tool)) return missing(source, 'Source is not configured');
+  if (!tools.has(source.tool))
+    return missing(source, 'Source is not configured');
   try {
     const result = await tools.call(source.tool, { area, limit });
     return evidenceSection(source, result);
   } catch (error) {
     return missing(
       source,
-      error instanceof ToolError ? error.message : 'Source unavailable right now',
+      error instanceof ToolError
+        ? error.message
+        : 'Source unavailable right now',
     );
   }
 }

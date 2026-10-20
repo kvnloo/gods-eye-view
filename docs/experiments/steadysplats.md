@@ -1,8 +1,8 @@
 # SteadySplats downstream rendering experiment
 
-**Scope:** opt-in CPU reference implementation and synthetic A/B laboratory, not a
-new GEV map layer, WebGL renderer, or upstream-ready feature. No production globe
-rendering changes are made. All normal sessions use the unchanged Cesium path.
+**Scope:** opt-in CPU reference **and independent WebGL2 research laboratory**.
+Neither is a production GEV layer, a Cesium renderer replacement, nor an
+upstream-ready feature. All normal sessions use the unchanged Cesium path.
 
 ## Run
 

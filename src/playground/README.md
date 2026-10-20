@@ -23,8 +23,11 @@ The Time Machine includes a separate **Historical Earth** place/year lens:
   (no year zero). The dated link opens [OpenHistoricalMap](https://www.openhistoricalmap.org/)
   in a separate tab or in a **user-initiated, sandboxed preview**. GEV's
   underlying terrain, imagery and live feeds **stay current**. The iframe
-  makes a third-party map request only when users click *Preview dated map*
-  and unloads on date/location change or panel close.
+  makes a third-party map request only after an explicit *Preview dated
+  map* or *Animate years* click, and unloads on date/location change or panel
+  close. The animation uses OHM's documented `start_date`, `end_date` and
+  signed year interval: at most 300 years per request and approximately 40
+  animation frames. It never synthesizes terrain or historical positions.
 - The first source-linked person-associated location is **Frederick Douglass's
   Cedar Hill residence** circa 1880. The [National Park Service](https://www.nps.gov/frdo/learn/historyculture/places.htm)
   documents the residence, **not** his presence, thoughts, or view at a
@@ -33,6 +36,12 @@ The Time Machine includes a separate **Historical Earth** place/year lens:
   the selected coordinate/year. Individual OHM features can carry different
   [license and attribution terms](https://www.openhistoricalmap.org/copyright).
   No map data or media is copied into this pilot.
+
+The time-animation embed contract comes from
+[OpenHistoricalMap's embed specification](https://github.com/OpenHistoricalMap/openhistoricalmap-embed#dates).
+Comparisons crossing BCE to CE are intentionally unsupported until a calendar
+transition contract (including no year zero) is explicit. The third-party
+preview is not a claim that data is present for either selected year.
 
 This does **not** implement historical 3D reconstruction, an authentic first-person
 reenactment, or location tracking of a historical person. Later slices can consume
@@ -51,6 +60,12 @@ npm test
 npm run build
 npm run dev
 ```
+
+In a browser, verify Historical Earth Preview/Animate only fetches after a click,
+changing either year unloads the iframe, the source link disappears outside
+the documented association period, and closing Time Machine cancels only its
+own in-flight camera motion. Verify keyboard/mobile input and the separate
+OpenHistoricalMap link as well.
 
 In a browser, select EXPLORE, visit all five tabs, launch the Nepal scene,
 seek its authored timeline, add/undo a hypothetical marker, join the same room

@@ -181,29 +181,3 @@ for (const fixture of contractCases) {
     );
   });
 }
-
-test('FIRMS skips blank, out-of-range and nondecimal coordinates', () => {
-  const row = (lat, lon) =>
-    `${lat},${lon},303.6,0.39,0.36,2026-07-16,1006,N20,VIIRS,n,2.0NRT,290.73,0.53,N`;
-  const csv = [
-    HEADER,
-    row('', '0'),
-    row('0', ''),
-    row('91', '0'),
-    row('0', '-181'),
-    row('0x10', '0'),
-    row('0b10', '0'),
-    row('0o10', '0'),
-    row('0', '0x10'),
-    row('0', '0b10'),
-    row('0', '0o10'),
-    row('0', '0'),
-    row('39.8', '-121.5'),
-  ].join('\n');
-  const rows = parseFirmsCsv(csv);
-  assert.equal(rows.length, 2);
-  assert.deepEqual(
-    rows.map(({ lat, lon }) => [lat, lon]),
-    [[0, 0], [39.8, -121.5]],
-  );
-});

@@ -62,14 +62,20 @@ export function fireHistoryProxy({
     try {
       payload = JSON.parse(await fsp.readFile(eventsPath, 'utf8'));
     } catch (err) {
-      console.warn('[fire-history] event registry unreadable:', err?.message || err);
+      console.warn(
+        '[fire-history] event registry unreadable:',
+        err?.message || err,
+      );
     }
     const { events, rejected } = normalizeFireEventCatalog(payload);
     if (rejected.length)
       console.warn(
         `[fire-history] ignoring invalid event definitions: ${rejected.join(', ')}`,
       );
-    catalog = { events, byId: new Map(events.map((event) => [event.id, event])) };
+    catalog = {
+      events,
+      byId: new Map(events.map((event) => [event.id, event])),
+    };
     return catalog;
   }
 
@@ -172,7 +178,8 @@ export function fireHistoryProxy({
     }
 
     if (!attempted && previous) return previous;
-    if (!windows.some((window) => window.ok)) throw new Error('all windows failed');
+    // Persist retry deadlines even if every window fails. The API still
+    // reports 502 until there is actual archive evidence to serve.
 
     return {
       definitionHash: definitionHash(event),
@@ -232,7 +239,8 @@ export function fireHistoryProxy({
       };
 
       try {
-        if (req.method !== 'GET') return sendJson(405, { error: 'method_not_allowed' });
+        if (req.method !== 'GET')
+          return sendJson(405, { error: 'method_not_allowed' });
         const subPath = String(req.url || '').split('?')[0];
         const { events, byId } = await loadCatalog();
         const key = mapKey();
@@ -245,12 +253,14 @@ export function fireHistoryProxy({
         }
 
         const parts = subPath.replace(/^\/+/, '').split('/');
-        if (parts.length !== 1) return sendJson(404, { error: 'unknown_event' });
+        if (parts.length !== 1)
+          return sendJson(404, { error: 'unknown_event' });
         const event = byId.get(parts[0]);
         if (!event) return sendJson(404, { error: 'unknown_event' });
 
         const entry = await resolveEvent(key, event);
-        if (entry) return sendJson(200, buildPayload(event, entry));
+        if (entry?.windows?.some((window) => window.ok))
+          return sendJson(200, buildPayload(event, entry));
         if (!key) return sendJson(503, { error: 'no_key' });
         return sendJson(502, { error: 'firms_archive_unavailable' });
       } catch (err) {

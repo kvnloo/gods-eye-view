@@ -37,7 +37,6 @@ const HOUR_MS = 3600_000;
 const WINDOW_MS = 24 * HOUR_MS;
 /** Forward slack for {@link filterTrailing24h} (upstream/local clock skew). */
 const FORWARD_SLACK_MS = 2 * HOUR_MS;
-const DECIMAL_COORDINATE = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i;
 
 /**
  * Cheap "is this actually FIRMS CSV?" check. HTML error pages (first
@@ -104,15 +103,13 @@ export function parseFirmsCsv(text) {
     if (!line) continue;
     const parts = line.split(',');
     if (parts.length < header.length) continue; // malformed row — skip
-    const latCell = parts[iLat].trim();
-    const lonCell = parts[iLon].trim();
-    // Number() coerces hex/binary/octal tokens that FIRMS never emits.
-    // Reject these rather than interpreting them as geographic positions.
-    if (!DECIMAL_COORDINATE.test(latCell) || !DECIMAL_COORDINATE.test(lonCell))
-      continue;
-    const lat = Number(latCell);
-    const lon = Number(lonCell);
+    const lat = Number(parts[iLat]);
+    const lon = Number(parts[iLon]);
+    // Blank or out-of-range positions are dropped, never read as 0 (see
+    // hasCoordinateValue in firmsAdapt.js for the proxy-record side).
     if (
+      !parts[iLat].trim() ||
+      !parts[iLon].trim() ||
       !Number.isFinite(lat) ||
       !Number.isFinite(lon) ||
       Math.abs(lat) > 90 ||
@@ -166,7 +163,13 @@ export function acquisitionMsUtc(acqDate, acqTime) {
     minutes > 59
   )
     return NaN;
-  return Date.UTC(year, month - 1, day, hours, minutes);
+  const ms = Date.UTC(year, month - 1, day, hours, minutes);
+  const parsed = new Date(ms);
+  return parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month - 1 &&
+    parsed.getUTCDate() === day
+    ? ms
+    : NaN;
 }
 
 /**

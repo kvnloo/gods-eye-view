@@ -101,7 +101,7 @@ test('the standalone provider list mounts the fire-history proxy once', () => {
   );
 });
 
-test('keyless registry is public and perimeter fetching is not duplicated here', async (t) => {
+test('keyless registry does not duplicate perimeter fetching', async (t) => {
   const { request, calls } = await fixture(t, {
     fetchImpl: () => {
       throw new Error('must not fetch');
@@ -116,7 +116,7 @@ test('keyless registry is public and perimeter fetching is not duplicated here',
   assert.equal(calls.length, 0);
 });
 
-test('failed archive windows cool down and the cache stores only merged fires', async (t) => {
+test('failed archive cooldown and merged-fire disk cache', async (t) => {
   let modisDown = true;
   const { request, calls, cacheDir, advance } = await fixture(t, {
     key: 'fixture-key',
@@ -134,7 +134,7 @@ test('failed archive windows cool down and the cache stores only merged fires', 
 
   const cooled = json(await request('/test-fire-2018'));
   assert.equal(cooled.complete, false);
-  assert.equal(calls.length, 2, 'failed window is not retried during cooldown');
+  assert.equal(calls.length, 2, 'cooldown prevents retry');
 
   advance(15 * 60_000);
   modisDown = false;
@@ -146,12 +146,46 @@ test('failed archive windows cool down and the cache stores only merged fires', 
   const [cacheFile] = (await fsp.readdir(cacheDir)).filter((name) =>
     name.endsWith('.json'),
   );
-  const disk = JSON.parse(await fsp.readFile(path.join(cacheDir, cacheFile), 'utf8'));
+  const disk = JSON.parse(
+    await fsp.readFile(path.join(cacheDir, cacheFile), 'utf8'),
+  );
   assert.ok(disk.definitionHash);
   assert.equal('firesByWindow' in disk, false);
 });
 
-test('editing an event definition changes the disk-cache identity', async (t) => {
+test('total outage retains failed-window cooldown', async (t) => {
+  let online = false;
+  const { request, calls, cacheDir, advance } = await fixture(t, {
+    key: 'fixture-key',
+    fetchImpl: () =>
+      online
+        ? new Response(CSV)
+        : new Response('unavailable', { status: 503 }),
+  });
+
+  assert.equal((await request('/test-fire-2018')).status, 502);
+  assert.equal(calls.length, 2);
+  assert.equal((await request('/test-fire-2018')).status, 502);
+  assert.equal(calls.length, 2, 'total outage must not bypass cooldown');
+
+  const [filename] = await fsp.readdir(cacheDir);
+  const disk = JSON.parse(
+    await fsp.readFile(path.join(cacheDir, filename), 'utf8'),
+  );
+  assert.equal(disk.complete, false);
+  assert.equal(disk.fires.length, 0);
+  assert.equal(disk.windows.length, 2);
+  assert.ok(disk.windows.every((window) => !window.ok && window.retryAt));
+
+  advance(15 * 60_000);
+  online = true;
+  const recovered = json(await request('/test-fire-2018'));
+  assert.equal(recovered.complete, true);
+  assert.equal(recovered.count, 2);
+  assert.equal(calls.length, 4, 'each failed source retried after cooldown');
+});
+
+test('event definition edits change disk-cache identity', async (t) => {
   const first = await fixture(t, {
     key: 'fixture-key',
     fetchImpl: () => new Response(CSV),
@@ -182,6 +216,10 @@ test('editing an event definition changes the disk-cache identity', async (t) =>
     },
   });
   await install(proxy)('/test-fire-2018');
-  assert.equal(calls.length, 1, 'changed definition cannot reuse the old cache');
+  assert.equal(
+    calls.length,
+    1,
+    'changed definition cannot reuse the old cache',
+  );
   assert.equal((await fsp.readdir(first.cacheDir)).length, 2);
 });

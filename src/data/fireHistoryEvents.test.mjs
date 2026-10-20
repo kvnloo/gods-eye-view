@@ -123,7 +123,7 @@ test('event bounding boxes reject missing and coerced zero coordinates', () => {
   );
 });
 
-test('missing detections do not become equatorial zero-coordinate fires', () => {
+test('missing coordinates do not become equatorial fires', () => {
   const event = normalizeFireEvent({
     ...VALID,
     bbox: [-10, -10, 10, 10],
@@ -160,7 +160,7 @@ test('nondecimal coordinate encodings do not become fire locations', () => {
   }
 });
 
-test('historic burned area rejects coerced values but retains decimal hectares', () => {
+test('burned hectares reject coerced values', () => {
   for (const invalid of [true, false, ['18'], '0x10', '0b10', '']) {
     assert.equal(
       normalizeFireEvent({ ...VALID, burnedHa: invalid })?.burnedHa,

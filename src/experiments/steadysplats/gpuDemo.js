@@ -50,13 +50,14 @@ export function startSteadySplatsGpuDemo(parent=document.body) {
     frame=0;
     const device=renderer.device;
     byId('ss-gpu-canvas').dataset.renderer=device.renderer;
+    byId('ss-gpu-canvas').dataset.backend=device.backend;
     byId('ss-gpu-canvas').dataset.software=String(device.software);
   }
   function update() {
     const camX=byId('ss-motion').checked?3.6*Math.sin(frame*0.035):0;
     const stats=renderer.renderFrame({models,frame,cameraX:camX,weight});
     if(frame%4===0 || !lastMetrics)lastMetrics=renderer.captureMetrics();
-    report.textContent=`WebGL2 renderer: ${renderer.device.renderer}\nVendor: ${renderer.device.vendor}\nExecution: ${renderer.device.software?'SOFTWARE (no hardware GPU evidence)':'HARDWARE CANDIDATE (check runner GPU counters)'}\nGaussians (projected): ${models.length} | Frame: ${frame}\nCPU submission: ${stats.cpuSubmissionMs.toFixed(2)} ms | GPU timer: ${stats.gpuMs==null?'pending/unavailable':stats.gpuMs.toFixed(2)+' ms'}\nPSNR (dB) vs GPU sorted-alpha: raw ${lastMetrics.psnr.raw.toFixed(2)} | spatial ${lastMetrics.psnr.spatial.toFixed(2)} | temporal ${lastMetrics.psnr.temporal.toFixed(2)}`;
+    report.textContent=`WebGL2 renderer: ${renderer.device.renderer}\nVendor: ${renderer.device.vendor}\nExecution: ${renderer.device.backend==='software'?'SOFTWARE (no hardware GPU evidence)':renderer.device.backend==='hardware-candidate'?'HARDWARE CANDIDATE (check runner GPU counters)':'UNKNOWN BACKEND (no GPU proof)'}\nGaussians (projected): ${models.length} | Frame: ${frame}\nCPU submission: ${stats.cpuSubmissionMs.toFixed(2)} ms | GPU timer: ${stats.gpuMs==null?'pending/unavailable':stats.gpuMs.toFixed(2)+' ms'}\nPSNR (dB) vs GPU sorted-alpha: raw ${lastMetrics.psnr.raw.toFixed(2)} | spatial ${lastMetrics.psnr.spatial.toFixed(2)} | temporal ${lastMetrics.psnr.temporal.toFixed(2)}`;
     frame++;
   }
   function tick(now) {

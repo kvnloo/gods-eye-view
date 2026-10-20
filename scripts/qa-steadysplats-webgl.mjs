@@ -62,13 +62,14 @@ try {
     if(result.gaussians<50)throw new Error('Too few projected splats');
   }
   const device=await page.evaluate(()=>window.__gevSteadySplatsGpuQa.getDevice());
-  const report={date:new Date().toISOString(),device,backend:device.software?'software':'hardware-candidate',confirmedHardware:!device.software,checks,errors};
+  const backend=device.backend;
+  // WebGL driver strings alone never prove GPU execution or utilization.
+  const report={date:new Date().toISOString(),device,backend,hardwareCandidate:backend==='hardware-candidate',confirmedHardware:false,checks,errors};
   await writeFile(path.join(output,'report.json'),JSON.stringify(report,null,2));
   console.log(JSON.stringify(report,null,2));
   if(errors.length)throw new Error('Browser console errors: '+errors.join(' | ').slice(0,1500));
-  if(requireHardware && device.software)throw new Error('GPU required but the browser used software rasterization');
-  if(requireHardware && !/NVIDIA|AMD|Radeon|Apple|Intel|Mali|Adreno/i.test(device.renderer+' '+device.vendor))
-    throw new Error('GPU identity not verifiable from WebGL driver');
+  if(requireHardware && backend!=='hardware-candidate')
+    throw new Error('Hardware candidate required; browser reported a software or unknown renderer');
 } finally {
   if(browser)await browser.close();
   dev.kill('SIGTERM');

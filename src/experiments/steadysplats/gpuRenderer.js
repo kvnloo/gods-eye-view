@@ -217,6 +217,15 @@ export function isSoftwareWebGLRenderer(renderer='') {
   return /swiftshader|llvmpipe|softpipe|software|lavapipe|microsoft basic render|warp device|mesa offscreen/i.test(renderer);
 }
 
+/** Browser-reported GPU names are only candidates, never hardware proof. */
+export function classifyWebGLRenderer(renderer='',vendor='') {
+  const identity=String(renderer||'')+' '+String(vendor||'');
+  if(isSoftwareWebGLRenderer(identity))return 'software';
+  if(/nvidia|geforce|amd|radeon|apple|intel|mali|adreno|qualcomm/i.test(identity))
+    return 'hardware-candidate';
+  return 'unknown';
+}
+
 /** Create a separate WebGL2 context and manage all GPU resources by ownership. */
 export function createGpuSteadySplats(canvas,{width=256,height=192,historySize=4,temporalWeight=0.65}={}) {
   if (!Number.isInteger(width)||!Number.isInteger(height)||width<8||height<8||width>4096||height>4096)
@@ -228,7 +237,8 @@ export function createGpuSteadySplats(canvas,{width=256,height=192,historySize=4
   const debug=gl.getExtension('WEBGL_debug_renderer_info');
   const renderer=debug?gl.getParameter(debug.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER);
   const vendor=debug?gl.getParameter(debug.UNMASKED_VENDOR_WEBGL):gl.getParameter(gl.VENDOR);
-  const device={renderer,vendor,software:isSoftwareWebGLRenderer(renderer),webglVersion:gl.getParameter(gl.VERSION),maxTextures:gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS)};
+  const backend=classifyWebGLRenderer(renderer,vendor);
+  const device={renderer,vendor,backend,software:backend==='software',webglVersion:gl.getParameter(gl.VERSION),maxTextures:gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS)};
   if(device.maxTextures<10)throw new Error('SteadySplats experiment requires >=10 fragment texture units');
   const programs={reference:program(gl,VERTEX_GAUSSIAN,FRAGMENT_REFERENCE),raw:program(gl,VERTEX_GAUSSIAN,FRAGMENT_STOCHASTIC),spatial:program(gl,VERTEX_SCREEN,FRAGMENT_SPATIAL),temporal:program(gl,VERTEX_SCREEN,FRAGMENT_TEMPORAL),display:program(gl,VERTEX_SCREEN,FRAGMENT_DISPLAY)};
   const vao=gl.createVertexArray(),quad=gl.createBuffer(),instances=gl.createBuffer(),screen=gl.createVertexArray();

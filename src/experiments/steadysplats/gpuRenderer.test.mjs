@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createGpuSteadySplats,isSoftwareWebGLRenderer} from './gpuRenderer.js';
+import {createGpuSteadySplats,isSoftwareWebGLRenderer,classifyWebGLRenderer} from './gpuRenderer.js';
 
 test('driver attribution rejects software backends and keeps hardware candidates',()=>{
   for(const name of ['ANGLE (Google, Vulkan 1.3 SwiftShader Device)','llvmpipe (LLVM 19.1.7)','softpipe Mesa'])
@@ -15,4 +15,12 @@ test('GPU lab rejects unsupported surfaces or dimensions before rendering',()=>{
   assert.throws(()=>createGpuSteadySplats(canvas,{width:128,height:128}),/WebGL2 unavailable/);
   assert.equal(canvas.width,256);
   assert.equal(canvas.height,256);
+});
+test('GPU provenance treats unknown names as unknown and software as software',()=>{
+  assert.equal(classifyWebGLRenderer('ANGLE (SwiftShader Device)','NVIDIA Corporation'),'software');
+  assert.equal(classifyWebGLRenderer('llvmpipe (LLVM 19.1.7)','Mesa'),'software');
+  assert.equal(classifyWebGLRenderer('WebKit WebGL',''),'unknown');
+  assert.equal(classifyWebGLRenderer('',''),'unknown');
+  assert.equal(classifyWebGLRenderer('ANGLE (NVIDIA GeForce RTX 3080 Ti)','Google'),'hardware-candidate');
+  assert.equal(classifyWebGLRenderer('Apple M1','Apple'),'hardware-candidate');
 });

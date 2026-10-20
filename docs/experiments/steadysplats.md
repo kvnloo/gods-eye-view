@@ -123,6 +123,11 @@ emulation from being misrepresented as GPU hardware:
 3. `[self-hosted, linux, x64, nvidia]`: optional **manual** NVIDIA runner job,
    guarded by `nvidia-smi`, and requiring a non-software browser renderer.
 
+A reported **hardware candidate is not confirmed hardware**: WebGL names
+can be generic or misleading. Unknown renderers remain `unknown`; the JSON
+sets `confirmedHardware: false` until independent driver/utilization evidence
+is attached. `--require-hardware` rejects software and unknown identities.
+
 The browser harness stores `artifacts/steadysplats-webgl/report.json`, static
 and moving-camera screenshots, driver identification, CPU command submission
 p50/p95, available GPU timer readings and sorted-alpha-reference PSNR. The

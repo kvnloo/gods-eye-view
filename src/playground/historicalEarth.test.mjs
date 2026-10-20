@@ -123,7 +123,7 @@ function fakeLensDocument() {
   return { document, nodes, Node };
 }
 
-test('lens links evidence, changes years, and hides unsupported associations', () => {
+test('lens links evidence and hides unsupported associations', () => {
   const { document, nodes, Node } = fakeLensDocument();
   const root = new Node('root', document);
   const services = {
@@ -174,7 +174,8 @@ test('documented-site navigation does not steal a running scene camera', () => {
   };
   const cleanup = mountHistoricalEarthLens({ root, services });
   const visit = nodes.find(
-    (node) => node.tag === 'button' && node.textContent === 'Visit documented site',
+    (node) =>
+      node.tag === 'button' && node.textContent === 'Visit documented site',
   );
   const status = nodes.find((node) => node.role === 'status');
   visit.dispatch('click');
@@ -214,14 +215,15 @@ test('globe center switches to an unsourced custom location', () => {
     (node) => node.tag === 'a' && /OpenHistoricalMap/.test(node.textContent),
   );
   const sources = nodes.find(
-    (node) => node.tag === 'p' && node.children.some((child) => child.tag === 'a'),
+    (node) =>
+      node.tag === 'p' && node.children.some((child) => child.tag === 'a'),
   );
   assert.match(map.href, /12\/40.75\/-73.98&date=1880$/);
   assert.equal(sources.hidden, true);
   cleanup();
 });
 
-test('dated-map preview loads only on consent and clears when date changes', () => {
+test('preview requires consent and unloads on date changes', () => {
   const { document, nodes, Node } = fakeLensDocument();
   const root = new Node('root', document);
   const cleanup = mountHistoricalEarthLens({
@@ -253,7 +255,7 @@ test('dated-map preview loads only on consent and clears when date changes', () 
   assert.equal(frame.hidden, true);
 });
 
-test('animation links honor OHM start/end/interval without an overriding date', () => {
+test('OHM animation uses start/end without overriding date', () => {
   const view = historicalAnimationView({
     lat: 38.863,
     lon: -76.9851,
@@ -290,7 +292,7 @@ test('animation links honor OHM start/end/interval without an overriding date', 
   assert.match(wide.embedUrl, /interval=P8Y&framerate=2&layer=O$/);
 });
 
-test('animation refuses nonexistent year, zero duration, BCE/CE ambiguity and unbounded spans', () => {
+test('animation rejects invalid, ambiguous or excessive date spans', () => {
   const options = { lat: 0, lon: 0, currentYear: 2026 };
   for (const [fromYear, toYear] of [
     [1880, 1880],
@@ -308,7 +310,7 @@ test('animation refuses nonexistent year, zero duration, BCE/CE ambiguity and un
   }
 });
 
-test('historical animation remains opt-in and unloads on any year edit or close', () => {
+test('historical animation is opt-in and unloads on edits', () => {
   const { document, nodes, Node } = fakeLensDocument();
   const root = new Node('root', document);
   const cleanup = mountHistoricalEarthLens({
@@ -316,10 +318,16 @@ test('historical animation remains opt-in and unloads on any year edit or close'
     services: { viewer: { camera: { flyTo() {}, cancelFlight() {} } } },
   });
   const year = nodes.find((node) => node['aria-label'] === 'Historical year');
-  const compare = nodes.find((node) => node['aria-label'] === 'Historical comparison year');
+  const compare = nodes.find(
+    (node) => node['aria-label'] === 'Historical comparison year',
+  );
   const frame = nodes.find((node) => node.tag === 'iframe');
-  const animate = nodes.find((node) => node.tag === 'button' && node.textContent === 'Animate years');
-  const preview = nodes.find((node) => node.tag === 'button' && node.textContent === 'Preview dated map');
+  const animate = nodes.find(
+    (node) => node.tag === 'button' && node.textContent === 'Animate years',
+  );
+  const preview = nodes.find(
+    (node) => node.tag === 'button' && node.textContent === 'Preview dated map',
+  );
   assert.equal(frame.src, undefined);
   assert.equal(animate.type, 'button');
   assert.equal(preview.type, 'button');
@@ -349,7 +357,7 @@ test('historical animation remains opt-in and unloads on any year edit or close'
   cleanup();
 });
 
-test('late cancellation of a previous site flight cannot clear ownership of the next flight', () => {
+test('stale flight cancellation preserves the next flight lease', () => {
   const { document, nodes, Node } = fakeLensDocument();
   const root = new Node('root', document);
   const flights = [];
@@ -371,7 +379,8 @@ test('late cancellation of a previous site flight cannot clear ownership of the 
     },
   });
   const visit = nodes.find(
-    (node) => node.tag === 'button' && node.textContent === 'Visit documented site',
+    (node) =>
+      node.tag === 'button' && node.textContent === 'Visit documented site',
   );
   visit.dispatch('click');
   visit.dispatch('click');

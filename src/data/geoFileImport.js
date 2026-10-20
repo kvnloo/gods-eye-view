@@ -1040,26 +1040,34 @@ export function detachImportedTime(dataSource) {
   return dataSource;
 }
 
+// The root probe must be linear even when a malformed KML repeats unclosed tags.
+function repairKmlRootTag(text) {
+  const start = text.search(/<kml\b/i);
+  if (start === -1) return text;
+  const end = text.indexOf('>', start + 4);
+  if (end === -1) return text;
+  const seen = new Set();
+  let root = text.slice(start, end + 1);
+  root = root.replace(
+    /\s+xmlns:([\w.-]+)\s*=\s*(["'])[^"']*\2/g,
+    (declaration, prefix) => {
+      if (seen.has(prefix)) return '';
+      seen.add(prefix);
+      return declaration;
+    },
+  );
+  if (!seen.has('xsi') && /[<\s]xsi:/.test(text))
+    root = root.replace(
+      />$/,
+      ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">',
+    );
+  return text.slice(0, start) + root + text.slice(end + 1);
+}
+
 function parseXml(text, what) {
+  text = String(text);
   // Match the namespace repairs Cesium applies to ordinary exported KML.
-  if (what !== 'GPX')
-    text = String(text).replace(/<kml\b[^>]*>/i, (root) => {
-      const seen = new Set();
-      root = root.replace(
-        /\s+xmlns:([\w.-]+)\s*=\s*(["'])[^"']*\2/g,
-        (declaration, prefix) => {
-          if (seen.has(prefix)) return '';
-          seen.add(prefix);
-          return declaration;
-        },
-      );
-      if (!seen.has('xsi') && /[<\s]xsi:/.test(text))
-        root = root.replace(
-          />$/,
-          ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">',
-        );
-      return root;
-    });
+  if (what !== 'GPX') text = repairKmlRootTag(text);
   const doc = new DOMParser().parseFromString(
     String(text).replace(/^﻿/, ''),
     'application/xml',

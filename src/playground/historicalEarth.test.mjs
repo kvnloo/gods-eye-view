@@ -5,6 +5,7 @@ import {
   HISTORICAL_PLACES,
   historicalYear,
   historicalPlaceView,
+  historicalAnimationView,
   historicalPlaceAssociation,
   mountHistoricalEarthLens,
 } from './historicalEarth.js';
@@ -250,4 +251,132 @@ test('dated-map preview loads only on consent and clears when date changes', () 
   cleanup();
   assert.equal(frame.src, undefined);
   assert.equal(frame.hidden, true);
+});
+
+test('animation links honor OHM start/end/interval without an overriding date', () => {
+  const view = historicalAnimationView({
+    lat: 38.863,
+    lon: -76.9851,
+    fromYear: 1880,
+    toYear: 1920,
+    currentYear: 2026,
+  });
+  assert.equal(view.fromLabel, '1880 CE');
+  assert.equal(view.toLabel, '1920 CE');
+  assert.equal(view.evidenceStatus, 'coverage-unverified');
+  assert.equal(
+    view.embedUrl,
+    'https://embed.openhistoricalmap.org/#map=12/38.863/-76.9851' +
+      '&start_date=1880&end_date=1920&interval=P1Y&framerate=2&layer=O',
+  );
+  assert.equal(new URL(view.embedUrl).hash.includes('&date='), false);
+  const reverse = historicalAnimationView({
+    lat: 40.7,
+    lon: -73.9,
+    fromYear: -100,
+    toYear: -205,
+    currentYear: 2026,
+  });
+  assert.equal(reverse.fromLabel, '100 BCE');
+  assert.equal(reverse.toLabel, '205 BCE');
+  assert.match(reverse.embedUrl, /interval=-P3Y&framerate=2&layer=O$/);
+  const wide = historicalAnimationView({
+    lat: 10,
+    lon: 20,
+    fromYear: 1700,
+    toYear: 2000,
+    currentYear: 2026,
+  });
+  assert.match(wide.embedUrl, /interval=P8Y&framerate=2&layer=O$/);
+});
+
+test('animation refuses nonexistent year, zero duration, BCE/CE ambiguity and unbounded spans', () => {
+  const options = { lat: 0, lon: 0, currentYear: 2026 };
+  for (const [fromYear, toYear] of [
+    [1880, 1880],
+    [1880, 2027],
+    [-44, 44],
+    [44, -44],
+    [1800, 2200],
+    [-3000, -2500],
+    [0, 1880],
+  ]) {
+    assert.throws(
+      () => historicalAnimationView({ ...options, fromYear, toYear }),
+      { name: /RangeError|TypeError/ },
+    );
+  }
+});
+
+test('historical animation remains opt-in and unloads on any year edit or close', () => {
+  const { document, nodes, Node } = fakeLensDocument();
+  const root = new Node('root', document);
+  const cleanup = mountHistoricalEarthLens({
+    root,
+    services: { viewer: { camera: { flyTo() {}, cancelFlight() {} } } },
+  });
+  const year = nodes.find((node) => node['aria-label'] === 'Historical year');
+  const compare = nodes.find((node) => node['aria-label'] === 'Historical comparison year');
+  const frame = nodes.find((node) => node.tag === 'iframe');
+  const animate = nodes.find((node) => node.tag === 'button' && node.textContent === 'Animate years');
+  const preview = nodes.find((node) => node.tag === 'button' && node.textContent === 'Preview dated map');
+  assert.equal(frame.src, undefined);
+  assert.equal(animate.type, 'button');
+  assert.equal(preview.type, 'button');
+  assert.equal(animate.disabled, false);
+  animate.dispatch('click');
+  assert.equal(frame.hidden, false);
+  assert.match(frame.src, /start_date=1880&end_date=1900&interval=P1Y/);
+  preview.dispatch('click');
+  assert.match(frame.src, /&date=1880&layer=O$/);
+  assert.equal(animate.textContent, 'Animate years');
+  compare.value = '0';
+  compare.dispatch('input');
+  assert.equal(animate.disabled, true);
+  assert.equal(frame.src, undefined);
+  assert.equal(frame.hidden, true);
+  year.value = '1881';
+  year.dispatch('input');
+  assert.equal(animate.disabled, true);
+  compare.value = '1890';
+  compare.dispatch('input');
+  assert.equal(animate.disabled, false);
+  animate.dispatch('click');
+  assert.match(frame.src, /start_date=1881&end_date=1890/);
+  animate.dispatch('click');
+  assert.equal(frame.src, undefined);
+  assert.equal(frame.hidden, true);
+  cleanup();
+});
+
+test('late cancellation of a previous site flight cannot clear ownership of the next flight', () => {
+  const { document, nodes, Node } = fakeLensDocument();
+  const root = new Node('root', document);
+  const flights = [];
+  const cancels = [];
+  const cleanup = mountHistoricalEarthLens({
+    root,
+    services: {
+      sceneDirector: { running: false },
+      Cesium: {
+        Cartesian3: { fromDegrees: (...args) => args },
+        Math: { toRadians: (value) => value },
+      },
+      viewer: {
+        camera: {
+          flyTo: (options) => flights.push(options),
+          cancelFlight: () => cancels.push('cancel'),
+        },
+      },
+    },
+  });
+  const visit = nodes.find(
+    (node) => node.tag === 'button' && node.textContent === 'Visit documented site',
+  );
+  visit.dispatch('click');
+  visit.dispatch('click');
+  assert.equal(flights.length, 2);
+  flights[0].cancel();
+  cleanup();
+  assert.deepEqual(cancels, ['cancel']);
 });

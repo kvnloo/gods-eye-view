@@ -73,6 +73,9 @@ export function historicalPlaceView({
     throw new RangeError('Map zoom must be an integer from 1 to 18.');
   }
   const selectedYear = historicalYear(year, currentYear);
+  // UI uses conventional BCE numbering (1 BCE = -1), but OHM uses
+  // astronomical dates (1 BCE = 0, 2 BCE = -1).
+  const providerYear = selectedYear < 0 ? selectedYear + 1 : selectedYear;
   const latitude = Number(lat.toFixed(5));
   const longitude = Number(lon.toFixed(5));
   const mapUrl =
@@ -83,7 +86,7 @@ export function historicalPlaceView({
     '/' +
     longitude +
     '&date=' +
-    selectedYear;
+    providerYear;
   return Object.freeze({
     lat: latitude,
     lon: longitude,
@@ -146,6 +149,9 @@ export function historicalAnimationView({
     initial.lat +
     '/' +
     initial.lon;
+  const fromProviderYear =
+    initial.year < 0 ? initial.year + 1 : initial.year;
+  const toProviderYear = finalYear < 0 ? finalYear + 1 : finalYear;
   return Object.freeze({
     fromYear: initial.year,
     toYear: finalYear,
@@ -154,9 +160,9 @@ export function historicalAnimationView({
     embedUrl:
       base +
       '&start_date=' +
-      initial.year +
+      fromProviderYear +
       '&end_date=' +
-      finalYear +
+      toProviderYear +
       '&interval=' +
       interval +
       '&framerate=2&layer=O',

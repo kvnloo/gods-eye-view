@@ -221,6 +221,10 @@ export function mountHistoricalEarthLens({ root, services }) {
   }
 
   siteButton.addEventListener('click', () => {
+    if (services.sceneDirector?.running) {
+      status.textContent = 'Stop the authored scene before moving the camera.';
+      return;
+    }
     coords = { lat: sample.lat, lon: sample.lon };
     selectedPlace = sample;
     yearInput.value = String(sample.year);

@@ -104,6 +104,69 @@ export function historicalPlaceView({
   });
 }
 
+/**
+ * A bounded, user-requested OHM animation. Only the third-party map renders
+ * dated geography; modern Cesium terrain is never relabeled as historical.
+ */
+export function historicalAnimationView({
+  lat,
+  lon,
+  fromYear,
+  toYear,
+  zoom = 12,
+  currentYear,
+} = {}) {
+  const initial = historicalPlaceView({
+    lat,
+    lon,
+    year: fromYear,
+    zoom,
+    currentYear,
+  });
+  const finalYear = historicalYear(toYear, currentYear);
+  const distance = finalYear - initial.year;
+  if (!distance) throw new RangeError('Choose two different historical years.');
+  // OHM supports negative years, but the consumer UI has no year zero.
+  // Do not silently invent a transition date across that boundary.
+  if ((initial.year < 0) !== (finalYear < 0)) {
+    throw new RangeError(
+      'For BCE to CE comparisons, open the two years separately.',
+    );
+  }
+  if (Math.abs(distance) > 300) {
+    throw new RangeError(
+      'Choose a historical window no longer than 300 years.',
+    );
+  }
+  // At most approximately 40 frames, irrespective of the date span.
+  const yearStep = Math.ceil(Math.abs(distance) / 40);
+  const interval = (distance < 0 ? '-' : '') + 'P' + yearStep + 'Y';
+  const base =
+    'https://embed.openhistoricalmap.org/#map=' +
+    zoom +
+    '/' +
+    initial.lat +
+    '/' +
+    initial.lon;
+  return Object.freeze({
+    fromYear: initial.year,
+    toYear: finalYear,
+    fromLabel: initial.yearLabel,
+    toLabel:
+      finalYear < 0 ? -finalYear + ' BCE' : finalYear + ' CE',
+    embedUrl:
+      base +
+      '&start_date=' +
+      initial.year +
+      '&end_date=' +
+      finalYear +
+      '&interval=' +
+      interval +
+      '&framerate=2&layer=O',
+    evidenceStatus: 'coverage-unverified',
+  });
+}
+
 export function historicalPlaceAssociation(place, year, currentYear) {
   const selectedYear = historicalYear(year, currentYear);
   if (
@@ -162,6 +225,16 @@ export function mountHistoricalEarthLens({ root, services }) {
   yearInput.value = String(sample.year);
   yearInput.setAttribute('aria-label', 'Historical year');
   yearLabel.append(yearInput);
+  const compareLabel = doc.createElement('label');
+  compareLabel.textContent = 'Compare with year';
+  const compareInput = doc.createElement('input');
+  compareInput.type = 'number';
+  compareInput.min = String(EARLIEST_MAP_YEAR);
+  compareInput.max = String(new Date().getUTCFullYear());
+  compareInput.step = '1';
+  compareInput.value = String(sample.year + 20);
+  compareInput.setAttribute('aria-label', 'Historical comparison year');
+  compareLabel.append(compareInput);
 
   const actions = doc.createElement('div');
   actions.className = 'gev-playground-actions';
@@ -174,7 +247,10 @@ export function mountHistoricalEarthLens({ root, services }) {
   const previewButton = doc.createElement('button');
   previewButton.type = 'button';
   previewButton.textContent = 'Preview dated map';
-  actions.append(siteButton, centerButton, previewButton);
+  const animateButton = doc.createElement('button');
+  animateButton.type = 'button';
+  animateButton.textContent = 'Animate years';
+  actions.append(siteButton, centerButton, previewButton, animateButton);
 
   const context = doc.createElement('p');
   context.className = 'gev-playground-muted';
@@ -205,12 +281,15 @@ export function mountHistoricalEarthLens({ root, services }) {
   let coords = { lat: sample.lat, lon: sample.lon };
   let selectedPlace = sample;
   let ownsFlight = false;
+  let flightGeneration = 0;
+  let previewMode = null;
 
   function closePreview() {
-    if (frame.hidden) return;
-    frame.removeAttribute('src');
+    if (!frame.hidden) frame.removeAttribute('src');
     frame.hidden = true;
+    previewMode = null;
     previewButton.textContent = 'Preview dated map';
+    animateButton.textContent = 'Animate years';
   }
 
   function update() {
@@ -223,6 +302,16 @@ export function mountHistoricalEarthLens({ root, services }) {
       mapLink.href = view.mapUrl;
       mapLink.hidden = false;
       previewButton.disabled = false;
+      try {
+        historicalAnimationView({
+          ...coords,
+          fromYear: yearInput.value,
+          toYear: compareInput.value,
+        });
+        animateButton.disabled = false;
+      } catch {
+        animateButton.disabled = true;
+      }
       const association =
         selectedPlace &&
         historicalPlaceAssociation(selectedPlace, view.year);
@@ -241,6 +330,7 @@ export function mountHistoricalEarthLens({ root, services }) {
       mapLink.removeAttribute('href');
       mapLink.hidden = true;
       previewButton.disabled = true;
+      animateButton.disabled = true;
       sources.hidden = true;
       context.textContent = '';
       status.textContent = error.message;
@@ -255,6 +345,8 @@ export function mountHistoricalEarthLens({ root, services }) {
     coords = { lat: sample.lat, lon: sample.lon };
     selectedPlace = sample;
     yearInput.value = String(sample.year);
+    compareInput.value = String(sample.year + 20);
+    const generation = ++flightGeneration;
     ownsFlight = true;
     services.viewer.trackedEntity = undefined;
     services.viewer.camera.flyTo({
@@ -270,10 +362,10 @@ export function mountHistoricalEarthLens({ root, services }) {
       },
       duration: 2,
       complete: () => {
-        ownsFlight = false;
+        if (generation === flightGeneration) ownsFlight = false;
       },
       cancel: () => {
-        ownsFlight = false;
+        if (generation === flightGeneration) ownsFlight = false;
       },
     });
     update();
@@ -290,31 +382,46 @@ export function mountHistoricalEarthLens({ root, services }) {
     selectedPlace = null;
     update();
   });
-  previewButton.addEventListener('click', () => {
-    if (!frame.hidden) {
+  function openPreview(mode) {
+    if (previewMode === mode) {
       closePreview();
       return;
     }
+    closePreview();
     try {
-      const view = historicalPlaceView({
-        ...coords,
-        year: yearInput.value,
-      });
-      frame.src = view.embedUrl;
+      const url =
+        mode === 'animate'
+          ? historicalAnimationView({
+              ...coords,
+              fromYear: yearInput.value,
+              toYear: compareInput.value,
+            }).embedUrl
+          : historicalPlaceView({
+              ...coords,
+              year: yearInput.value,
+            }).embedUrl;
+      frame.src = url;
       frame.hidden = false;
-      previewButton.textContent = 'Close dated map';
+      previewMode = mode;
+      if (mode === 'animate')
+        animateButton.textContent = 'Close animation';
+      else previewButton.textContent = 'Close dated map';
       status.textContent =
-        'Third-party historical map preview (OpenHistoricalMap). ' +
-        'GEV still uses present-day terrain; map coverage may be incomplete.';
+        'Third-party OpenHistoricalMap preview. Historical coverage can be incomplete; ' +
+        'the GEV globe remains present-day terrain.';
     } catch (error) {
       status.textContent = error.message;
     }
-  });
+  }
+  previewButton.addEventListener('click', () => openPreview('year'));
+  animateButton.addEventListener('click', () => openPreview('animate'));
   yearInput.addEventListener('input', update);
+  compareInput.addEventListener('input', update);
   section.append(
     heading,
     intro,
     yearLabel,
+    compareLabel,
     actions,
     context,
     sources,
@@ -326,7 +433,11 @@ export function mountHistoricalEarthLens({ root, services }) {
   update();
   return () => {
     closePreview();
-    if (ownsFlight) services.viewer.camera.cancelFlight();
+    if (ownsFlight) {
+      flightGeneration++;
+      ownsFlight = false;
+      services.viewer.camera.cancelFlight();
+    }
     section.remove();
   };
 }

@@ -164,7 +164,7 @@ function captureRejectedXml(t, received) {
   });
 }
 
-test('KML root normalization retains namespace repair without rewriting the rest', async (t) => {
+test('KML root namespaces survive linear matching', async (t) => {
   const received = [];
   captureRejectedXml(t, received);
   const cases = [
@@ -186,7 +186,7 @@ test('KML root normalization retains namespace repair without rewriting the rest
   }
 });
 
-test('malformed unclosed KML roots reach XML validation without quadratic scanning', async (t) => {
+test('malformed KML root scan is linear', async (t) => {
   const received = [];
   captureRejectedXml(t, received);
   const input = '<kml '.repeat(80_000);
@@ -197,7 +197,10 @@ test('malformed unclosed KML roots reach XML validation without quadratic scanni
   );
   const elapsedMs = performance.now() - started;
   assert.equal(received[0], input);
-  assert.ok(elapsedMs < 3000, 'malformed KML took ' + elapsedMs.toFixed(0) + ' ms');
+  assert.ok(
+    elapsedMs < 3000,
+    'malformed KML took ' + elapsedMs.toFixed(0) + ' ms',
+  );
 });
 
 test('KML tracks retain their explicit altitude and ground lines are tessellated', () => {

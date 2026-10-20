@@ -19,7 +19,10 @@ The MCP tool returns three **independent** sections:
 Each section retains the source's rows and timestamps, reports
 `available | partial | stale | unavailable`, and distinguishes **zero records**
 from an unavailable source. The default is 10 rows per source, maximum 25.
-Truncated results include source-level `total` and `returned` counts.
+Truncated results include source-level `total` and `returned` counts. The
+composite independently caps returned rows even if a child tool exceeds its
+requested limit or forgets to mark additional matches as truncated. Invalid
+source totals are treated as unavailable evidence, without hiding other sources.
 Missing or key-gated FIRMS never blocks the keyless perimeter query.
 
 The returned `view` frames the requested area and enables only the existing

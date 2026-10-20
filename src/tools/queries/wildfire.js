@@ -39,13 +39,19 @@ const missing = (source, reason) => ({
   rows: [],
 });
 
-function evidenceSection(source, result) {
+function evidenceSection(source, result, limit) {
   const data = result?.data;
-  if (!Array.isArray(data?.rows) || !Number.isInteger(data?.total))
+  if (
+    !Array.isArray(data?.rows) ||
+    !Number.isInteger(data?.total) ||
+    data.total < data.rows.length
+  )
     throw new ToolError(
       'malformed',
       source.provider + ' returned malformed evidence',
     );
+  // Treat the child tool's limit as advisory: never expose extra evidence rows.
+  const rows = data.rows.slice(0, limit);
   const issues = [];
   if (data.stale === true) issues.push('stale_cache');
   if (data.missing_sources?.length) issues.push('missing_satellite_sources');
@@ -58,10 +64,10 @@ function evidenceSection(source, result) {
       data.stale === true ? 'stale' : issues.length ? 'partial' : 'available',
     issues,
     total: data.total,
-    returned: data.rows.length,
-    truncated: data.truncated === true,
+    returned: rows.length,
+    truncated: data.truncated === true || data.total > rows.length,
     // Original tool rows retain their source-specific timestamps and fields.
-    rows: data.rows,
+    rows,
     ...(source.key === 'detections'
       ? {
           fetched_at: data.fetched_at ?? null,
@@ -83,7 +89,7 @@ async function readSource(source, area, limit, tools) {
     return missing(source, 'Source is not configured');
   try {
     const result = await tools.call(source.tool, { area, limit });
-    return evidenceSection(source, result);
+    return evidenceSection(source, result, limit);
   } catch (error) {
     return missing(
       source,

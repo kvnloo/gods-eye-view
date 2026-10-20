@@ -387,5 +387,40 @@ test('stale flight cancellation preserves the next flight lease', () => {
   assert.equal(flights.length, 2);
   flights[0].cancel();
   cleanup();
-  assert.deepEqual(cancels, ['cancel']);
+  assert.deepEqual(cancels, ['cancel', 'cancel']);
+});
+
+test('failed site camera flights retain a usable UI without owned motion', () => {
+  const { document, nodes, Node } = fakeLensDocument();
+  const root = new Node('root', document);
+  let cancellations = 0;
+  const cleanup = mountHistoricalEarthLens({
+    root,
+    services: {
+      sceneDirector: { running: false },
+      Cesium: {
+        Cartesian3: { fromDegrees: () => [0, 0, 0] },
+        Math: { toRadians: (value) => value },
+      },
+      viewer: {
+        camera: {
+          flyTo: () => {
+            throw new Error('viewer disconnected');
+          },
+          cancelFlight: () => {
+            cancellations++;
+          },
+        },
+      },
+    },
+  });
+  const visit = nodes.find(
+    (node) =>
+      node.tag === 'button' && node.textContent === 'Visit documented site',
+  );
+  const status = nodes.find((node) => node.role === 'status');
+  visit.dispatch('click');
+  assert.match(status.textContent, /viewer disconnected/);
+  cleanup();
+  assert.equal(cancellations, 0);
 });

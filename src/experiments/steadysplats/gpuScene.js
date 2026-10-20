@@ -132,3 +132,44 @@ export function createProceduralGaussians3D(count = 350, seed = 23) {
       scale:[base,base*(0.5+1.2*rand()),base*(0.5+rand())], rotation:[1,0,0,0]};
   });
 }
+
+/**
+ * Prepare a bounded, representative PLY preview without copying its full cloud.
+ * All vertices participate in centering, including those beyond the preview
+ * limit; sampled vertices span the entire file instead of a biased prefix.
+ */
+export function prepareGaussianPreview(gaussians, {maxPreview = 2000, extent = 3.4} = {}) {
+  if (!Array.isArray(gaussians) || gaussians.length < 1 ||
+      !Number.isInteger(maxPreview) || maxPreview < 1 || maxPreview > 2000 ||
+      !Number.isFinite(extent) || extent <= 0) {
+    throw new RangeError('Invalid PLY preview configuration');
+  }
+  const lower = [Infinity, Infinity, Infinity];
+  const upper = [-Infinity, -Infinity, -Infinity];
+  for (const gaussian of gaussians) {
+    const position = [gaussian.x, gaussian.y, gaussian.z];
+    if (!position.every(Number.isFinite) || !Array.isArray(gaussian.scale) ||
+        gaussian.scale.length !== 3 || !gaussian.scale.every((s) => Number.isFinite(s) && s > 0)) {
+      throw new TypeError('Invalid PLY preview Gaussian');
+    }
+    for (let axis = 0; axis < 3; axis++) {
+      lower[axis] = Math.min(lower[axis], position[axis]);
+      upper[axis] = Math.max(upper[axis], position[axis]);
+    }
+  }
+  const center = lower.map((value, axis) => (value + upper[axis]) / 2);
+  const span = Math.max(0.01, ...lower.map((value, axis) => upper[axis] - value));
+  const factor = extent / span;
+  const count = Math.min(maxPreview, gaussians.length);
+  return Array.from({length: count}, (_, i) => {
+    const index = count === 1 ? 0 : Math.round(i * (gaussians.length - 1) / (count - 1));
+    const gaussian = gaussians[index];
+    return {
+      ...gaussian,
+      x: (gaussian.x - center[0]) * factor,
+      y: (gaussian.y - center[1]) * factor,
+      z: 4 + (gaussian.z - center[2]) * factor,
+      scale: gaussian.scale.map((value) => value * factor),
+    };
+  });
+}

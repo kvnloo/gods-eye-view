@@ -100,8 +100,10 @@ reprojection with a 3×3 neighborhood clamp and variance-sensitive rejection.
 vertices, logistic opacity, exponentiated scale, quaternion rotation and SH0
 (DC) colors. Covariances are projected using the perspective Jacobian and
 rotated elliptical screen footprints. The UI can load an optional local PLY
-without server upload, capped at 100 MB. GPU sampling identifiers are 16-bit;
-only the first 2,000 projected PLY points are used by the interactive preview.
+without server upload, capped at 100 MB. GPU sampling identifiers are 16-bit. For imported PLY data, the preview
+computes bounds from **all** vertices and deterministically samples at most
+2,000 points across the full file before projection; this is a bounded
+visualization, not density-preserving or full-resolution rendering.
 Camera-motion testing is a 2D translation of projected Gaussians (a screen-space
 pan approximation), **not** a full six-degree-of-freedom 3DGS renderer. The
 projection and sorting happen on the CPU; OIT visibility and resampling happen

@@ -1,5 +1,5 @@
 import {createGpuSteadySplats} from './gpuRenderer.js';
-import {parseGaussianPly,createProceduralGaussians3D,projectGaussians3D} from './gpuScene.js';
+import {parseGaussianPly,createProceduralGaussians3D,projectGaussians3D,prepareGaussianPreview} from './gpuScene.js';
 
 const W=256,H=192;
 const CSS=`
@@ -74,16 +74,11 @@ export function startSteadySplatsGpuDemo(parent=document.body) {
     try{
       const file=event.target.files?.[0];if(!file)return;
       if(file.size>100_000_000)throw new RangeError('PLY file exceeds 100 MB experiment limit');
-      cloud=parseGaussianPly(await file.arrayBuffer(),{maxGaussians:250000});
-      // Recenter asset to camera coordinates without changing its colors/scales.
-      const xs=cloud.map(x=>x.x),ys=cloud.map(x=>x.y),zs=cloud.map(x=>x.z);
-      const bounds=[xs,ys,zs].map(a=>[Math.min(...a.slice(0,50000)),Math.max(...a.slice(0,50000))]);
-      const center=bounds.map(([lo,hi])=>(lo+hi)/2);
-      const span=Math.max(...bounds.map(([lo,hi])=>hi-lo),0.01);
-      const factor=3.4/span;
-      cloud=cloud.map(g=>({...g,x:(g.x-center[0])*factor,y:(g.y-center[1])*factor,z:4.0+(g.z-center[2])*factor,scale:g.scale.map(x=>x*factor)}));
-      models=projectGaussians3D(cloud,W,H).slice(0,2000);
-      if(!models.length)throw new Error('PLY projected no visible Gaussians');
+      const parsed=parseGaussianPly(await file.arrayBuffer(),{maxGaussians:250000});
+      const projected=projectGaussians3D(prepareGaussianPreview(parsed),W,H);
+      if(!projected.length)throw new Error('PLY projected no visible Gaussians');
+      cloud=parsed;
+      models=projected;
       renderer.reset();update();
     }catch(e){report.textContent=`PLY load failed: ${e.message}`;}
   });

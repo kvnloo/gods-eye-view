@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {parseGaussianPly, projectGaussians3D, createProceduralGaussians3D} from './gpuScene.js';
+import {parseGaussianPly, projectGaussians3D, createProceduralGaussians3D, prepareGaussianPreview} from './gpuScene.js';
 
 function plyVertices(rows, properties, {ascii = false} = {}) {
   const format = ascii ? 'ascii 1.0' : 'binary_little_endian 1.0';
@@ -42,4 +42,40 @@ test('common CRLF PLY header is parsed correctly',()=>{
   const dst=new Uint8Array(crlf.length+buf.byteLength-end);
   dst.set(crlf);dst.set(bytes.subarray(end),crlf.length);
   assert.equal(parseGaussianPly(dst.buffer)[0].z,4);
+});
+
+test('PLY preview bounds include all vertices beyond the first 50,000', () => {
+  const template={x:0,y:0,z:4,opacity:0.8,scale:[0.1,0.2,0.3],rotation:[1,0,0,0],color:[1,0,0]};
+  const cloud=Array.from({length:60001},(_,i)=>({...template,x:i===60000?100:0}));
+  const preview=prepareGaussianPreview(cloud);
+  assert.equal(preview.length,2000);
+  assert.ok(Math.abs(preview[0].x+1.7)<1e-9);
+  assert.ok(Math.abs(preview.at(-1).x-1.7)<1e-9);
+  assert.equal(preview[0].z,4);
+  assert.equal(cloud[0].x,0);
+  assert.equal(cloud.at(-1).x,100);
+  assert.equal(cloud[0].scale[0],0.1);
+  assert.ok(projectGaussians3D(preview,256,192).length>0);
+});
+
+test('PLY preview samples the full source range and preserves source appearance', () => {
+  const source=Array.from({length:4001},(_,i)=>({
+    x:i/1000,y:0,z:4,opacity:0.55,scale:[0.2,0.3,0.4],
+    rotation:[1,0,0,0],color:[0.1,0.2,0.3],
+  }));
+  const preview=prepareGaussianPreview(source,{maxPreview:5});
+  assert.equal(preview.length,5);
+  assert.deepEqual(preview.map((g)=>Number(g.x.toFixed(3))),[-1.7,-0.85,0,0.85,1.7]);
+  assert.equal(preview[4].color,source[4000].color);
+  assert.ok(preview[0].scale[0]>0);
+  assert.notEqual(preview[0].scale,source[0].scale);
+  assert.equal(source[4000].x,4);
+});
+
+test('PLY preview fails closed on invalid bounds, scale and budget', () => {
+  const valid={x:0,y:0,z:4,scale:[1,1,1]};
+  assert.throws(()=>prepareGaussianPreview([]),RangeError);
+  assert.throws(()=>prepareGaussianPreview([valid],{maxPreview:2001}),RangeError);
+  assert.throws(()=>prepareGaussianPreview([{...valid,x:NaN}]),TypeError);
+  assert.throws(()=>prepareGaussianPreview([{...valid,scale:[1,0,1]}]),TypeError);
 });

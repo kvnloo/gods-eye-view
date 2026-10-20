@@ -152,3 +152,69 @@ test('lens links evidence, changes years, and hides unsupported associations', (
   assert.equal(root.children[0].removed, true);
 });
 
+
+test('documented-site navigation does not steal a running scene camera', () => {
+  const { document, nodes, Node } = fakeLensDocument();
+  const root = new Node('root', document);
+  const cameraCalls = [];
+  const services = {
+    sceneDirector: { running: true },
+    Cesium: {
+      Cartesian3: { fromDegrees: (...args) => args },
+      Math: { toRadians: (value) => value },
+    },
+    viewer: {
+      camera: {
+        flyTo: (options) => cameraCalls.push(options),
+        cancelFlight: () => cameraCalls.push('cancel'),
+      },
+    },
+  };
+  const cleanup = mountHistoricalEarthLens({ root, services });
+  const visit = nodes.find(
+    (node) => node.tag === 'button' && node.textContent === 'Visit documented site',
+  );
+  const status = nodes.find((node) => node.role === 'status');
+  visit.dispatch('click');
+  assert.equal(cameraCalls.length, 0);
+  assert.match(status.textContent, /Stop the authored scene/);
+
+  services.sceneDirector.running = false;
+  visit.dispatch('click');
+  assert.equal(cameraCalls.length, 1);
+  assert.deepEqual(cameraCalls[0].destination, [-76.9851, 38.863, 1600]);
+  cleanup();
+  assert.deepEqual(cameraCalls[1], 'cancel');
+});
+
+test('globe center switches to an unsourced custom location', () => {
+  const { document, nodes, Node } = fakeLensDocument();
+  const root = new Node('root', document);
+  const services = {
+    Cesium: {
+      Cartesian2: class {
+        constructor(x, y) { this.x = x; this.y = y; }
+      },
+      Ellipsoid: { WGS84: {} },
+      Cartographic: { fromCartesian: (point) => point },
+      Math: { toDegrees: (value) => value },
+    },
+    viewer: {
+      scene: { canvas: { clientWidth: 800, clientHeight: 600 } },
+      camera: { pickEllipsoid: () => ({ latitude: 40.75, longitude: -73.98 }) },
+    },
+  };
+  const cleanup = mountHistoricalEarthLens({ root, services });
+  nodes.find(
+    (node) => node.tag === 'button' && node.textContent === 'Use globe center',
+  ).dispatch('click');
+  const map = nodes.find(
+    (node) => node.tag === 'a' && /OpenHistoricalMap/.test(node.textContent),
+  );
+  const sources = nodes.find(
+    (node) => node.tag === 'p' && node.children.some((child) => child.tag === 'a'),
+  );
+  assert.match(map.href, /12\/40.75\/-73.98&date=1880$/);
+  assert.equal(sources.hidden, true);
+  cleanup();
+});

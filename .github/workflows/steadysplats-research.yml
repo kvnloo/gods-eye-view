@@ -1,0 +1,93 @@
+name: SteadySplats Research WebGL
+
+on:
+  push:
+    branches: [experiment/steadysplats-resampling]
+  workflow_dispatch:
+    inputs:
+      nvidia:
+        description: Run on a pre-registered private NVIDIA runner
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ss-lab-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gpu-browser-software:
+    name: WebGL2 correctness (software rasterizer)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PUPPETEER_SKIP_DOWNLOAD: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24.14.0'
+          cache: npm
+      - run: npm ci
+      - run: node --test src/experiments/steadysplats/*.test.mjs
+      - run: node scripts/qa-steadysplats-webgl.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: steadysplats-software-evidence
+          path: artifacts/steadysplats-webgl/
+          if-no-files-found: warn
+
+  gpu-browser-macos:
+    name: Apple Silicon WebGL2 hardware probe
+    runs-on: macos-26
+    timeout-minutes: 25
+    continue-on-error: true # GPU access unconfirmed until first run
+    env:
+      PUPPETEER_SKIP_DOWNLOAD: '0' # Mac runner may not have Chrome preinstalled
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24.14.0'
+          cache: npm
+      - run: npm ci
+      - run: node scripts/qa-steadysplats-webgl.mjs --require-hardware
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: steadysplats-macos-probe
+          path: artifacts/steadysplats-webgl/
+          if-no-files-found: warn
+
+  gpu-nvidia-self-hosted:
+    name: NVIDIA hardware benchmarks (manual only)
+    if: github.event_name == 'workflow_dispatch' && inputs.nvidia == true
+    runs-on: [self-hosted, linux, x64, nvidia]
+    timeout-minutes: 25
+    env:
+      PUPPETEER_SKIP_DOWNLOAD: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24.14.0'
+          cache: npm
+      - run: npm ci
+      - run: nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv
+      - run: node scripts/qa-steadysplats-webgl.mjs --require-hardware
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: steadysplats-nvidia-evidence
+          path: artifacts/steadysplats-webgl/
+          if-no-files-found: warn

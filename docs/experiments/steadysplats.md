@@ -74,3 +74,75 @@ locally; the full GEV suite and browser integration have not been executed yet.
    not in GEV runtime; cite the original authors and license before porting code.
 5. Keep the work downstream until the maintainers request an integration and
    there is a demonstrated benefit beyond Cesium's existing splat pipeline.
+
+## GPU experiment (separate WebGL2 lab)
+
+The branch `experiment/steadysplats-resampling` also includes a gated hardware
+path, available only when Vite runs in development mode:
+
+```sh
+npm ci
+npm run dev
+# http://localhost:4173/?experiment=steadysplats-gpu
+node --test src/experiments/steadysplats/*.test.mjs
+node scripts/qa-steadysplats-webgl.mjs
+```
+
+The GPU prototype uses **instanced screen-projected 3D Gaussians** in a separate
+WebGL2 context; it does not replace Cesium or import GEV viewer internals.
+Reference: sorted back-to-front alpha blending. Stochastic: independent alpha
+masks and a depth buffer, with no per-fragment depth sort. Spatial: up to four
+reprojected sample surfaces, five-pixel neighborhoods and a capped ratio of
+estimated Gaussian alpha probabilities. Temporal: prior filtered image
+reprojection with a 3×3 neighborhood clamp and variance-sensitive rejection.
+
+`gpuScene.js` supports standard `binary_little_endian` and `ascii` 3DGS PLY
+vertices, logistic opacity, exponentiated scale, quaternion rotation and SH0
+(DC) colors. Covariances are projected using the perspective Jacobian and
+rotated elliptical screen footprints. The UI can load an optional local PLY
+without server upload, capped at 100 MB. GPU sampling identifiers are 16-bit;
+only the first 2,000 projected PLY points are used by the interactive preview.
+Camera-motion testing is a 2D translation of projected Gaussians (a screen-space
+pan approximation), **not** a full six-degree-of-freedom 3DGS renderer. The
+projection and sorting happen on the CPU; OIT visibility and resampling happen
+in fragment shaders. SH bands above DC are omitted.
+
+### GPU provenance and reproducible testing
+
+The repo contains `.github/workflows/steadysplats-research.yml`, designed to run
+on each push to the experimental branch. Three distinct jobs prevent software
+emulation from being misrepresented as GPU hardware:
+
+1. `ubuntu-latest`: Chromium/ANGLE SwiftShader, **software graphics correctness
+   only**. Checks GLSL/browser execution and exports PNG+JSON evidence.
+2. `macos-26`: Apple Silicon WebGL hardware probe. A detected software renderer
+   or unknown GPU name fails the probe; the job is initially non-blocking until
+   the environment is confirmed.
+3. `[self-hosted, linux, x64, nvidia]`: optional **manual** NVIDIA runner job,
+   guarded by `nvidia-smi`, and requiring a non-software browser renderer.
+
+The browser harness stores `artifacts/steadysplats-webgl/report.json`, static
+and moving-camera screenshots, driver identification, CPU command submission
+p50/p95, available GPU timer readings and sorted-alpha-reference PSNR. The
+`--require-hardware` flag exits nonzero if Chromium reports SwiftShader,
+llvmpipe, or an unrecognized renderer. A GPU candidate is not itself proof of
+CUDA usage: GL driver and actual GPU utilization require hardware validation.
+
+**To attach the local RTX 3080 Ti:** follow GitHub Settings → Actions → Runners
+→ New self-hosted runner, register it for the downstream fork with the additional
+label `nvidia`, and run the NVIDIA job manually. Keep the runner bound to trusted
+repo-owned workflows: do not expose a personal GPU runner to untrusted pull
+request code or fork-triggered jobs. Standard GitHub Actions public runner
+minutes are free, while organization-managed Tesla T4 larger runners are paid.
+
+### What remains unverified
+
+The current isolated sandbox has no NVIDIA device and rejects hardware WebGL2.
+Node tests and the CPU synthetic lab **do not** prove a working GPU shader or
+make a real-hardware speed claim. Do not mark this experiment as upstream-ready
+until the browser runner passes, driver/VRAM evidence is recorded, a real PLY is
+rendered successfully and the GPU-quality/performance regressions are reviewed.
+
+The reference is Windisch et al., *SteadySplats* (arXiv:2610.05576). This is
+independent research-code approximation, **not** a reproduction of the author's
+Vulkan code or their trained regularizer. Preserve original author credit.

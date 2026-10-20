@@ -57,6 +57,33 @@ test('map links bind date and coordinates without fake terrain', () => {
     }).yearLabel,
     '44 BCE',
   );
+  assert.match(
+    historicalPlaceView({
+      lat: 41.5,
+      lon: 12.4,
+      year: -44,
+      currentYear: 2026,
+    }).mapUrl,
+    /&date=-43$/,
+  );
+  assert.match(
+    historicalPlaceView({
+      lat: 41.5,
+      lon: 12.4,
+      year: -1,
+      currentYear: 2026,
+    }).embedUrl,
+    /&date=0&layer=O$/,
+  );
+  assert.match(
+    historicalPlaceView({
+      lat: 41.5,
+      lon: 12.4,
+      year: -2,
+      currentYear: 2026,
+    }).mapUrl,
+    /&date=-1$/,
+  );
   assert.throws(
     () => historicalPlaceView({ lat: 91, lon: 2, year: 1800 }),
     TypeError,
@@ -281,6 +308,7 @@ test('OHM animation uses start/end without overriding date', () => {
   });
   assert.equal(reverse.fromLabel, '100 BCE');
   assert.equal(reverse.toLabel, '205 BCE');
+  assert.match(reverse.embedUrl, /start_date=-99&end_date=-204&interval=-P3Y/);
   assert.match(reverse.embedUrl, /interval=-P3Y&framerate=2&layer=O$/);
   const wide = historicalAnimationView({
     lat: 10,

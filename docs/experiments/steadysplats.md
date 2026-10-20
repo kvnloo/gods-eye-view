@@ -146,3 +146,19 @@ rendered successfully and the GPU-quality/performance regressions are reviewed.
 The reference is Windisch et al., *SteadySplats* (arXiv:2610.05576). This is
 independent research-code approximation, **not** a reproduction of the author's
 Vulkan code or their trained regularizer. Preserve original author credit.
+
+### Independent GLSL driver smoke test
+
+For Linux systems exposing EGL + OpenGL (Mesa llvmpipe or real hardware), run:
+
+```sh
+python3 scripts/qa-steadysplats-glsl-egl.py
+python3 scripts/qa-steadysplats-glsl-egl.py --require-hardware
+```
+
+This compiles **and links all five** GLSL program pairs using the native driver,
+then reports vendor, version and renderer. It is explicitly not a WebGL2 API
+smoke test, image-quality test or proof of hardware execution. On the isolated
+Debian sandbox, the result was Mesa llvmpipe 25.0.7, a **software renderer**;
+all five GLSL pairs linked successfully. The hardware-required invocation must
+fail on llvmpipe.

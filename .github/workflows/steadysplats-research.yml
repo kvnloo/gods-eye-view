@@ -35,6 +35,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: node --test src/experiments/steadysplats/*.test.mjs
+      - run: |
+          mkdir -p artifacts/steadysplats-webgl
+          python3 scripts/qa-steadysplats-glsl-egl.py > artifacts/steadysplats-webgl/egl-report.json
       - run: node scripts/qa-steadysplats-webgl.mjs
       - uses: actions/upload-artifact@v4
         if: always()
@@ -84,6 +87,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv
+      - run: |
+          mkdir -p artifacts/steadysplats-webgl
+          python3 scripts/qa-steadysplats-glsl-egl.py --require-hardware > artifacts/steadysplats-webgl/egl-report.json
       - run: node scripts/qa-steadysplats-webgl.mjs --require-hardware
       - uses: actions/upload-artifact@v4
         if: always()

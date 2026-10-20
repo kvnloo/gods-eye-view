@@ -134,9 +134,7 @@ export function historicalAnimationView({
     );
   }
   if (Math.abs(distance) > 300) {
-    throw new RangeError(
-      'Choose a historical window no longer than 300 years.',
-    );
+    throw new RangeError('Choose a historical window no longer than 300 years.');
   }
   // At most approximately 40 frames, irrespective of the date span.
   const yearStep = Math.ceil(Math.abs(distance) / 40);
@@ -152,8 +150,7 @@ export function historicalAnimationView({
     fromYear: initial.year,
     toYear: finalYear,
     fromLabel: initial.yearLabel,
-    toLabel:
-      finalYear < 0 ? -finalYear + ' BCE' : finalYear + ' CE',
+    toLabel: finalYear < 0 ? -finalYear + ' BCE' : finalYear + ' CE',
     embedUrl:
       base +
       '&start_date=' +

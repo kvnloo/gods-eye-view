@@ -1,0 +1,1 @@
+- Avoid quadratic main-thread stalls when importing KML with repeated malformed root tags, while preserving namespace repair for valid files (reported by asturksever, #1261).

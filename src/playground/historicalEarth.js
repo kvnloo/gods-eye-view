@@ -54,6 +54,15 @@ export function historicalYear(
   return year;
 }
 
+function toAstronomicalYear(year) {
+  // OpenHistoricalMap uses ISO years: 1 BCE = 0, 2 BCE = -1.
+  return year < 0 ? year + 1 : year;
+}
+
+function historicalYearLabel(year) {
+  return year < 0 ? -year + ' BCE' : year + ' CE';
+}
+
 export function historicalPlaceView({
   lat,
   lon,
@@ -73,9 +82,7 @@ export function historicalPlaceView({
     throw new RangeError('Map zoom must be an integer from 1 to 18.');
   }
   const selectedYear = historicalYear(year, currentYear);
-  // UI uses conventional BCE numbering (1 BCE = -1), but OHM uses
-  // astronomical dates (1 BCE = 0, 2 BCE = -1).
-  const providerYear = selectedYear < 0 ? selectedYear + 1 : selectedYear;
+  const providerYear = toAstronomicalYear(selectedYear);
   const latitude = Number(lat.toFixed(5));
   const longitude = Number(lon.toFixed(5));
   const mapUrl =
@@ -91,10 +98,7 @@ export function historicalPlaceView({
     lat: latitude,
     lon: longitude,
     year: selectedYear,
-    yearLabel:
-      selectedYear < 0
-        ? -selectedYear + ' BCE'
-        : selectedYear + ' CE',
+    yearLabel: historicalYearLabel(selectedYear),
     mapUrl,
     embedUrl:
       mapUrl.replace(
@@ -149,14 +153,13 @@ export function historicalAnimationView({
     initial.lat +
     '/' +
     initial.lon;
-  const fromProviderYear =
-    initial.year < 0 ? initial.year + 1 : initial.year;
-  const toProviderYear = finalYear < 0 ? finalYear + 1 : finalYear;
+  const fromProviderYear = toAstronomicalYear(initial.year);
+  const toProviderYear = toAstronomicalYear(finalYear);
   return Object.freeze({
     fromYear: initial.year,
     toYear: finalYear,
     fromLabel: initial.yearLabel,
-    toLabel: finalYear < 0 ? -finalYear + ' BCE' : finalYear + ' CE',
+    toLabel: historicalYearLabel(finalYear),
     embedUrl:
       base +
       '&start_date=' +

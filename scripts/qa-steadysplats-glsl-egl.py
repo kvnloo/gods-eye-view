@@ -98,6 +98,86 @@ def native_compile(require_hardware=False):
         ("temporal", "VERTEX_SCREEN", "FRAGMENT_TEMPORAL"),
         ("display", "VERTEX_SCREEN", "FRAGMENT_DISPLAY"),
     ]
+    # A minimal rendered pixel test proves the compiled programs actually
+    # drive fragment output, not just that the driver accepts the source.
+    def render_fixture(draw_program):
+        import array
+        def setup(name, args, result=None):
+            f = getattr(gl, name)
+            f.argtypes = args
+            if result is not None: f.restype = result
+            return f
+        unsigned = C.c_uint
+        get_error = setup("glGetError", [], unsigned)
+        gen_buffers = setup("glGenBuffers", [integer, C.POINTER(unsigned)])
+        bind_buffer = setup("glBindBuffer", [unsigned, unsigned])
+        buffer_data = setup("glBufferData", [unsigned, C.c_ssize_t, C.c_void_p, unsigned])
+        gen_vaos = setup("glGenVertexArrays", [integer, C.POINTER(unsigned)])
+        bind_vao = setup("glBindVertexArray", [unsigned])
+        enable_attr = setup("glEnableVertexAttribArray", [unsigned])
+        attr_pointer = setup("glVertexAttribPointer", [unsigned, integer, unsigned, C.c_ubyte, integer, ptr])
+        attr_divisor = setup("glVertexAttribDivisor", [unsigned, unsigned])
+        gen_textures = setup("glGenTextures", [integer, C.POINTER(unsigned)])
+        bind_texture = setup("glBindTexture", [unsigned, unsigned])
+        tex_image = setup("glTexImage2D", [unsigned, integer, integer, integer, integer, integer, unsigned, unsigned, ptr])
+        gen_fb = setup("glGenFramebuffers", [integer, C.POINTER(unsigned)])
+        bind_fb = setup("glBindFramebuffer", [unsigned, unsigned])
+        fb_tex = setup("glFramebufferTexture2D", [unsigned, unsigned, unsigned, unsigned, integer])
+        draw_buffers = setup("glDrawBuffers", [integer, C.POINTER(unsigned)])
+        fb_status = setup("glCheckFramebufferStatus", [unsigned], unsigned)
+        view_port = setup("glViewport", [integer, integer, integer, integer])
+        clear_color = setup("glClearColor", [C.c_float]*4)
+        clear = setup("glClear", [unsigned])
+        clear_depth = setup("glClearDepth", [C.c_double])
+        enable = setup("glEnable", [unsigned])
+        use_program = setup("glUseProgram", [unsigned])
+        location = setup("glGetUniformLocation", [unsigned, C.c_char_p], integer)
+        uniform2f = setup("glUniform2f", [integer, C.c_float, C.c_float])
+        uniform1f = setup("glUniform1f", [integer, C.c_float])
+        draw = setup("glDrawArraysInstanced", [unsigned, integer, integer, integer])
+        read = setup("glReadPixels", [integer, integer, integer, integer, unsigned, unsigned, ptr])
+        rb_gen = setup("glGenRenderbuffers", [integer, C.POINTER(unsigned)])
+        rb_bind = setup("glBindRenderbuffer", [unsigned, unsigned])
+        rb_storage = setup("glRenderbufferStorage", [unsigned, unsigned, integer, integer])
+        rb_attach = setup("glFramebufferRenderbuffer", [unsigned, unsigned, unsigned, unsigned])
+        texture_filter = setup("glTexParameteri", [unsigned, unsigned, integer])
+        vao = unsigned();gen_vaos(1,C.byref(vao));bind_vao(vao.value)
+        buffers = (unsigned*2)();gen_buffers(2,buffers)
+        vertices = (C.c_float*8)(-1,-1, 1,-1, -1,1, 1,1)
+        bind_buffer(0x8892,buffers[0]);buffer_data(0x8892,C.sizeof(vertices),C.cast(vertices,ptr),0x88E4)
+        enable_attr(0);attr_pointer(0,2,0x1406,0,0,None)
+        instance = (C.c_float*12)(32.5,32.5,6,6, .8,.2,.1,1, .4,0,1,0)
+        bind_buffer(0x8892,buffers[1]);buffer_data(0x8892,C.sizeof(instance),C.cast(instance,ptr),0x88E4)
+        for slot,n,offset in ((1,4,0),(2,4,4),(3,2,8),(4,2,10)):
+            enable_attr(slot);attr_pointer(slot,n,0x1406,0,12*4,ptr(offset*4));attr_divisor(slot,1)
+        fb=unsigned();gen_fb(1,C.byref(fb));bind_fb(0x8D40,fb.value)
+        texts=(unsigned*2)();gen_textures(2,texts)
+        for i in range(2):
+            bind_texture(0x0DE1,texts[i]);texture_filter(0x0DE1,0x2801,0x2600)
+            texture_filter(0x0DE1,0x2800,0x2600)
+            tex_image(0x0DE1,0,0x8058,64,64,0,0x1908,0x1401,None)
+            fb_tex(0x8D40,0x8CE0+i,0x0DE1,texts[i],0)
+        draw_buffers(2,(unsigned*2)(0x8CE0,0x8CE1))
+        renderbuffer=unsigned();rb_gen(1,C.byref(renderbuffer));rb_bind(0x8D41,renderbuffer.value)
+        rb_storage(0x8D41,0x81A5,64,64) # DEPTH_COMPONENT16
+        rb_attach(0x8D40,0x8D00,0x8D41,renderbuffer.value)
+        if fb_status(0x8D40)!=0x8CD5: raise RuntimeError("EGL test framebuffer incomplete")
+        view_port(0,0,64,64);clear_color(.035,.055,.09,1);clear_depth(1)
+        clear(0x00004000|0x00000100);enable(0x0B71)  # COLOR_BUFFER_BIT | DEPTH_BUFFER_BIT, DEPTH_TEST
+        use_program(draw_program)
+        uniform2f(location(draw_program,b"uSize"),64,64)
+        uniform2f(location(draw_program,b"uCamera"),0,0)
+        uniform1f(location(draw_program,b"uFrame"),0)
+        draw(0x0005,0,4,1) # TRIANGLE_STRIP, 1 instance
+        mid=(C.c_ubyte*4)();edge=(C.c_ubyte*4)()
+        read(32,32,1,1,0x1908,0x1401,C.cast(mid,ptr))
+        read(0,0,1,1,0x1908,0x1401,C.cast(edge,ptr))
+        if get_error(): raise RuntimeError("OpenGL error after test splat draw")
+        if mid[0]<150 or mid[1]>100 or edge[0]>30:
+            raise RuntimeError(f"Unexpected stochastic splat output: center={list(mid)} background={list(edge)}")
+        return {"centerRGBA":list(mid),"backgroundRGBA":list(edge)}
+
+    linked_programs = {}
     for name, vert, frag in pairs:
         v = compiler("VERTEX", source[vert])
         f = compiler("FRAGMENT", source[frag])
@@ -111,11 +191,13 @@ def native_compile(require_hardware=False):
             log = C.create_string_buffer(8192)
             gl.glGetProgramInfoLog(handle, 8192, None, log)
             raise RuntimeError(name + " GLSL link failed: " + log.value.decode(errors="replace"))
-        gl.glDeleteProgram(handle)
+        linked_programs[name] = handle
         gl.glDeleteShader(v)
         gl.glDeleteShader(f)
+    info["renderedFixture"] = render_fixture(linked_programs["stochastic"])
+    for handle in linked_programs.values(): gl.glDeleteProgram(handle)
     info["compiledAndLinkedPrograms"] = [name for name, _, _ in pairs]
-    info["scope"] = "native EGL shader compiler; not WebGL2 runtime, graphics output, or speed"
+    info["scope"] = "native EGL software/hardware shader compiler and 1-splat raster fixture; not WebGL2 API or speed"
     return info
 
 

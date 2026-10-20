@@ -157,8 +157,11 @@ python3 scripts/qa-steadysplats-glsl-egl.py --require-hardware
 ```
 
 This compiles **and links all five** GLSL program pairs using the native driver,
-then reports vendor, version and renderer. It is explicitly not a WebGL2 API
+then rasterizes a controlled one-Gaussian stochastic fragment into an EGL
+framebuffer and checks center/background pixels. It reports vendor, version
+and renderer. It is explicitly not a WebGL2 API
 smoke test, image-quality test or proof of hardware execution. On the isolated
 Debian sandbox, the result was Mesa llvmpipe 25.0.7, a **software renderer**;
-all five GLSL pairs linked successfully. The hardware-required invocation must
-fail on llvmpipe.
+all five GLSL pairs linked successfully, and the sample center/background pixels
+were RGBA `(204,51,26,255)` and `(9,14,23,255)`. The hardware-required
+invocation must fail on llvmpipe.

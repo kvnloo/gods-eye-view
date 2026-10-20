@@ -3,6 +3,23 @@
  * explicitly hypothetical relief packet. Does not contact any provider.
  * All supplied text is inserted with DOM textContent (no HTML interpretation).
  */
+// The field view accepts packets from external offline consumers, not only
+// packets produced by our own synthetic projection.
+const validCount = (value) => Number.isSafeInteger(value) && value >= 0;
+const validLabel = (value) => typeof value === 'string' && value.length > 0;
+const validEvidenceRef = (value) =>
+  typeof value === 'string' && /^synthetic:[a-zA-Z0-9_.:-]+$/.test(value);
+const validNeed = (row) =>
+  row && typeof row === 'object' && !Array.isArray(row) &&
+  validLabel(row.zoneId) &&
+  [row.needUnits, row.servedUnits, row.unmetUnits].every(validCount) &&
+  row.servedUnits + row.unmetUnits === row.needUnits;
+const validAssignment = (row) =>
+  row && typeof row === 'object' && !Array.isArray(row) &&
+  validLabel(row.vehicleId) && validLabel(row.zoneId) &&
+  validCount(row.units) && row.units > 0 &&
+  validEvidenceRef(row.evidenceRef);
+
 export function reliefViewModel(packet) {
   if (packet?.kind !== 'gev-relief-replay-field-packet' ||
       packet.determination !== 'hypothetical' || packet.authority !== 'none' ||
@@ -13,23 +30,46 @@ export function reliefViewModel(packet) {
       packet.stages[0]?.phase !== 'baseline' ||
       packet.stages[1]?.phase !== 'revised' ||
       !Array.isArray(packet.fieldLite?.rows) || packet.fieldLite.rows.length !== 2 ||
-      packet.fieldLite.rows.some((row) => !Array.isArray(row?.evidenceRefs)) ||
+      ![packet.fieldLite.rows[0], packet.fieldLite.rows[1]].every(
+        (row) => Array.isArray(row?.evidenceRefs) &&
+          row.evidenceRefs.every(validEvidenceRef)) ||
       !Array.isArray(packet.fieldLite?.notices) ||
       !Number.isSafeInteger(packet.delta?.knownOnlyServedUnits)) return null;
   const [before, after] = packet.stages;
   const validStage = (s) => s && typeof s.accessRevision === 'string' &&
     ['evaluated', 'limited'].includes(s.status) &&
     Number.isSafeInteger(s.unknownRoutes) && s.unknownRoutes >= 0 &&
+    (s.status === 'limited' ? s.unknownRoutes > 0 : s.unknownRoutes === 0) &&
     s.knownOnlyExact && s.knownOnlyNearestFirst &&
     Number.isSafeInteger(s.knownOnlyExact.servedUnits) && s.knownOnlyExact.servedUnits >= 0 &&
     Number.isSafeInteger(s.knownOnlyNearestFirst.servedUnits) &&
     s.knownOnlyNearestFirst.servedUnits >= 0 &&
     Array.isArray(s.knownOnlyExact.unmetNeed) &&
-    Array.isArray(s.knownOnlyExact.assignments);
+    s.knownOnlyExact.unmetNeed.every(validNeed) &&
+    Array.isArray(s.knownOnlyExact.assignments) &&
+    s.knownOnlyExact.assignments.every(validAssignment);
   if (!validStage(before) || !validStage(after) ||
       before.accessRevision === after.accessRevision ||
       after.knownOnlyExact.servedUnits - before.knownOnlyExact.servedUnits !==
         packet.delta.knownOnlyServedUnits) return null;
+  // Every presentation row must describe the stage it supplies evidence for.
+  // Otherwise a valid receipt could render a closure reference as baseline proof.
+  const matchesStage = (row, stage) =>
+    row.phase === stage.phase &&
+    row.accessRevision === stage.accessRevision &&
+    row.exactKnownOnlyServedUnits === stage.knownOnlyExact.servedUnits &&
+    row.nearestFirstKnownOnlyServedUnits ===
+      stage.knownOnlyNearestFirst.servedUnits &&
+    row.unknownRoutes === stage.unknownRoutes;
+  const expectedStatus =
+    before.status === 'limited' || after.status === 'limited'
+      ? 'limited'
+      : 'evaluated';
+  if (
+    !matchesStage(packet.fieldLite.rows[0], before) ||
+    !matchesStage(packet.fieldLite.rows[1], after) ||
+    packet.status !== expectedStatus
+  ) return null;
   return {
     studyId: packet.source?.studyId || 'unknown',
     sourceRef: packet.source?.sourceRef || 'unknown',

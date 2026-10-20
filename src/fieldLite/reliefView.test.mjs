@@ -81,3 +81,79 @@ test('rendering does not mutate the upstream packet or import Cesium', () => {
   assert.equal(JSON.stringify(packet), baseline);
   assert.equal(Object.isFrozen(packet), true);
 });
+
+test('evidence rows cannot be relabelled across before/after revisions', () => {
+  const valid = createSyntheticReliefDemoPacket();
+  const corruptions = [
+    (p) => p.fieldLite.rows.reverse(),
+    (p) => { p.fieldLite.rows[0].phase = 'revised'; },
+    (p) => { p.fieldLite.rows[0].accessRevision = p.stages[1].accessRevision; },
+    (p) => { p.fieldLite.rows[0].exactKnownOnlyServedUnits += 1; },
+    (p) => { p.fieldLite.rows[1].nearestFirstKnownOnlyServedUnits += 1; },
+    (p) => { p.fieldLite.rows[1].unknownRoutes += 1; },
+  ];
+  for (const corrupt of corruptions) {
+    const packet = structuredClone(valid);
+    corrupt(packet);
+    assert.equal(reliefViewModel(packet), null);
+    const root = fakeRoot();
+    assert.equal(renderReliefFieldView(root, packet), false);
+    assert.equal(root.children[0].attributes.role, 'alert');
+  }
+});
+
+test('malformed nested evidence fails closed instead of crashing the view', () => {
+  const original = createSyntheticReliefDemoPacket();
+  const mutations = [
+    (p) => { p.stages[0].knownOnlyExact.unmetNeed = [null]; },
+    (p) => { p.stages[1].knownOnlyExact.assignments = [null]; },
+    (p) => { p.stages[0].knownOnlyExact.unmetNeed = [{
+      zoneId: 'zone-west', needUnits: 3, servedUnits: 5, unmetUnits: 0,
+    }]; },
+    (p) => { p.stages[1].knownOnlyExact.assignments = [{
+      vehicleId: 'truck-a', zoneId: 'zone-west',
+      units: -2, evidenceRef: 'synthetic:invalid',
+    }]; },
+    (p) => { p.stages[0].knownOnlyExact.assignments = [{
+      vehicleId: 'truck-a', zoneId: 'zone-west',
+      units: 2, evidenceRef: 'unverified:incident',
+    }]; },
+    (p) => { p.fieldLite.rows[0].evidenceRefs = [null]; },
+    (p) => { p.fieldLite.rows[1].evidenceRefs = ['unverified:incident']; },
+    (p) => { delete p.fieldLite.rows[1]; },
+  ];
+  for (const mutate of mutations) {
+    const packet = structuredClone(original);
+    mutate(packet);
+    assert.equal(reliefViewModel(packet), null);
+    const root = fakeRoot();
+    assert.equal(renderReliefFieldView(root, packet), false);
+    assert.equal(root.children[0].attributes.role, 'alert');
+  }
+});
+
+test('display status cannot overstate an uncertain synthetic stage', () => {
+  const original = createSyntheticReliefDemoPacket();
+  assert.equal(original.status, 'evaluated');
+
+  const mismatched = structuredClone(original);
+  mismatched.status = 'limited';
+  assert.equal(reliefViewModel(mismatched), null);
+
+  const stageDrift = structuredClone(original);
+  stageDrift.stages[1].status = 'limited';
+  stageDrift.stages[1].unknownRoutes = 1;
+  stageDrift.fieldLite.rows[1].unknownRoutes = 1;
+  assert.equal(reliefViewModel(stageDrift), null);
+
+  const falseEvaluated = structuredClone(original);
+  falseEvaluated.stages[1].unknownRoutes = 1;
+  falseEvaluated.fieldLite.rows[1].unknownRoutes = 1;
+  assert.equal(reliefViewModel(falseEvaluated), null);
+
+  const limited = structuredClone(stageDrift);
+  limited.status = 'limited';
+  const model = reliefViewModel(limited);
+  assert.equal(model?.status, 'limited');
+  assert.equal(model?.stages[1].unknownRoutes, 1);
+});

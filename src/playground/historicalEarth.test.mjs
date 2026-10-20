@@ -96,6 +96,7 @@ function fakeLensDocument() {
       this.ownerDocument = ownerDocument;
       this.children = [];
       this.events = new Map();
+      this.style = {};
       nodes.push(this);
     }
     append(...children) {
@@ -217,4 +218,36 @@ test('globe center switches to an unsourced custom location', () => {
   assert.match(map.href, /12\/40.75\/-73.98&date=1880$/);
   assert.equal(sources.hidden, true);
   cleanup();
+});
+
+test('dated-map preview loads only on consent and clears when date changes', () => {
+  const { document, nodes, Node } = fakeLensDocument();
+  const root = new Node('root', document);
+  const cleanup = mountHistoricalEarthLens({
+    root,
+    services: { viewer: { camera: { flyTo() {}, cancelFlight() {} } } },
+  });
+  const frame = nodes.find((node) => node.tag === 'iframe');
+  const preview = nodes.find(
+    (node) => node.tag === 'button' && node.textContent === 'Preview dated map',
+  );
+  const year = nodes.find((node) => node.type === 'number');
+  assert.equal(frame.hidden, true);
+  assert.equal(frame.src, undefined);
+  assert.equal(frame.sandbox, 'allow-scripts allow-same-origin');
+  preview.dispatch('click');
+  assert.equal(frame.hidden, false);
+  assert.equal(
+    frame.src,
+    'https://embed.openhistoricalmap.org/#map=12/38.863/-76.9851&date=1880&layer=O',
+  );
+  year.value = '1881';
+  year.dispatch('input');
+  assert.equal(frame.hidden, true);
+  assert.equal(frame.src, undefined);
+  preview.dispatch('click');
+  assert.match(frame.src, /date=1881&layer=O$/);
+  cleanup();
+  assert.equal(frame.src, undefined);
+  assert.equal(frame.hidden, true);
 });

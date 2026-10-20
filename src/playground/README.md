@@ -21,7 +21,10 @@ The Time Machine includes a separate **Historical Earth** place/year lens:
 
 - Choose any globe center and an integer year from 4000 BCE to the current year
   (no year zero). The dated link opens [OpenHistoricalMap](https://www.openhistoricalmap.org/)
-  in a separate tab; GEV's underlying terrain, imagery and live feeds **stay current**.
+  in a separate tab or in a **user-initiated, sandboxed preview**. GEV's
+  underlying terrain, imagery and live feeds **stay current**. The iframe
+  makes a third-party map request only when users click *Preview dated map*
+  and unloads on date/location change or panel close.
 - The first source-linked person-associated location is **Frederick Douglass's
   Cedar Hill residence** circa 1880. The [National Park Service](https://www.nps.gov/frdo/learn/historyculture/places.htm)
   documents the residence, **not** his presence, thoughts, or view at a

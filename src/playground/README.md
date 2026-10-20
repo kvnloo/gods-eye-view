@@ -20,7 +20,10 @@ Features must release their own event listeners, Cesium entities, timers, and op
 The Time Machine includes a separate **Historical Earth** place/year lens:
 
 - Choose any globe center and an integer year from 4000 BCE to the current year
-  (no year zero). The dated link opens [OpenHistoricalMap](https://www.openhistoricalmap.org/)
+  (no year zero). Displayed BCE years are conventional: **1 BCE is entered
+  as -1**, and GEV converts it to astronomical year 0 for OpenHistoricalMap,
+  following [OHM's documented ISO-style date convention](https://wiki.openstreetmap.org/wiki/OpenHistoricalMap/Tags/Key/start_date).
+  The dated link opens [OpenHistoricalMap](https://www.openhistoricalmap.org/)
   in a separate tab or in a **user-initiated, sandboxed preview**. GEV's
   underlying terrain, imagery and live feeds **stay current**. The iframe
   makes a third-party map request only after an explicit *Preview dated

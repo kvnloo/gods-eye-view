@@ -292,6 +292,7 @@ and the development server's internal routes. See SECURITY.md.
 | `get_regional_brief` | `regional` | What and where a location is, its weather and recent headlines |
 | `get_cyclones` | `cyclones` | Active NHC/CPHC tropical cyclones, optionally in an area |
 | `get_fire_perimeters` | `perimeters` | Mapped WFIGS wildfire perimeters in an area, largest first |
+| `get_wildfire_intelligence` | optional `fires`, `perimeters`, `cctv` | Read-only source-attributed wildfire evidence; [contract](WILDFIRE_INTELLIGENCE.md) |
 | `get_terrain_height` | `terrain` | Ground, geoid and ellipsoid heights at up to 20 points |
 | `find_military_installations` | `installations` | OpenStreetMap military sites in an area of at most 10° per side |
 | `get_map_features` | `features` | Administrative areas, named places or monuments at a location (needs Overpass) |

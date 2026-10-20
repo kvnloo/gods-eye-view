@@ -339,32 +339,46 @@ export function mountHistoricalEarthLens({ root, services }) {
       status.textContent = 'Stop the authored scene before moving the camera.';
       return;
     }
+    // Only cancel a flight this lens owns; never take over SceneDirector.
+    if (ownsFlight) {
+      flightGeneration++;
+      ownsFlight = false;
+      services.viewer.camera.cancelFlight();
+    }
+    const generation = ++flightGeneration;
+    ownsFlight = true;
+    try {
+      services.viewer.trackedEntity = undefined;
+      services.viewer.camera.flyTo({
+        destination: services.Cesium.Cartesian3.fromDegrees(
+          sample.lon,
+          sample.lat,
+          1600,
+        ),
+        orientation: {
+          heading: 0,
+          pitch: services.Cesium.Math.toRadians(-50),
+          roll: 0,
+        },
+        duration: 2,
+        complete: () => {
+          if (generation === flightGeneration) ownsFlight = false;
+        },
+        cancel: () => {
+          if (generation === flightGeneration) ownsFlight = false;
+        },
+      });
+    } catch (error) {
+      if (generation === flightGeneration) ownsFlight = false;
+      status.textContent =
+        'Could not focus the documented site: ' +
+        String(error.message || error);
+      return;
+    }
     coords = { lat: sample.lat, lon: sample.lon };
     selectedPlace = sample;
     yearInput.value = String(sample.year);
     compareInput.value = String(sample.year + 20);
-    const generation = ++flightGeneration;
-    ownsFlight = true;
-    services.viewer.trackedEntity = undefined;
-    services.viewer.camera.flyTo({
-      destination: services.Cesium.Cartesian3.fromDegrees(
-        sample.lon,
-        sample.lat,
-        1600,
-      ),
-      orientation: {
-        heading: 0,
-        pitch: services.Cesium.Math.toRadians(-50),
-        roll: 0,
-      },
-      duration: 2,
-      complete: () => {
-        if (generation === flightGeneration) ownsFlight = false;
-      },
-      cancel: () => {
-        if (generation === flightGeneration) ownsFlight = false;
-      },
-    });
     update();
   });
 

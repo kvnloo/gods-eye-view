@@ -119,10 +119,16 @@ export const getWildfireIntelligence = defineTool({
   // Sources are optional: unavailable data must not hide other evidence.
   async run(args, { services, signal, tools }) {
     const area = await resolveArea(args.area, { services, signal });
+    signal?.throwIfAborted();
+    // Resolve named regions once. Preserve exact radius filters for circles.
+    const sourceArea =
+      args.area.place != null
+        ? { bbox: [area.west, area.south, area.east, area.north] }
+        : args.area;
     const sections = {};
     const rows = await Promise.all(
       SOURCES.map((source) =>
-        readSource(source, args.area, args.limit ?? 10, tools),
+        readSource(source, sourceArea, args.limit ?? 10, tools),
       ),
     );
     signal?.throwIfAborted();

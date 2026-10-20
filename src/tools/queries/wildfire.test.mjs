@@ -24,13 +24,14 @@ const fixtureTool = (name, run) =>
     },
     run,
   });
-const catalogWith = (entries = {}, interceptors = []) =>
+const catalogWith = (entries = {}, interceptors = [], services = {}) =>
   composeCatalog({
     tools: [
       getWildfireIntelligence,
       ...Object.entries(entries).map(([name, run]) => fixtureTool(name, run)),
     ],
     interceptors,
+    services,
   });
 const response = (rows, extra = {}) => ({
   summary: rows.length + ' results',
@@ -149,6 +150,52 @@ test('missing sources and failures preserve safe reasons', async () => {
   );
   assert.equal(result.data.sections.perimeters.status, 'unavailable');
   assert.doesNotMatch(JSON.stringify(result), /secret/);
+});
+
+test('resolves named areas once and preserves circular filters', async () => {
+  let resolutions = 0;
+  const seen = [];
+  const services = {
+    places: {
+      resolve: async (name) => {
+        resolutions += 1;
+        assert.equal(name, 'Test Coast');
+        return {
+          name,
+          bounds: { west: 179, south: 35, east: -179, north: 37 },
+        };
+      },
+    },
+  };
+  const names = [
+    'get_active_fires',
+    'get_fire_perimeters',
+    'find_cctv_cameras',
+  ];
+  const providers = Object.fromEntries(
+    names.map((name) => [
+      name,
+      async (args) => {
+        seen.push(args.area);
+        return response([]);
+      },
+    ]),
+  );
+  const catalog = catalogWith(providers, [], services);
+  const named = await catalog.call('get_wildfire_intelligence', {
+    area: { place: 'Test Coast' },
+  });
+  assert.equal(resolutions, 1);
+  assert.match(named.summary, /Test Coast/);
+  assert.deepEqual(
+    seen,
+    Array(3).fill({ bbox: [179, 35, -179, 37] }),
+  );
+
+  const circle = { lat: 36, lon: -120, radius_km: 50 };
+  await catalog.call('get_wildfire_intelligence', { area: circle });
+  assert.equal(resolutions, 1);
+  assert.deepEqual(seen.slice(3), Array(3).fill(circle));
 });
 
 test('passes limits and preserves cancellation', async () => {

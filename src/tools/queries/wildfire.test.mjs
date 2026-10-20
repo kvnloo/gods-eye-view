@@ -229,6 +229,54 @@ test('passes limits and preserves cancellation', async () => {
   );
 });
 
+test('caps uncooperative child sources and preserves true totals', async () => {
+  const tooMany = Array.from({ length: 30 }, (_, id) => ({ id }));
+  const catalog = catalogWith({
+    get_active_fires: async () => ({
+      summary: 'source omitted its truncation flag',
+      data: { rows: tooMany, total: 30, truncated: false },
+    }),
+    get_fire_perimeters: async () => ({
+      summary: 'upstream reported more matches than rows',
+      data: { rows: [{ id: 'mapped' }], total: 9, truncated: false },
+    }),
+  });
+  const result = await catalog.call('get_wildfire_intelligence', {
+    area,
+    limit: 3,
+  });
+  assert.equal(result.data.sections.detections.total, 30);
+  assert.equal(result.data.sections.detections.returned, 3);
+  assert.deepEqual(
+    result.data.sections.detections.rows.map((row) => row.id),
+    [0, 1, 2],
+  );
+  assert.equal(result.data.sections.detections.truncated, true);
+  assert.equal(result.data.sections.perimeters.returned, 1);
+  assert.equal(result.data.sections.perimeters.truncated, true);
+  assert.equal(result.data.sections.cameras.status, 'unavailable');
+});
+
+test('rejects child counts that cannot describe their evidence rows', async () => {
+  for (const total of [-1, 1, 1.5]) {
+    const catalog = catalogWith({
+      get_active_fires: async () => ({
+        summary: 'inconsistent source',
+        data: { rows: [{ id: 1 }, { id: 2 }], total },
+      }),
+      get_fire_perimeters: async () => response([{ id: 'incident' }]),
+    });
+    const result = await catalog.call('get_wildfire_intelligence', { area });
+    assert.equal(result.data.sections.detections.status, 'unavailable');
+    assert.match(
+      result.data.sections.detections.reason,
+      /returned malformed evidence/,
+    );
+    assert.equal(result.data.sections.detections.returned, 0);
+    assert.equal(result.data.sections.perimeters.status, 'available');
+  }
+});
+
 test('exposes MCP without redundant voice calls', () => {
   assert.ok(coreTools.includes(getWildfireIntelligence));
   assert.ok(

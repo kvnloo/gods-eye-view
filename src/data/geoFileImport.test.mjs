@@ -149,6 +149,57 @@ test('real loader refuses empty files and malformed nested geometry before alloc
     );
 });
 
+function captureRejectedXml(t, received) {
+  const original = globalThis.DOMParser;
+  globalThis.DOMParser = class {
+    parseFromString(text, mimeType) {
+      assert.equal(mimeType, 'application/xml');
+      received.push(text);
+      return { getElementsByTagName: () => [{}] };
+    }
+  };
+  t.after(() => {
+    if (original === undefined) delete globalThis.DOMParser;
+    else globalThis.DOMParser = original;
+  });
+}
+
+test('KML root normalization retains namespace repair without rewriting the rest', async (t) => {
+  const received = [];
+  captureRejectedXml(t, received);
+  const cases = [
+    [
+      '<kml xmlns:foo="first" xmlns:foo="second"><Placemark xsi:type="keep"/></kml>',
+      '<kml xmlns:foo="first" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><Placemark xsi:type="keep"/></kml>',
+    ],
+    [
+      '<?xml version="1.0"?><KML xmlns:xsi="first" xmlns:xsi="second"><Placemark xsi:type="keep"/></KML>',
+      '<?xml version="1.0"?><KML xmlns:xsi="first"><Placemark xsi:type="keep"/></KML>',
+    ],
+  ];
+  for (const [input, expected] of cases) {
+    await assert.rejects(
+      loadGeoFile(new File([input], 'namespace.kml'), { viewer: {} }),
+      GeoImportError,
+    );
+    assert.equal(received.at(-1), expected);
+  }
+});
+
+test('malformed unclosed KML roots reach XML validation without quadratic scanning', async (t) => {
+  const received = [];
+  captureRejectedXml(t, received);
+  const input = '<kml '.repeat(80_000);
+  const started = performance.now();
+  await assert.rejects(
+    loadGeoFile(new File([input], 'unclosed.kml'), { viewer: {} }),
+    GeoImportError,
+  );
+  const elapsedMs = performance.now() - started;
+  assert.equal(received[0], input);
+  assert.ok(elapsedMs < 3000, 'malformed KML took ' + elapsedMs.toFixed(0) + ' ms');
+});
+
 test('KML tracks retain their explicit altitude and ground lines are tessellated', () => {
   const track = xmlEl('Track', {}, [
     xmlEl('altitudeMode', {}, 'absolute'),

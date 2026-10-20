@@ -93,6 +93,11 @@ export function historicalPlaceView({
         ? -selectedYear + ' BCE'
         : selectedYear + ' CE',
     mapUrl,
+    embedUrl:
+      mapUrl.replace(
+        'https://www.openhistoricalmap.org/',
+        'https://embed.openhistoricalmap.org/',
+      ) + '&layer=O',
     evidenceStatus: 'coverage-unverified',
     renderStatus:
       'Modern GEV globe; historical map available in a separate view',
@@ -166,7 +171,10 @@ export function mountHistoricalEarthLens({ root, services }) {
   const centerButton = doc.createElement('button');
   centerButton.type = 'button';
   centerButton.textContent = 'Use globe center';
-  actions.append(siteButton, centerButton);
+  const previewButton = doc.createElement('button');
+  previewButton.type = 'button';
+  previewButton.textContent = 'Preview dated map';
+  actions.append(siteButton, centerButton, previewButton);
 
   const context = doc.createElement('p');
   context.className = 'gev-playground-muted';
@@ -181,6 +189,15 @@ export function mountHistoricalEarthLens({ root, services }) {
   sourceLink.rel = 'noopener noreferrer';
   const sources = doc.createElement('p');
   sources.append(sourceLink);
+  const frame = doc.createElement('iframe');
+  frame.title = 'OpenHistoricalMap · dated historical features';
+  frame.loading = 'lazy';
+  frame.referrerPolicy = 'no-referrer';
+  frame.setAttribute('sandbox', 'allow-scripts allow-same-origin');
+  frame.style.width = '100%';
+  frame.style.height = '280px';
+  frame.style.border = '1px solid rgba(123, 211, 181, 0.3)';
+  frame.hidden = true;
   const status = doc.createElement('p');
   status.setAttribute('role', 'status');
   status.className = 'gev-playground-status';
@@ -189,7 +206,15 @@ export function mountHistoricalEarthLens({ root, services }) {
   let selectedPlace = sample;
   let ownsFlight = false;
 
+  function closePreview() {
+    if (frame.hidden) return;
+    frame.removeAttribute('src');
+    frame.hidden = true;
+    previewButton.textContent = 'Preview dated map';
+  }
+
   function update() {
+    closePreview();
     try {
       const view = historicalPlaceView({
         ...coords,
@@ -197,6 +222,7 @@ export function mountHistoricalEarthLens({ root, services }) {
       });
       mapLink.href = view.mapUrl;
       mapLink.hidden = false;
+      previewButton.disabled = false;
       const association =
         selectedPlace &&
         historicalPlaceAssociation(selectedPlace, view.year);
@@ -214,6 +240,7 @@ export function mountHistoricalEarthLens({ root, services }) {
     } catch (error) {
       mapLink.removeAttribute('href');
       mapLink.hidden = true;
+      previewButton.disabled = true;
       sources.hidden = true;
       context.textContent = '';
       status.textContent = error.message;
@@ -263,6 +290,26 @@ export function mountHistoricalEarthLens({ root, services }) {
     selectedPlace = null;
     update();
   });
+  previewButton.addEventListener('click', () => {
+    if (!frame.hidden) {
+      closePreview();
+      return;
+    }
+    try {
+      const view = historicalPlaceView({
+        ...coords,
+        year: yearInput.value,
+      });
+      frame.src = view.embedUrl;
+      frame.hidden = false;
+      previewButton.textContent = 'Close dated map';
+      status.textContent =
+        'Third-party historical map preview (OpenHistoricalMap). ' +
+        'GEV still uses present-day terrain; map coverage may be incomplete.';
+    } catch (error) {
+      status.textContent = error.message;
+    }
+  });
   yearInput.addEventListener('input', update);
   section.append(
     heading,
@@ -272,11 +319,13 @@ export function mountHistoricalEarthLens({ root, services }) {
     context,
     sources,
     mapLink,
+    frame,
     status,
   );
   root.append(section);
   update();
   return () => {
+    closePreview();
     if (ownsFlight) services.viewer.camera.cancelFlight();
     section.remove();
   };

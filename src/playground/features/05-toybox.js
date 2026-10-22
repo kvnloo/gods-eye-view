@@ -62,7 +62,6 @@ export const feature = {
       button.addEventListener('click', () => {
         services.lookPacks?.clearGrade();
         styleManager.setStyle(id, { applyPreset: true, userInitiated: true });
-        syncComparison();
         readout.textContent = label + ' lens active.';
       });
       looks.append(button);
@@ -115,7 +114,6 @@ export const feature = {
     compareSlider.addEventListener('input', () => {
       const percent = Number(compareSlider.value);
       if (services.lookPacks?.setReveal(percent / 100)) {
-        syncComparison();
         readout.textContent = percent + '% creative on left; right shows the ungraded ' +
           styleManager.activeStyle + ' base lens.';
       }

@@ -1,4 +1,9 @@
 {
+  "fire-history-replay": {
+    "exports": ["./layers/fire-history/replay"],
+    "modules": ["src/layers/fireHistory/replay.js"],
+    "external": []
+  },
   "infrastructure": {
     "exports": [
       "./infrastructure",

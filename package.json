@@ -77,6 +77,7 @@
     "ws": "^8.21.0"
   },
   "exports": {
+    "./layers/fire-history/replay": "./src/layers/fireHistory/replay.js",
     "./infrastructure": "./src/data/infrastructure.js",
     "./infrastructure/geojson": "./src/data/localGeojsonCore.js",
     "./infrastructure/lod": "./src/data/localGeojsonLod.js",

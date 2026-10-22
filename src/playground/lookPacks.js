@@ -187,6 +187,11 @@ export function createLookPackController({ viewer, Cesium, styleManager, onChang
   let activePack = null;
   let reveal = 1;
   let applyingBaseStyle = false;
+  const listeners = new Set();
+  const notify = () => {
+    onChange(activePack?.id ?? null, activePack);
+    for (const listener of listeners) listener(activePack?.id ?? null, activePack);
+  };
   const stages = viewer.scene.postProcessStages;
   const render = () => viewer.scene.requestRender?.();
 
@@ -219,7 +224,7 @@ export function createLookPackController({ viewer, Cesium, styleManager, onChang
       stage.enabled = Boolean(pack.grade);
     }
     activePack = pack;
-    onChange(activePack.id, activePack);
+    notify();
     render();
     return true;
   };
@@ -229,6 +234,12 @@ export function createLookPackController({ viewer, Cesium, styleManager, onChang
     get activePack() { return activePack; },
     get reveal() { return reveal; },
     get applyingBaseStyle() { return applyingBaseStyle; },
+    /** Observe active look changes without transferring renderer ownership. */
+    subscribe(listener) {
+      if (destroyed || typeof listener !== 'function') return () => {};
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
     /** Wipe left-side grade vs right-side current GEV base lens. */
     setReveal(value) {
       if (destroyed || !stage || !activePack?.grade ||
@@ -258,7 +269,7 @@ export function createLookPackController({ viewer, Cesium, styleManager, onChang
       if (stage) stage.enabled = false;
       reveal = 1;
       activePack = null;
-      onChange(null, null);
+      notify();
       render();
     },
     destroy() {
@@ -267,7 +278,8 @@ export function createLookPackController({ viewer, Cesium, styleManager, onChang
       if (stage) stages.remove(stage);
       stage = null;
       activePack = null;
-      onChange(null, null);
+      notify();
+      listeners.clear();
     },
   };
 }

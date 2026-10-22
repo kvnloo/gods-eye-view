@@ -189,8 +189,9 @@ export function createLookPackController({ viewer, Cesium, styleManager, onChang
   let applyingBaseStyle = false;
   const listeners = new Set();
   const notify = () => {
-    onChange(activePack?.id ?? null, activePack);
-    for (const listener of listeners) listener(activePack?.id ?? null, activePack);
+    const id = activePack?.id ?? null;
+    onChange(id, activePack);
+    for (const listener of listeners) listener(id, activePack);
   };
   const stages = viewer.scene.postProcessStages;
   const render = () => viewer.scene.requestRender?.();
@@ -234,7 +235,7 @@ export function createLookPackController({ viewer, Cesium, styleManager, onChang
     get activePack() { return activePack; },
     get reveal() { return reveal; },
     get applyingBaseStyle() { return applyingBaseStyle; },
-    /** Observe active look changes without transferring renderer ownership. */
+    /** Observe look selection and comparison-reveal changes. */
     subscribe(listener) {
       if (destroyed || typeof listener !== 'function') return () => {};
       listeners.add(listener);
@@ -245,10 +246,11 @@ export function createLookPackController({ viewer, Cesium, styleManager, onChang
       if (destroyed || !stage || !activePack?.grade ||
           !Number.isFinite(value) || value < 0 || value > 1)
         return false;
+      if (reveal === value) return true;
       reveal = value;
       stage.uniforms.reveal = value;
       stage.enabled = value > 0;
-      onChange(activePack.id, activePack);
+      notify();
       render();
       return true;
     },
@@ -265,7 +267,7 @@ export function createLookPackController({ viewer, Cesium, styleManager, onChang
       return applyPack(manifest);
     },
     clearGrade() {
-      if (destroyed) return;
+      if (destroyed || (!activePack && !stage?.enabled)) return;
       if (stage) stage.enabled = false;
       reveal = 1;
       activePack = null;

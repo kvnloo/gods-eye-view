@@ -61,8 +61,6 @@ export const feature = {
       button.textContent = label;
       button.addEventListener('click', () => {
         services.lookPacks?.clearGrade();
-        for (const card of gallery.querySelectorAll('[data-look-pack]'))
-          card.setAttribute('aria-pressed', 'false');
         styleManager.setStyle(id, { applyPreset: true, userInitiated: true });
         syncComparison();
         readout.textContent = label + ' lens active.';
@@ -90,9 +88,6 @@ export const feature = {
         readout.textContent = applied
           ? pack.title + ' active. Artistic color only; not an observed-data transformation.'
           : 'This creative look is unavailable on the current renderer.';
-        for (const option of gallery.querySelectorAll('[data-look-pack]'))
-          option.setAttribute('aria-pressed', String(applied && option === card));
-        syncComparison();
       });
       card.setAttribute('aria-pressed', String(services.lookPacks?.activeId === pack.id));
       gallery.append(card);
@@ -125,7 +120,20 @@ export const feature = {
           styleManager.activeStyle + ' base lens.';
       }
     });
-    syncComparison();
+    // The persistent Creative chip and native style controls live outside Toybox.
+    // Keep their active look, pressed gallery card, and comparison UI in sync.
+    function syncLookState() {
+      const active = services.lookPacks?.activePack;
+      for (const card of gallery.querySelectorAll('[data-look-pack]'))
+        card.setAttribute('aria-pressed', String(card.dataset.lookPack === active?.id));
+      syncComparison();
+      readout.textContent = active?.grade
+        ? 'Creative look: ' + active.title + ' (reset any time).'
+        : active?.id === 'original'
+          ? 'Original Earth lens active.'
+          : 'Current lens: ' + (styleManager.activeStyle || 'normal') + '.';
+    }
+    const unsubscribeLookState = services.lookPacks?.subscribe(syncLookState);
     const lab = doc.createElement('details');
     lab.className = 'gev-playground-look-lab';
     const labTitle = doc.createElement('summary');
@@ -179,9 +187,6 @@ export const feature = {
         const manifest = parseLookManifest(jsonArea.value);
         if (!services.lookPacks?.applyVerifiedManifest(manifest))
           throw new TypeError('Unsupported base lens');
-        for (const card of gallery.querySelectorAll('[data-look-pack]'))
-          card.setAttribute('aria-pressed', 'false');
-        syncComparison();
         readout.textContent = 'Creative remix "' + manifest.title + '" by ' +
           manifest.author.name + ' active. Original Earth resets it.';
       } catch {
@@ -230,11 +235,9 @@ export const feature = {
       readout.textContent = 'Returning to your starting view.';
     });
     root.append(title, description, galleryTitle, gallery, comparison, lab, lookTitle, looks, actions, readout);
-    const currentPack = services.lookPacks?.activePack;
-    readout.textContent = currentPack
-      ? 'Creative look: ' + currentPack.title + ' (reset any time).'
-      : 'Current lens: ' + (styleManager.activeStyle || 'normal') + '.';
+    syncLookState();
     return () => {
+      unsubscribeLookState?.();
       if (ownedFlight) viewer.camera.cancelFlight();
     };
   },

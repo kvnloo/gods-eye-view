@@ -371,3 +371,39 @@ test('rapid look changes keep a single grade stage and reset comparison', () => 
   f.lookPacks.destroy();
   assert.equal(f.managedStages.size, 0);
 });
+
+test('external reveal changes synchronize the mounted comparison without redundant updates', () => {
+  const f = toyboxFixture();
+  f.clickLook('storybook-wilds');
+  const slider = f.comparison.children[0].children[0];
+  assert.equal(slider.value, '100');
+  let observed = 0;
+  const unsubscribe = f.lookPacks.subscribe(() => { observed++; });
+  assert.equal(f.lookPacks.setReveal(0.4), true);
+  assert.equal(slider.value, '40');
+  assert.equal(f.comparison.hidden, false);
+  assert.equal(observed, 1);
+  assert.equal(f.lookPacks.setReveal(0.4), true);
+  assert.equal(observed, 1, 'unchanged reveal does not rebroadcast or redraw');
+  f.lookPacks.apply('original');
+  assert.equal(f.comparison.hidden, true);
+  assert.deepEqual(f.selected(), ['original']);
+  unsubscribe();
+  f.dispose();
+  f.lookPacks.destroy();
+});
+
+test('idle clear and repeated clear are no-ops for notification and scene rendering', () => {
+  const f = fixture();
+  f.controller.clearGrade();
+  assert.equal(f.renders, 0);
+  assert.deepEqual(f.notifications, []);
+  f.controller.apply('cinematic-earth');
+  f.controller.clearGrade();
+  const previousRenders = f.renders;
+  const previousNotifications = f.notifications.length;
+  f.controller.clearGrade();
+  assert.equal(f.renders, previousRenders);
+  assert.equal(f.notifications.length, previousNotifications);
+  f.controller.destroy();
+});

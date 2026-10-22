@@ -82,6 +82,18 @@ try {
     await page.screenshot({ path: 'qa-shots/visual-universe/' + id + '.png' });
   }
 
+  // The persistent Creative reset must update an already-open Toybox.
+  await page.click('.gev-playground-creative-chip');
+  const resetWhileOpen = await page.evaluate(() => ({
+    pressed: [...document.querySelectorAll('[data-look-pack]')]
+      .filter((card) => card.getAttribute('aria-pressed') === 'true')
+      .map((card) => card.dataset.lookPack),
+    comparisonHidden: document.querySelector('.gev-playground-compare').hidden,
+  }));
+  assert.deepEqual(resetWhileOpen.pressed, ['original']);
+  assert.equal(resetWhileOpen.comparisonHidden, true);
+  await page.click('[data-look-pack="arcade-racer"]');
+
   for (const [percentage, expectedEnabled] of [[0, false], [50, true], [100, true]]) {
     await page.$eval('.gev-playground-compare input[type="range"]', (input, value) => {
       input.value = String(value);
@@ -183,6 +195,14 @@ try {
   }));
   assert.equal(superseded.hidden, true);
   assert.equal(superseded.enabled, false);
+  const galleryAfterNativeStyle = await page.evaluate(() => ({
+    pressed: [...document.querySelectorAll('[data-look-pack]')]
+      .filter((card) => card.getAttribute('aria-pressed') === 'true')
+      .map((card) => card.dataset.lookPack),
+    comparisonHidden: document.querySelector('.gev-playground-compare').hidden,
+  }));
+  assert.deepEqual(galleryAfterNativeStyle.pressed, []);
+  assert.equal(galleryAfterNativeStyle.comparisonHidden, true);
   assert.deepEqual(errors, [], 'no browser page errors');
   console.log('[PASS] Visual Universe gallery, grade ownership, persistent disclosure and reset');
   console.log('[INFO] Screenshots: qa-shots/visual-universe/ (not GPU-performance evidence)');

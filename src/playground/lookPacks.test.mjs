@@ -7,6 +7,7 @@ import {
   isValidLookPack,
   createLookPackController,
 } from './lookPacks.js';
+import { feature as toyboxFeature } from './features/05-toybox.js';
 
 function fixture() {
   const owned = new Set();
@@ -219,4 +220,154 @@ test('invalid community look cannot mutate current lens', () => {
   assert.equal(f.selections.length, before);
   assert.equal(f.controller.activeId, 'neon-nocturne');
   f.controller.destroy();
+});
+
+// Exercise the real Toybox mount with explicit document/render stubs.
+class Element {
+  constructor(doc, tag) {
+    this.ownerDocument = doc;
+    this.tag = tag;
+    this.children = [];
+    this.attributes = {};
+    this.dataset = {};
+    this.hidden = false;
+    this.textContent = '';
+    this.value = '';
+    this.listeners = {};
+  }
+  append(...children) {
+    this.children.push(...children);
+  }
+  setAttribute(key, value) {
+    this.attributes[key] = String(value);
+  }
+  getAttribute(key) {
+    return this.attributes[key] ?? null;
+  }
+  addEventListener(name, fn) {
+    (this.listeners[name] ||= []).push(fn);
+  }
+  click() {
+    for (const fn of this.listeners.click || []) fn({ target: this });
+  }
+  querySelectorAll(selector) {
+    const all = (node) => node.children.flatMap((child) => [child, ...all(child)]);
+    const nodes = all(this);
+    if (selector === '[data-look-pack]')
+      return nodes.filter((node) => typeof node.dataset.lookPack === 'string');
+    throw new Error('Unexpected selector: ' + selector);
+  }
+  focus() {}
+  select() {}
+}
+function toyboxFixture() {
+  const doc = {
+    createElement(tag) {
+      return new Element(doc, tag);
+    },
+    defaultView: { matchMedia: () => ({ matches: true }) },
+  };
+  const root = new Element(doc, 'section');
+  const managedStages = new Set();
+  const viewer = {
+    scene: {
+      postProcessStages: {
+        add(stage) {
+          managedStages.add(stage);
+        },
+        remove(stage) {
+          managedStages.delete(stage);
+        },
+      },
+      requestRender() {},
+    },
+    camera: { positionWC: {}, heading: 0, pitch: 0, roll: 0 },
+  };
+  const styleManager = {
+    activeStyle: 'normal',
+    stages: Object.fromEntries(
+      ['retro', 'surveillance', 'thermal', 'anime', 'noir', 'snow'].map((n) => [n, {}]),
+    ),
+    setStyle(name) {
+      this.activeStyle = name;
+    },
+  };
+  const Cesium = {
+    PostProcessStage: class {
+      constructor(data) {
+        Object.assign(this, data);
+      }
+    },
+    Cartesian3: { clone(p) { return p; } },
+  };
+  const lookPacks = createLookPackController({ viewer, styleManager, Cesium });
+  const dispose = toyboxFeature.mount({
+    root, services: { viewer, styleManager, Cesium, lookPacks },
+  });
+  const findClass = (name) => root.children.find((el) => el.className === name);
+  const gallery = findClass('gev-playground-look-gallery');
+  const comparison = findClass('gev-playground-compare');
+  const status = findClass('gev-playground-status');
+  const cards = gallery.querySelectorAll('[data-look-pack]');
+  const clickLook = (id) => cards.find((card) => card.dataset.lookPack === id).click();
+  const selected = () => cards
+    .filter((card) => card.getAttribute('aria-pressed') === 'true')
+    .map((card) => card.dataset.lookPack);
+  return { lookPacks, viewer, managedStages, dispose, clickLook, selected, comparison, status };
+}
+
+test('persistent Creative chip reset updates still-open Toybox selection and comparison', () => {
+  const f = toyboxFixture();
+  f.clickLook('storybook-wilds');
+  assert.deepEqual(f.selected(), ['storybook-wilds']);
+  assert.equal(f.comparison.hidden, false);
+  // Outside-Toybox Reset action in src/playground/index.js.
+  assert.equal(f.lookPacks.apply('original'), true);
+  assert.deepEqual(f.selected(), ['original']);
+  assert.equal(f.comparison.hidden, true);
+  assert.equal([...f.managedStages][0].enabled, false);
+  f.dispose();
+});
+
+test('external native lens overrides clear stale gallery and the disabled comparison', () => {
+  const f = toyboxFixture();
+  f.clickLook('neon-nocturne');
+  f.lookPacks.clearGrade();
+  assert.equal(f.lookPacks.activeId, null);
+  assert.deepEqual(f.selected(), []);
+  assert.equal(f.comparison.hidden, true);
+  f.dispose();
+});
+
+test('external creative choice updates Toybox while it stays mounted', () => {
+  const f = toyboxFixture();
+  assert.equal(f.lookPacks.apply('arcade-racer'), true);
+  assert.deepEqual(f.selected(), ['arcade-racer']);
+  assert.equal(f.comparison.hidden, false);
+  assert.match(f.status.textContent, /Arcade Racer/);
+  f.dispose();
+});
+
+test('Toybox unmount releases its external look-state observer', () => {
+  const f = toyboxFixture();
+  f.clickLook('storybook-wilds');
+  f.dispose();
+  f.lookPacks.apply('neon-nocturne');
+  assert.deepEqual(f.selected(), ['storybook-wilds']);
+  assert.equal(f.lookPacks.activeId, 'neon-nocturne');
+  f.lookPacks.destroy();
+  assert.equal(f.managedStages.size, 0);
+});
+
+test('rapid look changes keep a single grade stage and reset comparison', () => {
+  const f = toyboxFixture();
+  f.clickLook('storybook-wilds');
+  assert.equal(f.lookPacks.setReveal(0.4), true);
+  f.clickLook('neon-nocturne');
+  assert.equal(f.lookPacks.reveal, 1);
+  assert.equal(f.managedStages.size, 1);
+  assert.deepEqual(f.selected(), ['neon-nocturne']);
+  f.dispose();
+  f.lookPacks.destroy();
+  assert.equal(f.managedStages.size, 0);
 });

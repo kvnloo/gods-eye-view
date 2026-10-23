@@ -121,3 +121,20 @@ test('native status and partial coverage survive; ages advance during an idle pr
   assert.match(later, /relay received 2m ago/);
   assert.notEqual(initial, later);
 });
+
+test('native projection exposes omitted layer coverage with cleared selection', () => {
+  const snapshot = normalizeSnapshot({
+    type: 'snapshot',
+    selected: null,
+    layers: [],
+    omittedLayers: 80,
+  });
+  const view = View.from(buildSurfaceView(snapshot, {}, {
+    kinds: ['col', 'text'],
+    features: [],
+  }));
+  const serialized = JSON.stringify(allTrees(view.regions[0]));
+  assert.match(serialized, /Layer coverage: 80 layer rows omitted/);
+  assert.match(serialized, /No active selection/);
+  assert.match(serialized, /Enabled layers in snapshot/);
+});

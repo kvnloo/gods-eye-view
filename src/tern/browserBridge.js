@@ -4,12 +4,18 @@ import { layerSnapshots } from '../data/layerSnapshot.js';
 const SEND_INTERVAL_MS = 125;
 const MAX_LAYERS = 80;
 const MAX_TEXT = 160;
+const MAX_SNAPSHOT_BYTES = 60_000;
+const SNAPSHOT_ENCODER = new TextEncoder();
 const RAD_TO_DEG = 180 / Math.PI;
 const MAX_RECONNECT_ATTEMPTS = 6;
 const PERMANENT_CLOSE_CODES = new Set([4001, 4002]);
 
 function text(value) {
-  return value == null ? null : String(value).slice(0, MAX_TEXT);
+  if (value == null) return null;
+  return String(value)
+    .toWellFormed()
+    .slice(0, MAX_TEXT)
+    .replace(/[\uD800-\uDBFF]$/, '');
 }
 
 function number(value, digits = 5) {
@@ -36,6 +42,7 @@ export function projectGevContext({ scene, data }, now = Date.now()) {
   const selected = isContextRecordActive(record, dataManager) ? record : null;
   const camera = viewer.camera;
   const position = camera.positionCartographic;
+  const allLayers = dataManager.getAll();
   return {
     type: 'snapshot',
     capturedAt: now,
@@ -65,7 +72,7 @@ export function projectGevContext({ scene, data }, now = Date.now()) {
             : null,
         }
       : null,
-    layers: layerSnapshots(dataManager.getAll().slice(0, MAX_LAYERS), {
+    layers: layerSnapshots(allLayers.slice(0, MAX_LAYERS), {
       now,
     }).map((layer) => ({
       id: text(layer.id),
@@ -77,7 +84,34 @@ export function projectGevContext({ scene, data }, now = Date.now()) {
       lastUpdate: layer.lastUpdate,
       error: text(layer.error),
     })),
+    omittedLayers: Math.max(0, allLayers.length - MAX_LAYERS),
   };
+}
+
+/** Keep the largest ordered layer prefix that fits the local relay's byte budget. */
+function boundedSnapshotPayload(snapshot) {
+  const layers = snapshot.layers;
+  let low = 0;
+  let high = layers.length;
+  let fitting = null;
+  while (low <= high) {
+    const keep = Math.floor((low + high) / 2);
+    const payload = JSON.stringify({
+      ...snapshot,
+      layers: layers.slice(0, keep),
+      omittedLayers: snapshot.omittedLayers + layers.length - keep,
+    });
+    if (SNAPSHOT_ENCODER.encode(payload).byteLength <= MAX_SNAPSHOT_BYTES) {
+      fitting = payload;
+      low = keep + 1;
+    } else {
+      high = keep - 1;
+    }
+  }
+  // All non-layer fields are individually bounded; an empty roster fits.
+  if (fitting === null)
+    throw new RangeError('GEV Tern snapshot metadata exceeds relay budget');
+  return fitting;
 }
 
 /**
@@ -125,10 +159,8 @@ export function connectTernBridge({
     if (disposed || socket?.readyState !== WebSocketCtor.OPEN) return;
     const value = projectGevContext(components);
     value.change = lastChange;
-    const payload = JSON.stringify(value);
-    // The relay's hard 64-KiB limit is a last defence, not a truncation policy.
-    if (new TextEncoder().encode(payload).length <= 60_000)
-      socket.send(payload);
+    // Selection and camera always publish; layer omissions travel explicitly.
+    socket.send(boundedSnapshotPayload(value));
   }
 
   function schedule(change = 'layer') {

@@ -107,7 +107,17 @@ export function buildSurfaceView(
   if (enabled.length > MAX_VISIBLE_LAYERS)
     feedChildren.push(txt('remainder', (enabled.length - MAX_VISIBLE_LAYERS) + ' more layers in browser'));
   if (!feedChildren.length) feedChildren.push(txt('empty', 'No enabled layers reported'));
-  main.push(section('feeds', 'Enabled layers · ' + enabled.length, feedChildren));
+  main.push(section('feeds', 'Enabled layers in snapshot · ' + enabled.length, feedChildren));
+  if (snapshot?.omittedLayers > 0)
+    main.push(
+      txt(
+        'layer-coverage',
+        'Layer coverage: ' + snapshot.omittedLayers +
+          ' layer rows omitted from this snapshot (relay size/80-row cap); ' +
+          'view the full roster in the browser.',
+        'warning',
+      ),
+    );
 
   main.push(
     txt(

@@ -382,3 +382,103 @@ test('transient browser retries stop after a bounded number of failures', () => 
     globalThis.clearTimeout = previousClear;
   }
 });
+
+test('80 maximal Unicode layer rows publish bounded snapshots across replacement and clearing', async () => {
+  const previous = globalThis.window;
+  const page = new EventTarget();
+  page.location = { hostname: 'localhost' };
+  const { record, components, dataManager, managerListeners, cameraListeners } = fixture();
+  const maximal = '🚀'.repeat(80); // 160 UTF-16 units, 320 UTF-8 bytes.
+  const layers = Array.from({ length: 80 }, (_, i) => ({
+    id: 'layer-' + String(i).padStart(2, '0') + 'x'.repeat(152),
+    name: maximal,
+    enabled: true,
+    stats: {
+      count: i,
+      source: i === 0 ? 'a'.repeat(159) + '🚀' : maximal,
+      lastUpdate: 1000,
+      error: maximal,
+    },
+  }));
+  dataManager.getAll = () => layers;
+  record.label = maximal;
+  record.source = maximal;
+  record.properties = { status: maximal };
+  const replacement = {
+    ...record,
+    id: 'aircraft:replacement',
+    label: 'Replacement 🚀',
+  };
+  page.__gevContextStore = {
+    entities: new Map([[record.id, record], [replacement.id, replacement]]),
+    selectedEntityId: record.id,
+    selectedAt: 1000,
+  };
+  globalThis.window = page;
+
+  const sockets = [];
+  class FakeSocket {
+    static OPEN = 1;
+    static CLOSING = 2;
+    readyState = 0;
+    sent = [];
+    constructor() { sockets.push(this); }
+    send(value) { this.sent.push(value); }
+    close() { this.readyState = 3; }
+  }
+  const application = { subscribe: () => () => {} };
+  let dispose;
+  function verifyPayload(raw) {
+    assert.ok(new TextEncoder().encode(raw).length <= 60_000, 'within relay budget');
+    const parsed = JSON.parse(raw);
+    assert.equal(parsed.type, 'snapshot');
+    assert.ok(parsed.omittedLayers > 0, 'does not claim a complete layer roster');
+    assert.equal(parsed.layers.length + parsed.omittedLayers, layers.length);
+    for (const layer of parsed.layers) {
+      for (const key of ['id', 'name', 'source', 'error'])
+        if (layer[key] !== null)
+          assert.equal(layer[key], layer[key].toWellFormed(), key);
+    }
+    if (parsed.selected)
+      for (const key of ['id', 'name', 'source', 'status'])
+        if (parsed.selected[key] !== null)
+          assert.equal(parsed.selected[key], parsed.selected[key].toWellFormed(), key);
+    return parsed;
+  }
+
+  try {
+    dispose = connectTernBridge({
+      application, components, port: 4222,
+      token: 'a'.repeat(43), WebSocketCtor: FakeSocket,
+    });
+    const socket = sockets[0];
+    socket.readyState = FakeSocket.OPEN;
+    socket.onopen();
+    assert.equal(socket.sent.length, 1);
+    const first = verifyPayload(socket.sent[0]);
+    assert.equal(first.selected.id, record.id);
+    assert.equal(first.layers[0].source, 'a'.repeat(159));
+
+    page.__gevContextStore.selectedEntityId = replacement.id;
+    page.dispatchEvent(new Event('gev:entity-selected'));
+    await new Promise((resolve) => setTimeout(resolve, 170));
+    assert.equal(socket.sent.length, 2, 'replacement must not be dropped');
+    const second = verifyPayload(socket.sent[1]);
+    assert.equal(second.selected.id, replacement.id);
+    assert.equal(second.change, 'selection');
+
+    page.__gevContextStore.selectedEntityId = null;
+    page.dispatchEvent(new Event('gev:entity-selection-cleared'));
+    await new Promise((resolve) => setTimeout(resolve, 170));
+    assert.equal(socket.sent.length, 3, 'clear must not be dropped');
+    const third = verifyPayload(socket.sent[2]);
+    assert.equal(third.selected, null);
+    assert.equal(third.change, 'selection');
+    assert.equal(page.__gevContextStore.selectedEntityId, null);
+  } finally {
+    dispose?.();
+    assert.equal(managerListeners.size, 0);
+    assert.equal(cameraListeners.size, 0);
+    globalThis.window = previous;
+  }
+});

@@ -113,3 +113,19 @@ test('freshness ages advance against presentation time without new snapshots', (
   assert.match(late, /Browser capture: 2m ago/);
   assert.match(late, /relay received: 2m ago/);
 });
+
+test('relay-size omission metadata survives normalization and plaintext', () => {
+  const message = sample();
+  message.omittedLayers = 29;
+  const normalized = normalizeSnapshot(message);
+  assert.equal(normalized.omittedLayers, 29);
+  const plain = plainSummary(normalized);
+  assert.match(plain, /Layer coverage: 29 layer rows omitted/);
+  assert.match(plain, /Enabled layers in snapshot: 1/);
+  assert.match(plain, /not complete or verified worldwide/);
+
+  message.layers.push({ ...message.layers[0] }); // duplicate rejected locally
+  assert.equal(normalizeSnapshot(message).omittedLayers, 30);
+  message.omittedLayers = -10; // untrusted value cannot erase local omissions
+  assert.equal(normalizeSnapshot(message).omittedLayers, 1);
+});

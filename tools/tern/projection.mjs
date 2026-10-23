@@ -96,10 +96,15 @@ export function normalizeSnapshot(message, receivedAt = Date.now()) {
     : null;
 
   const change = text(message.change, 64) || 'update';
+  const reportedOmissions = Number.isSafeInteger(message.omittedLayers) &&
+    message.omittedLayers >= 0
+    ? message.omittedLayers
+    : 0;
   return Object.freeze({
     selected,
     camera,
     layers: Object.freeze(layers),
+    omittedLayers: reportedOmissions + message.layers.length - layers.length,
     change,
     capturedAt: finite(message.capturedAt, 0),
     receivedAt,
@@ -142,8 +147,14 @@ export function plainSummary(snapshot, {
     if (snapshot.camera && snapshot.camera.latitude !== null && snapshot.camera.longitude !== null)
       lines.push('Camera: ' + snapshot.camera.latitude + ', ' + snapshot.camera.longitude +
         ' at ' + (snapshot.camera.heightM ?? 'unknown') + ' m');
+    if (snapshot.omittedLayers > 0)
+      lines.push(
+        'Layer coverage: ' + snapshot.omittedLayers +
+          ' layer rows omitted from this snapshot (relay size/80-row cap); ' +
+          'view the full roster in the browser.',
+      );
     const active = snapshot.layers.filter((layer) => layer.enabled);
-    lines.push('Enabled layers: ' + active.length);
+    lines.push('Enabled layers in snapshot: ' + active.length);
     for (const layer of active.slice(0, 18)) {
       lines.push(
         '- ' + layer.name + ': ' + layer.feedState.toUpperCase() +

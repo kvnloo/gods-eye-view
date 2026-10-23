@@ -26,7 +26,8 @@ abort signal or liveness predicate into pending work: a check between phases
 cannot stop a camera flight or network request already in progress. Cleanup
 between scenes and on preview exit runs without an aborted token. A refused
 initial handoff starts no shot. Final cleanup runs on completion, Stop or failure;
-`releaseOnFinish: false` retains the final scene for ordinary playback. Phase rejections propagate so the caller can restore its controls. If a phase
+`releaseOnFinish: false` retains the final scene for ordinary playback.
+Phase rejections propagate so the caller can restore its controls. If a phase
 and final cleanup both fail, the original rejection is preserved even for
 `undefined`, `null`, `false`, `0` or `''`; the secondary cleanup failure is
 logged. Cleanup-only failures still reject, and an interrupted scene transition

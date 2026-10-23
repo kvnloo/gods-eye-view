@@ -1,4 +1,9 @@
 import { LOOK_PACKS } from '../lookPacks.js';
+import {
+  createLookManifest,
+  parseLookManifest,
+  serializeLookManifest,
+} from '../lookManifest.js';
 
 /**
  * A thin joy layer over GEV's existing shader engine and Cesium camera.
@@ -33,6 +38,7 @@ export const feature = {
   mount({ root, services }) {
     const doc = root.ownerDocument;
     const { viewer, styleManager, Cesium } = services;
+    const styleEvents = services.window || doc.defaultView;
     const title = doc.createElement('h3');
     title.textContent = 'Planet Toybox';
     const description = doc.createElement('p');
@@ -56,10 +62,7 @@ export const feature = {
       button.textContent = label;
       button.addEventListener('click', () => {
         services.lookPacks?.clearGrade();
-        for (const card of gallery.querySelectorAll('[data-look-pack]'))
-          card.setAttribute('aria-pressed', 'false');
         styleManager.setStyle(id, { applyPreset: true, userInitiated: true });
-        syncComparison();
         readout.textContent = label + ' lens active.';
       });
       looks.append(button);
@@ -85,9 +88,6 @@ export const feature = {
         readout.textContent = applied
           ? pack.title + ' active. Artistic color only; not an observed-data transformation.'
           : 'This creative look is unavailable on the current renderer.';
-        for (const option of gallery.querySelectorAll('[data-look-pack]'))
-          option.setAttribute('aria-pressed', String(applied && option === card));
-        syncComparison();
       });
       card.setAttribute('aria-pressed', String(services.lookPacks?.activeId === pack.id));
       gallery.append(card);
@@ -106,7 +106,7 @@ export const feature = {
     compareLabel.append(compareSlider, compareValue);
     comparison.append(compareLabel);
     function syncComparison() {
-      const selected = LOOK_PACKS.find((pack) => pack.id === services.lookPacks?.activeId);
+      const selected = services.lookPacks?.activePack;
       comparison.hidden = !selected?.grade;
       const percentage = Math.round((services.lookPacks?.reveal ?? 1) * 100);
       compareSlider.value = String(percentage);
@@ -115,12 +115,89 @@ export const feature = {
     compareSlider.addEventListener('input', () => {
       const percent = Number(compareSlider.value);
       if (services.lookPacks?.setReveal(percent / 100)) {
-        syncComparison();
         readout.textContent = percent + '% creative on left; right shows the ungraded ' +
           styleManager.activeStyle + ' base lens.';
       }
     });
-    syncComparison();
+    // The persistent Creative chip and native style controls live outside Toybox.
+    // Keep their active look, pressed gallery card, and comparison UI in sync.
+    function syncLookState() {
+      const active = services.lookPacks?.activePack;
+      for (const card of gallery.querySelectorAll('[data-look-pack]'))
+        card.setAttribute('aria-pressed', String(card.dataset.lookPack === active?.id));
+      syncComparison();
+      readout.textContent = active?.grade
+        ? 'Creative look: ' + active.title + ' (reset any time).'
+        : active?.id === 'original'
+          ? 'Original Earth lens active.'
+          : 'Current lens: ' + (styleManager.activeStyle || 'normal') + '.';
+    }
+    const unsubscribeLookState = services.lookPacks?.subscribe(syncLookState);
+    const onBaseStyleChange = () => {
+      if (!services.lookPacks?.activeId) syncLookState();
+    };
+    styleEvents?.addEventListener?.('gev:style-change', onBaseStyleChange);
+    const lab = doc.createElement('details');
+    lab.className = 'gev-playground-look-lab';
+    const labTitle = doc.createElement('summary');
+    labTitle.textContent = 'Local Look Lab · remix and share JSON';
+    const labNote = doc.createElement('p');
+    labNote.textContent = 'Data-only creative presets. Nothing is uploaded or executed.';
+    const authorLabel = doc.createElement('label');
+    authorLabel.textContent = 'Author credit for a new remix';
+    const authorInput = doc.createElement('input');
+    authorInput.type = 'text';
+    authorInput.maxLength = 80;
+    authorInput.placeholder = 'Your display name';
+    authorInput.setAttribute('aria-label', 'Look author credit');
+    authorLabel.append(authorInput);
+    const fileLabel = doc.createElement('label');
+    fileLabel.textContent = 'Editable local JSON (4 KB maximum)';
+    const jsonArea = doc.createElement('textarea');
+    jsonArea.rows = 6;
+    jsonArea.maxLength = 4096;
+    jsonArea.spellcheck = false;
+    jsonArea.setAttribute('aria-label', 'Look manifest JSON');
+    fileLabel.append(jsonArea);
+    const labActions = doc.createElement('div');
+    labActions.className = 'gev-playground-actions';
+    const exportButton = doc.createElement('button');
+    exportButton.type = 'button';
+    exportButton.textContent = 'Export current';
+    const importButton = doc.createElement('button');
+    importButton.type = 'button';
+    importButton.textContent = 'Apply local JSON';
+    exportButton.addEventListener('click', () => {
+      try {
+        const selected = services.lookPacks?.activePack;
+        if (!selected?.grade) {
+          readout.textContent = 'Choose a creative look before exporting.';
+          return;
+        }
+        const manifest = selected.author
+          ? selected
+          : createLookManifest(selected, authorInput.value.trim());
+        jsonArea.value = serializeLookManifest(manifest);
+        jsonArea.focus();
+        jsonArea.select();
+        readout.textContent = 'Local look JSON ready to copy. Author credit preserved.';
+      } catch {
+        readout.textContent = 'Enter an author name to create a credited remix.';
+      }
+    });
+    importButton.addEventListener('click', () => {
+      try {
+        const manifest = parseLookManifest(jsonArea.value);
+        if (!services.lookPacks?.applyVerifiedManifest(manifest))
+          throw new TypeError('Unsupported base lens');
+        readout.textContent = 'Creative remix "' + manifest.title + '" by ' +
+          manifest.author.name + ' active. Original Earth resets it.';
+      } catch {
+        readout.textContent = 'Look JSON was rejected; current view is unchanged.';
+      }
+    });
+    labActions.append(exportButton, importButton);
+    lab.append(labTitle, labNote, authorLabel, fileLabel, labActions);
     const actions = doc.createElement('div');
     actions.className = 'gev-playground-actions';
     const surprise = doc.createElement('button');
@@ -160,12 +237,11 @@ export const feature = {
       });
       readout.textContent = 'Returning to your starting view.';
     });
-    root.append(title, description, galleryTitle, gallery, comparison, lookTitle, looks, actions, readout);
-    const currentPack = LOOK_PACKS.find((pack) => pack.id === services.lookPacks?.activeId);
-    readout.textContent = currentPack
-      ? 'Creative look: ' + currentPack.title + ' (reset any time).'
-      : 'Current lens: ' + (styleManager.activeStyle || 'normal') + '.';
+    root.append(title, description, galleryTitle, gallery, comparison, lab, lookTitle, looks, actions, readout);
+    syncLookState();
     return () => {
+      unsubscribeLookState?.();
+      styleEvents?.removeEventListener?.('gev:style-change', onBaseStyleChange);
       if (ownedFlight) viewer.camera.cancelFlight();
     };
   },

@@ -82,6 +82,18 @@ try {
     await page.screenshot({ path: 'qa-shots/visual-universe/' + id + '.png' });
   }
 
+  // The persistent Creative reset must update an already-open Toybox.
+  await page.click('.gev-playground-creative-chip');
+  const resetWhileOpen = await page.evaluate(() => ({
+    pressed: [...document.querySelectorAll('[data-look-pack]')]
+      .filter((card) => card.getAttribute('aria-pressed') === 'true')
+      .map((card) => card.dataset.lookPack),
+    comparisonHidden: document.querySelector('.gev-playground-compare').hidden,
+  }));
+  assert.deepEqual(resetWhileOpen.pressed, ['original']);
+  assert.equal(resetWhileOpen.comparisonHidden, true);
+  await page.click('[data-look-pack="arcade-racer"]');
+
   for (const [percentage, expectedEnabled] of [[0, false], [50, true], [100, true]]) {
     await page.$eval('.gev-playground-compare input[type="range"]', (input, value) => {
       input.value = String(value);
@@ -97,6 +109,53 @@ try {
     if (percentage === 50)
       await page.screenshot({ path: 'qa-shots/visual-universe/compare-half.png' });
   }
+
+  const exportedJson = await page.evaluate(() => {
+    const panel = document.querySelector('.gev-playground-look-lab');
+    panel.open = true;
+    panel.querySelector('[aria-label="Look author credit"]').value = 'QA Artist';
+    [...panel.querySelectorAll('button')]
+      .find((button) => button.textContent === 'Export current').click();
+    return panel.querySelector('textarea').value;
+  });
+  const exported = JSON.parse(exportedJson);
+  assert.equal(exported.schema, 'gev.visual-look.v1');
+  assert.equal(exported.author.name, 'QA Artist');
+  assert.equal(exported.author.basedOn, 'arcade-racer');
+  assert.equal(exported.creative, true);
+
+  const imported = { ...exported, grade: { ...exported.grade, warmth: 0.21 } };
+  await page.evaluate((json) => {
+    const panel = document.querySelector('.gev-playground-look-lab');
+    panel.querySelector('textarea').value = json;
+    [...panel.querySelectorAll('button')]
+      .find((button) => button.textContent === 'Apply local JSON').click();
+  }, JSON.stringify(imported));
+  const look = await page.evaluate(() => ({
+    chip: document.querySelector('.gev-playground-creative-chip').textContent,
+    uniform: window.__godsEyeView.viewer.scene.postProcessStages
+      .getStageByName('godsEyeView_creativeGrade')?.uniforms.warmth,
+    comparisonVisible: !document.querySelector('.gev-playground-compare').hidden,
+  }));
+  assert.ok(look.chip.includes('QA Artist'), 'author disclosure remains visible');
+  assert.equal(look.uniform, 0.21, 'valid imported grade was applied');
+  assert.equal(look.comparisonVisible, true);
+
+  await page.evaluate((json) => {
+    const panel = document.querySelector('.gev-playground-look-lab');
+    const bad = JSON.parse(json);
+    bad.grade.fragmentShader = 'void main() {}';
+    panel.querySelector('textarea').value = JSON.stringify(bad);
+    [...panel.querySelectorAll('button')]
+      .find((button) => button.textContent === 'Apply local JSON').click();
+  }, JSON.stringify(imported));
+  const rejection = await page.evaluate(() => ({
+    message: document.querySelector('.gev-playground-status')?.textContent,
+    uniform: window.__godsEyeView.viewer.scene.postProcessStages
+      .getStageByName('godsEyeView_creativeGrade')?.uniforms.warmth,
+  }));
+  assert.ok(rejection.message.includes('rejected'));
+  assert.equal(rejection.uniform, 0.21, 'rejection must preserve the prior look');
 
   await page.click('.gev-playground-close');
   const persistent = await page.evaluate(() => {
@@ -136,6 +195,14 @@ try {
   }));
   assert.equal(superseded.hidden, true);
   assert.equal(superseded.enabled, false);
+  const galleryAfterNativeStyle = await page.evaluate(() => ({
+    pressed: [...document.querySelectorAll('[data-look-pack]')]
+      .filter((card) => card.getAttribute('aria-pressed') === 'true')
+      .map((card) => card.dataset.lookPack),
+    comparisonHidden: document.querySelector('.gev-playground-compare').hidden,
+  }));
+  assert.deepEqual(galleryAfterNativeStyle.pressed, []);
+  assert.equal(galleryAfterNativeStyle.comparisonHidden, true);
   assert.deepEqual(errors, [], 'no browser page errors');
   console.log('[PASS] Visual Universe gallery, grade ownership, persistent disclosure and reset');
   console.log('[INFO] Screenshots: qa-shots/visual-universe/ (not GPU-performance evidence)');

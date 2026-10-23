@@ -443,6 +443,9 @@ Director's ordered shot runner is exported independently of rendering, UI,
 storage and scene content. The existing scene controller supplies an adapter for
 visual/layer state, camera travel, media holds and release. Playback cancellation,
 preview cleanup, saved projects and all scene assets/attribution are preserved.
+The runner attempts each scene release once. A failed shot keeps its original
+rejection (including a falsy reason) if final cleanup also fails; cleanup-only
+failures still reject. Clock and interaction observers cannot strand their owners.
 Pure authored-time/seek calculations and a playback clock now own timing,
 hold deadlines and subscriptions. Stop immediately clears timers and settles
 holds; stale tick callbacks cannot publish into a replacement. Registered pack

@@ -68,6 +68,14 @@
 
 ## [Unreleased]
 
+- Director playback preserves the first rejection even when it is `undefined`,
+  `null`, `false`, `0` or an empty string and final scene release also fails.
+  Cleanup-only failures still reject and each scene is released at most once
+  per transition. Thanks to [ianblenke](https://github.com/ianblenke) for
+  [#972](https://github.com/bilawalsidhu/gods-eye-view/issues/972) and
+  [aitradesniper-blip](https://github.com/aitradesniper-blip) for the
+  [independent review](https://github.com/kvnloo/gods-eye-view/pull/166#issuecomment-6252904708).
+
 - Add an experimental ChatGPT/Codex OAuth option for cloud voice in Provider
   Settings. API-key voice remains the default. Local sign-in can start from
   the auth button and reports completion, failure, timeout, or expired

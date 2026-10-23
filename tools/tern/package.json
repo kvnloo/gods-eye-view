@@ -1,0 +1,18 @@
+{
+  "name": "gev-tern-sidecar",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Opt-in Tern surface for live God's Eye View browser context",
+  "engines": {
+    "node": ">=24.14.0 <25 || >=26 <27"
+  },
+  "scripts": {
+    "start": "node cli.mjs",
+    "test": "node --test *.test.mjs"
+  },
+  "dependencies": {
+    "@stencil-hq/tern": "0.1.0",
+    "ws": "8.21.0"
+  }
+}

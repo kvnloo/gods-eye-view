@@ -1,0 +1,196 @@
+import { getSelectedEntityContext } from '../data/contextStore.js';
+import { layerSnapshots } from '../data/layerSnapshot.js';
+
+const SEND_INTERVAL_MS = 125;
+const MAX_LAYERS = 80;
+const MAX_TEXT = 160;
+const RAD_TO_DEG = 180 / Math.PI;
+
+function text(value) {
+  return value == null ? null : String(value).slice(0, MAX_TEXT);
+}
+
+function number(value, digits = 5) {
+  return Number.isFinite(value) ? Number(value.toFixed(digits)) : null;
+}
+
+/**
+ * Read the existing GEV owners without retaining Cesium entities, polling a
+ * provider, or modifying layer/camera authority. One snapshot is one instant:
+ * a late event cannot restore an earlier selected entity.
+ */
+export function projectGevContext({ scene, data }, now = Date.now()) {
+  const viewer = scene?.viewer;
+  const dataManager = data?.dataManager;
+  if (!viewer?.camera || !dataManager?.getAll)
+    throw new TypeError('GEV scene and layer manager are required');
+
+  const selected = getSelectedEntityContext({ dataManager });
+  const camera = viewer.camera;
+  const position = camera.positionCartographic;
+  return {
+    type: 'snapshot',
+    capturedAt: now,
+    camera: position
+      ? {
+          latitude: number(position.latitude * RAD_TO_DEG),
+          longitude: number(position.longitude * RAD_TO_DEG),
+          heightM: number(position.height, 0),
+          heading: number(camera.heading * RAD_TO_DEG, 1),
+          pitch: number(camera.pitch * RAD_TO_DEG, 1),
+        }
+      : null,
+    selected: selected
+      ? {
+          id: text(selected.id),
+          name: text(selected.label || selected.properties?.name || selected.id),
+          layerId: text(selected.layerId),
+          layerName: text(selected.layerName),
+          source: text(selected.source),
+          latitude: number(selected.latitude),
+          longitude: number(selected.longitude),
+          updatedAt: Number.isFinite(selected.updatedAt)
+            ? selected.updatedAt
+            : null,
+        }
+      : null,
+    layers: layerSnapshots(dataManager.getAll().slice(0, MAX_LAYERS), {
+      now,
+    }).map((layer) => ({
+      id: text(layer.id),
+      name: text(layer.name),
+      enabled: layer.enabled,
+      feedState: layer.feedState,
+      count: layer.count,
+      source: text(layer.source),
+      lastUpdate: layer.lastUpdate,
+      error: text(layer.error),
+    })),
+  };
+}
+
+/**
+ * Opt-in browser-to-local transport; all commands from the terminal are
+ * read-only refresh requests. The application and its typed action owners are
+ * deliberately not reachable through this socket.
+ */
+export function connectTernBridge({
+  application,
+  components,
+  port,
+  token,
+  WebSocketCtor = globalThis.WebSocket,
+}) {
+  const portNumber = Number(port);
+  if (
+    !Number.isInteger(portNumber) ||
+    portNumber < 1 ||
+    portNumber > 65535 ||
+    !/^[A-Za-z0-9_-]{43}$/.test(token || '') ||
+    !['localhost', '127.0.0.1'].includes(window.location.hostname)
+  ) {
+    throw new TypeError('Invalid local Tern bridge configuration');
+  }
+  if (typeof WebSocketCtor !== 'function')
+    throw new TypeError('WebSocket is required for the Tern bridge');
+
+  const address =
+    'ws://127.0.0.1:' +
+    portNumber +
+    '/?token=' +
+    encodeURIComponent(token);
+  const { viewer } = components.scene;
+  const { dataManager } = components.data;
+  const subscriptions = [];
+  let socket = null;
+  let disposed = false;
+  let retry = null;
+  let pending = null;
+  let lastChange = 'initial';
+  let failures = 0;
+
+  function publish() {
+    pending = null;
+    if (disposed || socket?.readyState !== WebSocketCtor.OPEN) return;
+    const value = projectGevContext(components);
+    value.change = lastChange;
+    const payload = JSON.stringify(value);
+    // The relay's hard 64-KiB limit is a last defence, not a truncation policy.
+    if (new TextEncoder().encode(payload).length <= 60_000)
+      socket.send(payload);
+  }
+
+  function schedule(change = 'layer') {
+    lastChange = change;
+    if (!disposed && pending === null)
+      pending = setTimeout(publish, SEND_INTERVAL_MS);
+  }
+
+  function reconnect() {
+    if (disposed) return;
+    const ws = new WebSocketCtor(address);
+    socket = ws;
+    ws.onopen = () => {
+      if (disposed || socket !== ws) return;
+      failures = 0;
+      lastChange = 'connected';
+      publish();
+    };
+    ws.onmessage = (event) => {
+      if (socket !== ws || disposed) return;
+      if (event.data === '{"type":"snapshot-request"}')
+        schedule('refresh');
+    };
+    ws.onerror = () => {
+      // Close owns retry; never log the secret-bearing socket URL.
+    };
+    ws.onclose = () => {
+      if (socket !== ws || disposed) return;
+      socket = null;
+      failures += 1;
+      retry = setTimeout(reconnect, Math.min(8000, 250 * 2 ** Math.min(failures, 5)));
+    };
+  }
+
+  function onSelection() {
+    schedule('selection');
+  }
+  function onCamera() {
+    schedule('camera');
+  }
+  function onLayer(change) {
+    schedule(
+      typeof change?.type === 'string' ? change.type.slice(0, 64) : 'layer',
+    );
+  }
+  function dispose() {
+    if (disposed) return;
+    disposed = true;
+    clearTimeout(retry);
+    clearTimeout(pending);
+    for (const unsubscribe of subscriptions) unsubscribe();
+    socket?.close();
+    socket = null;
+  }
+
+  subscriptions.push(dataManager.subscribeActivity(onLayer));
+  subscriptions.push(viewer.camera.moveEnd.addEventListener(onCamera));
+  for (const name of [
+    'gev:entity-selected',
+    'gev:entity-selection-cleared',
+    'gev:awareness-subject-selected',
+    'gev:awareness-subject-cleared',
+  ]) {
+    window.addEventListener(name, onSelection);
+    subscriptions.push(() => window.removeEventListener(name, onSelection));
+  }
+  window.addEventListener('pagehide', dispose);
+  subscriptions.push(() => window.removeEventListener('pagehide', dispose));
+  subscriptions.push(
+    application.subscribe(({ status }) => {
+      if (['destroying', 'destroyed', 'failed'].includes(status)) dispose();
+    }),
+  );
+  if (!disposed) reconnect();
+  return dispose;
+}

@@ -749,6 +749,16 @@ and result presentation. Existing search providers and camera handoff policy are
 preserved. Replacing or closing a POI row cancels its pending expansion frame;
 destruction releases listeners, pending searches and the orbit indicator.
 
+Saved locations currently provide a local-only, versioned storage contract in
+`src/ui/savedLocations.js`, not LOCATION UI or navigation execution. Records
+hold typed `fly_to_location` arguments: finite numeric WGS84 coordinates and
+optional finite numeric range, without coercing strings, booleans or null.
+Load, persist, upsert and remove retain the first valid occurrence per stable
+record id and cap storage at 24 distinct records. Malformed or blocked storage
+fails closed. The original saved/favourite-location request remains #335;
+the LOCATION surface must integrate this contract separately.
+
+
 Contacts and mapped-site search feedback filter subject-window installation matches by surface distance from the current subject position, within the stated 100 km radius; the retained tile-fetch square is only a loading window.
 
 Search arrivals (location bar and voice) end above the rendered surface.

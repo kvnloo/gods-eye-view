@@ -1,20 +1,25 @@
 import { buildDisasterAccessPacket } from './disasterAccess.js';
 
-function finiteCoordinate(value) {
+function boundedNumber(value, min, max) {
+  if (typeof value !== 'number' &&
+      (typeof value !== 'string' || !value.trim())) return null;
+  // Number() coerces blanks and nondecimal strings into unintended values.
+  if (typeof value === 'string' &&
+      !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(value.trim()))
+    return null;
   const number = Number(value);
-  return Number.isFinite(number) ? number : null;
+  return Number.isFinite(number) && number >= min && number <= max ? number : null;
 }
 
 function evidenceRecord(record) {
   if (!record || typeof record !== 'object' || !record.id) return null;
-  const lat = finiteCoordinate(record.lat);
-  const lon = finiteCoordinate(record.lon);
+  const lat = boundedNumber(record.lat, -90, 90);
+  const lon = boundedNumber(record.lon, -180, 180);
+  const sequence = boundedNumber(record.sequence, 0, Number.MAX_SAFE_INTEGER);
 
   return Object.freeze({
     id: String(record.id),
-    sequence: Number.isFinite(Number(record.sequence))
-      ? Number(record.sequence)
-      : null,
+    sequence: Number.isSafeInteger(sequence) ? sequence : null,
     title: typeof record.title === 'string' ? record.title : null,
     summary: typeof record.summary === 'string' ? record.summary : null,
     phase: typeof record.phase === 'string' ? record.phase : null,

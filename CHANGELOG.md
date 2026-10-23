@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+- Harden experimental downstream Tern #262 sidecar: permanent browser
+  supersession/stop, no selection mutation on projection, partial AIS and
+  selected stale-status honesty, clock-relative freshness, paused snapshot and
+  ownership isolation, one-time private attach URL, UTF-16-safe display, locked
+  npm ci installs, CLI/browser/relay regressions and Node CI coverage.
+  Qualification with a real selected GEV entity on MBP remains pending.
+
 ## [0.2.1] — 2026-10-02 — God's Eye View through Your Agent (with security fixes and other features)
 
 - Ship each bundled data pack once. The region, marine, admin-boundary,

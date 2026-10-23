@@ -1,6 +1,6 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { createServer } from 'node:http';
-import { WebSocketServer } from 'ws';
+import WebSocket, { WebSocketServer } from 'ws';
 import { normalizeSnapshot } from './projection.mjs';
 
 const MAX_MESSAGE_BYTES = 64 * 1024;
@@ -12,7 +12,7 @@ const LOOPBACK_PEERS = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
 
 /** Send a permanent reason before terminating unresponsive peers. */
 function closeClient(ws, code, reason) {
-  if (!ws || ws.readyState === ws.CLOSED) return Promise.resolve();
+  if (!ws || ws.readyState === WebSocket.CLOSED) return Promise.resolve();
   return new Promise((resolve) => {
     let settled = false;
     let timer;
@@ -28,8 +28,8 @@ function closeClient(ws, code, reason) {
       ws.terminate();
       finish();
     }, CLOSE_GRACE_MS);
-    if (ws.readyState === ws.CONNECTING) ws.terminate();
-    else if (ws.readyState === ws.OPEN) ws.close(code, reason);
+    if (ws.readyState === WebSocket.CONNECTING) ws.terminate();
+    else if (ws.readyState === WebSocket.OPEN) ws.close(code, reason);
   });
 }
 

@@ -1,3 +1,23 @@
+## Experimental local Tern surface — October 22, 2026 (downstream only)
+
+Draft [#262](https://github.com/kvnloo/gods-eye-view/pull/262) projects
+existing browser selection, camera and feed owners into a local read-only TSP v1
+surface ([setup and honest acceptance gates](../tools/tern/README.md)).
+A new authenticated tab invalidates the prior view; close codes 4001/4002
+dispose superseded/stopped browser bridges. Temporarily inactive selections
+project as absent without mutating the original context store. Tracked record
+status, including missed-poll staleness, travels separately from context-refresh
+time; feed state preserves PARTIAL. Capture and receipt ages advance during
+presentation idle, independently of feed polling. Pause freezes the visible
+snapshot except mandatory owner invalidation; resume requests a fresh one.
+The private attach link is output once to stderr only. Sidecar dependencies are
+frozen by their separate npm lock and verified in CI.
+
+**Evidence limit:** this is a connector-only implementation; tests, MBP
+qualification and actual browser selection in Tern are pending. Synthetic SDK
+smoke is not source-truth or globe-live-selection acceptance. Original GEV
+actions remain owned by GEV; ACP #252 is separate.
+
 # God's Eye View Current State
 
 ## God's Eye View in conversations — October 2, 2026

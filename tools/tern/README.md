@@ -14,7 +14,7 @@ npm run dev
 ~~~
 
 ~~~sh
-npm --prefix tools/tern install
+npm --prefix tools/tern ci
 npm --prefix tools/tern start
 ~~~
 
@@ -28,22 +28,48 @@ Without Tern, the exact same command prints readable text and updates to stdout,
 TERN_TSP=0 npm --prefix tools/tern start
 ~~~
 
-Type q + Enter or press Ctrl+C. The fallback still requires opening the printed browser URL to receive live context. Reconnection of a closed browser socket is automatic; a replaced tab invalidates the previous socket's updates. A newer browser selection replaces the previous selection; no cached selection is narrated after its owner removes it.
+Type q + Enter or press Ctrl+C. The fallback still requires opening the printed browser URL to receive live context. Only transient socket failures reconnect (at most six attempts, with capped backoff). An authenticated second tab explicitly supersedes the first (WebSocket code 4001) and permanently disposes its subscriptions/reconnect loop. Relay stop explicitly revokes the active tab (code 4002), with bounded close/terminate cleanup, so an old tab cannot attach to a new process reusing the port. A new owner or disconnect clears the former snapshot immediately, including during pause. Pause freezes visible presentation; resume asks the current owner for a fresh snapshot.
 
 ## Security / data limits
 
 - The WebSocket binds to **127.0.0.1 only**, requires a matching exact browser Origin and the random per-run URL token, and caps inbound UTF-8 JSON messages at 64 KiB. No network listener is opened when the CLI is off. The browser opt-in works only on localhost/127.0.0.1.
-- The browser sends small, bounded summaries from its existing getSelectedEntityContext, dataManager.getAll / layerSnapshots, and Cesium camera. No extra feed polling, scene copy, imported Node module or independent selection owner runs in browser code.
+- The browser sends bounded summaries from its existing context store, isContextRecordActive, dataManager.getAll / layerSnapshots, and Cesium camera. Reads never clear a selected entity merely because it is temporarily hidden by horizon/LOD or the layer is disabled. No extra feed polling, scene copy, imported Node module or independent selection owner runs in browser code.
 - Browser-to-terminal messages are data only. Terminal-to-browser messages are exactly {"type":"snapshot-request"}; **no** setEnabled, navigation, cameras, arbitrary commands or permissions are exposed. Future globe mutations need GEV's reviewed typed action schemas, original owner execution and explicit confirmation, not a new bridge handler.
-- Feed state (STALE, FALLBACK, DEGRADED, etc.) and original source labels are shown explicitly. Counts reflect **loaded data only**, not complete, current or verified worldwide coverage. Some layers report no last-updated timestamp; that is not a freshness guarantee. The globe stays in the browser.
+- Feed state (STALE, PARTIAL, FALLBACK, DEGRADED, etc.) and original source labels are shown explicitly. Selected records also carry their existing bounded `properties.status` (for example, tracked aircraft coasting on missed polls) separately from the last context refresh. `updatedAt` describes **GEV context refresh**, not the source observation's age. Feed last-update, browser capture and relay receive ages advance with the presentation clock even if messages stall; the ticker does not fetch or subscribe to any provider. Counts reflect **loaded data only**, not complete, current or verified worldwide coverage. Missing timestamps remain unknown, not proof of freshness. The globe stays in the browser.
 - The printed URL grants local access to a read-only view of your browser context. Avoid recording/screenshotting the token. **Do not upload** raw TERN_TSP_RECORD files without redaction; they may contain data from the selected view.
 - This design has no ACP dependency. The [ACP bridge proposal](https://github.com/kvnloo/gods-eye-view/issues/252) will use separate lifecycle, subprocess and permission owners.
+
+
+## Actual-browser acceptance (no relay credentials or private feed required)
+
+Use the same hostname at both ends: in terminal one run `npm run dev -- --host localhost --port 4173 --strictPort`; in a local Tern pane run `npm --prefix tools/tern start`. After the **one-time private link** appears on stderr, open it in a browser on that machine. Do not put it in an issue, console recording, or screenshot. No token is required for the sidecar's own connection beyond this ephemeral local link. A map provider or individual GEV feed may independently need its usual key; **do not enter credentials merely for this test**. If a globe cannot initialize without one, report that limitation rather than claiming live acceptance.
+
+On an available keyless public layer (for example, Flights when the configured public feed is available), select/track a genuine displayed entity using GEV's existing UI. In browser DevTools, use this read-only witness to compare the *actual GEV owner record* to native main/dock and plaintext output:
+
+~~~js
+const s = window.__gevContextStore;
+const r = s?.entities.get(s.selectedEntityId);
+console.table({
+  selectedId: s?.selectedEntityId,
+  recordId: r?.id,
+  layer: r?.layerId,
+  source: r?.source,
+  observationStatus: r?.properties?.status ?? 'not reported',
+  contextRefreshedAt: r?.updatedAt ?? null,
+});
+~~~
+
+Check exact ID/layer/source/status against the Tern selected readout; check layer feed state (including PARTIAL or STALE if genuinely reported), camera changes, and visibly advancing capture/receive ages when the browser stalls. This witness only confirms projection of an existing GEV selection; it does **not** attest aircraft positions, whole-world coverage, observation age, or correctness of the upstream feed. If no selectable public entity is actually available, mark the **live selection gate pending**. Synthetic SDK/protocol tests do not substitute for it.
+
+Open the same one-time private attach link in a second local browser tab: it becomes owner, the first stops reconnecting, and the old selection clears until the second publishes. Pause with `p`, change selection, verify no visible advance; resume with `p`, verify a fresh request. Quit with `q` (or Ctrl+C) and confirm the browser does not reconnect to a reused relay port. Repeat with `TERN_TSP=0 npm --prefix tools/tern start` and redirected stdout: no TSP/APC/escape bytes or bearer URL in stdout; the private link is printed to stderr once. Never publish the URL or raw TSP trace.
+
+The frozen sidecar dependencies are committed in `tools/tern/package-lock.json`; use `npm --prefix tools/tern ci`, not `install`, for acceptance and CI. CI on Node 24.14.0 and 26.x installs both locks and explicitly runs browser bridge and sidecar tests without importing TSP/Node dependencies into browser production graphs. This connector-only work has **not** run npm, unit tests, build, or MBP/native Tern acceptance.
 
 ## Gates for OMP
 
 ~~~sh
 npm ci
-npm --prefix tools/tern install
+npm --prefix tools/tern ci
 node --test src/tern/browserBridge.test.mjs
 npm --prefix tools/tern test
 npm run check:boundaries

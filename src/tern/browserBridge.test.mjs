@@ -331,3 +331,54 @@ test('hidden or disabled selection never mutates the original context store', ()
     globalThis.window = previous;
   }
 });
+
+test('transient browser retries stop after a bounded number of failures', () => {
+  const previousPage = globalThis.window;
+  const previousTimer = globalThis.setTimeout;
+  const previousClear = globalThis.clearTimeout;
+  const page = new EventTarget();
+  page.location = { hostname: 'localhost' };
+  page.__gevContextStore = { entities: new Map(), selectedEntityId: null, selectedAt: null };
+  globalThis.window = page;
+  const { components, managerListeners, cameraListeners } = fixture();
+  const queued = new Map();
+  let timerId = 0;
+  globalThis.setTimeout = (fn) => { queued.set(++timerId, fn); return timerId; };
+  globalThis.clearTimeout = (id) => queued.delete(id);
+  const sockets = [];
+  class FakeSocket {
+    static OPEN = 1;
+    static CLOSING = 2;
+    readyState = 0;
+    constructor() { sockets.push(this); }
+    close() { this.readyState = 3; }
+  }
+  const application = { subscribe: () => () => {} };
+  let dispose;
+  try {
+    dispose = connectTernBridge({
+      application, components, port: 4913,
+      token: 'b'.repeat(43), WebSocketCtor: FakeSocket,
+    });
+    for (let i = 0; i < 6; i += 1) {
+      const socket = sockets.at(-1);
+      socket.readyState = 3;
+      socket.onclose({ code: 1006 });
+      if (i < 5) {
+        assert.equal(queued.size, 1);
+        const [id, next] = queued.entries().next().value;
+        queued.delete(id);
+        next();
+      }
+    }
+    assert.equal(sockets.length, 6);
+    assert.equal(queued.size, 0);
+    assert.equal(managerListeners.size, 0);
+    assert.equal(cameraListeners.size, 0);
+  } finally {
+    dispose?.();
+    globalThis.window = previousPage;
+    globalThis.setTimeout = previousTimer;
+    globalThis.clearTimeout = previousClear;
+  }
+});

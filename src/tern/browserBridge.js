@@ -10,11 +10,11 @@ const RAD_TO_DEG = 180 / Math.PI;
 const MAX_RECONNECT_ATTEMPTS = 6;
 const PERMANENT_CLOSE_CODES = new Set([4001, 4002]);
 
-function text(value) {
+function text(value, max = MAX_TEXT) {
   if (value == null) return null;
   return String(value)
     .toWellFormed()
-    .slice(0, MAX_TEXT)
+    .slice(0, max)
     .replace(/[\uD800-\uDBFF]$/, '');
 }
 
@@ -216,7 +216,7 @@ export function connectTernBridge({
   }
   function onLayer(change) {
     schedule(
-      typeof change?.type === 'string' ? change.type.slice(0, 64) : 'layer',
+      typeof change?.type === 'string' ? text(change.type, 64) : 'layer',
     );
   }
   function dispose() {

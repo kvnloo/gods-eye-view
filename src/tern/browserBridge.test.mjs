@@ -432,6 +432,7 @@ test('80 maximal Unicode layer rows publish bounded snapshots across replacement
     assert.ok(new TextEncoder().encode(raw).length <= 60_000, 'within relay budget');
     const parsed = JSON.parse(raw);
     assert.equal(parsed.type, 'snapshot');
+    assert.equal(parsed.change, parsed.change.toWellFormed());
     assert.ok(parsed.omittedLayers > 0, 'does not claim a complete layer roster');
     assert.equal(parsed.layers.length + parsed.omittedLayers, layers.length);
     for (const layer of parsed.layers) {
@@ -459,19 +460,25 @@ test('80 maximal Unicode layer rows publish bounded snapshots across replacement
     assert.equal(first.selected.id, record.id);
     assert.equal(first.layers[0].source, 'a'.repeat(159));
 
+    for (const fn of managerListeners) fn({ type: 'x'.repeat(63) + '🚀' });
+    await new Promise((resolve) => setTimeout(resolve, 170));
+    assert.equal(socket.sent.length, 2);
+    const changed = verifyPayload(socket.sent[1]);
+    assert.equal(changed.change, 'x'.repeat(63));
+
     page.__gevContextStore.selectedEntityId = replacement.id;
     page.dispatchEvent(new Event('gev:entity-selected'));
     await new Promise((resolve) => setTimeout(resolve, 170));
-    assert.equal(socket.sent.length, 2, 'replacement must not be dropped');
-    const second = verifyPayload(socket.sent[1]);
+    assert.equal(socket.sent.length, 3, 'replacement must not be dropped');
+    const second = verifyPayload(socket.sent[2]);
     assert.equal(second.selected.id, replacement.id);
     assert.equal(second.change, 'selection');
 
     page.__gevContextStore.selectedEntityId = null;
     page.dispatchEvent(new Event('gev:entity-selection-cleared'));
     await new Promise((resolve) => setTimeout(resolve, 170));
-    assert.equal(socket.sent.length, 3, 'clear must not be dropped');
-    const third = verifyPayload(socket.sent[2]);
+    assert.equal(socket.sent.length, 4, 'clear must not be dropped');
+    const third = verifyPayload(socket.sent[3]);
     assert.equal(third.selected, null);
     assert.equal(third.change, 'selection');
     assert.equal(page.__gevContextStore.selectedEntityId, null);

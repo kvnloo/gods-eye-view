@@ -47,8 +47,17 @@ export function layoutRightPanelRail({
   // A collapse may schedule one follow-up, which only measures and allocates.
   const isCollapseRetry = pendingCollapseRetries.delete(stack);
 
+  // Panels hidden by other CSS must not consume rail space or make the rail
+  // exclusive. Collapsed panels hidden by the rail itself remain eligible for
+  // restoration when exclusivity ends.
+  const hiddenByRail = (panel) =>
+    stack.classList.contains('layout-exclusive') &&
+    panel.classList.contains('collapsed');
   const panels = [...stack.children].filter(
-    (panel) => panel.matches('[data-panel-id]') && !panel.hidden,
+    (panel) =>
+      panel.matches('[data-panel-id]') &&
+      !panel.hidden &&
+      (hiddenByRail(panel) || getComputedStyle(panel).display !== 'none'),
   );
   if (!hud.visible || hud.variant !== 'tactical') {
     for (const panel of panels.filter((item) =>

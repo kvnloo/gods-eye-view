@@ -905,6 +905,7 @@
       "src/layers/recentImagery/model.js",
       "src/layers/recentImagery/catalog.js",
       "src/layers/recentImagery/rendering.js",
+      "src/services/cameraMotionGate.js",
       "src/layers/recentImagery/thumbnails.js",
       "src/maps/imageryHost.js"
     ],
@@ -2034,6 +2035,7 @@
       "src/layers/recentImagery/model.js",
       "src/layers/recentImagery/catalog.js",
       "src/layers/recentImagery/rendering.js",
+      "src/services/cameraMotionGate.js",
       "src/layers/recentImagery/thumbnails.js",
       "src/maps/imageryHost.js",
       "src/ui/recentImagery.js",
@@ -2527,6 +2529,7 @@
       "src/layers/recentImagery/model.js",
       "src/layers/recentImagery/catalog.js",
       "src/layers/recentImagery/rendering.js",
+      "src/services/cameraMotionGate.js",
       "src/layers/recentImagery/thumbnails.js",
       "src/maps/imageryHost.js",
       "src/layers/alpr/tileRecords.js",

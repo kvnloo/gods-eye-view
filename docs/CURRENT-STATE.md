@@ -1,5 +1,58 @@
 # God's Eye View Current State
 
+## Opt-in headless intelligence watches (PERF-06 T0)
+
+`node server/watch/cli.mjs --config /private/watch.json` runs only the enabled
+watch sources, durable evaluation and outbound delivery. It does not import
+Cesium, launch a browser or start an HTTP listener. No watch is enabled by
+default. `--once` evaluates once and reports process RSS/CPU, not full-app
+resource savings.
+
+The private configuration (mode 0600) contains `rules`, a `stateDirectory`
+(created 0700), and one explicit notifier: `{ "type": "ntfy", "server":
+"https://your-notification-service.example", "topic": "your-private-topic" }`
+with optional server-owned `GEV_NTFY_TOKEN`, or `{ "type": "kdeconnect",
+"deviceId": "an-explicit-already-paired-device-id" }`. KDE Connect does not
+discover, pair, install applications or select a phone automatically. ntfy is
+portable outbound HTTP; a topic is not authentication, so use an authenticated
+private server/topic for private watches. Neither adapter sends provider keys.
+
+Each rule requires a unique `id`, `source` (`usgs` or `firms`), explicit
+`enabled`, numeric `lat`, `lon`, `radiusKm`, `maxAgeMs` (at most 24 hours),
+`cooldownMs`, and either `minMagnitude` (USGS, at least 2.5) or `minFrp`
+(FIRMS, megawatts). Optional `quietHours: { "start": 22, "end": 7 }` uses UTC.
+For example a disabled test-area rule is `{ "id": "quakes", "source": "usgs",
+"enabled": false, "lat": 0, "lon": 0, "radiusKm": 100, "minMagnitude": 4,
+"maxAgeMs": 3600000, "cooldownMs": 600000 }`.
+
+The USGS watch reuses the portable earthquake source/normalizer and stable
+USGS IDs, at a one-minute cadence. FIRMS reuses the existing server provider's
+30-minute cache/acquisition and CSV timestamp owner; it needs the existing
+server-side `FIRMS_MAP_KEY` and refuses stale snapshots. Partial or unknown
+satellite coverage stays `degraded`, not fully current. A FIRMS detection is
+not a fire perimeter, extent or emergency warning. No other providers poll.
+Unknown timestamps, future observations, stale events, missing source IDs,
+invalid coordinates and nonmatching severity/area do not notify.
+
+Atomic private state persists pause, event identity, source cursors and delivery
+status. An explicit changed config `enabled` value wins on restart. Otherwise a
+durable phone pause survives restart. A pending pause blocks further sends
+immediately, while its acknowledgement still waits for durable completion.
+Quiet hours/cooldown defer valid events; expired queued events do not deliver
+later. A known transient HTTP rejection retries with bounded backoff.
+A known permanent or exhausted rejection is `failed`, not `uncertain`.
+Definite pre-connection failures can retry; resets/aborts after possible delivery
+remain ambiguous. Idle cadence checks do not rewrite or sync unchanged state.
+An interrupted/ambiguous delivery is **uncertain**, not automatically resent:
+ntfy/KDE Connect do not provide transactional exactly-once delivery. A crash
+between external delivery and durable acknowledgement cannot honestly promise
+exactly once. State capacity is bounded; capacity pressure is visible and
+never evicts replay identity for still-eligible events. A private SQLite lock
+database uses the supported Node runtime's native file locking. The operating
+system releases ownership on close or crash; no PID reuse, stale-file takeover
+or lock-file deletion can grant a second owner.
+No physical phone delivery or resource improvement follows from a unit test.
+
 Analyst region queries resolve unique Natural Earth names offline without
 geocoding, so Gold Coast and Ivory Coast name the West African natural regions.
 Duplicate names require a geocoded containment anchor; when several entries for

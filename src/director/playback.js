@@ -53,7 +53,7 @@ export async function playSceneQueue(
   const cancelled = () => Boolean(token.cancelled || token.signal?.aborted);
   let activeScene = null;
   let completedShots = 0;
-  let failure = null;
+  let hasPrimaryFailure = false;
   const releaseActiveScene = async () => {
     const scene = activeScene;
     activeScene = null;
@@ -88,14 +88,14 @@ export async function playSceneQueue(
     if (!cancelled()) await adapter.complete?.();
     return { status: cancelled() ? 'cancelled' : 'completed', completedShots };
   } catch (error) {
-    failure = error;
+    hasPrimaryFailure = true;
     throw error;
   } finally {
     if (releaseOnFinish && activeScene) {
       try {
         await releaseActiveScene();
       } catch (error) {
-        if (!failure) throw error;
+        if (!hasPrimaryFailure) throw error;
         console.warn(
           '[Scenes] Could not release scene after playback failure:',
           error,

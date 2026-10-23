@@ -233,3 +233,48 @@ test('a failed between-scene release is attempted once', async () => {
   );
   assert.deepEqual(released, ['a']);
 });
+
+for (const [label, reason] of [
+  ['undefined', undefined],
+  ['null', null],
+  ['false', false],
+  ['zero', 0],
+  ['empty string', ''],
+]) {
+  test(`a ${label} shot rejection survives failed final cleanup`, async (t) => {
+    const warn = console.warn;
+    const warnings = [];
+    console.warn = (...args) => warnings.push(args);
+    t.after(() => {
+      console.warn = warn;
+    });
+    const cleanupFailure = new Error('release failed');
+    const released = [];
+    const f = fixture({
+      travel: () => Promise.reject(reason),
+      releaseScene: (scene) => {
+        released.push(scene.id);
+        throw cleanupFailure;
+      },
+    });
+    await assert.rejects(
+      playSceneQueue(buildPlaybackQueue(scenes, 'a', { single: true }), f),
+      (actual) => Object.is(actual, reason),
+    );
+    assert.deepEqual(released, ['a']);
+    assert.equal(warnings.length, 1);
+    assert.equal(warnings[0][1], cleanupFailure);
+  });
+}
+
+test('a falsy shot rejection survives successful final cleanup', async () => {
+  const f = fixture({ travel: () => Promise.reject(undefined) });
+  await assert.rejects(
+    playSceneQueue(buildPlaybackQueue(scenes, 'a', { single: true }), f),
+    (reason) => reason === undefined,
+  );
+  assert.deepEqual(
+    f.events.filter((event) => event.startsWith('release:')),
+    ['release:a:cleanup'],
+  );
+});

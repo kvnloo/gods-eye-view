@@ -1,6 +1,7 @@
 name: CI
 
 on:
+  workflow_dispatch:
   pull_request:
   push:
     branches: [main]
@@ -15,7 +16,7 @@ concurrency:
 jobs:
   verify:
     name: Node ${{ matrix.node }}
-    runs-on: ubuntu-latest
+    runs-on: avrea-ubuntu-latest-4-vcpu
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -61,7 +62,7 @@ jobs:
 
   windows-onboarding:
     name: Windows onboarding
-    runs-on: windows-latest
+    runs-on: avrea-windows-2025-4-vcpu
     timeout-minutes: 20
     env:
       PUPPETEER_SKIP_DOWNLOAD: '1'

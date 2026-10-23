@@ -183,6 +183,30 @@ export function firmsProxy() {
     return statusInflight;
   }
 
+  // Shared by the HTTP layer and the renderer-free watch runtime.
+  async function getSnapshot() {
+    await readDiskOnce();
+    const key = mapKey();
+    if (!key) throw new Error('FIRMS key required');
+    const entry = mem;
+    if (entry && Date.now() - entry.at < TTL_MS)
+      return buildPayload(entry, false);
+    if (!inflight) {
+      inflight = refreshUpstream(key)
+        .then(async (fresh) => {
+          mem = fresh;
+          await writeDisk(fresh);
+          return fresh;
+        })
+        .catch(() => null)
+        .finally(() => { inflight = null; });
+    }
+    const fresh = await inflight;
+    if (fresh) return buildPayload(fresh, false);
+    if (entry) return buildPayload(entry, true);
+    throw Object.assign(new Error('FIRMS unavailable'), { status: 502 });
+  }
+
   const installMiddleware = (server) => {
     server.middlewares.use('/api/firms', async (req, res) => {
       const sendJson = (status, obj) => {
@@ -227,50 +251,20 @@ export function firmsProxy() {
           return;
         }
 
-        const entry = mem;
-        if (entry && Date.now() - entry.at < TTL_MS) {
-          sendJson(200, buildPayload(entry, false));
-          return;
-        }
-        // Stale or missing → refresh, single-flight (concurrent requests
-        // share one upstream pass). Capture the promise locally BEFORE
-        // awaiting: the .finally() nulls `inflight` the moment it settles.
-        if (!inflight) {
-          inflight = refreshUpstream(key)
-            .then(async (fresh) => {
-              mem = fresh;
-              await writeDisk(fresh);
-              return fresh;
-            })
-            .catch((err) => {
-              console.warn(
-                `[firms-proxy] refresh failed (${err?.message || err}) — serving cache if any`,
-              );
-              return null;
-            })
-            .finally(() => {
-              inflight = null;
-            });
-        }
-        const pending = inflight;
-        const fresh = await pending;
-        if (fresh) {
-          sendJson(200, buildPayload(fresh, false));
-        } else if (entry) {
-          sendJson(200, buildPayload(entry, true)); // upstream down — stale beats empty
-        } else {
-          sendJson(502, {
-            error: 'firms fetch failed and no cache available',
-          });
-        }
+        const payload = await getSnapshot();
+        sendJson(200, payload);
       } catch (err) {
         console.warn('[firms-proxy] error:', err?.message || err);
-        sendJson(500, { error: 'firms proxy error' });
+        sendJson(
+          err?.status === 502 ? 502 : 500,
+          { error: err?.status === 502 ? 'firms fetch failed and no cache available' : 'firms proxy error' },
+        );
       }
     });
   };
   return {
     name: 'firms-proxy',
+    api: { getSnapshot },
     configureServer: installMiddleware,
     configurePreviewServer: installMiddleware,
   };

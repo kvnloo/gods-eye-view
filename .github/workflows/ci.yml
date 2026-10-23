@@ -40,6 +40,9 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      - name: Install frozen Tern sidecar dependencies
+        run: npm --prefix tools/tern ci
+
       - name: Run setup policy checks
         run: npm run doctor -- --json
 
@@ -52,6 +55,11 @@ jobs:
       - name: Check published layer-token allocations
         if: github.event_name == 'pull_request'
         run: npm run layer-token:check -- --base-ref origin/main
+
+      - name: Run Tern browser and sidecar regression tests
+        run: |
+          node --test src/tern/browserBridge.test.mjs
+          npm --prefix tools/tern test
 
       - name: Run unit tests
         run: npm test

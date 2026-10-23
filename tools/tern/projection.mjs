@@ -7,6 +7,7 @@ const FEED_STATES = new Set([
   'loading',
   'degraded',
   'stale',
+  'partial',
   'fallback',
   'unavailable',
   'off',
@@ -18,10 +19,14 @@ function record(value) {
 
 function text(value, max = MAX_TEXT) {
   if (typeof value !== 'string' && typeof value !== 'number') return null;
+  // Replace preexisting unpaired surrogates, then avoid splitting a pair at
+  // the UTF-16 length limit. No half-emoji reaches JSON or the TSP renderer.
   const cleaned = String(value)
+    .toWellFormed()
     .replace(/[\u0000-\u001f\u007f-\u009f]/g, ' ')
     .trim()
-    .slice(0, max);
+    .slice(0, max)
+    .replace(/[\uD800-\uDBFF]$/, '');
   return cleaned || null;
 }
 
@@ -73,6 +78,7 @@ export function normalizeSnapshot(message, receivedAt = Date.now()) {
         layerId: text(raw.layerId, 96),
         layerName: text(raw.layerName),
         source: text(raw.source),
+        status: text(raw.status),
         latitude: finite(raw.latitude, -90, 90),
         longitude: finite(raw.longitude, -180, 180),
         updatedAt: finite(raw.updatedAt, 0),
@@ -100,9 +106,24 @@ export function normalizeSnapshot(message, receivedAt = Date.now()) {
   });
 }
 
+/** Clock-relative age; never confuse a context refresh with an observation time. */
+export function ageLabel(timestamp, now = Date.now()) {
+  if (typeof timestamp !== 'number' || !Number.isFinite(timestamp) || timestamp <= 0)
+    return 'age unknown';
+  const seconds = Math.max(0, Math.floor((now - timestamp) / 1000));
+  if (seconds < 60) return seconds + 's ago';
+  if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
+  return Math.floor(seconds / 3600) + 'h ago';
+}
+
 /** Text fallback; no terminal escapes or claims that a feed is real-time. */
-export function plainSummary(snapshot, { connected = false, link } = {}) {
-  const lines = ["God's Eye View — local context", 'Browser: ' + (connected ? 'connected' : 'disconnected')];
+export function plainSummary(snapshot, {
+  connected = false, link, paused = false, notice = '', now = Date.now(),
+} = {}) {
+  const lines = ["God's Eye View — local context",
+    'Browser: ' + (connected ? 'connected' : 'disconnected') +
+      (paused ? ' · presentation paused' : '')];
+  if (notice) lines.push('Notice: ' + text(notice, 160));
   if (!snapshot) {
     lines.push('No current browser snapshot. Open the connected GEV link.');
   } else {
@@ -112,7 +133,12 @@ export function plainSummary(snapshot, { connected = false, link } = {}) {
         ? 'Selected: ' + s.name + ' [' + (s.layerName || s.layerId || 'unknown layer') + ']'
         : 'Selected: none',
     );
-    if (s) lines.push('Source: ' + (s.source || 'not reported'));
+    if (s) {
+      lines.push('Source: ' + (s.source || 'not reported'));
+      lines.push('Observation status: ' + (s.status || 'not reported'));
+      lines.push('Context refreshed: ' + ageLabel(s.updatedAt, now) +
+        ' (not source observation age)');
+    }
     if (snapshot.camera && snapshot.camera.latitude !== null && snapshot.camera.longitude !== null)
       lines.push('Camera: ' + snapshot.camera.latitude + ', ' + snapshot.camera.longitude +
         ' at ' + (snapshot.camera.heightM ?? 'unknown') + ' m');
@@ -122,10 +148,13 @@ export function plainSummary(snapshot, { connected = false, link } = {}) {
       lines.push(
         '- ' + layer.name + ': ' + layer.feedState.toUpperCase() +
           ' · ' + (layer.source || 'source unreported') +
-          ' · ' + (layer.count ?? '?') + ' loaded',
+          ' · ' + (layer.count ?? '?') + ' loaded' +
+          ' · feed last update ' + ageLabel(layer.lastUpdate, now),
       );
     }
     if (active.length > 18) lines.push('... ' + (active.length - 18) + ' more layers in the globe');
+    lines.push('Browser capture: ' + ageLabel(snapshot.capturedAt, now) +
+      ' · relay received: ' + ageLabel(snapshot.receivedAt, now));
   }
   lines.push('Counts describe loaded data, not complete or verified worldwide coverage.');
   if (link) lines.push('Globe: ' + link);

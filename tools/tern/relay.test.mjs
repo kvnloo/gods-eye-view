@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import WebSocket from 'ws';
-import { createLocalRelay, localGlobeUrl } from './relay.mjs';
+import { CLOSE_SUPERSEDED, CLOSE_STOPPED, createLocalRelay, localGlobeUrl } from './relay.mjs';
 import { parseArgs } from './cli.mjs';
 
 function wsUrl(relay) {
@@ -84,7 +84,8 @@ test('new tab supersedes old connection; rejected data and stale socket do not p
     const firstClosed = once(first, 'close');
     second = connect(wsUrl(relay));
     await once(second, 'open');
-    await firstClosed;
+    const [closeCode] = await firstClosed;
+    assert.equal(closeCode, CLOSE_SUPERSEDED);
     second.send(JSON.stringify({ type: 'action', name: 'turn_on_flights', layers: [] }));
     second.send(JSON.stringify({ type: 'snapshot', selected: null, layers: [] }));
     await new Promise((resolve) => setTimeout(resolve, 35));
@@ -127,6 +128,25 @@ test('oversized UTF-8 data is closed without being published', async () => {
     assert.equal(snapshots.length, 0);
   } finally {
     ws.terminate();
+    await relay.close();
+  }
+});
+
+
+// Stop closes the active authenticated client with a non-retryable reason.
+test('relay shutdown signals permanent stop and releases the port', async () => {
+  const relay = await createLocalRelay();
+  const browser = connect(wsUrl(relay));
+  try {
+    await once(browser, 'open');
+    const closed = once(browser, 'close');
+    await relay.close();
+    const [code] = await closed;
+    assert.equal(code, CLOSE_STOPPED);
+    const replacement = await createLocalRelay({ port: relay.port });
+    await replacement.close();
+  } finally {
+    browser.terminate();
     await relay.close();
   }
 });

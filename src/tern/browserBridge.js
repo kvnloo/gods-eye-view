@@ -1,10 +1,12 @@
-import { getSelectedEntityContext } from '../data/contextStore.js';
+import { getContextStore, isContextRecordActive } from '../data/contextStore.js';
 import { layerSnapshots } from '../data/layerSnapshot.js';
 
 const SEND_INTERVAL_MS = 125;
 const MAX_LAYERS = 80;
 const MAX_TEXT = 160;
 const RAD_TO_DEG = 180 / Math.PI;
+const MAX_RECONNECT_ATTEMPTS = 6;
+const PERMANENT_CLOSE_CODES = new Set([4001, 4002]);
 
 function text(value) {
   return value == null ? null : String(value).slice(0, MAX_TEXT);
@@ -25,7 +27,13 @@ export function projectGevContext({ scene, data }, now = Date.now()) {
   if (!viewer?.camera || !dataManager?.getAll)
     throw new TypeError('GEV scene and layer manager are required');
 
-  const selected = getSelectedEntityContext({ dataManager });
+  // Tern observes selection. The owning getter clears inactive records, so
+  // never use it from this read-only projection (LOD/horizon can hide them).
+  const store = getContextStore();
+  const record = store.selectedEntityId
+    ? store.entities.get(store.selectedEntityId)
+    : null;
+  const selected = isContextRecordActive(record, dataManager) ? record : null;
   const camera = viewer.camera;
   const position = camera.positionCartographic;
   return {
@@ -49,6 +57,7 @@ export function projectGevContext({ scene, data }, now = Date.now()) {
           layerId: text(selected.layerId),
           layerName: text(selected.layerName),
           source: text(selected.source),
+          status: text(selected.properties?.status),
           latitude: number(selected.latitude),
           longitude: number(selected.longitude),
           updatedAt: Number.isFinite(selected.updatedAt)
@@ -146,14 +155,24 @@ export function connectTernBridge({
     ws.onerror = () => {
       // Close owns retry; never log the secret-bearing socket URL.
     };
-    ws.onclose = () => {
+    ws.onclose = (event) => {
       if (socket !== ws || disposed) return;
       socket = null;
+      // A replacement tab or relay shutdown revokes this browser's ownership.
+      // Do not reconnect into a newer owner or a later process on the same port.
+      if (PERMANENT_CLOSE_CODES.has(event?.code)) {
+        dispose();
+        return;
+      }
       failures += 1;
-      retry = setTimeout(
-        reconnect,
-        Math.min(8000, 250 * 2 ** Math.min(failures, 5)),
-      );
+      if (failures >= MAX_RECONNECT_ATTEMPTS) {
+        dispose();
+        return;
+      }
+      retry = setTimeout(() => {
+        retry = null;
+        reconnect();
+      }, Math.min(8000, 250 * 2 ** Math.min(failures, 5)));
     };
   }
 
@@ -173,9 +192,11 @@ export function connectTernBridge({
     disposed = true;
     clearTimeout(retry);
     clearTimeout(pending);
-    for (const unsubscribe of subscriptions) unsubscribe();
-    socket?.close();
+    for (const unsubscribe of subscriptions.splice(0)) unsubscribe();
+    const closingSocket = socket;
     socket = null;
+    if (closingSocket && closingSocket.readyState < WebSocketCtor.CLOSING)
+      closingSocket.close();
   }
 
   subscriptions.push(dataManager.subscribeActivity(onLayer));

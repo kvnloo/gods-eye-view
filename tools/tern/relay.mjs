@@ -5,7 +5,33 @@ import { normalizeSnapshot } from './projection.mjs';
 
 const MAX_MESSAGE_BYTES = 64 * 1024;
 const REQUEST_SNAPSHOT = '{"type":"snapshot-request"}';
+export const CLOSE_SUPERSEDED = 4001;
+export const CLOSE_STOPPED = 4002;
+const CLOSE_GRACE_MS = 750;
 const LOOPBACK_PEERS = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
+
+/** Send a permanent reason before terminating unresponsive peers. */
+function closeClient(ws, code, reason) {
+  if (!ws || ws.readyState === ws.CLOSED) return Promise.resolve();
+  return new Promise((resolve) => {
+    let settled = false;
+    let timer;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      ws.off('close', finish);
+      resolve();
+    };
+    ws.once('close', finish);
+    timer = setTimeout(() => {
+      ws.terminate();
+      finish();
+    }, CLOSE_GRACE_MS);
+    if (ws.readyState === ws.CONNECTING) ws.terminate();
+    else if (ws.readyState === ws.OPEN) ws.close(code, reason);
+  });
+}
 
 /** The browser origin must be explicit; never accept wildcards or foreign hosts. */
 export function localGlobeUrl(input = 'http://localhost:4173/') {
@@ -83,7 +109,7 @@ export async function createLocalRelay({
 
     wss.handleUpgrade(request, socket, head, (ws) => {
       if (stopped) {
-        ws.terminate();
+        void closeClient(ws, CLOSE_STOPPED, 'relay stopped');
         return;
       }
 
@@ -91,7 +117,9 @@ export async function createLocalRelay({
       const old = active;
       const mine = ++generation;
       active = ws;
-      old?.terminate();
+      void closeClient(old, CLOSE_SUPERSEDED, 'superseded');
+      // Every authenticated connection starts a new snapshot generation.
+      // Consumers must invalidate the prior owner's view before first data.
       onStatus('connected');
       ws.on('message', (bytes, binary) => {
         if (stopped || active !== ws || mine !== generation) return;
@@ -147,8 +175,9 @@ export async function createLocalRelay({
       if (stopped) return;
       stopped = true;
       generation += 1;
-      active?.terminate();
+      const closing = active;
       active = null;
+      await closeClient(closing, CLOSE_STOPPED, 'relay stopped');
       await Promise.all([
         new Promise((resolve) => wss.close(resolve)),
         new Promise((resolve) => server.close(resolve)),

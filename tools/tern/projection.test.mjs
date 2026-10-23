@@ -75,3 +75,41 @@ test('fallback handles empty camera and never emits control sequences', () => {
   assert.ok(!printed.includes('\u001b'));
   assert.match(plainSummary(null, { connected: false }), /No current browser snapshot/);
 });
+
+test('partial AIS coverage is preserved through normalization and plaintext', () => {
+  const message = sample();
+  message.layers[0].feedState = 'partial';
+  message.selected.status = 'stale (missed polls)';
+  const normalized = normalizeSnapshot(message, 1500);
+  assert.equal(normalized.layers[0].feedState, 'partial');
+  assert.equal(normalized.selected.status, 'stale (missed polls)');
+  const printed = plainSummary(normalized, { now: 5000 });
+  assert.match(printed, /PARTIAL.*OpenSky/);
+  assert.match(printed, /Observation status: stale \(missed polls\)/);
+  assert.match(printed, /Context refreshed: .*not source observation age/);
+  assert.match(printed, /Browser capture: /);
+});
+
+test('bounds preserve Unicode scalar boundaries at the exact UTF-16 limit', () => {
+  const message = sample();
+  message.selected.name = 'a'.repeat(159) + '🚀';
+  message.layers[0].source = 'b'.repeat(159) + '𐀀';
+  let normalized = normalizeSnapshot(message);
+  assert.equal(normalized.selected.name, 'a'.repeat(159));
+  assert.equal(normalized.layers[0].source, 'b'.repeat(159));
+  assert.equal(normalized.selected.name, normalized.selected.name.toWellFormed());
+  message.selected.name = 'a'.repeat(158) + '🚀';
+  message.layers[0].source = 'x\uD800y';
+  normalized = normalizeSnapshot(message);
+  assert.equal(normalized.selected.name, 'a'.repeat(158) + '🚀');
+  assert.equal(normalized.layers[0].source, 'x\uFFFDy');
+});
+
+test('freshness ages advance against presentation time without new snapshots', () => {
+  const value = normalizeSnapshot(sample(), 3000);
+  const early = plainSummary(value, { connected: true, now: 4000 });
+  const late = plainSummary(value, { connected: true, now: 124000 });
+  assert.match(early, /Browser capture: 2s ago/);
+  assert.match(late, /Browser capture: 2m ago/);
+  assert.match(late, /relay received: 2m ago/);
+});

@@ -265,7 +265,21 @@ function toyboxFixture() {
     createElement(tag) {
       return new Element(doc, tag);
     },
-    defaultView: { matchMedia: () => ({ matches: true }) },
+    defaultView: {
+      matchMedia: () => ({ matches: true }),
+      listeners: new Set(),
+      addEventListener(name, handler) {
+        if (name === 'gev:style-change') this.listeners.add(handler);
+      },
+      removeEventListener(name, handler) {
+        if (name === 'gev:style-change') this.listeners.delete(handler);
+      },
+      dispatchEvent(event) {
+        if (event.type === 'gev:style-change') {
+          for (const handler of this.listeners) handler(event);
+        }
+      },
+    },
   };
   const root = new Element(doc, 'section');
   const managedStages = new Set();
@@ -313,7 +327,7 @@ function toyboxFixture() {
   const selected = () => cards
     .filter((card) => card.getAttribute('aria-pressed') === 'true')
     .map((card) => card.dataset.lookPack);
-  return { lookPacks, viewer, managedStages, dispose, clickLook, selected, comparison, status };
+  return { lookPacks, viewer, managedStages, dispose, clickLook, selected, comparison, status, doc, styleManager };
 }
 
 test('persistent Creative chip reset updates still-open Toybox selection and comparison', () => {
@@ -406,4 +420,19 @@ test('idle clear and repeated clear are no-ops for notification and scene render
   assert.equal(f.renders, previousRenders);
   assert.equal(f.notifications.length, previousNotifications);
   f.controller.destroy();
+});
+
+test('Toybox native status follows external style changes and detaches its listener', () => {
+  const f = toyboxFixture();
+  assert.match(f.status.textContent, /Current lens: normal/);
+  f.styleManager.activeStyle = 'thermal';
+  f.doc.defaultView.dispatchEvent({ type: 'gev:style-change' });
+  assert.match(f.status.textContent, /Current lens: thermal/);
+  assert.equal(f.comparison.hidden, true);
+  f.dispose();
+  f.styleManager.activeStyle = 'anime';
+  f.doc.defaultView.dispatchEvent({ type: 'gev:style-change' });
+  assert.match(f.status.textContent, /Current lens: thermal/,
+    'unmounted Toybox must not update its detached status');
+  f.lookPacks.destroy();
 });

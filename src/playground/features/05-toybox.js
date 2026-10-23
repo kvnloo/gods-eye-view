@@ -38,6 +38,7 @@ export const feature = {
   mount({ root, services }) {
     const doc = root.ownerDocument;
     const { viewer, styleManager, Cesium } = services;
+    const styleEvents = services.window || doc.defaultView;
     const title = doc.createElement('h3');
     title.textContent = 'Planet Toybox';
     const description = doc.createElement('p');
@@ -132,6 +133,10 @@ export const feature = {
           : 'Current lens: ' + (styleManager.activeStyle || 'normal') + '.';
     }
     const unsubscribeLookState = services.lookPacks?.subscribe(syncLookState);
+    const onBaseStyleChange = () => {
+      if (!services.lookPacks?.activeId) syncLookState();
+    };
+    styleEvents?.addEventListener?.('gev:style-change', onBaseStyleChange);
     const lab = doc.createElement('details');
     lab.className = 'gev-playground-look-lab';
     const labTitle = doc.createElement('summary');
@@ -236,6 +241,7 @@ export const feature = {
     syncLookState();
     return () => {
       unsubscribeLookState?.();
+      styleEvents?.removeEventListener?.('gev:style-change', onBaseStyleChange);
       if (ownedFlight) viewer.camera.cancelFlight();
     };
   },

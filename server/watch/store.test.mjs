@@ -11,14 +11,40 @@ test('native exclusive ownership rejects a second process and recovers after SIG
   const dir = await mkdtemp(path.join(os.tmpdir(), 'gev-store-lock-'));
   const filename = path.join(dir, 'state.json');
   const moduleUrl = new URL('./store.js', import.meta.url).href;
-  const child = spawn(process.execPath, ['--input-type=module', '-e', `const {createWatchStore}=await import(process.argv[1]); const s=createWatchStore(process.argv[2]); await s.load(); process.stdout.write('LOCKED'); setInterval(()=>{},1000);`, moduleUrl, filename], { stdio: ['ignore', 'pipe', 'pipe'] });
+  const child = spawn(
+    process.execPath,
+    [
+      '--input-type=module',
+      '-e',
+      `const {createWatchStore}=await import(process.argv[1]); const s=createWatchStore(process.argv[2]); await s.load(); process.stdout.write('LOCKED'); setInterval(()=>{},1000);`,
+      moduleUrl,
+      filename,
+    ],
+    { stdio: ['ignore', 'pipe', 'pipe'] },
+  );
   const exited = once(child, 'exit');
-  t.after(async () => { if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL'); await exited; await rm(dir, { recursive: true, force: true }); });
+  t.after(async () => {
+    if (child.exitCode === null && child.signalCode === null)
+      child.kill('SIGKILL');
+    await exited;
+    await rm(dir, { recursive: true, force: true });
+  });
   await new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('Child lock startup timeout')), 10000);
-    child.stdout.once('data', (data) => { clearTimeout(timer); data.toString() === 'LOCKED' ? resolve() : reject(new Error('Unexpected child status')); });
+    const timer = setTimeout(
+      () => reject(new Error('Child lock startup timeout')),
+      10000,
+    );
+    child.stdout.once('data', (data) => {
+      clearTimeout(timer);
+      data.toString() === 'LOCKED'
+        ? resolve()
+        : reject(new Error('Unexpected child status'));
+    });
     child.once('error', reject);
-    child.once('exit', () => { clearTimeout(timer); reject(new Error('Child exited before acquiring lock')); });
+    child.once('exit', () => {
+      clearTimeout(timer);
+      reject(new Error('Child exited before acquiring lock'));
+    });
   });
   const waiting = createWatchStore(filename);
   await assert.rejects(waiting.load());

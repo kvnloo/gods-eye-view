@@ -199,7 +199,9 @@ export function firmsProxy() {
           return fresh;
         })
         .catch(() => null)
-        .finally(() => { inflight = null; });
+        .finally(() => {
+          inflight = null;
+        });
     }
     const fresh = await inflight;
     if (fresh) return buildPayload(fresh, false);
@@ -255,10 +257,12 @@ export function firmsProxy() {
         sendJson(200, payload);
       } catch (err) {
         console.warn('[firms-proxy] error:', err?.message || err);
-        sendJson(
-          err?.status === 502 ? 502 : 500,
-          { error: err?.status === 502 ? 'firms fetch failed and no cache available' : 'firms proxy error' },
-        );
+        sendJson(err?.status === 502 ? 502 : 500, {
+          error:
+            err?.status === 502
+              ? 'firms fetch failed and no cache available'
+              : 'firms proxy error',
+        });
       }
     });
   };

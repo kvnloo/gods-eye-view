@@ -14,37 +14,61 @@ export function createWatchStore(filename) {
     const dir = path.dirname(filename);
     await mkdir(dir, { recursive: true, mode: 0o700 });
     const info = await stat(dir);
-    if (!info.isDirectory() || info.mode & 0o077) throw new Error('Watch directory must be private (0700)');
-    const file = await open(lockPath, constants.O_CREAT | constants.O_RDWR | constants.O_NOFOLLOW, 0o600);
+    if (!info.isDirectory() || info.mode & 0o077)
+      throw new Error('Watch directory must be private (0700)');
+    const file = await open(
+      lockPath,
+      constants.O_CREAT | constants.O_RDWR | constants.O_NOFOLLOW,
+      0o600,
+    );
     try {
       lockIdentity = await file.stat();
-      if (lockIdentity.mode & 0o077) throw new Error('Watch lock must be private');
-    } finally { await file.close(); }
+      if (lockIdentity.mode & 0o077)
+        throw new Error('Watch lock must be private');
+    } finally {
+      await file.close();
+    }
     const db = new DatabaseSync(lockPath);
     try {
       // EXCLUSIVE mode retains the real database file lock after COMMIT, until close/crash.
       // No stale PID, timeout takeover, lock-file deletion, or helper process is involved.
-      db.exec('PRAGMA busy_timeout=0; PRAGMA locking_mode=EXCLUSIVE; BEGIN EXCLUSIVE; CREATE TABLE IF NOT EXISTS owner (id INTEGER PRIMARY KEY); COMMIT;');
+      db.exec(
+        'PRAGMA busy_timeout=0; PRAGMA locking_mode=EXCLUSIVE; BEGIN EXCLUSIVE; CREATE TABLE IF NOT EXISTS owner (id INTEGER PRIMARY KEY); COMMIT;',
+      );
       lock = db;
       await checkOwnership();
-    } catch (error) { db.close(); lock = null; throw error; }
+    } catch (error) {
+      db.close();
+      lock = null;
+      throw error;
+    }
   }
   async function checkOwnership() {
     if (!lock) throw new Error('Watch store not acquired');
     const current = await stat(lockPath);
-    if (current.ino !== lockIdentity.ino || current.dev !== lockIdentity.dev) throw new Error('Watch state lock replaced');
+    if (current.ino !== lockIdentity.ino || current.dev !== lockIdentity.dev)
+      throw new Error('Watch state lock replaced');
   }
   return {
     async load() {
       await acquire();
       try {
-        const handle = await open(filename, constants.O_RDONLY | constants.O_NOFOLLOW);
+        const handle = await open(
+          filename,
+          constants.O_RDONLY | constants.O_NOFOLLOW,
+        );
         try {
           const info = await handle.stat();
-          if (info.mode & 0o077 || info.size > 4 * 1024 * 1024) throw new Error('Watch state must be private and bounded');
+          if (info.mode & 0o077 || info.size > 4 * 1024 * 1024)
+            throw new Error('Watch state must be private and bounded');
           return JSON.parse(await handle.readFile('utf8'));
-        } finally { await handle.close(); }
-      } catch (error) { if (error.code === 'ENOENT') return null; throw error; }
+        } finally {
+          await handle.close();
+        }
+      } catch (error) {
+        if (error.code === 'ENOENT') return null;
+        throw error;
+      }
     },
     async save(state) {
       await checkOwnership();
@@ -57,7 +81,11 @@ export function createWatchStore(filename) {
         await checkOwnership();
         await rename(temporary, filename);
         const dir = await open(path.dirname(filename), 'r');
-        try { await dir.sync(); } finally { await dir.close(); }
+        try {
+          await dir.sync();
+        } finally {
+          await dir.close();
+        }
       } catch (error) {
         await handle.close().catch(() => {});
         await unlink(temporary).catch(() => {});

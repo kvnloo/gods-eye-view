@@ -8,15 +8,22 @@ import { randomUUID } from 'node:crypto';
 import { registerHooks } from 'node:module';
 
 const server = process.env.NTFY_SERVER;
-if (!server || !['127.0.0.1', 'localhost', '[::1]'].includes(new URL(server).hostname)) throw new Error('Provide a real worker-local NTFY_SERVER');
+if (
+  !server ||
+  !['127.0.0.1', 'localhost', '[::1]'].includes(new URL(server).hostname)
+)
+  throw new Error('Provide a real worker-local NTFY_SERVER');
 const topic = `gev-test-${randomUUID()}`;
 const loaded = [];
-const hook = registerHooks({ resolve(specifier, context, next) {
-  if (/cesium|puppeteer|playwright|vite/.test(specifier)) throw new Error('T0 imported a renderer/browser/build dependency');
-  const result = next(specifier, context);
-  loaded.push(result.url);
-  return result;
-} });
+const hook = registerHooks({
+  resolve(specifier, context, next) {
+    if (/cesium|puppeteer|playwright|vite/.test(specifier))
+      throw new Error('T0 imported a renderer/browser/build dependency');
+    const result = next(specifier, context);
+    loaded.push(result.url);
+    return result;
+  },
+});
 const { createWatchRuntime } = await import('../server/watch/runtime.js');
 const { createWatchStore } = await import('../server/watch/store.js');
 const { createNtfyNotifier } = await import('../server/watch/notifiers.js');
@@ -26,9 +33,38 @@ const dir = await mkdtemp(path.join(os.tmpdir(), 'gev-watch-proof-'));
 const now = Date.now();
 const notifier = createNtfyNotifier({ server, topic });
 const options = {
-  rules: [{ id: 'synthetic-proof', source: 'usgs', enabled: true, lat: 0, lon: 0, radiusKm: 100, minMagnitude: 4, maxAgeMs: 3600000, cooldownMs: 0 }],
-  sources: { usgs: { intervalMs: 1000, getSnapshot: async () => [{ id: 'usgs:synthetic-proof', source: 'USGS synthetic fixture', observedAt: now, lat: 0, lon: 0, magnitude: 5, title: 'GEV TEST — synthetic event', url: 'https://earthquake.usgs.gov/' }] } },
-  notifier, store: createWatchStore(path.join(dir, 'state.json')),
+  rules: [
+    {
+      id: 'synthetic-proof',
+      source: 'usgs',
+      enabled: true,
+      lat: 0,
+      lon: 0,
+      radiusKm: 100,
+      minMagnitude: 4,
+      maxAgeMs: 3600000,
+      cooldownMs: 0,
+    },
+  ],
+  sources: {
+    usgs: {
+      intervalMs: 1000,
+      getSnapshot: async () => [
+        {
+          id: 'usgs:synthetic-proof',
+          source: 'USGS synthetic fixture',
+          observedAt: now,
+          lat: 0,
+          lon: 0,
+          magnitude: 5,
+          title: 'GEV TEST — synthetic event',
+          url: 'https://earthquake.usgs.gov/',
+        },
+      ],
+    },
+  },
+  notifier,
+  store: createWatchStore(path.join(dir, 'state.json')),
 };
 let runtime;
 const start = process.cpuUsage();
@@ -45,12 +81,37 @@ try {
   await runtime.tick();
   const response = await fetch(`${server}/${topic}/json?poll=1`);
   assert.equal(response.ok, true);
-  const messages = (await response.text()).trim().split('\n').filter(Boolean).map((line) => JSON.parse(line)).filter((entry) => entry.event === 'message');
-  assert.equal(messages.length, 1, 'real ntfy must receive one message across restart/replay');
+  const messages = (await response.text())
+    .trim()
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => JSON.parse(line))
+    .filter((entry) => entry.event === 'message');
+  assert.equal(
+    messages.length,
+    1,
+    'real ntfy must receive one message across restart/replay',
+  );
   assert.match(messages[0].message, /synthetic fixture/);
   assert.equal(messages[0].click, 'https://earthquake.usgs.gov/');
   const cpu = process.cpuUsage(start);
-  console.log(JSON.stringify({ gate: 'watch-real-ntfy', status: 'PASS', synthetic: true, physicalPhone: false, realNtfy: true, messages: messages.length, acknowledgedDeliveryMs, elapsedMs: performance.now() - started, rssBytes: process.memoryUsage().rss, cpuMicroseconds: cpu, loadedModuleCount: loaded.length, rendererImportGuard: 'passed', resourceComparison: 'not measured by this gate' }));
+  console.log(
+    JSON.stringify({
+      gate: 'watch-real-ntfy',
+      status: 'PASS',
+      synthetic: true,
+      physicalPhone: false,
+      realNtfy: true,
+      messages: messages.length,
+      acknowledgedDeliveryMs,
+      elapsedMs: performance.now() - started,
+      rssBytes: process.memoryUsage().rss,
+      cpuMicroseconds: cpu,
+      loadedModuleCount: loaded.length,
+      rendererImportGuard: 'passed',
+      resourceComparison: 'not measured by this gate',
+    }),
+  );
 } finally {
   await runtime?.close();
   hook.deregister();

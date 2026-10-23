@@ -209,19 +209,14 @@ test('real action schema alternatives and string constraints fail closed', () =>
 
 test('catalog rejects non-string human metadata without coercing labels', () => {
   for (const label of [42, {}]) {
-    assert.throws(
-      () =>
-        createCommandCatalog([
-          reviewCommand('stop_tracking', {}, { label }),
-        ]),
-      /required/,
-    );
+    const entry = reviewCommand('stop_tracking', {}, { label });
+    assert.throws(() => createCommandCatalog([entry]), /required/);
   }
+  const invalidKeywords = reviewCommand('stop_tracking', {}, {
+    keywords: [23],
+  });
   assert.throws(
-    () =>
-      createCommandCatalog([
-        reviewCommand('stop_tracking', {}, { keywords: [23] }),
-      ]),
+    () => createCommandCatalog([invalidKeywords]),
     /bounded text/,
   );
 });

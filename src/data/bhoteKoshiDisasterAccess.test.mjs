@@ -90,3 +90,41 @@ test('reconstruction caveat remains attached to the evidence packet', () => {
   assert.match(packet.evidence.reconstruction.label, /SCHEMATIC/i);
   assert.match(packet.evidence.reconstruction.caveat, /not an official hazard model/i);
 });
+
+test('unknown and malformed evidence coordinates never become locations near zero', () => {
+  const cases = [
+    { id: 'null', lat: null, lon: null, sequence: null },
+    { id: 'blank', lat: '', lon: '  ', sequence: '' },
+    { id: 'boolean', lat: false, lon: true, sequence: false },
+    { id: 'nondecimal', lat: '0x10', lon: '0b10', sequence: '0x10' },
+    { id: 'out-of-bounds', lat: 91, lon: 181, sequence: -1 },
+    { id: 'fractional-index', lat: 27.1, lon: 85.5, sequence: 2.5 },
+  ];
+  const packet = buildBhoteKoshiDisasterAccessPacket({
+    ...event, evidenceSpine: cases,
+  });
+  const records = packet.evidence.observations;
+  assert.equal(records.length, cases.length, 'retain evidence rows with unknown positions');
+  assert.ok(records.slice(0, 5).every((record) => record.position === null));
+  assert.ok(records.every((record) => record.sequence === null));
+  assert.deepEqual(records[5].position, { lat: 27.1, lon: 85.5 });
+  assert.deepEqual(packet.gaps, ['access-not-assessed']);
+  assert.equal(packet.access.segments.length, 0);
+});
+
+test('real equator coordinates, valid Nepal coordinates and numeric strings survive', () => {
+  const packet = buildBhoteKoshiDisasterAccessPacket({
+    ...event,
+    evidenceSpine: [
+      { id: 'real-zero', lat: 0, lon: 0, sequence: 0 },
+      { id: 'numeric', lat: '27.2', lon: '85.6', sequence: '2' },
+      { id: 'range-limits', lat: -90, lon: 180, sequence: 3 },
+    ],
+  });
+  assert.deepEqual(packet.evidence.observations.map((record) => record.position), [
+    { lat: 0, lon: 0 }, { lat: 27.2, lon: 85.6 }, { lat: -90, lon: 180 },
+  ]);
+  assert.deepEqual(packet.evidence.observations.map((record) => record.sequence), [
+    0, 2, 3,
+  ]);
+});

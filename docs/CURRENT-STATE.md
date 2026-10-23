@@ -5777,3 +5777,18 @@ datacenters, dams and the Nepal locator retain that shared credit while displaye
 
 Military fragments stitch by source identity. Different mapped parcels merge only
 when their footprints touch or contain one another, never across a seam tolerance gap.
+
+## Typed-action command catalog validation
+
+`src/ui/commandCatalog.js` provides catalog/search only, with no UI shortcut or
+execution authority. Its entries use the canonical `GEV_ACTION_SCHEMAS` arguments,
+including alternatives (`anyOf`), non-whitespace patterns and string length
+bounds, at nested array/object positions too. Human-facing ids, labels, groups
+and keywords must be bounded strings, not coerced values.
+
+Search matches the stored English labels, keywords and the current locale's
+translated labels/groups at query time; changing locale does not mutate or
+rebuild the catalog. Queries exceeding 256 UTF-16 code units return no results.
+The default result limit is 10; supplied limits clamp to 1–50 (including
+`limit: 0` becoming 1). Stable order and existing default commands remain
+unchanged.

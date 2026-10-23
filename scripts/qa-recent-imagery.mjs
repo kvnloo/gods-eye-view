@@ -1242,15 +1242,15 @@ try {
         mode: rail?.dataset.layoutMode || null,
         expandedCount: rail?.dataset.expandedCount || null,
       },
-      panels: [...(rail?.querySelectorAll(':scope > [data-panel-id]') || [])].map(
-        (panel) => ({
-          id: panel.id,
-          collapsed: panel.classList.contains('collapsed'),
-          autoCollapsed: panel.classList.contains('layout-auto-collapsed'),
-          display: getComputedStyle(panel).display,
-          height: panel.getBoundingClientRect().height,
-        }),
-      ),
+      panels: [
+        ...(rail?.querySelectorAll(':scope > [data-panel-id]') || []),
+      ].map((panel) => ({
+        id: panel.id,
+        collapsed: panel.classList.contains('collapsed'),
+        autoCollapsed: panel.classList.contains('layout-auto-collapsed'),
+        display: getComputedStyle(panel).display,
+        height: panel.getBoundingClientRect().height,
+      })),
     };
   });
   check(
@@ -1404,15 +1404,15 @@ try {
           mode: rail?.dataset.layoutMode || null,
           expandedCount: rail?.dataset.expandedCount || null,
         },
-        panels: [...(rail?.querySelectorAll(':scope > [data-panel-id]') || [])].map(
-          (panel) => ({
-            id: panel.id,
-            collapsed: panel.classList.contains('collapsed'),
-            autoCollapsed: panel.classList.contains('layout-auto-collapsed'),
-            display: getComputedStyle(panel).display,
-            height: panel.getBoundingClientRect().height,
-          }),
-        ),
+        panels: [
+          ...(rail?.querySelectorAll(':scope > [data-panel-id]') || []),
+        ].map((panel) => ({
+          id: panel.id,
+          collapsed: panel.classList.contains('collapsed'),
+          autoCollapsed: panel.classList.contains('layout-auto-collapsed'),
+          display: getComputedStyle(panel).display,
+          height: panel.getBoundingClientRect().height,
+        })),
       };
     });
     check(

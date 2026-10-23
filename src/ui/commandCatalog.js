@@ -1,5 +1,7 @@
-import { msg } from '../i18n/index.js';
+import { msg, t } from '../i18n/index.js';
 import { GEV_ACTION_SCHEMAS } from '../voice/actionSchemas.js';
+
+const MAX_COMMAND_QUERY_LENGTH = 256;
 
 const DEFAULT_COMMAND_ENTRIES = [
   {
@@ -135,7 +137,8 @@ const DEFAULT_COMMAND_ENTRIES = [
 ];
 
 function boundedText(value, maxLength) {
-  const text = String(value ?? '').trim();
+  if (typeof value !== 'string') return null;
+  const text = value.trim();
   return text && text.length <= maxLength ? text : null;
 }
 
@@ -158,6 +161,19 @@ function validateSchemaValue(value, schema, path) {
     (!Number.isInteger(value) || !Number.isFinite(value))
   )
     throw new TypeError(`${path} must be an integer`);
+
+  if (typeof value === 'string') {
+    const length = [...value].length;
+    if (Number.isInteger(schema.minLength) && length < schema.minLength)
+      throw new TypeError(`${path} is shorter than the schema minimum`);
+    if (Number.isInteger(schema.maxLength) && length > schema.maxLength)
+      throw new TypeError(`${path} is longer than the schema maximum`);
+    if (
+      typeof schema.pattern === 'string' &&
+      !new RegExp(schema.pattern).test(value)
+    )
+      throw new TypeError(`${path} does not match the schema pattern`);
+  }
 
   if (typeof value === 'number') {
     if (Number.isFinite(schema.minimum) && value < schema.minimum)
@@ -198,6 +214,20 @@ function validateSchemaValue(value, schema, path) {
       }
       validateSchemaValue(item, properties[key], `${path}.${key}`);
     }
+  }
+
+  if (Array.isArray(schema.anyOf)) {
+    const matches = schema.anyOf.some((alternative) => {
+      try {
+        validateSchemaValue(value, alternative, path);
+        return true;
+      } catch (error) {
+        if (!(error instanceof TypeError)) throw error;
+        return false;
+      }
+    });
+    if (!matches)
+      throw new TypeError(`${path} must match a schema alternative`);
   }
 }
 
@@ -268,25 +298,39 @@ export function createCommandCatalog(
 }
 
 function searchableText(command) {
-  return [command.label, command.group, ...command.keywords]
+  return [
+    command.label,
+    t(command.label),
+    command.group,
+    t(command.group),
+    ...command.keywords,
+  ]
     .join(' ')
     .toLowerCase();
 }
 
 function commandScore(command, query) {
-  const label = command.label.toLowerCase();
+  const labels = [
+    command.label.toLowerCase(),
+    t(command.label).toLowerCase(),
+  ];
   const normalized = query.toLowerCase();
   const tokens = normalized.split(/\s+/).filter(Boolean);
   const searchable = searchableText(command);
   if (!tokens.every((token) => searchable.includes(token))) return 0;
 
   let score = 100;
-  if (label === normalized) score += 1000;
-  else if (label.startsWith(normalized)) score += 700;
-  else if (label.includes(normalized)) score += 500;
+  if (labels.includes(normalized)) score += 1000;
+  else if (labels.some((label) => label.startsWith(normalized))) score += 700;
+  else if (labels.some((label) => label.includes(normalized))) score += 500;
 
   for (const token of tokens) {
-    if (label.split(/\s+/).some((word) => word.startsWith(token))) score += 80;
+    if (
+      labels.some((label) =>
+        label.split(/\s+/).some((word) => word.startsWith(token)),
+      )
+    )
+      score += 80;
     if (command.keywords.some((keyword) => keyword.toLowerCase() === token))
       score += 60;
   }
@@ -295,10 +339,13 @@ function commandScore(command, query) {
 
 /** Deterministic catalog search; no model call and no execution authority. */
 export function searchCommandCatalog(catalog, query, { limit = 10 } = {}) {
-  const normalizedQuery = String(query ?? '').trim();
+  const queryText = String(query ?? '');
+  if (queryText.length > MAX_COMMAND_QUERY_LENGTH) return [];
+  const normalizedQuery = queryText.trim();
+  const requestedLimit = Number(limit ?? 10);
   const boundedLimit = Math.max(
     1,
-    Math.min(50, Math.floor(Number(limit) || 10)),
+    Math.min(50, Math.floor(Number.isNaN(requestedLimit) ? 10 : requestedLimit)),
   );
   const commands = Array.isArray(catalog) ? catalog : [];
   if (!normalizedQuery) return commands.slice(0, boundedLimit);

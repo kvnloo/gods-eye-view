@@ -6,6 +6,8 @@ import { createLocalRelay, localGlobeUrl } from './relay.mjs';
 import { plainSummary } from './projection.mjs';
 import { buildSurfaceView } from './view.mjs';
 
+const PRESENTATION_TICK_MS = 5000;
+
 export function parseArgs(argv) {
   const options = { appUrl: 'http://localhost:4173/', port: 0, help: false };
   for (let i = 0; i < argv.length; i += 1) {
@@ -30,19 +32,33 @@ const USAGE = [
   'Keys: r refresh, p pause presentation, h help, q/esc quit.',
 ].join('\n');
 
-/** Starts a local relay and TSP surface, with a plaintext fallback outside Tern. */
-export async function run(argv = process.argv.slice(2)) {
+/**
+ * Presentation adapter only. Injectable transports/clock exist for CLI
+ * lifecycle tests; production always uses the official SDK and local relay.
+ */
+export async function run(argv = process.argv.slice(2), {
+  connectSession = connect,
+  makeRelay = createLocalRelay,
+  stdin = process.stdin,
+  stdout = process.stdout,
+  stderr = process.stderr,
+  now = Date.now,
+  startTicker = setInterval,
+  stopTicker = clearInterval,
+  observeSignals = true,
+} = {}) {
   const options = parseArgs(argv);
   if (options.help) {
-    process.stdout.write(USAGE + '\n');
+    stdout.write(USAGE + '\n');
     return;
   }
 
-  // Match the Hermes adapter: the official SDK owns hello, node diffing,
-  // frame ACK/credit limits, size/chunking and clean TSP termination.
-  const session = await connect({ app: 'gods-eye-view', version: '0.2.1', exitHooks: false });
-  const native =
-    session !== null &&
+  // Unlike browserUrl, the fallback link never contains relay credentials.
+  const publicGlobeUrl = localGlobeUrl(options.appUrl).href;
+  const session = await connectSession({
+    app: 'gods-eye-view', version: '0.2.1', exitHooks: false,
+  });
+  const native = session !== null &&
     session.caps.kinds.includes('col') &&
     session.caps.kinds.includes('text');
   if (!native && session) await session.close();
@@ -58,18 +74,16 @@ export async function run(argv = process.argv.slice(2)) {
   let closing = null;
   let surfaceRecovery = 0;
   let input = null;
+  let ticker = null;
   const signals = ['SIGINT', 'SIGTERM', 'SIGHUP'];
   const onSignal = () => void shutdown();
 
   function render() {
     if (stopped) return;
     if (!native) {
-      process.stdout.write(
-        plainSummary(snapshot, {
-          connected,
-          link: relay?.browserUrl,
-        }) + '\n\n',
-      );
+      stdout.write(plainSummary(snapshot, {
+        connected, paused, notice, link: publicGlobeUrl, now: now(),
+      }) + '\n\n');
       return;
     }
     if (surface?.closed) {
@@ -85,21 +99,16 @@ export async function run(argv = process.argv.slice(2)) {
         title: "God's Eye View",
       });
     }
-    surface.render(
-      buildSurfaceView(
-        snapshot,
-        {
-          connected,
-          paused,
-          help,
-          notice,
-          onRefresh: refresh,
-          onTogglePause: togglePause,
-          onHelp: toggleHelp,
-        },
-        session.caps,
-      ),
-    );
+    surface.render(buildSurfaceView(snapshot, {
+      connected,
+      paused,
+      help,
+      notice,
+      now: now(),
+      onRefresh: refresh,
+      onTogglePause: togglePause,
+      onHelp: toggleHelp,
+    }, session.caps));
   }
 
   function refresh() {
@@ -109,8 +118,16 @@ export async function run(argv = process.argv.slice(2)) {
     render();
   }
   function togglePause() {
+    if (stopped) return;
     paused = !paused;
-    notice = paused ? 'Presentation paused (browser stays live)' : '';
+    if (paused) {
+      notice = 'Presentation paused (browser stays live)';
+    } else {
+      const requested = relay?.requestSnapshot() === true;
+      notice = requested
+        ? 'Presentation resumed; awaiting current browser snapshot'
+        : 'Presentation resumed; browser not connected';
+    }
     render();
   }
   function toggleHelp() {
@@ -122,7 +139,11 @@ export async function run(argv = process.argv.slice(2)) {
     if (closing) return closing;
     stopped = true;
     closing = (async () => {
-      for (const signal of signals) process.off(signal, onSignal);
+      if (ticker !== null) {
+        stopTicker(ticker);
+        ticker = null;
+      }
+      if (observeSignals) for (const signal of signals) process.off(signal, onSignal);
       input?.close();
       try {
         await relay?.close();
@@ -138,20 +159,25 @@ export async function run(argv = process.argv.slice(2)) {
   }
 
   try {
-    relay = await createLocalRelay({
+    relay = await makeRelay({
       appUrl: options.appUrl,
       port: options.port,
       onSnapshot: (next) => {
+        // Pause freezes what the operator sees; owner loss still invalidates it.
+        if (stopped || paused) return;
         snapshot = next;
-        if (!paused) {
-          notice = '';
-          render();
-        }
+        notice = '';
+        render();
       },
       onStatus: (status) => {
+        if (stopped) return;
         connected = status === 'connected';
-        if (!connected) snapshot = null;
-        notice = connected ? 'Browser connected' : 'Browser disconnected; reconnect using the link';
+        // Both a disconnection and a new authenticated owner invalidate the
+        // preceding generation, even if presentation was paused.
+        snapshot = null;
+        notice = connected
+          ? 'Browser owner connected; awaiting its first snapshot'
+          : 'Browser disconnected; reopen the private link if needed';
         render();
       },
     });
@@ -164,11 +190,15 @@ export async function run(argv = process.argv.slice(2)) {
         title: "God's Eye View",
       });
     }
-    for (const signal of signals) process.on(signal, onSignal);
-    // Printed once. This URL contains a secret; never write it to diagnostics,
-    // telemetry, a TSP stylesheet, or a checked-in recording.
-    process.stderr.write('Open this local GEV browser link (keep private): ' + relay.browserUrl + '\n');
+    if (observeSignals) for (const signal of signals) process.on(signal, onSignal);
+    // Only this stderr line ever carries the ephemeral private attach URL.
+    stderr.write('Open this local GEV browser link (keep private): ' + relay.browserUrl + '\n');
     render();
+    ticker = startTicker(() => {
+      // Age-only presentation redraw; no extra browser/subscription/feed work.
+      if (!stopped && !paused && snapshot) render();
+    }, PRESENTATION_TICK_MS);
+    ticker?.unref?.();
 
     if (native) {
       for await (const message of session) {
@@ -185,9 +215,9 @@ export async function run(argv = process.argv.slice(2)) {
         }
       }
     } else {
-      process.stdout.write('No Tern TSP session; using plain-text updates.\n');
+      stdout.write('No Tern TSP session; using plain-text updates.\n');
       await new Promise((resolve) => {
-        input = createInterface({ input: process.stdin, crlfDelay: Infinity });
+        input = createInterface({ input: stdin, crlfDelay: Infinity });
         input.on('line', (line) => {
           switch (line.trim().toLowerCase()) {
             case 'q':
@@ -202,7 +232,7 @@ export async function run(argv = process.argv.slice(2)) {
               togglePause();
               break;
             case 'h':
-              process.stdout.write(USAGE + '\n');
+              stdout.write(USAGE + '\n');
               break;
           }
         });

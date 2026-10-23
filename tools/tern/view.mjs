@@ -1,17 +1,10 @@
 import { html, ui } from '@stencil-hq/tern';
+import { ageLabel } from './projection.mjs';
 
 const MAX_VISIBLE_LAYERS = 40;
 
 function scalar(value, fallback = 'not reported') {
   return value === null || value === undefined ? fallback : String(value);
-}
-
-function ageLabel(timestamp, now) {
-  if (timestamp === null || timestamp === undefined) return 'age unknown';
-  const secs = Math.max(0, Math.floor((now - timestamp) / 1000));
-  if (secs < 60) return secs + 's old';
-  if (secs < 3600) return Math.floor(secs / 60) + 'm old';
-  return Math.floor(secs / 3600) + 'h old';
 }
 
 function coords(latitude, longitude) {
@@ -31,6 +24,7 @@ export function buildSurfaceView(
     paused = false,
     help = false,
     notice = '',
+    now = Date.now(),
     onRefresh = () => {},
     onTogglePause = () => {},
     onHelp = () => {},
@@ -49,7 +43,7 @@ export function buildSurfaceView(
       : ui.col({ key }, txt('heading', heading, 'accent'), ...children);
 
   const main = [
-    txt('title', "GOD'S EYE VIEW · Live context", 'accent'),
+    txt('title', "GOD'S EYE VIEW · Browser context", 'accent'),
     txt(
       'status',
       'Browser ' + (connected ? 'connected' : 'disconnected') +
@@ -71,7 +65,9 @@ export function buildSurfaceView(
             txt('origin', 'Source: ' + scalar(selected.source)),
             txt('layer', 'Layer: ' + scalar(selected.layerName || selected.layerId)),
             txt('position', coords(selected.latitude, selected.longitude)),
-            txt('age', 'Record: ' + ageLabel(selected.updatedAt, snapshot.receivedAt)),
+            txt('status', 'Observation status: ' + scalar(selected.status)),
+            txt('age', 'Context refreshed: ' + ageLabel(selected.updatedAt, now) +
+              ' (not source observation age)'),
           ]
         : [txt('empty', snapshot ? 'No active selection' : 'Waiting for browser snapshot')],
     ),
@@ -103,7 +99,7 @@ export function buildSurfaceView(
       txt(
         'scope',
         scalar(layer.count, '?') + ' loaded · ' +
-          ageLabel(layer.lastUpdate, snapshot.receivedAt),
+          'feed last update ' + ageLabel(layer.lastUpdate, now),
       ),
       ...(layer.error ? [txt('error', 'Feed warning: ' + layer.error, 'warning')] : []),
     ]),
@@ -117,8 +113,9 @@ export function buildSurfaceView(
     txt(
       'change',
       snapshot
-        ? 'Latest: ' + snapshot.change + ' · snapshot ' +
-            ageLabel(snapshot.capturedAt, snapshot.receivedAt)
+        ? 'Latest: ' + snapshot.change + ' · browser capture ' +
+            ageLabel(snapshot.capturedAt, now) + ' · relay received ' +
+            ageLabel(snapshot.receivedAt, now)
         : 'No browser update received yet',
       'muted',
     ),

@@ -100,3 +100,24 @@ test('SDK frame credit blocks bursts and coalesces to the newest stable tree', a
   assert.ok(!JSON.stringify(writes.at(-1)).includes('burst-13'));
   await surface.close({ keep: false });
 });
+
+test('native status and partial coverage survive; ages advance during an idle presentation', () => {
+  const message = {
+    ...data,
+    selected: { ...data.selected, status: 'stale (missed polls)' },
+    layers: [{ ...data.layers[0], feedState: 'partial' }],
+  };
+  const caps = { kinds: ['col', 'text'], features: [] };
+  const first = View.from(buildSurfaceView(message, { now: 3000 }, caps));
+  const second = View.from(buildSurfaceView(message, { now: 123000 }, caps));
+  const walk = (root) => allTrees(root).map((node) => JSON.stringify(node)).join(' ');
+  const initial = walk(first.regions[0]);
+  const later = walk(second.regions[0]);
+  assert.match(initial, /PARTIAL/);
+  assert.match(initial, /stale \(missed polls\)/);
+  assert.match(initial, /Context refreshed/);
+  assert.match(initial, /not source observation age/);
+  assert.match(later, /browser capture 2m ago/);
+  assert.match(later, /relay received 2m ago/);
+  assert.notEqual(initial, later);
+});

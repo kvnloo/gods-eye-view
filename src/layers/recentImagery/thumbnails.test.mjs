@@ -415,11 +415,14 @@ test('repeat retain counts one abort while its fetch is pending', async () => {
   });
   const stale = candidate('S30', '2026-09-10');
   const newer = candidate('S30', '2026-09-11');
-  const present = () =>
+  const originalAcquisitionTime = '2026-09-18T17:12:00Z';
+  const lateAcquisitionTime = '2026-09-19T17:12:00Z';
+  const retryAcquisitionTime = '2026-09-20T17:12:00Z';
+  const present = (acquisitionTime = originalAcquisitionTime) =>
     response({
       headers: {
         'Data-Present': 'true',
-        'Acquisition-Time': '2026-09-18T17:12:00Z',
+        'Acquisition-Time': acquisitionTime,
       },
     });
 
@@ -427,6 +430,7 @@ test('repeat retain counts one abort while its fetch is pending', async () => {
   calls[0].resolve(present());
   await settle();
   const acquisitionTime = loader.get(stale.key).acquisitionTime;
+  assert.equal(acquisitionTime, originalAcquisitionTime);
 
   loader.request(newer, BOX, 0);
   calls[1].resolve(present());
@@ -447,18 +451,20 @@ test('repeat retain counts one abort while its fetch is pending', async () => {
   assert.equal(loader.get(stale.key).loading, true);
 
   // Release the ignored abort only after checking the second retain.
-  calls[2].resolve(present());
+  calls[2].resolve(present(lateAcquisitionTime));
   await settle();
   assert.equal(loader.get(stale.key).status, 'present');
   assert.equal(loader.get(stale.key).acquisitionTime, acquisitionTime);
+  assert.notEqual(loader.get(stale.key).acquisitionTime, lateAcquisitionTime);
   assert.equal(loader.get(stale.key).objectUrl, null);
   assert.equal(loader.get(stale.key).loading, false);
 
   loader.request(stale, BOX, 0);
   assert.equal(calls.length, 4, 'a cancelled re-fetch remains retryable');
-  calls[3].resolve(present());
+  calls[3].resolve(present(retryAcquisitionTime));
   await settle();
   assert.equal(loader.get(stale.key).status, 'present');
   assert.ok(loader.get(stale.key).objectUrl);
+  assert.equal(loader.get(stale.key).acquisitionTime, retryAcquisitionTime);
   loader.destroy();
 });

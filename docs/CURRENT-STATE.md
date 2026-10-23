@@ -1,6 +1,6 @@
 # God's Eye View Current State
 
-## Generation-style stale thumbnail cancellation — September 29, 2026
+**Generation-style stale thumbnail cancellation — September 29, 2026**
 
 Recent Imagery thumbnail acquisition now retains only the current refinement
 intent. When focus, visible strip range, pins or preview intent changes, queued

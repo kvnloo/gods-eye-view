@@ -342,11 +342,9 @@ export function searchCommandCatalog(catalog, query, { limit = 10 } = {}) {
   const queryText = String(query ?? '');
   if (queryText.length > MAX_COMMAND_QUERY_LENGTH) return [];
   const normalizedQuery = queryText.trim();
-  const requestedLimit = Number(limit ?? 10);
-  const boundedLimit = Math.max(
-    1,
-    Math.min(50, Math.floor(Number.isNaN(requestedLimit) ? 10 : requestedLimit)),
-  );
+  const parsedLimit = Number(limit ?? 10);
+  const requestedLimit = Number.isNaN(parsedLimit) ? 10 : parsedLimit;
+  const boundedLimit = Math.max(1, Math.min(50, Math.floor(requestedLimit)));
   const commands = Array.isArray(catalog) ? catalog : [];
   if (!normalizedQuery) return commands.slice(0, boundedLimit);
 

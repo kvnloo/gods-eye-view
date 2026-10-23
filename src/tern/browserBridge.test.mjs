@@ -164,3 +164,71 @@ test('invalid bridge config refuses non-loopback pages and weak tokens', () => {
     globalThis.window = previous;
   }
 });
+
+
+test('unauthorized write commands are ignored and browser reconnects without new owners', async () => {
+  const previous = globalThis.window;
+  const page = new EventTarget();
+  page.location = { hostname: '127.0.0.1' };
+  page.__gevContextStore = {
+    entities: new Map(),
+    selectedEntityId: null,
+    selectedAt: null,
+  };
+  globalThis.window = page;
+  const { components, managerListeners, cameraListeners, dataManager } = fixture();
+  const sockets = [];
+  class FakeSocket {
+    static OPEN = 1;
+    readyState = 0;
+    sent = [];
+    constructor(url) {
+      this.url = url;
+      sockets.push(this);
+    }
+    send(data) {
+      this.sent.push(JSON.parse(data));
+    }
+    close() {
+      this.readyState = 3;
+    }
+  }
+  const application = {
+    subscribe(listener) {
+      listener({ status: 'ready' });
+      return () => {};
+    },
+  };
+  try {
+    const dispose = connectTernBridge({
+      application,
+      components,
+      port: 4210,
+      token: 'a'.repeat(43),
+      WebSocketCtor: FakeSocket,
+    });
+    const first = sockets[0];
+    first.readyState = 1;
+    first.onopen();
+    assert.equal(first.sent.length, 1);
+    first.onmessage({
+      data: '{"type":"setEnabled","id":"flights","enabled":false}',
+    });
+    assert.equal(dataManager.enabled, true);
+    assert.equal(first.sent.length, 1);
+    first.readyState = 3;
+    first.onclose();
+    await new Promise((resolve) => setTimeout(resolve, 550));
+    assert.equal(sockets.length, 2);
+    const next = sockets[1];
+    next.readyState = 1;
+    next.onopen();
+    assert.equal(next.sent.length, 1);
+    dispose();
+    assert.equal(next.readyState, 3);
+    assert.equal(managerListeners.size, 0);
+    assert.equal(cameraListeners.size, 0);
+  } finally {
+    globalThis.window = previous;
+  }
+});

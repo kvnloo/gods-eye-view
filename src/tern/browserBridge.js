@@ -43,7 +43,9 @@ export function projectGevContext({ scene, data }, now = Date.now()) {
     selected: selected
       ? {
           id: text(selected.id),
-          name: text(selected.label || selected.properties?.name || selected.id),
+          name: text(
+            selected.label || selected.properties?.name || selected.id,
+          ),
           layerId: text(selected.layerId),
           layerName: text(selected.layerName),
           source: text(selected.source),
@@ -148,7 +150,10 @@ export function connectTernBridge({
       if (socket !== ws || disposed) return;
       socket = null;
       failures += 1;
-      retry = setTimeout(reconnect, Math.min(8000, 250 * 2 ** Math.min(failures, 5)));
+      retry = setTimeout(
+        reconnect,
+        Math.min(8000, 250 * 2 ** Math.min(failures, 5)),
+      );
     };
   }
 

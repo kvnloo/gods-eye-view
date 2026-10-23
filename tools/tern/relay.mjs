@@ -57,7 +57,13 @@ export async function createLocalRelay({
   let stopped = false;
 
   server.on('upgrade', (request, socket, head) => {
-    const target = new URL(request.url || '/', 'http://127.0.0.1');
+    let target;
+    try {
+      target = new URL(request.url || '/', 'http://127.0.0.1');
+    } catch {
+      socket.end('HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n');
+      return;
+    }
     const presentedToken = Buffer.from(target.searchParams.get('token') || '');
     const allowed =
       !stopped &&

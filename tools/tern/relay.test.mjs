@@ -81,8 +81,10 @@ test('new tab supersedes old connection; rejected data and stale socket do not p
   try {
     first = connect(wsUrl(relay));
     await once(first, 'open');
+    const firstClosed = once(first, 'close');
     second = connect(wsUrl(relay));
     await once(second, 'open');
+    await firstClosed;
     second.send(JSON.stringify({ type: 'action', name: 'turn_on_flights', layers: [] }));
     second.send(JSON.stringify({ type: 'snapshot', selected: null, layers: [] }));
     await new Promise((resolve) => setTimeout(resolve, 35));
@@ -103,4 +105,28 @@ test('relay release closes its listener so the same port can be rebound', async 
   const next = await createLocalRelay({ port });
   assert.equal(next.port, port);
   await next.close();
+});
+
+
+test('oversized UTF-8 data is closed without being published', async () => {
+  const snapshots = [];
+  const relay = await createLocalRelay({ onSnapshot: (value) => snapshots.push(value) });
+  const ws = connect(wsUrl(relay));
+  try {
+    await once(ws, 'open');
+    const closed = once(ws, 'close');
+    const payload = JSON.stringify({
+      type: 'snapshot',
+      layers: [],
+      untrusted: '界'.repeat(30_000),
+    });
+    assert.ok(Buffer.byteLength(payload) > 64 * 1024);
+    ws.send(payload);
+    const [code] = await closed;
+    assert.equal(code, 1009);
+    assert.equal(snapshots.length, 0);
+  } finally {
+    ws.terminate();
+    await relay.close();
+  }
 });

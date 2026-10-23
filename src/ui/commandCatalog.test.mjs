@@ -143,7 +143,8 @@ test('real action schema alternatives and string constraints fail closed', () =>
     /schema minimum/,
   );
   assert.throws(
-    () => createCommandCatalog([reviewCommand('track_entity', { query: '   ' })]),
+    () =>
+      createCommandCatalog([reviewCommand('track_entity', { query: '   ' })]),
     /schema pattern/,
   );
   assert.throws(
@@ -155,7 +156,9 @@ test('real action schema alternatives and string constraints fail closed', () =>
     'an allowed alternative cannot bypass an invalid supplied property',
   );
   assert.doesNotThrow(() =>
-    createCommandCatalog([reviewCommand('track_entity', { query: 'aircraft' })]),
+    createCommandCatalog([
+      reviewCommand('track_entity', { query: 'aircraft' }),
+    ]),
   );
   assert.doesNotThrow(() =>
     createCommandCatalog([reviewCommand('track_entity', { referent: 1 })]),
@@ -212,13 +215,14 @@ test('catalog rejects non-string human metadata without coercing labels', () => 
     const entry = reviewCommand('stop_tracking', {}, { label });
     assert.throws(() => createCommandCatalog([entry]), /required/);
   }
-  const invalidKeywords = reviewCommand('stop_tracking', {}, {
-    keywords: [23],
-  });
-  assert.throws(
-    () => createCommandCatalog([invalidKeywords]),
-    /bounded text/,
+  const invalidKeywords = reviewCommand(
+    'stop_tracking',
+    {},
+    {
+      keywords: [23],
+    },
   );
+  assert.throws(() => createCommandCatalog([invalidKeywords]), /bounded text/);
 });
 
 test('search caps query work and clamps zero limits without changing defaults', () => {

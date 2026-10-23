@@ -310,10 +310,7 @@ function searchableText(command) {
 }
 
 function commandScore(command, query) {
-  const labels = [
-    command.label.toLowerCase(),
-    t(command.label).toLowerCase(),
-  ];
+  const labels = [command.label.toLowerCase(), t(command.label).toLowerCase()];
   const normalized = query.toLowerCase();
   const tokens = normalized.split(/\s+/).filter(Boolean);
   const searchable = searchableText(command);

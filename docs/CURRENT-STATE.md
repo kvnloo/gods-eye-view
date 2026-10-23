@@ -894,6 +894,13 @@ Automatic collapse remains presentation only, prioritizes the latest explicit
 panel, and honors keyboard focus on the right. Mobile layout still releases
 desktop allocation styles. Stable Display allocation avoids unnecessary style
 writes. This extraction does not change panel positions or layout defaults.
+A panel hidden by external CSS (for example, a weather panel suppressed by the
+current view) does not count as expanded or receive an allocation. Collapsed
+launchers hidden by the rail's own exclusive state still participate so they
+reappear when that state ends. A rail recenter can move the whole Recent Imagery
+panel; its fixed-stack contract measures controls relative to that panel, not
+the viewport. The Recent Imagery browser gate checks this, camera-height
+convergence, and late CCTV allocation stability.
 
 ## Surface keyboard lifecycle
 

@@ -306,17 +306,25 @@ const CONTROLS = {
   'export-b': `${PANEL} [data-action-id="export-b"]`,
   details: '#ri-details .rail-card-header',
 };
+// Controls are fixed within their own card; the rail may reposition the
+// whole card as its available viewport corridor changes.
 const measure = () =>
   page.evaluate((controls) => {
+    const panel = document.getElementById('recent-imagery-panel');
     const body = document.getElementById('recent-imagery-panel-body');
+    const panelRect = panel?.getBoundingClientRect();
     const out = { bodyScroll: body?.scrollTop ?? null, rects: {} };
     for (const [name, selector] of Object.entries(controls)) {
       const rect = document.querySelector(selector)?.getBoundingClientRect();
-      out.rects[name] = rect
-        ? [rect.left, rect.top, rect.width, rect.height].map(
-            (v) => Math.round(v * 10) / 10,
-          )
-        : null;
+      out.rects[name] =
+        rect && panelRect
+          ? [
+              rect.left - panelRect.left,
+              rect.top - panelRect.top,
+              rect.width,
+              rect.height,
+            ].map((v) => Math.round(v * 10) / 10)
+          : null;
     }
     return out;
   }, CONTROLS);
@@ -1035,6 +1043,8 @@ try {
     return Math.min(400, Math.max(5, 400 / (2 * halfWidth))) * 1000;
   });
   check('ZOOM IN is clickable', await click('#ri-zoom-in'));
+  // Wait for the observed camera height, not a fixed post-click sleep. Headless
+  // software rendering may delay the 1.2 s Cesium flight beyond 2 s wall time.
   const zoomed = await until(
     (target) =>
       Math.abs(
@@ -1042,13 +1052,13 @@ try {
       ) <=
       target * 0.01,
     fitHeight,
-    2_000,
+    4_000,
   );
   const zoomedHeight = await page.evaluate(
     () => window.__godsEyeView.viewer.camera.positionCartographic.height,
   );
   check(
-    `ZOOM IN flies to ${Math.round(fitHeight / 1000)} km within 2 s`,
+    `ZOOM IN lands at ${Math.round(fitHeight / 1000)} km`,
     zoomed,
     `height=${Math.round(zoomedHeight)} target=${Math.round(fitHeight)}`,
   );
@@ -1222,10 +1232,27 @@ try {
   const imageryPanel = 'recent-imagery-panel';
   const collapsedNow = (await togglePanel(imageryPanel)) === false;
   await wait(400);
-  const headerOnly = await page.evaluate(() => ({
-    panel: document.getElementById('recent-imagery-panel')?.offsetHeight,
-    body: document.getElementById('recent-imagery-panel-body')?.offsetHeight,
-  }));
+  const headerOnly = await page.evaluate(() => {
+    const rail = document.getElementById('right-context-rail');
+    return {
+      panel: document.getElementById('recent-imagery-panel')?.offsetHeight,
+      body: document.getElementById('recent-imagery-panel-body')?.offsetHeight,
+      rail: {
+        className: rail?.className || '',
+        mode: rail?.dataset.layoutMode || null,
+        expandedCount: rail?.dataset.expandedCount || null,
+      },
+      panels: [...(rail?.querySelectorAll(':scope > [data-panel-id]') || [])].map(
+        (panel) => ({
+          id: panel.id,
+          collapsed: panel.classList.contains('collapsed'),
+          autoCollapsed: panel.classList.contains('layout-auto-collapsed'),
+          display: getComputedStyle(panel).display,
+          height: panel.getBoundingClientRect().height,
+        }),
+      ),
+    };
+  });
   check(
     'collapsing the panel leaves a header bar only',
     collapsedNow &&
@@ -1258,7 +1285,9 @@ try {
       );
       await wait(100);
     }
-    const tail = (key) => new Set(samples.slice(8).map((s) => s[key]));
+    // Check the final 800 ms after the transition, not the early in-flight
+    // samples (which must be allowed to change height).
+    const tail = (key) => new Set(samples.slice(-8).map((s) => s[key]));
     return {
       settled: tail('imagery').size === 1 && tail('cctv').size === 1,
       detail: `imagery=${samples.map((s) => s.imagery).join(',')} cctv=${samples.map((s) => s.cctv).join(',')}`,
@@ -1358,20 +1387,38 @@ try {
     );
     if (imageryExpanded) await togglePanel(imageryPanel);
     await wait(400);
-    const onScreen = await page.evaluate(() =>
-      Object.fromEntries(
+    const collapsedRail = await page.evaluate(() => {
+      const rail = document.getElementById('right-context-rail');
+      const onScreen = Object.fromEntries(
         [
           'pp-toggles',
           'global-context-panel',
           'recent-imagery-panel',
           'cctv-panel',
         ].map((id) => [id, window.__riQa.headerOnScreen(id)]),
-      ),
-    );
+      );
+      return {
+        onScreen,
+        rail: {
+          className: rail?.className || '',
+          mode: rail?.dataset.layoutMode || null,
+          expandedCount: rail?.dataset.expandedCount || null,
+        },
+        panels: [...(rail?.querySelectorAll(':scope > [data-panel-id]') || [])].map(
+          (panel) => ({
+            id: panel.id,
+            collapsed: panel.classList.contains('collapsed'),
+            autoCollapsed: panel.classList.contains('layout-auto-collapsed'),
+            display: getComputedStyle(panel).display,
+            height: panel.getBoundingClientRect().height,
+          }),
+        ),
+      };
+    });
     check(
       `DISPLAY, CONTEXT, CCTV and the imagery header are all on screen once everything is collapsed ${at}`,
-      Object.values(onScreen).every(Boolean),
-      JSON.stringify(onScreen),
+      Object.values(collapsedRail.onScreen).every(Boolean),
+      JSON.stringify(collapsedRail),
     );
     await togglePanel(imageryPanel);
     await wait(400);

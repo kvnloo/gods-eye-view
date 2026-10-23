@@ -58,3 +58,9 @@ test('FIRMS reuses existing service and rejects stale snapshots', async () => {
   assert.equal(row.frp, 10);
   assert.equal(row.magnitude, undefined);
 });
+test('pre-connect failures retry while resets and aborts remain ambiguous', async () => {
+  for (const code of ['ENOTFOUND', 'EAI_AGAIN', 'ECONNREFUSED', 'ENETUNREACH', 'EHOSTUNREACH', 'UND_ERR_CONNECT_TIMEOUT', 'ECONNRESET']) {
+    const notifier = createNtfyNotifier({ server: 'https://example.org', topic: 'test', fetchImpl: async () => { throw Object.assign(new TypeError('private transport detail'), { cause: { code } }); } });
+    await assert.rejects(notifier.send({ title: 'test' }), (error) => !error.message.includes('private transport detail') && (code === 'ECONNRESET' ? error.retryable === undefined : error.retryable === true));
+  }
+});

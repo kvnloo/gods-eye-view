@@ -18,7 +18,14 @@ export function createNtfyNotifier({ server, topic, token, fetchImpl = globalThi
           headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
           body: JSON.stringify({ topic, title, message, click: url, tags: ['globe_with_meridians'] }),
         });
-      } catch { throw new Error('Notification delivery outcome unknown'); }
+      } catch (error) {
+        // These failures occur before a TCP connection/request exists. Resets,
+        // aborts and response timeouts can follow delivery and remain uncertain.
+        const beforeConnect = ['ENOTFOUND', 'EAI_AGAIN', 'ECONNREFUSED', 'ENETUNREACH', 'EHOSTUNREACH', 'UND_ERR_CONNECT_TIMEOUT'];
+        if (beforeConnect.includes(error?.cause?.code))
+          throw Object.assign(new Error('Notification server unreachable'), { retryable: true });
+        throw new Error('Notification delivery outcome unknown');
+      }
       await response.body?.cancel();
       if (!response.ok) throw Object.assign(new Error('Notification server rejected delivery'), { retryable: response.status === 429 || response.status >= 500 });
     },

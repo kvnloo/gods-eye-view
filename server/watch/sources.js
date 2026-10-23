@@ -24,9 +24,11 @@ export function createWatchSources({ fetchImpl = globalThis.fetch, firmsService 
         const snapshot = await fires.getSnapshot();
         signal?.throwIfAborted();
         if (snapshot.stale || !Array.isArray(snapshot.fires) || !Number.isFinite(snapshot.fetchedAt) || Date.now() - snapshot.fetchedAt > 1800000) throw new Error('FIRMS snapshot not current');
-        return snapshot.fires.filter((r) => r.satellite && r.instrument).map((r) => ({
+        const rows = snapshot.fires.filter((r) => r.satellite && r.instrument).map((r) => ({
           id: `firms:${r.satellite}:${r.instrument}:${r.acqDate}:${String(r.acqTime).padStart(4, '0')}:${r.lat}:${r.lon}`, source: 'NASA FIRMS', observedAt: acquisitionMsUtc(r.acqDate, r.acqTime), lat: r.lat, lon: r.lon, frp: r.frp, confidence: r.confidence, title: 'Active-fire detection', url: 'https://firms.modaps.eosdis.nasa.gov/map/',
         }));
+        rows.partial = !Array.isArray(snapshot.sources) || snapshot.sources.some((source) => source.ok !== true);
+        return rows;
       },
     },
   };

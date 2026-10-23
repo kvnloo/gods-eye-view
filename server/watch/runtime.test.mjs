@@ -50,7 +50,7 @@ test('disabled rules cause no source requests; multiple rules share one acquisit
 });
 test('missing identity/time, stale, future, low severity and outside-area events cannot notify', async (t) => {
   const f = await fixture(t);
-  f.rows([{ ...event, id: null }, { ...event, id: 'missing-time', observedAt: null }, { ...event, id: 'stale', observedAt: epoch - 7200000 }, { ...event, id: 'future', observedAt: epoch + 1 }, { ...event, id: 'small', magnitude: 3 }, { ...event, id: 'far', lat: 40 }]);
+  f.rows([{ ...event, id: null }, { ...event, id: 'missing-source', source: null }, { ...event, id: 'missing-time', observedAt: null }, { ...event, id: 'stale', observedAt: epoch - 7200000 }, { ...event, id: 'future', observedAt: epoch + 1 }, { ...event, id: 'small', magnitude: 3 }, { ...event, id: 'far', lat: 40 }]);
   await f.runtime.tick();
   assert.equal(f.sent.length, 0);
   assert.equal(f.runtime.getState().events.length, 0);
@@ -111,4 +111,77 @@ test('invalid geographic/rule input is rejected rather than coerced', async (t) 
   for (const change of [{ lat: null }, { lon: '0' }, { radiusKm: -1 }, { maxAgeMs: Infinity }, { source: 'unknown' }, { quietHours: { start: 25, end: 1 } }]) {
     await assert.rejects(fixture(t, { rules: [{ ...rule, ...change }] }));
   }
+});
+test('idle cadence ticks perform no redundant durable writes', async (t) => {
+  const f = await fixture(t);
+  f.rows([]);
+  let writes = 0;
+  const save = f.store.save;
+  f.store.save = async (state) => { writes++; return save(state); };
+  await f.runtime.tick();
+  assert.equal(writes, 1);
+  await f.runtime.tick();
+  await f.runtime.tick();
+  assert.equal(writes, 1);
+});
+test('a failed durable rule change rolls back the unacknowledged memory mutation', async (t) => {
+  const f = await fixture(t);
+  const save = f.store.save;
+  f.store.save = async () => { throw new Error('disk unavailable'); };
+  await assert.rejects(f.runtime.setRuleEnabled('hazards', false));
+  assert.equal(f.runtime.getState().rules[0].enabled, true);
+  f.store.save = save;
+});
+test('a changed config enabled flag overrides persisted pause in either direction', async (t) => {
+  const f = await fixture(t, { rules: [{ ...rule, enabled: false }] });
+  await f.runtime.close();
+  const enabled = await createWatchRuntime({ ...f.options, rules: [{ ...rule, enabled: true }] });
+  assert.equal(enabled.getState().rules[0].enabled, true);
+  await enabled.close();
+  const disabled = await createWatchRuntime({ ...f.options, rules: [{ ...rule, enabled: false }] });
+  assert.equal(disabled.getState().rules[0].enabled, false);
+  await disabled.close();
+});
+test('a pause intent prevents delivery while an in-flight source awaits completion', async (t) => {
+  let release, announce;
+  const pending = new Promise((resolve) => { release = resolve; });
+  const started = new Promise((resolve) => { announce = resolve; });
+  const f = await fixture(t, { sources: { usgs: { intervalMs: 1000, getSnapshot: async () => { announce(); return pending; } } } });
+  const cycle = f.runtime.tick();
+  await started;
+  const paused = f.runtime.setRuleEnabled('hazards', false);
+  release([event]);
+  await Promise.all([cycle, paused]);
+  assert.equal(f.sent.length, 0);
+  assert.equal(f.runtime.getState().rules[0].enabled, false);
+});
+test('known permanent rejection is failed, not ambiguous or delivered', async (t) => {
+  const f = await fixture(t, { notifier: { send: async () => { throw Object.assign(new Error('rejected'), { retryable: false }); } } });
+  await f.runtime.tick();
+  assert.equal(f.runtime.getState().events[0].status, 'failed');
+  assert.equal(f.runtime.getState().events[0].deliveredAt, null);
+});
+test('expired uncertain and paused records cannot exhaust dedupe capacity forever', async () => {
+  let clock = epoch;
+  let saved = null;
+  let rows = Array.from({ length: 1000 }, (_, i) => ({ ...event, id: `usgs:${i}` }));
+  const runtime = await createWatchRuntime({
+    rules: [rule], now: () => clock,
+    sources: { usgs: { intervalMs: 1000, getSnapshot: async () => rows } },
+    notifier: { send: async () => { throw new Error('ambiguous'); } },
+    store: { load: async () => saved, save: async (state) => { saved = structuredClone(state); }, close: async () => {} },
+  });
+  await runtime.tick();
+  assert.equal(runtime.getState().events.length, 1000);
+  clock += 86400001;
+  rows = [{ ...event, id: 'usgs:new', observedAt: clock }];
+  await runtime.tick();
+  assert.equal(runtime.getState().events.length, 1);
+  assert.equal(runtime.getState().events[0].sourceId, 'usgs:new');
+  await runtime.close();
+});
+test('partial coverage remains degraded even when a snapshot is fresh', async (t) => {
+  const f = await fixture(t, { sources: { usgs: { intervalMs: 1000, getSnapshot: async () => Object.assign([], { partial: true }) } } });
+  await f.runtime.tick();
+  assert.equal(f.runtime.getState().sources.usgs.status, 'degraded');
 });

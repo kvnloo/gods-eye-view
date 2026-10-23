@@ -28,20 +28,29 @@ For example a disabled test-area rule is `{ "id": "quakes", "source": "usgs",
 The USGS watch reuses the portable earthquake source/normalizer and stable
 USGS IDs, at a one-minute cadence. FIRMS reuses the existing server provider's
 30-minute cache/acquisition and CSV timestamp owner; it needs the existing
-server-side `FIRMS_MAP_KEY` and refuses stale snapshots. A FIRMS detection is
+server-side `FIRMS_MAP_KEY` and refuses stale snapshots. Partial or unknown
+satellite coverage stays `degraded`, not fully current. A FIRMS detection is
 not a fire perimeter, extent or emergency warning. No other providers poll.
 Unknown timestamps, future observations, stale events, missing source IDs,
 invalid coordinates and nonmatching severity/area do not notify.
 
 Atomic private state persists pause, event identity, source cursors and delivery
-status. Quiet hours/cooldown defer valid events; expired queued events do not
-deliver later. A known transient HTTP rejection retries with bounded backoff.
+status. An explicit changed config `enabled` value wins on restart. Otherwise a
+durable phone pause survives restart. A pending pause blocks further sends
+immediately, while its acknowledgement still waits for durable completion.
+Quiet hours/cooldown defer valid events; expired queued events do not deliver
+later. A known transient HTTP rejection retries with bounded backoff.
+A known permanent or exhausted rejection is `failed`, not `uncertain`.
+Definite pre-connection failures can retry; resets/aborts after possible delivery
+remain ambiguous. Idle cadence checks do not rewrite or sync unchanged state.
 An interrupted/ambiguous delivery is **uncertain**, not automatically resent:
 ntfy/KDE Connect do not provide transactional exactly-once delivery. A crash
 between external delivery and durable acknowledgement cannot honestly promise
 exactly once. State capacity is bounded; capacity pressure is visible and
-never evicts replay identity for still-eligible events. One live process owns
-the state lock; a dead local PID can be recovered, a live/foreign lock cannot.
+never evicts replay identity for still-eligible events. A private SQLite lock
+database uses the supported Node runtime's native file locking. The operating
+system releases ownership on close or crash; no PID reuse, stale-file takeover
+or lock-file deletion can grant a second owner.
 No physical phone delivery or resource improvement follows from a unit test.
 
 Analyst region queries resolve unique Natural Earth names offline without

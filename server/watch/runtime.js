@@ -132,8 +132,8 @@ export async function createWatchRuntime({ rules, sources, notifier, store, now 
         event.deliveredAt = now();
         state.lastDelivered[rule.id] = now();
       } catch (error) {
-        event.status = error.retryable === true && event.attempts < 5 ? 'retry'
-          : typeof error.retryable === 'boolean' ? 'failed' : 'uncertain';
+        event.status = error?.retryable === true && event.attempts < 5 ? 'retry'
+          : typeof error?.retryable === 'boolean' ? 'failed' : 'uncertain';
         event.nextAttemptAt = now() + Math.min(3600000, 60000 * 2 ** (event.attempts - 1));
       }
       await store.save(state);

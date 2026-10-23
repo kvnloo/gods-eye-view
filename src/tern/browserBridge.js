@@ -1,4 +1,7 @@
-import { getContextStore, isContextRecordActive } from '../data/contextStore.js';
+import {
+  getContextStore,
+  isContextRecordActive,
+} from '../data/contextStore.js';
 import { layerSnapshots } from '../data/layerSnapshot.js';
 
 const SEND_INTERVAL_MS = 125;
@@ -140,10 +143,7 @@ export function connectTernBridge({
     throw new TypeError('WebSocket is required for the Tern bridge');
 
   const address =
-    'ws://127.0.0.1:' +
-    portNumber +
-    '/?token=' +
-    encodeURIComponent(token);
+    'ws://127.0.0.1:' + portNumber + '/?token=' + encodeURIComponent(token);
   const { viewer } = components.scene;
   const { dataManager } = components.data;
   const subscriptions = [];
@@ -181,8 +181,7 @@ export function connectTernBridge({
     };
     ws.onmessage = (event) => {
       if (socket !== ws || disposed) return;
-      if (event.data === '{"type":"snapshot-request"}')
-        schedule('refresh');
+      if (event.data === '{"type":"snapshot-request"}') schedule('refresh');
     };
     ws.onerror = () => {
       // Close owns retry; never log the secret-bearing socket URL.
@@ -201,10 +200,13 @@ export function connectTernBridge({
         dispose();
         return;
       }
-      retry = setTimeout(() => {
-        retry = null;
-        reconnect();
-      }, Math.min(8000, 250 * 2 ** Math.min(failures, 5)));
+      retry = setTimeout(
+        () => {
+          retry = null;
+          reconnect();
+        },
+        Math.min(8000, 250 * 2 ** Math.min(failures, 5)),
+      );
     };
   }
 

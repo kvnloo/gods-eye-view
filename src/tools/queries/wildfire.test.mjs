@@ -229,6 +229,56 @@ test('passes limits and preserves cancellation', async () => {
   );
 });
 
+test('mid-flight cancellation does not wait for a stalled optional source', async () => {
+  let started;
+  let release;
+  const entered = new Promise((resolve) => {
+    started = resolve;
+  });
+  const stalled = new Promise((resolve) => {
+    release = resolve;
+  });
+  const nestedSignals = [];
+  const catalog = catalogWith(
+    {
+      get_active_fires: async () => {
+        started();
+        // Deliberately ignore AbortSignal to model an uncooperative adapter.
+        return stalled;
+      },
+      get_fire_perimeters: async () => response([{ id: 'incident' }]),
+    },
+    [
+      (call, next) => {
+        if (call.parent === 'get_wildfire_intelligence')
+          nestedSignals.push(call.signal);
+        return next(call);
+      },
+    ],
+  );
+  const controller = new AbortController();
+  const pending = catalog.call(
+    'get_wildfire_intelligence',
+    { area },
+    { signal: controller.signal },
+  );
+  await entered;
+  controller.abort();
+
+  // A canceled composite must settle before an uncooperative child is freed.
+  const outcome = await Promise.race([
+    pending.then(
+      () => 'unexpected success',
+      (error) => error?.name,
+    ),
+    new Promise((resolve) => setImmediate(() => resolve('still waiting'))),
+  ]);
+  release(response([{ id: 'late detection' }]));
+  assert.equal(outcome, 'AbortError');
+  assert.deepEqual(nestedSignals, Array(2).fill(controller.signal));
+  await assert.rejects(pending, { name: 'AbortError' });
+});
+
 test('caps uncooperative child sources and preserves true totals', async () => {
   const tooMany = Array.from({ length: 30 }, (_, id) => ({ id }));
   const catalog = catalogWith({

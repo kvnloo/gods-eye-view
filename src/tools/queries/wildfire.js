@@ -100,6 +100,27 @@ async function readSource(source, area, limit, tools) {
   }
 }
 
+/**
+ * Stop composing promptly after cancellation, even if an optional source has
+ * stalled and ignores the signal forwarded by the catalog. Promise.race still
+ * observes late source settlements; none can publish a canceled result.
+ */
+async function waitForSources(reads, signal) {
+  if (!signal) return reads;
+  signal.throwIfAborted();
+  let onAbort;
+  const aborted = new Promise((_, reject) => {
+    onAbort = () => reject(signal.reason);
+    signal.addEventListener('abort', onAbort, { once: true });
+  });
+  try {
+    signal.throwIfAborted();
+    return await Promise.race([reads, aborted]);
+  } finally {
+    signal.removeEventListener('abort', onAbort);
+  }
+}
+
 /** Compose independent wildfire evidence without promoting proximity to proof. */
 export const getWildfireIntelligence = defineTool({
   name: 'get_wildfire_intelligence',
@@ -132,11 +153,12 @@ export const getWildfireIntelligence = defineTool({
         ? { bbox: [area.west, area.south, area.east, area.north] }
         : args.area;
     const sections = {};
-    const rows = await Promise.all(
+    const reads = Promise.all(
       SOURCES.map((source) =>
         readSource(source, sourceArea, args.limit ?? 10, tools),
       ),
     );
+    const rows = await waitForSources(reads, signal);
     signal?.throwIfAborted();
     for (let index = 0; index < SOURCES.length; index += 1)
       sections[SOURCES[index].key] = rows[index];

@@ -24,6 +24,9 @@ composite independently caps returned rows even if a child tool exceeds its
 requested limit or forgets to mark additional matches as truncated. Invalid
 source totals are treated as unavailable evidence, without hiding other sources.
 Missing or key-gated FIRMS never blocks the keyless perimeter query.
+Cancellation ends the composite response promptly even when an optional provider
+ignores the forwarded abort signal. Each source still owns stopping its own
+network I/O; canceled results are not published if a child finishes later.
 
 The returned `view` frames the requested area and enables only the existing
 GEV layers whose queries succeeded; no new Cesium layer or background polling

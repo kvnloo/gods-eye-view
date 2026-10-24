@@ -571,7 +571,7 @@ One heads-up from the inside: build in this space for a week and you learn that 
 ## Downstream Avrea CI
 
 The downstream `ci/avrea-factory-20261023` branch uses 4-vCPU Avrea Linux and
-Windows runners. `avrea-factory.yml` preserves both Node versions, the full
+Windows runners. Manually dispatched `ci.yml` preserves both Node versions, the full
 unit suite, setup/format/boundary checks, production builds, and Windows
 onboarding coverage. Its lanes run sequentially to bound account concurrency.
 Dispatch `provider=github` for an identical-scope control, then

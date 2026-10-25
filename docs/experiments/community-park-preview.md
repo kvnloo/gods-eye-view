@@ -20,6 +20,11 @@ The Scene preview also prints the synthetic baseline source's ID, fixture revisi
 attribution, license and URL as **plain text**, never fetched or interpreted as
 verified land ownership. Missing source records are explicitly marked unverified. The preview also discloses how many authored planning records the projection excludes as stale or incompatible, plus how many valid alternatives fall outside its two-card display. These are snapshot counts, **not conflict detection**: the existing deterministic merge projection retains a winner but cannot reconstruct overwritten edits. No operation history, remote identity or review approval is inferred.
 
+If only one or no valid alternatives survive validation, the Scene panel visibly
+says comparison is unavailable and disables Game view. Excluded stale snapshots
+must not masquerade as competing proposals. The Puppeteer gate exercises both
+one-valid and zero-valid negative fixtures without any real place or transport.
+
 `Co-op view` shows both proposals side by side; `Game view` focuses one proposal at a time, with keyboard-accessible `Inspect` controls to switch between them. This is a **local, reversible presentation choice**, not a simulation or scoring mechanic. Neither adds points, votes, municipal approval, a site suitability claim, a model prediction, a route, a signal controller, or writes to GEV observed data. There is no real parcel, no live collaborative service, no GIS survey accuracy, no profile location inference, and no map/satellite tile redistribution. The plot is an approximate SVG schematic, not a geospatial basemap.
 
 ## Gates

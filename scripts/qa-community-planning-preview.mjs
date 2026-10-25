@@ -344,6 +344,64 @@ try {
   assert.ok(excluded.summary.includes('1 stale/incompatible excluded'));
   assert.deepEqual(excluded.visibleIds, ['play-first', 'trees-first']);
   assert.equal(await page.$('[data-community-planning-preview]'), null);
+  // Negative controls: a stale winner cannot count as a valid proposal.
+  // One or zero valid alternatives must not expose a usable compare mode.
+  const insufficient = await page.evaluate(async () => {
+    const { createSyntheticCommunityPlanningFixture } = await import(
+      '/src/standalone/communityPlanningFixture.js'
+    );
+    const { openCommunityPlanningPreview } = await import(
+      '/src/ui/communityPlanningPreview.js'
+    );
+    const inspect = (staleIds) => {
+      const { project, collaborationState } =
+        createSyntheticCommunityPlanningFixture();
+      for (const id of staleIds) {
+        const key = `draft-scenario:community-plan:synthetic-park:${id}`;
+        const proposal = collaborationState.authored[key].fields.proposal;
+        proposal.value = {
+          ...proposal.value,
+          baselineRevision: 'obsolete-r0',
+        };
+      }
+      const preview = openCommunityPlanningPreview({ project, collaborationState });
+      try {
+        const root = preview.element;
+        return {
+          visibleIds: [...root.querySelectorAll('[data-alternative-id]')]
+            .map((item) => item.dataset.alternativeId),
+          gameDisabled: [...root.querySelectorAll('button')].find(
+            (button) => button.textContent === 'Game view'
+          ).disabled,
+          notice: root.querySelector('[data-planning-comparison-unavailable]')
+            ?.textContent,
+          excluded: root.querySelector('[data-planning-record-summary]')
+            .textContent.includes(`${staleIds.length} stale/incompatible excluded`),
+        };
+      } finally {
+        preview.dispose();
+      }
+    };
+    return {
+      one: inspect(['play-first']),
+      none: inspect(['play-first', 'trees-first']),
+    };
+  });
+  assert.deepEqual(insufficient, {
+    one: {
+      visibleIds: ['trees-first'],
+      gameDisabled: true,
+      notice: 'Only one valid proposal is available; comparing requires two.',
+      excluded: true,
+    },
+    none: {
+      visibleIds: [],
+      gameDisabled: true,
+      notice: 'No valid proposals to compare; excluded records cannot be displayed as alternatives.',
+      excluded: true,
+    },
+  });
+  assert.equal(await page.$('[data-community-planning-preview]'), null);
   // A missing or malformed clock must never invent authorship or an edit ID.
   const missingClock = await page.evaluate(async () => {
     const { createSyntheticCommunityPlanningFixture } = await import(

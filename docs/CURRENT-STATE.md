@@ -11,7 +11,9 @@ revision, attribution, license and URL, or an unverified-source notice if none
 exists. Recorded metadata does not authenticate a participant or grant approval. The preview
 reports excluded stale/incompatible authored records and valid proposals beyond
 its two-card limit. It cannot reconstruct overwritten edits or certify conflict
-resolution from the winner-only projection. No real parcel,
+resolution from the winner-only projection. With fewer than two valid
+alternatives, the UI explicitly marks comparison unavailable and disables Game
+view instead of treating excluded records as proposals. No real parcel,
 observed-data edit, simulation, approval, external transport or live multiplayer
 is provided. This is **not** a production/origin feature. Supported-runtime
 full-app and browser acceptance remain **NOT_RUN**.

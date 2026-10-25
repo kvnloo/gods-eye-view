@@ -109,6 +109,17 @@ export function openCommunityPlanningPreview({ project, collaborationState }) {
     'planning-record-status',
   );
   recordSummary.dataset.planningRecordSummary = '';
+  // An invalid-only snapshot cannot be presented as a comparison.
+  if (alternatives.length < 2) {
+    const message = alternatives.length === 0
+      ? 'No valid proposals to compare; excluded records cannot be displayed as alternatives.'
+      : 'Only one valid proposal is available; comparing requires two.';
+    const unavailable = addText(
+      dialog.body, 'p', message, 'planning-comparison-unavailable',
+    );
+    unavailable.dataset.planningComparisonUnavailable = '';
+    unavailable.setAttribute('role', 'status');
+  }
   const focusNavigation = dialog.body.ownerDocument.createElement('nav');
   focusNavigation.dataset.planningFocusNavigation = '';
   focusNavigation.setAttribute('aria-label', 'Inspect a hypothetical proposal');
@@ -183,6 +194,11 @@ export function openCommunityPlanningPreview({ project, collaborationState }) {
       },
     ),
   }));
+  if (alternatives.length < 2) {
+    const gameButton = modeButtons.find(({ value }) => value === 'game').button;
+    gameButton.disabled = true;
+    gameButton.title = 'At least two valid alternatives are required';
+  }
   function syncMode() {
     const single = mode === 'game';
     focusNavigation.hidden = !single;

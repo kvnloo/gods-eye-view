@@ -1,5 +1,10 @@
 # Changelog
 
+- Fork-only planning preview shows a comparison-unavailable status and disables
+  Game view when validation leaves fewer than two usable proposals. Puppeteer
+  fixture gates cover one/zero valid alternatives with stale revisions; full
+  GEV browser, supported Node and native verification are still NOT_RUN.
+
 - Fork-only Scene community planning preview discloses excluded stale/incompatible
   authored proposals and valid alternatives beyond the two-card comparison.
   It shows the recorded operation ID/counter only for a valid merge clock and

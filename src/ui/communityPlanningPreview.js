@@ -89,6 +89,26 @@ export function openCommunityPlanningPreview({ project, collaborationState }) {
   addText(dialog.body, 'p',
     'Compare user-authored possibilities, not verified construction or traffic forecasts.');
   const alternatives = view.alternatives.slice(0, 2);
+  // The merge projection retains winners, not an editable conflict history.
+  // Make incompatible authored records visible as exclusions, never proposals.
+  const recordPrefix = `draft-scenario:community-plan:${project.id}:`;
+  const projectedIds = new Set(
+    view.alternatives.map((alternative) => alternative.alternativeId),
+  );
+  const excludedRecords = Object.keys(collaborationState?.authored ?? {}).filter(
+    (key) =>
+      key.startsWith(recordPrefix) &&
+      !projectedIds.has(key.slice(recordPrefix.length)),
+  ).length;
+  const beyondPreview = view.alternatives.length - alternatives.length;
+  const recordSummary = addText(
+    dialog.body, 'p',
+    `Planning records: ${excludedRecords} stale/incompatible excluded; ` +
+      `${beyondPreview} valid beyond this two-proposal preview. ` +
+      'This snapshot cannot reconstruct overwritten edits or resolve conflicts.',
+    'planning-record-status',
+  );
+  recordSummary.dataset.planningRecordSummary = '';
   const focusNavigation = dialog.body.ownerDocument.createElement('nav');
   focusNavigation.dataset.planningFocusNavigation = '';
   focusNavigation.setAttribute('aria-label', 'Inspect a hypothetical proposal');

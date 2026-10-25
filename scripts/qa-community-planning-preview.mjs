@@ -67,6 +67,7 @@ try {
       bob: text.includes('Recorded author: bob'),
       official: text.includes('Approval: not-requested'),
       provenance,
+      recordSummary: dialog.querySelector('[data-planning-record-summary]')?.textContent,
     };
   });
   assert.deepEqual(checked, {
@@ -84,8 +85,11 @@ try {
         'license: synthetic-test-data · ' +
         'URL: https://example.org/synthetic-fixture',
     ],
+    recordSummary: 'Planning records: 0 stale/incompatible excluded; ' +
+      '0 valid beyond this two-proposal preview. ' +
+      'This snapshot cannot reconstruct overwritten edits or resolve conflicts.',
   });
-  const initiallyVisible = await page.$$eval(
+  const initiallyVisible = await page.$eval(
     '[data-community-planning-preview] [data-alternative-id]',
     (items) => items.filter((item) => !item.hidden).map((item) => item.dataset.alternativeId),
   );
@@ -244,6 +248,54 @@ try {
     null,
   );
   assert.equal(await page.$('[data-planning-source-provenance]'), null);
+  // Negative control: an unsupported/stale imported proposal is excluded
+  // visibly, without leaking into the two valid synthetic alternatives.
+  const excluded = await page.evaluate(async () => {
+    const { createSyntheticCommunityPlanningFixture } = await import(
+      '/src/standalone/communityPlanningFixture.js'
+    );
+    const { openCommunityPlanningPreview } = await import(
+      '/src/ui/communityPlanningPreview.js'
+    );
+    const { project, collaborationState } =
+      createSyntheticCommunityPlanningFixture();
+    const key = 'draft-scenario:community-plan:synthetic-park:trees-first';
+    const original = collaborationState.authored[key].fields.proposal;
+    const staleRecord = {
+      fields: {
+        proposal: {
+          ...original,
+          value: {
+            ...original.value,
+            alternativeId: 'stale',
+            baselineRevision: 'obsolete-r0',
+          },
+        },
+      },
+    };
+    collaborationState.authored[
+      'draft-scenario:community-plan:synthetic-park:stale'
+    ] = staleRecord;
+    collaborationState.authored[
+      'draft-scenario:community-plan:other-project:unrelated'
+    ] = staleRecord;
+    const preview = openCommunityPlanningPreview({ project, collaborationState });
+    try {
+      return {
+        summary: preview.element.querySelector(
+          '[data-planning-record-summary]',
+        ).textContent,
+        visibleIds: [
+          ...preview.element.querySelectorAll('[data-alternative-id]'),
+        ].map((item) => item.dataset.alternativeId),
+      };
+    } finally {
+      preview.dispose();
+    }
+  });
+  assert.match(excluded.summary, /1 stale\\/incompatible excluded/);
+  assert.deepEqual(excluded.visibleIds, ['play-first', 'trees-first']);
+  assert.equal(await page.$('[data-community-planning-preview]'), null);
   console.log('Community planning preview: 2 hypothetical proposals, 5 markers, baseline provenance, keyboard, mobile viewport, Escape/reopen and close PASS');
 } finally {
   await browser.close();

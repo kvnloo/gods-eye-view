@@ -89,7 +89,7 @@ try {
       '0 valid beyond this two-proposal preview. ' +
       'This snapshot cannot reconstruct overwritten edits or resolve conflicts.',
   });
-  const initiallyVisible = await page.$eval(
+  const initiallyVisible = await page.$$eval(
     '[data-community-planning-preview] [data-alternative-id]',
     (items) => items.filter((item) => !item.hidden).map((item) => item.dataset.alternativeId),
   );

@@ -122,7 +122,7 @@ try {
   );
   await page.click('[data-planning-focus-id="trees-first"]');
   assert.deepEqual(
-    await page.$eval(
+    await page.$$eval(
       '[data-community-planning-preview] [data-alternative-id]',
       (items) => items.filter((item) => !item.hidden).map((item) => item.dataset.alternativeId),
     ),

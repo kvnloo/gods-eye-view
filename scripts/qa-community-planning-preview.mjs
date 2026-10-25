@@ -65,6 +65,8 @@ try {
       hypothetical: (text.match(/HYPOTHETICAL · NOT APPROVED/g) || []).length,
       alice: text.includes('Recorded author: alice'),
       bob: text.includes('Recorded author: bob'),
+      editProvenance: [...dialog.querySelectorAll('.planning-edit-provenance')]
+        .map((node) => node.textContent),
       official: text.includes('Approval: not-requested'),
       provenance,
       recordSummary: dialog.querySelector('[data-planning-record-summary]')?.textContent,
@@ -78,6 +80,10 @@ try {
     hypothetical: 2,
     alice: true,
     bob: true,
+    editProvenance: [
+      'Recorded edit: bob-play-v1 · logical counter: 1 (unverified, not approval)',
+      'Recorded edit: alice-trees-v1 · logical counter: 1 (unverified, not approval)',
+    ],
     official: true,
     provenance: [
       'Baseline source: synthetic-source · revision: fixture-v1 · ' +
@@ -296,7 +302,37 @@ try {
   assert.ok(excluded.summary.includes('1 stale/incompatible excluded'));
   assert.deepEqual(excluded.visibleIds, ['play-first', 'trees-first']);
   assert.equal(await page.$('[data-community-planning-preview]'), null);
-  console.log('Community planning preview: 2 hypothetical proposals, 5 markers, baseline provenance, keyboard, mobile viewport, Escape/reopen and close PASS');
+  // A missing or malformed clock must never invent authorship or an edit ID.
+  const missingClock = await page.evaluate(async () => {
+    const { createSyntheticCommunityPlanningFixture } = await import(
+      '/src/standalone/communityPlanningFixture.js'
+    );
+    const { openCommunityPlanningPreview } = await import(
+      '/src/ui/communityPlanningPreview.js'
+    );
+    const { project, collaborationState } =
+      createSyntheticCommunityPlanningFixture();
+    const key = 'draft-scenario:community-plan:synthetic-park:play-first';
+    delete collaborationState.authored[key].fields.proposal.clock;
+    const preview = openCommunityPlanningPreview({ project, collaborationState });
+    try {
+      const card = preview.element.querySelector(
+        '[data-alternative-id="play-first"]',
+      );
+      return {
+        author: card.querySelector('.planning-author-credit').textContent,
+        edit: card.querySelector('.planning-edit-provenance').textContent,
+      };
+    } finally {
+      preview.dispose();
+    }
+  });
+  assert.deepEqual(missingClock, {
+    author: 'Recorded author: unknown',
+    edit: 'Recorded edit: unknown (no valid recorded operation metadata)',
+  });
+  assert.equal(await page.$('[data-community-planning-preview]'), null);
+  console.log('Community planning preview: synthetic proposals, attribution, missing-clock fail-closed, keyboard, mobile, teardown PASS');
 } finally {
   await browser.close();
 }

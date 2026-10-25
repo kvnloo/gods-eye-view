@@ -136,6 +136,12 @@ export function openCommunityPlanningPreview({ project, collaborationState }) {
       ? `Recorded author: ${alternative.authorship.actorId} (unverified identity)`
       : 'Recorded author: unknown';
     addText(article, 'p', credit, 'planning-author-credit');
+    // Recorded merge metadata is not authenticated identity or permission.
+    const edit = alternative.authorship?.status === 'recorded'
+      ? `Recorded edit: ${alternative.authorship.operationId} · logical counter: ` +
+        `${alternative.authorship.counter} (unverified, not approval)`
+      : 'Recorded edit: unknown (no valid recorded operation metadata)';
+    addText(article, 'p', edit, 'planning-edit-provenance');
     addText(article, 'p', `Source revision: ${alternative.baselineRevision}`);
     drawSyntheticMarkers(article, alternative, project.place.bounds);
     const features = alternative.features.length

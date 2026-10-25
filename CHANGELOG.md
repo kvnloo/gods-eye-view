@@ -2,6 +2,8 @@
 
 - Fork-only Scene community planning preview discloses excluded stale/incompatible
   authored proposals and valid alternatives beyond the two-card comparison.
+  It shows the recorded operation ID/counter only for a valid merge clock and
+  otherwise shows unknown; neither metadata nor actor IDs verify identity.
   The winner-only snapshot explicitly cannot reconstruct overwritten conflicts.
   A real-app Puppeteer negative gate supplies a stale/cross-project record;
   native full-app and browser verification remain NOT_RUN.

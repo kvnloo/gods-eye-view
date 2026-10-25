@@ -5,8 +5,10 @@
 The downstream `exp/community-park-preview-20261013` draft adds an opt-in,
 single-browser `?planningPreview=fixture` comparison of two hypothetical
 park proposals in the existing Scene dialog. It displays recorded pseudonymous
-actor credits and explicit synthetic baseline source ID, revision, attribution,
-license and URL, or an unverified-source notice if none exists. The preview
+actor credits, recorded operation ID and logical counter when the merge clock
+is valid (otherwise explicitly unknown), and synthetic baseline source ID,
+revision, attribution, license and URL, or an unverified-source notice if none
+exists. Recorded metadata does not authenticate a participant or grant approval. The preview
 reports excluded stale/incompatible authored records and valid proposals beyond
 its two-card limit. It cannot reconstruct overwritten edits or certify conflict
 resolution from the winner-only projection. No real parcel,

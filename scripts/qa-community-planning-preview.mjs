@@ -47,6 +47,51 @@ try {
     bob: true,
     official: true,
   });
+  const initiallyVisible = await page.$eval(
+    '[data-community-planning-preview] [data-alternative-id]',
+    (items) => items.filter((item) => !item.hidden).map((item) => item.dataset.alternativeId),
+  );
+  assert.deepEqual(initiallyVisible, ['play-first', 'trees-first']);
+  await page.evaluate(() => {
+    const dialog = document.querySelector('[data-community-planning-preview]');
+    [...dialog.querySelectorAll('button')].find((button) =>
+      button.textContent === 'Game view'
+    ).click();
+  });
+  const focused = await page.$eval(
+    '[data-community-planning-preview] [data-alternative-id]',
+    (items) => items.filter((item) => !item.hidden).map((item) => item.dataset.alternativeId),
+  );
+  assert.deepEqual(focused, ['play-first']);
+  assert.equal(
+    await page.$eval('[data-planning-focus-navigation]', (el) => el.hidden),
+    false,
+  );
+  await page.click('[data-planning-focus-id="trees-first"]');
+  assert.deepEqual(
+    await page.$eval(
+      '[data-community-planning-preview] [data-alternative-id]',
+      (items) => items.filter((item) => !item.hidden).map((item) => item.dataset.alternativeId),
+    ),
+    ['trees-first'],
+  );
+  await page.evaluate(() => {
+    const dialog = document.querySelector('[data-community-planning-preview]');
+    [...dialog.querySelectorAll('button')].find((button) =>
+      button.textContent === 'Co-op view'
+    ).click();
+  });
+  assert.deepEqual(
+    await page.$eval(
+      '[data-community-planning-preview] [data-alternative-id]',
+      (items) => items.filter((item) => !item.hidden).map((item) => item.dataset.alternativeId),
+    ),
+    ['play-first', 'trees-first'],
+  );
+  assert.equal(
+    await page.$eval('[data-planning-focus-navigation]', (el) => el.hidden),
+    true,
+  );
   await page.evaluate(() => {
     const dialog = document.querySelector('[data-community-planning-preview]');
     [...dialog.querySelectorAll('button')].find((button) =>

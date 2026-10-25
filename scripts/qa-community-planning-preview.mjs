@@ -6,6 +6,8 @@ import puppeteer from 'puppeteer';
  * It never edits a real place or downloads municipal data.
  */
 const origin = process.env.GEV_QA_APP_URL || 'http://localhost:4173';
+const optOutUrl = new URL(origin);
+optOutUrl.searchParams.delete('planningPreview');
 const url = new URL(origin);
 url.searchParams.set('planningPreview', 'fixture');
 const browser = await puppeteer.launch({
@@ -15,13 +17,38 @@ const browser = await puppeteer.launch({
 try {
   const page = await browser.newPage();
   await page.setViewport({ width: 1100, height: 900 });
+  // Normal startup must not expose the fixture-only Scene launcher.
+  await page.goto(optOutUrl.href, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await page.waitForFunction(
+    () =>
+      window.__godsEyeView?.sceneDirector?._controls &&
+      document.getElementById('loading-screen')?.classList.contains('hidden'),
+    { timeout: 60000 },
+  );
+  assert.equal(
+    await page.$('[data-community-planning-preview-open]'),
+    null,
+    'the fixture launcher must be absent without planningPreview=fixture',
+  );
   await page.goto(url.href, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await page.waitForFunction(
+    () =>
+      window.__godsEyeView?.sceneDirector?._controls &&
+      document.getElementById('loading-screen')?.classList.contains('hidden'),
+    { timeout: 60000 },
+  );
+  // A programmatic .click() on a collapsed panel gives a false browser PASS.
+  if (
+    await page.$eval('#scene-panel', (panel) =>
+      panel.classList.contains('collapsed'),
+    )
+  )
+    await page.click('[data-collapse-target="scene-panel"]');
   await page.waitForSelector('[data-community-planning-preview-open]', {
+    visible: true,
     timeout: 45000,
   });
-  await page.evaluate(() =>
-    document.querySelector('[data-community-planning-preview-open]').click(),
-  );
+  await page.click('[data-community-planning-preview-open]');
   await page.waitForSelector('[data-community-planning-preview]');
   const checked = await page.evaluate(() => {
     const dialog = document.querySelector('[data-community-planning-preview]');
@@ -170,9 +197,17 @@ try {
     await page.$$eval('[data-community-planning-preview-open]', (items) => items.length),
     1,
   );
-  await page.evaluate(() =>
-    document.querySelector('[data-community-planning-preview-open]').click(),
-  );
+  // Escape may close the accordion too; re-open using the installed control.
+  if (
+    await page.$eval('#scene-panel', (panel) =>
+      panel.classList.contains('collapsed'),
+    )
+  )
+    await page.click('[data-collapse-target="scene-panel"]');
+  await page.waitForSelector('[data-community-planning-preview-open]', {
+    visible: true,
+  });
+  await page.click('[data-community-planning-preview-open]');
   await page.waitForSelector('[data-community-planning-preview]');
   assert.equal(
     await page.$eval('[data-community-planning-preview]', (dialog) => dialog.open),

@@ -102,6 +102,89 @@ try {
     '[data-planning-mode-status]', (el) => el.textContent,
   );
   assert.equal(mode, 'View: game · neither mode grants authority');
+  // Native button activation, not a synthetic click: focus then press Enter.
+  assert.equal(
+    await page.evaluate(() => {
+      const button = document.querySelector('[data-planning-focus-id="trees-first"]');
+      button.focus();
+      return document.activeElement === button;
+    }),
+    true,
+  );
+  await page.keyboard.press('Enter');
+  assert.deepEqual(
+    await page.$eval(
+      '[data-community-planning-preview] [data-alternative-id]',
+      (items) => items.filter((item) => !item.hidden).map((item) => item.dataset.alternativeId),
+    ),
+    ['trees-first'],
+  );
+  assert.equal(
+    await page.$eval('[data-planning-focus-id="trees-first"]', (el) =>
+      el.getAttribute('aria-pressed')),
+    'true',
+  );
+  assert.equal(
+    await page.evaluate(() => {
+      const dialog = document.querySelector('[data-community-planning-preview]');
+      const button = [...dialog.querySelectorAll('button')].find(
+        (candidate) => candidate.textContent === 'Co-op view',
+      );
+      button.focus();
+      return document.activeElement === button;
+    }),
+    true,
+  );
+  await page.keyboard.press('Enter');
+  assert.deepEqual(
+    await page.$eval(
+      '[data-community-planning-preview] [data-alternative-id]',
+      (items) => items.filter((item) => !item.hidden).map((item) => item.dataset.alternativeId),
+    ),
+    ['play-first', 'trees-first'],
+  );
+
+  // A narrow mobile viewport must not clip the modal or change its authority.
+  await page.setViewport({ width: 375, height: 667, isMobile: true, hasTouch: true });
+  const mobile = await page.evaluate(() => {
+    const dialog = document.querySelector('[data-community-planning-preview]');
+    const rect = dialog.getBoundingClientRect();
+    return {
+      viewportWidth: window.innerWidth,
+      left: rect.left,
+      right: rect.right,
+      open: dialog.open,
+      disclaimer: dialog.textContent.includes('HYPOTHETICAL · NOT APPROVED'),
+    };
+  });
+  assert.equal(mobile.open, true);
+  assert.equal(mobile.disclaimer, true);
+  assert.ok(mobile.viewportWidth <= 400, 'mobile CSS viewport did not activate');
+  assert.ok(mobile.left >= -1 && mobile.right <= mobile.viewportWidth + 1,
+    'planning dialog clips outside the mobile CSS viewport');
+
+  // Escape must fully dispose the modal; reopening must be fresh and singular.
+  await page.keyboard.press('Escape');
+  assert.equal(await page.$('[data-community-planning-preview]'), null);
+  assert.equal(
+    await page.$eval('[data-community-planning-preview-open]', (items) => items.length),
+    1,
+  );
+  await page.evaluate(() =>
+    document.querySelector('[data-community-planning-preview-open]').click(),
+  );
+  await page.waitForSelector('[data-community-planning-preview]');
+  assert.equal(
+    await page.$eval('[data-community-planning-preview]', (dialog) => dialog.open),
+    true,
+  );
+  assert.deepEqual(
+    await page.$eval(
+      '[data-community-planning-preview] [data-alternative-id]',
+      (items) => items.filter((item) => !item.hidden).map((item) => item.dataset.alternativeId),
+    ),
+    ['play-first', 'trees-first'],
+  );
   if (process.env.GEV_QA_SCREENSHOT)
     await page.screenshot({ path: process.env.GEV_QA_SCREENSHOT });
   await page.evaluate(() => {
@@ -114,7 +197,7 @@ try {
     await page.$('[data-community-planning-preview]'),
     null,
   );
-  console.log('Community planning preview: 2 hypothetical proposals, 5 markers, 2 credits, mode and close PASS');
+  console.log('Community planning preview: 2 hypothetical proposals, 5 markers, keyboard, mobile viewport, Escape/reopen and close PASS');
 } finally {
   await browser.close();
 }

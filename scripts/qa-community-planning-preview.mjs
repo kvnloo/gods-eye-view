@@ -113,7 +113,7 @@ try {
   );
   await page.keyboard.press('Enter');
   assert.deepEqual(
-    await page.$eval(
+    await page.$$eval(
       '[data-community-planning-preview] [data-alternative-id]',
       (items) => items.filter((item) => !item.hidden).map((item) => item.dataset.alternativeId),
     ),
@@ -137,7 +137,7 @@ try {
   );
   await page.keyboard.press('Enter');
   assert.deepEqual(
-    await page.$eval(
+    await page.$$eval(
       '[data-community-planning-preview] [data-alternative-id]',
       (items) => items.filter((item) => !item.hidden).map((item) => item.dataset.alternativeId),
     ),
@@ -167,7 +167,7 @@ try {
   await page.keyboard.press('Escape');
   assert.equal(await page.$('[data-community-planning-preview]'), null);
   assert.equal(
-    await page.$eval('[data-community-planning-preview-open]', (items) => items.length),
+    await page.$$eval('[data-community-planning-preview-open]', (items) => items.length),
     1,
   );
   await page.evaluate(() =>
@@ -179,7 +179,7 @@ try {
     true,
   );
   assert.deepEqual(
-    await page.$eval(
+    await page.$$eval(
       '[data-community-planning-preview] [data-alternative-id]',
       (items) => items.filter((item) => !item.hidden).map((item) => item.dataset.alternativeId),
     ),

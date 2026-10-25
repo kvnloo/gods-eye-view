@@ -100,12 +100,10 @@ try {
     (items) => items.filter((item) => !item.hidden).map((item) => item.dataset.alternativeId),
   );
   assert.deepEqual(initiallyVisible, ['play-first', 'trees-first']);
-  await page.evaluate(() => {
-    const dialog = document.querySelector('[data-community-planning-preview]');
-    [...dialog.querySelectorAll('button')].find((button) =>
-      button.textContent === 'Game view'
-    ).click();
-  });
+  // Use Puppeteer pointer interaction, not a hidden button's synthetic click.
+  await page.click(
+    '[data-community-planning-preview] [data-planning-mode="game"]',
+  );
   const focused = await page.$$eval(
     '[data-community-planning-preview] [data-alternative-id]',
     (items) => items.filter((item) => !item.hidden).map((item) => item.dataset.alternativeId),
@@ -123,12 +121,9 @@ try {
     ),
     ['trees-first'],
   );
-  await page.evaluate(() => {
-    const dialog = document.querySelector('[data-community-planning-preview]');
-    [...dialog.querySelectorAll('button')].find((button) =>
-      button.textContent === 'Co-op view'
-    ).click();
-  });
+  await page.click(
+    '[data-community-planning-preview] [data-planning-mode="co-op"]',
+  );
   assert.deepEqual(
     await page.$$eval(
       '[data-community-planning-preview] [data-alternative-id]',
@@ -140,12 +135,10 @@ try {
     await page.$eval('[data-planning-focus-navigation]', (el) => el.hidden),
     true,
   );
-  await page.evaluate(() => {
-    const dialog = document.querySelector('[data-community-planning-preview]');
-    [...dialog.querySelectorAll('button')].find((button) =>
-      button.textContent === 'Game view'
-    ).click();
-  });
+  // Use Puppeteer pointer interaction, not a hidden button's synthetic click.
+  await page.click(
+    '[data-community-planning-preview] [data-planning-mode="game"]',
+  );
   const mode = await page.$eval(
     '[data-planning-mode-status]', (el) => el.textContent,
   );
@@ -247,6 +240,29 @@ try {
       mobile.left >= -1 && mobile.right <= mobile.viewportWidth + 1,
       'planning dialog clips outside the mobile CSS viewport',
     );
+    // Real emulated touch must switch between one-card and two-card modes.
+    await mobilePage.tap(
+      '[data-community-planning-preview] [data-planning-mode="game"]',
+    );
+    assert.deepEqual(
+      await mobilePage.$eval(
+        '[data-community-planning-preview] [data-alternative-id]',
+        (items) =>
+          items.filter((item) => !item.hidden).map((item) => item.dataset.alternativeId),
+      ),
+      ['play-first'],
+    );
+    await mobilePage.tap(
+      '[data-community-planning-preview] [data-planning-mode="co-op"]',
+    );
+    assert.deepEqual(
+      await mobilePage.$eval(
+        '[data-community-planning-preview] [data-alternative-id]',
+        (items) =>
+          items.filter((item) => !item.hidden).map((item) => item.dataset.alternativeId),
+      ),
+      ['play-first', 'trees-first'],
+    );
     await mobilePage.keyboard.press('Escape');
     assert.equal(await mobilePage.$('[data-community-planning-preview]'), null);
   } finally {
@@ -285,12 +301,10 @@ try {
   );
   if (process.env.GEV_QA_SCREENSHOT)
     await page.screenshot({ path: process.env.GEV_QA_SCREENSHOT });
-  await page.evaluate(() => {
-    const dialog = document.querySelector('[data-community-planning-preview]');
-    [...dialog.querySelectorAll('button')].find((button) =>
-      button.textContent === 'Cancel'
-    ).click();
-  });
+  // Cancel must be an actual visible pointer target, not Element.click().
+  await page.click(
+    '[data-community-planning-preview] [data-planning-cancel]',
+  );
   assert.equal(
     await page.$('[data-community-planning-preview]'),
     null,

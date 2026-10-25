@@ -192,24 +192,66 @@ try {
     ['play-first', 'trees-first'],
   );
 
-  // A narrow mobile viewport must not clip the modal or change its authority.
-  await page.setViewport({ width: 375, height: 667, isMobile: true, hasTouch: true });
-  const mobile = await page.evaluate(() => {
-    const dialog = document.querySelector('[data-community-planning-preview]');
-    const rect = dialog.getBoundingClientRect();
-    return {
-      viewportWidth: window.innerWidth,
-      left: rect.left,
-      right: rect.right,
-      open: dialog.open,
-      disclaimer: dialog.textContent.includes('HYPOTHETICAL · NOT APPROVED'),
-    };
-  });
-  assert.equal(mobile.open, true);
-  assert.equal(mobile.disclaimer, true);
-  assert.ok(mobile.viewportWidth <= 400, 'mobile CSS viewport did not activate');
-  assert.ok(mobile.left >= -1 && mobile.right <= mobile.viewportWidth + 1,
-    'planning dialog clips outside the mobile CSS viewport');
+  // Set mobile/touch emulation before navigation. Changing isMobile or
+  // hasTouch on the active desktop page can reload it and destroy the modal.
+  const mobilePage = await browser.newPage();
+  try {
+    await mobilePage.setViewport({
+      width: 375,
+      height: 667,
+      isMobile: true,
+      hasTouch: true,
+    });
+    await mobilePage.goto(url.href, {
+      waitUntil: 'domcontentloaded',
+      timeout: 45000,
+    });
+    await mobilePage.waitForFunction(
+      () =>
+        window.__godsEyeView?.sceneDirector?._controls &&
+        document.getElementById('loading-screen')?.classList.contains('hidden'),
+      { timeout: 60000 },
+    );
+    if (
+      await mobilePage.$eval('#scene-panel', (panel) =>
+        panel.classList.contains('collapsed'),
+      )
+    )
+      await mobilePage.tap('[data-collapse-target="scene-panel"]');
+    await mobilePage.waitForSelector('[data-community-planning-preview-open]', {
+      visible: true,
+      timeout: 45000,
+    });
+    // Touch the actual opt-in launcher rather than clicking an invisible node.
+    await mobilePage.tap('[data-community-planning-preview-open]');
+    await mobilePage.waitForSelector('[data-community-planning-preview]', {
+      visible: true,
+    });
+    const mobile = await mobilePage.evaluate(() => {
+      const dialog = document.querySelector('[data-community-planning-preview]');
+      const rect = dialog.getBoundingClientRect();
+      return {
+        viewportWidth: window.innerWidth,
+        left: rect.left,
+        right: rect.right,
+        open: dialog.open,
+        disclaimer: dialog.textContent.includes('HYPOTHETICAL · NOT APPROVED'),
+        alternatives: dialog.querySelectorAll('[data-alternative-id]').length,
+      };
+    });
+    assert.equal(mobile.open, true);
+    assert.equal(mobile.disclaimer, true);
+    assert.equal(mobile.alternatives, 2);
+    assert.ok(mobile.viewportWidth <= 400, 'mobile CSS viewport did not activate');
+    assert.ok(
+      mobile.left >= -1 && mobile.right <= mobile.viewportWidth + 1,
+      'planning dialog clips outside the mobile CSS viewport',
+    );
+    await mobilePage.keyboard.press('Escape');
+    assert.equal(await mobilePage.$('[data-community-planning-preview]'), null);
+  } finally {
+    await mobilePage.close();
+  }
 
   // Escape must fully dispose the modal; reopening must be fresh and singular.
   await page.keyboard.press('Escape');

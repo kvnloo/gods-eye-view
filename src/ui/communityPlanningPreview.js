@@ -72,6 +72,13 @@ export function openCommunityPlanningPreview({ project, collaborationState }) {
   const intro = addText(dialog.body, 'p',
     `${project.place.label} · reference-only baseline ${view.baselineRevision}`);
   intro.style.color = '#aad3db';
+  const localOnly = addText(
+    dialog.body,
+    'p',
+    'LOCAL-ONLY DISPLAY · No shared room, live participants or synchronized edits.',
+  );
+  localOnly.dataset.planningLocalOnly = '';
+  localOnly.style.color = '#aad3db';
   // Attribute authored baseline references without treating them as surveyed fact.
   const sources = project.baseline.sources;
   if (!sources.length) {
@@ -172,6 +179,9 @@ export function openCommunityPlanningPreview({ project, collaborationState }) {
     dialog.body, 'p', 'View: co-op · neither mode grants authority',
   );
   modeStatus.dataset.planningModeStatus = '';
+  modeStatus.setAttribute('role', 'status');
+  modeStatus.setAttribute('aria-live', 'polite');
+  modeStatus.setAttribute('aria-atomic', 'true');
   let mode = 'co-op';
   let focusedId = alternatives[0]?.alternativeId ?? null;
   const focusButtons = alternatives.map((alternative) => {

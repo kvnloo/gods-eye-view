@@ -1,5 +1,10 @@
 # Changelog
 
+- The fork-only synthetic park comparison now visibly marks Co-op as a local-only
+  display (no live room, participants or synchronized edits). Game/Co-op changes
+  update a polite accessible status; opt-out, mobile and teardown checks cover the
+  disclosure in the existing Puppeteer gate. Full-app/browser proof remains NOT_RUN.
+
 - Fork-only planning preview shows a comparison-unavailable status and disables
   Game view when validation leaves fewer than two usable proposals. Puppeteer
   fixture gates cover one/zero valid alternatives with stale revisions; full

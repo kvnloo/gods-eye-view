@@ -31,6 +31,7 @@ try {
     'the fixture launcher must be absent without planningPreview=fixture',
   );
   assert.equal(await page.$('[data-planning-source-provenance]'), null);
+  assert.equal(await page.$('[data-planning-local-only]'), null);
   await page.goto(url.href, { waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.waitForFunction(
     () =>
@@ -69,6 +70,7 @@ try {
         .map((node) => node.textContent),
       official: text.includes('Approval: not-requested'),
       provenance,
+      localOnly: dialog.querySelector('[data-planning-local-only]')?.textContent,
       recordSummary: dialog.querySelector('[data-planning-record-summary]')?.textContent,
     };
   });
@@ -91,6 +93,7 @@ try {
         'license: synthetic-test-data · ' +
         'URL: https://example.org/synthetic-fixture',
     ],
+    localOnly: 'LOCAL-ONLY DISPLAY · No shared room, live participants or synchronized edits.',
     recordSummary: 'Planning records: 0 stale/incompatible excluded; ' +
       '0 valid beyond this two-proposal preview. ' +
       'This snapshot cannot reconstruct overwritten edits or resolve conflicts.',
@@ -139,10 +142,18 @@ try {
   await page.click(
     '[data-community-planning-preview] [data-planning-mode="game"]',
   );
-  const mode = await page.$eval(
-    '[data-planning-mode-status]', (el) => el.textContent,
-  );
-  assert.equal(mode, 'View: game · neither mode grants authority');
+  const mode = await page.$eval('[data-planning-mode-status]', (el) => ({
+    text: el.textContent,
+    role: el.getAttribute('role'),
+    live: el.getAttribute('aria-live'),
+    atomic: el.getAttribute('aria-atomic'),
+  }));
+  assert.deepEqual(mode, {
+    text: 'View: game · neither mode grants authority',
+    role: 'status',
+    live: 'polite',
+    atomic: 'true',
+  });
   // Native button activation, not a synthetic click: focus then press Enter.
   assert.equal(
     await page.evaluate(() => {
@@ -183,6 +194,11 @@ try {
       (items) => items.filter((item) => !item.hidden).map((item) => item.dataset.alternativeId),
     ),
     ['play-first', 'trees-first'],
+  );
+
+  assert.equal(
+    await page.$eval('[data-planning-mode-status]', (el) => el.textContent),
+    'View: co-op · neither mode grants authority',
   );
 
   // Set mobile/touch emulation before navigation. Changing isMobile or
@@ -229,11 +245,13 @@ try {
         right: rect.right,
         open: dialog.open,
         disclaimer: dialog.textContent.includes('HYPOTHETICAL · NOT APPROVED'),
+        localOnly: dialog.querySelector('[data-planning-local-only]')?.textContent,
         alternatives: dialog.querySelectorAll('[data-alternative-id]').length,
       };
     });
     assert.equal(mobile.open, true);
     assert.equal(mobile.disclaimer, true);
+    assert.equal(mobile.localOnly, 'LOCAL-ONLY DISPLAY · No shared room, live participants or synchronized edits.');
     assert.equal(mobile.alternatives, 2);
     assert.ok(mobile.viewportWidth <= 400, 'mobile CSS viewport did not activate');
     assert.ok(
@@ -310,6 +328,7 @@ try {
     null,
   );
   assert.equal(await page.$('[data-planning-source-provenance]'), null);
+  assert.equal(await page.$('[data-planning-local-only]'), null);
   // Negative control: an unsupported/stale imported proposal is excluded
   // visibly, without leaking into the two valid synthetic alternatives.
   const excluded = await page.evaluate(async () => {

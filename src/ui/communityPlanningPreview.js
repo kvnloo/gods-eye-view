@@ -72,13 +72,20 @@ export function openCommunityPlanningPreview({ project, collaborationState }) {
   intro.style.color = '#aad3db';
   addText(dialog.body, 'p',
     'Compare user-authored possibilities, not verified construction or traffic forecasts.');
+  const alternatives = view.alternatives.slice(0, 2);
+  const focusNavigation = dialog.body.ownerDocument.createElement('nav');
+  focusNavigation.dataset.planningFocusNavigation = '';
+  focusNavigation.setAttribute('aria-label', 'Inspect a hypothetical proposal');
+  focusNavigation.hidden = true;
+  dialog.body.appendChild(focusNavigation);
   const cards = dialog.body.ownerDocument.createElement('div');
   cards.dataset.planningAlternatives = '';
   Object.assign(cards.style, {
     display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'stretch',
   });
   dialog.body.appendChild(cards);
-  for (const alternative of view.alternatives.slice(0, 2)) {
+  const articles = [];
+  for (const alternative of alternatives) {
     const article = dialog.body.ownerDocument.createElement('article');
     article.dataset.alternativeId = alternative.alternativeId;
     article.setAttribute('aria-label', alternative.title);
@@ -104,18 +111,50 @@ export function openCommunityPlanningPreview({ project, collaborationState }) {
     for (const assumption of alternative.assumptions)
       addText(article, 'p', `Assumption: ${assumption}`);
     cards.appendChild(article);
+    articles.push({ id: alternative.alternativeId, element: article });
   }
   const modeStatus = addText(
     dialog.body, 'p', 'View: co-op · neither mode grants authority',
   );
   modeStatus.dataset.planningModeStatus = '';
-  for (const mode of ['co-op', 'game']) {
-    dialog.button(mode === 'co-op' ? 'Co-op view' : 'Game view', () => {
-      const selected = planningView(project, collaborationState, mode);
-      modeStatus.textContent =
-        `View: ${selected.mode} · neither mode grants authority`;
-    });
+  let mode = 'co-op';
+  let focusedId = alternatives[0]?.alternativeId ?? null;
+  const focusButtons = alternatives.map((alternative) => {
+    const button = dialog.button(
+      `Inspect ${alternative.title}`,
+      () => {
+        focusedId = alternative.alternativeId;
+        syncMode();
+      },
+      focusNavigation,
+    );
+    button.dataset.planningFocusId = alternative.alternativeId;
+    return { id: alternative.alternativeId, button };
+  });
+  const modeButtons = ['co-op', 'game'].map((value) => ({
+    value,
+    button: dialog.button(
+      value === 'co-op' ? 'Co-op view' : 'Game view',
+      () => {
+        mode = value;
+        syncMode();
+      },
+    ),
+  }));
+  function syncMode() {
+    const single = mode === 'game';
+    focusNavigation.hidden = !single;
+    for (const { id, element } of articles)
+      element.hidden = single && id !== focusedId;
+    for (const { id, button } of focusButtons)
+      button.setAttribute('aria-pressed', String(single && id === focusedId));
+    for (const { value, button } of modeButtons)
+      button.setAttribute('aria-pressed', String(value === mode));
+    // Presentation only. Choosing a card never updates proposal data or evidence.
+    modeStatus.textContent =
+      `View: ${mode} · neither mode grants authority`;
   }
+  syncMode();
   return dialog;
 }
 

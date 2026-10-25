@@ -63,6 +63,8 @@ export function openCommunityPlanningPreview({ project, collaborationState }) {
   let dialog;
   const close = () => dialog?.dispose();
   dialog = createSceneDialog('Community planning · hypothetical preview', close);
+  // Stable browser hooks for genuine pointer/touch verification of the modal.
+  dialog.footer.querySelector('button').dataset.planningCancel = '';
   dialog.element.dataset.communityPlanningPreview = '';
   dialog.element.style.width = 'min(900px,calc(100vw - 32px))';
   dialog.status.textContent =
@@ -184,16 +186,17 @@ export function openCommunityPlanningPreview({ project, collaborationState }) {
     button.dataset.planningFocusId = alternative.alternativeId;
     return { id: alternative.alternativeId, button };
   });
-  const modeButtons = ['co-op', 'game'].map((value) => ({
-    value,
-    button: dialog.button(
+  const modeButtons = ['co-op', 'game'].map((value) => {
+    const button = dialog.button(
       value === 'co-op' ? 'Co-op view' : 'Game view',
       () => {
         mode = value;
         syncMode();
       },
-    ),
-  }));
+    );
+    button.dataset.planningMode = value;
+    return { value, button };
+  });
   if (alternatives.length < 2) {
     const gameButton = modeButtons.find(({ value }) => value === 'game').button;
     gameButton.disabled = true;

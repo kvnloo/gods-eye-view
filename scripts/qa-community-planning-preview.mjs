@@ -293,7 +293,7 @@ try {
       preview.dispose();
     }
   });
-  assert.match(excluded.summary, /1 stale\\/incompatible excluded/);
+  assert.ok(excluded.summary.includes('1 stale/incompatible excluded'));
   assert.deepEqual(excluded.visibleIds, ['play-first', 'trees-first']);
   assert.equal(await page.$('[data-community-planning-preview]'), null);
   console.log('Community planning preview: 2 hypothetical proposals, 5 markers, baseline provenance, keyboard, mobile viewport, Escape/reopen and close PASS');

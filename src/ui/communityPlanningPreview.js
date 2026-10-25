@@ -222,8 +222,12 @@ export function openCommunityPlanningPreview({ project, collaborationState }) {
     for (const { value, button } of modeButtons)
       button.setAttribute('aria-pressed', String(value === mode));
     // Presentation only. Choosing a card never updates proposal data or evidence.
-    modeStatus.textContent =
-      `View: ${mode} · neither mode grants authority`;
+    const focusedTitle =
+      alternatives.find((alternative) => alternative.alternativeId === focusedId)
+        ?.title ?? 'unknown proposal';
+    modeStatus.textContent = single
+      ? `View: game · inspecting ${focusedTitle} (hypothetical) · neither mode grants authority`
+      : 'View: co-op · neither mode grants authority';
   }
   syncMode();
   return dialog;

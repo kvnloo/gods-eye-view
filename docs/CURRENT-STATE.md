@@ -14,8 +14,9 @@ its two-card limit. It cannot reconstruct overwritten edits or certify conflict
 resolution from the winner-only projection. With fewer than two valid
 alternatives, the UI explicitly marks comparison unavailable and disables Game
 view instead of treating excluded records as proposals. The visible Co-op mode is explicitly local-only (no shared room, live
-participants or synchronized edits); switching modes updates an accessible
-polite status announcement. No real parcel, observed-data edit, simulation,
+participants or synchronized edits); switching modes or inspecting a different
+hypothetical proposal updates an accessible polite status announcement with the
+selected proposal title. No real parcel, observed-data edit, simulation,
 approval, external transport or live multiplayer is provided. This is **not** a production/origin feature. Supported-runtime
 full-app and browser acceptance remain **NOT_RUN**.
 

@@ -113,16 +113,24 @@ try {
   );
   assert.deepEqual(focused, ['play-first']);
   assert.equal(
+    await page.$eval('[data-planning-mode-status]', (el) => el.textContent),
+    'View: game · inspecting Play & community garden (hypothetical) · neither mode grants authority',
+  );
+  assert.equal(
     await page.$eval('[data-planning-focus-navigation]', (el) => el.hidden),
     false,
   );
   await page.click('[data-planning-focus-id="trees-first"]');
   assert.deepEqual(
-    await page.$$eval(
+    await page.$eval(
       '[data-community-planning-preview] [data-alternative-id]',
       (items) => items.filter((item) => !item.hidden).map((item) => item.dataset.alternativeId),
     ),
     ['trees-first'],
+  );
+  assert.equal(
+    await page.$eval('[data-planning-mode-status]', (el) => el.textContent),
+    'View: game · inspecting Trees & shade (hypothetical) · neither mode grants authority',
   );
   await page.click(
     '[data-community-planning-preview] [data-planning-mode="co-op"]',
@@ -149,7 +157,7 @@ try {
     atomic: el.getAttribute('aria-atomic'),
   }));
   assert.deepEqual(mode, {
-    text: 'View: game · neither mode grants authority',
+    text: 'View: game · inspecting Trees & shade (hypothetical) · neither mode grants authority',
     role: 'status',
     live: 'polite',
     atomic: 'true',
@@ -157,7 +165,7 @@ try {
   // Native button activation, not a synthetic click: focus then press Enter.
   assert.equal(
     await page.evaluate(() => {
-      const button = document.querySelector('[data-planning-focus-id="trees-first"]');
+      const button = document.querySelector('[data-planning-focus-id="play-first"]');
       button.focus();
       return document.activeElement === button;
     }),
@@ -169,12 +177,16 @@ try {
       '[data-community-planning-preview] [data-alternative-id]',
       (items) => items.filter((item) => !item.hidden).map((item) => item.dataset.alternativeId),
     ),
-    ['trees-first'],
+    ['play-first'],
   );
   assert.equal(
-    await page.$eval('[data-planning-focus-id="trees-first"]', (el) =>
+    await page.$eval('[data-planning-focus-id="play-first"]', (el) =>
       el.getAttribute('aria-pressed')),
     'true',
+  );
+  assert.equal(
+    await page.$eval('[data-planning-mode-status]', (el) => el.textContent),
+    'View: game · inspecting Play & community garden (hypothetical) · neither mode grants authority',
   );
   assert.equal(
     await page.evaluate(() => {

@@ -17,7 +17,7 @@ The opt-in query is an **exact match**; normal startup does not import the previ
 
 The demo composes a synthetic reference-only parcel and two distinct author operations through the existing `collaborationAuthority.js` kernel. It shows "Trees & shade" (recorded actor `alice`) beside "Play & community garden" (recorded actor `bob`), with schematic markers normalized to the authored fixture bounds, assumptions, and explicit `not-evaluated` and `not-requested` labels. Credit is the **recorded operation actor ID, not verified real-world identity**.
 
-`Game view` and `Co-op view` switch **local presentation only**; neither adds points, votes, municipal approval, a site suitability claim, a model prediction, a route, a signal controller, or writes to GEV observed data. There is no real parcel, no live collaborative service, no GIS survey accuracy, no profile location inference, and no map/satellite tile redistribution. The plot is an approximate SVG schematic, not a geospatial basemap.
+`Co-op view` shows both proposals side by side; `Game view` focuses one proposal at a time, with keyboard-accessible `Inspect` controls to switch between them. This is a **local, reversible presentation choice**, not a simulation or scoring mechanic. Neither adds points, votes, municipal approval, a site suitability claim, a model prediction, a route, a signal controller, or writes to GEV observed data. There is no real parcel, no live collaborative service, no GIS survey accuracy, no profile location inference, and no map/satellite tile redistribution. The plot is an approximate SVG schematic, not a geospatial basemap.
 
 ## Gates
 
@@ -27,7 +27,7 @@ node --test src/standalone/communityPlanningFixture.test.mjs
 node scripts/qa-community-planning-preview.mjs
 ```
 
-The QA gate uses the repository's existing Puppeteer dev dependency, opens the opt-in GEV URL, and checks that two branches, 5 markers, two recorded actors, no official approvals, and mode toggling/close behavior are present.
+The QA gate uses the repository's existing Puppeteer dev dependency, opens the opt-in GEV URL, and checks that two branches, 5 markers, two recorded actors, no official approvals, and mode toggling/focused-card switching/restoring both cards/close behavior are present.
 
 A separate isolated Chromium smoke test of the preview DOM with a **stubbed planning-data adapter** passed: 2 hypothetical cards, author credits, schematic markers, local mode toggle and teardown. That test does **not** prove complete real-app startup, two-browser sync, or production bundle behavior; the actual GEV browser gate above must pass before further promotion.
 

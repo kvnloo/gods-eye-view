@@ -245,7 +245,7 @@ try {
       '[data-community-planning-preview] [data-planning-mode="game"]',
     );
     assert.deepEqual(
-      await mobilePage.$eval(
+      await mobilePage.$$eval(
         '[data-community-planning-preview] [data-alternative-id]',
         (items) =>
           items.filter((item) => !item.hidden).map((item) => item.dataset.alternativeId),
@@ -256,7 +256,7 @@ try {
       '[data-community-planning-preview] [data-planning-mode="co-op"]',
     );
     assert.deepEqual(
-      await mobilePage.$eval(
+      await mobilePage.$$eval(
         '[data-community-planning-preview] [data-alternative-id]',
         (items) =>
           items.filter((item) => !item.hidden).map((item) => item.dataset.alternativeId),

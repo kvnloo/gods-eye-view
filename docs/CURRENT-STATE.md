@@ -6,7 +6,10 @@ The downstream `exp/community-park-preview-20261013` draft adds an opt-in,
 single-browser `?planningPreview=fixture` comparison of two hypothetical
 park proposals in the existing Scene dialog. It displays recorded pseudonymous
 actor credits and explicit synthetic baseline source ID, revision, attribution,
-license and URL, or an unverified-source notice if none exists. No real parcel,
+license and URL, or an unverified-source notice if none exists. The preview
+reports excluded stale/incompatible authored records and valid proposals beyond
+its two-card limit. It cannot reconstruct overwritten edits or certify conflict
+resolution from the winner-only projection. No real parcel,
 observed-data edit, simulation, approval, external transport or live multiplayer
 is provided. This is **not** a production/origin feature. Supported-runtime
 full-app and browser acceptance remain **NOT_RUN**.

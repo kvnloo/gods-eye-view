@@ -1,5 +1,11 @@
 # Changelog
 
+- Fork-only Scene community planning preview discloses excluded stale/incompatible
+  authored proposals and valid alternatives beyond the two-card comparison.
+  The winner-only snapshot explicitly cannot reconstruct overwritten conflicts.
+  A real-app Puppeteer negative gate supplies a stale/cross-project record;
+  native full-app and browser verification remain NOT_RUN.
+
 - Vector tile sources take their allowed tile origin from the configured
   `tileJsonUrl`, so repointing only that URL at a mirror loads tiles from the
   mirror or fails visibly instead of silently using OpenFreeMap. Thanks to

@@ -16,6 +16,9 @@ npm run dev
 The opt-in query is an **exact match**; normal startup does not import the preview. The preview button mounts within the existing Scene panel after startup and is removed when the application is destroyed.
 
 The demo composes a synthetic reference-only parcel and two distinct author operations through the existing `collaborationAuthority.js` kernel. It shows "Trees & shade" (recorded actor `alice`) beside "Play & community garden" (recorded actor `bob`), with schematic markers normalized to the authored fixture bounds, assumptions, and explicit `not-evaluated` and `not-requested` labels. Credit is the **recorded operation actor ID, not verified real-world identity**.
+The Scene preview also prints the synthetic baseline source's ID, fixture revision,
+attribution, license and URL as **plain text**, never fetched or interpreted as
+verified land ownership. Missing source records are explicitly marked unverified.
 
 `Co-op view` shows both proposals side by side; `Game view` focuses one proposal at a time, with keyboard-accessible `Inspect` controls to switch between them. This is a **local, reversible presentation choice**, not a simulation or scoring mechanic. Neither adds points, votes, municipal approval, a site suitability claim, a model prediction, a route, a signal controller, or writes to GEV observed data. There is no real parcel, no live collaborative service, no GIS survey accuracy, no profile location inference, and no map/satellite tile redistribution. The plot is an approximate SVG schematic, not a geospatial basemap.
 

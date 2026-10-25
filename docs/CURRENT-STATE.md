@@ -1,5 +1,16 @@
 # God's Eye View Current State
 
+## Fork-only synthetic co-op Scene preview — October 25, 2026
+
+The downstream `exp/community-park-preview-20261013` draft adds an opt-in,
+single-browser `?planningPreview=fixture` comparison of two hypothetical
+park proposals in the existing Scene dialog. It displays recorded pseudonymous
+actor credits and explicit synthetic baseline source ID, revision, attribution,
+license and URL, or an unverified-source notice if none exists. No real parcel,
+observed-data edit, simulation, approval, external transport or live multiplayer
+is provided. This is **not** a production/origin feature. Supported-runtime
+full-app and browser acceptance remain **NOT_RUN**.
+
 ## God's Eye View in conversations — October 2, 2026
 
 Tool answers that can be shown in God's Eye View include a view: camera, layers,

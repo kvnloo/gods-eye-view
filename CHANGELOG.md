@@ -68,6 +68,11 @@
 
 ## [Unreleased]
 
+- Fork-only experimental co-op Scene comparison makes its synthetic baseline
+  source revision, attribution, license and URL explicit (or marks absent
+  provenance unknown). Still single-browser, hypothetical and not an approved
+  city-planning or model result. Live GEV/Puppeteer acceptance is outstanding.
+
 - Add an experimental ChatGPT/Codex OAuth option for cloud voice in Provider
   Settings. API-key voice remains the default. Local sign-in can start from
   the auth button and reports completion, failure, timeout, or expired

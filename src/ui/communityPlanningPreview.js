@@ -70,6 +70,22 @@ export function openCommunityPlanningPreview({ project, collaborationState }) {
   const intro = addText(dialog.body, 'p',
     `${project.place.label} · reference-only baseline ${view.baselineRevision}`);
   intro.style.color = '#aad3db';
+  // Attribute authored baseline references without treating them as surveyed fact.
+  const sources = project.baseline.sources;
+  if (!sources.length) {
+    const notice = addText(dialog.body, 'p',
+      'Baseline source: absent · verification unavailable');
+    notice.dataset.planningSourceProvenance = '';
+  }
+  for (const source of sources) {
+    const provenance = addText(
+      dialog.body, 'p',
+      `Baseline source: ${source.id} · revision: ${source.revision} · ` +
+        `attribution: ${source.attribution} · license: ${source.license} · ` +
+        `URL: ${source.url}`,
+    );
+    provenance.dataset.planningSourceProvenance = '';
+  }
   addText(dialog.body, 'p',
     'Compare user-authored possibilities, not verified construction or traffic forecasts.');
   const alternatives = view.alternatives.slice(0, 2);

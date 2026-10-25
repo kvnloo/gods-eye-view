@@ -30,6 +30,7 @@ try {
     null,
     'the fixture launcher must be absent without planningPreview=fixture',
   );
+  assert.equal(await page.$('[data-planning-source-provenance]'), null);
   await page.goto(url.href, { waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.waitForFunction(
     () =>
@@ -53,6 +54,9 @@ try {
   const checked = await page.evaluate(() => {
     const dialog = document.querySelector('[data-community-planning-preview]');
     const text = dialog.textContent;
+    const provenance = [...dialog.querySelectorAll(
+      '[data-planning-source-provenance]',
+    )].map((node) => node.textContent);
     return {
       open: dialog.open,
       alternatives: dialog.querySelectorAll('[data-alternative-id]').length,
@@ -62,6 +66,7 @@ try {
       alice: text.includes('Recorded author: alice'),
       bob: text.includes('Recorded author: bob'),
       official: text.includes('Approval: not-requested'),
+      provenance,
     };
   });
   assert.deepEqual(checked, {
@@ -73,6 +78,12 @@ try {
     alice: true,
     bob: true,
     official: true,
+    provenance: [
+      'Baseline source: synthetic-source · revision: fixture-v1 · ' +
+        'attribution: Generated example, not official parcel data · ' +
+        'license: synthetic-test-data · ' +
+        'URL: https://example.org/synthetic-fixture',
+    ],
   });
   const initiallyVisible = await page.$$eval(
     '[data-community-planning-preview] [data-alternative-id]',
@@ -232,7 +243,8 @@ try {
     await page.$('[data-community-planning-preview]'),
     null,
   );
-  console.log('Community planning preview: 2 hypothetical proposals, 5 markers, keyboard, mobile viewport, Escape/reopen and close PASS');
+  assert.equal(await page.$('[data-planning-source-provenance]'), null);
+  console.log('Community planning preview: 2 hypothetical proposals, 5 markers, baseline provenance, keyboard, mobile viewport, Escape/reopen and close PASS');
 } finally {
   await browser.close();
 }

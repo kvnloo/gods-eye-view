@@ -503,6 +503,80 @@ try {
     afterSecondModals: 0,
     detached: true,
   });
+  // Third and later valid authored alternatives are not compared, but their
+  // provenance must remain discoverable and bounded instead of disappearing.
+  const additional = await page.evaluate(async () => {
+    const { createSyntheticCommunityPlanningFixture } = await import(
+      '/src/standalone/communityPlanningFixture.js'
+    );
+    const { createPlanningAlternativeOperation } = await import(
+      '/src/data/communityPlanning.js'
+    );
+    const { applyCollaborationOperation } = await import(
+      '/src/data/collaborationAuthority.js'
+    );
+    const { openCommunityPlanningPreview } = await import(
+      '/src/ui/communityPlanningPreview.js'
+    );
+    const inspect = (count) => {
+      const { project, collaborationState } =
+        createSyntheticCommunityPlanningFixture();
+      let state = collaborationState;
+      for (let i = 0; i < count; i++) {
+        const padded = String(i).padStart(2, '0');
+        const operation = createPlanningAlternativeOperation(project, {
+          operationId: `charlie-extra-${padded}`,
+          actorId: 'charlie',
+          counter: i + 1,
+          alternativeId: `zz-${padded}`,
+          title: `Extra hypothetical park ${padded}`,
+          features: [],
+          assumptions: ['No site ownership checked'],
+        });
+        const next = applyCollaborationOperation(state, operation);
+        if (!next.result.accepted || !next.result.changed)
+          throw new Error('synthetic operation was not accepted');
+        state = next.state;
+      }
+      const preview = openCommunityPlanningPreview({
+        project,
+        collaborationState: state,
+      });
+      try {
+        const root = preview.element;
+        const details = root.querySelector('[data-planning-additional-details]');
+        return {
+          cards: [...root.querySelectorAll('[data-alternative-id]')]
+            .map((item) => item.dataset.alternativeId),
+          summary: root.querySelector('[data-planning-record-summary]').textContent,
+          heading: details?.querySelector('summary')?.textContent,
+          records: [...(details?.querySelectorAll('[data-planning-additional-record]') ?? [])]
+            .map((item) => item.textContent),
+          overflow: details?.querySelector('li:last-child')?.textContent,
+        };
+      } finally {
+        preview.dispose();
+      }
+    };
+    return { one: inspect(1), many: inspect(10) };
+  });
+  assert.deepEqual(additional.one.cards, ['play-first', 'trees-first']);
+  assert.ok(additional.one.summary.includes('1 valid beyond this two-proposal preview'));
+  assert.equal(
+    additional.one.heading,
+    'Inspect 1 additional valid hypothetical proposal not shown in comparison',
+  );
+  assert.deepEqual(additional.one.records, [
+    'Extra hypothetical park 00 · proposal zz-00 · Recorded author: charlie (unverified identity) · ' +
+      'Source revision: synthetic-parcel-v1 · HYPOTHETICAL · NOT APPROVED',
+  ]);
+  assert.deepEqual(additional.many.cards, ['play-first', 'trees-first']);
+  assert.ok(additional.many.summary.includes('10 valid beyond this two-proposal preview'));
+  assert.equal(additional.many.records.length, 8);
+  assert.ok(additional.many.records[0].includes('proposal zz-00'));
+  assert.ok(additional.many.records[7].includes('proposal zz-07'));
+  assert.equal(additional.many.overflow, '2 more valid proposals not listed');
+  assert.equal(await page.$('[data-community-planning-preview]'), null);
   // Negative control: an unsupported/stale imported proposal is excluded
   // visibly, without leaking into the two valid synthetic alternatives.
   const excluded = await page.evaluate(async () => {

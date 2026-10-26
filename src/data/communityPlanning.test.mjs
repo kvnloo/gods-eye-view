@@ -209,3 +209,57 @@ test('real collaboration kernel merges both neighbors and rejects remote control
     'remote-side-effect-requires-local-confirmation',
   );
 });
+
+test('sparse imported planning arrays fail closed without breaking valid neighbors', () => {
+  const base = project();
+  const valid = proposal('trees-first', 'alice', 'alice-op', 'oak');
+  const apply = (value) => applyCollaborationOperation(
+    createCollaborationState(),
+    { ...valid, value },
+  );
+  // The merge kernel accepts authored data. The planning projection must
+  // reject sparse imported lists before the Scene UI iterates their holes.
+  for (const field of ['features', 'assumptions']) {
+    const accepted = apply({ ...valid.value, [field]: Array(1) });
+    assert.equal(accepted.result.accepted, true);
+    assert.deepEqual(listPlanningAlternatives(base, accepted.state), []);
+    assert.deepEqual(planningView(base, accepted.state).alternatives, []);
+  }
+
+  const input = {
+    alternativeId: 'trees-first',
+    actorId: 'alice',
+    operationId: 'alice-op',
+    counter: 1,
+    title: 'Trees and shade',
+  };
+  assert.throws(() => createPlanningAlternativeOperation(base, {
+    ...input, features: Array(1),
+  }), /features must be a dense bounded array/);
+  assert.throws(() => createPlanningAlternativeOperation(base, {
+    ...input, assumptions: Array(1),
+  }), /assumptions must be a dense bounded array/);
+  assert.throws(() => createPlanningAlternativeOperation(base, {
+    ...input, features: [
+      { id: 'oak', kind: 'tree', point: Array(2) },
+    ],
+  }), /feature requires a supported kind/);
+
+  const site = {
+    id: 'sample-park',
+    title: 'Synthetic park',
+    place: { label: 'Fixture site', bounds: [-88.2, 40, -88.1, 40.1] },
+    baseline: { revision: 'r1' },
+  };
+  assert.throws(() => createCommunityPlanningProject({
+    ...site, place: { ...site.place, bounds: Array(4) },
+  }), /place bounds/);
+  assert.throws(() => createCommunityPlanningProject({
+    ...site, baseline: { ...site.baseline, sources: Array(1) },
+  }), /sources must be a dense bounded array/);
+  const positive = apply(valid.value);
+  assert.deepEqual(
+    listPlanningAlternatives(base, positive.state).map((item) => item.alternativeId),
+    ['trees-first'],
+  );
+});

@@ -10,8 +10,11 @@ is valid (otherwise explicitly unknown), and synthetic baseline source ID,
 revision, attribution, license and URL, or an unverified-source notice if none
 exists. Recorded metadata does not authenticate a participant or grant approval. The preview
 reports excluded stale/incompatible authored records and valid proposals beyond
-its two-card limit. A keyboard-accessible disclosure lists up to eight rejected
-proposal IDs (masking invalid IDs), with remaining exclusions counted. Those
+its two-card limit. A separate disclosure lists up to eight additional valid,
+but unshown, hypothetical proposal titles/IDs with recorded (unverified) authors
+and source revisions. More valid proposals are counted but never silently treated
+as compared, approved or modeled. A keyboard-accessible disclosure lists up to
+eight rejected proposal IDs (masking invalid IDs), with remaining exclusions counted. Those
 IDs are sorted before the eight-item cap, so equivalent imported records show
 the same subset regardless of arrival order. The planning validator owns rejection; the UI does not invent a precise cause or
 display unrelated projects. It cannot reconstruct overwritten edits or certify

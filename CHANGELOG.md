@@ -1,5 +1,12 @@
 # Changelog
 
+- The fork-only park proposal preview now sorts rejected record IDs before
+  displaying a capped set of eight, so identical imports produce the same
+  disclosure regardless of arrival order. Its existing Puppeteer gate now
+  checks reversed input order, overflow counts, malformed-ID masking and
+  preservation of the two valid synthetic proposals. Full-app browser and
+  supported Node 24/26 verification remain NOT_RUN.
+
 - The fork-only community planning Scene preview now offers an expandable,
   keyboard-accessible list of up to eight rejected proposal IDs, masks invalid
   IDs, and counts additional rejected entries. Unrelated projects are excluded.

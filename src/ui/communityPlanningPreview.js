@@ -123,6 +123,36 @@ export function openCommunityPlanningPreview({ project, collaborationState }) {
     'planning-record-status',
   );
   recordSummary.dataset.planningRecordSummary = '';
+  // A two-card preview must not silently hide other valid authored work.
+  // List only bounded, read-only provenance; these are not compared or approved.
+  if (beyondPreview) {
+    const details = dialog.body.ownerDocument.createElement('details');
+    details.dataset.planningAdditionalDetails = '';
+    addText(
+      details,
+      'summary',
+      `Inspect ${beyondPreview} additional valid hypothetical proposal${beyondPreview === 1 ? '' : 's'} not shown in comparison`,
+    );
+    const list = dialog.body.ownerDocument.createElement('ul');
+    for (const alternative of view.alternatives.slice(2, 10)) {
+      const author = alternative.authorship?.status === 'recorded'
+        ? `${alternative.authorship.actorId} (unverified identity)`
+        : 'unknown';
+      const item = addText(
+        list,
+        'li',
+        `${alternative.title} · proposal ${alternative.alternativeId} · ` +
+          `Recorded author: ${author} · ` +
+          `Source revision: ${alternative.baselineRevision} · ` +
+          'HYPOTHETICAL · NOT APPROVED',
+      );
+      item.dataset.planningAdditionalRecord = '';
+    }
+    if (beyondPreview > 8)
+      addText(list, 'li', `${beyondPreview - 8} more valid proposals not listed`);
+    details.appendChild(list);
+    dialog.body.appendChild(details);
+  }
   // The data owner validates proposals; this disclosure reports exclusions
   // without guessing a cause, reviving stale data or claiming conflict history.
   if (excludedRecords) {

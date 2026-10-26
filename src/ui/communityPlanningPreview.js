@@ -104,11 +104,14 @@ export function openCommunityPlanningPreview({ project, collaborationState }) {
   const projectedIds = new Set(
     view.alternatives.map((alternative) => alternative.alternativeId),
   );
-  const excludedRecords = Object.keys(collaborationState?.authored ?? {}).filter(
-    (key) =>
-      key.startsWith(recordPrefix) &&
-      !projectedIds.has(key.slice(recordPrefix.length)),
-  ).length;
+  const excludedIds = Object.keys(collaborationState?.authored ?? {})
+    .filter(
+      (key) =>
+        key.startsWith(recordPrefix) &&
+        !projectedIds.has(key.slice(recordPrefix.length)),
+    )
+    .map((key) => key.slice(recordPrefix.length));
+  const excludedRecords = excludedIds.length;
   const beyondPreview = view.alternatives.length - alternatives.length;
   const recordSummary = addText(
     dialog.body, 'p',
@@ -118,6 +121,33 @@ export function openCommunityPlanningPreview({ project, collaborationState }) {
     'planning-record-status',
   );
   recordSummary.dataset.planningRecordSummary = '';
+  // The data owner validates proposals; this disclosure reports exclusions
+  // without guessing a cause, reviving stale data or claiming conflict history.
+  if (excludedRecords) {
+    const details = dialog.body.ownerDocument.createElement('details');
+    details.dataset.planningExcludedDetails = '';
+    addText(
+      details,
+      'summary',
+      `Inspect ${excludedRecords} excluded proposal record${excludedRecords === 1 ? '' : 's'}`,
+    );
+    const list = dialog.body.ownerDocument.createElement('ul');
+    for (const id of excludedIds.slice(0, 8)) {
+      const label = /^[a-z][a-z0-9-]{0,63}$/.test(id)
+        ? id
+        : '(invalid proposal id)';
+      const item = addText(
+        list,
+        'li',
+        `Excluded ${label} · stale, invalid or incompatible; exact cause not verified`,
+      );
+      item.dataset.planningExcludedRecord = '';
+    }
+    if (excludedRecords > 8)
+      addText(list, 'li', `${excludedRecords - 8} more excluded records not listed`);
+    details.appendChild(list);
+    dialog.body.appendChild(details);
+  }
   // An invalid-only snapshot cannot be presented as a comparison.
   if (alternatives.length < 2) {
     const message = alternatives.length === 0

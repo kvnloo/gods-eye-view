@@ -2,6 +2,24 @@ import assert from 'node:assert/strict';
 import puppeteer from 'puppeteer';
 
 /**
+ * Dev-server lazy-import proof. A missing launcher alone cannot show whether
+ * fixture-only modules were accidentally fetched on normal startup.
+ */
+async function loadedPreviewModules(page) {
+  return page.evaluate(() =>
+    performance
+      .getEntriesByType('resource')
+      .map((entry) => new URL(entry.name).pathname)
+      .filter(
+        (pathname) =>
+          pathname.endsWith('/src/ui/communityPlanningPreview.js') ||
+          pathname.endsWith('/src/standalone/communityPlanningFixture.js'),
+      )
+      .sort(),
+  );
+}
+
+/**
  * Headless gate for the opt-in GEV Scene preview. Start the GEV dev server first.
  * It never edits a real place or downloads municipal data.
  */
@@ -32,6 +50,11 @@ try {
   );
   assert.equal(await page.$('[data-planning-source-provenance]'), null);
   assert.equal(await page.$('[data-planning-local-only]'), null);
+  assert.deepEqual(
+    await loadedPreviewModules(page),
+    [],
+    'normal startup must not fetch the fixture-only planning modules',
+  );
   await page.goto(url.href, { waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.waitForFunction(
     () =>
@@ -52,6 +75,10 @@ try {
   });
   await page.click('[data-community-planning-preview-open]');
   await page.waitForSelector('[data-community-planning-preview]');
+  assert.deepEqual(await loadedPreviewModules(page), [
+    '/src/standalone/communityPlanningFixture.js',
+    '/src/ui/communityPlanningPreview.js',
+  ]);
   const checked = await page.evaluate(() => {
     const dialog = document.querySelector('[data-community-planning-preview]');
     const text = dialog.textContent;

@@ -350,7 +350,7 @@ try {
     assert.equal(await mobilePage.$('[data-community-planning-preview]'), null);
     assert.equal(await mobilePage.$('[data-planning-local-only]'), null);
     assert.equal(
-      await mobilePage.$eval(
+      await mobilePage.$$eval(
         '[data-community-planning-preview-open]',
         (items) => items.length,
       ),

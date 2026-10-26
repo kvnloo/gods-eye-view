@@ -392,6 +392,12 @@ try {
   await page.keyboard.press('Escape');
   assert.equal(await page.$('[data-community-planning-preview]'), null);
   assert.equal(
+    await page.$eval('[data-community-planning-preview-open]', (button) =>
+      document.activeElement === button),
+    true,
+    'Escape must restore keyboard focus to the surviving Scene launcher',
+  );
+  assert.equal(
     await page.$$eval('[data-community-planning-preview-open]', (items) => items.length),
     1,
   );
@@ -427,6 +433,12 @@ try {
   assert.equal(
     await page.$('[data-community-planning-preview]'),
     null,
+  );
+  assert.equal(
+    await page.$eval('[data-community-planning-preview-open]', (button) =>
+      document.activeElement === button),
+    true,
+    'Cancel must return focus to the surviving Scene launcher',
   );
   assert.equal(await page.$('[data-planning-source-provenance]'), null);
   assert.equal(await page.$('[data-planning-local-only]'), null);

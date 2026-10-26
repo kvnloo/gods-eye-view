@@ -21,6 +21,15 @@ function text(value, label, max = 160) {
   return value.trim();
 }
 
+/** Reject sparse and inherited-index lists before imported proposal rendering. */
+function denseArray(value, maxLength) {
+  if (!Array.isArray(value) || value.length > maxLength) return false;
+  for (let index = 0; index < value.length; index++) {
+    if (!Object.hasOwn(value, index)) return false;
+  }
+  return true;
+}
+
 function freeze(value) {
   if (value && typeof value === 'object' && !Object.isFrozen(value)) {
     for (const child of Object.values(value)) freeze(child);
@@ -30,7 +39,7 @@ function freeze(value) {
 }
 
 function bounds(value) {
-  if (!Array.isArray(value) || value.length !== 4) {
+  if (!denseArray(value, 4) || value.length !== 4) {
     throw new TypeError('place bounds must be [west,south,east,north]');
   }
   const [west, south, east, north] = value;
@@ -47,14 +56,18 @@ function bounds(value) {
 /** A place footprint is explicitly authored, never derived from a user's location. */
 export function createCommunityPlanningProject(input = {}) {
   const extent = bounds(input.place?.bounds);
-  const references = (input.baseline?.sources ?? []).map((source) => ({
+  const sourceEntries = input.baseline?.sources ?? [];
+  if (!denseArray(sourceEntries, 30)) {
+    throw new TypeError('sources must be a dense bounded array');
+  }
+  const references = sourceEntries.map((source) => ({
     id: identifier(source?.id, 'source id'),
     revision: text(source?.revision, 'source revision', 120),
     url: text(source?.url, 'source URL', 2048),
     attribution: text(source?.attribution, 'source attribution'),
     license: text(source?.license, 'source license', 120),
   }));
-  if (references.length > 30 || new Set(references.map((s) => s.id)).size !== references.length ||
+  if (new Set(references.map((s) => s.id)).size !== references.length ||
       references.some((s) => !/^https:\/\//i.test(s.url))) {
     throw new TypeError('sources must be unique, bounded HTTPS references');
   }
@@ -77,7 +90,7 @@ export function createCommunityPlanningProject(input = {}) {
 function featureInBounds(feature, project) {
   const kind = feature?.kind;
   const point = feature?.point;
-  if (!FEATURE_KINDS.has(kind) || !Array.isArray(point) || point.length !== 2 ||
+  if (!FEATURE_KINDS.has(kind) || !denseArray(point, 2) || point.length !== 2 ||
       !point.every((x) => typeof x === 'number' && Number.isFinite(x))) {
     throw new TypeError('feature requires a supported kind and [longitude,latitude] point');
   }
@@ -104,13 +117,19 @@ export function createPlanningAlternativeOperation(project, input = {}) {
     throw new TypeError('nonnegative safe integer logical counter required');
   }
   const alternativeId = identifier(input.alternativeId, 'alternative id');
-  const features = (input.features ?? []).map((f) => featureInBounds(f, project));
-  if (features.length > 100 ||
-      new Set(features.map((f) => f.id)).size !== features.length) {
+  const featureEntries = input.features ?? [];
+  if (!denseArray(featureEntries, 100)) {
+    throw new TypeError('features must be a dense bounded array');
+  }
+  const features = featureEntries.map((f) => featureInBounds(f, project));
+  if (new Set(features.map((f) => f.id)).size !== features.length) {
     throw new TypeError('features must have distinct ids and be bounded');
   }
-  const assumptions = (input.assumptions ?? []).map((a) => text(a, 'assumption', 500));
-  if (assumptions.length > 30) throw new TypeError('too many assumptions');
+  const assumptionEntries = input.assumptions ?? [];
+  if (!denseArray(assumptionEntries, 30)) {
+    throw new TypeError('assumptions must be a dense bounded array');
+  }
+  const assumptions = assumptionEntries.map((a) => text(a, 'assumption', 500));
   return freeze({
     id: identifier(input.operationId, 'operation id'),
     actorId: identifier(input.actorId, 'actor id'),

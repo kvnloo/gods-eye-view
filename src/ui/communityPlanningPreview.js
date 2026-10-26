@@ -110,7 +110,9 @@ export function openCommunityPlanningPreview({ project, collaborationState }) {
         key.startsWith(recordPrefix) &&
         !projectedIds.has(key.slice(recordPrefix.length)),
     )
-    .map((key) => key.slice(recordPrefix.length));
+    // Sort before applying the eight-ID disclosure cap: arrival order is not authority.
+    .map((key) => key.slice(recordPrefix.length))
+    .sort();
   const excludedRecords = excludedIds.length;
   const beyondPreview = view.alternatives.length - alternatives.length;
   const recordSummary = addText(

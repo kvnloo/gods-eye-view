@@ -341,6 +341,79 @@ try {
   );
   assert.equal(await page.$('[data-planning-source-provenance]'), null);
   assert.equal(await page.$('[data-planning-local-only]'), null);
+  // Scene owner teardown can happen with the modal still open, not just on
+  // Cancel or Escape. Verify a temporary owner removes the dialog, launcher,
+  // and click listener without disturbing the installed Scene launcher.
+  const mounted = await page.evaluate(async () => {
+    const { mountCommunityPlanningPreview } = await import(
+      '/src/ui/communityPlanningPreview.js'
+    );
+    const { createSyntheticCommunityPlanningFixture } = await import(
+      '/src/standalone/communityPlanningFixture.js'
+    );
+    const { project, collaborationState } =
+      createSyntheticCommunityPlanningFixture();
+    const panel = document.getElementById('scene-panel');
+    const before = panel.querySelectorAll(
+      '[data-community-planning-preview-open]',
+    ).length;
+    const dispose = mountCommunityPlanningPreview({
+      project,
+      collaborationState,
+      panel,
+    });
+    const buttons = panel.querySelectorAll(
+      '[data-community-planning-preview-open]',
+    );
+    const ephemeral = buttons[buttons.length - 1];
+    ephemeral.dataset.planningQaTemporaryLauncher = '';
+    window.__gevPlanningTeardownQa = { dispose, ephemeral };
+    return { before, during: buttons.length };
+  });
+  assert.deepEqual(mounted, { before: 1, during: 2 });
+  // Real pointer activation; this is a second mount, not a synthetic DOM stub.
+  await page.click('[data-planning-qa-temporary-launcher]');
+  assert.equal(
+    await page.$eval(
+      '[data-community-planning-preview]',
+      (dialog) => dialog.open,
+    ),
+    true,
+  );
+  const disposed = await page.evaluate(() => {
+    const owner = window.__gevPlanningTeardownQa;
+    try {
+      owner.dispose();
+      const afterFirst = {
+        controls: document.querySelectorAll(
+          '[data-community-planning-preview-open]',
+        ).length,
+        modals: document.querySelectorAll(
+          '[data-community-planning-preview]',
+        ).length,
+      };
+      owner.dispose();
+      owner.ephemeral.click();
+      return {
+        afterFirst,
+        afterSecondControls: document.querySelectorAll(
+          '[data-community-planning-preview-open]',
+        ).length,
+        afterSecondModals: document.querySelectorAll(
+          '[data-community-planning-preview]',
+        ).length,
+        detached: !owner.ephemeral.isConnected,
+      };
+    } finally {
+      delete window.__gevPlanningTeardownQa;
+    }
+  });
+  assert.deepEqual(disposed, {
+    afterFirst: { controls: 1, modals: 0 },
+    afterSecondControls: 1,
+    afterSecondModals: 0,
+    detached: true,
+  });
   // Negative control: an unsupported/stale imported proposal is excluded
   // visibly, without leaking into the two valid synthetic alternatives.
   const excluded = await page.evaluate(async () => {

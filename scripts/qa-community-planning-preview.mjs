@@ -342,7 +342,45 @@ try {
       ),
       ['play-first', 'trees-first'],
     );
-    await mobilePage.keyboard.press('Escape');
+    // Phones have no Escape key: prove the visible Cancel control actually
+    // disposes the dialog through emulated touch and leaves one live launcher.
+    await mobilePage.tap(
+      '[data-community-planning-preview] [data-planning-cancel]',
+    );
+    assert.equal(await mobilePage.$('[data-community-planning-preview]'), null);
+    assert.equal(await mobilePage.$('[data-planning-local-only]'), null);
+    assert.equal(
+      await mobilePage.$eval(
+        '[data-community-planning-preview-open]',
+        (items) => items.length,
+      ),
+      1,
+    );
+    // Reopen by touch, not an invisible synthetic click; confirm the mounted
+    // Scene owner has no stale modal/listener after the first dismissal.
+    if (
+      await mobilePage.$eval('#scene-panel', (panel) =>
+        panel.classList.contains('collapsed'),
+      )
+    )
+      await mobilePage.tap('[data-collapse-target="scene-panel"]');
+    await mobilePage.waitForSelector('[data-community-planning-preview-open]', {
+      visible: true,
+    });
+    await mobilePage.tap('[data-community-planning-preview-open]');
+    await mobilePage.waitForSelector('[data-community-planning-preview]', {
+      visible: true,
+    });
+    assert.equal(
+      await mobilePage.$eval(
+        '[data-community-planning-preview]',
+        (dialog) => dialog.open,
+      ),
+      true,
+    );
+    await mobilePage.tap(
+      '[data-community-planning-preview] [data-planning-cancel]',
+    );
     assert.equal(await mobilePage.$('[data-community-planning-preview]'), null);
   } finally {
     await mobilePage.close();

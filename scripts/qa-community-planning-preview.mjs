@@ -2,21 +2,32 @@ import assert from 'node:assert/strict';
 import puppeteer from 'puppeteer';
 
 /**
- * Dev-server lazy-import proof. A missing launcher alone cannot show whether
- * fixture-only modules were accidentally fetched on normal startup.
+ * Observe actual requests rather than the capped Resource Timing buffer,
+ * which may silently omit lazy imports on a busy GEV startup.
  */
-async function loadedPreviewModules(page) {
-  return page.evaluate(() =>
-    performance
-      .getEntriesByType('resource')
-      .map((entry) => new URL(entry.name).pathname)
-      .filter(
-        (pathname) =>
-          pathname.endsWith('/src/ui/communityPlanningPreview.js') ||
-          pathname.endsWith('/src/standalone/communityPlanningFixture.js'),
-      )
-      .sort(),
-  );
+function watchPreviewModuleRequests(page) {
+  const paths = new Set();
+  let requestCount = 0;
+  const onRequest = (request) => {
+    requestCount += 1;
+    const pathname = new URL(request.url()).pathname;
+    if (
+      pathname === '/src/ui/communityPlanningPreview.js' ||
+      pathname === '/src/standalone/communityPlanningFixture.js'
+    ) {
+      paths.add(pathname);
+    }
+  };
+  page.on('request', onRequest);
+  return {
+    snapshot: () => [...paths].sort(),
+    requestCount: () => requestCount,
+    clear: () => {
+      paths.clear();
+      requestCount = 0;
+    },
+    dispose: () => page.off('request', onRequest),
+  };
 }
 
 /**
@@ -32,8 +43,10 @@ const browser = await puppeteer.launch({
   headless: true,
   args: ['--no-sandbox', '--disable-dev-shm-usage'],
 });
+let moduleRequests;
 try {
   const page = await browser.newPage();
+  moduleRequests = watchPreviewModuleRequests(page);
   await page.setViewport({ width: 1100, height: 900 });
   // Normal startup must not expose the fixture-only Scene launcher.
   await page.goto(optOutUrl.href, { waitUntil: 'domcontentloaded', timeout: 45000 });
@@ -50,11 +63,16 @@ try {
   );
   assert.equal(await page.$('[data-planning-source-provenance]'), null);
   assert.equal(await page.$('[data-planning-local-only]'), null);
-  assert.deepEqual(
-    await loadedPreviewModules(page),
-    [],
-    'normal startup must not fetch the fixture-only planning modules',
+  assert.ok(
+    moduleRequests.requestCount() > 0,
+    'request observer missed startup',
   );
+  assert.deepEqual(
+    moduleRequests.snapshot(),
+    [],
+    'normal startup must not request the fixture-only planning modules',
+  );
+  moduleRequests.clear();
   await page.goto(url.href, { waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.waitForFunction(
     () =>
@@ -75,7 +93,11 @@ try {
   });
   await page.click('[data-community-planning-preview-open]');
   await page.waitForSelector('[data-community-planning-preview]');
-  assert.deepEqual(await loadedPreviewModules(page), [
+  assert.ok(
+    moduleRequests.requestCount() > 0,
+    'request observer missed opt-in',
+  );
+  assert.deepEqual(moduleRequests.snapshot(), [
     '/src/standalone/communityPlanningFixture.js',
     '/src/ui/communityPlanningPreview.js',
   ]);
@@ -579,5 +601,6 @@ try {
   assert.equal(await page.$('[data-community-planning-preview]'), null);
   console.log('Community planning preview: synthetic proposals, attribution, missing-clock fail-closed, keyboard, mobile, teardown PASS');
 } finally {
+  moduleRequests?.dispose();
   await browser.close();
 }

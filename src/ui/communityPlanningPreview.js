@@ -104,13 +104,13 @@ export function openCommunityPlanningPreview({ project, collaborationState }) {
   const projectedIds = new Set(
     view.alternatives.map((alternative) => alternative.alternativeId),
   );
+  // Sort before applying the eight-ID cap: arrival order is not authority.
   const excludedIds = Object.keys(collaborationState?.authored ?? {})
     .filter(
       (key) =>
         key.startsWith(recordPrefix) &&
         !projectedIds.has(key.slice(recordPrefix.length)),
     )
-    // Sort before applying the eight-ID disclosure cap: arrival order is not authority.
     .map((key) => key.slice(recordPrefix.length))
     .sort();
   const excludedRecords = excludedIds.length;

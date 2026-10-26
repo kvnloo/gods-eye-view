@@ -1,5 +1,12 @@
 # Changelog
 
+- The fork-only community planning Scene preview now offers an expandable,
+  keyboard-accessible list of up to eight rejected proposal IDs, masks invalid
+  IDs, and counts additional rejected entries. Unrelated projects are excluded.
+  Rejection remains data-validator-owned: the preview cannot infer the exact
+  reason or reconstruct overwritten/conflicting edits. Actual mounted
+  Scene/Puppeteer, supported Node and device QA remain NOT_RUN.
+
 - The fork-only synthetic park comparison now visibly marks Co-op as a local-only
   display (no live room, participants or synchronized edits). Game/Co-op changes
   update a polite accessible status, including the inspected hypothetical proposal

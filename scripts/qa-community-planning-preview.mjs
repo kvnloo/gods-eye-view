@@ -599,13 +599,17 @@ try {
           },
         };
       }
-      const dialog = openCommunityPlanningPreview({ project, collaborationState });
+      const dialog = openCommunityPlanningPreview({
+        project,
+        collaborationState,
+      });
       try {
         const root = dialog.element;
         const details = root.querySelector('[data-planning-excluded-details]');
         return {
-          entries: [...details.querySelectorAll('[data-planning-excluded-record]')]
-            .map((item) => item.textContent),
+          entries: [
+            ...details.querySelectorAll('[data-planning-excluded-record]'),
+          ].map((item) => item.textContent),
           overflow: details.querySelector('li:last-child')?.textContent,
           invalidLeaked: root.textContent.includes('../private-location'),
           alternatives: [...root.querySelectorAll('[data-alternative-id]')]
@@ -625,12 +629,19 @@ try {
   assert.deepEqual(exclusionOrder.forward.entries, [
     'Excluded (invalid proposal id) · stale, invalid or incompatible; exact cause not verified',
     ...['aa', 'bb', 'cc', 'dd', 'ee', 'vv', 'ww'].map(
-      (id) => `Excluded ${id} · stale, invalid or incompatible; exact cause not verified`,
+      (id) =>
+        `Excluded ${id} · stale, invalid or incompatible; exact cause not verified`,
     ),
   ]);
-  assert.equal(exclusionOrder.forward.overflow, '3 more excluded records not listed');
+  assert.equal(
+    exclusionOrder.forward.overflow,
+    '3 more excluded records not listed',
+  );
   assert.equal(exclusionOrder.forward.invalidLeaked, false);
-  assert.deepEqual(exclusionOrder.forward.alternatives, ['play-first', 'trees-first']);
+  assert.deepEqual(exclusionOrder.forward.alternatives, [
+    'play-first',
+    'trees-first',
+  ]);
   assert.equal(await page.$('[data-community-planning-preview]'), null);
   // Negative controls: a stale winner cannot count as a valid proposal.
   // One or zero valid alternatives must not expose a usable compare mode.

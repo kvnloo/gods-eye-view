@@ -315,6 +315,8 @@ export function mountCommunityPlanningPreview({
     dialog.dispose = () => {
       originalDispose();
       dialog = null;
+      // Return keyboard focus only when the Scene launcher still exists.
+      if (button.isConnected) button.focus({ preventScroll: true });
     };
   };
   button.addEventListener('click', open);

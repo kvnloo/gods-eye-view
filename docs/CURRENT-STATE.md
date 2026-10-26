@@ -10,8 +10,11 @@ is valid (otherwise explicitly unknown), and synthetic baseline source ID,
 revision, attribution, license and URL, or an unverified-source notice if none
 exists. Recorded metadata does not authenticate a participant or grant approval. The preview
 reports excluded stale/incompatible authored records and valid proposals beyond
-its two-card limit. It cannot reconstruct overwritten edits or certify conflict
-resolution from the winner-only projection. With fewer than two valid
+its two-card limit. A keyboard-accessible disclosure lists up to eight rejected
+proposal IDs (masking invalid IDs), with remaining exclusions counted. The
+planning validator owns rejection; the UI does not invent a precise cause or
+display unrelated projects. It cannot reconstruct overwritten edits or certify
+conflict resolution from the winner-only projection. With fewer than two valid
 alternatives, the UI explicitly marks comparison unavailable and disables Game
 view instead of treating excluded records as proposals. The visible Co-op mode is explicitly local-only (no shared room, live
 participants or synchronized edits); switching modes or inspecting a different

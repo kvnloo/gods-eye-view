@@ -165,7 +165,7 @@ try {
   assert.deepEqual(focused, ['play-first']);
   assert.equal(
     await page.$eval('[data-planning-mode-status]', (el) => el.textContent),
-    'View: game · inspecting Play & community garden (hypothetical) · neither mode grants authority',
+    'View: game · inspecting Play & community garden · proposal play-first (hypothetical) · neither mode grants authority',
   );
   assert.equal(
     await page.$eval('[data-planning-focus-navigation]', (el) => el.hidden),
@@ -181,7 +181,7 @@ try {
   );
   assert.equal(
     await page.$eval('[data-planning-mode-status]', (el) => el.textContent),
-    'View: game · inspecting Trees & shade (hypothetical) · neither mode grants authority',
+    'View: game · inspecting Trees & shade · proposal trees-first (hypothetical) · neither mode grants authority',
   );
   await page.click(
     '[data-community-planning-preview] [data-planning-mode="co-op"]',
@@ -208,7 +208,7 @@ try {
     atomic: el.getAttribute('aria-atomic'),
   }));
   assert.deepEqual(mode, {
-    text: 'View: game · inspecting Trees & shade (hypothetical) · neither mode grants authority',
+    text: 'View: game · inspecting Trees & shade · proposal trees-first (hypothetical) · neither mode grants authority',
     role: 'status',
     live: 'polite',
     atomic: 'true',
@@ -237,7 +237,7 @@ try {
   );
   assert.equal(
     await page.$eval('[data-planning-mode-status]', (el) => el.textContent),
-    'View: game · inspecting Play & community garden (hypothetical) · neither mode grants authority',
+    'View: game · inspecting Play & community garden · proposal play-first (hypothetical) · neither mode grants authority',
   );
   assert.equal(
     await page.evaluate(() => {
@@ -442,6 +442,70 @@ try {
   );
   assert.equal(await page.$('[data-planning-source-provenance]'), null);
   assert.equal(await page.$('[data-planning-local-only]'), null);
+
+  // Distinct proposal IDs must remain accessible when titles collide.
+  // All operations use the existing schema and synthetic fixture baseline.
+  const duplicateTitles = await page.evaluate(async () => {
+    const { createSyntheticCommunityPlanningFixture } = await import(
+      '/src/standalone/communityPlanningFixture.js'
+    );
+    const { createPlanningAlternativeOperation } = await import(
+      '/src/data/communityPlanning.js'
+    );
+    const { createCollaborationState, applyCollaborationOperations } =
+      await import('/src/data/collaborationAuthority.js');
+    const { openCommunityPlanningPreview } = await import(
+      '/src/ui/communityPlanningPreview.js'
+    );
+    const { project } = createSyntheticCommunityPlanningFixture();
+    const operations = ['play-first', 'trees-first'].map((id, index) =>
+      createPlanningAlternativeOperation(project, {
+        operationId: `same-title-${id}`,
+        actorId: index === 0 ? 'alice' : 'bob',
+        counter: 1,
+        alternativeId: id,
+        title: 'Shared park name',
+        features: [],
+        assumptions: [],
+      }),
+    );
+    const { state } = applyCollaborationOperations(
+      createCollaborationState(),
+      operations,
+    );
+    const dialog = openCommunityPlanningPreview({
+      project,
+      collaborationState: state,
+    });
+    try {
+      const root = dialog.element;
+      const cards = [...root.querySelectorAll('[data-alternative-id]')]
+        .map((node) => node.getAttribute('aria-label'));
+      const inspect = [...root.querySelectorAll('[data-planning-focus-id]')]
+        .map((node) => node.textContent);
+      root.querySelector('[data-planning-mode="game"]').click();
+      root.querySelector('[data-planning-focus-id="trees-first"]').click();
+      return {
+        cards,
+        inspect,
+        status: root.querySelector('[data-planning-mode-status]').textContent,
+      };
+    } finally {
+      dialog.dispose();
+    }
+  });
+  assert.deepEqual(duplicateTitles, {
+    cards: [
+      'Shared park name · proposal play-first',
+      'Shared park name · proposal trees-first',
+    ],
+    inspect: [
+      'Inspect Shared park name · proposal play-first',
+      'Inspect Shared park name · proposal trees-first',
+    ],
+    status: 'View: game · inspecting Shared park name · proposal trees-first (hypothetical) · neither mode grants authority',
+  });
+  assert.equal(await page.$('[data-community-planning-preview]'), null);
   // Scene owner teardown can happen with the modal still open, not just on
   // Cancel or Escape. Verify a temporary owner removes the dialog, launcher,
   // and click listener without disturbing the installed Scene launcher.

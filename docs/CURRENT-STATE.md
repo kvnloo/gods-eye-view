@@ -23,7 +23,8 @@ alternatives, the UI explicitly marks comparison unavailable and disables Game
 view instead of treating excluded records as proposals. The visible Co-op mode is explicitly local-only (no shared room, live
 participants or synchronized edits); switching modes or inspecting a different
 hypothetical proposal updates an accessible polite status announcement with the
-selected proposal title. Closing the dialog by Escape or Cancel returns focus
+selected proposal title and stable proposal ID; equal-titled alternatives have distinct
+accessible card names, Inspect controls and Game view announcements. Closing the dialog by Escape or Cancel returns focus
 to its surviving Scene launcher; owner teardown removes the launcher first, so
 it cannot receive stale focus. No real parcel, observed-data edit, simulation,
 approval, external transport or live multiplayer is provided. This is **not** a production/origin feature. Supported-runtime

@@ -1,5 +1,11 @@
 # Changelog
 
+- The fork-only World Game Scene preview includes stable proposal IDs in card
+  accessible names, Inspect controls and Game view announcements, so two valid
+  authored alternatives sharing a title remain distinguishable. The existing
+  real-app Puppeteer gate now tests that collision; supported Node 24/26 and
+  full-app Scene/browser verification are still NOT_RUN.
+
 - The fork-only World Game Scene dialog returns keyboard focus to its surviving
   launcher after Escape or Cancel, while owner teardown never targets a
   detached launcher. The existing real-app Puppeteer gate now asserts both

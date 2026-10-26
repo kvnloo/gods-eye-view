@@ -206,7 +206,10 @@ export function openCommunityPlanningPreview({ project, collaborationState }) {
   for (const alternative of alternatives) {
     const article = dialog.body.ownerDocument.createElement('article');
     article.dataset.alternativeId = alternative.alternativeId;
-    article.setAttribute('aria-label', alternative.title);
+    article.setAttribute(
+      'aria-label',
+      `${alternative.title} · proposal ${alternative.alternativeId}`,
+    );
     Object.assign(article.style, {
       flex: '1 1 245px', minWidth: '0', padding: '12px',
       background: '#10242e', border: '1px solid #397080', borderRadius: '6px',
@@ -248,7 +251,7 @@ export function openCommunityPlanningPreview({ project, collaborationState }) {
   let focusedId = alternatives[0]?.alternativeId ?? null;
   const focusButtons = alternatives.map((alternative) => {
     const button = dialog.button(
-      `Inspect ${alternative.title}`,
+      `Inspect ${alternative.title} · proposal ${alternative.alternativeId}`,
       () => {
         focusedId = alternative.alternativeId;
         syncMode();
@@ -284,11 +287,14 @@ export function openCommunityPlanningPreview({ project, collaborationState }) {
     for (const { value, button } of modeButtons)
       button.setAttribute('aria-pressed', String(value === mode));
     // Presentation only. Choosing a card never updates proposal data or evidence.
-    const focusedTitle =
-      alternatives.find((alternative) => alternative.alternativeId === focusedId)
-        ?.title ?? 'unknown proposal';
+    const focusedAlternative = alternatives.find(
+      (alternative) => alternative.alternativeId === focusedId,
+    );
+    const focusedLabel = focusedAlternative
+      ? `${focusedAlternative.title} · proposal ${focusedAlternative.alternativeId}`
+      : 'unknown proposal';
     modeStatus.textContent = single
-      ? `View: game · inspecting ${focusedTitle} (hypothetical) · neither mode grants authority`
+      ? `View: game · inspecting ${focusedLabel} (hypothetical) · neither mode grants authority`
       : 'View: co-op · neither mode grants authority';
   }
   syncMode();

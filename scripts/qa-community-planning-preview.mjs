@@ -563,6 +563,75 @@ try {
   ]);
   assert.equal(excluded.unrelatedVisible, false);
   assert.equal(await page.$('[data-community-planning-preview]'), null);
+  // Rejected proposal identities are a bounded disclosure, not a CRDT arrival
+  // log. Reordering identical imported records must not change which eight
+  // IDs appear, and malformed IDs must remain masked.
+  const exclusionOrder = await page.evaluate(async () => {
+    const { createSyntheticCommunityPlanningFixture } = await import(
+      '/src/standalone/communityPlanningFixture.js'
+    );
+    const { openCommunityPlanningPreview } = await import(
+      '/src/ui/communityPlanningPreview.js'
+    );
+    const ids = [
+      'zz', 'aa', 'yy', 'bb', 'xx', 'cc', 'ww', 'dd', 'vv', 'ee',
+      '../private-location',
+    ];
+    const inspect = (order) => {
+      const { project, collaborationState } =
+        createSyntheticCommunityPlanningFixture();
+      const original = collaborationState.authored[
+        'draft-scenario:community-plan:synthetic-park:trees-first'
+      ].fields.proposal;
+      for (const id of order) {
+        collaborationState.authored[
+          `draft-scenario:community-plan:synthetic-park:${id}`
+        ] = {
+          fields: {
+            proposal: {
+              ...original,
+              value: {
+                ...original.value,
+                alternativeId: id,
+                baselineRevision: 'obsolete-r0',
+              },
+            },
+          },
+        };
+      }
+      const dialog = openCommunityPlanningPreview({ project, collaborationState });
+      try {
+        const root = dialog.element;
+        const details = root.querySelector('[data-planning-excluded-details]');
+        return {
+          entries: [...details.querySelectorAll('[data-planning-excluded-record]')]
+            .map((item) => item.textContent),
+          overflow: details.querySelector('li:last-child')?.textContent,
+          invalidLeaked: root.textContent.includes('../private-location'),
+          alternatives: [...root.querySelectorAll('[data-alternative-id]')]
+            .map((item) => item.dataset.alternativeId),
+        };
+      } finally {
+        dialog.dispose();
+      }
+    };
+    return { forward: inspect(ids), reverse: inspect([...ids].reverse()) };
+  });
+  assert.deepEqual(
+    exclusionOrder.forward,
+    exclusionOrder.reverse,
+    'excluded record order/cap must not depend on import arrival order',
+  );
+  assert.deepEqual(exclusionOrder.forward.entries, [
+    'Excluded (invalid proposal id) · stale, invalid or incompatible; exact cause not verified',
+    ...['aa', 'bb', 'cc', 'dd', 'ee', 'vv', 'ww'].map(
+      (id) => `Excluded ${id} · stale, invalid or incompatible; exact cause not verified`,
+    ),
+  ]);
+  assert.equal(exclusionOrder.forward.overflow, '3 more excluded records not listed');
+  assert.equal(exclusionOrder.forward.invalidLeaked, false);
+  assert.deepEqual(exclusionOrder.forward.alternatives, ['play-first', 'trees-first']);
+  assert.equal(await page.$('[data-community-planning-preview]'), null);
   // Negative controls: a stale winner cannot count as a valid proposal.
   // One or zero valid alternatives must not expose a usable compare mode.
   const insufficient = await page.evaluate(async () => {

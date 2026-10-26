@@ -1,5 +1,12 @@
 # Changelog
 
+- The fork-only World Game park preview now discloses up to eight additional
+  valid but unshown hypothetical proposals with recorded, unverified authors
+  and source revisions, plus an overflow count. The first two comparisons,
+  observed layers and approval boundaries remain unchanged. The existing Scene
+  Puppeteer gate now includes one/many valid-alternative negative controls;
+  actual full-app/browser and supported Node 24/26 checks remain NOT_RUN.
+
 - The fork-only park proposal preview now sorts rejected record IDs before
   displaying a capped set of eight, so identical imports produce the same
   disclosure regardless of arrival order. Its existing Puppeteer gate now

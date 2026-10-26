@@ -121,6 +121,7 @@ try {
       provenance,
       localOnly: dialog.querySelector('[data-planning-local-only]')?.textContent,
       recordSummary: dialog.querySelector('[data-planning-record-summary]')?.textContent,
+      excludedDisclosure: dialog.querySelector('[data-planning-excluded-details]'),
     };
   });
   assert.deepEqual(checked, {
@@ -146,6 +147,7 @@ try {
     recordSummary: 'Planning records: 0 stale/incompatible excluded; ' +
       '0 valid beyond this two-proposal preview. ' +
       'This snapshot cannot reconstruct overwritten edits or resolve conflicts.',
+    excludedDisclosure: null,
   });
   const initiallyVisible = await page.$$eval(
     '[data-community-planning-preview] [data-alternative-id]',
@@ -541,6 +543,13 @@ try {
         visibleIds: [
           ...preview.element.querySelectorAll('[data-alternative-id]'),
         ].map((item) => item.dataset.alternativeId),
+        disclosure: preview.element.querySelector(
+          '[data-planning-excluded-details] summary',
+        )?.textContent,
+        excludedEntries: [...preview.element.querySelectorAll(
+          '[data-planning-excluded-record]',
+        )].map((item) => item.textContent),
+        unrelatedVisible: preview.element.textContent.includes('other-project'),
       };
     } finally {
       preview.dispose();
@@ -548,6 +557,11 @@ try {
   });
   assert.ok(excluded.summary.includes('1 stale/incompatible excluded'));
   assert.deepEqual(excluded.visibleIds, ['play-first', 'trees-first']);
+  assert.equal(excluded.disclosure, 'Inspect 1 excluded proposal record');
+  assert.deepEqual(excluded.excludedEntries, [
+    'Excluded stale · stale, invalid or incompatible; exact cause not verified',
+  ]);
+  assert.equal(excluded.unrelatedVisible, false);
   assert.equal(await page.$('[data-community-planning-preview]'), null);
   // Negative controls: a stale winner cannot count as a valid proposal.
   // One or zero valid alternatives must not expose a usable compare mode.

@@ -4,6 +4,8 @@
  * A real internet room transport can be added behind this message contract.
  */
 export const ROOM_PROTOCOL = 'gev.playground.local-room.v1';
+const HEARTBEAT_MS = 15_000;
+const PEER_EXPIRE_MS = 75_000;
 
 export function normalizeRoom(raw) {
   const room = String(raw || '').trim().toLowerCase();
@@ -94,15 +96,27 @@ export const feature = {
     let channel = null;
     let room = null;
     const peers = new Map();
+    const lastSeen = new Map();
+    const timerHost = typeof win.setInterval === 'function' &&
+      typeof win.clearInterval === 'function' ? win : globalThis;
+    let heartbeat = null;
     const peerId = 'peer-' + Math.random().toString(36).slice(2, 12);
     function notice(message) { status.textContent = message; }
     function leaveRoom() {
+      if (heartbeat !== null) {
+        timerHost.clearInterval(heartbeat);
+        heartbeat = null;
+      }
       // Inform already-joined tabs before closing; teardown is a departure too.
-      if (channel) send('leave');
+      if (channel) {
+        send('leave');
+        channel.onmessage = null;
+      }
       channel?.close();
       channel = null;
       room = null;
       peers.clear();
+      lastSeen.clear();
       leave.disabled = true;
       share.disabled = true;
       peersContainer.replaceChildren();
@@ -143,6 +157,23 @@ export const feature = {
         peersContainer.append(row);
       }
     }
+    function heartbeatAndPrune() {
+      if (!channel) return;
+      const now = Date.now();
+      let changed = false;
+      for (const [peer, receivedAt] of lastSeen) {
+        if (now - receivedAt <= PEER_EXPIRE_MS) continue;
+        lastSeen.delete(peer);
+        peers.delete(peer);
+        changed = true;
+      }
+      if (changed) {
+        presentPeers();
+        notice(peers.size + ' nearby tab(s) in local room ' + room + '.');
+      }
+      // Presence-only heartbeat: never publish a camera view automatically.
+      send('hello');
+    }
     join.addEventListener('click', () => {
       const nextRoom = normalizeRoom(roomInput.value);
       if (!nextRoom) {
@@ -156,22 +187,28 @@ export const feature = {
       leaveRoom();
       room = nextRoom;
       channel = new win.BroadcastChannel('gev-playground:' + room);
-      channel.onmessage = (event) => {
+      const joinedChannel = channel;
+      joinedChannel.onmessage = (event) => {
+        // Queued messages from an earlier room instance cannot resurrect peers.
+        if (channel !== joinedChannel) return;
         const packet = parseRoomMessage(event.data, room);
         if (!packet || packet.peer === peerId) return;
         if (packet.kind === 'leave') {
           peers.delete(packet.peer);
+          lastSeen.delete(packet.peer);
           presentPeers();
           notice(peers.size + ' nearby tab(s) in local room ' + room + '.');
           return;
         }
         const previous = peers.get(packet.peer) || null;
         peers.set(packet.peer, packet.kind === 'view' ? packet.view : previous);
+        lastSeen.set(packet.peer, Date.now());
         presentPeers();
         if (packet.kind === 'join') send('hello');
         notice(peers.size + ' nearby tab(s) in local room ' + room + '.');
       };
       send('join');
+      heartbeat = timerHost.setInterval(heartbeatAndPrune, HEARTBEAT_MS);
       leave.disabled = false;
       share.disabled = false;
       notice('Joined local tab room ' + room + '.');

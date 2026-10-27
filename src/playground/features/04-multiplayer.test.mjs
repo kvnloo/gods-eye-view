@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { normalizeRoom, parseRoomMessage, makeRoomInvite, ROOM_PROTOCOL } from './04-multiplayer.js';
+import { normalizeRoom, parseRoomMessage, makeRoomInvite, ROOM_PROTOCOL, feature } from './04-multiplayer.js';
 
 test('local room codes cannot contain path or script characters', () => {
   assert.equal(normalizeRoom(' Team-Earth '), 'team-earth');
@@ -165,7 +165,7 @@ test('explicit leave and owner teardown remove ghost same-origin tab presence', 
   assert.equal(observer.peerCount(), 1);
   visitor.leave();
   assert.equal(observer.peerCount(), 0);
-  assert.match(observer.status(), /^0 nearby tab\\(s\\)/);
+  assert.match(observer.status(), /^0 nearby tab\(s\)/);
   visitor.join();
   assert.equal(observer.peerCount(), 1);
   visitor.dispose();

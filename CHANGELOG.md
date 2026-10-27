@@ -1,5 +1,9 @@
 # Changelog
 
+- The fork-only community-planning projection rejects imported proposal records
+  with mismatched draft-scenario kind/target ownership. Independent valid
+  hypotheses remain visible; recorded actors and parcel rights remain unverified.
+
 - The opt-in World Game park preview now compares the same first two versioned
   hypothetical proposals across browser languages: stable ID sorting is
   locale-independent, not a preference or municipal approval. A synthetic

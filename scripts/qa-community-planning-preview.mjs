@@ -483,11 +483,14 @@ try {
         .map((node) => node.getAttribute('aria-label'));
       const inspect = [...root.querySelectorAll('[data-planning-focus-id]')]
         .map((node) => node.textContent);
+      const schematics = [...root.querySelectorAll('[data-alternative-id] svg')]
+        .map((node) => node.getAttribute('aria-label'));
       root.querySelector('[data-planning-mode="game"]').click();
       root.querySelector('[data-planning-focus-id="trees-first"]').click();
       return {
         cards,
         inspect,
+        schematics,
         status: root.querySelector('[data-planning-mode-status]').textContent,
       };
     } finally {
@@ -502,6 +505,10 @@ try {
     inspect: [
       'Inspect Shared park name · proposal play-first',
       'Inspect Shared park name · proposal trees-first',
+    ],
+    schematics: [
+      'Synthetic marker positions for Shared park name · proposal play-first; not surveyed',
+      'Synthetic marker positions for Shared park name · proposal trees-first; not surveyed',
     ],
     status: 'View: game · inspecting Shared park name · proposal trees-first (hypothetical) · neither mode grants authority',
   });

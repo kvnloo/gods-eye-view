@@ -28,7 +28,7 @@ function drawSyntheticMarkers(host, alternative, bounds) {
   svg.setAttribute('role', 'img');
   svg.setAttribute(
     'aria-label',
-    `Synthetic marker positions for ${alternative.title}; not surveyed`,
+    `Synthetic marker positions for ${alternative.title} · proposal ${alternative.alternativeId}; not surveyed`,
   );
   const backdrop = host.ownerDocument.createElementNS(ns, 'rect');
   for (const [key, value] of Object.entries({

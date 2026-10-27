@@ -1,5 +1,10 @@
 # Changelog
 
+- The fork-only World Game preview now includes stable proposal IDs in the
+  accessible names of synthetic marker schematics, so equal-titled alternatives
+  remain distinct to screen-reader users. The existing Scene Puppeteer collision
+  fixture checks both SVGs; full-app/native/browser proof remains NOT_RUN.
+
 - The fork-only World Game Scene preview includes stable proposal IDs in card
   accessible names, Inspect controls and Game view announcements, so two valid
   authored alternatives sharing a title remain distinguishable. The existing

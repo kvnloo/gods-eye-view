@@ -31,6 +31,11 @@ function uniqueSorted(values) {
   return [...new Set(values)].sort();
 }
 
+// The collaboration merge clock must not vary with a participant's locale.
+function compareCodeUnits(left, right) {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 function cloneState(state) {
   return {
     seenOperationIds: [...(state?.seenOperationIds || [])],
@@ -98,9 +103,9 @@ function clockFor(operation, identity) {
 function compareClock(left, right) {
   if (!right) return 1;
   if (left.counter !== right.counter) return left.counter - right.counter;
-  const actor = left.actorId.localeCompare(right.actorId);
+  const actor = compareCodeUnits(left.actorId, right.actorId);
   if (actor) return actor;
-  return left.operationId.localeCompare(right.operationId);
+  return compareCodeUnits(left.operationId, right.operationId);
 }
 
 function markSeen(next, id) {
@@ -116,7 +121,7 @@ function recordAudit(next, operation, result) {
     changed: result.changed,
     reason: result.reason,
   });
-  next.audit.sort((a, b) => a.operationId.localeCompare(b.operationId));
+  next.audit.sort((a, b) => compareCodeUnits(a.operationId, b.operationId));
 }
 
 function finish(next, operation, result) {
@@ -210,9 +215,10 @@ function appendClaim(next, operation, identity) {
     payload: operation.payload ?? null,
   });
   next.claims.sort((a, b) =>
-    [a.targetId, a.claimId, a.operationId]
-      .join('\u0000')
-      .localeCompare([b.targetId, b.claimId, b.operationId].join('\u0000')),
+    compareCodeUnits(
+      [a.targetId, a.claimId, a.operationId].join('\u0000'),
+      [b.targetId, b.claimId, b.operationId].join('\u0000'),
+    ),
   );
 
   return finish(next, operation, {

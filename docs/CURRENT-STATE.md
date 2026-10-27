@@ -2,6 +2,12 @@
 
 ## Fork-only synthetic co-op Scene preview — October 25, 2026
 
+The opt-in synthetic planning modal focuses its hypothetical heading after
+constructing its comparison, before native keyboard Tab proceeds to Cancel.
+Escape/Cancel still restores focus to the surviving Scene launcher. Its focused
+Puppeteer regression has been added but **NOT RUN** in the full GEV browser;
+supported Node 24.14/26 and device acceptance also remain **NOT RUN**.
+
 The hypothetical proposal projection sorts stable IDs independently of browser
 locale, so a two-card comparison drawn from multiple alternatives is consistent
 across languages and imported record order. This order is not an endorsement,

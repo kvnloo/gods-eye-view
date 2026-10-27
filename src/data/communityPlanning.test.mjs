@@ -99,6 +99,36 @@ test('missing provenance and invalid project bounds fail closed', () => {
   }), /HTTPS/);
 });
 
+test('baseline HTTPS sources reject URL credentials and malformed URLs', () => {
+  const baseline = project();
+  const source = baseline.baseline.sources[0];
+  const withUrl = (url) => createCommunityPlanningProject({
+    id: baseline.id,
+    title: baseline.title,
+    place: baseline.place,
+    baseline: {
+      revision: baseline.baseline.revision,
+      sources: [{ ...source, url }],
+    },
+  });
+  for (const url of [
+    'https://alice:secret@example.org/parcel',
+    'https://alice@example.org/parcel',
+    'https://:secret@example.org/parcel',
+    'https://',
+    'https://example.org/\nsecret',
+    'http://example.org/parcel',
+  ]) {
+    assert.throws(() => withUrl(url), /HTTPS references/);
+  }
+  for (const url of [
+    'https://example.org/parcel',
+    'https://example.org/parcel?revision=1#record',
+  ]) {
+    assert.equal(withUrl(url).baseline.sources[0].url, url);
+  }
+});
+
 test('stale or cross-project alternatives are not materialized as current', () => {
   const op = proposal('trees-first', 'alice', 'op-1', 'oak');
   assert.deepEqual(listPlanningAlternatives(project(), { authored: {

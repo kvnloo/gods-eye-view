@@ -13,10 +13,10 @@ export function parseRoomMessage(raw, room, now = Date.now()) {
   if (!raw || typeof raw !== 'object' || raw.protocol !== ROOM_PROTOCOL ||
       raw.room !== room || typeof raw.peer !== 'string' ||
       !/^[a-z0-9-]{4,32}$/.test(raw.peer) ||
-      !['join', 'hello', 'view'].includes(raw.kind) ||
+      !['join', 'hello', 'leave', 'view'].includes(raw.kind) ||
       !Number.isFinite(raw.sentAt) || Math.abs(now - raw.sentAt) > 60000)
     return null;
-  // Presence handshakes must not preserve untrusted private metadata or
+  // Presence and departure packets must not retain private metadata or
   // fine-grained views, even when another same-origin tab sends extras.
   if (raw.kind !== 'view') {
     return {
@@ -97,6 +97,8 @@ export const feature = {
     const peerId = 'peer-' + Math.random().toString(36).slice(2, 12);
     function notice(message) { status.textContent = message; }
     function leaveRoom() {
+      // Inform already-joined tabs before closing; teardown is a departure too.
+      if (channel) send('leave');
       channel?.close();
       channel = null;
       room = null;
@@ -157,6 +159,12 @@ export const feature = {
       channel.onmessage = (event) => {
         const packet = parseRoomMessage(event.data, room);
         if (!packet || packet.peer === peerId) return;
+        if (packet.kind === 'leave') {
+          peers.delete(packet.peer);
+          presentPeers();
+          notice(peers.size + ' nearby tab(s) in local room ' + room + '.');
+          return;
+        }
         const previous = peers.get(packet.peer) || null;
         peers.set(packet.peer, packet.kind === 'view' ? packet.view : previous);
         presentPeers();

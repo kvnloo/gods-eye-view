@@ -79,3 +79,96 @@ test('presence packets strip private fields and precise views', () => {
     });
   }
 });
+
+test('explicit leave sanitizes private data and rejects stale or cross-room packets', () => {
+  const now = 100000;
+  const raw = {
+    protocol: ROOM_PROTOCOL,
+    room: 'earth-lab',
+    peer: 'peer-alpha',
+    sentAt: now,
+    kind: 'leave',
+    address: 'private-house',
+    view: { lat: 40.12345, lon: -88.12345, height: 1234 },
+  };
+  assert.deepEqual(parseRoomMessage(raw, 'earth-lab', now), {
+    protocol: ROOM_PROTOCOL,
+    room: 'earth-lab',
+    peer: 'peer-alpha',
+    sentAt: now,
+    kind: 'leave',
+  });
+  for (const invalid of [
+    { ...raw, room: 'another-room' },
+    { ...raw, peer: '<script>' },
+    { ...raw, sentAt: now - 60001 },
+  ])
+    assert.equal(parseRoomMessage(invalid, 'earth-lab', now), null);
+});
+
+test('explicit leave and owner teardown remove ghost same-origin tab presence', () => {
+  const channels = new Map();
+  class TestChannel {
+    constructor(name) {
+      this.name = name;
+      this.closed = false;
+      if (!channels.has(name)) channels.set(name, new Set());
+      channels.get(name).add(this);
+    }
+    postMessage(data) {
+      for (const peer of channels.get(this.name))
+        if (peer !== this && !peer.closed)
+          peer.onmessage?.({ data: structuredClone(data) });
+    }
+    close() {
+      this.closed = true;
+      channels.get(this.name).delete(this);
+    }
+  }
+  const document = {
+    createElement(tag) {
+      return {
+        tagName: tag,
+        ownerDocument: document,
+        children: [],
+        textContent: '',
+        disabled: false,
+        listeners: new Map(),
+        setAttribute() {},
+        append(...nodes) { this.children.push(...nodes); },
+        replaceChildren(...nodes) { this.children = nodes; },
+        addEventListener(name, listener) { this.listeners.set(name, listener); },
+        click() { this.listeners.get('click')?.(); },
+      };
+    },
+  };
+  const tab = () => {
+    const root = document.createElement('section');
+    const dispose = feature.mount({
+      root,
+      services: {
+        window: { location: { search: '' }, BroadcastChannel: TestChannel },
+      },
+    });
+    return {
+      join: () => root.children[3].children[0].click(),
+      leave: () => root.children[3].children[1].click(),
+      peerCount: () => root.children[5].children.length,
+      status: () => root.children[4].textContent,
+      dispose,
+    };
+  };
+  const observer = tab();
+  const visitor = tab();
+  observer.join();
+  visitor.join();
+  assert.equal(observer.peerCount(), 1);
+  visitor.leave();
+  assert.equal(observer.peerCount(), 0);
+  assert.match(observer.status(), /^0 nearby tab\\(s\\)/);
+  visitor.join();
+  assert.equal(observer.peerCount(), 1);
+  visitor.dispose();
+  assert.equal(observer.peerCount(), 0);
+  observer.dispose();
+});

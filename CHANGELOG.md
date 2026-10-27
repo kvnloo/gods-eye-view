@@ -1,5 +1,11 @@
 # Changelog
 
+- The fork-only World Game Scene preview now rejects credential-bearing,
+  malformed or control-character baseline HTTPS URLs before displaying source
+  provenance, matching the existing parent #185 validator. Added focused
+  negative/positive source fixtures; full-app browser and supported Node 24/26
+  checks remain NOT_RUN.
+
 - The fork-only World Game Scene preview now wraps long, credited HTTPS
   baseline references inside its mobile-width modal instead of overflowing
   horizontally. The existing Puppeteer gate adds a schema-valid long-source

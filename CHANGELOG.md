@@ -1,5 +1,7 @@
 # Changelog
 
+- The inherited collaboration authority kernel now resolves equal-clock authored ties and sorts claims/audit receipts consistently across browser locales. This changes only fork-local deterministic proposal semantics; it does not grant authority or create a live room.
+
 - The fork-only community-planning projection rejects imported proposal records
   with mismatched draft-scenario kind/target ownership. Independent valid
   hypotheses remain visible; recorded actors and parcel rights remain unverified.

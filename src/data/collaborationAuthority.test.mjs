@@ -234,3 +234,52 @@ test('single-user mode requires no collaboration service or transport', () => {
     audit: [],
   });
 });
+
+test('clock ties and receipt ordering are identical across browser locales', () => {
+  const previous = String.prototype.localeCompare;
+  const check = (locale) => {
+    const collator = new Intl.Collator(locale);
+    String.prototype.localeCompare = function (other) {
+      return collator.compare(String(this), String(other));
+    };
+    try {
+      const byActor = applyCollaborationOperations(
+        createCollaborationState(),
+        [annotation('actor-aa', 'aa', 'aa'), annotation('actor-z', 'z', 'z')],
+      ).state;
+      const byOperation = applyCollaborationOperations(
+        createCollaborationState(),
+        [annotation('aa', 'peer', 'aa'), annotation('z', 'peer', 'z')],
+      ).state;
+      const claims = applyCollaborationOperations(
+        createCollaborationState(),
+        ['aa', 'z'].map((id) => ({
+          id: `claim-${id}`, actorId: 'peer', kind: 'evidence-claim',
+          targetId: 'synthetic-site', claimId: id, sourceRevision: 'fixture-v1',
+        })),
+      ).state;
+      const audited = applyCollaborationOperations(
+        createCollaborationState(),
+        ['aa', 'z'].map((id) => ({
+          id, actorId: 'peer', kind: 'claim-status',
+          targetId: `record-${id}`, baseRevision: 0, nextRevision: 1,
+          value: 'reviewed',
+        })),
+      ).state;
+      return {
+        actorWinner: byActor.authored['annotation:note-1'].fields.text.value,
+        operationWinner: byOperation.authored['annotation:note-1'].fields.text.value,
+        claimOrder: claims.claims.map((claim) => claim.claimId),
+        auditOrder: audited.audit.map((entry) => entry.operationId),
+      };
+    } finally {
+      String.prototype.localeCompare = previous;
+    }
+  };
+  const expected = {
+    actorWinner: 'z', operationWinner: 'z',
+    claimOrder: ['aa', 'z'], auditOrder: ['aa', 'z'],
+  };
+  assert.deepEqual(check('en'), expected);
+  assert.deepEqual(check('da'), expected);
+});

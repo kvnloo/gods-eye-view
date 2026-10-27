@@ -67,6 +67,8 @@ export function openCommunityPlanningPreview({ project, collaborationState }) {
   dialog.footer.querySelector('button').dataset.planningCancel = '';
   dialog.element.dataset.communityPlanningPreview = '';
   dialog.element.style.width = 'min(900px,calc(100vw - 32px))';
+  // Keep credited but unbroken HTTPS source URLs readable on narrow screens.
+  dialog.body.style.overflowWrap = 'anywhere';
   dialog.status.textContent =
     'SYNTHETIC FIXTURE · NO LAND RIGHTS, MUNICIPAL APPROVAL OR MODELED IMPACT';
   const intro = addText(dialog.body, 'p',

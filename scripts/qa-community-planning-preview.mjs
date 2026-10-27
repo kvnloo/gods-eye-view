@@ -358,6 +358,68 @@ try {
       ),
       1,
     );
+    // A legitimate long HTTPS reference must not force horizontal scrolling.
+    // The unwrapped measurement is an explicit negative control, not a
+    // production setting; no external URL is fetched by this fixture.
+    const longSourceLayout = await mobilePage.evaluate(async () => {
+      const { createSyntheticCommunityPlanningFixture } = await import(
+        '/src/standalone/communityPlanningFixture.js'
+      );
+      const { createCommunityPlanningProject } = await import(
+        '/src/data/communityPlanning.js'
+      );
+      const { openCommunityPlanningPreview } = await import(
+        '/src/ui/communityPlanningPreview.js'
+      );
+      const { project, collaborationState } =
+        createSyntheticCommunityPlanningFixture();
+      const longSourceUrl = `https://example.org/${'x'.repeat(1400)}`;
+      const sourcedProject = createCommunityPlanningProject({
+        ...project,
+        baseline: {
+          ...project.baseline,
+          sources: [{ ...project.baseline.sources[0], url: longSourceUrl }],
+        },
+      });
+      const preview = openCommunityPlanningPreview({
+        project: sourcedProject,
+        collaborationState,
+      });
+      try {
+        const provenance = preview.element.querySelector(
+          '[data-planning-source-provenance]',
+        );
+        const measure = () => ({
+          clientWidth: preview.body.clientWidth,
+          scrollWidth: preview.body.scrollWidth,
+        });
+        const wrapped = measure();
+        const previousWrap = preview.body.style.overflowWrap;
+        preview.body.style.overflowWrap = 'normal';
+        provenance.style.whiteSpace = 'nowrap';
+        const unwrapped = measure();
+        provenance.style.whiteSpace = '';
+        preview.body.style.overflowWrap = previousWrap;
+        return {
+          fixtureUrlDisplayed: provenance.textContent.includes(longSourceUrl),
+          wrapped,
+          unwrapped,
+        };
+      } finally {
+        preview.dispose();
+      }
+    });
+    assert.equal(longSourceLayout.fixtureUrlDisplayed, true);
+    assert.ok(
+      longSourceLayout.unwrapped.scrollWidth >
+        longSourceLayout.unwrapped.clientWidth + 1,
+      'long-URL negative control did not exercise mobile overflow',
+    );
+    assert.ok(
+      longSourceLayout.wrapped.scrollWidth <=
+        longSourceLayout.wrapped.clientWidth + 1,
+      'a credited long HTTPS source must fit within the mobile dialog body',
+    );
     // Reopen by touch, not an invisible synthetic click; confirm the mounted
     // Scene owner has no stale modal/listener after the first dismissal.
     if (

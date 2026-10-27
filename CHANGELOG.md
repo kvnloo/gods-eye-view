@@ -1,5 +1,11 @@
 # Changelog
 
+- The fork-only World Game Scene preview now wraps long, credited HTTPS
+  baseline references inside its mobile-width modal instead of overflowing
+  horizontally. The existing Puppeteer gate adds a schema-valid long-source
+  fixture and a forced-no-wrap overflow negative control. Full-app browser,
+  supported Node 24/26, and device verification remain NOT_RUN.
+
 - The fork-only World Game preview now includes stable proposal IDs in the
   accessible names of synthetic marker schematics, so equal-titled alternatives
   remain distinct to screen-reader users. The existing Scene Puppeteer collision

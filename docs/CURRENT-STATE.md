@@ -2,6 +2,12 @@
 
 ## Fork-only synthetic co-op Scene preview — October 25, 2026
 
+Long but schema-valid HTTPS baseline reference URLs wrap within the Scene
+dialog on narrow mobile viewports, retaining their attribution and license.
+The existing opt-in mobile Puppeteer gate now includes a versioned synthetic
+long-URL source and an intentionally unwrapped overflow negative control.
+The actual mounted GEV browser gate remains NOT_RUN; this is not device proof.
+
 The downstream `exp/community-park-preview-20261013` draft adds an opt-in,
 single-browser `?planningPreview=fixture` comparison of two hypothetical
 park proposals in the existing Scene dialog. It displays recorded pseudonymous

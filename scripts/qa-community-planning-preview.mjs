@@ -103,6 +103,10 @@ try {
     [],
     'normal startup must not request the fixture-only planning modules',
   );
+  assert.deepEqual(
+    moduleRequests.baselineRequests(), [],
+    'normal startup must not request synthetic baseline URLs',
+  );
   moduleRequests.clear();
   await page.goto(url.href, { waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.waitForFunction(
@@ -302,6 +306,9 @@ try {
   // Set mobile/touch emulation before navigation. Changing isMobile or
   // hasTouch on the active desktop page can reload it and destroy the modal.
   const mobilePage = await browser.newPage();
+  // The mobile tab has an independent request stream. The desktop watcher
+  // alone cannot establish that credits stay network-inert during touch QA.
+  const mobileRequests = watchPreviewModuleRequests(mobilePage);
   try {
     await mobilePage.setViewport({
       width: 375,
@@ -481,7 +488,12 @@ try {
       '[data-community-planning-preview] [data-planning-cancel]',
     );
     assert.equal(await mobilePage.$('[data-community-planning-preview]'), null);
+    assert.deepEqual(
+      mobileRequests.baselineRequests(), [],
+      'mobile touch, long-source display and teardown must not fetch credited baselines',
+    );
   } finally {
+    mobileRequests.dispose();
     await mobilePage.close();
   }
 

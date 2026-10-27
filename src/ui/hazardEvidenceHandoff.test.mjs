@@ -260,6 +260,7 @@ test('FIRMS selection hands its own coordinates to Recent Imagery and remembers 
 
   handoff.destroy();
   assert.equal(windowRef.listenerCount('gev:entity-selected'), 0);
+  assert.equal(windowRef.listenerCount('gev:entity-selection-cleared'), 0);
 });
 
 test('Nearby Cameras uses the hazard coordinate, not viewer position, and learns that explicit choice', async () => {
@@ -428,6 +429,650 @@ test('explicit weather-cyclones selection opens the chooser, keeps cyclone coord
     ['nearest-camera', 18.4, -66.1, { focus: true }],
     ['panel', 'cctv-panel', false, { explicit: true }],
   ]);
+
+  handoff.destroy();
+});
+
+test('owning-layer selection clear dismisses the open chooser without auto-running evidence', () => {
+  const documentRef = fakeDocument();
+  const windowRef = fakeWindow();
+  const storage = memoryStorage();
+  const calls = [];
+  const handoff = createHazardEvidenceHandoff({
+    documentRef,
+    windowRef,
+    storage,
+    dataManager: {
+      async setEnabled(id, enabled, options) {
+        calls.push(['enable', id, enabled, options]);
+        return true;
+      },
+    },
+    styleManager: {
+      setPanelCollapsed(id, collapsed, options) {
+        calls.push(['panel', id, collapsed, options]);
+      },
+    },
+    recentImagery: {
+      boxFromPinAt(lon, lat) {
+        calls.push(['box', lon, lat]);
+        return true;
+      },
+    },
+  });
+
+  const record = {
+    layerId: 'weather-cyclones',
+    latitude: 18.4,
+    longitude: -66.1,
+  };
+  assert.equal(handoff.openForRecord(record), true);
+  assert.equal(documentRef.body.children.length, 1);
+
+  // A clear for a different layer must leave this chooser alone.
+  windowRef.dispatch('gev:entity-selection-cleared', {
+    layerId: 'earthquakes',
+    reason: 'deliberate',
+  });
+  assert.equal(documentRef.body.children.length, 1);
+
+  // Owning-layer deliberate clear dismisses without enabling evidence.
+  windowRef.dispatch('gev:entity-selection-cleared', {
+    layerId: 'weather-cyclones',
+    reason: 'deliberate',
+  });
+  assert.equal(documentRef.body.children.length, 0);
+  assert.deepEqual(calls, []);
+  assert.deepEqual(readHazardEvidencePreference(storage), {
+    imagery: 0,
+    cameras: 0,
+  });
+
+  // Eviction clear also dismisses after a fresh open.
+  assert.equal(handoff.openForRecord(record), true);
+  assert.equal(documentRef.body.children.length, 1);
+  windowRef.dispatch('gev:entity-selection-cleared', {
+    layerId: 'weather-cyclones',
+    reason: 'evicted',
+  });
+  assert.equal(documentRef.body.children.length, 0);
+  assert.deepEqual(calls, []);
+
+  handoff.destroy();
+  assert.equal(windowRef.listenerCount('gev:entity-selected'), 0);
+  assert.equal(windowRef.listenerCount('gev:entity-selection-cleared'), 0);
+});
+
+test('stale evidence choice after dismiss or rebind neither ranks nor closes a successor chooser', async () => {
+  const documentRef = fakeDocument();
+  const windowRef = fakeWindow();
+  const storage = memoryStorage();
+  let resolveEnable;
+  const enableGate = new Promise((resolve) => {
+    resolveEnable = resolve;
+  });
+  const calls = [];
+  const handoff = createHazardEvidenceHandoff({
+    documentRef,
+    windowRef,
+    storage,
+    dataManager: {
+      async setEnabled(id, enabled, options) {
+        calls.push(['enable', id, enabled, options]);
+        await enableGate;
+        return true;
+      },
+    },
+    styleManager: {
+      setPanelCollapsed(id, collapsed, options) {
+        calls.push(['panel', id, collapsed, options]);
+      },
+    },
+    recentImagery: {
+      boxFromPinAt(lon, lat) {
+        calls.push(['box', lon, lat]);
+        return true;
+      },
+    },
+  });
+
+  const cyclone = {
+    layerId: 'weather-cyclones',
+    latitude: 18.4,
+    longitude: -66.1,
+  };
+  const firms = {
+    layerId: 'local-firms',
+    latitude: 34.25,
+    longitude: -118.5,
+  };
+
+  assert.equal(handoff.openForRecord(cyclone), true);
+  findAction(documentRef.body.children[0], 'imagery').click();
+  // Chooser dismissed (owning-layer clear) while imagery enable is still pending.
+  windowRef.dispatch('gev:entity-selection-cleared', {
+    layerId: 'weather-cyclones',
+    reason: 'deliberate',
+  });
+  assert.equal(documentRef.body.children.length, 0);
+
+  // A newer supported selection opens a successor chooser before the stale await settles.
+  assert.equal(handoff.openForRecord(firms), true);
+  assert.equal(documentRef.body.children.length, 1);
+  const successor = documentRef.body.children[0];
+
+  resolveEnable(true);
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  // Stale completion must not rank and must not close the successor.
+  assert.deepEqual(readHazardEvidencePreference(storage), {
+    imagery: 0,
+    cameras: 0,
+  });
+  assert.equal(documentRef.body.children.length, 1);
+  assert.equal(documentRef.body.children[0], successor);
+  assert.ok(findAction(successor, 'imagery'));
+
+  handoff.destroy();
+});
+
+test('concurrent evidence clicks while a choice is in flight neither double-enable nor double-rank', async () => {
+  const documentRef = fakeDocument();
+  const windowRef = fakeWindow();
+  const storage = memoryStorage();
+  let resolveEnable;
+  const enableGate = new Promise((resolve) => {
+    resolveEnable = resolve;
+  });
+  const calls = [];
+  const cctv = {
+    focusNearestToPoint(lat, lon, options) {
+      calls.push(['nearest-camera', lat, lon, options]);
+      return 'cam-near-cyclone';
+    },
+  };
+  const handoff = createHazardEvidenceHandoff({
+    documentRef,
+    windowRef,
+    storage,
+    dataManager: {
+      layers: new Map([['cctv', { module: cctv }]]),
+      async setEnabled(id, enabled, options) {
+        calls.push(['enable', id, enabled, options]);
+        await enableGate;
+        return true;
+      },
+    },
+    styleManager: {
+      setPanelCollapsed(id, collapsed, options) {
+        calls.push(['panel', id, collapsed, options]);
+      },
+    },
+    recentImagery: {
+      boxFromPinAt(lon, lat) {
+        calls.push(['box', lon, lat]);
+        return true;
+      },
+    },
+  });
+
+  const record = {
+    layerId: 'weather-cyclones',
+    latitude: 18.4,
+    longitude: -66.1,
+  };
+  assert.equal(handoff.openForRecord(record), true);
+  const dialog = documentRef.body.children[0];
+  const imagery = findAction(dialog, 'imagery');
+  const cameras = findAction(dialog, 'cameras');
+  const dismiss = findAction(dialog, 'dismiss');
+
+  imagery.click();
+  // Second evidence click while the first enable is still gated must be ignored.
+  cameras.click();
+  const busyDuringFlight =
+    imagery.disabled === true && cameras.disabled === true;
+  // NOT NOW stays usable so the operator can still dismiss mid-flight.
+  assert.equal(dismiss.disabled, false);
+
+  resolveEnable(true);
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  // Only the first choice runs; preference ranks imagery once, never cameras.
+  assert.deepEqual(calls, [
+    ['enable', 'recent-imagery', true, { origin: 'user' }],
+    ['box', -66.1, 18.4],
+    ['panel', 'recent-imagery-panel', false, { explicit: true }],
+  ]);
+  assert.deepEqual(readHazardEvidencePreference(storage), {
+    imagery: 1,
+    cameras: 0,
+  });
+  assert.equal(documentRef.body.children.length, 0);
+  assert.equal(busyDuringFlight, true);
+
+  handoff.destroy();
+});
+
+test('soft-fail on open chooser toasts once and recovers busy actions', async () => {
+  const documentRef = fakeDocument();
+  const windowRef = fakeWindow();
+  const storage = memoryStorage();
+  const toasts = [];
+  const handoff = createHazardEvidenceHandoff({
+    documentRef,
+    windowRef,
+    storage,
+    showToast: (message) => toasts.push(message),
+    dataManager: {
+      async setEnabled() {
+        return false;
+      },
+    },
+    styleManager: {},
+    recentImagery: {},
+  });
+
+  const record = {
+    layerId: 'local-firms',
+    latitude: 34.25,
+    longitude: -118.5,
+  };
+  assert.equal(handoff.openForRecord(record), true);
+  const dialog = documentRef.body.children[0];
+  const imagery = findAction(dialog, 'imagery');
+  const cameras = findAction(dialog, 'cameras');
+
+  imagery.click();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.equal(documentRef.body.children.length, 1);
+  assert.equal(imagery.disabled, false);
+  assert.equal(cameras.disabled, false);
+  assert.deepEqual(toasts, ['Recent Imagery could not be enabled']);
+  assert.deepEqual(readHazardEvidencePreference(storage), {
+    imagery: 0,
+    cameras: 0,
+  });
+
+  handoff.destroy();
+});
+
+test('soft-fail after dismiss does not toast onto a successor chooser', async () => {
+  const documentRef = fakeDocument();
+  const windowRef = fakeWindow();
+  const storage = memoryStorage();
+  const toasts = [];
+  let resolveEnable;
+  const enableGate = new Promise((resolve) => {
+    resolveEnable = resolve;
+  });
+  const calls = [];
+  const handoff = createHazardEvidenceHandoff({
+    documentRef,
+    windowRef,
+    storage,
+    showToast: (message) => toasts.push(message),
+    dataManager: {
+      async setEnabled(id, enabled, options) {
+        calls.push(['enable', id, enabled, options]);
+        await enableGate;
+        return false;
+      },
+    },
+    styleManager: {
+      setPanelCollapsed(id, collapsed, options) {
+        calls.push(['panel', id, collapsed, options]);
+      },
+    },
+    recentImagery: {
+      boxFromPinAt(lon, lat) {
+        calls.push(['box', lon, lat]);
+        return true;
+      },
+    },
+  });
+
+  const cyclone = {
+    layerId: 'weather-cyclones',
+    latitude: 18.4,
+    longitude: -66.1,
+  };
+  const firms = {
+    layerId: 'local-firms',
+    latitude: 34.25,
+    longitude: -118.5,
+  };
+
+  assert.equal(handoff.openForRecord(cyclone), true);
+  findAction(documentRef.body.children[0], 'imagery').click();
+  // Owning-layer clear dismisses while soft-fail enable is still pending.
+  windowRef.dispatch('gev:entity-selection-cleared', {
+    layerId: 'weather-cyclones',
+    reason: 'deliberate',
+  });
+  assert.equal(documentRef.body.children.length, 0);
+
+  // Successor VERIFY dialog opens before the stale soft-fail settles.
+  assert.equal(handoff.openForRecord(firms), true);
+  assert.equal(documentRef.body.children.length, 1);
+  const successor = documentRef.body.children[0];
+
+  resolveEnable(false);
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  // Stale soft-fail must not toast onto the successor, must not rank, and
+  // must leave the successor chooser open and idle.
+  assert.deepEqual(toasts, []);
+  assert.deepEqual(readHazardEvidencePreference(storage), {
+    imagery: 0,
+    cameras: 0,
+  });
+  assert.equal(documentRef.body.children.length, 1);
+  assert.equal(documentRef.body.children[0], successor);
+  assert.equal(findAction(successor, 'imagery').disabled, false);
+  assert.equal(findAction(successor, 'cameras').disabled, false);
+  assert.deepEqual(calls, [
+    ['enable', 'recent-imagery', true, { origin: 'user' }],
+  ]);
+
+  handoff.destroy();
+});
+
+test('thrown evidence enable recovers busy actions so a retry can proceed', async () => {
+  const documentRef = fakeDocument();
+  const windowRef = fakeWindow();
+  const storage = memoryStorage();
+  const toasts = [];
+  let resolveEnable;
+  let failNextEnable = true;
+  const enableGate = new Promise((resolve) => {
+    resolveEnable = resolve;
+  });
+  const calls = [];
+  const handoff = createHazardEvidenceHandoff({
+    documentRef,
+    windowRef,
+    storage,
+    showToast: (message) => toasts.push(message),
+    dataManager: {
+      async setEnabled(id, enabled, options) {
+        calls.push(['enable', id, enabled, options]);
+        if (failNextEnable) {
+          await enableGate;
+          throw new Error('enable exploded');
+        }
+        return true;
+      },
+    },
+    styleManager: {
+      setPanelCollapsed(id, collapsed, options) {
+        calls.push(['panel', id, collapsed, options]);
+      },
+    },
+    recentImagery: {
+      boxFromPinAt(lon, lat) {
+        calls.push(['box', lon, lat]);
+        return true;
+      },
+    },
+  });
+
+  const record = {
+    layerId: 'weather-cyclones',
+    latitude: 18.4,
+    longitude: -66.1,
+  };
+  assert.equal(handoff.openForRecord(record), true);
+  const dialog = documentRef.body.children[0];
+  const imagery = findAction(dialog, 'imagery');
+  const cameras = findAction(dialog, 'cameras');
+  const dismiss = findAction(dialog, 'dismiss');
+
+  imagery.click();
+  assert.equal(imagery.disabled, true);
+  assert.equal(cameras.disabled, true);
+  assert.equal(dismiss.disabled, false);
+
+  resolveEnable(true);
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  // Same open chooser must recover: evidence actions usable, no ranking, toast once.
+  assert.equal(documentRef.body.children.length, 1);
+  assert.equal(documentRef.body.children[0], dialog);
+  assert.equal(imagery.disabled, false);
+  assert.equal(cameras.disabled, false);
+  assert.deepEqual(readHazardEvidencePreference(storage), {
+    imagery: 0,
+    cameras: 0,
+  });
+  assert.deepEqual(toasts, ['Evidence view could not be opened']);
+  assert.deepEqual(calls, [
+    ['enable', 'recent-imagery', true, { origin: 'user' }],
+  ]);
+
+  // Retry after recovery must complete a successful choice (latch cleared).
+  failNextEnable = false;
+  imagery.click();
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.deepEqual(readHazardEvidencePreference(storage), {
+    imagery: 1,
+    cameras: 0,
+  });
+  assert.equal(documentRef.body.children.length, 0);
+  assert.deepEqual(calls, [
+    ['enable', 'recent-imagery', true, { origin: 'user' }],
+    ['enable', 'recent-imagery', true, { origin: 'user' }],
+    ['box', -66.1, 18.4],
+    ['panel', 'recent-imagery-panel', false, { explicit: true }],
+  ]);
+
+  handoff.destroy();
+});
+
+test('stale success after dismiss does not box, focus, or uncollapse onto a successor', async () => {
+  const documentRef = fakeDocument();
+  const windowRef = fakeWindow();
+  const storage = memoryStorage();
+  const toasts = [];
+  let resolveEnable;
+  const enableGate = new Promise((resolve) => {
+    resolveEnable = resolve;
+  });
+  const calls = [];
+  const cctv = {
+    focusNearestToPoint(lat, lon, options) {
+      calls.push(['nearest-camera', lat, lon, options]);
+      return 'cam-stale';
+    },
+  };
+  const handoff = createHazardEvidenceHandoff({
+    documentRef,
+    windowRef,
+    storage,
+    showToast: (message) => toasts.push(message),
+    dataManager: {
+      layers: new Map([['cctv', { module: cctv }]]),
+      async setEnabled(id, enabled, options) {
+        calls.push(['enable', id, enabled, options]);
+        await enableGate;
+        return true;
+      },
+    },
+    styleManager: {
+      setPanelCollapsed(id, collapsed, options) {
+        calls.push(['panel', id, collapsed, options]);
+      },
+    },
+    recentImagery: {
+      boxFromPinAt(lon, lat) {
+        calls.push(['box', lon, lat]);
+        return true;
+      },
+    },
+  });
+
+  const cyclone = {
+    layerId: 'weather-cyclones',
+    latitude: 18.4,
+    longitude: -66.1,
+  };
+  const firms = {
+    layerId: 'local-firms',
+    latitude: 34.25,
+    longitude: -118.5,
+  };
+
+  assert.equal(handoff.openForRecord(cyclone), true);
+  findAction(documentRef.body.children[0], 'imagery').click();
+  // Owning-layer clear dismisses while a successful enable is still pending.
+  windowRef.dispatch('gev:entity-selection-cleared', {
+    layerId: 'weather-cyclones',
+    reason: 'deliberate',
+  });
+  assert.equal(documentRef.body.children.length, 0);
+
+  // Successor VERIFY dialog opens before the stale success settles.
+  assert.equal(handoff.openForRecord(firms), true);
+  assert.equal(documentRef.body.children.length, 1);
+  const successor = documentRef.body.children[0];
+
+  resolveEnable(true);
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  // Layer enable may settle (source-owned), but presentation must not apply
+  // the abandoned hazard's box/focus/panel onto the successor context.
+  assert.deepEqual(calls, [
+    ['enable', 'recent-imagery', true, { origin: 'user' }],
+  ]);
+  assert.deepEqual(toasts, []);
+  assert.deepEqual(readHazardEvidencePreference(storage), {
+    imagery: 0,
+    cameras: 0,
+  });
+  assert.equal(documentRef.body.children.length, 1);
+  assert.equal(documentRef.body.children[0], successor);
+  assert.equal(findAction(successor, 'imagery').disabled, false);
+  assert.equal(findAction(successor, 'cameras').disabled, false);
+
+  handoff.destroy();
+});
+
+test('stale choose finally does not clear a successor in-flight latch', async () => {
+  const documentRef = fakeDocument();
+  const windowRef = fakeWindow();
+  const storage = memoryStorage();
+  const toasts = [];
+  /** @type {Array<() => void>} */
+  const releaseEnables = [];
+  const calls = [];
+  const cctv = {
+    focusNearestToPoint(lat, lon, options) {
+      calls.push(['nearest-camera', lat, lon, options]);
+      return 'cam-near';
+    },
+  };
+  const handoff = createHazardEvidenceHandoff({
+    documentRef,
+    windowRef,
+    storage,
+    showToast: (message) => toasts.push(message),
+    dataManager: {
+      layers: new Map([['cctv', { module: cctv }]]),
+      async setEnabled(id, enabled, options) {
+        calls.push(['enable', id, enabled, options]);
+        await new Promise((resolve) => {
+          releaseEnables.push(resolve);
+        });
+        return true;
+      },
+    },
+    styleManager: {
+      setPanelCollapsed(id, collapsed, options) {
+        calls.push(['panel', id, collapsed, options]);
+      },
+    },
+    recentImagery: {
+      boxFromPinAt(lon, lat) {
+        calls.push(['box', lon, lat]);
+        return true;
+      },
+    },
+  });
+
+  const cyclone = {
+    layerId: 'weather-cyclones',
+    latitude: 18.4,
+    longitude: -66.1,
+  };
+  const firms = {
+    layerId: 'local-firms',
+    latitude: 34.25,
+    longitude: -118.5,
+  };
+
+  // Generation A starts imagery, then is dismissed while enable is pending.
+  assert.equal(handoff.openForRecord(cyclone), true);
+  findAction(documentRef.body.children[0], 'imagery').click();
+  assert.equal(releaseEnables.length, 1);
+  windowRef.dispatch('gev:entity-selection-cleared', {
+    layerId: 'weather-cyclones',
+    reason: 'deliberate',
+  });
+  assert.equal(documentRef.body.children.length, 0);
+
+  // Successor generation B starts its own imagery choice before A settles.
+  assert.equal(handoff.openForRecord(firms), true);
+  const successor = documentRef.body.children[0];
+  const imageryB = findAction(successor, 'imagery');
+  const camerasB = findAction(successor, 'cameras');
+  imageryB.click();
+  assert.equal(releaseEnables.length, 2);
+  assert.equal(imageryB.disabled, true);
+  assert.equal(camerasB.disabled, true);
+
+  // Stale A settles. Its finally must NOT wipe B's in-flight latch.
+  releaseEnables[0]();
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  // A concurrent second click on B must still be ignored (#100 for successor).
+  camerasB.click();
+  assert.equal(releaseEnables.length, 2);
+
+  // Finish B successfully: only one imagery enable for B, cameras never ran.
+  releaseEnables[1]();
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.deepEqual(calls, [
+    ['enable', 'recent-imagery', true, { origin: 'user' }],
+    ['enable', 'recent-imagery', true, { origin: 'user' }],
+    ['box', -118.5, 34.25],
+    ['panel', 'recent-imagery-panel', false, { explicit: true }],
+  ]);
+  assert.deepEqual(readHazardEvidencePreference(storage), {
+    imagery: 1,
+    cameras: 0,
+  });
+  assert.deepEqual(toasts, []);
+  assert.equal(documentRef.body.children.length, 0);
 
   handoff.destroy();
 });

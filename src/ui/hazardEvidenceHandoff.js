@@ -114,6 +114,15 @@ export function createHazardEvidenceHandoff({
 
   let dialog = null;
   let currentRecord = null;
+  // Bumped whenever the open chooser is dismissed or replaced so a late
+  // async evidence action cannot rank preference or close a successor.
+  let openGeneration = 0;
+  // One in-flight evidence choice per open generation so a double-click
+  // cannot start a second enable or double-rank preference. close() clears
+  // the latch for a successor; choose()'s finally only clears when its
+  // starting generation is still current so a stale settle cannot free a
+  // successor's latch.
+  let chooseInFlight = false;
 
   const close = () => {
     if (!dialog) return;
@@ -125,37 +134,59 @@ export function createHazardEvidenceHandoff({
     dialog.remove?.();
     dialog = null;
     currentRecord = null;
+    openGeneration += 1;
+    // Free the in-flight latch so a successor chooser can accept a fresh click
+    // while a stale await from this generation is still settling.
+    chooseInFlight = false;
   };
 
-  const runImagery = async (record) => {
+  // Soft failures return { ok:false, toast } without announcing. choose()
+  // toasts only when this same chooser generation is still open, so a
+  // dismiss/rebind mid-flight cannot drop a stale failure toast onto a
+  // successor VERIFY dialog.
+  //
+  // After await setEnabled, abandon presentation (box / focus / panel) when
+  // the starting chooser was dismissed or rebound. Layer enable may still
+  // settle (source-owned); only ranking/close/toast stay gated in choose().
+  const stillCurrent = (record, generation) =>
+    generation === openGeneration && currentRecord === record;
+
+  const runImagery = async (record, generation) => {
     const enabled = await dataManager?.setEnabled?.('recent-imagery', true, {
       origin: 'user',
     });
+    if (!stillCurrent(record, generation))
+      return { ok: false, abandoned: true };
     if (enabled === false) {
-      showToast('Recent Imagery could not be enabled');
-      return false;
+      return {
+        ok: false,
+        toast: 'Recent Imagery could not be enabled',
+      };
     }
     const accepted = recentImagery?.boxFromPinAt?.(
       Number(record.longitude),
       Number(record.latitude),
     );
     if (accepted === false || accepted == null) {
-      showToast('Recent Imagery could not use this hazard location');
-      return false;
+      return {
+        ok: false,
+        toast: 'Recent Imagery could not use this hazard location',
+      };
     }
     styleManager?.setPanelCollapsed?.('recent-imagery-panel', false, {
       explicit: true,
     });
-    return true;
+    return { ok: true };
   };
 
-  const runCameras = async (record) => {
+  const runCameras = async (record, generation) => {
     const enabled = await dataManager?.setEnabled?.('cctv', true, {
       origin: 'user',
     });
+    if (!stillCurrent(record, generation))
+      return { ok: false, abandoned: true };
     if (enabled === false) {
-      showToast('CCTV could not be enabled');
-      return false;
+      return { ok: false, toast: 'CCTV could not be enabled' };
     }
     const cctv = dataManager?.layers?.get?.('cctv')?.module;
     const cameraId = cctv?.focusNearestToPoint?.(
@@ -164,27 +195,75 @@ export function createHazardEvidenceHandoff({
       { focus: true },
     );
     if (!cameraId) {
-      showToast('No public camera is available near this hazard');
-      return false;
+      return {
+        ok: false,
+        toast: 'No public camera is available near this hazard',
+      };
     }
     styleManager?.setPanelCollapsed?.('cctv-panel', false, {
       explicit: true,
     });
-    return true;
+    return { ok: true };
+  };
+
+  const setEvidenceActionsBusy = (busy) => {
+    if (!dialog) return;
+    const walk = (node) => {
+      if (!node) return;
+      if (HAZARD_EVIDENCE_ACTIONS.includes(node.dataset?.action)) {
+        node.disabled = busy;
+      }
+      for (const child of node.children || []) walk(child);
+    };
+    walk(dialog);
   };
 
   const choose = async (action) => {
     const record = currentRecord;
+    const generation = openGeneration;
     if (!record) return false;
-    const ok =
-      action === 'imagery'
-        ? await runImagery(record)
-        : action === 'cameras'
-          ? await runCameras(record)
-          : false;
-    if (ok) recordHazardEvidenceChoice(action, storage);
-    if (ok) close();
-    return ok;
+    if (chooseInFlight) return false;
+    chooseInFlight = true;
+    setEvidenceActionsBusy(true);
+    try {
+      const result =
+        action === 'imagery'
+          ? await runImagery(record, generation)
+          : action === 'cameras'
+            ? await runCameras(record, generation)
+            : { ok: false };
+      // Dismiss / rebind / destroy while we awaited → drop stale completion
+      // (no ranking, no successor close, no soft-fail toast).
+      // Runners already skipped box/focus/panel when abandoned mid-flight.
+      if (generation !== openGeneration || currentRecord !== record)
+        return false;
+      if (result?.ok) {
+        recordHazardEvidenceChoice(action, storage);
+        close();
+        return true;
+      }
+      setEvidenceActionsBusy(false);
+      if (result?.toast) showToast(result.toast);
+      return false;
+    } catch {
+      // Owner threw while awaiting. Latch clears in finally only when this
+      // generation still owns it; if this chooser is still open, re-enable
+      // evidence actions so the operator can retry or pick the other view.
+      // Do not rank. A dismiss/rebind mid-flight already closed the dialog
+      // — leave successor UI alone.
+      if (generation === openGeneration && currentRecord === record) {
+        setEvidenceActionsBusy(false);
+        showToast('Evidence view could not be opened');
+      }
+      return false;
+    } finally {
+      // close() already freed the latch when this generation was dismissed
+      // or rebound. A stale finally must not wipe a successor that has
+      // already taken chooseInFlight for its own click (#100 across gens).
+      if (generation === openGeneration) {
+        chooseInFlight = false;
+      }
+    }
   };
 
   const openForRecord = (record) => {
@@ -243,12 +322,31 @@ export function createHazardEvidenceHandoff({
   };
 
   const onSelection = (event) => openForRecord(event?.detail);
+
+  // Publishers already emit gev:entity-selection-cleared on deliberate clear
+  // and eviction. Dismiss only when that clear belongs to the open chooser's
+  // hazard layer so a stale VERIFY dialog cannot outlive its source selection.
+  const onSelectionCleared = (event) => {
+    const layerId = event?.detail?.layerId;
+    if (!dialog || !currentRecord) return;
+    if (layerId != null && layerId !== currentRecord.layerId) return;
+    close();
+  };
+
   windowRef.addEventListener('gev:entity-selected', onSelection);
+  windowRef.addEventListener(
+    'gev:entity-selection-cleared',
+    onSelectionCleared,
+  );
 
   return {
     openForRecord,
     destroy() {
       windowRef.removeEventListener?.('gev:entity-selected', onSelection);
+      windowRef.removeEventListener?.(
+        'gev:entity-selection-cleared',
+        onSelectionCleared,
+      );
       close();
     },
   };

@@ -53,9 +53,20 @@ export function parseRoomMessage(raw, room, now = Date.now()) {
     view: { lat, lon, height },
   };
 }
-export function makeRoomInvite(currentUrl, room) {
+/**
+ * Room-only invites must not silently copy a private scene hash, credentials
+ * or unrelated query state. Scene sharing requires separate explicit opt-in.
+ */
+export function makeRoomInvite(currentUrl, room, { includeScene = false } = {}) {
   if (!normalizeRoom(room)) throw new TypeError('Invalid room');
   const link = new URL(currentUrl);
+  if (link.protocol !== 'https:' && link.protocol !== 'http:')
+    throw new TypeError('Room invite requires an HTTP(S) URL');
+  const sceneHash = includeScene === true ? link.hash : '';
+  link.username = '';
+  link.password = '';
+  link.search = '';
+  link.hash = sceneHash;
   link.searchParams.set('gevRoom', room);
   return link.href;
 }
@@ -69,7 +80,7 @@ export const feature = {
     const title = doc.createElement('h3');
     title.textContent = 'Shared Earth · local demo';
     const description = doc.createElement('p');
-    description.textContent = 'Open two same-origin tabs. While joined, presence-only heartbeats expire silent peers; camera views transmit only when you choose Send coarse view. No internet rooms or verified identities.';
+    description.textContent = 'Open two same-origin tabs. Presence-only heartbeats expire silent peers; camera views transmit only when you choose Send coarse view. Room links omit the current scene unless separately opted in. No internet rooms or verified identities.';
     const roomInput = doc.createElement('input');
     roomInput.type = 'text';
     roomInput.maxLength = 24;
@@ -89,6 +100,14 @@ export const feature = {
     const leave = button('Leave');
     const share = button('Send coarse view');
     const invite = button('Copy room link');
+    const includeScene = doc.createElement('input');
+    includeScene.type = 'checkbox';
+    includeScene.checked = false;
+    const includeSceneLabel = doc.createElement('label');
+    includeSceneLabel.textContent =
+      'Include current scene in link (may disclose map location)';
+    includeSceneLabel.append(includeScene);
+    actions.append(includeSceneLabel);
     const status = doc.createElement('p');
     status.setAttribute('role', 'status');
     status.className = 'gev-playground-status';
@@ -235,10 +254,14 @@ export const feature = {
     invite.addEventListener('click', async () => {
       const candidate = normalizeRoom(roomInput.value);
       if (!candidate) return notice('Enter a valid room first.');
-      const link = makeRoomInvite(win.location.href, candidate);
+      const link = makeRoomInvite(win.location.href, candidate, {
+        includeScene: includeScene.checked,
+      });
       try {
         await win.navigator.clipboard.writeText(link);
-        notice('Room link copied. Shared presence works only in same-origin tabs.');
+        notice(includeScene.checked
+          ? 'Room and scene link copied; the scene may disclose map location. Same-origin tabs only.'
+          : 'Room-only link copied without scene or map state. Same-origin tabs only.');
       } catch {
         notice('Clipboard unavailable; copy this room code: ' + candidate);
       }

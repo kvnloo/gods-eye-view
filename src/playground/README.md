@@ -13,7 +13,7 @@ Features must release their own event listeners, Cesium entities, timers, and op
 - **02 Time Machine** — authored SceneDirector clock only
 - **03 What-if** — reversible A/B proposals, labeled hypothetical; no modeled outcomes
 - **04 Multiplayer** — opt-in same-origin tab broadcast, not a remote presence server
-- **05 Toybox** — existing GLSL looks and explicit camera trips
+- **05 Toybox** — existing GLSL looks, nine curated creative grade packs, and explicit camera trips
 
 ## Verification
 
@@ -28,6 +28,10 @@ npm run build
 npm run dev
 ```
 
+Run `node scripts/qa-playground-looks.mjs` with the dev server running to
+check the creative gallery, GLSL stage reuse, persistent disclosure, reset and
+comparison screenshots. Software WebGL proof is **not** a GPU performance result.
+
 In a browser, select EXPLORE, visit all five tabs, launch the Nepal scene,
 seek its authored timeline, add/undo a hypothetical marker, join the same room
 in two same-origin tabs (no automatic camera sharing), and choose a sensor look.
@@ -36,3 +40,25 @@ Also verify Escape, mobile layout, and `?embed=1` without a launcher.
 **Not implemented:** remote internet rooms, global time travel, SUMO/PyPSA
 impact forecasts, operational disaster guidance. Keep provenance and simulated
 states explicitly separated.
+
+## Visual Universe (experimental)
+
+The Toybox imports `lookPacks.js` as a **data-only** curated look catalog. A
+single static GLSL post-process color grade is initialized only when needed and
+owned by the Playground lifetime. Original Earth and the existing GEV styles
+remain available. No third-party shader source, scripts, fonts, assets, network
+downloads, account state, or persistent background GPU loop are introduced.
+
+The built-in looks are creative treatments of rendered pixels, **not** changes
+to factual geographic data, lighting models, source imagery, weather, materials,
+or measured thermal signatures. Genre names describe an aesthetic, not licensed
+game assets. Grades remain session-only in this first slice; only existing GEV
+style controls continue to use normal share links. Browser GPU/frame-time proof
+and screenshot A/B inspection are required before origin promotion.
+
+Next, if this pilot proves useful, extend existing share/Scene serialization
+with versioned, bounded grade parameters and a default-off creative marker.
+Community submissions should be curated signed/data-only manifests with author
+credit, explicit asset rights, compatibility/performance receipts, rollback, and
+unmodified Earth comparison; do not permit arbitrary downloaded GLSL or runtime
+code from catalog listings.

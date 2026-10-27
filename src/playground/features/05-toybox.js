@@ -1,3 +1,5 @@
+import { LOOK_PACKS } from '../lookPacks.js';
+
 /**
  * A thin joy layer over GEV's existing shader engine and Cesium camera.
  * All changes are explicit; no background animation or resource holders.
@@ -34,7 +36,7 @@ export const feature = {
     const title = doc.createElement('h3');
     title.textContent = 'Planet Toybox';
     const description = doc.createElement('p');
-    description.textContent = 'Reskin Earth, fly somewhere surprising, and keep the look in your normal shareable view.';
+    description.textContent = 'Reimagine Earth with built-in creative color grades. Filters never change the underlying data; cinematic grades are session-only.';
     const lookTitle = doc.createElement('p');
     lookTitle.textContent = 'Pick a sensor lens';
     const looks = doc.createElement('div');
@@ -53,10 +55,40 @@ export const feature = {
       button.type = 'button';
       button.textContent = label;
       button.addEventListener('click', () => {
+        services.lookPacks?.clearGrade();
+        for (const card of gallery.querySelectorAll('[data-look-pack]'))
+          card.setAttribute('aria-pressed', 'false');
         styleManager.setStyle(id, { applyPreset: true, userInitiated: true });
         readout.textContent = label + ' lens active.';
       });
       looks.append(button);
+    }
+
+    const galleryTitle = doc.createElement('p');
+    galleryTitle.textContent = 'Visual Universe · creative looks';
+    const gallery = doc.createElement('div');
+    gallery.className = 'gev-playground-look-gallery';
+    for (const pack of LOOK_PACKS) {
+      const card = doc.createElement('button');
+      card.type = 'button';
+      card.className = 'gev-playground-card';
+      card.dataset.lookPack = pack.id;
+      card.setAttribute('aria-label', 'Choose ' + pack.title);
+      const title = doc.createElement('strong');
+      title.textContent = pack.title;
+      const subtitle = doc.createElement('span');
+      subtitle.textContent = pack.family + ' · ' + pack.description;
+      card.append(title, subtitle);
+      card.addEventListener('click', () => {
+        const applied = services.lookPacks?.apply(pack.id) || false;
+        readout.textContent = applied
+          ? pack.title + ' active. Artistic color only; not an observed-data transformation.'
+          : 'This creative look is unavailable on the current renderer.';
+        for (const option of gallery.querySelectorAll('[data-look-pack]'))
+          option.setAttribute('aria-pressed', String(applied && option === card));
+      });
+      card.setAttribute('aria-pressed', String(services.lookPacks?.activeId === pack.id));
+      gallery.append(card);
     }
     const actions = doc.createElement('div');
     actions.className = 'gev-playground-actions';
@@ -97,8 +129,11 @@ export const feature = {
       });
       readout.textContent = 'Returning to your starting view.';
     });
-    root.append(title, description, lookTitle, looks, actions, readout);
-    readout.textContent = 'Current lens: ' + (styleManager.activeStyle || 'normal') + '.';
+    root.append(title, description, galleryTitle, gallery, lookTitle, looks, actions, readout);
+    const currentPack = LOOK_PACKS.find((pack) => pack.id === services.lookPacks?.activeId);
+    readout.textContent = currentPack
+      ? 'Creative look: ' + currentPack.title + ' (reset any time).'
+      : 'Current lens: ' + (styleManager.activeStyle || 'normal') + '.';
     return () => {
       if (ownedFlight) viewer.camera.cancelFlight();
     };

@@ -16,10 +16,74 @@ test('presence packets are scoped, fresh and view coordinates bounded', () => {
   assert.equal(parseRoomMessage({ ...base, view: { lat: 91, lon: 2, height: 10000 } }, 'earth', now), null);
   assert.equal(parseRoomMessage({ ...base, sentAt: 100 }, 'earth', now), null);
 });
-test('invite preserves existing scene share hash', () => {
-  const next = new URL(makeRoomInvite('https://example.org/view?embed=0#map=foo', 'earth-lab'));
-  assert.equal(next.searchParams.get('gevRoom'), 'earth-lab');
-  assert.equal(next.hash, '#map=foo');
+test('room invite excludes private query, credentials and scene by default', () => {
+  const next = new URL(makeRoomInvite(
+    'https://user:password@example.org/view?embed=0&token=private#map=40.123456',
+    'earth-lab',
+  ));
+  assert.equal(next.origin, 'https://example.org');
+  assert.equal(next.pathname, '/view');
+  assert.deepEqual([...next.searchParams], [['gevRoom', 'earth-lab']]);
+  assert.equal(next.hash, '');
+  assert.equal(next.username, '');
+  assert.equal(next.password, '');
+  assert.throws(() => makeRoomInvite('file:///tmp/gev', 'earth-lab'), TypeError);
+});
+test('scene URL fragment requires separate consent and excludes unrelated query', () => {
+  const original = 'https://example.org/view?embed=1&token=private#map=40.123456';
+  const next = new URL(makeRoomInvite(original, 'earth-lab', { includeScene: true }));
+  assert.deepEqual([...next.searchParams], [['gevRoom', 'earth-lab']]);
+  assert.equal(next.hash, '#map=40.123456');
+  assert.equal(new URL(makeRoomInvite(original, 'earth-lab', { includeScene: 'true' })).hash, '');
+});
+
+test('copy room link keeps precise scene state out until explicitly checked', async () => {
+  const copied = [];
+  const document = {
+    createElement(tagName) {
+      return {
+        tagName, ownerDocument: document, children: [], listeners: new Map(),
+        textContent: '', checked: false,
+        setAttribute() {},
+        append(...nodes) { this.children.push(...nodes); },
+        replaceChildren(...nodes) { this.children = nodes; },
+        addEventListener(name, listener) { this.listeners.set(name, listener); },
+      };
+    },
+  };
+  const root = document.createElement('section');
+  const dispose = feature.mount({
+    root,
+    services: {
+      window: {
+        location: {
+          search: '',
+          href: 'https://example.org/view?token=private#map=40.123456',
+        },
+        navigator: {
+          clipboard: { async writeText(value) { copied.push(value); } },
+        },
+      },
+    },
+  });
+  try {
+    const actions = root.children[3];
+    const copy = actions.children[3];
+    const includeScene = actions.children[4].children[0];
+    assert.equal(includeScene.type, 'checkbox');
+    assert.equal(includeScene.checked, false);
+    await copy.listeners.get('click')();
+    assert.deepEqual([...new URL(copied[0]).searchParams], [['gevRoom', 'earth-lab']]);
+    assert.equal(new URL(copied[0]).hash, '');
+    assert.match(root.children[4].textContent, /Room-only link copied/);
+    includeScene.checked = true;
+    await copy.listeners.get('click')();
+    assert.equal(new URL(copied[1]).hash, '#map=40.123456');
+    assert.deepEqual([...new URL(copied[1]).searchParams], [['gevRoom', 'earth-lab']]);
+    assert.match(root.children[4].textContent, /may disclose map location/);
+  } finally {
+    dispose();
+  }
 });
 
 // Only intentionally coarsened public-view coordinates may cross a local-room boundary.

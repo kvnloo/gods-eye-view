@@ -128,6 +128,21 @@ try {
   });
   await page.click('[data-community-planning-preview-open]');
   await page.waitForSelector('[data-community-planning-preview]');
+  // The modal must begin at its hypothetical heading, not on Cancel before
+  // the cards are constructed. A native Tab must still reach real controls.
+  assert.equal(
+    await page.$eval('[data-community-planning-preview]', (dialog) =>
+      document.activeElement === dialog.querySelector('h2[tabindex="-1"]')),
+    true,
+    'initial modal focus must announce the hypothetical planning heading',
+  );
+  await page.keyboard.press('Tab');
+  assert.equal(
+    await page.$eval('[data-community-planning-preview]', (dialog) =>
+      document.activeElement === dialog.querySelector('[data-planning-cancel]')),
+    true,
+    'Tab from heading must reach the native Cancel control',
+  );
   assert.ok(
     moduleRequests.requestCount() > 0,
     'request observer missed opt-in',

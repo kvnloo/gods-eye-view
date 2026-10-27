@@ -2,6 +2,13 @@
 
 ## Fork-only synthetic co-op Scene preview — October 25, 2026
 
+Public baseline HTTPS references reject URL userinfo credentials, malformed
+URLs and ASCII control characters before the fixture-only Scene dialog can
+render them as provenance. The validation matches parent city-data Draft #185;
+it does not fetch the source, authenticate an author, prove a parcel or approve
+a proposal. Source fixtures cover accepted URLs and rejected credentials.
+Supported Node 24/26 and mounted Scene/Puppeteer remain NOT_RUN.
+
 Long but schema-valid HTTPS baseline reference URLs wrap within the Scene
 dialog on narrow mobile viewports, retaining their attribution and license.
 The existing opt-in mobile Puppeteer gate now includes a versioned synthetic

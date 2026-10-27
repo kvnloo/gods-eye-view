@@ -1,5 +1,10 @@
 # Changelog
 
+- The opt-in World Game park preview now compares the same first two versioned
+  hypothetical proposals across browser languages: stable ID sorting is
+  locale-independent, not a preference or municipal approval. A synthetic
+  four-proposal negative-control regression guards the ordering.
+
 - The fork-only World Game Scene preview now rejects credential-bearing,
   malformed or control-character baseline HTTPS URLs before displaying source
   provenance, matching the existing parent #185 validator. Added focused

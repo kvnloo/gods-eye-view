@@ -2,6 +2,11 @@
 
 ## Fork-only synthetic co-op Scene preview — October 25, 2026
 
+The hypothetical proposal projection sorts stable IDs independently of browser
+locale, so a two-card comparison drawn from multiple alternatives is consistent
+across languages and imported record order. This order is not an endorsement,
+preference, modeled impact or government ranking. Browser/device QA is NOT_RUN.
+
 Public baseline HTTPS references reject URL userinfo credentials, malformed
 URLs and ASCII control characters before the fixture-only Scene dialog can
 render them as provenance. The validation matches parent city-data Draft #185;

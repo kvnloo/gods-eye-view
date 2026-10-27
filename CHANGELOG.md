@@ -1,5 +1,13 @@
 # Changelog
 
+- Add an explicit `?observedTraffic=fixture` corridor demo for the #831
+  integration path. The standalone app enables CCTV + Traffic, waits for the
+  real loaded CCTV catalog, prefers SR-90/Imperial-area Caltrans rows when
+  present, then feeds deterministic synthetic fresh/stale/missing observations
+  through the #830 source contract and #829 card presentation. The fixture is
+  off by default, performs no CV/network analysis, and labels provenance and
+  quality as synthetic.
+
 - Surface optional observed-traffic evidence in CCTV presentation without
   coupling cameras to a detector. A configured #830 source can annotate the
   active camera and ambient thumbnail cards with the freshest camera-scoped

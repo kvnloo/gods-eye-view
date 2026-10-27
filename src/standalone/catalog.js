@@ -7,6 +7,7 @@ export { createStandaloneReferenceSources } from './layerSources.js';
 /** Create fresh layer instances using the existing standalone source choices. */
 export function createStandaloneCatalog({
   nepalBoundaryResolver,
+  observedTrafficSource = null,
   signal = new AbortController().signal,
   surface = createSurfaceServices({
     terrainSource: createApplicationRequestServices().terrain,
@@ -15,6 +16,7 @@ export function createStandaloneCatalog({
 } = {}) {
   return createApplicationCatalog({
     nepalBoundaryResolver,
+    observedTrafficSource,
     surface,
     sources: createStandaloneLayerSources(),
     signal,

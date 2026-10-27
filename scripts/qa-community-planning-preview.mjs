@@ -7,10 +7,15 @@ import puppeteer from 'puppeteer';
  */
 function watchPreviewModuleRequests(page) {
   const paths = new Set();
+  const baselineRequests = new Set();
   let requestCount = 0;
   const onRequest = (request) => {
     requestCount += 1;
-    const pathname = new URL(request.url()).pathname;
+    const requested = new URL(request.url());
+    const pathname = requested.pathname;
+    // Fixture baseline URLs are plain-text credits, never network inputs.
+    if (requested.origin === 'https://example.org')
+      baselineRequests.add(requested.href);
     if (
       pathname === '/src/ui/communityPlanningPreview.js' ||
       pathname === '/src/standalone/communityPlanningFixture.js'
@@ -21,14 +26,40 @@ function watchPreviewModuleRequests(page) {
   page.on('request', onRequest);
   return {
     snapshot: () => [...paths].sort(),
+    baselineRequests: () => [...baselineRequests].sort(),
     requestCount: () => requestCount,
     clear: () => {
       paths.clear();
+      baselineRequests.clear();
       requestCount = 0;
     },
     dispose: () => page.off('request', onRequest),
   };
 }
+
+/** Negative control: prove baseline network detection without making a request. */
+function checkBaselineRequestObserver() {
+  let observedRequest = null;
+  const fakePage = {
+    on(event, listener) {
+      assert.equal(event, 'request');
+      observedRequest = listener;
+    },
+    off(event, listener) {
+      assert.equal(event, 'request');
+      assert.equal(listener, observedRequest);
+    },
+  };
+  const watcher = watchPreviewModuleRequests(fakePage);
+  observedRequest({ url: () => 'https://example.org/synthetic-fixture' });
+  assert.deepEqual(watcher.baselineRequests(), [
+    'https://example.org/synthetic-fixture',
+  ]);
+  watcher.clear();
+  assert.deepEqual(watcher.baselineRequests(), []);
+  watcher.dispose();
+}
+checkBaselineRequestObserver();
 
 /**
  * Headless gate for the opt-in GEV Scene preview. Start the GEV dev server first.
@@ -101,6 +132,10 @@ try {
     '/src/standalone/communityPlanningFixture.js',
     '/src/ui/communityPlanningPreview.js',
   ]);
+  assert.deepEqual(
+    moduleRequests.baselineRequests(), [],
+    'rendering synthetic baseline credits must not request their source URLs',
+  );
   const checked = await page.evaluate(() => {
     const dialog = document.querySelector('[data-community-planning-preview]');
     const text = dialog.textContent;
@@ -950,7 +985,11 @@ try {
     edit: 'Recorded edit: unknown (no valid recorded operation metadata)',
   });
   assert.equal(await page.$('[data-community-planning-preview]'), null);
-  console.log('Community planning preview: synthetic proposals, attribution, missing-clock fail-closed, keyboard, mobile, teardown PASS');
+  assert.deepEqual(
+    moduleRequests.baselineRequests(), [],
+    'mode changes, provenance disclosures and teardown must never fetch baseline source URLs',
+  );
+  console.log('Community planning preview: synthetic proposals, inert source credits, attribution, missing-clock fail-closed, keyboard, mobile, teardown PASS');
 } finally {
   moduleRequests?.dispose();
   await browser.close();

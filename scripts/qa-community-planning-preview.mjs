@@ -1061,22 +1061,37 @@ try {
     );
     await page.click('[data-planning-mode="game"]');
     assert.deepEqual(
-      await page.$eval('[data-alternative-id]', (items) =>
-        items.filter((item) => !item.hidden).map((item) => item.dataset.alternativeId)),
+      await page.$$eval(
+        '[data-community-planning-preview] [data-alternative-id]',
+        (items) =>
+          items
+            .filter((item) => !item.hidden)
+            .map((item) => item.dataset.alternativeId),
+      ),
       ['play-first'],
     );
     await page.$eval('[data-planning-focus-id="trees-first"]', (button) =>
       button.focus());
     await page.keyboard.press('Enter');
     assert.deepEqual(
-      await page.$eval('[data-alternative-id]', (items) =>
-        items.filter((item) => !item.hidden).map((item) => item.dataset.alternativeId)),
+      await page.$$eval(
+        '[data-community-planning-preview] [data-alternative-id]',
+        (items) =>
+          items
+            .filter((item) => !item.hidden)
+            .map((item) => item.dataset.alternativeId),
+      ),
       ['trees-first'],
     );
     await page.click('[data-planning-mode="co-op"]');
     assert.deepEqual(
-      await page.$eval('[data-alternative-id]', (items) =>
-        items.filter((item) => !item.hidden).map((item) => item.dataset.alternativeId)),
+      await page.$$eval(
+        '[data-community-planning-preview] [data-alternative-id]',
+        (items) =>
+          items
+            .filter((item) => !item.hidden)
+            .map((item) => item.dataset.alternativeId),
+      ),
       ['play-first', 'trees-first'],
     );
     // Animation observer negative control: inject then cancel one test-only

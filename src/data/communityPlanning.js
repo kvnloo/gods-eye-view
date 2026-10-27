@@ -220,7 +220,9 @@ export function listPlanningAlternatives(project, collaborationState) {
       }
     })
     .filter(Boolean)
-    .sort((a, b) => a.alternativeId.localeCompare(b.alternativeId)));
+    .sort((a, b) =>
+      a.alternativeId < b.alternativeId ? -1 : a.alternativeId > b.alternativeId ? 1 : 0,
+    ));
 }
 
 /** Game/co-op is a local presentation choice; never synced as authority. */

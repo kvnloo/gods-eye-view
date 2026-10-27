@@ -40,6 +40,15 @@ heartbeat; background timer throttling can delay this). Leave, room switch
 and feature teardown must clear their timers and peers. Presence is only an
 unverified local-tab liveness hint, never authenticated or durable membership.
 
+Room invites are **room-only by default**: the copied URL retains the app
+origin/path and adds only `gevRoom`, stripping unrelated query parameters,
+credentials and the scene/map fragment. The unchecked-by-default **Include
+current scene** option preserves only the existing URL fragment after explicit
+consent; it may disclose a map position, never grants room identity or municipal
+approval. Test with a synthetic `?token=canary#map=canary`: room-only copy must
+contain neither canary and explicit scene copy must contain only the hash canary.
+No real location or secret is required for this test.
+
 **Not implemented:** remote internet rooms, global time travel, SUMO/PyPSA
 impact forecasts, operational disaster guidance. Keep provenance and simulated
 states explicitly separated.

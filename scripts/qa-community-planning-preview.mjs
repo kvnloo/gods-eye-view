@@ -1016,7 +1016,116 @@ try {
     moduleRequests.baselineRequests(), [],
     'mode changes, provenance disclosures and teardown must never fetch baseline source URLs',
   );
-  console.log('Community planning preview: synthetic proposals, inert source credits, attribution, missing-clock fail-closed, keyboard, mobile, teardown PASS');
+  // Reduced-motion media negative control: a real Chromium media override must
+  // change matchMedia before the fixture-only comparison is exercised.
+  await page.emulateMediaFeatures([
+    { name: 'prefers-reduced-motion', value: 'no-preference' },
+  ]);
+  assert.equal(
+    await page.evaluate(() =>
+      matchMedia('(prefers-reduced-motion: reduce)').matches),
+    false,
+    'reduced-motion negative control must start disabled',
+  );
+  await page.emulateMediaFeatures([
+    { name: 'prefers-reduced-motion', value: 'reduce' },
+  ]);
+  try {
+    assert.equal(
+      await page.evaluate(() =>
+        matchMedia('(prefers-reduced-motion: reduce)').matches),
+      true,
+      'Chromium did not enable the requested reduced-motion preference',
+    );
+    if (
+      await page.$eval('#scene-panel', (panel) =>
+        panel.classList.contains('collapsed'))
+    )
+      await page.click('[data-collapse-target="scene-panel"]');
+    await page.click('[data-community-planning-preview-open]');
+    await page.waitForSelector('[data-community-planning-preview]', {
+      visible: true,
+    });
+    assert.equal(
+      await page.$eval('[data-community-planning-preview]', (dialog) =>
+        document.activeElement === dialog.querySelector('h2[tabindex="-1"]')),
+      true,
+      'reduced-motion modal must still focus its hypothetical heading',
+    );
+    await page.keyboard.press('Tab');
+    assert.equal(
+      await page.$eval('[data-community-planning-preview]', (dialog) =>
+        document.activeElement === dialog.querySelector('[data-planning-cancel]')),
+      true,
+      'reduced-motion heading must still lead to native controls',
+    );
+    await page.click('[data-planning-mode="game"]');
+    assert.deepEqual(
+      await page.$eval('[data-alternative-id]', (items) =>
+        items.filter((item) => !item.hidden).map((item) => item.dataset.alternativeId)),
+      ['play-first'],
+    );
+    await page.$eval('[data-planning-focus-id="trees-first"]', (button) =>
+      button.focus());
+    await page.keyboard.press('Enter');
+    assert.deepEqual(
+      await page.$eval('[data-alternative-id]', (items) =>
+        items.filter((item) => !item.hidden).map((item) => item.dataset.alternativeId)),
+      ['trees-first'],
+    );
+    await page.click('[data-planning-mode="co-op"]');
+    assert.deepEqual(
+      await page.$eval('[data-alternative-id]', (items) =>
+        items.filter((item) => !item.hidden).map((item) => item.dataset.alternativeId)),
+      ['play-first', 'trees-first'],
+    );
+    // Animation observer negative control: inject then cancel one test-only
+    // animation to prove the probe can detect motion without asserting that
+    // the overall Cesium globe (outside this preview) is animation-free.
+    const animationProbe = await page.$eval(
+      '[data-planning-alternatives]',
+      (cards) => {
+        const count = () =>
+          cards.getAnimations({ subtree: true })
+            .filter((animation) => animation.playState === 'running').length;
+        const current = count();
+        const testOnly = cards.animate(
+          [{ opacity: 1 }, { opacity: 0.5 }],
+          { duration: 5000 },
+        );
+        const detected = count();
+        testOnly.cancel();
+        return { current, detected };
+      },
+    );
+    assert.equal(
+      animationProbe.current, 0,
+      'reduced-motion proposal cards must not run an animation',
+    );
+    assert.ok(
+      animationProbe.detected > 0,
+      'animation probe negative control failed to detect inserted animation',
+    );
+    await page.keyboard.press('Escape');
+    assert.equal(await page.$('[data-community-planning-preview]'), null);
+    assert.equal(
+      await page.$eval('[data-community-planning-preview-open]', (button) =>
+        document.activeElement === button),
+      true,
+      'reduced-motion Escape must return focus to the surviving launcher',
+    );
+    assert.deepEqual(
+      moduleRequests.baselineRequests(),
+      [],
+      'reduced-motion mode changes must not fetch source credits',
+    );
+  } finally {
+    await page.emulateMediaFeatures([
+      { name: 'prefers-reduced-motion', value: 'no-preference' },
+    ]);
+  }
+
+  console.log('Community planning preview: synthetic proposals, inert source credits, attribution, missing-clock fail-closed, keyboard, mobile, reduced-motion, teardown PASS');
 } finally {
   moduleRequests?.dispose();
   await browser.close();

@@ -5079,3 +5079,7 @@ datacenters, dams and the Nepal locator retain that shared credit while displaye
 
 Military fragments stitch by source identity. Different mapped parcels merge only
 when their footprints touch or contain one another, never across a seam tolerance gap.
+
+## Experimental city planning baseline provenance (fork-only)
+
+The draft community-planning kernel uses explicitly authored, reference-only baselines; it is not an official parcel or municipal planning service. Baseline source IDs, revisions, attribution and licenses are preserved. A baseline URL must be a valid HTTPS reference without embedded username/password credentials or control characters; invalid references fail closed before the optional Scene preview displays them. This does not validate the rights, accuracy or official status of a cited source, or model any traffic, energy or construction outcome.

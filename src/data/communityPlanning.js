@@ -30,6 +30,24 @@ function denseArray(value, maxLength) {
   return true;
 }
 
+/** Public baseline references must not carry URL-userinfo credentials. */
+function publicHttpsSourceUrl(value) {
+  if (!/^https:\/\//i.test(value) || /[\u0000-\u001f\u007f]/.test(value)) {
+    return false;
+  }
+  try {
+    const parsed = new URL(value);
+    return (
+      parsed.protocol === 'https:' &&
+      Boolean(parsed.hostname) &&
+      !parsed.username &&
+      !parsed.password
+    );
+  } catch {
+    return false;
+  }
+}
+
 function freeze(value) {
   if (value && typeof value === 'object' && !Object.isFrozen(value)) {
     for (const child of Object.values(value)) freeze(child);
@@ -68,7 +86,7 @@ export function createCommunityPlanningProject(input = {}) {
     license: text(source?.license, 'source license', 120),
   }));
   if (new Set(references.map((s) => s.id)).size !== references.length ||
-      references.some((s) => !/^https:\/\//i.test(s.url))) {
+      references.some((s) => !publicHttpsSourceUrl(s.url))) {
     throw new TypeError('sources must be unique, bounded HTTPS references');
   }
   return freeze({

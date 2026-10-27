@@ -18,11 +18,28 @@ export function parseRoomMessage(raw, room, now = Date.now()) {
     return null;
   if (raw.kind !== 'view') return raw;
   const { lat, lon, height } = raw.view || {};
-  if (![lat, lon, height].every(Number.isFinite) ||
-      Math.abs(lat) > 90 || Math.abs(lon) > 180 ||
-      height < 1000 || height > 30000000)
+  // The sender shares only 0.1-degree coordinates and 1 km elevation bands.
+  // Reject finer incoming values; another local tab is not a trusted peer.
+  if (
+    ![lat, lon, height].every(Number.isFinite) ||
+    Math.abs(lat) > 90 ||
+    Math.abs(lon) > 180 ||
+    height < 1000 ||
+    height > 30000000 ||
+    Math.round(lat * 10) / 10 !== lat ||
+    Math.round(lon * 10) / 10 !== lon ||
+    Math.round(height / 1000) * 1000 !== height
+  )
     return null;
-  return raw;
+  // Unrecognized fields may contain private place data; never retain them.
+  return {
+    protocol: ROOM_PROTOCOL,
+    room,
+    peer: raw.peer,
+    sentAt: raw.sentAt,
+    kind: 'view',
+    view: { lat, lon, height },
+  };
 }
 export function makeRoomInvite(currentUrl, room) {
   if (!normalizeRoom(room)) throw new TypeError('Invalid room');

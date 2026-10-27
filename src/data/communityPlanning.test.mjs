@@ -76,6 +76,24 @@ test('park options are separate mergeable draft-scenario operations', () => {
   assert.deepEqual(forward.map((x) => x.alternativeId), ['play-first', 'trees-first']);
 });
 
+test('park alternative ordering is stable under locale-dependent collation', () => {
+  const cases = [
+    proposal('aa', 'alice', 'op-aa', 'feat-aa'),
+    proposal('ab', 'bob', 'op-ab', 'feat-ab'),
+    proposal('z', 'charlie', 'op-z', 'feat-z'),
+    proposal('a-1', 'dana', 'op-a-1', 'feat-a-1'),
+  ];
+  const ids = (operations) => listPlanningAlternatives(project(), {
+    authored: projection(operations),
+  }).map((item) => item.alternativeId);
+  // This is a versioned synthetic comparison, not surveyed geometry.
+  // Code-unit ordering must be independent of device/browser locale.
+  const expected = ['a-1', 'aa', 'ab', 'z'];
+  assert.deepEqual(ids(cases), expected);
+  assert.deepEqual(ids([...cases].reverse()), expected);
+  assert.deepEqual(ids(cases).slice(0, 2), ['a-1', 'aa']);
+});
+
 test('duplicate feature IDs and out-of-bounds geometry are refused', () => {
   assert.throws(() => createPlanningAlternativeOperation(project(), {
     alternativeId: 'x', operationId: 'one', actorId: 'alice', counter: 2,

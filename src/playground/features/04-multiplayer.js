@@ -16,7 +16,17 @@ export function parseRoomMessage(raw, room, now = Date.now()) {
       !['join', 'hello', 'view'].includes(raw.kind) ||
       !Number.isFinite(raw.sentAt) || Math.abs(now - raw.sentAt) > 60000)
     return null;
-  if (raw.kind !== 'view') return raw;
+  // Presence handshakes must not preserve untrusted private metadata or
+  // fine-grained views, even when another same-origin tab sends extras.
+  if (raw.kind !== 'view') {
+    return {
+      protocol: ROOM_PROTOCOL,
+      room,
+      peer: raw.peer,
+      sentAt: raw.sentAt,
+      kind: raw.kind,
+    };
+  }
   const { lat, lon, height } = raw.view || {};
   // The sender shares only 0.1-degree coordinates and 1 km elevation bands.
   // Reject finer incoming values; another local tab is not a trusted peer.

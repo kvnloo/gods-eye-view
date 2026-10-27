@@ -53,3 +53,29 @@ test('incoming views reject fine locations and discard unrecognized private fiel
     );
   }
 });
+
+// Join/hello are presence-only. Never retain arbitrary fields from another tab.
+test('presence packets strip private fields and precise views', () => {
+  const now = 100000;
+  for (const kind of ['join', 'hello']) {
+    const raw = {
+      protocol: ROOM_PROTOCOL,
+      room: 'earth-lab',
+      peer: 'peer-alpha',
+      sentAt: now,
+      kind,
+      view: { lat: 40.123456, lon: -100.123456, height: 1234 },
+      address: 'private-house',
+      location: { preciseLatitude: 40.123456 },
+    };
+    const parsed = parseRoomMessage(raw, 'earth-lab', now);
+    assert.notStrictEqual(parsed, raw);
+    assert.deepEqual(parsed, {
+      protocol: ROOM_PROTOCOL,
+      room: 'earth-lab',
+      peer: 'peer-alpha',
+      sentAt: now,
+      kind,
+    });
+  }
+});

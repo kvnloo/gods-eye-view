@@ -252,7 +252,8 @@ export const feature = {
       notice('Coarse camera view shared with local tabs (about 0.1° precision).');
     });
     invite.addEventListener('click', async () => {
-      const candidate = normalizeRoom(roomInput.value);
+      // Invite the active channel, not an edited but unjoined room code.
+    const candidate = room || normalizeRoom(roomInput.value);
       if (!candidate) return notice('Enter a valid room first.');
       const link = makeRoomInvite(win.location.href, candidate, {
         includeScene: includeScene.checked,

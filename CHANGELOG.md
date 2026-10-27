@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- In the fork-only Planet Playground local-room prototype, keep copied invites
+  pinned to the joined room when the editable code changes. No automatic room
+  switch or scene/location disclosure is introduced.
+
 ## [0.2.1] — 2026-10-02 — God's Eye View through Your Agent (with security fixes and other features)
 
 - Ship each bundled data pack once. The region, marine, admin-boundary,

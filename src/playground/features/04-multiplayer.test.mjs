@@ -86,6 +86,73 @@ test('copy room link keeps precise scene state out until explicitly checked', as
   }
 });
 
+test('joined-room invite uses active channel despite edits to the room-code field', async () => {
+  const copied = [];
+  const document = {
+    createElement(tagName) {
+      return {
+        tagName, ownerDocument: document, children: [], listeners: new Map(),
+        textContent: '', checked: false,
+        setAttribute() {},
+        append(...nodes) { this.children.push(...nodes); },
+        replaceChildren(...nodes) { this.children = nodes; },
+        addEventListener(name, listener) { this.listeners.set(name, listener); },
+      };
+    },
+  };
+  const root = document.createElement('section');
+  const dispose = feature.mount({
+    root,
+    services: {
+      window: {
+        location: {
+          search: '',
+          href: 'https://example.org/view?token=private#map=canary',
+        },
+        navigator: {
+          clipboard: { async writeText(value) { copied.push(value); } },
+        },
+        BroadcastChannel: class {
+          postMessage() {}
+          close() {}
+        },
+        setInterval() { return 1; },
+        clearInterval() {},
+      },
+    },
+  });
+  try {
+    const input = root.children[2];
+    const actions = root.children[3];
+    const join = actions.children[0];
+    const leave = actions.children[1];
+    const copy = actions.children[3];
+    join.listeners.get('click')();
+    input.value = 'other-room';
+    await copy.listeners.get('click')();
+    assert.deepEqual([...new URL(copied.at(-1)).searchParams], [
+      ['gevRoom', 'earth-lab'],
+    ]);
+    assert.equal(new URL(copied.at(-1)).hash, '');
+    assert.equal(new URL(copied.at(-1)).searchParams.has('token'), false);
+    // An invalid draft room code cannot suppress the joined-room invite.
+    input.value = 'x';
+    await copy.listeners.get('click')();
+    assert.equal(new URL(copied.at(-1)).searchParams.get('gevRoom'), 'earth-lab');
+    // Leaving restores the field as the invitation target.
+    leave.listeners.get('click')();
+    input.value = 'other-room';
+    await copy.listeners.get('click')();
+    assert.equal(new URL(copied.at(-1)).searchParams.get('gevRoom'), 'other-room');
+    join.listeners.get('click')();
+    input.value = 'third-room';
+    await copy.listeners.get('click')();
+    assert.equal(new URL(copied.at(-1)).searchParams.get('gevRoom'), 'other-room');
+  } finally {
+    dispose();
+  }
+});
+
 // Only intentionally coarsened public-view coordinates may cross a local-room boundary.
 test('incoming views reject fine locations and discard unrecognized private fields', () => {
   const now = 100000;

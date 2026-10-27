@@ -1,5 +1,16 @@
 # God's Eye View Current State
 
+## Fork-only Planet Playground local-room invitation experiment — October 27, 2026
+
+Downstream Draft #253 keeps Copy room link pointed at the actively joined
+BroadcastChannel room even when its editable room-code field changes. Leaving
+allows a different entered code to be used for another invitation without
+silently switching the connected tab. Invites still strip unrelated query
+state, credentials and scene hashes by default; the scene requires separate
+consent. Same-origin local-tab synthetic prototype only; not internet
+multiplayer or authenticated membership. Supported Node 24/26 and live
+two-tab browser proof remain unverified, and origin has not accepted it.
+
 ## God's Eye View in conversations — October 2, 2026
 
 Tool answers that can be shown in God's Eye View include a view: camera, layers,

@@ -1,5 +1,6 @@
 # Changelog
 
+- The fork-only park proposal projection now rejects imported authored records with mismatched draft-scenario kind/target ownership, preserving other valid hypothetical proposals without claiming verified identity, site rights or approval.
 - The downstream experimental community-planning baseline now rejects malformed or username/password-bearing HTTPS source references before the optional park Scene preview can display them. Source attribution and licenses remain read-only; no real-location or municipal-approval claim is added.
 
 - Vector tile sources take their allowed tile origin from the configured

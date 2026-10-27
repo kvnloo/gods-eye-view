@@ -106,8 +106,12 @@ test('explicit leave sanitizes private data and rejects stale or cross-room pack
     assert.equal(parseRoomMessage(invalid, 'earth-lab', now), null);
 });
 
-test('explicit leave and owner teardown remove ghost same-origin tab presence', () => {
+test('explicit leave, active heartbeats, crashes and stale callbacks stay local', () => {
+  const previousNow = Date.now;
+  let now = 100000;
+  Date.now = () => now;
   const channels = new Map();
+  const outgoing = [];
   class TestChannel {
     constructor(name) {
       this.name = name;
@@ -116,9 +120,12 @@ test('explicit leave and owner teardown remove ghost same-origin tab presence', 
       channels.get(name).add(this);
     }
     postMessage(data) {
-      for (const peer of channels.get(this.name))
+      if (this.closed) return;
+      outgoing.push(structuredClone(data));
+      for (const peer of channels.get(this.name)) {
         if (peer !== this && !peer.closed)
           peer.onmessage?.({ data: structuredClone(data) });
+      }
     }
     close() {
       this.closed = true;
@@ -144,31 +151,101 @@ test('explicit leave and owner teardown remove ghost same-origin tab presence', 
   };
   const tab = () => {
     const root = document.createElement('section');
-    const dispose = feature.mount({
-      root,
-      services: {
-        window: { location: { search: '' }, BroadcastChannel: TestChannel },
+    let timer = null;
+    const win = {
+      location: { search: '' },
+      BroadcastChannel: class extends TestChannel {
+        constructor(name) {
+          super(name);
+          win.currentChannel = this;
+        }
       },
-    });
+      setInterval(callback, ms) {
+        assert.equal(ms, 15000);
+        assert.equal(timer, null, 'only one active room heartbeat');
+        timer = callback;
+        return 1;
+      },
+      clearInterval(id) {
+        assert.equal(id, 1);
+        timer = null;
+      },
+    };
+    const dispose = feature.mount({ root, services: { window: win } });
     return {
       join: () => root.children[3].children[0].click(),
       leave: () => root.children[3].children[1].click(),
       peerCount: () => root.children[5].children.length,
       status: () => root.children[4].textContent,
+      pulse() {
+        assert.ok(timer, 'joined tab must have a heartbeat');
+        timer();
+      },
+      abruptClose() {
+        // Simulates a terminated tab: BroadcastChannel disappears without Leave.
+        win.currentChannel.close();
+        timer = null;
+      },
+      messageHandler: () => win.currentChannel.onmessage,
+      heartbeatActive: () => Boolean(timer),
       dispose,
     };
   };
-  const observer = tab();
-  const visitor = tab();
-  observer.join();
-  visitor.join();
-  assert.equal(observer.peerCount(), 1);
-  visitor.leave();
-  assert.equal(observer.peerCount(), 0);
-  assert.match(observer.status(), /^0 nearby tab\(s\)/);
-  visitor.join();
-  assert.equal(observer.peerCount(), 1);
-  visitor.dispose();
-  assert.equal(observer.peerCount(), 0);
-  observer.dispose();
+  let observer, visitor, crashing;
+  try {
+    observer = tab();
+    visitor = tab();
+    observer.join();
+    visitor.join();
+    assert.equal(observer.peerCount(), 1);
+    assert.equal(observer.heartbeatActive(), true);
+    assert.equal(visitor.heartbeatActive(), true);
+    visitor.leave();
+    assert.equal(observer.peerCount(), 0);
+    assert.match(observer.status(), /^0 nearby tab\(s\)/);
+    assert.equal(visitor.heartbeatActive(), false);
+    visitor.join();
+    assert.equal(observer.peerCount(), 1);
+    visitor.dispose();
+    assert.equal(observer.peerCount(), 0);
+
+    crashing = tab();
+    crashing.join();
+    assert.equal(observer.peerCount(), 1);
+    // Joined peers refresh presence without ever automatically sending view.
+    now += 15000;
+    observer.pulse();
+    crashing.pulse();
+    now += 60000;
+    observer.pulse();
+    crashing.pulse();
+    assert.equal(observer.peerCount(), 1);
+    assert.ok(outgoing.some((message) => message.kind === 'hello'));
+    assert.equal(outgoing.some((message) => message.kind === 'view'), false);
+
+    crashing.abruptClose();
+    assert.equal(observer.peerCount(), 1, 'a crash does not emit Leave');
+    now += 76000;
+    observer.pulse();
+    assert.equal(observer.peerCount(), 0, 'silent peer must expire from view');
+    assert.match(observer.status(), /^0 nearby tab\(s\)/);
+
+    // A queued callback from the previous channel must not resurrect a peer
+    // when a new channel happens to reuse the same room name.
+    const staleHandler = observer.messageHandler();
+    observer.leave();
+    observer.join();
+    staleHandler({ data: {
+      protocol: ROOM_PROTOCOL, room: 'earth-lab',
+      peer: 'peer-stale', sentAt: now, kind: 'join',
+    } });
+    assert.equal(observer.peerCount(), 0);
+    observer.dispose();
+    assert.equal(observer.heartbeatActive(), false);
+  } finally {
+    observer?.dispose();
+    visitor?.dispose();
+    crashing?.dispose();
+    Date.now = previousNow;
+  }
 });

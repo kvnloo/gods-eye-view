@@ -300,6 +300,14 @@ export function openCommunityPlanningPreview({ project, collaborationState }) {
       : 'View: co-op · neither mode grants authority';
   }
   syncMode();
+  // The shared dialog opens before the comparison is populated, so its first
+  // autofocus target is Cancel. Put keyboard/screen-reader entry at the
+  // hypothetical heading instead, while keeping Tab on native controls.
+  const heading = dialog.element.querySelector('h2');
+  if (heading) {
+    heading.tabIndex = -1;
+    heading.focus({ preventScroll: true });
+  }
   return dialog;
 }
 

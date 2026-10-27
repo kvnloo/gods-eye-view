@@ -1,5 +1,11 @@
 # Changelog
 
+- The fork-only World Game Scene preview now focuses its hypothetical
+  heading after the modal's comparison content is built, rather than leaving
+  initial keyboard focus on the shared Cancel button. The existing Puppeteer
+  gate checks title focus and native Tab to Cancel. Supported Node 24/26,
+  mounted full-app browser and device verification remain NOT_RUN.
+
 - The inherited collaboration authority kernel now resolves equal-clock authored ties and sorts claims/audit receipts consistently across browser locales. This changes only fork-local deterministic proposal semantics; it does not grant authority or create a live room.
 
 - The fork-only community-planning projection rejects imported proposal records

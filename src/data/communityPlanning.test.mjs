@@ -38,6 +38,8 @@ function projection(operations) {
   const authored = {};
   for (const operation of operations) {
     authored[`draft-scenario:${operation.targetId}`] = {
+      kind: operation.kind,
+      targetId: operation.targetId,
       fields: { proposal: { value: operation.value } },
     };
   }
@@ -292,4 +294,35 @@ test('sparse imported planning arrays fail closed without breaking valid neighbo
     listPlanningAlternatives(base, positive.state).map((item) => item.alternativeId),
     ['trees-first'],
   );
+});
+
+test('imported authored planning records require matching draft-scenario owner metadata', () => {
+  const base = project();
+  const trees = proposal('trees-first', 'alice', 'alice-op', 'oak');
+  const play = proposal('play-first', 'bob', 'bob-op', 'play', 'play-area');
+  const accepted = applyCollaborationOperations(
+    createCollaborationState(), [trees, play],
+  );
+  const key = `draft-scenario:${trees.targetId}`;
+  assert.deepEqual(
+    listPlanningAlternatives(base, accepted.state).map((entry) => entry.alternativeId),
+    ['play-first', 'trees-first'],
+  );
+  for (const mismatch of [
+    { kind: 'annotation' },
+    { kind: undefined },
+    { targetId: 'community-plan:another-project:trees-first' },
+    { targetId: undefined },
+  ]) {
+    const imported = {
+      ...accepted.state,
+      authored: {
+        ...accepted.state.authored,
+        [key]: { ...accepted.state.authored[key], ...mismatch },
+      },
+    };
+    const visible = listPlanningAlternatives(base, imported);
+    assert.deepEqual(visible.map((entry) => entry.alternativeId), ['play-first']);
+    assert.equal(visible[0].authorship.actorId, 'bob');
+  }
 });

@@ -2,6 +2,15 @@
 
 ## Fork-only Planet Playground local-room invitation experiment — October 27, 2026
 
+**October 28 unrelated-peer keyboard focus (#253, fork-only):** Local-room
+peer rows now reconcile individually rather than re-creating every row when
+another peer joins, changes its coarse view or leaves. An existing keyboard-
+focused **Visit view** action remains mounted for unrelated peer updates; an
+actual change to that peer's view updates only its own action. The old exact
+source lost focus in three synthetic cases (RED); the patched source and new
+DOM-like regression passed isolated V8 controls (GREEN). Supported Node 24/26,
+real GEV two-/three-tab Chromium, mobile and hosted CI are **NOT RUN**.
+
 **October 28 local-room focus preservation (#253, fork-only):** A received
 peer's heartbeat, repeated Join or identical coarse-view packet now refreshes
 presence without replacing the keyboard-focusable **Visit view** action. A

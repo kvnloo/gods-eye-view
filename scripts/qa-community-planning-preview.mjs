@@ -121,14 +121,18 @@ function qaNavigationAllowedBeforeRequest(raw, expectedOrigin) {
 }
 
 function dispatchQaInterceptedRequest(request, mainFrame, expectedOrigin) {
-  if (
-    request.isNavigationRequest() &&
-    request.frame() === mainFrame &&
-    !qaNavigationAllowedBeforeRequest(request.url(), expectedOrigin)
-  ) {
-    return request.abort('blockedbyclient');
+  if (request.isNavigationRequest()) {
+    // A provisional navigation may have no associated frame yet. Unknown
+    // top-level document targets must fail closed before any network request.
+    const frame = request.frame();
+    if (
+      (frame === mainFrame || frame === null) &&
+      !qaNavigationAllowedBeforeRequest(request.url(), expectedOrigin)
+    ) {
+      return request.abort('blockedbyclient');
+    }
   }
-  // GEV may load external map tiles/assets; block only top-level navigation.
+  // GEV may load external map tiles/assets; leave known subframes untouched.
   return request.continue();
 }
 
@@ -194,6 +198,29 @@ function checkQaPreRequestNegativeControls() {
     observedAction('https://iframe.example.test/', true, {}),
     'continue',
     'this guard is deliberately scoped to the main browser frame',
+  );
+  // A provisional navigation with no bound frame must not escape the
+  // pinned target guard, while valid local entries and map assets still load.
+  for (const unexpected of [
+    'https://remote.example.test/unbound',
+    origin + '/?access_token=synthetic-canary',
+    'file:///tmp/unbound.html',
+  ]) {
+    assert.equal(
+      observedAction(unexpected, true, null),
+      'abort:blockedbyclient',
+      'unbound document navigation must not escape the pinned target',
+    );
+  }
+  assert.equal(
+    observedAction(origin + '/?planningPreview=fixture', true, null),
+    'continue',
+    'pinned provisional entries must remain available',
+  );
+  assert.equal(
+    observedAction('https://tiles.example.test/asset.png', false, null),
+    'continue',
+    'unbound non-navigation assets must remain available',
   );
 }
 checkQaPreRequestNegativeControls();

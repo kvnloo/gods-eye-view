@@ -6,11 +6,39 @@ import puppeteer from 'puppeteer';
 
 
 const qaRoot = fileURLToPath(new URL('../', import.meta.url));
+// These six source owners together implement the opt-in bootstrap, authored
+// operation projection, Scene dialog and renderer. Pinning only the visible
+// preview modules can give a false PASS against a different dev-server core.
 const qaSources = [
   'src/data/communityPlanning.js',
+  'src/data/collaborationAuthority.js',
   'src/standalone/communityPlanningFixture.js',
+  'src/standalone/tools.js',
   'src/ui/communityPlanningPreview.js',
+  'src/ui/sceneSharing.js',
 ];
+
+// Independent closure guard: accidentally dropping a runtime owner must fail
+// the QA self-test before launching Chromium, not quietly weaken provenance.
+const requiredQaRuntimeOwners = Object.freeze([
+  'src/data/collaborationAuthority.js',
+  'src/standalone/tools.js',
+  'src/ui/sceneSharing.js',
+]);
+function assertQaRuntimeOwnerCoverage(paths) {
+  const missing = requiredQaRuntimeOwners.filter((owner) => !paths.includes(owner));
+  assert.deepEqual(missing, [], 'QA source identity omits required runtime owners');
+}
+function checkQaRuntimeOwnerNegativeControls() {
+  assertQaRuntimeOwnerCoverage(qaSources);
+  for (const owner of requiredQaRuntimeOwners) {
+    assert.throws(
+      () => assertQaRuntimeOwnerCoverage(qaSources.filter((path) => path !== owner)),
+      /omits required runtime owners/,
+    );
+  }
+}
+checkQaRuntimeOwnerNegativeControls();
 
 function assertCheckoutLock(expected, actual, status) {
   if (!/^[0-9a-f]{40}$/.test(expected || ''))
@@ -112,7 +140,7 @@ checkIdentityNegativeControls();
 assertCurrentCheckout();
 
 // Vite's ?raw module returns the exact source text from the server's root.
-// Compare all three owned modules with the pinned clean checkout. A browser
+// Compare all six directly involved owners with the pinned clean checkout. A browser
 // pointed at another checkout must not earn an exact-head PASS.
 const pinnedSources = Object.fromEntries(
   qaSources.map((path) => [

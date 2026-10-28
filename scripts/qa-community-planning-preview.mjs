@@ -8,13 +8,15 @@ import puppeteer from 'puppeteer';
 function watchPreviewModuleRequests(page) {
   const paths = new Set();
   const baselineRequests = new Set();
+  // Track additional credited HTTPS origins for imported synthetic sources.
+  const creditedSourceOrigins = new Set(['https://example.org']);
   let requestCount = 0;
   const onRequest = (request) => {
     requestCount += 1;
     const requested = new URL(request.url());
     const pathname = requested.pathname;
     // Fixture baseline URLs are plain-text credits, never network inputs.
-    if (requested.origin === 'https://example.org')
+    if (creditedSourceOrigins.has(requested.origin))
       baselineRequests.add(requested.href);
     if (
       pathname === '/src/ui/communityPlanningPreview.js' ||
@@ -28,6 +30,11 @@ function watchPreviewModuleRequests(page) {
     snapshot: () => [...paths].sort(),
     baselineRequests: () => [...baselineRequests].sort(),
     requestCount: () => requestCount,
+    watchCreditedSource(sourceUrl) {
+      const source = new URL(sourceUrl);
+      if (source.protocol !== 'https:') throw new TypeError('HTTPS source required');
+      creditedSourceOrigins.add(source.origin);
+    },
     clear: () => {
       paths.clear();
       baselineRequests.clear();
@@ -57,6 +64,18 @@ function checkBaselineRequestObserver() {
   ]);
   watcher.clear();
   assert.deepEqual(watcher.baselineRequests(), []);
+  // Negative controls must detect a source on another credited HTTPS origin,
+  // including a wrong-path fetch, without issuing a real network request.
+  const alternate = 'https://credited-source.example.net/fixture-v2';
+  watcher.watchCreditedSource(alternate);
+  observedRequest({ url: () => alternate });
+  assert.deepEqual(watcher.baselineRequests(), [alternate]);
+  watcher.clear();
+  const unexpected = 'https://credited-source.example.net/other-path';
+  observedRequest({ url: () => unexpected });
+  assert.deepEqual(watcher.baselineRequests(), [unexpected]);
+  watcher.clear();
+  assert.throws(() => watcher.watchCreditedSource('http://example.net/'), TypeError);
   watcher.dispose();
 }
 checkBaselineRequestObserver();
@@ -418,7 +437,11 @@ try {
     // A legitimate long HTTPS reference must not force horizontal scrolling.
     // The unwrapped measurement is an explicit negative control, not a
     // production setting; no external URL is fetched by this fixture.
-    const longSourceLayout = await mobilePage.evaluate(async () => {
+    // Use another valid HTTPS origin so the network observer cannot pass
+    // solely by watching the default example.org fixture host.
+    const longSourceUrl = `https://credited-source.example.net/${'x'.repeat(1400)}`;
+    mobileRequests.watchCreditedSource(longSourceUrl);
+    const longSourceLayout = await mobilePage.evaluate(async (longSourceUrl) => {
       const { createSyntheticCommunityPlanningFixture } = await import(
         '/src/standalone/communityPlanningFixture.js'
       );
@@ -430,7 +453,6 @@ try {
       );
       const { project, collaborationState } =
         createSyntheticCommunityPlanningFixture();
-      const longSourceUrl = `https://example.org/${'x'.repeat(1400)}`;
       const sourcedProject = createCommunityPlanningProject({
         ...project,
         baseline: {
@@ -465,7 +487,7 @@ try {
       } finally {
         preview.dispose();
       }
-    });
+    }, longSourceUrl);
     assert.equal(longSourceLayout.fixtureUrlDisplayed, true);
     assert.ok(
       longSourceLayout.unwrapped.scrollWidth >

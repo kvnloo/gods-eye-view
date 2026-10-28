@@ -202,13 +202,16 @@ export const feature = {
       for (const [id, view] of peers) {
         const prior = renderedPeers.get(id);
         if (prior && prior.view === view) continue;
+        const previousVisit = prior?.row.querySelector?.('button');
+        const restoreVisitFocus = Boolean(previousVisit && previousVisit === doc.activeElement);
         const row = doc.createElement('div');
         row.className = 'gev-playground-actions';
         const label = doc.createElement('span');
         label.textContent = 'Peer ' + id.slice(-6) + (view ? ' · shared a coarse view' : ' · connected');
         row.append(label);
+        let follow = null;
         if (view) {
-          const follow = doc.createElement('button');
+          follow = doc.createElement('button');
           follow.type = 'button';
           follow.textContent = 'Visit view';
           follow.addEventListener('click', () => {
@@ -243,6 +246,10 @@ export const feature = {
           peersContainer.append(row);
         }
         renderedPeers.set(id, { row, view });
+        // Preserve focus on an updated peer view without stealing it from
+        // another control or resurrecting a removed peer action.
+        if (restoreVisitFocus && follow?.isConnected)
+          follow.focus({ preventScroll: true });
       }
       // Minimal DOM fakes in the existing unit tests have replaceChildren
       // but no Element.remove/replaceWith. Real browsers take the keyed path.

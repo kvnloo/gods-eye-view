@@ -30,11 +30,53 @@ test('room invite excludes private query, credentials and scene by default', () 
   assert.throws(() => makeRoomInvite('file:///tmp/gev', 'earth-lab'), TypeError);
 });
 test('scene URL fragment requires separate consent and excludes unrelated query', () => {
-  const original = 'https://example.org/view?embed=1&token=private#map=40.123456';
+  const original = 'https://example.org/view?embed=1&token=private#lat=40.1&lon=-88.1&map=photoreal&access_token=hash-private';
   const next = new URL(makeRoomInvite(original, 'earth-lab', { includeScene: true }));
   assert.deepEqual([...next.searchParams], [['gevRoom', 'earth-lab']]);
-  assert.equal(next.hash, '#map=40.123456');
+  assert.equal(next.hash, '#lat=40.1&lon=-88.1&map=photoreal');
   assert.equal(new URL(makeRoomInvite(original, 'earth-lab', { includeScene: 'true' })).hash, '');
+});
+
+test('explicit scene invites discard unrelated hash tokens and invalid camera state', () => {
+  const source = 'https://example.org/view?token=query-secret';
+  const fragment = '#lat=40.1&lon=-88.1&map=photoreal&style=nvg' +
+    '&access_token=hash-secret&custom=canary&lat=41';
+  const included = new URL(makeRoomInvite(source + fragment, 'earth-lab', {
+    includeScene: true,
+  }));
+  assert.deepEqual([...included.searchParams], [['gevRoom', 'earth-lab']]);
+  assert.equal(included.hash, '#lat=40.1&lon=-88.1&map=photoreal&style=nvg');
+  assert.equal(included.href.includes('secret'), false);
+  assert.equal(included.href.includes('canary'), false);
+  assert.equal(
+    new URL(makeRoomInvite(source + fragment, 'earth-lab')).hash,
+    '',
+    'room-only default never includes even recognized camera hash keys',
+  );
+  for (const hash of [
+    '#access_token=hash-secret',
+    '#map=photoreal',
+    '#lat=40.1',
+    '#lat=&lon=-88.1',
+    '#lat=NaN&lon=-88.1',
+    '#lat=91&lon=-88.1',
+    '#lat=40.1&lon=-181',
+  ]) {
+    assert.equal(
+      new URL(makeRoomInvite(source + hash, 'earth-lab', {
+        includeScene: true,
+      })).hash,
+      '',
+      'unsupported or incomplete camera hash must never be copied',
+    );
+  }
+  assert.equal(
+    new URL(makeRoomInvite(source + fragment, 'earth-lab', {
+      includeScene: 'true',
+    })).hash,
+    '',
+    'truthy-looking strings are not scene-sharing consent',
+  );
 });
 
 test('copy room link keeps precise scene state out until explicitly checked', async () => {
@@ -58,7 +100,7 @@ test('copy room link keeps precise scene state out until explicitly checked', as
       window: {
         location: {
           search: '',
-          href: 'https://example.org/view?token=private#map=40.123456',
+          href: 'https://example.org/view?token=private#lat=40.1&lon=-88.1&map=photoreal&access_token=hash-private',
         },
         navigator: {
           clipboard: { async writeText(value) { copied.push(value); } },
@@ -78,7 +120,7 @@ test('copy room link keeps precise scene state out until explicitly checked', as
     assert.match(root.children[4].textContent, /Room-only link copied/);
     includeScene.checked = true;
     await copy.listeners.get('click')();
-    assert.equal(new URL(copied[1]).hash, '#map=40.123456');
+    assert.equal(new URL(copied[1]).hash, '#lat=40.1&lon=-88.1&map=photoreal');
     assert.deepEqual([...new URL(copied[1]).searchParams], [['gevRoom', 'earth-lab']]);
     assert.match(root.children[4].textContent, /may disclose map location/);
     assert.equal(includeScene.checked, false, 'scene consent must be one-shot');
@@ -92,7 +134,7 @@ test('copy room link keeps precise scene state out until explicitly checked', as
     const first = copy.listeners.get('click')();
     const second = copy.listeners.get('click')();
     await Promise.all([first, second]);
-    assert.equal(new URL(copied[3]).hash, '#map=40.123456');
+    assert.equal(new URL(copied[3]).hash, '#lat=40.1&lon=-88.1&map=photoreal');
     assert.equal(new URL(copied[4]).hash, '',
       'a pending scene copy must not authorize a second scene disclosure');
     assert.equal(includeScene.checked, false);
@@ -886,7 +928,7 @@ test('overlapping invite copies cannot restore an older scene link', async () =>
       window: {
         location: {
           search: '',
-          href: 'https://example.org/view?token=private#map=scene-canary',
+          href: 'https://example.org/view?token=private#lat=40.1&lon=-88.1&map=photoreal&access_token=scene-canary',
         },
         navigator: {
           clipboard: {
@@ -913,7 +955,7 @@ test('overlapping invite copies cannot restore an older scene link', async () =>
     const second = copyLink();
     await Promise.resolve();
     assert.equal(writes.length, 1, 'newer room-only copy must wait for old clipboard settlement');
-    assert.equal(new URL(writes[0].value).hash, '#map=scene-canary');
+    assert.equal(new URL(writes[0].value).hash, '#lat=40.1&lon=-88.1&map=photoreal');
     writes[0].succeed();
     await first;
     await Promise.resolve();

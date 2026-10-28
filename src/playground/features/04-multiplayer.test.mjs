@@ -582,3 +582,76 @@ test('local room message failures release membership and never confirm a failed 
     dispose();
   }
 });
+
+test('invalid camera snapshots never send views or claim success, then allow a valid retry', () => {
+  const document = {
+    createElement(tagName) {
+      return {
+        tagName, ownerDocument: document, children: [], listeners: new Map(),
+        textContent: '', disabled: false,
+        setAttribute() {},
+        append(...nodes) { this.children.push(...nodes); },
+        replaceChildren(...nodes) { this.children = nodes; },
+        addEventListener(event, listener) { this.listeners.set(event, listener); },
+      };
+    },
+  };
+  const root = document.createElement('section');
+  const sent = [];
+  let camera = null;
+  const dispose = feature.mount({
+    root,
+    services: {
+      window: {
+        location: { search: '' },
+        BroadcastChannel: class {
+          postMessage(packet) { sent.push(packet); }
+          close() {}
+        },
+        setInterval() { return 1; },
+        clearInterval() {},
+      },
+      viewer: { camera: { positionWC: {} } },
+      Cesium: {
+        Cartographic: {
+          fromCartesian() {
+            if (camera === 'throw') throw new Error('destroyed camera');
+            return camera;
+          },
+        },
+        Math: { toDegrees: (radians) => radians * 180 / Math.PI },
+      },
+    },
+  });
+  const [join, leave, share] = root.children[3].children;
+  const click = (button) => button.listeners.get('click')();
+  try {
+    click(join);
+    assert.equal(leave.disabled, false);
+    for (const invalid of [
+      null,
+      { latitude: NaN, longitude: 1, height: 3000 },
+      { latitude: 1, longitude: Infinity, height: 3000 },
+      { latitude: 1, longitude: 1, height: NaN },
+      { latitude: Math.PI, longitude: 1, height: 3000 },
+      'throw',
+    ]) {
+      camera = invalid;
+      assert.doesNotThrow(() => click(share));
+      assert.equal(sent.filter((packet) => packet.kind === 'view').length, 0);
+      assert.match(root.children[4].textContent, /nothing shared/);
+      assert.equal(leave.disabled, false, 'camera failure must not disconnect peers');
+    }
+    camera = { latitude: 0.5, longitude: -1, height: 3333 };
+    click(share);
+    const views = sent.filter((packet) => packet.kind === 'view');
+    assert.equal(views.length, 1);
+    assert.deepEqual(views[0].view, {
+      lat: 28.6, lon: -57.3, height: 3000,
+    });
+    assert.match(root.children[4].textContent, /Coarse camera view shared/);
+    assert.deepEqual(Object.keys(views[0].view).sort(), ['height', 'lat', 'lon']);
+  } finally {
+    dispose();
+  }
+});

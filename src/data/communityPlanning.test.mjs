@@ -119,7 +119,7 @@ test('missing provenance and invalid project bounds fail closed', () => {
   }), /HTTPS/);
 });
 
-test('baseline HTTPS sources reject URL credentials and malformed URLs', () => {
+test('baseline HTTPS credits reject credential parameters and unsafe fragments', () => {
   const baseline = project();
   const source = baseline.baseline.sources[0];
   const withUrl = (url) => createCommunityPlanningProject({
@@ -135,6 +135,14 @@ test('baseline HTTPS sources reject URL credentials and malformed URLs', () => {
     'https://alice:secret@example.org/parcel',
     'https://alice@example.org/parcel',
     'https://:secret@example.org/parcel',
+    'https://example.org/parcel?access_token=synthetic-canary',
+    'https://example.org/parcel?API_KEY=synthetic-canary',
+    'https://example.org/parcel?%61ccess_token=synthetic-canary',
+    'https://example.org/parcel?X-Amz-Signature=synthetic-canary',
+    'https://example.org/parcel?session_id=synthetic-canary',
+    'https://example.org/parcel#access_token=synthetic-canary',
+    'https://example.org/parcel#scene=private-position',
+    'https://example.org/parcel#record%3Dprivate',
     'https://',
     'https://example.org/\nsecret',
     'http://example.org/parcel',

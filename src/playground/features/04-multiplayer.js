@@ -143,6 +143,9 @@ export const feature = {
     const timerHost = typeof win.setInterval === 'function' &&
       typeof win.clearInterval === 'function' ? win : globalThis;
     let heartbeat = null;
+    let inviteWriteTail = Promise.resolve();
+    let latestInviteIntent = 0;
+    let mounted = true;
     const peerId = 'peer-' + Math.random().toString(36).slice(2, 12);
     function notice(message) { status.textContent = message; }
     function leaveRoom(notifyPeers = true) {
@@ -328,7 +331,7 @@ export const feature = {
       }
       notice('Coarse camera view shared with local tabs (about 0.1° precision).');
     });
-    invite.addEventListener('click', async () => {
+    invite.addEventListener('click', () => {
       // Invite the active channel, not an edited but unjoined room code.
       const candidate = room || normalizeRoom(roomInput.value);
       if (!candidate) return notice('Enter a valid room first.');
@@ -339,18 +342,31 @@ export const feature = {
       const link = makeRoomInvite(win.location.href, candidate, {
         includeScene: shareScene,
       });
-      try {
-        await win.navigator.clipboard.writeText(link);
-        notice(shareScene
-          ? 'Room and scene link copied; the scene may disclose map location. Same-origin tabs only.'
-          : 'Room-only link copied without scene or map state. Same-origin tabs only.');
-      } catch {
-        notice('Clipboard unavailable; copy this room code: ' + candidate);
-      }
+      const intent = ++latestInviteIntent;
+      // Clipboard writes can settle out of order (e.g. a permission prompt).
+      // Serialize them so an old scene link cannot overwrite a later room-only
+      // choice, and never show success for a superseded or disposed intent.
+      const copy = inviteWriteTail.then(async () => {
+        try {
+          await win.navigator.clipboard.writeText(link);
+          if (mounted && intent === latestInviteIntent)
+            notice(shareScene
+              ? 'Room and scene link copied; the scene may disclose map location. Same-origin tabs only.'
+              : 'Room-only link copied without scene or map state. Same-origin tabs only.');
+        } catch {
+          if (mounted && intent === latestInviteIntent)
+            notice('Clipboard unavailable; copy this room code: ' + candidate);
+        }
+      });
+      inviteWriteTail = copy;
+      return copy;
     });
     root.append(title, description, roomInput, actions, status, peersContainer);
     leaveRoom();
     notice('Disconnected. Joining is optional.');
-    return leaveRoom;
+    return () => {
+      mounted = false;
+      leaveRoom();
+    };
   },
 };

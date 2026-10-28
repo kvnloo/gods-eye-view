@@ -490,6 +490,27 @@ try {
     'rendering synthetic baseline credits must not request their source URLs',
   );
   await assertServedSourceIdentity(page);
+  // Inspect the real boot predicate through Vite, not a copied test helper.
+  // Extra and duplicate query keys must never opt in to synthetic planning UI.
+  const queryDecisions = await page.evaluate(async () => {
+    const { isPlanningFixturePreviewRequested } =
+      await import('/src/standalone/tools.js');
+    return [
+      ['?planningPreview=fixture', true],
+      ['', false],
+      ['?planningPreview=other', false],
+      ['?planningPreview=fixture&access_token=synthetic-canary', false],
+      ['?planningPreview=fixture&planningPreview=fixture', false],
+      ['?foo=bar&planningPreview=fixture', false],
+      ['?planningPreview=%66ixture', false],
+    ].map(([search, expected]) => ({
+      search,
+      actual: isPlanningFixturePreviewRequested(search),
+      expected,
+    }));
+  });
+  for (const { search, actual, expected } of queryDecisions)
+    assert.equal(actual, expected, `Fixture gate misclassified query ${search}`);
   const checked = await page.evaluate(() => {
     const dialog = document.querySelector('[data-community-planning-preview]');
     const text = dialog.textContent;

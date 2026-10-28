@@ -13,7 +13,7 @@ npm run dev
 # Open the SCENES panel and click COMPARE PARK PROPOSALS · FIXTURE
 ```
 
-The opt-in query is an **exact match**; normal startup does not import the preview. The preview button mounts within the existing Scene panel after startup and is removed when the application is destroyed.
+The opt-in query is an **exact match** (`?planningPreview=fixture` only); normal startup does not import the preview. Additional parameters, repeated `planningPreview` keys, or differently encoded values do not mount fixture UI. The real-browser QA gate imports the actual bootstrap query predicate and checks positive/negative query cases; this source-level contract is **not** proof that the full browser QA ran. The preview button mounts within the existing Scene panel after startup and is removed when the application is destroyed.
 
 The demo composes a synthetic reference-only parcel and two distinct author operations through the existing `collaborationAuthority.js` kernel. It shows "Trees & shade" (recorded actor `alice`) beside "Play & community garden" (recorded actor `bob`), with schematic markers normalized to the authored fixture bounds, assumptions, and explicit `not-evaluated` and `not-requested` labels. Credit is the **recorded operation actor ID, not verified real-world identity**.
 The Scene preview also prints the synthetic baseline source's ID, fixture revision,

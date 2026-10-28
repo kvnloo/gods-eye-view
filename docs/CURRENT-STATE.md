@@ -1,5 +1,12 @@
 # God's Eye View Current State
 
+The fork-only synthetic city-builder Scene bootstrap now requires the exact
+`?planningPreview=fixture` query. Extra/duplicate query keys (including
+credential-shaped canaries) and encoded aliases do not opt in to the
+hypothetical module. The focused browser QA verifies the actual exported
+bootstrap predicate, but full-app GEV Scene/Puppeteer, supported Node 24/26,
+mobile and `test:track` remain **NOT RUN**.
+
 ## Fork-only synthetic co-op Scene preview — October 25, 2026
 
 The opt-in synthetic planning modal focuses its hypothetical heading after

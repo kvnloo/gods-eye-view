@@ -1,5 +1,11 @@
 # Changelog
 
+- The fork-only World Game planning preview now loads only for the exact
+  `?planningPreview=fixture` query; extra/duplicate parameters and encoded
+  aliases cannot activate the synthetic Scene launcher. Added the actual
+  bootstrap-predicate query matrix to the existing browser QA gate; native
+  Node 24/26 and full-app/browser QA remain NOT RUN.
+
 - The fork-only World Game Scene preview now focuses its hypothetical
   heading after the modal's comparison content is built, rather than leaving
   initial keyboard focus on the shared Cancel button. The existing Puppeteer

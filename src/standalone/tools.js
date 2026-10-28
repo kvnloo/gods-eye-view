@@ -2,6 +2,11 @@ import { createAssetDirectorySource } from '../director/packs/source.js';
 import { createApplicationTools } from '../app/tools.js';
 import { startStandaloneChrome } from './startupChrome.js';
 import { loadToolCatalog } from './toolCatalog.js';
+/** Only the exact, explicit fixture query may load hypothetical planning UI. */
+export function isPlanningFixturePreviewRequested(search) {
+  return search === '?planningPreview=fixture';
+}
+
 export function createStandaloneTools(options) {
   const tools = createApplicationTools({
     startChrome: startStandaloneChrome,
@@ -20,10 +25,7 @@ export function createStandaloneTools(options) {
     voice: { toolCatalog: loadToolCatalog, ...options?.voice },
   });
   // Explicit fixture-only proof. Normal GEV startup loads no proposal UI/code.
-  if (
-    new URLSearchParams(window.location.search).get('planningPreview') ===
-    'fixture'
-  ) {
+  if (isPlanningFixturePreviewRequested(window.location.search)) {
     let stopped = false;
     let dispose = () => {};
     // Startup cleanup registration must happen synchronously, before the

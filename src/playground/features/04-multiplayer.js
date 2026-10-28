@@ -347,6 +347,8 @@ export const feature = {
       // Serialize them so an old scene link cannot overwrite a later room-only
       // choice, and never show success for a superseded or disposed intent.
       const copy = inviteWriteTail.then(async () => {
+        // A discarded playground must not start a queued clipboard write.
+        if (!mounted) return;
         try {
           await win.navigator.clipboard.writeText(link);
           if (mounted && intent === latestInviteIntent)

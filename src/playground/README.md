@@ -53,10 +53,14 @@ unverified local-tab liveness hint, never authenticated or durable membership.
 Room invites are **room-only by default**: the copied URL retains the app
 origin/path and adds only `gevRoom`, stripping unrelated query parameters,
 credentials and the scene/map fragment. The unchecked-by-default **Include
-current scene** option preserves only the existing URL fragment after explicit
-consent; it may disclose a map position, never grants room identity or municipal
-approval. Test with a synthetic `?token=canary#map=canary`: room-only copy must
-contain neither canary and explicit scene copy must contain only the hash canary.
+current scene** option includes only recognized GEV share-link fragment
+fields after explicit consent, and only when finite in-range camera lat/lon
+are present. Unrelated hash keys (including tokens) are discarded; an invalid
+or incomplete scene yields a room-only link with an explicit notice. Even valid
+scene fragments can disclose map location; this is not room identity or municipal
+approval. Test with synthetic `?token=query-canary#lat=40.1&lon=-88.1&map=photoreal&access_token=hash-canary`:
+room-only copy must contain no camera/hash/query canaries, while consented
+copy retains only the recognized camera/map fields and no hash/query tokens.
 No real location or secret is required for this test.
 The scene opt-in is **one-shot per copied invitation**: Copy immediately
 unchecks it, even if clipboard access stalls or fails. Another Copy (or

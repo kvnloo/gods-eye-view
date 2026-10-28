@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+- Limit explicit Planet Playground room-invite scene fragments to the
+  recognized GEV share-link fields and valid bounded camera coordinates;
+  unrelated hash tokens cannot be copied. Invalid scene state falls back to
+  a room-only link with a truthful notice. Isolated V8 controls only;
+  supported Node 24/26, app/browser and CI verification remain outstanding.
 - Prevent Planet Playground local rooms from sending retained coarse camera
   coordinates after Scene destruction or a throwing lifecycle check. Preserve
   the joined room for a valid explicit retry. Isolated V8 RED→GREEN only;

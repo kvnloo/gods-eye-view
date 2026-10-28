@@ -33,7 +33,13 @@ seek its authored timeline, add/undo a hypothetical marker, join the same room
 in two same-origin tabs (no automatic camera sharing), and choose a sensor look.
 Also verify Escape, mobile layout, and `?embed=1` without a launcher.
 For local rooms, keep two tabs idle across multiple 15-second heartbeats: both
-should remain visible without automatically sending camera views. Abruptly
+should remain visible without automatically sending camera views. With a received
+coarse peer view visible, keyboard-focus **Visit view** in one tab, then wait
+for a heartbeat from the other. Focus must stay on the same control; repeated
+Join/identical view packets must not recreate it. A changed coarse view must
+update the action, and Leave must remove it. This requires real two-tab keyboard
+and mobile verification; the focused regression runs only in a synthetic DOM.
+Abruptly
 terminate one tab without Leave and confirm the survivor eventually removes
 its stale presence (75 seconds without valid packets, checked by the next
 heartbeat; background timer throttling can delay this). Leave, room switch

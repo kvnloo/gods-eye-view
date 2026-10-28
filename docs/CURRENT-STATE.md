@@ -5136,7 +5136,7 @@ when their footprints touch or contain one another, never across a seam toleranc
 
 ## Experimental city planning baseline provenance (fork-only)
 
-The draft community-planning kernel uses explicitly authored, reference-only baselines; it is not an official parcel or municipal planning service. Baseline source IDs, revisions, attribution and licenses are preserved. A baseline URL must be a valid HTTPS reference without embedded username/password credentials or control characters; invalid references fail closed before the optional Scene preview displays them. This does not validate the rights, accuracy or official status of a cited source, or model any traffic, energy or construction outcome.
+The draft community-planning kernel uses explicitly authored, reference-only baselines; it is not an official parcel or municipal planning service. Baseline source IDs, revisions, attribution and licenses are preserved. A baseline URL must be a valid HTTPS reference without username/password credentials, credential-shaped query keys, arbitrary URL fragments or control characters; simple document anchors and non-sensitive revision queries remain valid. Invalid references fail closed before the optional Scene preview displays them. This does not validate the rights, accuracy or official status of a cited source, or model any traffic, energy or construction outcome.
 
 Imported authored park records must declare `draft-scenario` ownership and the exact `community-plan:<project-id>:<alternative-id>` target matching their record key. Incompatible owner metadata is excluded rather than credited as a valid proposal, while independent valid alternatives remain visible. A recorded operation is not verified personal identity or government approval.
 

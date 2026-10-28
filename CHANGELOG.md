@@ -17,11 +17,11 @@
   locale-independent, not a preference or municipal approval. A synthetic
   four-proposal negative-control regression guards the ordering.
 
-- The fork-only World Game Scene preview now rejects credential-bearing,
-  malformed or control-character baseline HTTPS URLs before displaying source
-  provenance, matching the existing parent #185 validator. Added focused
-  negative/positive source fixtures; full-app browser and supported Node 24/26
-  checks remain NOT_RUN.
+- The fork-only World Game Scene preview uses parent #185 validation
+  to reject credential-shaped query keys, unsafe URL fragments, malformed and
+  credentialed HTTPS references before showing public source credits, while
+  retaining safe revision queries and document anchors. Full-app browser and
+  supported Node 24/26 checks remain NOT_RUN.
 
 - The fork-only World Game Scene preview now wraps long, credited HTTPS
   baseline references inside its mobile-width modal instead of overflowing

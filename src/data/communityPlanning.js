@@ -31,17 +31,32 @@ function denseArray(value, maxLength) {
 }
 
 /** Public baseline references must not carry URL-userinfo credentials. */
+/** Keep credential-like references out of public planning source credits. */
 function publicHttpsSourceUrl(value) {
   if (!/^https:\/\//i.test(value) || /[\u0000-\u001f\u007f]/.test(value)) {
     return false;
   }
   try {
     const parsed = new URL(value);
+    const credentialQuery = [...parsed.searchParams.keys()].some((key) => {
+      // URLSearchParams decodes percent-encoded key spellings first.
+      const normalized = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+      return (
+        /token|secret|password|passwd|signature|credential/.test(normalized) ||
+        /apikey|authorization|bearer/.test(normalized) ||
+        /^(?:auth|key|sig|pwd|sessionid)$/.test(normalized)
+      );
+    });
+    // A document anchor is a public citation; arbitrary hash payloads may
+    // contain OAuth tokens or precise scene state and cannot be credited.
+    const safeAnchor = !parsed.hash || /^#[a-z][a-z0-9-]{0,79}$/i.test(parsed.hash);
     return (
       parsed.protocol === 'https:' &&
       Boolean(parsed.hostname) &&
       !parsed.username &&
-      !parsed.password
+      !parsed.password &&
+      !credentialQuery &&
+      safeAnchor
     );
   } catch {
     return false;

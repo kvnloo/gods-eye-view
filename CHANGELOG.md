@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- Transfer keyboard focus to a refreshed Planet Playground Visit view button
+  only when that peer's previous button was focused; background peer updates
+  never steal focus. Synthetic V8 RED→GREEN only; Node 24/26 and browser
+  acceptance remain unverified.
 - Keep Planet Playground's keyboard-focused Visit view mounted when a
   different local-room peer joins, changes its coarse view or leaves. Reconcile
   only the affected peer row; preserve the existing coarse/opt-in limits.

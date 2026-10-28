@@ -271,16 +271,25 @@ export const feature = {
         const packet = parseRoomMessage(event.data, room);
         if (!packet || packet.peer === peerId) return;
         if (packet.kind === 'leave') {
-          peers.delete(packet.peer);
+          const wasPresent = peers.delete(packet.peer);
           lastSeen.delete(packet.peer);
-          presentPeers();
+          if (wasPresent) presentPeers();
           notice(peers.size + ' nearby tab(s) in local room ' + room + '.');
           return;
         }
+        const wasPresent = peers.has(packet.peer);
         const previous = peers.get(packet.peer) || null;
-        peers.set(packet.peer, packet.kind === 'view' ? packet.view : previous);
+        const nextView = packet.kind === 'view' ? packet.view : previous;
+        // A liveness-only heartbeat must never replace a focused Visit view
+        // button. Rebuild only when membership or the coarse view changes.
+        const changed = !wasPresent || (packet.kind === 'view' && (
+          previous?.lat !== nextView.lat ||
+          previous?.lon !== nextView.lon ||
+          previous?.height !== nextView.height
+        ));
+        peers.set(packet.peer, nextView);
         lastSeen.set(packet.peer, Date.now());
-        presentPeers();
+        if (changed) presentPeers();
         if (packet.kind === 'join' && !send('hello')) {
           leaveRoom();
           notice('Local room messaging unavailable; disconnected.');

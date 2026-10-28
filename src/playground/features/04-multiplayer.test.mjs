@@ -614,6 +614,8 @@ test('invalid camera snapshots never send views or claim success, then allow a v
   const root = document.createElement('section');
   const sent = [];
   let camera = null;
+  let destroyed = false;
+  let teardownThrows = false;
   const dispose = feature.mount({
     root,
     services: {
@@ -626,7 +628,13 @@ test('invalid camera snapshots never send views or claim success, then allow a v
         setInterval() { return 1; },
         clearInterval() {},
       },
-      viewer: { camera: { positionWC: {} } },
+      viewer: {
+        isDestroyed() {
+          if (teardownThrows) throw new Error('Scene teardown in progress');
+          return destroyed;
+        },
+        camera: { positionWC: {} },
+      },
       Cesium: {
         Cartographic: {
           fromCartesian() {
@@ -658,6 +666,18 @@ test('invalid camera snapshots never send views or claim success, then allow a v
       assert.equal(leave.disabled, false, 'camera failure must not disconnect peers');
     }
     camera = { latitude: 0.5, longitude: -1, height: 3333 };
+    destroyed = true;
+    assert.doesNotThrow(() => click(share));
+    assert.equal(sent.filter((packet) => packet.kind === 'view').length, 0,
+      'a destroyed Scene cannot share its stale camera position');
+    assert.match(root.children[4].textContent, /nothing shared/);
+    assert.equal(leave.disabled, false, 'teardown must not disconnect the room');
+    destroyed = false;
+    teardownThrows = true;
+    assert.doesNotThrow(() => click(share));
+    assert.equal(sent.filter((packet) => packet.kind === 'view').length, 0,
+      'a throwing Scene lifecycle check cannot share a view');
+    teardownThrows = false;
     click(share);
     const views = sent.filter((packet) => packet.kind === 'view');
     assert.equal(views.length, 1);

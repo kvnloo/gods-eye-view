@@ -32,6 +32,11 @@ out-of-range Cesium camera without posting a view or claiming a successful
 share. The local room stays joined for an explicit valid retry. Only an
 isolated V8 adapter exercised the negative and positive cases; supported
 Node 24/26 and actual GEV browser/device behavior remain unverified.
+A received peer's **Visit view** action now also refuses an absent or destroyed
+Scene camera, failed Cesium coordinate conversion, or failed flyTo without
+throwing or claiming navigation. It leaves the local room intact for an
+explicit valid retry and does not send the user's camera. This has only an
+isolated synthetic V8 regression, not native supported Node or browser proof.
 
 ## God's Eye View in conversations — October 2, 2026
 

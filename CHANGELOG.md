@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+- Fail closed when Planet Playground's local-room Visit view button outlives
+  its Cesium Scene camera: no thrown navigation, no local view transmission,
+  and no room disconnect. A valid explicit follow still works. Isolated V8
+  RED→GREEN only; supported Node/browser proof remains outstanding.
+
 - Make Planet Playground's optional scene/location inclusion one-shot per
   copied local-room invitation. Consume consent before asynchronous clipboard
   access so repeat or rapid copies do not inherit a precise map fragment.

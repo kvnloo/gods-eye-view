@@ -63,6 +63,12 @@ than claiming the view was shared. Failed departure/close must still release
 the local channel, heartbeat and peer list. Only an explicit Join retries.
 The denial regressions use synthetic channels, not a real browser.
 
+A received peer's **Visit view** button navigates only on an explicit
+click. If its Cesium Scene camera was destroyed or became unavailable while
+the peer row remained visible, navigation must fail closed without throwing,
+sending a local camera view, or leaving the room. A valid later click can
+still navigate to the coarse peer view; live two-tab/browser proof is pending.
+
 **Not implemented:** remote internet rooms, global time travel, SUMO/PyPSA
 impact forecasts, operational disaster guidance. Keep provenance and simulated
 states explicitly separated.

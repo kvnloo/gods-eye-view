@@ -197,12 +197,27 @@ export const feature = {
           follow.type = 'button';
           follow.textContent = 'Visit view';
           follow.addEventListener('click', () => {
-            services.viewer.camera.flyTo({
-              destination: services.Cesium.Cartesian3.fromDegrees(
-                view.lon, view.lat, view.height,
-              ),
-              duration: 2,
-            });
+            // A peer row may outlive its Scene camera during teardown.
+            try {
+              const viewer = services.viewer;
+              if (
+                !viewer ||
+                viewer.isDestroyed?.() ||
+                typeof viewer.camera?.flyTo !== 'function' ||
+                typeof services.Cesium?.Cartesian3?.fromDegrees !== 'function'
+              ) {
+                notice('Scene camera unavailable; peer view not opened.');
+                return;
+              }
+              viewer.camera.flyTo({
+                destination: services.Cesium.Cartesian3.fromDegrees(
+                  view.lon, view.lat, view.height,
+                ),
+                duration: 2,
+              });
+            } catch {
+              notice('Scene camera unavailable; peer view not opened.');
+            }
           });
           row.append(follow);
         }

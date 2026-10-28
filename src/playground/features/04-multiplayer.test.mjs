@@ -670,3 +670,93 @@ test('invalid camera snapshots never send views or claim success, then allow a v
     dispose();
   }
 });
+
+test('Visit view fails closed after Scene teardown and still allows explicit retry', () => {
+  const document = {
+    createElement(tagName) {
+      return {
+        tagName, ownerDocument: document, children: [],
+        listeners: new Map(), textContent: '', disabled: false,
+        setAttribute() {},
+        append(...nodes) { this.children.push(...nodes); },
+        replaceChildren(...nodes) { this.children = nodes; },
+        addEventListener(name, listener) { this.listeners.set(name, listener); },
+      };
+    },
+  };
+  const root = document.createElement('section');
+  const packets = [];
+  const flights = [];
+  let channel;
+  const services = {
+    window: {
+      location: { search: '' },
+      BroadcastChannel: class {
+        constructor() { channel = this; }
+        postMessage(packet) { packets.push(packet); }
+        close() {}
+      },
+      setInterval() { return 1; },
+      clearInterval() {},
+    },
+    viewer: {
+      isDestroyed: () => false,
+      camera: { flyTo(options) { flights.push(options); } },
+    },
+    Cesium: {
+      Cartesian3: {
+        fromDegrees(lon, lat, height) { return { lon, lat, height }; },
+      },
+    },
+  };
+  const dispose = feature.mount({ root, services });
+  try {
+    const [join, leave] = root.children[3].children;
+    join.listeners.get('click')();
+    channel.onmessage({
+      data: {
+        protocol: ROOM_PROTOCOL, room: 'earth-lab', peer: 'peer-guest',
+        sentAt: Date.now(), kind: 'view',
+        view: { lat: 40.1, lon: -88.2, height: 10000 },
+      },
+    });
+    const visit = root.children[5].children[0].children[1];
+    assert.equal(visit.textContent, 'Visit view');
+    assert.deepEqual(flights, [], 'receiving a view must not navigate');
+    visit.listeners.get('click')();
+    assert.deepEqual(flights, [{
+      destination: { lon: -88.2, lat: 40.1, height: 10000 },
+      duration: 2,
+    }]);
+    const validViewer = services.viewer;
+    for (const invalidViewer of [
+      null,
+      { camera: null },
+      { isDestroyed: () => true, camera: {
+        flyTo() { throw new Error('must not navigate'); },
+      } },
+      { camera: { flyTo() { throw new Error('destroyed camera'); } } },
+    ]) {
+      services.viewer = invalidViewer;
+      assert.doesNotThrow(() => visit.listeners.get('click')());
+      assert.equal(flights.length, 1, 'unavailable camera cannot navigate');
+      assert.match(root.children[4].textContent, /Scene camera unavailable/);
+      assert.equal(leave.disabled, false, 'failed navigation cannot leave room');
+    }
+    services.viewer = validViewer;
+    services.Cesium.Cartesian3.fromDegrees = () => {
+      throw new Error('destroyed Cesium scene');
+    };
+    assert.doesNotThrow(() => visit.listeners.get('click')());
+    assert.equal(flights.length, 1);
+    services.Cesium.Cartesian3.fromDegrees = (lon, lat, height) => ({
+      lon, lat, height,
+    });
+    visit.listeners.get('click')();
+    assert.equal(flights.length, 2, 'valid explicit retry still navigates');
+    assert.equal(packets.some((packet) => packet.kind === 'view'), false,
+      'visiting a peer cannot transmit the local camera view');
+  } finally {
+    dispose();
+  }
+});

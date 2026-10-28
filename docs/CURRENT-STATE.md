@@ -19,6 +19,11 @@ presence reply, heartbeat or view send disconnects locally and clears timers;
 failure while posting Leave or closing the channel cannot retain local
 membership. An explicit Join is required to retry. Only synthetic V8 proof is
 available, not supported Node or full-app/two-tab browser acceptance.
+A manual coarse-view send also refuses a missing, destroyed, nonfinite or
+out-of-range Cesium camera without posting a view or claiming a successful
+share. The local room stays joined for an explicit valid retry. Only an
+isolated V8 adapter exercised the negative and positive cases; supported
+Node 24/26 and actual GEV browser/device behavior remain unverified.
 
 ## God's Eye View in conversations — October 2, 2026
 

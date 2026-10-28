@@ -1146,6 +1146,29 @@ test('unrelated local-room peer changes do not detach a focused Visit view', () 
     receive('peer-alpha', 'leave');
     assert.strictEqual(document.activeElement, join,
       'peer leave must not steal keyboard focus from other controls');
+    // If the *focused* Visit view disappears, do not strand keyboard focus
+    // on a detached node or move it to an action that broadcasts a location.
+    receive('peer-alpha', 'view', first);
+    const departingVisit = rows.children[0].children[1];
+    departingVisit.focus();
+    receive('peer-alpha', 'leave');
+    assert.equal(rows.children.length, 0);
+    assert.equal(departingVisit.isConnected, false);
+    assert.strictEqual(document.activeElement, root.children[4],
+      'focused peer departure must return focus to non-action room status');
+    assert.equal(root.children[4].tabIndex, -1);
+    // A local-room disconnect while a peer is focused has the same safe
+    // keyboard handoff, but explicit teardown must never reconnect a peer.
+    receive('peer-alpha', 'view', first);
+    const disconnectedVisit = rows.children[0].children[1];
+    disconnectedVisit.focus();
+    root.children[3].children[1].listeners.get('click')();
+    assert.equal(rows.children.length, 0);
+    assert.equal(disconnectedVisit.isConnected, false);
+    assert.strictEqual(document.activeElement, root.children[4],
+      'disconnect must not leave keyboard focus on detached peer controls');
+    assert.equal(root.children[3].children[2].disabled, true,
+      'disconnect must not leave a live outbound Send coarse view action');
   } finally {
     dispose();
   }

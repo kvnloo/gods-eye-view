@@ -445,3 +445,140 @@ test('denied BroadcastChannel remains disconnected and a later join can recover'
     dispose();
   }
 });
+
+test('local room message failures release membership and never confirm a failed view', () => {
+  const document = {
+    createElement(tagName) {
+      return {
+        tagName,
+        ownerDocument: document,
+        children: [],
+        listeners: new Map(),
+        textContent: '',
+        disabled: false,
+        setAttribute() {},
+        append(...nodes) {
+          this.children.push(...nodes);
+        },
+        replaceChildren(...nodes) {
+          this.children = nodes;
+        },
+        addEventListener(event, listener) {
+          this.listeners.set(event, listener);
+        },
+      };
+    },
+  };
+  const root = document.createElement('section');
+  const outgoing = [];
+  const channels = [];
+  let failPost = null;
+  let failClose = false;
+  let activeTick = null;
+  let timerId = 0;
+  class Channel {
+    constructor(name) {
+      this.name = name;
+      channels.push(this);
+    }
+    postMessage(message) {
+      if (failPost === message.kind) {
+        failPost = null;
+        throw new Error('simulated BroadcastChannel postMessage denial');
+      }
+      outgoing.push(message);
+    }
+    close() {
+      this.closed = true;
+      if (failClose) {
+        failClose = false;
+        throw new Error('simulated BroadcastChannel close denial');
+      }
+    }
+  }
+  const dispose = feature.mount({
+    root,
+    services: {
+      window: {
+        location: { search: '' },
+        BroadcastChannel: Channel,
+        setInterval(callback, duration) {
+          assert.equal(duration, 15000);
+          activeTick = callback;
+          return ++timerId;
+        },
+        clearInterval() {
+          activeTick = null;
+        },
+      },
+      viewer: { camera: { positionWC: {} } },
+      Cesium: {
+        Cartographic: {
+          fromCartesian: () => ({ latitude: 0.5, longitude: -1, height: 3000 }),
+        },
+        Math: { toDegrees: (radians) => (radians * 180) / Math.PI },
+      },
+    },
+  });
+  const [join, leave, share] = root.children[3].children;
+  const click = (button) => button.listeners.get('click')();
+  const disconnected = () => {
+    assert.equal(leave.disabled, true);
+    assert.equal(share.disabled, true);
+    assert.equal(activeTick, null);
+    assert.equal(root.children[5].children.length, 0);
+  };
+  try {
+    failPost = 'join';
+    assert.doesNotThrow(() => click(join));
+    disconnected();
+    assert.equal(channels.at(-1).closed, true);
+    assert.equal(outgoing.length, 0, 'denied join cannot send ghost presence');
+
+    // A later explicit retry is allowed; a failed send is not membership.
+    click(join);
+    assert.equal(leave.disabled, false);
+    assert.ok(activeTick);
+
+    // Replies to a new participant also fail closed.
+    failPost = 'hello';
+    channels.at(-1).onmessage({
+      data: {
+        protocol: ROOM_PROTOCOL,
+        room: 'earth-lab',
+        peer: 'peer-other',
+        sentAt: Date.now(),
+        kind: 'join',
+      },
+    });
+    disconnected();
+
+    click(join);
+    failPost = 'hello';
+    assert.doesNotThrow(() => activeTick());
+    disconnected();
+
+    click(join);
+    failPost = 'view';
+    assert.doesNotThrow(() => click(share));
+    disconnected();
+    assert.equal(
+      outgoing.some((packet) => packet.kind === 'view'),
+      false,
+      'a denied view send must not claim successful sharing',
+    );
+    assert.match(root.children[4].textContent, /view not shared/);
+
+    click(join);
+    failPost = 'leave';
+    assert.doesNotThrow(() => click(leave));
+    disconnected();
+
+    click(join);
+    failClose = true;
+    assert.doesNotThrow(() => click(leave));
+    disconnected();
+  } finally {
+    dispose();
+  }
+});

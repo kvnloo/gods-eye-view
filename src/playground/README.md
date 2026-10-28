@@ -52,6 +52,12 @@ While joined, Copy room link always uses the actively joined room, even if the e
 room-code field has changed. After Leave, the field can prepare a different
 room invite; entering a code does not silently switch a joined channel.
 
+Local-room messaging is best-effort: if posting Join is denied, no membership
+is announced; a denied reply, heartbeat or coarse-view send disconnects rather
+than claiming the view was shared. Failed departure/close must still release
+the local channel, heartbeat and peer list. Only an explicit Join retries.
+The denial regressions use synthetic channels, not a real browser.
+
 **Not implemented:** remote internet rooms, global time travel, SUMO/PyPSA
 impact forecasts, operational disaster guidance. Keep provenance and simulated
 states explicitly separated.

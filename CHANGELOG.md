@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+- Fail closed on Planet Playground local-room postMessage errors: Join cannot
+  leave ghost membership, failed heartbeat/reply/view sending disconnects, and
+  departure/close failures still release local state. Isolated V8 regression
+  only; supported Node and real-browser QA remain outstanding.
+
 - Keep Planet Playground local-room Join fail-closed when a browser
   denies BroadcastChannel creation: show an unavailable notice, avoid ghost
   membership, disable room controls and allow explicit retry. Browser proof

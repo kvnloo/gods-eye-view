@@ -14,6 +14,11 @@ When a browser exposes BroadcastChannel but refuses channel construction, Join
 stays disconnected with an unavailable notice and disabled Leave/Send controls.
 A later explicit Join may retry; only an isolated mocked-channel regression
 has been exercised for this failure path, not a real-browser acceptance run.
+If a channel denies posting Join, no ghost membership is announced. A denied
+presence reply, heartbeat or view send disconnects locally and clears timers;
+failure while posting Leave or closing the channel cannot retain local
+membership. An explicit Join is required to retry. Only synthetic V8 proof is
+available, not supported Node or full-app/two-tab browser acceptance.
 
 ## God's Eye View in conversations — October 2, 2026
 

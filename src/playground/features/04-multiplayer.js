@@ -121,17 +121,21 @@ export const feature = {
     let heartbeat = null;
     const peerId = 'peer-' + Math.random().toString(36).slice(2, 12);
     function notice(message) { status.textContent = message; }
-    function leaveRoom() {
+    function leaveRoom(notifyPeers = true) {
       if (heartbeat !== null) {
         timerHost.clearInterval(heartbeat);
         heartbeat = null;
       }
       // Inform already-joined tabs before closing; teardown is a departure too.
       if (channel) {
-        send('leave');
+        if (notifyPeers) send('leave');
         channel.onmessage = null;
+        try {
+          channel.close();
+        } catch {
+          // Local state must still clear if closing a channel fails.
+        }
       }
-      channel?.close();
       channel = null;
       room = null;
       peers.clear();
@@ -141,15 +145,20 @@ export const feature = {
       peersContainer.replaceChildren();
     }
     function send(kind, view) {
-      if (!channel) return;
-      channel.postMessage({
-        protocol: ROOM_PROTOCOL,
-        kind,
-        room,
-        peer: peerId,
-        sentAt: Date.now(),
-        ...(view ? { view } : {}),
-      });
+      if (!channel) return false;
+      try {
+        channel.postMessage({
+          protocol: ROOM_PROTOCOL,
+          kind,
+          room,
+          peer: peerId,
+          sentAt: Date.now(),
+          ...(view ? { view } : {}),
+        });
+        return true;
+      } catch {
+        return false;
+      }
     }
     function presentPeers() {
       peersContainer.replaceChildren();
@@ -191,7 +200,10 @@ export const feature = {
         notice(peers.size + ' nearby tab(s) in local room ' + room + '.');
       }
       // Presence-only heartbeat: never publish a camera view automatically.
-      send('hello');
+      if (!send('hello')) {
+        leaveRoom();
+        notice('Local room messaging unavailable; disconnected.');
+      }
     }
     join.addEventListener('click', () => {
       const nextRoom = normalizeRoom(roomInput.value);
@@ -230,10 +242,19 @@ export const feature = {
         peers.set(packet.peer, packet.kind === 'view' ? packet.view : previous);
         lastSeen.set(packet.peer, Date.now());
         presentPeers();
-        if (packet.kind === 'join') send('hello');
+        if (packet.kind === 'join' && !send('hello')) {
+          leaveRoom();
+          notice('Local room messaging unavailable; disconnected.');
+          return;
+        }
         notice(peers.size + ' nearby tab(s) in local room ' + room + '.');
       };
-      send('join');
+      if (!send('join')) {
+        // No join packet was sent; do not emit a ghost departure.
+        leaveRoom(false);
+        notice('Local room messaging unavailable; disconnected.');
+        return;
+      }
       heartbeat = timerHost.setInterval(heartbeatAndPrune, HEARTBEAT_MS);
       leave.disabled = false;
       share.disabled = false;
@@ -255,7 +276,11 @@ export const feature = {
         lon: Math.round(services.Cesium.Math.toDegrees(c.longitude) * 10) / 10,
         height: Math.round(rawHeight / 1000) * 1000,
       };
-      send('view', view);
+      if (!send('view', view)) {
+        leaveRoom();
+        notice('Local room messaging unavailable; view not shared.');
+        return;
+      }
       notice('Coarse camera view shared with local tabs (about 0.1° precision).');
     });
     invite.addEventListener('click', async () => {

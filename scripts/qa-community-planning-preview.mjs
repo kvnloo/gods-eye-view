@@ -104,7 +104,16 @@ function assertQaNavigationOrigin(actual, expected) {
 function qaNavigationAllowedBeforeRequest(raw, expectedOrigin) {
   try {
     const url = new URL(raw);
-    return url.origin === expectedOrigin && !url.username && !url.password;
+    // Only the two entry URLs exercised by this gate may navigate the main frame.
+    // A same-origin redirect can still leak query tokens to the local server
+    // or silently run the wrong fixture unless the path/query are pinned too.
+    return (
+      url.origin === expectedOrigin &&
+      !url.username && !url.password &&
+      url.pathname === '/' &&
+      !url.hash &&
+      (url.search === '' || url.search === '?planningPreview=fixture')
+    );
   } catch {
     return false;
   }
@@ -144,7 +153,24 @@ function checkQaPreRequestNegativeControls() {
     void dispatchQaInterceptedRequest(request, mainFrame, origin);
     return action;
   }
+  assert.equal(observedAction(origin + '/'), 'continue');
   assert.equal(observedAction(origin + '/?planningPreview=fixture'), 'continue');
+  // Negative controls: same-origin navigations can still carry sensitive
+  // query data or silently switch to a different, unpinned fixture.
+  for (const unexpected of [
+    origin + '/?access_token=synthetic-canary',
+    origin + '/?planningPreview=fixture&api_key=synthetic-canary',
+    origin + '/?planningPreview=other',
+    origin + '/?planningPreview=fixture&planningPreview=fixture',
+    origin + '/login',
+    origin + '/?planningPreview=fixture#synthetic-private-fragment',
+  ]) {
+    assert.equal(
+      observedAction(unexpected),
+      'abort:blockedbyclient',
+      'same-origin redirects outside the two pinned QA entries must be blocked',
+    );
+  }
   for (const remote of [
     'https://remote.example.test/redirect',
     'http://127.0.0.1:4173/',

@@ -762,6 +762,10 @@ test('Visit view fails closed after Scene teardown and still allows explicit ret
 });
 
 test('repeated peer heartbeats retain focused Visit view until the view changes', () => {
+  const setConnected = (node, connected) => {
+    node.isConnected = connected;
+    for (const child of node.children) setConnected(child, connected);
+  };
   const document = {
     createElement(tagName) {
       return {
@@ -770,12 +774,12 @@ test('repeated peer heartbeats retain focused Visit view until the view changes'
         setAttribute() {},
         append(...nodes) {
           this.children.push(...nodes);
-          for (const node of nodes) node.isConnected = true;
+          for (const node of nodes) setConnected(node, true);
         },
         replaceChildren(...nodes) {
-          for (const node of this.children) node.isConnected = false;
+          for (const node of this.children) setConnected(node, false);
           this.children = nodes;
-          for (const node of nodes) node.isConnected = true;
+          for (const node of nodes) setConnected(node, true);
         },
         addEventListener(name, listener) { this.listeners.set(name, listener); },
       };

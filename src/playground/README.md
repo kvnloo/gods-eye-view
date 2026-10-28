@@ -59,6 +59,14 @@ unchecks it, even if clipboard access stalls or fails. Another Copy (or
 a changed room) cannot inherit a previous scene/location disclosure without
 a new explicit check. This behavior still needs full-app browser QA.
 
+Overlapping copies serialize their clipboard writes in click order: an older
+scene-inclusive copy cannot finish after and overwrite the newer room-only
+copy. Only the latest Copy reports its result. Teardown suppresses stale
+notices and abandons queued writes that have not started; an already-started
+browser clipboard call cannot be revoked. Synthetic deferred-clipboard
+regression only; native Node 24/26 and real browser permission/two-tab QA
+remain outstanding.
+
 While joined, Copy room link always uses the actively joined room, even if the editable
 room-code field has changed. After Leave, the field can prepare a different
 room invite; entering a code does not silently switch a joined channel.

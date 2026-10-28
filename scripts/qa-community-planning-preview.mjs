@@ -39,6 +39,62 @@ function assertSourceIdentity(expected, actual, path) {
   assert.equal(actual, expected, `Dev server is serving stale/different source: ${path}`);
 }
 
+/** The Scene QA runner must not point Chromium at a remote/credentialed site. */
+function qaLoopbackOrigin(raw) {
+  let parsed;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    throw new TypeError('GEV_QA_APP_URL must be a valid loopback HTTP(S) root');
+  }
+  if (
+    !['http:', 'https:'].includes(parsed.protocol) ||
+    !['localhost', '127.0.0.1', '[::1]'].includes(parsed.hostname) ||
+    parsed.username || parsed.password ||
+    parsed.pathname !== '/' || parsed.search || parsed.hash
+  ) {
+    throw new TypeError(
+      'GEV_QA_APP_URL must be a loopback HTTP(S) root without credentials, query or fragment',
+    );
+  }
+  return parsed.origin;
+}
+
+/** Redirects outside the local dev server cannot earn an exact-head QA PASS. */
+function assertQaNavigationOrigin(actual, expected) {
+  assert.equal(
+    new URL(actual).origin,
+    expected,
+    'GEV QA page left the pinned loopback dev-server origin',
+  );
+}
+
+function checkLocalQaOriginNegativeControls() {
+  for (const valid of [
+    'http://localhost:4173',
+    'https://localhost:4173/',
+    'http://127.0.0.1:5173/',
+    'http://[::1]:4173/',
+  ]) assert.equal(qaLoopbackOrigin(valid), new URL(valid).origin);
+  for (const invalid of [
+    'https://remote.example.test/',
+    'http://localhost.remote.example.test/',
+    'http://user:secret@localhost:4173/',
+    'http://localhost:4173/?token=synthetic',
+    'http://localhost:4173/#private',
+    'http://localhost:4173/not-root',
+    'file:///tmp/snapshot.html',
+    'http://192.168.1.2:4173/',
+    'not a URL',
+  ]) assert.throws(() => qaLoopbackOrigin(invalid), /GEV_QA_APP_URL/);
+  assertQaNavigationOrigin('http://localhost:4173/', 'http://localhost:4173');
+  assert.throws(
+    () => assertQaNavigationOrigin('https://remote.example.test/', 'http://localhost:4173'),
+    /pinned loopback/,
+  );
+}
+checkLocalQaOriginNegativeControls();
+
 function checkIdentityNegativeControls() {
   const valid = 'a'.repeat(40);
   assert.throws(() => assertCheckoutLock('', valid, ''), /GEV_QA_EXPECTED_SHA/);
@@ -161,7 +217,7 @@ checkBaselineRequestObserver();
  * Headless gate for the opt-in GEV Scene preview. Start the GEV dev server first.
  * It never edits a real place or downloads municipal data.
  */
-const origin = process.env.GEV_QA_APP_URL || 'http://localhost:4173';
+const origin = qaLoopbackOrigin(process.env.GEV_QA_APP_URL || 'http://localhost:4173');
 const optOutUrl = new URL(origin);
 optOutUrl.searchParams.delete('planningPreview');
 const url = new URL(origin);
@@ -177,6 +233,7 @@ try {
   await page.setViewport({ width: 1100, height: 900 });
   // Normal startup must not expose the fixture-only Scene launcher.
   await page.goto(optOutUrl.href, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  assertQaNavigationOrigin(page.url(), origin);
   await page.waitForFunction(
     () =>
       window.__godsEyeView?.sceneDirector?._controls &&
@@ -205,6 +262,7 @@ try {
   );
   moduleRequests.clear();
   await page.goto(url.href, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  assertQaNavigationOrigin(page.url(), origin);
   await page.waitForFunction(
     () =>
       window.__godsEyeView?.sceneDirector?._controls &&
@@ -432,6 +490,7 @@ try {
       waitUntil: 'domcontentloaded',
       timeout: 45000,
     });
+    assertQaNavigationOrigin(mobilePage.url(), origin);
     await mobilePage.waitForFunction(
       () =>
         window.__godsEyeView?.sceneDirector?._controls &&

@@ -939,3 +939,135 @@ test('overlapping invite copies cannot restore an older scene link', async () =>
     dispose();
   }
 });
+
+test('unrelated local-room peer changes do not detach a focused Visit view', () => {
+  const document = {
+    activeElement: null,
+    createElement(tag) {
+      const node = {
+        tagName: tag, ownerDocument: document, parentNode: null,
+        children: [], listeners: new Map(), isConnected: false,
+        textContent: '', disabled: false,
+        setAttribute() {},
+        append(...items) {
+          for (const item of items) {
+            item.parentNode = this;
+            this.children.push(item);
+            setConnected(item, this.isConnected);
+          }
+        },
+        replaceChildren(...items) {
+          for (const old of this.children) {
+            old.parentNode = null;
+            setConnected(old, false);
+          }
+          this.children = [...items];
+          for (const item of items) {
+            item.parentNode = this;
+            setConnected(item, this.isConnected);
+          }
+        },
+        replaceWith(next) {
+          const parent = this.parentNode;
+          assert.ok(parent, 'only mounted peer rows can be replaced');
+          const position = parent.children.indexOf(this);
+          assert.ok(position >= 0);
+          parent.children[position] = next;
+          this.parentNode = null;
+          next.parentNode = parent;
+          setConnected(this, false);
+          setConnected(next, parent.isConnected);
+        },
+        remove() {
+          if (!this.parentNode) return;
+          const parent = this.parentNode;
+          parent.children.splice(parent.children.indexOf(this), 1);
+          this.parentNode = null;
+          setConnected(this, false);
+        },
+        addEventListener(name, listener) { this.listeners.set(name, listener); },
+        focus() { document.activeElement = this; },
+      };
+      return node;
+    },
+  };
+  function setConnected(node, connected) {
+    node.isConnected = connected;
+    if (!connected && document.activeElement === node)
+      document.activeElement = null;
+    for (const child of node.children) setConnected(child, connected);
+  }
+  const root = document.createElement('section');
+  root.isConnected = true;
+  const flights = [];
+  let channel;
+  const dispose = feature.mount({
+    root,
+    services: {
+      window: {
+        location: { search: '' },
+        BroadcastChannel: class {
+          constructor() { channel = this; }
+          postMessage() {}
+          close() {}
+        },
+        setInterval() { return 1; },
+        clearInterval() {},
+      },
+      viewer: { camera: { flyTo(options) { flights.push(options); } } },
+      Cesium: {
+        Cartesian3: {
+          fromDegrees(lon, lat, height) { return { lon, lat, height }; },
+        },
+      },
+    },
+  });
+  try {
+    root.children[3].children[0].listeners.get('click')();
+    const rows = root.children[5];
+    const receive = (peer, kind, view) => channel.onmessage({
+      data: {
+        protocol: ROOM_PROTOCOL, room: 'earth-lab', peer,
+        sentAt: Date.now(), kind, ...(view ? { view } : {}),
+      },
+    });
+    const first = { lat: 40.1, lon: -88.2, height: 10000 };
+    receive('peer-alpha', 'view', first);
+    const visit = rows.children[0].children[1];
+    visit.focus();
+    assert.strictEqual(document.activeElement, visit);
+    for (const [kind, view] of [
+      ['join', undefined],
+      ['view', { lat: 40.2, lon: -87.2, height: 9000 }],
+      ['view', { lat: 40.3, lon: -87.2, height: 9000 }],
+      ['leave', undefined],
+    ]) {
+      receive('peer-bravo', kind, view);
+      assert.strictEqual(rows.children[0].children[1], visit,
+        'unrelated peer changes must keep the original Visit control');
+      assert.strictEqual(document.activeElement, visit,
+        'unrelated peer changes must preserve keyboard focus');
+      assert.equal(visit.isConnected, true);
+    }
+    assert.equal(rows.children.length, 1);
+    receive('peer-alpha', 'hello');
+    assert.strictEqual(rows.children[0].children[1], visit);
+    visit.listeners.get('click')();
+    assert.deepEqual(flights, [{
+      destination: { lon: -88.2, lat: 40.1, height: 10000 },
+      duration: 2,
+    }]);
+    receive('peer-alpha', 'view', { ...first, height: 11000 });
+    assert.equal(visit.isConnected, false,
+      'changing this peer view must replace its own action');
+    const updated = rows.children[0].children[1];
+    assert.notStrictEqual(updated, visit);
+    updated.listeners.get('click')();
+    assert.deepEqual(flights[1], {
+      destination: { lon: -88.2, lat: 40.1, height: 11000 },
+      duration: 2,
+    });
+  } finally {
+    dispose();
+  }
+});

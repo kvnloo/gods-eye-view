@@ -81,12 +81,40 @@ export function coarseRoomView(Cesium, cameraPosition) {
  * Room-only invites must not silently copy a private scene hash, credentials
  * or unrelated query state. Scene sharing requires separate explicit opt-in.
  */
+// GEV's share-link contract is a query-style camera/visual URL fragment. A
+// room invitation must never forward unrelated fragment keys (e.g. OAuth
+// tokens) just because the user opted to include the *scene*.
+const ROOM_SCENE_HASH_KEYS = new Set([
+  'v', 'lat', 'lon', 'alt', 'heading', 'pitch', 'roll', 'style',
+  'bloom', 'bi', 'bv', 'sharpen', 'si', 'hud', 'hv',
+  'dm', 'dd', 'da', 'kf', 'ko', 'cr', 'sc', 'scf', 'sce',
+  'map', 'l', 'ui', 'sp', 'at',
+]);
+function roomSceneHash(hash) {
+  const params = new URLSearchParams(hash.replace(/^#/, ''));
+  const latitude = params.get('lat');
+  const longitude = params.get('lon');
+  // A miscellaneous hash is not a camera scene. Reject incomplete,
+  // nonfinite or out-of-range coordinates before copying any fragment state.
+  if (latitude === null || longitude === null ||
+      !latitude.trim() || !longitude.trim()) return '';
+  const lat = Number(latitude), lon = Number(longitude);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon) ||
+      Math.abs(lat) > 90 || Math.abs(lon) > 180) return '';
+  const safe = new URLSearchParams();
+  for (const [key, value] of params) {
+    if (ROOM_SCENE_HASH_KEYS.has(key) && !safe.has(key))
+      safe.set(key, value);
+  }
+  return '#' + safe.toString();
+}
+
 export function makeRoomInvite(currentUrl, room, { includeScene = false } = {}) {
   if (!normalizeRoom(room)) throw new TypeError('Invalid room');
   const link = new URL(currentUrl);
   if (link.protocol !== 'https:' && link.protocol !== 'http:')
     throw new TypeError('Room invite requires an HTTP(S) URL');
-  const sceneHash = includeScene === true ? link.hash : '';
+  const sceneHash = includeScene === true ? roomSceneHash(link.hash) : '';
   link.username = '';
   link.password = '';
   link.search = '';
@@ -377,6 +405,7 @@ export const feature = {
       const link = makeRoomInvite(win.location.href, candidate, {
         includeScene: shareScene,
       });
+      const includedScene = shareScene && Boolean(new URL(link).hash);
       const intent = ++latestInviteIntent;
       // Clipboard writes can settle out of order (e.g. a permission prompt).
       // Serialize them so an old scene link cannot overwrite a later room-only
@@ -387,9 +416,11 @@ export const feature = {
         try {
           await win.navigator.clipboard.writeText(link);
           if (mounted && intent === latestInviteIntent)
-            notice(shareScene
+            notice(includedScene
               ? 'Room and scene link copied; the scene may disclose map location. Same-origin tabs only.'
-              : 'Room-only link copied without scene or map state. Same-origin tabs only.');
+              : shareScene
+                ? 'Room-only link copied; no valid scene state to include. Same-origin tabs only.'
+                : 'Room-only link copied without scene or map state. Same-origin tabs only.');
         } catch {
           if (mounted && intent === latestInviteIntent)
             notice('Clipboard unavailable; copy this room code: ' + candidate);

@@ -1,6 +1,8 @@
 /**
  * Clock scrubber for authored SceneDirector time, not a fabricated global time feed.
  */
+import { mountHistoricalEarthLens } from '../historicalEarth.js';
+
 export function clampSceneProgress(value) {
   const number = Number(value);
   return Number.isFinite(number) ? Math.min(1, Math.max(0, number)) : 0;
@@ -106,7 +108,9 @@ export const feature = {
     });
     if (scenes.length) root.append(title, description, select, slider, progress, actions, notice);
     else root.append(title, description, notice);
+    const disposeHistoryLens = mountHistoricalEarthLens({ root, services });
     return () => {
+      disposeHistoryLens();
       alive = false;
       seekCounter++;
       if (playbackOwned && services.sceneDirector.running)

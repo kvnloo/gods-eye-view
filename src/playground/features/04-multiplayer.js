@@ -308,12 +308,16 @@ export const feature = {
       // Invite the active channel, not an edited but unjoined room code.
       const candidate = room || normalizeRoom(roomInput.value);
       if (!candidate) return notice('Enter a valid room first.');
+      // Each invitation needs fresh scene consent. Clear before awaiting
+      // clipboard so rapid repeat copies cannot inherit a private map view.
+      const shareScene = includeScene.checked === true;
+      includeScene.checked = false;
       const link = makeRoomInvite(win.location.href, candidate, {
-        includeScene: includeScene.checked,
+        includeScene: shareScene,
       });
       try {
         await win.navigator.clipboard.writeText(link);
-        notice(includeScene.checked
+        notice(shareScene
           ? 'Room and scene link copied; the scene may disclose map location. Same-origin tabs only.'
           : 'Room-only link copied without scene or map state. Same-origin tabs only.');
       } catch {

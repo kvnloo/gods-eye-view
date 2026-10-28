@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+- Make Planet Playground's optional scene/location inclusion one-shot per
+  copied local-room invitation. Consume consent before asynchronous clipboard
+  access so repeat or rapid copies do not inherit a precise map fragment.
+  Fork-only focused regression; supported Node/browser proof still pending.
+
 - Refuse malformed/invalid Cesium camera snapshots before sending a Planet
   Playground coarse local-room view; report not shared, retain the joined
   channel for a valid explicit retry. Isolated V8 RED→GREEN only; native

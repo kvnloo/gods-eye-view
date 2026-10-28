@@ -81,6 +81,21 @@ test('copy room link keeps precise scene state out until explicitly checked', as
     assert.equal(new URL(copied[1]).hash, '#map=40.123456');
     assert.deepEqual([...new URL(copied[1]).searchParams], [['gevRoom', 'earth-lab']]);
     assert.match(root.children[4].textContent, /may disclose map location/);
+    assert.equal(includeScene.checked, false, 'scene consent must be one-shot');
+    await copy.listeners.get('click')();
+    assert.equal(new URL(copied[2]).hash, '',
+      'copying again without fresh consent must not leak the scene');
+    assert.match(root.children[4].textContent, /Room-only link copied/);
+    // Two immediate Copy activations must consume only one scene opt-in,
+    // even when clipboard completion occurs asynchronously.
+    includeScene.checked = true;
+    const first = copy.listeners.get('click')();
+    const second = copy.listeners.get('click')();
+    await Promise.all([first, second]);
+    assert.equal(new URL(copied[3]).hash, '#map=40.123456');
+    assert.equal(new URL(copied[4]).hash, '',
+      'a pending scene copy must not authorize a second scene disclosure');
+    assert.equal(includeScene.checked, false);
   } finally {
     dispose();
   }

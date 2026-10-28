@@ -2,6 +2,14 @@
 
 ## Fork-only Planet Playground local-room invitation experiment — October 27, 2026
 
+**October 28 one-shot invite consent (#253, fork-only):** Checking
+"Include current scene" authorizes only the next Copy room link. The checkbox
+resets *before* awaiting the clipboard, so a later or rapid second Copy is
+room-only unless explicitly rechecked. This prevents accidental repeat
+disclosure of the scene fragment; it does not authenticate participants.
+Regression is isolated source/test coverage; supported Node 24/26 and live
+two-tab browser proof remain unverified.
+
 Downstream Draft #253 keeps Copy room link pointed at the actively joined
 BroadcastChannel room even when its editable room-code field changes. Leaving
 allows a different entered code to be used for another invitation without

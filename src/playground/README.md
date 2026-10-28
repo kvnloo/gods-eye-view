@@ -48,6 +48,11 @@ consent; it may disclose a map position, never grants room identity or municipal
 approval. Test with a synthetic `?token=canary#map=canary`: room-only copy must
 contain neither canary and explicit scene copy must contain only the hash canary.
 No real location or secret is required for this test.
+The scene opt-in is **one-shot per copied invitation**: Copy immediately
+unchecks it, even if clipboard access stalls or fails. Another Copy (or
+a changed room) cannot inherit a previous scene/location disclosure without
+a new explicit check. This behavior still needs full-app browser QA.
+
 While joined, Copy room link always uses the actively joined room, even if the editable
 room-code field has changed. After Leave, the field can prepare a different
 room invite; entering a code does not silently switch a joined channel.

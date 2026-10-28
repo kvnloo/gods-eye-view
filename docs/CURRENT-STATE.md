@@ -2,6 +2,13 @@
 
 ## Fork-only Planet Playground local-room invitation experiment — October 27, 2026
 
+**October 28 local-room focus preservation (#253, fork-only):** A received
+peer's heartbeat, repeated Join or identical coarse-view packet now refreshes
+presence without replacing the keyboard-focusable **Visit view** action. A
+changed coarse view updates the action, and Leave removes it. This remains an
+unverified same-origin tab prototype; isolated synthetic DOM tests do not
+establish Node 24/26, real keyboard/browser or two-tab acceptance.
+
 **October 28 one-shot invite consent (#253, fork-only):** Checking
 "Include current scene" authorizes only the next Copy room link. The checkbox
 resets *before* awaiting the clipboard, so a later or rapid second Copy is

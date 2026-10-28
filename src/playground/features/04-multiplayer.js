@@ -204,8 +204,15 @@ export const feature = {
         return;
       }
       leaveRoom();
+      try {
+        channel = new win.BroadcastChannel('gev-playground:' + nextRoom);
+      } catch {
+        // Some browsers expose BroadcastChannel but deny its construction.
+        // Remain disconnected and allow a later retry, without a ghost room.
+        notice('Local room unavailable in this browser.');
+        return;
+      }
       room = nextRoom;
-      channel = new win.BroadcastChannel('gev-playground:' + room);
       const joinedChannel = channel;
       joinedChannel.onmessage = (event) => {
         // Queued messages from an earlier room instance cannot resurrect peers.
@@ -253,7 +260,7 @@ export const feature = {
     });
     invite.addEventListener('click', async () => {
       // Invite the active channel, not an edited but unjoined room code.
-    const candidate = room || normalizeRoom(roomInput.value);
+      const candidate = room || normalizeRoom(roomInput.value);
       if (!candidate) return notice('Enter a valid room first.');
       const link = makeRoomInvite(win.location.href, candidate, {
         includeScene: includeScene.checked,

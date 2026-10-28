@@ -843,3 +843,99 @@ test('repeated peer heartbeats retain focused Visit view until the view changes'
     dispose();
   }
 });
+
+test('overlapping invite copies cannot restore an older scene link', async () => {
+  let clipboard = '';
+  const writes = [];
+  const document = {
+    createElement(tagName) {
+      return {
+        tagName, ownerDocument: document, children: [], listeners: new Map(),
+        textContent: '', checked: false,
+        setAttribute() {},
+        append(...nodes) { this.children.push(...nodes); },
+        replaceChildren(...nodes) { this.children = nodes; },
+        addEventListener(name, listener) { this.listeners.set(name, listener); },
+      };
+    },
+  };
+  const root = document.createElement('section');
+  const dispose = feature.mount({
+    root,
+    services: {
+      window: {
+        location: {
+          search: '',
+          href: 'https://example.org/view?token=private#map=scene-canary',
+        },
+        navigator: {
+          clipboard: {
+            writeText(value) {
+              return new Promise((resolve, reject) => {
+                writes.push({
+                  value,
+                  succeed() { clipboard = value; resolve(); },
+                  fail() { reject(new Error('synthetic clipboard denial')); },
+                });
+              });
+            },
+          },
+        },
+      },
+    },
+  });
+  try {
+    const copy = root.children[3].children[3];
+    const includeScene = root.children[3].children[4].children[0];
+    const copyLink = () => copy.listeners.get('click')();
+    includeScene.checked = true;
+    const first = copyLink();
+    const second = copyLink();
+    await Promise.resolve();
+    assert.equal(writes.length, 1, 'newer room-only copy must wait for old clipboard settlement');
+    assert.equal(new URL(writes[0].value).hash, '#map=scene-canary');
+    writes[0].succeed();
+    await first;
+    await Promise.resolve();
+    assert.equal(writes.length, 2);
+    assert.equal(new URL(writes[1].value).hash, '', 'second copy did not inherit scene consent');
+    writes[1].succeed();
+    await second;
+    assert.equal(clipboard, writes[1].value, 'latest click must determine final clipboard value');
+    assert.match(root.children[4].textContent, /^Room-only link copied/);
+    assert.equal(includeScene.checked, false);
+
+    // A denied earlier permission/write must not strand a later room-only copy.
+    includeScene.checked = true;
+    const failed = copyLink();
+    const recovery = copyLink();
+    await Promise.resolve();
+    assert.equal(writes.length, 3);
+    writes[2].fail();
+    await failed;
+    await Promise.resolve();
+    assert.equal(writes.length, 4);
+    assert.equal(new URL(writes[3].value).hash, '');
+    writes[3].succeed();
+    await recovery;
+    assert.equal(clipboard, writes[3].value);
+    assert.match(root.children[4].textContent, /^Room-only link copied/);
+
+    // Disposing the feature cannot start remaining queued copies or update
+    // a detached status after an already-in-flight clipboard call settles.
+    includeScene.checked = true;
+    const inFlight = copyLink();
+    const abandoned = copyLink();
+    await Promise.resolve();
+    assert.equal(writes.length, 5);
+    const lastNotice = root.children[4].textContent;
+    dispose();
+    writes[4].succeed();
+    await inFlight;
+    await abandoned;
+    assert.equal(writes.length, 5, 'queued copy should be abandoned on teardown');
+    assert.equal(root.children[4].textContent, lastNotice);
+  } finally {
+    dispose();
+  }
+});

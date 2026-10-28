@@ -41,7 +41,10 @@ have another tab join, send a different peer view, and leave: peer A's action
 must remain the same focused DOM control. A new view from peer A must transfer
 keyboard focus to its updated Visit view button only if the old button was
 focused; updates must not steal focus from other controls. Leave removes its
-own action. Native two-tab keyboard/mobile proof remains outstanding; the
+own action. If the focused peer leaves, expires or the local room disconnects,
+focus must move to the non-action room status (not Send coarse view); focus on
+other controls must remain unchanged, and feature teardown cannot steal focus.
+Native two-tab keyboard/mobile proof remains outstanding; the
 keyed-row regression uses a synthetic DOM.
 Abruptly
 terminate one tab without Leave and confirm the survivor eventually removes

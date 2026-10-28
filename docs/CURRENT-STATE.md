@@ -1,5 +1,13 @@
 # God's Eye View Current State
 
+**October 28 destroyed-Scene coarse-view safety (#253, fork-only):**
+The opt-in same-origin room now refuses **Send coarse view** after the Cesium
+viewer reports destruction, including when the lifecycle check throws during
+teardown; it cannot send a retained camera coordinate. A failed send leaves the
+local room joined for an explicit retry against a valid viewer. Exact published
+source and focused regression passed a synthetic V8 RED→GREEN probe only;
+supported Node 24/26, full GEV Scene/browser and CI are **NOT RUN**.
+
 ## Fork-only Planet Playground local-room invitation experiment — October 27, 2026
 
 **October 28 focused-peer view refresh (#253, fork-only):** A received change

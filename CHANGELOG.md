@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- Keep Planet Playground's keyboard-focused Visit view mounted when a
+  different local-room peer joins, changes its coarse view or leaves. Reconcile
+  only the affected peer row; preserve the existing coarse/opt-in limits.
+  Isolated synthetic V8 RED→GREEN only; supported Node/browser proof pending.
 - Serialize Planet Playground's optional local-room invite clipboard writes
   so a delayed older scene-inclusive Copy cannot overwrite a newer room-only
   choice. Only the latest intent reports its result; teardown abandons queued

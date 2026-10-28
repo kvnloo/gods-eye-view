@@ -36,9 +36,11 @@ For local rooms, keep two tabs idle across multiple 15-second heartbeats: both
 should remain visible without automatically sending camera views. With a received
 coarse peer view visible, keyboard-focus **Visit view** in one tab, then wait
 for a heartbeat from the other. Focus must stay on the same control; repeated
-Join/identical view packets must not recreate it. A changed coarse view must
-update the action, and Leave must remove it. This requires real two-tab keyboard
-and mobile verification; the focused regression runs only in a synthetic DOM.
+Join/identical view packets must not recreate it. While focused on peer A,
+have another tab join, send a different peer view, and leave: peer A's action
+must remain the same focused DOM control. A new view from peer A may update its
+own action, and its Leave must remove it. Native two-tab keyboard/mobile proof
+remains outstanding; the expanded keyed-row regression uses a synthetic DOM.
 Abruptly
 terminate one tab without Leave and confirm the survivor eventually removes
 its stale presence (75 seconds without valid packets, checked by the next

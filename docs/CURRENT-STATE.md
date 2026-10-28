@@ -2,6 +2,13 @@
 
 ## Fork-only Planet Playground local-room invitation experiment — October 27, 2026
 
+**October 28 focused-peer view refresh (#253, fork-only):** A received change
+from the keyboard-focused peer now transfers focus from the retired **Visit view**
+button to the new one, while a background peer update cannot steal focus from
+another control. Departed peers are still removed; only an explicitly shared,
+coarsened view is navigable. Isolated source-level synthetic DOM V8 RED→GREEN
+only; native Node 24/26, real browser/phone and CI remain **NOT RUN**.
+
 **October 28 unrelated-peer keyboard focus (#253, fork-only):** Local-room
 peer rows now reconcile individually rather than re-creating every row when
 another peer joins, changes its coarse view or leaves. An existing keyboard-

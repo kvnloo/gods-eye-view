@@ -1,5 +1,15 @@
 # God's Eye View Current State
 
+**October 28 room-link scene-fragment boundary (#253, fork-only):**
+Explicit **Include current scene** now copies only recognized GEV share-link
+fragment fields when a bounded, finite camera lat/lon exists. Unsupported
+fragment keys (including unrelated hash credentials) are excluded. An absent,
+malformed or out-of-range camera fragment produces a room-only link with a
+truthful notice; room-only remains the default. The old exact source disclosed
+an unknown hash token in an isolated V8 URL probe (RED), and the new source
+excluded it (GREEN). This is **not** native Node 24/26, actual browser,
+full Scene, mobile, two-tab or CI acceptance; origin product fit remains open.
+
 **October 28 destroyed-Scene coarse-view safety (#253, fork-only):**
 The opt-in same-origin room now refuses **Send coarse view** after the Cesium
 viewer reports destruction, including when the lifecycle check throws during

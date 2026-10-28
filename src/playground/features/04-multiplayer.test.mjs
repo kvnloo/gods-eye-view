@@ -380,3 +380,68 @@ test('explicit leave, active heartbeats, crashes and stale callbacks stay local'
     Date.now = previousNow;
   }
 });
+
+test('denied BroadcastChannel remains disconnected and a later join can recover', () => {
+  const document = {
+    createElement(tagName) {
+      return {
+        tagName, ownerDocument: document, children: [], listeners: new Map(),
+        textContent: '',
+        setAttribute() {},
+        append(...nodes) { this.children.push(...nodes); },
+        replaceChildren(...nodes) { this.children = nodes; },
+        addEventListener(name, listener) { this.listeners.set(name, listener); },
+      };
+    },
+  };
+  const root = document.createElement('section');
+  let attempts = 0;
+  const packets = [];
+  const dispose = feature.mount({
+    root,
+    services: {
+      window: {
+        location: { search: '' },
+        BroadcastChannel: class {
+          constructor(name) {
+            attempts += 1;
+            if (attempts === 1) throw new Error('channel denied');
+            this.name = name;
+          }
+          postMessage(packet) { packets.push(packet); }
+          close() {}
+        },
+        setInterval(_callback, ms) {
+          assert.equal(ms, 15000);
+          return 1;
+        },
+        clearInterval(id) { assert.equal(id, 1); },
+      },
+    },
+  });
+  try {
+    const actions = root.children[3];
+    const join = actions.children[0];
+    const leave = actions.children[1];
+    const share = actions.children[2];
+    const joinRoom = () => join.listeners.get('click')();
+
+    assert.doesNotThrow(joinRoom);
+    assert.equal(attempts, 1);
+    assert.match(root.children[4].textContent, /Local room unavailable/);
+    assert.equal(leave.disabled, true);
+    assert.equal(share.disabled, true);
+    assert.deepEqual(packets, []);
+
+    assert.doesNotThrow(joinRoom);
+    assert.equal(attempts, 2);
+    assert.equal(leave.disabled, false);
+    assert.equal(share.disabled, false);
+    assert.equal(packets.length, 1);
+    assert.equal(packets[0].kind, 'join');
+    assert.equal(packets[0].room, 'earth-lab');
+    assert.match(root.children[4].textContent, /Joined local tab room earth-lab/);
+  } finally {
+    dispose();
+  }
+});

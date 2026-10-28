@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+- Refuse malformed/invalid Cesium camera snapshots before sending a Planet
+  Playground coarse local-room view; report not shared, retain the joined
+  channel for a valid explicit retry. Isolated V8 RED→GREEN only; native
+  Node and actual browser QA remain outstanding.
+
 - Fail closed on Planet Playground local-room postMessage errors: Join cannot
   leave ghost membership, failed heartbeat/reply/view sending disconnects, and
   departure/close failures still release local state. Isolated V8 regression

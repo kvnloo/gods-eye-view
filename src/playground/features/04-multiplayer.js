@@ -53,6 +53,30 @@ export function parseRoomMessage(raw, room, now = Date.now()) {
     view: { lat, lon, height },
   };
 }
+/** Only validated, coarse finite coordinates may leave this tab on an explicit click. */
+export function coarseRoomView(Cesium, cameraPosition) {
+  try {
+    if (!cameraPosition) return null;
+    const position = Cesium.Cartographic.fromCartesian(cameraPosition);
+    if (!position || ![
+      position.latitude, position.longitude, position.height,
+    ].every(Number.isFinite)) return null;
+    const lat = Cesium.Math.toDegrees(position.latitude);
+    const lon = Cesium.Math.toDegrees(position.longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon) ||
+        Math.abs(lat) > 90 || Math.abs(lon) > 180) return null;
+    const height = Math.min(30000000, Math.max(1000, position.height));
+    return {
+      lat: Math.round(lat * 10) / 10,
+      lon: Math.round(lon * 10) / 10,
+      height: Math.round(height / 1000) * 1000,
+    };
+  } catch {
+    // A destroyed/invalid Cesium camera is not permission to send a view.
+    return null;
+  }
+}
+
 /**
  * Room-only invites must not silently copy a private scene hash, credentials
  * or unrelated query state. Scene sharing requires separate explicit opt-in.
@@ -266,16 +290,13 @@ export const feature = {
     });
     share.addEventListener('click', () => {
       if (!channel) return;
-      const c = services.Cesium.Cartographic.fromCartesian(
-        services.viewer.camera.positionWC,
+      const view = coarseRoomView(
+        services.Cesium, services.viewer?.camera?.positionWC,
       );
-      if (!c) return;
-      const rawHeight = Math.min(30000000, Math.max(1000, c.height));
-      const view = {
-        lat: Math.round(services.Cesium.Math.toDegrees(c.latitude) * 10) / 10,
-        lon: Math.round(services.Cesium.Math.toDegrees(c.longitude) * 10) / 10,
-        height: Math.round(rawHeight / 1000) * 1000,
-      };
+      if (!view) {
+        notice('Camera view unavailable; nothing shared.');
+        return;
+      }
       if (!send('view', view)) {
         leaveRoom();
         notice('Local room messaging unavailable; view not shared.');

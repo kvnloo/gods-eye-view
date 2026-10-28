@@ -10,6 +10,10 @@ state, credentials and scene hashes by default; the scene requires separate
 consent. Same-origin local-tab synthetic prototype only; not internet
 multiplayer or authenticated membership. Supported Node 24/26 and live
 two-tab browser proof remain unverified, and origin has not accepted it.
+When a browser exposes BroadcastChannel but refuses channel construction, Join
+stays disconnected with an unavailable notice and disabled Leave/Send controls.
+A later explicit Join may retry; only an isolated mocked-channel regression
+has been exercised for this failure path, not a real-browser acceptance run.
 
 ## God's Eye View in conversations — October 2, 2026
 

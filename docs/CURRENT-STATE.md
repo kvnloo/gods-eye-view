@@ -1,5 +1,12 @@
 # God's Eye View Current State
 
+**October 28 peer-removal keyboard handoff (#253, fork-only):** If a focused
+**Visit view** action disappears because its peer leaves/expires or the local
+room disconnects, focus moves to the existing non-action status message, not
+onto **Send coarse view** or a detached button. Unrelated UI focus remains
+untouched; teardown cannot resurrect focus. Isolated synthetic DOM testing only;
+supported Node 24/26, real GEV two-tab Chromium/mobile and CI remain **NOT RUN**.
+
 **October 28 room-link scene-fragment boundary (#253, fork-only):**
 Explicit **Include current scene** now copies only recognized GEV share-link
 fragment fields when a bounded, finite camera lat/lon exists. Unsupported

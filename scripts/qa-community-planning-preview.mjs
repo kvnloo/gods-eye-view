@@ -1,5 +1,77 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer';
+
+
+const qaRoot = fileURLToPath(new URL('../', import.meta.url));
+const qaSources = [
+  'src/data/communityPlanning.js',
+  'src/standalone/communityPlanningFixture.js',
+  'src/ui/communityPlanningPreview.js',
+];
+
+function assertCheckoutLock(expected, actual, status) {
+  if (!/^[0-9a-f]{40}$/.test(expected || ''))
+    throw new Error('Set GEV_QA_EXPECTED_SHA to the independently pinned 40-character PR head');
+  assert.equal(actual, expected, 'QA checkout HEAD differs from pinned PR head');
+  assert.equal(status, '', 'QA checkout has tracked changes outside the pinned PR head');
+}
+
+function gitOutput(...args) {
+  return execFileSync('git', args, { cwd: qaRoot, encoding: 'utf8' }).trim();
+}
+
+function assertCurrentCheckout() {
+  const expected = process.env.GEV_QA_EXPECTED_SHA;
+  // Check the supplied target before touching Git or starting a browser.
+  if (!/^[0-9a-f]{40}$/.test(expected || ''))
+    throw new Error('Set GEV_QA_EXPECTED_SHA to the independently pinned 40-character PR head');
+  assertCheckoutLock(
+    expected,
+    gitOutput('rev-parse', 'HEAD'),
+    gitOutput('status', '--porcelain', '--untracked-files=no'),
+  );
+}
+
+function assertSourceIdentity(expected, actual, path) {
+  assert.equal(actual, expected, `Dev server is serving stale/different source: ${path}`);
+}
+
+function checkIdentityNegativeControls() {
+  const valid = 'a'.repeat(40);
+  assert.throws(() => assertCheckoutLock('', valid, ''), /GEV_QA_EXPECTED_SHA/);
+  assert.throws(() => assertCheckoutLock(valid, 'b'.repeat(40), ''), /differs/);
+  assert.throws(() => assertCheckoutLock(valid, valid, ' M src/ui/communityPlanningPreview.js'), /tracked changes/);
+  assertCheckoutLock(valid, valid, '');
+  assert.throws(() => assertSourceIdentity('source-a', 'source-b', '/src/test.js'), /stale/);
+}
+checkIdentityNegativeControls();
+assertCurrentCheckout();
+
+// Vite's ?raw module returns the exact source text from the server's root.
+// Compare all three owned modules with the pinned clean checkout. A browser
+// pointed at another checkout must not earn an exact-head PASS.
+const pinnedSources = Object.fromEntries(
+  qaSources.map((path) => [
+    `/${path}`,
+    readFileSync(new URL(`../${path}`, import.meta.url), 'utf8'),
+  ]),
+);
+async function assertServedSourceIdentity(page) {
+  const served = await page.evaluate(async (paths) => {
+    const sources = {};
+    for (const path of paths) {
+      const module = await import(`${path}?raw`);
+      sources[path] = module.default;
+    }
+    return sources;
+  }, Object.keys(pinnedSources));
+  assert.deepEqual(Object.keys(served).sort(), Object.keys(pinnedSources).sort());
+  for (const [path, expected] of Object.entries(pinnedSources))
+    assertSourceIdentity(expected, served[path], path);
+}
 
 /**
  * Observe actual requests rather than the capped Resource Timing buffer,
@@ -174,6 +246,7 @@ try {
     moduleRequests.baselineRequests(), [],
     'rendering synthetic baseline credits must not request their source URLs',
   );
+  await assertServedSourceIdentity(page);
   const checked = await page.evaluate(() => {
     const dialog = document.querySelector('[data-community-planning-preview]');
     const text = dialog.textContent;
@@ -1162,6 +1235,8 @@ try {
     ]);
   }
 
+  // Fail closed if the checkout changed while the browser gate was running.
+  assertCurrentCheckout();
   console.log('Community planning preview: synthetic proposals, inert source credits, attribution, missing-clock fail-closed, keyboard, mobile, reduced-motion, teardown PASS');
 } finally {
   moduleRequests?.dispose();

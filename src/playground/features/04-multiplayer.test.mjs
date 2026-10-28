@@ -986,6 +986,11 @@ test('unrelated local-room peer changes do not detach a focused Visit view', () 
           setConnected(this, false);
         },
         addEventListener(name, listener) { this.listeners.set(name, listener); },
+        querySelector(selector) {
+          return selector === 'button'
+            ? this.children.find((item) => item.tagName === 'button') || null
+            : null;
+        },
         focus() { document.activeElement = this; },
       };
       return node;
@@ -1062,11 +1067,23 @@ test('unrelated local-room peer changes do not detach a focused Visit view', () 
       'changing this peer view must replace its own action');
     const updated = rows.children[0].children[1];
     assert.notStrictEqual(updated, visit);
+    assert.strictEqual(document.activeElement, updated,
+      'a new view from the focused peer must transfer focus to its new Visit button');
     updated.listeners.get('click')();
     assert.deepEqual(flights[1], {
       destination: { lon: -88.2, lat: 40.1, height: 11000 },
       duration: 2,
     });
+    // A later peer update must not steal focus from another UI control.
+    const join = root.children[3].children[0];
+    join.focus();
+    receive('peer-alpha', 'view', { ...first, height: 12000 });
+    assert.strictEqual(document.activeElement, join,
+      'background peer view update must not steal unrelated keyboard focus');
+    assert.equal(rows.children[0].children[1].isConnected, true);
+    receive('peer-alpha', 'leave');
+    assert.strictEqual(document.activeElement, join,
+      'peer leave must not steal keyboard focus from other controls');
   } finally {
     dispose();
   }

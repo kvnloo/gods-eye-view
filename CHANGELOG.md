@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+- Keep Planet Playground local-room Join fail-closed when a browser
+  denies BroadcastChannel creation: show an unavailable notice, avoid ghost
+  membership, disable room controls and allow explicit retry. Browser proof
+  remains pending on this fork-only prototype.
+
 - In the fork-only Planet Playground local-room prototype, keep copied invites
   pinned to the joined room when the editable code changes. No automatic room
   switch or scene/location disclosure is introduced.

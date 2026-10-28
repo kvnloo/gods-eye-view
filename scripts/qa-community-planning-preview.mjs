@@ -109,7 +109,8 @@ function qaNavigationAllowedBeforeRequest(raw, expectedOrigin) {
     // or silently run the wrong fixture unless the path/query are pinned too.
     return (
       url.origin === expectedOrigin &&
-      !url.username && !url.password &&
+      !url.username &&
+      !url.password &&
       url.pathname === '/' &&
       !url.hash &&
       (url.search === '' || url.search === '?planningPreview=fixture')

@@ -760,3 +760,82 @@ test('Visit view fails closed after Scene teardown and still allows explicit ret
     dispose();
   }
 });
+
+test('repeated peer heartbeats retain focused Visit view until the view changes', () => {
+  const document = {
+    createElement(tagName) {
+      return {
+        tagName, ownerDocument: document, children: [], listeners: new Map(),
+        textContent: '', isConnected: false,
+        setAttribute() {},
+        append(...nodes) {
+          this.children.push(...nodes);
+          for (const node of nodes) node.isConnected = true;
+        },
+        replaceChildren(...nodes) {
+          for (const node of this.children) node.isConnected = false;
+          this.children = nodes;
+          for (const node of nodes) node.isConnected = true;
+        },
+        addEventListener(name, listener) { this.listeners.set(name, listener); },
+      };
+    },
+  };
+  const root = document.createElement('section');
+  let channel;
+  const flights = [];
+  const dispose = feature.mount({
+    root,
+    services: {
+      window: {
+        location: { search: '' },
+        BroadcastChannel: class {
+          constructor() { channel = this; }
+          postMessage() {}
+          close() {}
+        },
+        setInterval() { return 1; },
+        clearInterval() {},
+      },
+      viewer: { camera: { flyTo(options) { flights.push(options); } } },
+      Cesium: { Cartesian3: {
+        fromDegrees(lon, lat, height) { return { lon, lat, height }; },
+      } },
+    },
+  });
+  try {
+    root.children[3].children[0].listeners.get('click')();
+    const peerRows = root.children[5];
+    const coarse = { lat: 40.1, lon: -88.2, height: 10000 };
+    const receive = (kind, view) => channel.onmessage({ data: {
+      protocol: ROOM_PROTOCOL, room: 'earth-lab', peer: 'peer-guest',
+      sentAt: Date.now(), kind, ...(view ? { view } : {}),
+    } });
+    receive('view', coarse);
+    const visit = peerRows.children[0].children[1];
+    assert.equal(visit.textContent, 'Visit view');
+    assert.equal(visit.isConnected, true);
+    for (const kind of ['hello', 'join']) {
+      receive(kind);
+      assert.strictEqual(peerRows.children[0].children[1], visit,
+        'liveness must not replace the keyboard-focusable control');
+      assert.equal(visit.isConnected, true);
+    }
+    receive('view', { ...coarse });
+    assert.strictEqual(peerRows.children[0].children[1], visit,
+      'identical view replay must not replace the control');
+    receive('view', { ...coarse, height: 11000 });
+    const updated = peerRows.children[0].children[1];
+    assert.notStrictEqual(updated, visit, 'changed coarse view updates action');
+    assert.equal(visit.isConnected, false);
+    updated.listeners.get('click')();
+    assert.deepEqual(flights, [{
+      destination: { lon: -88.2, lat: 40.1, height: 11000 },
+      duration: 2,
+    }]);
+    receive('leave');
+    assert.equal(peerRows.children.length, 0);
+  } finally {
+    dispose();
+  }
+});

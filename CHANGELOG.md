@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+- Preserve keyboard focus on a peer's Planet Playground Visit view button
+  across presence-only heartbeats, repeated joins and unchanged coarse-view
+  packets. Re-render only when peer membership or the shared view changes;
+  leaving still removes the action. Fork-only synthetic regression; supported
+  Node 24/26 and real two-tab browser QA remain outstanding.
+
 - Fail closed when Planet Playground's local-room Visit view button outlives
   its Cesium Scene camera: no thrown navigation, no local view transmission,
   and no room disconnect. A valid explicit follow still works. Isolated V8

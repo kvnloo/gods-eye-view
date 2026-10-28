@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- Prevent Planet Playground local rooms from sending retained coarse camera
+  coordinates after Scene destruction or a throwing lifecycle check. Preserve
+  the joined room for a valid explicit retry. Isolated V8 RED→GREEN only;
+  supported Node 24/26, app/browser and CI verification outstanding.
 - Transfer keyboard focus to a refreshed Planet Playground Visit view button
   only when that peer's previous button was focused; background peer updates
   never steal focus. Synthetic V8 RED→GREEN only; Node 24/26 and browser

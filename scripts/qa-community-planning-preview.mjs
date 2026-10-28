@@ -16,7 +16,7 @@ function assertCheckoutLock(expected, actual, status) {
   if (!/^[0-9a-f]{40}$/.test(expected || ''))
     throw new Error('Set GEV_QA_EXPECTED_SHA to the independently pinned 40-character PR head');
   assert.equal(actual, expected, 'QA checkout HEAD differs from pinned PR head');
-  assert.equal(status, '', 'QA checkout has tracked changes outside the pinned PR head');
+  assert.equal(status, '', 'QA checkout has modified or untracked files outside the pinned PR head');
 }
 
 function gitOutput(...args) {
@@ -31,7 +31,7 @@ function assertCurrentCheckout() {
   assertCheckoutLock(
     expected,
     gitOutput('rev-parse', 'HEAD'),
-    gitOutput('status', '--porcelain', '--untracked-files=no'),
+    gitOutput('status', '--porcelain', '--untracked-files=normal'),
   );
 }
 
@@ -44,6 +44,11 @@ function checkIdentityNegativeControls() {
   assert.throws(() => assertCheckoutLock('', valid, ''), /GEV_QA_EXPECTED_SHA/);
   assert.throws(() => assertCheckoutLock(valid, 'b'.repeat(40), ''), /differs/);
   assert.throws(() => assertCheckoutLock(valid, valid, ' M src/ui/communityPlanningPreview.js'), /tracked changes/);
+  // A new untracked source can change the dev server without changing HEAD.
+  assert.throws(
+    () => assertCheckoutLock(valid, valid, '?? src/ui/untracked-planning-module.js'),
+    /modified or untracked/,
+  );
   assertCheckoutLock(valid, valid, '');
   assert.throws(() => assertSourceIdentity('source-a', 'source-b', '/src/test.js'), /stale/);
 }

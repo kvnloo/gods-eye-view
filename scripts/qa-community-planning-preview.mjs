@@ -97,6 +97,101 @@ function assertQaNavigationOrigin(actual, expected) {
   );
 }
 
+/**
+ * Abort a redirected top-level document before Chromium contacts another site.
+ * A post-goto origin assertion is too late to prevent the remote request.
+ */
+function qaNavigationAllowedBeforeRequest(raw, expectedOrigin) {
+  try {
+    const url = new URL(raw);
+    return url.origin === expectedOrigin && !url.username && !url.password;
+  } catch {
+    return false;
+  }
+}
+
+function dispatchQaInterceptedRequest(request, mainFrame, expectedOrigin) {
+  if (
+    request.isNavigationRequest() &&
+    request.frame() === mainFrame &&
+    !qaNavigationAllowedBeforeRequest(request.url(), expectedOrigin)
+  ) {
+    return request.abort('blockedbyclient');
+  }
+  // GEV may load external map tiles/assets; block only top-level navigation.
+  return request.continue();
+}
+
+/** Exercise the actual request-decision handler without network access. */
+function checkQaPreRequestNegativeControls() {
+  const origin = 'http://localhost:4173';
+  const mainFrame = {};
+  function observedAction(raw, navigation = true, frame = mainFrame) {
+    let action = null;
+    const request = {
+      url: () => raw,
+      isNavigationRequest: () => navigation,
+      frame: () => frame,
+      abort(reason) {
+        action = `abort:${reason}`;
+        return Promise.resolve();
+      },
+      continue() {
+        action = 'continue';
+        return Promise.resolve();
+      },
+    };
+    void dispatchQaInterceptedRequest(request, mainFrame, origin);
+    return action;
+  }
+  assert.equal(observedAction(origin + '/?planningPreview=fixture'), 'continue');
+  for (const remote of [
+    'https://remote.example.test/redirect',
+    'http://127.0.0.1:4173/',
+    'http://user:secret@localhost:4173/',
+    'file:///tmp/stale.html',
+    'not a URL',
+  ]) {
+    assert.equal(
+      observedAction(remote),
+      'abort:blockedbyclient',
+      'redirect/navigation must be rejected before the remote request',
+    );
+  }
+  assert.equal(
+    observedAction('https://tiles.example.test/asset.png', false),
+    'continue',
+    'normal non-navigation map assets must remain available',
+  );
+  assert.equal(
+    observedAction('https://iframe.example.test/', true, {}),
+    'continue',
+    'this guard is deliberately scoped to the main browser frame',
+  );
+}
+checkQaPreRequestNegativeControls();
+
+/** Interception must be enabled before any goto, including the mobile tab. */
+async function guardQaTopLevelNavigation(page, expectedOrigin) {
+  const interceptionErrors = [];
+  page.on('request', (request) => {
+    try {
+      void dispatchQaInterceptedRequest(
+        request, page.mainFrame(), expectedOrigin,
+      ).catch((error) => interceptionErrors.push(String(error)));
+    } catch (error) {
+      interceptionErrors.push(String(error));
+      void request.abort('blockedbyclient')
+        .catch((abortError) => interceptionErrors.push(String(abortError)));
+    }
+  });
+  await page.setRequestInterception(true);
+  return () => assert.deepEqual(
+    interceptionErrors, [],
+    'QA browser request interception failed; cannot certify navigation safety',
+  );
+}
+
 function checkLocalQaOriginNegativeControls() {
   for (const valid of [
     'http://localhost:4173',
@@ -257,11 +352,13 @@ const browser = await puppeteer.launch({
 let moduleRequests;
 try {
   const page = await browser.newPage();
+  const assertDesktopRequestsSafe = await guardQaTopLevelNavigation(page, origin);
   moduleRequests = watchPreviewModuleRequests(page);
   await page.setViewport({ width: 1100, height: 900 });
   // Normal startup must not expose the fixture-only Scene launcher.
   await page.goto(optOutUrl.href, { waitUntil: 'domcontentloaded', timeout: 45000 });
   assertQaNavigationOrigin(page.url(), origin);
+  assertDesktopRequestsSafe();
   await page.waitForFunction(
     () =>
       window.__godsEyeView?.sceneDirector?._controls &&
@@ -291,6 +388,7 @@ try {
   moduleRequests.clear();
   await page.goto(url.href, { waitUntil: 'domcontentloaded', timeout: 45000 });
   assertQaNavigationOrigin(page.url(), origin);
+  assertDesktopRequestsSafe();
   await page.waitForFunction(
     () =>
       window.__godsEyeView?.sceneDirector?._controls &&
@@ -504,6 +602,7 @@ try {
   // Set mobile/touch emulation before navigation. Changing isMobile or
   // hasTouch on the active desktop page can reload it and destroy the modal.
   const mobilePage = await browser.newPage();
+  const assertMobileRequestsSafe = await guardQaTopLevelNavigation(mobilePage, origin);
   // The mobile tab has an independent request stream. The desktop watcher
   // alone cannot establish that credits stay network-inert during touch QA.
   const mobileRequests = watchPreviewModuleRequests(mobilePage);
@@ -519,6 +618,7 @@ try {
       timeout: 45000,
     });
     assertQaNavigationOrigin(mobilePage.url(), origin);
+    assertMobileRequestsSafe();
     await mobilePage.waitForFunction(
       () =>
         window.__godsEyeView?.sceneDirector?._controls &&

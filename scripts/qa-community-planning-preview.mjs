@@ -43,7 +43,7 @@ function checkIdentityNegativeControls() {
   const valid = 'a'.repeat(40);
   assert.throws(() => assertCheckoutLock('', valid, ''), /GEV_QA_EXPECTED_SHA/);
   assert.throws(() => assertCheckoutLock(valid, 'b'.repeat(40), ''), /differs/);
-  assert.throws(() => assertCheckoutLock(valid, valid, ' M src/ui/communityPlanningPreview.js'), /tracked changes/);
+  assert.throws(() => assertCheckoutLock(valid, valid, ' M src/ui/communityPlanningPreview.js'), /modified or untracked/);
   // A new untracked source can change the dev server without changing HEAD.
   assert.throws(
     () => assertCheckoutLock(valid, valid, '?? src/ui/untracked-planning-module.js'),

@@ -139,6 +139,7 @@ export const feature = {
     let channel = null;
     let room = null;
     const peers = new Map();
+    const renderedPeers = new Map();
     const lastSeen = new Map();
     const timerHost = typeof win.setInterval === 'function' &&
       typeof win.clearInterval === 'function' ? win : globalThis;
@@ -166,6 +167,7 @@ export const feature = {
       channel = null;
       room = null;
       peers.clear();
+      renderedPeers.clear();
       lastSeen.clear();
       leave.disabled = true;
       share.disabled = true;
@@ -188,8 +190,18 @@ export const feature = {
       }
     }
     function presentPeers() {
-      peersContainer.replaceChildren();
+      // Rebuilding the whole peer list unmounts another peer's focused
+      // Visit view button. Reconcile only rows whose membership/view changed.
+      let needsMockFallback = false;
+      for (const [id, entry] of renderedPeers) {
+        if (peers.has(id)) continue;
+        if (typeof entry.row.remove === 'function') entry.row.remove();
+        else needsMockFallback = true;
+        renderedPeers.delete(id);
+      }
       for (const [id, view] of peers) {
+        const prior = renderedPeers.get(id);
+        if (prior && prior.view === view) continue;
         const row = doc.createElement('div');
         row.className = 'gev-playground-actions';
         const label = doc.createElement('span');
@@ -224,8 +236,18 @@ export const feature = {
           });
           row.append(follow);
         }
-        peersContainer.append(row);
+        if (prior) {
+          if (typeof prior.row.replaceWith === 'function') prior.row.replaceWith(row);
+          else needsMockFallback = true;
+        } else {
+          peersContainer.append(row);
+        }
+        renderedPeers.set(id, { row, view });
       }
+      // Minimal DOM fakes in the existing unit tests have replaceChildren
+      // but no Element.remove/replaceWith. Real browsers take the keyed path.
+      if (needsMockFallback)
+        peersContainer.replaceChildren(...[...renderedPeers.values()].map(({ row }) => row));
     }
     function heartbeatAndPrune() {
       if (!channel) return;

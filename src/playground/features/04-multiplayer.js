@@ -162,6 +162,8 @@ export const feature = {
     actions.append(includeSceneLabel);
     const status = doc.createElement('p');
     status.setAttribute('role', 'status');
+    // A disappearing focused peer action needs a safe non-action focus target.
+    status.tabIndex = -1;
     status.className = 'gev-playground-status';
     const peersContainer = doc.createElement('div');
     let channel = null;
@@ -178,6 +180,9 @@ export const feature = {
     const peerId = 'peer-' + Math.random().toString(36).slice(2, 12);
     function notice(message) { status.textContent = message; }
     function leaveRoom(notifyPeers = true) {
+      const focusedPeerRemoved = [...renderedPeers.values()].some(
+        ({ row }) => row.querySelector?.('button') === doc.activeElement,
+      );
       if (heartbeat !== null) {
         timerHost.clearInterval(heartbeat);
         heartbeat = null;
@@ -200,6 +205,9 @@ export const feature = {
       leave.disabled = true;
       share.disabled = true;
       peersContainer.replaceChildren();
+      // Disconnect must not leave keyboard focus on a detached Visit action.
+      if (focusedPeerRemoved && mounted && status.isConnected)
+        status.focus({ preventScroll: true });
     }
     function send(kind, view) {
       if (!channel) return false;
@@ -221,8 +229,11 @@ export const feature = {
       // Rebuilding the whole peer list unmounts another peer's focused
       // Visit view button. Reconcile only rows whose membership/view changed.
       let needsMockFallback = false;
+      let focusedPeerRemoved = false;
       for (const [id, entry] of renderedPeers) {
         if (peers.has(id)) continue;
+        if (entry.row.querySelector?.('button') === doc.activeElement)
+          focusedPeerRemoved = true;
         if (typeof entry.row.remove === 'function') entry.row.remove();
         else needsMockFallback = true;
         renderedPeers.delete(id);
@@ -283,6 +294,9 @@ export const feature = {
       // but no Element.remove/replaceWith. Real browsers take the keyed path.
       if (needsMockFallback)
         peersContainer.replaceChildren(...[...renderedPeers.values()].map(({ row }) => row));
+      // Peer Leave/expiry never moves focus onto an outbound sharing action.
+      if (focusedPeerRemoved && mounted && status.isConnected)
+        status.focus({ preventScroll: true });
     }
     function heartbeatAndPrune() {
       if (!channel) return;

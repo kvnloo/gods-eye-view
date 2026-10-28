@@ -42,7 +42,8 @@ function publicHttpsSourceUrl(value) {
       // URLSearchParams decodes percent-encoded key spellings first.
       const normalized = key.toLowerCase().replace(/[^a-z0-9]/g, '');
       return (
-        /(?:token|secret|password|passwd|signature|credential|apikey|authorization|bearer)/.test(normalized) ||
+        /token|secret|password|passwd|signature|credential/.test(normalized) ||
+        /apikey|authorization|bearer/.test(normalized) ||
         /^(?:auth|key|sig|pwd|sessionid)$/.test(normalized)
       );
     });

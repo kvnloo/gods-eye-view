@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+- When a focused local-room peer Visit view disappears (peer Leave, expiry,
+  or local disconnect), move keyboard focus to the non-action room status
+  instead of losing it or selecting a location-sharing button. Never restore
+  focus during feature teardown. Focused synthetic DOM RED→GREEN only;
+  supported Node 24/26, real two-tab browser/mobile and CI proof pending.
+
 - Limit explicit Planet Playground room-invite scene fragments to the
   recognized GEV share-link fields and valid bounded camera coordinates;
   unrelated hash tokens cannot be copied. Invalid scene state falls back to

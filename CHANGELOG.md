@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+- Serialize Planet Playground's optional local-room invite clipboard writes
+  so a delayed older scene-inclusive Copy cannot overwrite a newer room-only
+  choice. Only the latest intent reports its result; teardown abandons queued
+  unstarted copies and suppresses stale notices. Deferred clipboard V8
+  regression only; supported Node 24/26 and browser proof remain outstanding.
 - Preserve keyboard focus on a peer's Planet Playground Visit view button
   across presence-only heartbeats, repeated joins and unchanged coarse-view
   packets. Re-render only when peer membership or the shared view changes;

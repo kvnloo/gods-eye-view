@@ -38,9 +38,11 @@ coarse peer view visible, keyboard-focus **Visit view** in one tab, then wait
 for a heartbeat from the other. Focus must stay on the same control; repeated
 Join/identical view packets must not recreate it. While focused on peer A,
 have another tab join, send a different peer view, and leave: peer A's action
-must remain the same focused DOM control. A new view from peer A may update its
-own action, and its Leave must remove it. Native two-tab keyboard/mobile proof
-remains outstanding; the expanded keyed-row regression uses a synthetic DOM.
+must remain the same focused DOM control. A new view from peer A must transfer
+keyboard focus to its updated Visit view button only if the old button was
+focused; updates must not steal focus from other controls. Leave removes its
+own action. Native two-tab keyboard/mobile proof remains outstanding; the
+keyed-row regression uses a synthetic DOM.
 Abruptly
 terminate one tab without Leave and confirm the survivor eventually removes
 its stale presence (75 seconds without valid packets, checked by the next

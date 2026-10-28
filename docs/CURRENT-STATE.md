@@ -9,6 +9,8 @@ changed coarse view updates the action, and Leave removes it. This remains an
 unverified same-origin tab prototype; isolated synthetic DOM tests do not
 establish Node 24/26, real keyboard/browser or two-tab acceptance.
 
+**October 28 queued clipboard consent (#253, fork-only):** Back-to-back Copy room link actions now serialize browser clipboard writes in click order. A delayed earlier scene-inclusive Copy cannot overwrite the later room-only clipboard result; only the latest Copy reports success/failure. On feature teardown, queued unstarted writes are abandoned and stale status suppressed, but already-started browser clipboard operations cannot be revoked. The regression uses synthetic deferred clipboard promises: supported Node 24/26 project tests, Chromium two-tab/permission-prompt QA and device verification are **NOT RUN**; no real-world location or internet room is used.
+
 **October 28 one-shot invite consent (#253, fork-only):** Checking
 "Include current scene" authorizes only the next Copy room link. The checkbox
 resets *before* awaiting the clipboard, so a later or rapid second Copy is

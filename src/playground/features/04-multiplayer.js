@@ -346,9 +346,15 @@ export const feature = {
     });
     share.addEventListener('click', () => {
       if (!channel) return;
-      const view = coarseRoomView(
-        services.Cesium, services.viewer?.camera?.positionWC,
-      );
+      // Scene teardown may retain a stale camera position. Never transmit it.
+      let view = null;
+      try {
+        const viewer = services.viewer;
+        if (viewer && !viewer.isDestroyed?.())
+          view = coarseRoomView(services.Cesium, viewer.camera?.positionWC);
+      } catch {
+        // A destroyed viewer can throw from its camera or lifecycle getter.
+      }
       if (!view) {
         notice('Camera view unavailable; nothing shared.');
         return;

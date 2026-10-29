@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+- Make repeated Join in the already joined Planet Playground local room
+  idempotent: retain the channel/heartbeat/peer presence without spurious
+  Leave/Join packets; a changed room still switches explicitly. Published
+  source isolated V8 RED→GREEN; supported Node 24/26, two-tab browser/mobile
+  and CI remain NOT RUN.
+
 - When a focused local-room peer Visit view disappears (peer Leave, expiry,
   or local disconnect), move keyboard focus to the non-action room status
   instead of losing it or selecting a location-sharing button. Never restore

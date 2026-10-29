@@ -350,7 +350,8 @@ export function mountCommunityPlanningPreview({
         current.element.remove();
         if (dialog === current) dialog = null;
         // A host teardown must never put focus back on a detached launcher.
-        if (!disposed && button.isConnected) button.focus({ preventScroll: true });
+        if (!disposed && button.isConnected)
+          button.focus({ preventScroll: true });
       }
     };
   };

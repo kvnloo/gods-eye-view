@@ -44,7 +44,7 @@ function publicHttpsSourceUrl(value) {
       return (
         /token|secret|password|passwd|signature|credential/.test(normalized) ||
         /apikey|authorization|bearer/.test(normalized) ||
-        /^(?:auth|key|sig|pwd|sessionid)$/.test(normalized) ||
+        /^(?:auth|key|sig|pwd|session(?:id)?|(?:auth|oauth)?code)$/.test(normalized) ||
         // Reject service-specific accessKey/clientKey query aliases too.
         /key$/.test(normalized)
       );

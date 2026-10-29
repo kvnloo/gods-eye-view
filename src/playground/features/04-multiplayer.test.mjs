@@ -128,15 +128,17 @@ test('copy room link keeps precise scene state out until explicitly checked', as
     assert.equal(new URL(copied[2]).hash, '',
       'copying again without fresh consent must not leak the scene');
     assert.match(root.children[4].textContent, /Room-only link copied/);
-    // Two immediate Copy activations must consume only one scene opt-in,
-    // even when clipboard completion occurs asynchronously.
+    // A same-turn room-only Copy supersedes a queued scene-inclusive intent
+    // before the first clipboard request starts; no stale scene reaches it.
+    const copiesBeforeRapid = copied.length;
     includeScene.checked = true;
     const first = copy.listeners.get('click')();
     const second = copy.listeners.get('click')();
     await Promise.all([first, second]);
-    assert.equal(new URL(copied[3]).hash, '#lat=40.1&lon=-88.1&map=photoreal');
-    assert.equal(new URL(copied[4]).hash, '',
-      'a pending scene copy must not authorize a second scene disclosure');
+    assert.equal(copied.length, copiesBeforeRapid + 1,
+      'superseded queued scene-inclusive Copy must never write to clipboard');
+    assert.equal(new URL(copied.at(-1)).hash, '',
+      'latest room-only intent must not inherit a queued scene disclosure');
     assert.equal(includeScene.checked, false);
   } finally {
     dispose();
@@ -916,7 +918,7 @@ test('repeated peer heartbeats retain focused Visit view until the view changes'
   }
 });
 
-test('overlapping invite copies cannot restore an older scene link', async () => {
+test('overlapping invite copies skip superseded queued scenes and keep in-flight ordering', async () => {
   let clipboard = '';
   const writes = [];
   const document = {
@@ -964,48 +966,46 @@ test('overlapping invite copies cannot restore an older scene link', async () =>
     const first = copyLink();
     const second = copyLink();
     await Promise.resolve();
-    assert.equal(writes.length, 1, 'newer room-only copy must wait for old clipboard settlement');
-    assert.equal(new URL(writes[0].value).hash, '#lat=40.1&lon=-88.1&map=photoreal');
-    writes[0].succeed();
-    await first;
     await Promise.resolve();
-    assert.equal(writes.length, 2);
-    assert.equal(new URL(writes[1].value).hash, '', 'second copy did not inherit scene consent');
-    writes[1].succeed();
-    await second;
-    assert.equal(clipboard, writes[1].value, 'latest click must determine final clipboard value');
+    assert.equal(writes.length, 1,
+      'new room-only intent must skip the earlier queued scene disclosure');
+    assert.equal(new URL(writes[0].value).hash, '');
+    assert.equal(writes[0].value.includes('scene-canary'), false);
+    writes[0].succeed();
+    await Promise.all([first, second]);
+    assert.equal(clipboard, writes[0].value, 'latest click determines clipboard');
     assert.match(root.children[4].textContent, /^Room-only link copied/);
     assert.equal(includeScene.checked, false);
 
     // A denied earlier permission/write must not strand a later room-only copy.
     includeScene.checked = true;
     const failed = copyLink();
-    const recovery = copyLink();
     await Promise.resolve();
-    assert.equal(writes.length, 3);
-    writes[2].fail();
+    assert.equal(writes.length, 2, 'first browser clipboard call started');
+    const recovery = copyLink();
+    writes[1].fail();
     await failed;
     await Promise.resolve();
-    assert.equal(writes.length, 4);
-    assert.equal(new URL(writes[3].value).hash, '');
-    writes[3].succeed();
+    assert.equal(writes.length, 3, 'new room-only request follows denial');
+    assert.equal(new URL(writes[2].value).hash, '');
+    writes[2].succeed();
     await recovery;
-    assert.equal(clipboard, writes[3].value);
+    assert.equal(clipboard, writes[2].value);
     assert.match(root.children[4].textContent, /^Room-only link copied/);
 
     // Disposing the feature cannot start remaining queued copies or update
     // a detached status after an already-in-flight clipboard call settles.
     includeScene.checked = true;
     const inFlight = copyLink();
-    const abandoned = copyLink();
     await Promise.resolve();
-    assert.equal(writes.length, 5);
+    assert.equal(writes.length, 4, 'first copy already started');
+    const abandoned = copyLink();
     const lastNotice = root.children[4].textContent;
     dispose();
-    writes[4].succeed();
+    writes[3].succeed();
     await inFlight;
     await abandoned;
-    assert.equal(writes.length, 5, 'queued copy should be abandoned on teardown');
+    assert.equal(writes.length, 4, 'queued copy should be abandoned on teardown');
     assert.equal(root.children[4].textContent, lastNotice);
   } finally {
     dispose();

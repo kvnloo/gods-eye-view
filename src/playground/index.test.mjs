@@ -157,3 +157,99 @@ test('an unopened disposed shell cannot later join a local room', () => {
   launcher.fire('click');
   assert.equal(mounted, 0, 'disposed shell cannot join a local room');
 });
+
+test('throwing mode cleanup cannot strand tab changes, close or host teardown', (t) => {
+  const { doc, nodes, handlers } = syntheticDocument();
+  const events = [];
+  const errors = [];
+  t.mock.method(console, 'error', (...parts) => errors.push(parts));
+  const dispose = mountPlanetPlayground(
+    { document: doc, window: { location: { search: '' } } },
+    [
+      {
+        id: 'world-builder',
+        title: 'What-if',
+        mount() {
+          events.push('mount:what-if');
+          return () => {
+            events.push('dispose:what-if');
+            throw new Error('synthetic feature cleanup failure');
+          };
+        },
+      },
+      {
+        id: 'local-room',
+        title: 'Local room',
+        mount() {
+          events.push('mount:room');
+          return () => events.push('dispose:room');
+        },
+      },
+    ],
+  );
+  const launcher = nodes.find((node) => node.id === 'planet-playground-launcher');
+  const close = nodes.find(
+    (node) => node.attributes.get('aria-label') === 'Close Planet Playground',
+  );
+  const roomTab = nodes.find((node) => node.dataset.mode === 'local-room');
+  assert.ok(launcher && close && roomTab);
+  launcher.fire('click');
+  // Old code threw and left the active ID/disposer stuck on What-if.
+  assert.doesNotThrow(() => roomTab.fire('click'));
+  assert.deepEqual(events, ['mount:what-if', 'dispose:what-if', 'mount:room']);
+  close.fire('click');
+  launcher.fire('click');
+  assert.equal(events.at(-1), 'mount:what-if', 'closing must reset selected mode');
+  assert.doesNotThrow(() => close.fire('click'));
+  assert.doesNotThrow(() => launcher.fire('click'));
+  assert.equal(
+    events.filter((event) => event === 'mount:what-if').length, 3,
+    'reopening after a failed cleanup must remount, not reuse stale state',
+  );
+  assert.doesNotThrow(dispose);
+  assert.equal(
+    events.filter((event) => event === 'dispose:what-if').length, 3,
+    'every distinct mount has exactly one cleanup attempt',
+  );
+  assert.equal(errors.length, 3);
+  assert.ok(errors.every(([message, error]) =>
+    message === 'Planet Playground mode cleanup failed:' &&
+    error.message === 'synthetic feature cleanup failure'));
+  const completed = [...events];
+  launcher.fire('click');
+  roomTab.fire('click');
+  close.fire('click');
+  dispose();
+  assert.deepEqual(events, completed, 'detached controls and double dispose are inert');
+  assert.equal(launcher.isConnected, false);
+  assert.equal(handlers.get('keydown')?.size, 0);
+});
+
+test('transient mount failure allows retrying the same selected tab', (t) => {
+  const { doc, nodes } = syntheticDocument();
+  const errors = [];
+  t.mock.method(console, 'error', (...parts) => errors.push(parts));
+  let attempts = 0;
+  let cleaned = 0;
+  const dispose = mountPlanetPlayground(
+    { document: doc, window: { location: { search: '' } } },
+    [{
+      id: 'world-builder',
+      title: 'What-if',
+      mount() {
+        attempts++;
+        if (attempts === 1) throw new Error('synthetic mount failure');
+        return () => { cleaned++; };
+      },
+    }],
+  );
+  const launcher = nodes.find((node) => node.id === 'planet-playground-launcher');
+  const tab = nodes.find((node) => node.dataset.mode === 'world-builder');
+  launcher.fire('click');
+  assert.equal(attempts, 1);
+  tab.fire('click');
+  assert.equal(attempts, 2, 'a failed mount must not lock out a retry');
+  dispose();
+  assert.equal(cleaned, 1);
+  assert.equal(errors.length, 1);
+});

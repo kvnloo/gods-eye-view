@@ -61,12 +61,23 @@ export function mountPlanetPlayground(services, featureOverrides = null) {
   let disposed = false;
   const buttons = [];
   const removeTabListeners = [];
+  // A failing feature cleanup must not trap the shell in its previous mode.
+  // Only the feature can guarantee that its partially released resources are safe.
+  function releaseFeature() {
+    const cleanup = disposeFeature;
+    disposeFeature = null;
+    activeId = null;
+    try {
+      cleanup?.();
+    } catch (error) {
+      console.error('Planet Playground mode cleanup failed:', error);
+    }
+  }
   function select(id) {
     if (disposed) return;
     const feature = features.find((entry) => entry.id === id);
     if (!feature || activeId === id) return;
-    disposeFeature?.();
-    disposeFeature = null;
+    releaseFeature();
     activeId = id;
     body.replaceChildren();
     body.setAttribute('aria-label', feature.title);
@@ -81,6 +92,8 @@ export function mountPlanetPlayground(services, featureOverrides = null) {
         services: { ...services, Cesium },
       }) || null;
     } catch (error) {
+      // Retry the same tab after a transient mount failure.
+      activeId = null;
       const problem = doc.createElement('p');
       problem.textContent = 'This mode could not open. Other modes remain available.';
       body.replaceChildren(problem);
@@ -97,9 +110,7 @@ export function mountPlanetPlayground(services, featureOverrides = null) {
       close.focus();
     } else {
       // An inactive mode never keeps live camera, timers or presence listeners.
-      disposeFeature?.();
-      disposeFeature = null;
-      activeId = null;
+      releaseFeature();
       launcher.focus();
     }
   }
@@ -137,10 +148,8 @@ export function mountPlanetPlayground(services, featureOverrides = null) {
     close.removeEventListener('click', onCloseClick);
     for (const remove of removeTabListeners) remove();
     try {
-      disposeFeature?.();
+      releaseFeature();
     } finally {
-      disposeFeature = null;
-      activeId = null;
       opened = false;
       panel.remove();
       launcher.remove();

@@ -10,7 +10,7 @@ The shell owns switching, keyboard dismissal and application-lifetime teardown.
 Features must release their own event listeners, Cesium entities, timers, and opt-in connections.
 The shell removes launcher, tab, close and keyboard handlers on host teardown;
 retained detached controls cannot remount a mode and repeat disposal is inert.
-This has only synthetic DOM regression coverage, not full-app browser proof.
+Feature cleanup failures are logged and cannot strand tab switching, close, or host teardown; a transient mount failure can be retried. The feature still owns releasing any resources it failed to clean. This has only synthetic DOM regression coverage, not full-app browser proof.
 
 - **01 Expeditions** — existing Nepal evidence scene; fire and traffic layer scout views
 - **02 Time Machine** — authored SceneDirector clock only

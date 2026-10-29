@@ -1,1 +1,2 @@
 - Fix Planet Playground shell teardown: detached controls can no longer remount a mode, recreate local-room effects or leave stale listeners after host unmount. Includes a deterministic synthetic DOM regression; no real multiplayer, native browser or production-build proof is claimed.
+- Keep Planet Playground shell usable if a feature's cleanup or mount throws: clear stale mode ownership, allow retry, and still revoke host controls. Synthetic fault-injection regression only; full-app browser and supported Node tests remain outstanding.

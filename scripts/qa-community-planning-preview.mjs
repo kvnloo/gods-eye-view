@@ -1478,6 +1478,55 @@ try {
     moduleRequests.baselineRequests(), [],
     'mode changes, provenance disclosures and teardown must never fetch baseline source URLs',
   );
+  // A Scene panel can be detached before its owner runs the disposer.
+  // A retained off-DOM button must not resurrect a hypothetical modal.
+  const disconnectedOwner = await page.evaluate(async () => {
+    const { mountCommunityPlanningPreview } = await import(
+      '/src/ui/communityPlanningPreview.js'
+    );
+    const { createSyntheticCommunityPlanningFixture } = await import(
+      '/src/standalone/communityPlanningFixture.js'
+    );
+    const host = document.createElement('section');
+    const inner = document.createElement('div');
+    inner.className = 'scene-panel-inner';
+    host.append(inner);
+    document.body.append(host);
+    const stop = mountCommunityPlanningPreview({
+      ...createSyntheticCommunityPlanningFixture(),
+      panel: host,
+    });
+    const launcher = host.querySelector(
+      '[data-community-planning-preview-open]',
+    );
+    try {
+      host.remove(); // Simulate detached Scene host before disposal.
+      launcher.click();
+      const blockedWhileDetached = !document.querySelector(
+        '[data-community-planning-preview]',
+      );
+      document.body.append(host); // Reattached live owner still works.
+      launcher.click();
+      const openedAfterReattach = Boolean(document.querySelector(
+        '[data-community-planning-preview]',
+      )?.open);
+      document.querySelector(
+        '[data-community-planning-preview] [data-planning-cancel]',
+      )?.click();
+      const cleanAfterClose = !document.querySelector(
+        '[data-community-planning-preview]',
+      );
+      return { blockedWhileDetached, openedAfterReattach, cleanAfterClose };
+    } finally {
+      stop();
+      host.remove();
+    }
+  });
+  assert.deepEqual(disconnectedOwner, {
+    blockedWhileDetached: true,
+    openedAfterReattach: true,
+    cleanAfterClose: true,
+  });
   // Fault-inject the actual modal close path. A close failure must not
   // strand a Scene preview, block reopening, or permit teardown resurrection.
   const closeFaultRecovery = await page.evaluate(async () => {

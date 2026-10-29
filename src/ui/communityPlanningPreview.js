@@ -355,7 +355,9 @@ export function mountCommunityPlanningPreview({
   let dialog = null;
   let disposed = false;
   const open = () => {
-    if (disposed || dialog) return;
+    // A detached Scene panel may still have a retained button handler until
+    // its owner runs cleanup. Never open a modal from an off-DOM launcher.
+    if (disposed || dialog || !button.isConnected) return;
     dialog = openCommunityPlanningPreview({ project, collaborationState });
     const current = dialog;
     const originalDispose = current.dispose;

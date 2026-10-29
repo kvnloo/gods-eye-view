@@ -318,7 +318,7 @@ async function assertServedSourceIdentity(page) {
  * Observe actual requests rather than the capped Resource Timing buffer,
  * which may silently omit lazy imports on a busy GEV startup.
  */
-function watchPreviewModuleRequests(page) {
+function watchPreviewModuleRequests(page, expectedOrigin) {
   const paths = new Set();
   const baselineRequests = new Set();
   // Track additional credited HTTPS origins for imported synthetic sources.
@@ -332,8 +332,9 @@ function watchPreviewModuleRequests(page) {
     if (creditedSourceOrigins.has(requested.origin))
       baselineRequests.add(requested.href);
     if (
-      pathname === '/src/ui/communityPlanningPreview.js' ||
-      pathname === '/src/standalone/communityPlanningFixture.js'
+      requested.origin === expectedOrigin &&
+      (pathname === '/src/ui/communityPlanningPreview.js' ||
+        pathname === '/src/standalone/communityPlanningFixture.js')
     ) {
       paths.add(pathname);
     }
@@ -370,7 +371,25 @@ function checkBaselineRequestObserver() {
       assert.equal(listener, observedRequest);
     },
   };
-  const watcher = watchPreviewModuleRequests(fakePage);
+  const watcher = watchPreviewModuleRequests(fakePage, 'http://localhost:4173');
+  // A remote asset can reuse GEV module pathnames but cannot prove local opt-in.
+  for (const path of [
+    '/src/ui/communityPlanningPreview.js',
+    '/src/standalone/communityPlanningFixture.js',
+  ]) observedRequest({ url: () => `https://tiles.example.test${path}` });
+  assert.deepEqual(
+    watcher.snapshot(), [],
+    'remote path aliases must not count as pinned GEV module requests',
+  );
+  for (const path of [
+    '/src/ui/communityPlanningPreview.js',
+    '/src/standalone/communityPlanningFixture.js',
+  ]) observedRequest({ url: () => `http://localhost:4173${path}` });
+  assert.deepEqual(watcher.snapshot(), [
+    '/src/standalone/communityPlanningFixture.js',
+    '/src/ui/communityPlanningPreview.js',
+  ]);
+  watcher.clear();
   observedRequest({ url: () => 'https://example.org/synthetic-fixture' });
   assert.deepEqual(watcher.baselineRequests(), [
     'https://example.org/synthetic-fixture',
@@ -410,7 +429,7 @@ let moduleRequests;
 try {
   const page = await browser.newPage();
   const assertDesktopRequestsSafe = await guardQaTopLevelNavigation(page, origin);
-  moduleRequests = watchPreviewModuleRequests(page);
+  moduleRequests = watchPreviewModuleRequests(page, origin);
   await page.setViewport({ width: 1100, height: 900 });
   // Normal startup must not expose the fixture-only Scene launcher.
   await page.goto(optOutUrl.href, { waitUntil: 'domcontentloaded', timeout: 45000 });
@@ -710,7 +729,7 @@ try {
   const assertMobileRequestsSafe = await guardQaTopLevelNavigation(mobilePage, origin);
   // The mobile tab has an independent request stream. The desktop watcher
   // alone cannot establish that credits stay network-inert during touch QA.
-  const mobileRequests = watchPreviewModuleRequests(mobilePage);
+  const mobileRequests = watchPreviewModuleRequests(mobilePage, origin);
   try {
     await mobilePage.setViewport({
       width: 375,

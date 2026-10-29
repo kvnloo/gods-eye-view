@@ -125,11 +125,16 @@ function qaNavigationAllowedBeforeRequest(raw, expectedOrigin) {
 
 function dispatchQaInterceptedRequest(request, mainFrame, expectedOrigin) {
   if (request.isNavigationRequest()) {
-    // A provisional navigation may have no associated frame yet. Unknown
-    // top-level document targets must fail closed before any network request.
+    // A provisional root navigation can use a different Frame instance,
+    // not merely null or the current mainFrame identity.
     const frame = request.frame();
+    const topLevel = (
+      frame === null ||
+      frame === mainFrame ||
+      (typeof frame.parentFrame === 'function' && frame.parentFrame() === null)
+    );
     if (
-      (frame === mainFrame || frame === null) &&
+      topLevel &&
       !qaNavigationAllowedBeforeRequest(request.url(), expectedOrigin)
     ) {
       return request.abort('blockedbyclient');
@@ -143,6 +148,8 @@ function dispatchQaInterceptedRequest(request, mainFrame, expectedOrigin) {
 function checkQaPreRequestNegativeControls() {
   const origin = 'http://localhost:4173';
   const mainFrame = {};
+  const provisionalRoot = { parentFrame: () => null };
+  const childFrame = { parentFrame: () => mainFrame };
   function observedAction(raw, navigation = true, frame = mainFrame) {
     let action = null;
     const request = {
@@ -198,9 +205,24 @@ function checkQaPreRequestNegativeControls() {
     'normal non-navigation map assets must remain available',
   );
   assert.equal(
-    observedAction('https://iframe.example.test/', true, {}),
+    observedAction('https://iframe.example.test/', true, childFrame),
     'continue',
-    'this guard is deliberately scoped to the main browser frame',
+    'subframe navigation stays outside this main-frame-only gate',
+  );
+  for (const unexpected of [
+    'https://remote.example.test/new-root',
+    origin + '/?access_token=synthetic-canary',
+  ]) {
+    assert.equal(
+      observedAction(unexpected, true, provisionalRoot),
+      'abort:blockedbyclient',
+      'a provisional root Frame must not bypass the navigation guard',
+    );
+  }
+  assert.equal(
+    observedAction(origin + '/?planningPreview=fixture', true, provisionalRoot),
+    'continue',
+    'a provisional root Frame must still permit the pinned entry',
   );
   // A provisional navigation with no bound frame must not escape the
   // pinned target guard, while valid local entries and map assets still load.

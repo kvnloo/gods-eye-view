@@ -1,5 +1,11 @@
 # Changelog
 
+- Fork-only World Game Scene preview now releases modal ownership, removes a
+  stranded dialog, and allows reopening when native close throws. Teardown
+  blocks stale detached launchers and avoids returning focus after host removal.
+  Added a fault-injected pinned Puppeteer regression (NOT RUN). Isolated
+  source-level V8 RED→GREEN does not establish supported Node/browser proof.
+
 - Fork-only community park source citations now reject `*Key` query aliases (`clientKey`, `access_key`, encoded spellings) before publicly displaying those URLs. Benign revision references remain allowed; this does not establish source rights or official approval.
 
 - Fork-only World Game keyboard Game-mode entry now moves focus to the selected

@@ -340,6 +340,52 @@ function checkIdentityNegativeControls() {
   assert.throws(() => assertSourceIdentity('source-a', 'source-b', '/src/test.js'), /stale/);
 }
 checkIdentityNegativeControls();
+
+/**
+ * An opt-in Scene gate cannot report PASS after an uncaught app exception or
+ * Chromium page crash, even if the final DOM assertions still happen to pass.
+ */
+function watchQaPageFailures(page, label) {
+  const failures = [];
+  const onPageError = (error) =>
+    failures.push(`unhandled page exception: ${String(error?.message ?? error)}`);
+  const onCrash = (error) =>
+    failures.push(`page crash: ${String(error?.message ?? error)}`);
+  page.on('pageerror', onPageError);
+  page.on('error', onCrash);
+  return {
+    assertClean: () => assert.deepEqual(
+      failures, [], `${label} had unhandled browser failures`,
+    ),
+    dispose() {
+      page.off('pageerror', onPageError);
+      page.off('error', onCrash);
+    },
+  };
+}
+
+function checkQaPageFailureObserverNegativeControls() {
+  const handlers = new Map();
+  const fakePage = {
+    on(event, handler) { handlers.set(event, handler); },
+    off(event, handler) {
+      assert.equal(handlers.get(event), handler);
+      handlers.delete(event);
+    },
+  };
+  for (const [event, message] of [
+    ['pageerror', 'synthetic uncaught error'],
+    ['error', 'synthetic renderer crash'],
+  ]) {
+    const watcher = watchQaPageFailures(fakePage, 'injected failure');
+    watcher.assertClean();
+    handlers.get(event)(new Error(message));
+    assert.throws(() => watcher.assertClean(), /unhandled browser failures/);
+    watcher.dispose();
+    assert.equal(handlers.size, 0, 'browser failure listeners must be removed');
+  }
+}
+checkQaPageFailureObserverNegativeControls();
 assertCurrentCheckout();
 
 // Vite's ?raw module returns the exact source text from the server's root.
@@ -477,8 +523,10 @@ const browser = await puppeteer.launch({
   args: ['--no-sandbox', '--disable-dev-shm-usage'],
 });
 let moduleRequests;
+let desktopFailures;
 try {
   const page = await browser.newPage();
+  desktopFailures = watchQaPageFailures(page, 'desktop Scene QA');
   const assertDesktopRequestsSafe = await guardQaTopLevelNavigation(page, origin);
   moduleRequests = watchPreviewModuleRequests(page, origin);
   await page.setViewport({ width: 1100, height: 900 });
@@ -781,6 +829,7 @@ try {
   // The mobile tab has an independent request stream. The desktop watcher
   // alone cannot establish that credits stay network-inert during touch QA.
   const mobileRequests = watchPreviewModuleRequests(mobilePage, origin);
+  const mobileFailures = watchQaPageFailures(mobilePage, 'mobile Scene QA');
   try {
     await mobilePage.setViewport({
       width: 375,
@@ -969,7 +1018,9 @@ try {
       mobileRequests.baselineRequests(), [],
       'mobile touch, long-source display and teardown must not fetch credited baselines',
     );
+    mobileFailures.assertClean();
   } finally {
+    mobileFailures.dispose();
     mobileRequests.dispose();
     await mobilePage.close();
   }
@@ -1775,10 +1826,13 @@ try {
     ]);
   }
 
+  // A successful DOM walkthrough cannot mask an earlier unhandled runtime error.
+  desktopFailures.assertClean();
   // Fail closed if the checkout changed while the browser gate was running.
   assertCurrentCheckout();
   console.log('Community planning preview: synthetic proposals, inert source credits, attribution, missing-clock fail-closed, keyboard, mobile, reduced-motion, teardown PASS');
 } finally {
+  desktopFailures?.dispose();
   moduleRequests?.dispose();
   await browser.close();
 }

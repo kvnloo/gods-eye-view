@@ -324,6 +324,12 @@ export const feature = {
         notice('Use 3–24 lowercase letters, digits or hyphens.');
         return;
       }
+      // Repeated Join is not a departure: preserve existing membership,
+      // remote peer focus, and the one active heartbeat for this room.
+      if (channel && room === nextRoom) {
+        notice('Already joined local tab room ' + room + '.');
+        return;
+      }
       if (typeof win.BroadcastChannel !== 'function') {
         notice('BroadcastChannel is unavailable in this browser.');
         return;

@@ -44,7 +44,9 @@ function publicHttpsSourceUrl(value) {
       return (
         /token|secret|password|passwd|signature|credential/.test(normalized) ||
         /apikey|authorization|bearer/.test(normalized) ||
-        /^(?:auth|key|sig|pwd|sessionid)$/.test(normalized)
+        /^(?:auth|key|sig|pwd|sessionid)$/.test(normalized) ||
+        // Reject service-specific accessKey/clientKey query aliases too.
+        /key$/.test(normalized)
       );
     });
     // A document anchor is a public citation; arbitrary hash payloads may

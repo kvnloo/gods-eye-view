@@ -1,5 +1,7 @@
 # Changelog
 
+- Fork-only community park source citations now reject `*Key` query aliases (`clientKey`, `access_key`, encoded spellings) before publicly displaying those URLs. Benign revision references remain allowed; this does not establish source rights or official approval.
+
 - Fork-only World Game keyboard Game-mode entry now moves focus to the selected
   revealed Inspect control; pointer/touch changes keep focus on the mode button.
   Pinned real-app Puppeteer assertions were added but are NOT RUN; supported

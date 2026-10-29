@@ -1,5 +1,7 @@
 # Changelog
 
+- Fork-only park baseline citations now reject obvious private/local HTTPS hosts (loopback, private IPv4, local/internal names and IPv6 literals) before source credit display. Public example.org/revision references remain accepted; DNS rights and browser proof are not established.
+
 - Fork-only community park source citations now reject `*Key` query aliases (`clientKey`, `access_key`, encoded spellings) before publicly displaying those URLs. Benign revision references remain allowed; this does not establish source rights or official approval.
 
 - Experimental park proposals now have a deterministic, locale-independent ID order; browser languages cannot silently choose different first-two hypothetical comparisons. This is not prioritization or municipal approval.

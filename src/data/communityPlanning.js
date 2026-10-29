@@ -30,8 +30,29 @@ function denseArray(value, maxLength) {
   return true;
 }
 
-/** Public baseline references must not carry URL-userinfo credentials. */
-/** Keep credential-like references out of public planning source credits. */
+/** Public credits must not expose an obviously local/private source hostname. */
+function publicCitationHostname(value) {
+  const hostname = value.toLowerCase().replace(/\.$/, '');
+  // A public-looking HTTPS scheme is not enough for a private host citation.
+  if (
+    !hostname.includes('.') ||
+    hostname.includes(':') ||
+    /(?:^|\.)(?:localhost|local|internal|lan|home|test|invalid)$/.test(hostname)
+  ) return false;
+  if (/^(?:\d{1,3}\.){3}\d{1,3}$/.test(hostname)) {
+    const [first, second] = hostname.split('.').map(Number);
+    return !(
+      first === 0 || first === 10 || first === 127 ||
+      (first === 100 && second >= 64 && second <= 127) ||
+      (first === 169 && second === 254) ||
+      (first === 172 && second >= 16 && second <= 31) ||
+      (first === 192 && second === 168)
+    );
+  }
+  return true;
+}
+
+/** Keep credential-like URLs out of public planning source credits. */
 function publicHttpsSourceUrl(value) {
   if (!/^https:\/\//i.test(value) || /[\u0000-\u001f\u007f]/.test(value)) {
     return false;
@@ -54,7 +75,7 @@ function publicHttpsSourceUrl(value) {
     const safeAnchor = !parsed.hash || /^#[a-z][a-z0-9-]{0,79}$/i.test(parsed.hash);
     return (
       parsed.protocol === 'https:' &&
-      Boolean(parsed.hostname) &&
+      publicCitationHostname(parsed.hostname) &&
       !parsed.username &&
       !parsed.password &&
       !credentialQuery &&

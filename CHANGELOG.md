@@ -1,5 +1,10 @@
 # Changelog
 
+- Fork-only World Game keyboard Game-mode entry now moves focus to the selected
+  revealed Inspect control; pointer/touch changes keep focus on the mode button.
+  Pinned real-app Puppeteer assertions were added but are NOT RUN; supported
+  Node 24/26, full build, browser and device proof remain pending.
+
 - The fork-only World Game planning preview now loads only for the exact
   `?planningPreview=fixture` query; extra/duplicate parameters and encoded
   aliases cannot activate the synthetic Scene launcher. Added the actual

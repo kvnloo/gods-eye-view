@@ -266,9 +266,16 @@ export function openCommunityPlanningPreview({ project, collaborationState }) {
   const modeButtons = ['co-op', 'game'].map((value) => {
     const button = dialog.button(
       value === 'co-op' ? 'Co-op view' : 'Game view',
-      () => {
+      (event) => {
         mode = value;
         syncMode();
+        // Reveal the selected Inspect control to keyboard users entering Game.
+        // Pointer/touch and scripted activation must not unexpectedly move focus.
+        if (value === 'game' && event?.isTrusted && event.detail === 0) {
+          focusButtons.find(({ id }) => id === focusedId)?.button.focus({
+            preventScroll: true,
+          });
+        }
       },
     );
     button.dataset.planningMode = value;

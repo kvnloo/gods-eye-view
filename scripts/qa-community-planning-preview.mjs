@@ -674,6 +674,33 @@ try {
     'View: co-op · neither mode grants authority',
   );
 
+  // Game's Inspect controls precede the mode footer in tab order. A native
+  // keyboard entry must reveal and focus the selected Inspect action; pointer
+  // entry must leave focus on the tapped/clicked mode control instead.
+  await page.keyboard.press('Tab');
+  assert.equal(
+    await page.$eval('[data-planning-mode="game"]', (button) =>
+      document.activeElement === button),
+    true,
+    'Tab from Co-op must reach Game mode',
+  );
+  await page.keyboard.press('Enter');
+  assert.equal(
+    await page.$eval('[data-planning-focus-id="play-first"]', (button) =>
+      document.activeElement === button),
+    true,
+    'keyboard Game entry must focus its revealed selected Inspect control',
+  );
+  await page.click('[data-planning-mode="co-op"]');
+  await page.click('[data-planning-mode="game"]');
+  assert.equal(
+    await page.$eval('[data-planning-mode="game"]', (button) =>
+      document.activeElement === button),
+    true,
+    'pointer Game entry must not steal focus from the clicked mode control',
+  );
+  await page.click('[data-planning-mode="co-op"]');
+
   // Set mobile/touch emulation before navigation. Changing isMobile or
   // hasTouch on the active desktop page can reload it and destroy the modal.
   const mobilePage = await browser.newPage();

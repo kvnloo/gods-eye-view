@@ -9,6 +9,13 @@ mobile and `test:track` remain **NOT RUN**.
 
 ## Fork-only synthetic co-op Scene preview — October 25, 2026
 
+The keyboard Game-view transition now focuses the selected newly revealed
+Inspect control, which precedes the mode footer in DOM tab order. Pointer/touch
+mode selection does not hijack focus. A focused native-keyboard/pointer
+Puppeteer regression was added, but the full GEV browser, supported Node
+24.14/26 tests, and device paths remain **NOT RUN**; the fixture remains
+hypothetical and local-only.
+
 The opt-in synthetic planning modal focuses its hypothetical heading after
 constructing its comparison, before native keyboard Tab proceeds to Cancel.
 Escape/Cancel still restores focus to the surviving Scene launcher. Its focused

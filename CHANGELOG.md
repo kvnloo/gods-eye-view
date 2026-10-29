@@ -1,5 +1,18 @@
 # Changelog
 
+- Fork-only park baseline references now reject reserved, documentation, benchmarking and multicast IPv4 source hosts before optional Scene credit display. The check remains syntactic: DNS, licensing and native browser proof are not established.
+
+- Fork-only park baseline citations now reject obvious private/local HTTPS hosts (loopback, private IPv4, local/internal names and IPv6 literals) before source credit display. Public example.org/revision references remain accepted; DNS rights and browser proof are not established.
+
+- Fork-only community park source citations now reject `*Key` query aliases (`clientKey`, `access_key`, encoded spellings) before publicly displaying those URLs. Benign revision references remain allowed; this does not establish source rights or official approval.
+
+- Experimental park proposals now have a deterministic, locale-independent ID order; browser languages cannot silently choose different first-two hypothetical comparisons. This is not prioritization or municipal approval.
+
+- The inherited collaboration authority kernel now resolves equal-clock authored ties and sorts claims/audit receipts consistently across browser locales. This changes only fork-local deterministic proposal semantics; it does not grant authority or create a live room.
+
+- The fork-only park proposal projection now rejects imported authored records with mismatched draft-scenario kind/target ownership, preserving other valid hypothetical proposals without claiming verified identity, site rights or approval.
+- The downstream experimental community-planning baseline now rejects malformed, credential-bearing query and unsafe URL-fragment references before the optional park Scene preview displays them; normal public revisions and simple document anchors are preserved. Credits and licenses remain read-only, not verified planning approval.
+
 - Vector tile sources take their allowed tile origin from the configured
   `tileJsonUrl`, so repointing only that URL at a mirror loads tiles from the
   mirror or fails visibly instead of silently using OpenFreeMap. Thanks to

@@ -43,6 +43,35 @@ function checkQaRuntimeOwnerNegativeControls() {
 }
 checkQaRuntimeOwnerNegativeControls();
 
+/** Reject unsupported engines even when the focused gate runs via plain node. */
+function qaSupportedNodeRuntime(version) {
+  const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(version);
+  if (!match) return false;
+  const major = Number(match[1]);
+  const minor = Number(match[2]);
+  return (major === 24 && minor >= 14) || major === 26;
+}
+
+function checkQaSupportedNodeRuntimeNegativeControls() {
+  for (const version of ['24.14.0', '24.16.1', '26.0.0', '26.3.2'])
+    assert.equal(
+      qaSupportedNodeRuntime(version), true, `supported Node ${version}`,
+    );
+  for (const version of [
+    '22.16.0', '24.13.9', '25.0.0', '27.0.0',
+    '24.14.0-rc.1', '26.0.0-rc.1', 'invalid',
+  ])
+    assert.equal(
+      qaSupportedNodeRuntime(version), false, `unsupported Node ${version}`,
+    );
+}
+checkQaSupportedNodeRuntimeNegativeControls();
+if (!qaSupportedNodeRuntime(process.versions.node)) {
+  throw new Error(
+    'GEV Scene QA requires supported Node 24.14.x or later 24.x, or Node 26.x',
+  );
+}
+
 function assertCheckoutLock(expected, actual, status) {
   if (!/^[0-9a-f]{40}$/.test(expected || ''))
     throw new Error('Set GEV_QA_EXPECTED_SHA to the independently pinned 40-character PR head');

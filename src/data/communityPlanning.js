@@ -40,13 +40,23 @@ function publicCitationHostname(value) {
     /(?:^|\.)(?:localhost|local|internal|lan|home|test|invalid)$/.test(hostname)
   ) return false;
   if (/^(?:\d{1,3}\.){3}\d{1,3}$/.test(hostname)) {
-    const [first, second] = hostname.split('.').map(Number);
+    const [first, second, third] = hostname.split('.').map(Number);
+    // Exclude non-public/special-use ranges, not just RFC1918/private hosts.
     return !(
       first === 0 || first === 10 || first === 127 ||
       (first === 100 && second >= 64 && second <= 127) ||
       (first === 169 && second === 254) ||
       (first === 172 && second >= 16 && second <= 31) ||
-      (first === 192 && second === 168)
+      (first === 192 && (
+        (second === 0 && (third === 0 || third === 2)) ||
+        (second === 88 && third === 99) || second === 168
+      )) ||
+      (first === 198 && (
+        second === 18 || second === 19 ||
+        (second === 51 && third === 100)
+      )) ||
+      (first === 203 && second === 0 && third === 113) ||
+      first >= 224
     );
   }
   return true;

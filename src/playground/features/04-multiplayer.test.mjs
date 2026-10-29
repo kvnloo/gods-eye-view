@@ -386,6 +386,16 @@ test('explicit leave, active heartbeats, crashes and stale callbacks stay local'
     observer.join();
     visitor.join();
     assert.equal(observer.peerCount(), 1);
+    // Repeating Join for the same normalized room must preserve the peer's
+    // existing channel/presence; otherwise other tabs see a false Leave/Join.
+    const packetsBeforeRepeat = outgoing.length;
+    const visitorHandler = visitor.messageHandler();
+    visitor.join();
+    assert.equal(outgoing.length, packetsBeforeRepeat,
+      'repeated Join must not publish a spurious departure or presence');
+    assert.strictEqual(visitor.messageHandler(), visitorHandler,
+      'same-room Join must retain the live channel and handler');
+    assert.equal(observer.peerCount(), 1);
     assert.equal(observer.heartbeatActive(), true);
     assert.equal(visitor.heartbeatActive(), true);
     visitor.leave();

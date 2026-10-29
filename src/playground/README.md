@@ -49,8 +49,11 @@ keyed-row regression uses a synthetic DOM.
 Abruptly
 terminate one tab without Leave and confirm the survivor eventually removes
 its stale presence (75 seconds without valid packets, checked by the next
-heartbeat; background timer throttling can delay this). Leave, room switch
-and feature teardown must clear their timers and peers. Presence is only an
+heartbeat; background timer throttling can delay this). A second **Join** for the same normalized room preserves its channel, peer
+membership and active heartbeat: it must not send a false Leave/Join or reset
+focused peer actions. Editing the room code and joining a **different** room
+still explicitly leaves the old room. Leave, actual room switch and feature
+teardown must clear their timers and peers. Presence is only an
 unverified local-tab liveness hint, never authenticated or durable membership.
 
 Room invites are **room-only by default**: the copied URL retains the app

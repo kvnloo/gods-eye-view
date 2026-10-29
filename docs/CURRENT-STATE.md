@@ -1,5 +1,13 @@
 # God's Eye View Current State
 
+**October 28 queued room-link consent safety (#253, fork-only):**
+If a scene-inclusive Copy is queued but a newer room-only Copy occurs before
+browser clipboard access begins, the older request is now skipped entirely;
+the transient scene link never reaches clipboard.writeText. Already-started
+clipboard calls are not revocable: the later intent still writes last.
+One-shot scene consent is unchanged. Isolated exact-source synthetic V8
+RED→GREEN only; native Node 24/26, browser permission/phone and CI are NOT RUN.
+
 **October 28 same-room Join stability (#253, fork-only):** Pressing Join
 again for an already connected normalized room now retains the channel,
 peer membership and timer instead of broadcasting a false Leave and Join.

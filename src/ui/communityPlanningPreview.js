@@ -331,20 +331,34 @@ export function mountCommunityPlanningPreview({
   button.dataset.communityPlanningPreviewOpen = '';
   button.textContent = 'COMPARE PARK PROPOSALS · FIXTURE';
   let dialog = null;
+  let disposed = false;
   const open = () => {
-    if (dialog) return;
+    if (disposed || dialog) return;
     dialog = openCommunityPlanningPreview({ project, collaborationState });
-    const originalDispose = dialog.dispose;
-    dialog.dispose = () => {
-      originalDispose();
-      dialog = null;
-      // Return keyboard focus only when the Scene launcher still exists.
-      if (button.isConnected) button.focus({ preventScroll: true });
+    const current = dialog;
+    const originalDispose = current.dispose;
+    let closed = false;
+    current.dispose = () => {
+      if (closed) return;
+      closed = true;
+      try {
+        originalDispose();
+      } catch (error) {
+        // A failed native close must not strand the modal or lock the launcher.
+        console.warn('Community planning preview cleanup failed', error);
+      } finally {
+        current.element.remove();
+        if (dialog === current) dialog = null;
+        // A host teardown must never put focus back on a detached launcher.
+        if (!disposed && button.isConnected) button.focus({ preventScroll: true });
+      }
     };
   };
   button.addEventListener('click', open);
   (panel.querySelector('.scene-panel-inner') || panel).appendChild(button);
   return () => {
+    if (disposed) return;
+    disposed = true;
     button.removeEventListener('click', open);
     button.remove();
     dialog?.dispose();

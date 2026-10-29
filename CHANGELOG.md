@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+- Skip superseded Planet Playground scene-inclusive Copy intents before
+  starting a queued clipboard request; rapid room-only Copy must not expose a
+  stale precise location, even transiently. In-flight browser writes cannot
+  be revoked but latest intent still wins. Isolated V8 RED→GREEN; Node 24/26,
+  real browser/phone and CI remain unverified.
+
 - Make repeated Join in the already joined Planet Playground local room
   idempotent: retain the channel/heartbeat/peer presence without spurious
   Leave/Join packets; a changed room still switches explicitly. Published

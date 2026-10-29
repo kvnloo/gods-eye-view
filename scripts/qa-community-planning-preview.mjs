@@ -18,11 +18,14 @@ const qaSources = [
   'src/ui/sceneSharing.js',
 ];
 
-// Independent closure guard: accidentally dropping a runtime owner must fail
-// the QA self-test before launching Chromium, not quietly weaken provenance.
+// Independent fixed closure guard: omitting ANY of the six runtime owners
+// must fail before Chromium, including the fixture, projection and renderer.
 const requiredQaRuntimeOwners = Object.freeze([
+  'src/data/communityPlanning.js',
   'src/data/collaborationAuthority.js',
+  'src/standalone/communityPlanningFixture.js',
   'src/standalone/tools.js',
+  'src/ui/communityPlanningPreview.js',
   'src/ui/sceneSharing.js',
 ]);
 function assertQaRuntimeOwnerCoverage(paths) {

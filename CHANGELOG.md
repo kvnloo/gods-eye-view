@@ -1,5 +1,7 @@
 # Changelog
 
+- Fork-only community park source citations now reject `*Key` query aliases (`clientKey`, `access_key`, encoded spellings) before publicly displaying those URLs. Benign revision references remain allowed; this does not establish source rights or official approval.
+
 - Experimental park proposals now have a deterministic, locale-independent ID order; browser languages cannot silently choose different first-two hypothetical comparisons. This is not prioritization or municipal approval.
 
 - The inherited collaboration authority kernel now resolves equal-clock authored ties and sorts claims/audit receipts consistently across browser locales. This changes only fork-local deterministic proposal semantics; it does not grant authority or create a live room.

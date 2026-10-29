@@ -1,5 +1,14 @@
 # God's Eye View Current State
 
+**October 28 same-room Join stability (#253, fork-only):** Pressing Join
+again for an already connected normalized room now retains the channel,
+peer membership and timer instead of broadcasting a false Leave and Join.
+A genuinely different room still transitions with explicit departure; no
+remote multiplayer or automatic camera sharing exists. Original exact-source
+V8 reproduced the unnecessary Leave/Join, and patched exact-source V8
+preserved membership while retaining room-switch/leave controls. This is
+NOT native supported Node 24/26, real two-tab Chromium/mobile or CI proof.
+
 **October 28 peer-removal keyboard handoff (#253, fork-only):** If a focused
 **Visit view** action disappears because its peer leaves/expires or the local
 room disconnects, focus moves to the existing non-action status message, not

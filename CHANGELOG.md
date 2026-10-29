@@ -1,5 +1,10 @@
 # Changelog
 
+- Fork-only World Game Scene comparison now restores dialog-close keyboard
+  focus only to a visible, interactive launcher, not a collapsed/hidden host.
+  Added pinned browser regression for visible and hidden owner teardown
+  (NOT RUN); isolated V8 helper checks do not replace native Scene proof.
+
 - Fork-only park baseline references now reject reserved, documentation, benchmarking and multicast IPv4 source hosts before optional Scene credit display. The check remains syntactic: DNS, licensing and native browser proof are not established.
 
 - Fork-only park baseline citations now reject obvious private/local HTTPS hosts (loopback, private IPv4, local/internal names and IPv6 literals) before source credit display. Public example.org/revision references remain accepted; DNS rights and browser proof are not established.

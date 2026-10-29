@@ -1629,6 +1629,76 @@ try {
     openedAfterReattach: true,
     cleanAfterClose: true,
   });
+  // A connected Scene owner may be hidden/collapsed during a modal close.
+  // Do not restore keyboard focus to a launcher outside the accessible view.
+  const hiddenOwnerFocus = await page.evaluate(async () => {
+    const { mountCommunityPlanningPreview } = await import(
+      '/src/ui/communityPlanningPreview.js'
+    );
+    const { createSyntheticCommunityPlanningFixture } = await import(
+      '/src/standalone/communityPlanningFixture.js'
+    );
+    const host = document.createElement('section');
+    const inner = document.createElement('div');
+    inner.className = 'scene-panel-inner';
+    host.append(inner);
+    document.body.append(host);
+    const stop = mountCommunityPlanningPreview({
+      ...createSyntheticCommunityPlanningFixture(),
+      panel: host,
+    });
+    const launcher = host.querySelector(
+      '[data-community-planning-preview-open]',
+    );
+    const originalFocus = launcher.focus.bind(launcher);
+    let focusCalls = 0;
+    launcher.focus = (...args) => {
+      focusCalls++;
+      originalFocus(...args);
+    };
+    const cancel = () => document.querySelector(
+      '[data-community-planning-preview] [data-planning-cancel]',
+    )?.click();
+    try {
+      launcher.click();
+      host.hidden = true;
+      cancel();
+      const hiddenNotFocused = focusCalls === 0;
+      host.hidden = false;
+      launcher.click();
+      cancel();
+      const visibleFocused = focusCalls === 1 &&
+        document.activeElement === launcher;
+      launcher.click();
+      host.classList.add('collapsed');
+      cancel();
+      const collapsedNotFocused = focusCalls === 1;
+      host.classList.remove('collapsed');
+      launcher.click();
+      host.style.visibility = 'hidden';
+      cancel();
+      const invisibleNotFocused = focusCalls === 1;
+      return {
+        hiddenNotFocused,
+        visibleFocused,
+        collapsedNotFocused,
+        invisibleNotFocused,
+        cleanAfterClose: !document.querySelector(
+          '[data-community-planning-preview]',
+        ),
+      };
+    } finally {
+      stop();
+      host.remove();
+    }
+  });
+  assert.deepEqual(hiddenOwnerFocus, {
+    hiddenNotFocused: true,
+    visibleFocused: true,
+    collapsedNotFocused: true,
+    invisibleNotFocused: true,
+    cleanAfterClose: true,
+  });
   // Fault-inject the actual modal close path. A close failure must not
   // strand a Scene preview, block reopening, or permit teardown resurrection.
   const closeFaultRecovery = await page.evaluate(async () => {

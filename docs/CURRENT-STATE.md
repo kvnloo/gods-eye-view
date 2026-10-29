@@ -1,5 +1,16 @@
 # God's Eye View Current State
 
+## Fork-only World Game Scene keyboard focus restoration — October 29, 2026
+
+The hypothetical comparison dialog returns focus to its opt-in Scene launcher
+only when that launcher is still visible and keyboard-reachable. A hidden,
+collapsed, inert, accessibility-hidden or detached Scene owner must not receive
+focus on Cancel/Escape, even if its button remains connected. A new pinned
+Puppeteer regression covers hidden, collapsed, visible and visibility-hidden
+close paths but is **NOT RUN** in the mounted Scene. Isolated source-level V8
+negative controls are not supported Node 24.14/26, full build, device or
+real-browser acceptance. No official map, construction or multiplayer claim.
+
 ## Fork-only World Game excluded-record reason disclosure — October 29, 2026
 
 The opt-in hypothetical Scene preview now shows one observed validation

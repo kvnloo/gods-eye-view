@@ -340,6 +340,19 @@ export function openCommunityPlanningPreview({ project, collaborationState }) {
   return dialog;
 }
 
+/** Restore focus only when the Scene launcher remains keyboard-reachable. */
+function canRestorePlanningLauncherFocus(button, panel, disposed) {
+  if (
+    disposed ||
+    !button.isConnected ||
+    button.disabled ||
+    panel.classList.contains('collapsed') ||
+    button.closest('[hidden], [inert], [aria-hidden="true"]') ||
+    !button.getClientRects().length
+  ) return false;
+  return button.ownerDocument.defaultView.getComputedStyle(button).visibility === 'visible';
+}
+
 /** Scene-panel entry; no launch or DOM mutation until explicitly opted in. */
 export function mountCommunityPlanningPreview({
   project,
@@ -374,7 +387,7 @@ export function mountCommunityPlanningPreview({
         current.element.remove();
         if (dialog === current) dialog = null;
         // A host teardown must never put focus back on a detached launcher.
-        if (!disposed && button.isConnected)
+        if (canRestorePlanningLauncherFocus(button, panel, disposed))
           button.focus({ preventScroll: true });
       }
     };

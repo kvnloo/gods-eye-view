@@ -1423,24 +1423,32 @@ try {
       ...createSyntheticCommunityPlanningFixture(),
       panel: host,
     });
-    const launcher = host.querySelector('[data-community-planning-preview-open]');
+    const launcher = host.querySelector(
+      '[data-community-planning-preview-open]',
+    );
     try {
       launcher.click();
       const first = document.querySelector('[data-community-planning-preview]');
       // Inject only a synthetic browser exception; no network or real data.
-      first.close = () => { throw new Error('synthetic Scene dialog close fault'); };
+      first.close = () => {
+        throw new Error('synthetic Scene dialog close fault');
+      };
       first.querySelector('[data-planning-cancel]').click();
       const faultCleared = !first.isConnected &&
         !document.querySelector('[data-community-planning-preview]');
       const focusRecovered = document.activeElement === launcher;
       launcher.click();
-      const reopened = document.querySelector('[data-community-planning-preview]');
+      const reopened = document.querySelector(
+        '[data-community-planning-preview]',
+      );
       const reopenedAfterFault = Boolean(reopened && reopened !== first);
       reopened?.querySelector('[data-planning-cancel]')?.click();
       const ordinaryCloseRecovered = !reopened?.isConnected &&
         document.activeElement === launcher;
       launcher.click();
-      const duringTeardown = document.querySelector('[data-community-planning-preview]');
+      const duringTeardown = document.querySelector(
+        '[data-community-planning-preview]',
+      );
       stop();
       stop(); // idempotent host teardown
       const teardownCleared = !launcher.isConnected &&

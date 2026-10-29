@@ -1,5 +1,7 @@
 # God's Eye View Current State
 
+**October 28 What-if teardown lifecycle (#253, fork-only):** Closing or switching away from the Planet Playground What-if mode now detaches all four owned DOM listeners, removes Cesium markers, and makes disposal idempotent. An old retained Add control cannot resurrect a marker after cleanup. Existing synthetic A/B scenario behavior is unchanged. Predecessor published source fails an isolated V8 retained-control negative; patched source passes. Supported Node 24.14/26, real Scene/Puppeteer and mobile remain NOT RUN; no measured urban impact or approval claimed.
+
 **October 28 queued room-link consent safety (#253, fork-only):**
 If a scene-inclusive Copy is queued but a newer room-only Copy occurs before
 browser clipboard access begins, the older request is now skipped entirely;

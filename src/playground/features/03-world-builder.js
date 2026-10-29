@@ -85,6 +85,7 @@ export const feature = {
     status.setAttribute('role', 'status');
     status.textContent = 'Pan the globe to select a location.';
     const items = [];
+    let disposed = false;
     function update() {
       const selected = scenarioSelect.value;
       for (const item of items) item.entity.show = item.proposal.scenario === selected;
@@ -103,7 +104,8 @@ export const feature = {
       const c = Cesium.Cartographic.fromCartesian(position);
       return { lat: Cesium.Math.toDegrees(c.latitude), lon: Cesium.Math.toDegrees(c.longitude) };
     }
-    add.addEventListener('click', () => {
+    const onAdd = () => {
+      if (disposed) return;
       const center = centerCoordinates();
       if (!center) {
         status.textContent = 'No globe intersection at the crosshair. Try zooming out.';
@@ -135,8 +137,10 @@ export const feature = {
       items.push({ proposal, entity });
       update();
       status.textContent = proposal.type + ' proposed at ' + proposal.lat + ', ' + proposal.lon + '.';
-    });
-    undo.addEventListener('click', () => {
+    };
+    add.addEventListener('click', onAdd);
+    const onUndo = () => {
+      if (disposed) return;
       const index = items.findLastIndex(({ proposal }) => proposal.scenario === scenarioSelect.value);
       if (index < 0) {
         status.textContent = 'No proposals to undo in this branch.';
@@ -146,9 +150,11 @@ export const feature = {
       items.splice(index, 1);
       update();
       status.textContent = 'Last proposal undone.';
-    });
+    };
+    undo.addEventListener('click', onUndo);
     scenarioSelect.addEventListener('change', update);
-    exportButton.addEventListener('click', () => {
+    const onExport = () => {
+      if (disposed) return;
       const receipt = makeScenarioReceipt(items.map(({ proposal }) => proposal), new Date().toISOString());
       const url = URL.createObjectURL(new Blob([JSON.stringify(receipt, null, 2)], { type: 'application/json' }));
       const link = doc.createElement('a');
@@ -159,11 +165,21 @@ export const feature = {
       link.remove();
       setTimeout(() => URL.revokeObjectURL(url), 0);
       status.textContent = 'Exported hypothetical proposals. No predictions included.';
-    });
+    };
+    exportButton.addEventListener('click', onExport);
     root.append(title, intro, controlRow, buttons, count, status);
     update();
     return () => {
+      if (disposed) return;
+      disposed = true;
+      // Tab switching/closing must leave no stale controls that can create
+      // Cesium markers or export an abandoned hypothetical scenario.
+      add.removeEventListener('click', onAdd);
+      undo.removeEventListener('click', onUndo);
+      scenarioSelect.removeEventListener('change', update);
+      exportButton.removeEventListener('click', onExport);
       for (const { entity } of items) viewer.entities.remove(entity);
+      items.length = 0;
       viewer.scene.requestRender();
     };
   },

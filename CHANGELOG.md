@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+- Release Planet Playground What-if button/select listeners on feature teardown and
+  make disposal idempotent. A detached Add control cannot resurrect a Cesium
+  proposal after switching tabs. Published source isolated V8 RED→GREEN only;
+  supported Node 24.14/26, real Scene/Puppeteer/mobile and CI NOT RUN.
+
 - Skip superseded Planet Playground scene-inclusive Copy intents before
   starting a queued clipboard request; rapid room-only Copy must not expose a
   stale precise location, even transiently. In-flight browser writes cannot

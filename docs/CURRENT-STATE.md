@@ -1,5 +1,16 @@
 # God's Eye View Current State
 
+## Fork-only World Game excluded-record reason disclosure — October 29, 2026
+
+The opt-in hypothetical Scene preview now shows one observed validation
+mismatch for each excluded imported proposal (project, proposal ID, reference
+revision, malformed payload or record ownership), without echoing rejected
+payloads or malformed IDs. The reason is **not exhaustive conflict history**
+or proof of a disputed edit; invalid scenarios remain excluded and unapproved.
+The pinned Puppeteer fixture now asserts the reason labels and negative cases,
+but supported Node 24.14/26, full GEV Scene/Puppeteer, mobile, build and
+`test:track` remain **NOT RUN**.
+
 The fork-only synthetic city-builder Scene bootstrap now requires the exact
 `?planningPreview=fixture` query. Extra/duplicate query keys (including
 credential-shaped canaries) and encoded aliases do not opt in to the

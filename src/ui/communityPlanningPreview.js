@@ -10,6 +10,26 @@ const FEATURE_COLORS = Object.freeze({
   'path-marker': '#b6c1d6',
 });
 
+/** Report one observable mismatch; this is not conflict history or a root-cause audit. */
+function excludedProposalReason(id, record, project) {
+  if (!/^[a-z][a-z0-9-]{0,63}$/.test(id))
+    return 'invalid proposal identifier';
+  const candidate = record?.fields?.proposal?.value;
+  if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate))
+    return 'missing or malformed proposal payload';
+  if (candidate.projectId !== project.id)
+    return 'proposal belongs to another project';
+  if (candidate.alternativeId !== id)
+    return 'proposal ID differs from its record key';
+  if (candidate.baselineRevision !== project.baseline.revision)
+    return 'baseline revision differs from reference';
+  if (
+    record.kind !== 'draft-scenario' ||
+    record.targetId !== `community-plan:${project.id}:${id}`
+  ) return 'record ownership metadata differs';
+  return 'proposal failed another validation rule';
+}
+
 function addText(parent, tag, value, className = '') {
   const node = parent.ownerDocument.createElement(tag);
   node.className = className;
@@ -155,8 +175,8 @@ export function openCommunityPlanningPreview({ project, collaborationState }) {
     details.appendChild(list);
     dialog.body.appendChild(details);
   }
-  // The data owner validates proposals; this disclosure reports exclusions
-  // without guessing a cause, reviving stale data or claiming conflict history.
+  // Report one observable mismatch without reviving stale records, leaking
+  // malformed IDs, or inventing overwritten conflict history.
   if (excludedRecords) {
     const details = dialog.body.ownerDocument.createElement('details');
     details.dataset.planningExcludedDetails = '';
@@ -170,10 +190,12 @@ export function openCommunityPlanningPreview({ project, collaborationState }) {
       const label = /^[a-z][a-z0-9-]{0,63}$/.test(id)
         ? id
         : '(invalid proposal id)';
+      const record = collaborationState?.authored?.[`${recordPrefix}${id}`];
+      const reason = excludedProposalReason(id, record, project);
       const item = addText(
         list,
         'li',
-        `Excluded ${label} · stale, invalid or incompatible; exact cause not verified`,
+        `Excluded ${label} · ${reason}; other validation failures may exist`,
       );
       item.dataset.planningExcludedRecord = '';
     }

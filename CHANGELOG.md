@@ -1,5 +1,11 @@
 # Changelog
 
+- Fork-only World Game now explains one directly observed mismatch for
+  excluded imported park proposals while masking malformed IDs. Other
+  validation failures and merge conflicts remain unknown; added synthetic
+  browser QA negative controls (NOT RUN on actual Scene). Supported Node
+  24.14/26, browser and full-checkout verification are still pending.
+
 - Fork-only World Game Scene preview now releases modal ownership, removes a
   stranded dialog, and allows reopening when native close throws. Teardown
   blocks stale detached launchers and avoids returning focus after host removal.

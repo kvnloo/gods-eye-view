@@ -1232,7 +1232,7 @@ try {
   assert.deepEqual(excluded.visibleIds, ['play-first', 'trees-first']);
   assert.equal(excluded.disclosure, 'Inspect 1 excluded proposal record');
   assert.deepEqual(excluded.excludedEntries, [
-    'Excluded stale · stale, invalid or incompatible; exact cause not verified',
+    'Excluded stale · baseline revision differs from reference; other validation failures may exist',
   ]);
   assert.equal(excluded.unrelatedVisible, false);
   assert.equal(await page.$('[data-community-planning-preview]'), null);
@@ -1300,10 +1300,10 @@ try {
     'excluded record order/cap must not depend on import arrival order',
   );
   assert.deepEqual(exclusionOrder.forward.entries, [
-    'Excluded (invalid proposal id) · stale, invalid or incompatible; exact cause not verified',
+    'Excluded (invalid proposal id) · invalid proposal identifier; other validation failures may exist',
     ...['aa', 'bb', 'cc', 'dd', 'ee', 'vv', 'ww'].map(
       (id) =>
-        `Excluded ${id} · stale, invalid or incompatible; exact cause not verified`,
+        `Excluded ${id} · proposal ID differs from its record key; other validation failures may exist`,
     ),
   ]);
   assert.equal(
@@ -1314,6 +1314,57 @@ try {
   assert.deepEqual(exclusionOrder.forward.alternatives, [
     'play-first',
     'trees-first',
+  ]);
+  assert.equal(await page.$('[data-community-planning-preview]'), null);
+  // Distinguish specific observable mismatches without guessing merge history,
+  // echoing rejected payloads, or inferring real-world author/approval rights.
+  const exclusionReasons = await page.evaluate(async () => {
+    const { createSyntheticCommunityPlanningFixture } = await import(
+      '/src/standalone/communityPlanningFixture.js'
+    );
+    const { openCommunityPlanningPreview } = await import(
+      '/src/ui/communityPlanningPreview.js'
+    );
+    const { project, collaborationState } =
+      createSyntheticCommunityPlanningFixture();
+    const key = (id) => `draft-scenario:community-plan:${project.id}:${id}`;
+    const seed = collaborationState.authored[key('play-first')];
+    const put = (id, changes = {}) => {
+      collaborationState.authored[key(id)] = {
+        ...seed,
+        targetId: `community-plan:${project.id}:${id}`,
+        fields: {
+          proposal: {
+            ...seed.fields.proposal,
+            value: {
+              ...seed.fields.proposal.value,
+              alternativeId: id,
+              ...changes,
+            },
+          },
+        },
+      };
+    };
+    put('wrong-project', { projectId: 'other-project' });
+    put('wrong-baseline', { baselineRevision: 'obsolete-r0' });
+    put('wrong-kind');
+    collaborationState.authored[key('wrong-kind')].kind = 'comment';
+    put('no-payload');
+    delete collaborationState.authored[key('no-payload')].fields.proposal.value;
+    const preview = openCommunityPlanningPreview({ project, collaborationState });
+    try {
+      return [...preview.element.querySelectorAll(
+        '[data-planning-excluded-record]',
+      )].map((item) => item.textContent);
+    } finally {
+      preview.dispose();
+    }
+  });
+  assert.deepEqual(exclusionReasons, [
+    'Excluded no-payload · missing or malformed proposal payload; other validation failures may exist',
+    'Excluded wrong-baseline · baseline revision differs from reference; other validation failures may exist',
+    'Excluded wrong-kind · record ownership metadata differs; other validation failures may exist',
+    'Excluded wrong-project · proposal belongs to another project; other validation failures may exist',
   ]);
   assert.equal(await page.$('[data-community-planning-preview]'), null);
   // Negative controls: a stale winner cannot count as a valid proposal.

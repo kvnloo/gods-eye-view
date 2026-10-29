@@ -1405,6 +1405,71 @@ try {
     moduleRequests.baselineRequests(), [],
     'mode changes, provenance disclosures and teardown must never fetch baseline source URLs',
   );
+  // Fault-inject the actual modal close path. A close failure must not
+  // strand a Scene preview, block reopening, or permit teardown resurrection.
+  const closeFaultRecovery = await page.evaluate(async () => {
+    const { mountCommunityPlanningPreview } = await import(
+      '/src/ui/communityPlanningPreview.js'
+    );
+    const { createSyntheticCommunityPlanningFixture } = await import(
+      '/src/standalone/communityPlanningFixture.js'
+    );
+    const host = document.createElement('section');
+    const inner = document.createElement('div');
+    inner.className = 'scene-panel-inner';
+    host.append(inner);
+    document.body.append(host);
+    const stop = mountCommunityPlanningPreview({
+      ...createSyntheticCommunityPlanningFixture(),
+      panel: host,
+    });
+    const launcher = host.querySelector('[data-community-planning-preview-open]');
+    try {
+      launcher.click();
+      const first = document.querySelector('[data-community-planning-preview]');
+      // Inject only a synthetic browser exception; no network or real data.
+      first.close = () => { throw new Error('synthetic Scene dialog close fault'); };
+      first.querySelector('[data-planning-cancel]').click();
+      const faultCleared = !first.isConnected &&
+        !document.querySelector('[data-community-planning-preview]');
+      const focusRecovered = document.activeElement === launcher;
+      launcher.click();
+      const reopened = document.querySelector('[data-community-planning-preview]');
+      const reopenedAfterFault = Boolean(reopened && reopened !== first);
+      reopened?.querySelector('[data-planning-cancel]')?.click();
+      const ordinaryCloseRecovered = !reopened?.isConnected &&
+        document.activeElement === launcher;
+      launcher.click();
+      const duringTeardown = document.querySelector('[data-community-planning-preview]');
+      stop();
+      stop(); // idempotent host teardown
+      const teardownCleared = !launcher.isConnected &&
+        !duringTeardown?.isConnected;
+      launcher.click(); // detached stale control must not remount the modal
+      const staleLauncherBlocked = !document.querySelector(
+        '[data-community-planning-preview]',
+      );
+      return {
+        faultCleared,
+        focusRecovered,
+        reopenedAfterFault,
+        ordinaryCloseRecovered,
+        teardownCleared,
+        staleLauncherBlocked,
+      };
+    } finally {
+      stop();
+      host.remove();
+    }
+  });
+  assert.deepEqual(closeFaultRecovery, {
+    faultCleared: true,
+    focusRecovered: true,
+    reopenedAfterFault: true,
+    ordinaryCloseRecovered: true,
+    teardownCleared: true,
+    staleLauncherBlocked: true,
+  });
   // Reduced-motion media negative control: a real Chromium media override must
   // change matchMedia before the fixture-only comparison is exercised.
   await page.emulateMediaFeatures([

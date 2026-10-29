@@ -9,11 +9,13 @@ const discovered = import.meta.env
   ? import.meta.glob('./features/*.js', { eager: true })
   : {};
 
-export function mountPlanetPlayground(services) {
-  const features = Object.entries(discovered)
+export function mountPlanetPlayground(services, featureOverrides = null) {
+  const discoveredFeatures = Object.entries(discovered)
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([, module]) => module.feature)
     .filter((item) => item && typeof item.id === 'string' && typeof item.mount === 'function');
+  // Injectable local feature registry keeps lifetime tests independent of Vite.
+  const features = Array.isArray(featureOverrides) ? featureOverrides : discoveredFeatures;
   const doc = services.document || document;
   if (doc.querySelector('#planet-playground-launcher') || !features.length)
     return () => {};
@@ -56,8 +58,11 @@ export function mountPlanetPlayground(services) {
   let opened = false;
   let activeId = null;
   let disposeFeature = null;
+  let disposed = false;
   const buttons = [];
+  const removeTabListeners = [];
   function select(id) {
+    if (disposed) return;
     const feature = features.find((entry) => entry.id === id);
     if (!feature || activeId === id) return;
     disposeFeature?.();
@@ -83,6 +88,7 @@ export function mountPlanetPlayground(services) {
     }
   }
   function setOpen(next) {
+    if (disposed) return;
     opened = Boolean(next);
     panel.hidden = !opened;
     launcher.setAttribute('aria-expanded', String(opened));
@@ -105,12 +111,16 @@ export function mountPlanetPlayground(services) {
     button.setAttribute('role', 'tab');
     button.setAttribute('aria-selected', 'false');
     button.tabIndex = -1;
-    button.addEventListener('click', () => select(feature.id));
+    const onSelect = () => select(feature.id);
+    button.addEventListener('click', onSelect);
+    removeTabListeners.push(() => button.removeEventListener('click', onSelect));
     tabs.append(button);
     buttons.push(button);
   }
-  launcher.addEventListener('click', () => setOpen(!opened));
-  close.addEventListener('click', () => setOpen(false));
+  const onLauncherClick = () => setOpen(!opened);
+  const onCloseClick = () => setOpen(false);
+  launcher.addEventListener('click', onLauncherClick);
+  close.addEventListener('click', onCloseClick);
   const onKeydown = (event) => {
     if (event.key === 'Escape' && opened && !event.defaultPrevented) {
       event.preventDefault();
@@ -120,9 +130,20 @@ export function mountPlanetPlayground(services) {
   doc.addEventListener('keydown', onKeydown);
   doc.body.append(launcher, panel);
   return () => {
+    if (disposed) return;
+    disposed = true;
     doc.removeEventListener('keydown', onKeydown);
-    disposeFeature?.();
-    panel.remove();
-    launcher.remove();
+    launcher.removeEventListener('click', onLauncherClick);
+    close.removeEventListener('click', onCloseClick);
+    for (const remove of removeTabListeners) remove();
+    try {
+      disposeFeature?.();
+    } finally {
+      disposeFeature = null;
+      activeId = null;
+      opened = false;
+      panel.remove();
+      launcher.remove();
+    }
   };
 }

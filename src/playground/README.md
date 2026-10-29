@@ -8,6 +8,9 @@ Each `features/NN-name.js` exports `feature = { id, title, mount({ root, service
 The mount function renders inside the provided panel and may return a cleanup callback.
 The shell owns switching, keyboard dismissal and application-lifetime teardown.
 Features must release their own event listeners, Cesium entities, timers, and opt-in connections.
+The shell removes launcher, tab, close and keyboard handlers on host teardown;
+retained detached controls cannot remount a mode and repeat disposal is inert.
+This has only synthetic DOM regression coverage, not full-app browser proof.
 
 - **01 Expeditions** — existing Nepal evidence scene; fire and traffic layer scout views
 - **02 Time Machine** — authored SceneDirector clock only

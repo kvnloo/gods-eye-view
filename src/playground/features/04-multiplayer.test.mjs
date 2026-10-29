@@ -965,7 +965,9 @@ test('overlapping invite copies skip superseded queued scenes and keep in-flight
     includeScene.checked = true;
     const first = copyLink();
     const second = copyLink();
-    await Promise.resolve();
+    // The first queued job resolves without writing; wait for that promise
+    // before expecting the next job to call the deferred clipboard stub.
+    await first;
     await Promise.resolve();
     assert.equal(writes.length, 1,
       'new room-only intent must skip the earlier queued scene disclosure');

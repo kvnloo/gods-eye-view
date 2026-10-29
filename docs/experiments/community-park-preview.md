@@ -27,6 +27,22 @@ one-valid and zero-valid negative fixtures without any real place or transport.
 
 `Co-op view` shows both proposals side by side; `Game view` focuses one proposal at a time, with keyboard-accessible `Inspect` controls to switch between them. A native keyboard activation of Game view hands focus to the selected newly visible Inspect control; pointer/touch mode changes retain focus on the mode control. The pinned Puppeteer QA asserts both paths, but an actual full-app browser run remains **NOT RUN**. This is a **local, reversible presentation choice**, not a simulation or scoring mechanic. Neither adds points, votes, municipal approval, a site suitability claim, a model prediction, a route, a signal controller, or writes to GEV observed data. There is no real parcel, no live collaborative service, no GIS survey accuracy, no profile location inference, and no map/satellite tile redistribution. The plot is an approximate SVG schematic, not a geospatial basemap.
 
+## Safe Scene dialog teardown
+
+The opt-in Scene launcher owns at most one planning dialog. If the shared
+dialog's native close path throws, the preview wrapper logs the failure, removes
+the stranded modal element, releases its own dialog ownership and permits
+reopening. Cancel restores focus only when the launcher is still mounted.
+Destroying the Scene host removes the launcher idempotently; clicking an old
+detached launcher cannot reopen a hypothetical preview.
+
+The pinned Puppeteer gate now injects a synthetic close failure against the
+mounted Scene dialog, followed by reopen, ordinary close, host teardown and
+stale-launcher negative controls. **That full-app browser gate has NOT RUN.**
+An isolated exact-source V8 adapter reproduced the old stuck owner and
+confirmed the new recovery behavior, but is not Node, Cesium, Puppeteer,
+device or app-startup evidence.
+
 ## Gates
 
 ```sh

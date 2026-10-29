@@ -1629,6 +1629,75 @@ try {
     openedAfterReattach: true,
     cleanAfterClose: true,
   });
+  // Synthetic click delivery on a connected but inaccessible Scene launcher
+  // must not create a dialog. Visible opt-in still opens and closes normally.
+  const inaccessibleOwnerActivation = await page.evaluate(async () => {
+    const { mountCommunityPlanningPreview } = await import(
+      '/src/ui/communityPlanningPreview.js'
+    );
+    const { createSyntheticCommunityPlanningFixture } = await import(
+      '/src/standalone/communityPlanningFixture.js'
+    );
+    const host = document.createElement('section');
+    const inner = document.createElement('div');
+    inner.className = 'scene-panel-inner';
+    host.append(inner);
+    document.body.append(host);
+    const stop = mountCommunityPlanningPreview({
+      ...createSyntheticCommunityPlanningFixture(),
+      panel: host,
+    });
+    const launcher = host.querySelector(
+      '[data-community-planning-preview-open]',
+    );
+    const isOpen = () => Boolean(document.querySelector(
+      '[data-community-planning-preview]',
+    ));
+    try {
+      host.hidden = true;
+      launcher.click();
+      const hiddenBlocked = !isOpen();
+      host.hidden = false;
+      host.classList.add('collapsed');
+      launcher.click();
+      const collapsedBlocked = !isOpen();
+      host.classList.remove('collapsed');
+      host.style.visibility = 'hidden';
+      launcher.click();
+      const visibilityBlocked = !isOpen();
+      host.style.visibility = '';
+      host.inert = true;
+      launcher.click();
+      const inertBlocked = !isOpen();
+      host.inert = false;
+      host.setAttribute('aria-hidden', 'true');
+      launcher.click();
+      const ariaHiddenBlocked = !isOpen();
+      host.removeAttribute('aria-hidden');
+      launcher.click();
+      const visibleOpened = isOpen();
+      document.querySelector(
+        '[data-community-planning-preview] [data-planning-cancel]',
+      )?.click();
+      const cleanAfterClose = !isOpen();
+      return {
+        hiddenBlocked, collapsedBlocked, visibilityBlocked, inertBlocked,
+        ariaHiddenBlocked, visibleOpened, cleanAfterClose,
+      };
+    } finally {
+      stop();
+      host.remove();
+    }
+  });
+  assert.deepEqual(inaccessibleOwnerActivation, {
+    hiddenBlocked: true,
+    collapsedBlocked: true,
+    visibilityBlocked: true,
+    inertBlocked: true,
+    ariaHiddenBlocked: true,
+    visibleOpened: true,
+    cleanAfterClose: true,
+  });
   // A connected Scene owner may be hidden/collapsed during a modal close.
   // Do not restore keyboard focus to a launcher outside the accessible view.
   const hiddenOwnerFocus = await page.evaluate(async () => {

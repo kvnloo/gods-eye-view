@@ -1,5 +1,15 @@
 # God's Eye View Current State
 
+## Fork-only World Game inaccessible Scene activation — October 29, 2026
+
+A connected but hidden, collapsed, inert, accessibility-hidden or
+visibility-hidden Scene launcher can receive a scripted click even though it
+should not be user-interactive. The opt-in hypothetical park preview now
+ignores these stale activations and still opens from a visible launcher.
+The existing pinned Scene/Puppeteer gate adds negative/positive cases but
+remains **NOT RUN**. An isolated source-level V8 check is not supported
+Node 24.14/26, mounted GEV browser or device acceptance.
+
 ## Fork-only World Game Scene keyboard focus restoration — October 29, 2026
 
 The hypothetical comparison dialog returns focus to its opt-in Scene launcher

@@ -340,8 +340,8 @@ export function openCommunityPlanningPreview({ project, collaborationState }) {
   return dialog;
 }
 
-/** Restore focus only when the Scene launcher remains keyboard-reachable. */
-function canRestorePlanningLauncherFocus(button, panel, disposed) {
+/** A Scene launcher may open and regain focus only while interactive. */
+function isPlanningLauncherInteractive(button, panel, disposed) {
   if (
     disposed ||
     !button.isConnected ||
@@ -368,9 +368,9 @@ export function mountCommunityPlanningPreview({
   let dialog = null;
   let disposed = false;
   const open = () => {
-    // A detached Scene panel may still have a retained button handler until
-    // its owner runs cleanup. Never open a modal from an off-DOM launcher.
-    if (disposed || dialog || !button.isConnected) return;
+    // A retained click on a hidden, collapsed or detached Scene owner must
+    // never open a hypothetical modal, even before owner cleanup runs.
+    if (dialog || !isPlanningLauncherInteractive(button, panel, disposed)) return;
     dialog = openCommunityPlanningPreview({ project, collaborationState });
     const current = dialog;
     const originalDispose = current.dispose;
@@ -387,7 +387,7 @@ export function mountCommunityPlanningPreview({
         current.element.remove();
         if (dialog === current) dialog = null;
         // A host teardown must never put focus back on a detached launcher.
-        if (canRestorePlanningLauncherFocus(button, panel, disposed))
+        if (isPlanningLauncherInteractive(button, panel, disposed))
           button.focus({ preventScroll: true });
       }
     };

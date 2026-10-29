@@ -1,5 +1,10 @@
 # Changelog
 
+- Fork-only World Game blocks hidden, collapsed, inert and inaccessible Scene
+  launcher clicks from opening the hypothetical comparison while preserving
+  visible opt-in. Pinned Scene/Puppeteer negative controls added (NOT RUN);
+  isolated source V8 is not a native app or supported Node verification.
+
 - Fork-only World Game Scene comparison now restores dialog-close keyboard
   focus only to a visible, interactive launcher, not a collapsed/hidden host.
   Added pinned browser regression for visible and hidden owner teardown

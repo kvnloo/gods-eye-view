@@ -1,5 +1,11 @@
 # Changelog
 
+- Fork-only World Game Scene baseline credits now distinguish user-entered
+  attribution/license **claims** from verified reuse rights: the source row
+  reads UNVERIFIED and NOT rights-cleared, without fetching links or changing
+  synthetic scenario data. A pinned Scene/Puppeteer assertion was updated
+  but not executed; supported Node24/26/browser acceptance remains pending.
+
 - Fork-only World Game blocks hidden, collapsed, inert and inaccessible Scene
   launcher clicks from opening the hypothetical comparison while preserving
   visible opt-in. Pinned Scene/Puppeteer negative controls added (NOT RUN);

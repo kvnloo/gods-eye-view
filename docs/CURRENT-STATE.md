@@ -1,5 +1,15 @@
 # God's Eye View Current State
 
+## Fork-only World Game baseline citation authority — October 29, 2026
+
+The opt-in synthetic Scene preview now marks each baseline source row
+**UNVERIFIED**. Attribution and license are explicitly **claimed** fields;
+the apparent license never establishes reuse or municipal land rights. The
+source URL is displayed as text, not fetched by the preview. An empty list
+still reports missing provenance. The pinned Scene/Puppeteer gate asserts
+this separation on the versioned synthetic fixture (**NOT RUN**). Isolated
+source-level V8 string controls are not full-app or supported Node proof.
+
 ## Fork-only World Game inaccessible Scene activation — October 29, 2026
 
 A connected but hidden, collapsed, inert, accessibility-hidden or

@@ -30,6 +30,14 @@ function excludedProposalReason(id, record, project) {
   return 'proposal failed another validation rule';
 }
 
+/** Author-supplied source metadata never establishes reuse or municipal rights. */
+function unverifiedPlanningCitation(source) {
+  return `Baseline citation (UNVERIFIED): ${source.id} · revision: ${source.revision} · ` +
+    `claimed attribution: ${source.attribution} · ` +
+    `claimed license (NOT rights-cleared): ${source.license} · ` +
+    `source URL (not fetched): ${source.url}`;
+}
+
 function addText(parent, tag, value, className = '') {
   const node = parent.ownerDocument.createElement(tag);
   node.className = className;
@@ -111,9 +119,7 @@ export function openCommunityPlanningPreview({ project, collaborationState }) {
   for (const source of sources) {
     const provenance = addText(
       dialog.body, 'p',
-      `Baseline source: ${source.id} · revision: ${source.revision} · ` +
-        `attribution: ${source.attribution} · license: ${source.license} · ` +
-        `URL: ${source.url}`,
+      unverifiedPlanningCitation(source),
     );
     provenance.dataset.planningSourceProvenance = '';
   }

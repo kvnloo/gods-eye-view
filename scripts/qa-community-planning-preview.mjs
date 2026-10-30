@@ -669,10 +669,10 @@ try {
     ],
     official: true,
     provenance: [
-      'Baseline source: synthetic-source · revision: fixture-v1 · ' +
-        'attribution: Generated example, not official parcel data · ' +
-        'license: synthetic-test-data · ' +
-        'URL: https://example.org/synthetic-fixture',
+      'Baseline citation (UNVERIFIED): synthetic-source · revision: fixture-v1 · ' +
+        'claimed attribution: Generated example, not official parcel data · ' +
+        'claimed license (NOT rights-cleared): synthetic-test-data · ' +
+        'source URL (not fetched): https://example.org/synthetic-fixture',
     ],
     localOnly: 'LOCAL-ONLY DISPLAY · No shared room, live participants or synchronized edits.',
     recordSummary: 'Planning records: 0 stale/incompatible excluded; ' +
@@ -680,7 +680,12 @@ try {
       'This snapshot cannot reconstruct overwritten edits or resolve conflicts.',
     excludedDisclosure: null,
   });
-  const initiallyVisible = await page.$$eval(
+  assert.ok(
+    checked.provenance.every((line) =>
+      line.includes('UNVERIFIED') && line.includes('NOT rights-cleared')),
+    'author-entered attribution/license cannot masquerade as verified reuse rights',
+  );
+  const initiallyVisible = await page.$eval(
     '[data-community-planning-preview] [data-alternative-id]',
     (items) => items.filter((item) => !item.hidden).map((item) => item.dataset.alternativeId),
   );

@@ -1,5 +1,12 @@
 # Changelog
 
+- Fork-only World Game Scene preview now explains when imported park
+  proposals are excluded for unsupported schema, non-hypothetical state,
+  unverified modeled impact or unverified approval claims, without echoing
+  rejected payloads or granting authority. Pinned real-Scene/Puppeteer
+  negative controls added but **NOT RUN**. Only isolated source-level V8
+  helper checks; supported Node24/26, build and browser gates outstanding.
+
 - Fork-only World Game #229 now refuses script activation of hypothetical
   park previews from CSS-transparent (zero-opacity) Scene launchers, panels,
   or ancestors even though they retain layout boxes. Opaque controls still

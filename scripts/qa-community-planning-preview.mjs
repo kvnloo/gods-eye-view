@@ -1730,6 +1730,12 @@ try {
       };
     };
     put('wrong-project', { projectId: 'other-project' });
+    // Imported projection must disclose unsupported authority/model claims
+    // without echoing untrusted payloads or promoting them into valid cards.
+    put('unsupported-schema', { schemaVersion: 99 });
+    put('observed-state', { state: 'observed' });
+    put('claimed-impact', { modeledImpact: 'fabricated-traffic-benefit' });
+    put('claimed-approval', { approval: 'municipal-approved-<script>' });
     put('wrong-baseline', { baselineRevision: 'obsolete-r0' });
     put('wrong-kind');
     collaborationState.authored[key('wrong-kind')].kind = 'comment';
@@ -1745,11 +1751,19 @@ try {
     }
   });
   assert.deepEqual(exclusionReasons, [
+    'Excluded claimed-approval · proposal carries an unverified approval claim; other validation failures may exist',
+    'Excluded claimed-impact · proposal claims an evaluated impact; other validation failures may exist',
     'Excluded no-payload · missing or malformed proposal payload; other validation failures may exist',
+    'Excluded observed-state · proposal is not marked hypothetical; other validation failures may exist',
+    'Excluded unsupported-schema · unsupported proposal schema revision; other validation failures may exist',
     'Excluded wrong-baseline · baseline revision differs from reference; other validation failures may exist',
     'Excluded wrong-kind · record ownership metadata differs; other validation failures may exist',
     'Excluded wrong-project · proposal belongs to another project; other validation failures may exist',
   ]);
+  assert.ok(
+    !exclusionReasons.some((line) => /fabricated-traffic-benefit|municipal-approved-<script>/.test(line)),
+    'rejected impact/approval payloads must never be echoed into Scene text',
+  );
   assert.equal(await page.$('[data-community-planning-preview]'), null);
   // Negative controls: a stale winner cannot count as a valid proposal.
   // One or zero valid alternatives must not expose a usable compare mode.

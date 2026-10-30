@@ -1,5 +1,5 @@
 import { createSceneDialog } from './sceneSharing.js';
-import { planningView } from '../data/communityPlanning.js';
+import { COMMUNITY_PLANNING_SCHEMA_VERSION, planningView } from '../data/communityPlanning.js';
 
 const FEATURE_COLORS = Object.freeze({
   tree: '#65b58b',
@@ -27,6 +27,14 @@ function excludedProposalReason(id, record, project) {
     record.kind !== 'draft-scenario' ||
     record.targetId !== `community-plan:${project.id}:${id}`
   ) return 'record ownership metadata differs';
+  if (candidate.schemaVersion !== COMMUNITY_PLANNING_SCHEMA_VERSION)
+    return 'unsupported proposal schema revision';
+  if (candidate.state !== 'hypothesis')
+    return 'proposal is not marked hypothetical';
+  if (candidate.modeledImpact !== 'not-evaluated')
+    return 'proposal claims an evaluated impact';
+  if (candidate.approval !== 'not-requested')
+    return 'proposal carries an unverified approval claim';
   return 'proposal failed another validation rule';
 }
 

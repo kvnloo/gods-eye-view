@@ -1,5 +1,18 @@
 # God's Eye View Current State
 
+## Fork-only World Game excluded authority/impact claims — October 30, 2026
+
+The opt-in Scene park comparison already excluded imported proposals that were
+not hypothetical, used unknown schema revisions, claimed a modeled impact,
+or asserted civic approval. Its exclusion disclosure previously reported only
+a generic validation failure. It now names one bounded, observable mismatch
+for each of these cases, without displaying untrusted claim values or promoting
+excluded proposals into the two-card comparison. This is not a history of
+merge conflicts, a verified permit, a model validation, or proof of land rights.
+The pinned Scene/Puppeteer fixture contains synthetic negative controls but
+has **NOT RUN** in a mounted app; isolated V8 source-helper checks are limited
+and do not prove supported Node24/26, browser, mobile or build acceptance.
+
 ## Fork-only World Game zero-opacity Scene guard — October 29, 2026
 
 The existing synthetic park launcher no longer opens its hypothetical modal

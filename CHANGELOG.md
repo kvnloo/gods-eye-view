@@ -1,5 +1,11 @@
 # Changelog
 
+- Fork-only World Game #229 now refuses script activation of hypothetical
+  park previews from CSS-transparent (zero-opacity) Scene launchers, panels,
+  or ancestors even though they retain layout boxes. Opaque controls still
+  work. Pinned browser negatives added but **NOT RUN**; isolated V8 only,
+  with supported Node24/26, build, and mounted Chromium gates outstanding.
+
 - Fork-only World Game Scene launchers moved outside their original connected
   Scene panel can no longer open a hypothetical modal or regain close focus.
   Reparenting back restores opt-in. Pinned real-Scene/Puppeteer negative and

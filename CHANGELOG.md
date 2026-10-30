@@ -1,5 +1,10 @@
 # Changelog
 
+- Fork-only World Game Scene launchers from retired documents now fail closed
+  when their browsing context is gone instead of throwing on a stale click.
+  Pinned Puppeteer negative control added, **NOT RUN** on the full GEV app;
+  supported Node24/26 and browser/device acceptance remain outstanding.
+
 - Fork-only World Game Scene baseline credits now distinguish user-entered
   attribution/license **claims** from verified reuse rights: the source row
   reads UNVERIFIED and NOT rights-cleared, without fetching links or changing

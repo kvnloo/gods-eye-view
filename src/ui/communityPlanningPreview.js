@@ -355,11 +355,13 @@ export function openCommunityPlanningPreview({ project, collaborationState }) {
   return dialog;
 }
 
-/** A Scene launcher may open and regain focus only while interactive. */
+/** A Scene launcher may open and regain focus only inside its live Scene owner. */
 function isPlanningLauncherInteractive(button, panel, disposed) {
   if (
     disposed ||
     !button.isConnected ||
+    !panel.isConnected ||
+    !panel.contains(button) ||
     button.disabled ||
     panel.classList.contains('collapsed') ||
     button.closest('[hidden], [inert], [aria-hidden="true"]') ||

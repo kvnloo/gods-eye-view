@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+- Keep the sole Planet Playground keyboard tab stop on the focused tab during
+  manual arrow/Home/End navigation without selecting a room or What-if; clicking
+  the already-active tab restores its tab stop without remounting. Isolated V8
+  synthetic DOM only; Node 24/26, real browser/mobile and CI NOT RUN.
+
 - Release Planet Playground What-if button/select listeners on feature teardown and
   make disposal idempotent. A detached Add control cannot resurrect a Cesium
   proposal after switching tabs. Published source isolated V8 RED→GREEN only;

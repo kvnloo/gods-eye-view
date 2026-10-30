@@ -354,27 +354,36 @@ test('manual Playground tabs move focus without mounting room or What-if', () =>
   assert.ok(tabs.every((tab) => tab.attributes.get('aria-controls') === body.id));
   launcher.fire('click');
   assert.deepEqual(events, ['mount:park']);
+  assert.deepEqual(tabs.map((tab) => tab.tabIndex), [0, -1, -1]);
   assert.equal(body.attributes.get('aria-labelledby'), tabs[0].id);
   tabs[0].focus();
   assert.equal(tabs[0].fire('keydown', { key: 'ArrowRight' }).defaultPrevented, true);
   assert.equal(doc.activeElement, tabs[1]);
+  assert.deepEqual(tabs.map((tab) => tab.tabIndex), [-1, 0, -1]);
   assert.equal(tabs[1].attributes.get('aria-selected'), 'false');
   assert.deepEqual(events, ['mount:park'], 'focus alone cannot join a room');
   tabs[1].fire('keydown', { key: 'ArrowRight' });
   assert.equal(doc.activeElement, tabs[2]);
+  assert.deepEqual(tabs.map((tab) => tab.tabIndex), [-1, -1, 0]);
   tabs[2].fire('keydown', { key: 'ArrowRight' });
   assert.equal(doc.activeElement, tabs[0], 'right wraps');
+  assert.deepEqual(tabs.map((tab) => tab.tabIndex), [0, -1, -1]);
   tabs[0].fire('keydown', { key: 'ArrowLeft' });
   assert.equal(doc.activeElement, tabs[2], 'left wraps');
   tabs[2].fire('keydown', { key: 'Home' });
   assert.equal(doc.activeElement, tabs[0]);
   tabs[0].fire('keydown', { key: 'End' });
   assert.equal(doc.activeElement, tabs[2]);
+  assert.deepEqual(tabs.map((tab) => tab.tabIndex), [-1, -1, 0]);
   assert.equal(tabs[2].fire('keydown', { key: 'ArrowLeft', altKey: true }).defaultPrevented, false);
   assert.equal(doc.activeElement, tabs[2]);
   assert.equal(tabs[2].fire('keydown', { key: 'ArrowDown' }).defaultPrevented, false);
   assert.deepEqual(events, ['mount:park'], 'keys cannot mount What-if');
+  tabs[0].fire('click'); // Already-active tab still reclaims the tab stop.
+  assert.deepEqual(tabs.map((tab) => tab.tabIndex), [0, -1, -1]);
+  assert.deepEqual(events, ['mount:park'], 'repeat selection cannot remount');
   tabs[1].fire('click'); // Native Enter/Space on a button dispatches click.
+  assert.deepEqual(tabs.map((tab) => tab.tabIndex), [-1, 0, -1]);
   assert.deepEqual(events, ['mount:park', 'dispose:park', 'mount:local-room']);
   assert.equal(body.attributes.get('aria-labelledby'), tabs[1].id);
   launcher.fire('click');

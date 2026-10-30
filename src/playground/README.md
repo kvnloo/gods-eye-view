@@ -8,7 +8,9 @@ Each `features/NN-name.js` exports `feature = { id, title, mount({ root, service
 The mount function renders inside the provided panel and may return a cleanup callback.
 The shell owns switching, keyboard dismissal and application-lifetime teardown.
 Tabs use manual keyboard activation: ArrowLeft/ArrowRight wrap focus and Home/End
-focus the first/last tab; native Enter/Space activates the focused button.
+focus the first/last tab. The sole tabbable tab follows keyboard focus even
+when aria-selected remains on the mounted mode; clicking an already-selected
+tab restores its tab stop. Native Enter/Space explicitly activates a mode.
 Focus alone cannot join a local room, mount What-if, or share a location.
 Only synthetic DOM proof exists; browser, screen reader and mobile QA pending.
 Features must release their own event listeners, Cesium entities, timers, and opt-in connections.

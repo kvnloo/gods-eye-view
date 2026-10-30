@@ -64,6 +64,11 @@ export function mountPlanetPlayground(services, featureOverrides = null) {
   let disposed = false;
   const buttons = [];
   const removeTabListeners = [];
+  // One keyboard tab stop follows focus, not the currently mounted mode.
+  function setTabStop(target) {
+    for (const button of buttons)
+      button.tabIndex = button === target ? 0 : -1;
+  }
   // A failing feature cleanup must not trap the shell in its previous mode.
   // Only the feature can guarantee that its partially released resources are safe.
   function releaseFeature() {
@@ -130,7 +135,12 @@ export function mountPlanetPlayground(services, featureOverrides = null) {
     button.setAttribute('aria-controls', body.id);
     button.setAttribute('aria-selected', 'false');
     button.tabIndex = -1;
-    const onSelect = () => select(feature.id);
+    const onSelect = () => {
+      if (disposed || !opened) return;
+      // A click on the already-active tab also restores its keyboard stop.
+      setTabStop(button);
+      select(feature.id);
+    };
     // Focus-only navigation: keyboard browsing must not join a room.
     const onTabKeydown = (event) => {
       if (
@@ -145,6 +155,7 @@ export function mountPlanetPlayground(services, featureOverrides = null) {
       else if (event.key === 'End') next = buttons.length - 1;
       else return;
       event.preventDefault();
+      setTabStop(buttons[next]);
       buttons[next].focus();
     };
     button.addEventListener('click', onSelect);

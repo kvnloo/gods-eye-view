@@ -2,8 +2,10 @@
 
 **October 30 Planet Playground keyboard tabs (#253, fork-only):**
 ArrowLeft/ArrowRight/Home/End move focus without activating a local room or
-What-if; native Enter/Space activation remains explicit. Tablist/tabpanel
-association and teardown have synthetic DOM regressions. Supported Node24/26,
+What-if; the roving keyboard tab stop follows focus while aria-selected stays
+on the mounted mode. Re-selecting that same mode restores its tab stop without
+remounting. Native Enter/Space remains explicit; tablist/tabpanel associations
+and teardown have synthetic DOM regressions. Supported Node24/26,
 browser, screen-reader and mobile QA **NOT RUN**; no live co-op or municipal
 authority.
 

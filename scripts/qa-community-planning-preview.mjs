@@ -360,15 +360,20 @@ function isPreviewConsoleError(message, expectedOrigin) {
   // Bootstrap's handled import error is logged without throwing a pageerror.
   if (message.text().startsWith('Community planning fixture preview failed'))
     return true;
-  try {
-    const source = new URL(message.location()?.url);
-    return (
-      source.origin === expectedOrigin &&
-      previewConsoleSourcePaths.has(source.pathname)
-    );
-  } catch {
-    return false;
+  // Chromium may leave ConsoleMessage.location empty while its stack still
+  // identifies the failing preview owner. Inspect both, preserving origin pinning.
+  for (const frame of [message.location?.(), ...(message.stackTrace?.() ?? [])]) {
+    try {
+      const source = new URL(frame?.url);
+      if (
+        source.origin === expectedOrigin &&
+        previewConsoleSourcePaths.has(source.pathname)
+      ) return true;
+    } catch {
+      // An absent/malformed location is not proof of an unrelated console error.
+    }
   }
+  return false;
 }
 
 function watchQaPageFailures(page, label, expectedOrigin) {
@@ -406,9 +411,12 @@ function checkQaPageFailureObserverNegativeControls() {
     },
   };
   const origin = 'http://localhost:4173';
-  const consoleMessage = (type, url, text = 'synthetic preview failure') => ({
+  const consoleMessage = (
+    type, url, text = 'synthetic preview failure', stackUrls = [],
+  ) => ({
     type: () => type,
     location: () => ({ url }),
+    stackTrace: () => stackUrls.map((source) => ({ url: source })),
     text: () => text,
   });
   for (const [event, message] of [
@@ -433,6 +441,22 @@ function checkQaPageFailureObserverNegativeControls() {
     watcher.dispose();
     assert.equal(handlers.size, 0, 'console listeners must be removed');
   }
+  // A blank/foreign top call site must not hide a preview-owned error in
+  // Puppeteer's stack; remote path aliases are not this local owner's errors.
+  for (const [location, stackUrls] of [
+    ['', [origin + '/src/ui/communityPlanningPreview.js?t=1']],
+    ['https://tiles.example.test/unrelated.js', [
+      origin + '/src/ui/sceneSharing.js',
+    ]],
+  ]) {
+    const watcher = watchQaPageFailures(fakePage, 'preview stack', origin);
+    handlers.get('console')(consoleMessage(
+      'error', location, 'synthetic preview stack error', stackUrls,
+    ));
+    assert.throws(() => watcher.assertClean(), /unhandled browser failures/);
+    watcher.dispose();
+    assert.equal(handlers.size, 0, 'stack error listeners must be removed');
+  }
   const bootstrap = watchQaPageFailures(fakePage, 'bootstrap console', origin);
   handlers.get('console')(consoleMessage(
     'error', '', 'Community planning fixture preview failed',
@@ -445,6 +469,13 @@ function checkQaPageFailureObserverNegativeControls() {
     ['error', origin + '/src/ui/otherFeature.js'],
     ['error', 'https://tiles.example.test/src/ui/communityPlanningPreview.js'],
   ]) handlers.get('console')(consoleMessage(type, source));
+  for (const [type, stackUrl] of [
+    ['log', origin + '/src/ui/communityPlanningPreview.js'],
+    ['error', origin + '/src/ui/unrelated.js'],
+    ['error', 'https://tiles.example.test/src/ui/communityPlanningPreview.js'],
+  ]) handlers.get('console')(consoleMessage(
+    type, '', 'unrelated stack', [stackUrl],
+  ));
   unrelated.assertClean();
   unrelated.dispose();
   assert.equal(handlers.size, 0, 'all page listeners must be removed');

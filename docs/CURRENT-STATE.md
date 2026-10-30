@@ -1,5 +1,19 @@
 # God's Eye View Current State
 
+## Fork-only World Game foreign native modal guard — October 30, 2026
+
+An opt-in park launcher now refuses retained programmatic clicks while
+another native `dialog:modal` is topmost. Native `showModal()` makes
+outside controls inert without adding `[inert]`; synthetic
+`Element.click()` events can otherwise launch a second modal and steal
+top-layer ownership. Once the other dialog closes, normal launcher
+behavior returns; preview cleanup also avoids hidden focus restoration.
+Pinned actual-Scene/Puppeteer negative controls are **NOT RUN**.
+Standalone Chromium verified the browser inert-click primitive; isolated
+V8 checked the guard. Supported Node24.14/26 format/unit/boundaries/
+build/track, mounted Scene/mobile and two-tab QA remain outstanding.
+No observed facts, real co-op, physical impact or civic approval.
+
 ## Fork-only World Game excluded authority/impact claims — October 30, 2026
 
 The opt-in Scene park comparison already excluded imported proposals that were

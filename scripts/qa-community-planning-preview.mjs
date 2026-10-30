@@ -282,23 +282,84 @@ checkQaPreRequestNegativeControls();
 /** Interception must be enabled before any goto, including the mobile tab. */
 async function guardQaTopLevelNavigation(page, expectedOrigin) {
   const interceptionErrors = [];
+  const pendingInterceptions = new Set();
+  // An immediate assertion can miss a still-unsettled request.continue/abort.
+  function trackInterception(promise) {
+    const task = Promise.resolve(promise)
+      .catch((error) => interceptionErrors.push(String(error)))
+      .finally(() => pendingInterceptions.delete(task));
+    pendingInterceptions.add(task);
+  }
   page.on('request', (request) => {
     try {
-      void dispatchQaInterceptedRequest(
+      trackInterception(dispatchQaInterceptedRequest(
         request, page.mainFrame(), expectedOrigin,
-      ).catch((error) => interceptionErrors.push(String(error)));
+      ));
     } catch (error) {
       interceptionErrors.push(String(error));
-      void request.abort('blockedbyclient')
-        .catch((abortError) => interceptionErrors.push(String(abortError)));
+      trackInterception(request.abort('blockedbyclient'));
     }
   });
   await page.setRequestInterception(true);
-  return () => assert.deepEqual(
-    interceptionErrors, [],
-    'QA browser request interception failed; cannot certify navigation safety',
+  return async () => {
+    await Promise.all([...pendingInterceptions]);
+    assert.deepEqual(
+      interceptionErrors, [],
+      'QA browser request interception failed; cannot certify navigation safety',
+    );
+  };
+}
+
+/** A late request rejection must invalidate even an earlier clean QA check. */
+async function checkQaLateInterceptionNegativeControls() {
+  let onRequest;
+  const fakePage = {
+    on(event, handler) {
+      if (event === 'request') onRequest = handler;
+    },
+    mainFrame: () => null,
+    async setRequestInterception(enabled) {
+      assert.equal(enabled, true);
+    },
+  };
+  const assertSafe = await guardQaTopLevelNavigation(
+    fakePage, 'http://localhost:4173',
+  );
+  await assertSafe();
+  // Unrelated successfully continued requests remain accepted.
+  onRequest({
+    isNavigationRequest: () => false,
+    continue: () => Promise.resolve(),
+  });
+  await assertSafe();
+  let rejectPending;
+  onRequest({
+    isNavigationRequest: () => false,
+    continue: () => new Promise((_, reject) => {
+      rejectPending = reject;
+    }),
+  });
+  let finished = false;
+  const pendingCheck = assertSafe().then(
+    () => {
+      finished = true;
+      return null;
+    },
+    (error) => {
+      finished = true;
+      return error;
+    },
+  );
+  await Promise.resolve();
+  assert.equal(finished, false, 'QA must await outstanding interception work');
+  rejectPending(new Error('synthetic late request interception failure'));
+  const failure = await pendingCheck;
+  assert.match(String(failure), /QA browser request interception failed/);
+  await assert.rejects(
+    assertSafe(), /QA browser request interception failed/,
   );
 }
+await checkQaLateInterceptionNegativeControls();
 
 function checkLocalQaOriginNegativeControls() {
   for (const valid of [
@@ -656,7 +717,7 @@ try {
   // Normal startup must not expose the fixture-only Scene launcher.
   await page.goto(optOutUrl.href, { waitUntil: 'domcontentloaded', timeout: 45000 });
   assertQaNavigationOrigin(page.url(), origin);
-  assertDesktopRequestsSafe();
+  await assertDesktopRequestsSafe();
   await page.waitForFunction(
     () =>
       window.__godsEyeView?.sceneDirector?._controls &&
@@ -686,7 +747,7 @@ try {
   moduleRequests.clear();
   await page.goto(url.href, { waitUntil: 'domcontentloaded', timeout: 45000 });
   assertQaNavigationOrigin(page.url(), origin);
-  assertDesktopRequestsSafe();
+  await assertDesktopRequestsSafe();
   await page.waitForFunction(
     () =>
       window.__godsEyeView?.sceneDirector?._controls &&
@@ -983,7 +1044,7 @@ try {
       timeout: 45000,
     });
     assertQaNavigationOrigin(mobilePage.url(), origin);
-    assertMobileRequestsSafe();
+    await assertMobileRequestsSafe();
     await mobilePage.waitForFunction(
       () =>
         window.__godsEyeView?.sceneDirector?._controls &&
@@ -1160,6 +1221,7 @@ try {
       'mobile touch, long-source display and teardown must not fetch credited baselines',
     );
     mobileFailures.assertClean();
+    await assertMobileRequestsSafe();
   } finally {
     mobileFailures.dispose();
     mobileRequests.dispose();
@@ -2222,6 +2284,7 @@ try {
 
   // A successful DOM walkthrough cannot mask an earlier unhandled runtime error.
   desktopFailures.assertClean();
+  await assertDesktopRequestsSafe();
   // Fail closed if the checkout changed while the browser gate was running.
   assertCurrentCheckout();
   console.log('Community planning preview: synthetic proposals, inert source credits, attribution, missing-clock fail-closed, keyboard, mobile, reduced-motion, teardown PASS');

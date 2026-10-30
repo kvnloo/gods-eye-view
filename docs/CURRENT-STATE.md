@@ -1,5 +1,16 @@
 # God's Eye View Current State
 
+## Fork-only World Game zero-opacity Scene guard — October 29, 2026
+
+The existing synthetic park launcher no longer opens its hypothetical modal
+from a CSS `opacity: 0` button, Scene panel, or enclosing ancestor. Opacity
+preserves layout and synthetic click delivery, so connected/visible-geometry
+checks alone were insufficient. Faded-but-visible controls still work; no
+record, map, multiplayer or civic authority changes. The pinned full-Scene
+Puppeteer negative controls are committed but **NOT RUN**. Exact-source
+isolated V8 caught the previous transparent activation and the new guard,
+not a supported Node24/26 or actual browser run.
+
 ## Fork-only World Game Scene owner containment — October 29, 2026
 
 A visible opt-in launcher moved into an unrelated connected DOM host no longer

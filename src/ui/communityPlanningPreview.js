@@ -357,7 +357,8 @@ function isPlanningLauncherInteractive(button, panel, disposed) {
     button.closest('[hidden], [inert], [aria-hidden="true"]') ||
     !button.getClientRects().length
   ) return false;
-  return button.ownerDocument.defaultView.getComputedStyle(button).visibility === 'visible';
+  // A retired owner document can lose its browsing context before disposal.
+  return button.ownerDocument.defaultView?.getComputedStyle(button).visibility === 'visible';
 }
 
 /** Scene-panel entry; no launch or DOM mutation until explicitly opted in. */

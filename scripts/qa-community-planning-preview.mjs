@@ -302,7 +302,11 @@ async function guardQaTopLevelNavigation(page, expectedOrigin) {
   });
   await page.setRequestInterception(true);
   return async () => {
-    await Promise.all([...pendingInterceptions]);
+    // New request events may arrive while an older interception settles.
+    // A single Promise.all snapshot can falsely certify a later rejection.
+    while (pendingInterceptions.size) {
+      await Promise.all([...pendingInterceptions]);
+    }
     assert.deepEqual(
       interceptionErrors, [],
       'QA browser request interception failed; cannot certify navigation safety',
@@ -360,6 +364,48 @@ async function checkQaLateInterceptionNegativeControls() {
   );
 }
 await checkQaLateInterceptionNegativeControls();
+
+/** Request events arriving during a check must join that same check. */
+async function checkQaGrowingInterceptionNegativeControls() {
+  let onRequest;
+  const fakePage = {
+    on(event, handler) {
+      if (event === 'request') onRequest = handler;
+    },
+    mainFrame: () => null,
+    async setRequestInterception(enabled) {
+      assert.equal(enabled, true);
+    },
+  };
+  const assertSafe = await guardQaTopLevelNavigation(
+    fakePage, 'http://localhost:4173',
+  );
+  let finishFirst;
+  onRequest({
+    isNavigationRequest: () => false,
+    continue: () => new Promise((resolve) => { finishFirst = resolve; }),
+  });
+  let finished = false;
+  const check = assertSafe().then(
+    () => { finished = true; return null; },
+    (error) => { finished = true; return error; },
+  );
+  let rejectSecond;
+  onRequest({
+    isNavigationRequest: () => false,
+    continue: () => new Promise((_, reject) => { rejectSecond = reject; }),
+  });
+  finishFirst();
+  for (let i = 0; i < 8; i++) await Promise.resolve();
+  assert.equal(
+    finished, false,
+    'QA must wait for requests added after its first pending snapshot',
+  );
+  rejectSecond(new Error('synthetic newly arrived interception failure'));
+  const failure = await check;
+  assert.match(String(failure), /QA browser request interception failed/);
+}
+await checkQaGrowingInterceptionNegativeControls();
 
 function checkLocalQaOriginNegativeControls() {
   for (const valid of [

@@ -1647,6 +1647,54 @@ try {
     openedAfterReattach: true,
     cleanAfterClose: true,
   });
+  // A launcher moved into an unrelated connected host is not owned by Scene.
+  // Returning it to Scene restores opt-in without reviving a stale dialog.
+  const relocatedOwner = await page.evaluate(async () => {
+    const { mountCommunityPlanningPreview } = await import(
+      '/src/ui/communityPlanningPreview.js'
+    );
+    const { createSyntheticCommunityPlanningFixture } = await import(
+      '/src/standalone/communityPlanningFixture.js'
+    );
+    const host = document.createElement('section');
+    const inner = document.createElement('div');
+    inner.className = 'scene-panel-inner';
+    host.append(inner);
+    const otherHost = document.createElement('section');
+    document.body.append(host, otherHost);
+    const stop = mountCommunityPlanningPreview({
+      ...createSyntheticCommunityPlanningFixture(),
+      panel: host,
+    });
+    const launcher = host.querySelector(
+      '[data-community-planning-preview-open]',
+    );
+    const isOpen = () => Boolean(document.querySelector(
+      '[data-community-planning-preview]',
+    ));
+    try {
+      otherHost.appendChild(launcher);
+      launcher.click();
+      const blockedOutsideScene = !isOpen();
+      inner.appendChild(launcher);
+      launcher.click();
+      const openedInsideScene = isOpen();
+      document.querySelector(
+        '[data-community-planning-preview] [data-planning-cancel]',
+      )?.click();
+      const cleanAfterClose = !isOpen();
+      return { blockedOutsideScene, openedInsideScene, cleanAfterClose };
+    } finally {
+      stop();
+      host.remove();
+      otherHost.remove();
+    }
+  });
+  assert.deepEqual(relocatedOwner, {
+    blockedOutsideScene: true,
+    openedInsideScene: true,
+    cleanAfterClose: true,
+  });
   // A stale Scene owner document can lose its Window before disposal. Even
   // if a layout rectangle is retained, its click must not throw or reopen UI.
   const retiredDocumentOwner = await page.evaluate(async () => {

@@ -1634,6 +1634,51 @@ try {
     openedAfterReattach: true,
     cleanAfterClose: true,
   });
+  // A stale Scene owner document can lose its Window before disposal. Even
+  // if a layout rectangle is retained, its click must not throw or reopen UI.
+  const retiredDocumentOwner = await page.evaluate(async () => {
+    const { mountCommunityPlanningPreview } = await import(
+      '/src/ui/communityPlanningPreview.js'
+    );
+    const { createSyntheticCommunityPlanningFixture } = await import(
+      '/src/standalone/communityPlanningFixture.js'
+    );
+    const retired = document.implementation.createHTMLDocument('retired scene');
+    const host = retired.createElement('section');
+    const inner = retired.createElement('div');
+    inner.className = 'scene-panel-inner';
+    host.append(inner);
+    retired.body.append(host);
+    const stop = mountCommunityPlanningPreview({
+      ...createSyntheticCommunityPlanningFixture(),
+      panel: host,
+    });
+    const launcher = host.querySelector(
+      '[data-community-planning-preview-open]',
+    );
+    // Force the stale-layout negative control to reach the browsing-context
+    // check regardless of how Chromium lays out disconnected documents.
+    launcher.getClientRects = () => [new DOMRect(0, 0, 1, 1)];
+    const errors = [];
+    const onError = (event) => errors.push(String(event.message));
+    window.addEventListener('error', onError);
+    try {
+      launcher.click();
+    } finally {
+      window.removeEventListener('error', onError);
+      stop();
+    }
+    return {
+      noBrowsingContext: retired.defaultView === null,
+      blocked: !document.querySelector('[data-community-planning-preview]'),
+      errors,
+    };
+  });
+  assert.deepEqual(retiredDocumentOwner, {
+    noBrowsingContext: true,
+    blocked: true,
+    errors: [],
+  });
   // Synthetic click delivery on a connected but inaccessible Scene launcher
   // must not create a dialog. Visible opt-in still opens and closes normally.
   const inaccessibleOwnerActivation = await page.evaluate(async () => {

@@ -317,6 +317,14 @@ export function openCommunityPlanningPreview({ project, collaborationState }) {
   }
   function syncMode() {
     const single = mode === 'game';
+    // Touch and scripted mode changes can leave keyboard focus inside Inspect.
+    // Rehome it before hiding that navigation, rather than dropping to <body>.
+    if (
+      !single &&
+      focusNavigation.contains(dialog.body.ownerDocument.activeElement)
+    ) {
+      modeButtons[0].button.focus({ preventScroll: true });
+    }
     focusNavigation.hidden = !single;
     for (const { id, element } of articles)
       element.hidden = single && id !== focusedId;

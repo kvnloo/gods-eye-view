@@ -1749,11 +1749,13 @@ try {
     const { createSyntheticCommunityPlanningFixture } = await import(
       '/src/standalone/communityPlanningFixture.js'
     );
+    const wrapper = document.createElement('div');
     const host = document.createElement('section');
     const inner = document.createElement('div');
     inner.className = 'scene-panel-inner';
     host.append(inner);
-    document.body.append(host);
+    wrapper.append(host);
+    document.body.append(wrapper);
     const stop = mountCommunityPlanningPreview({
       ...createSyntheticCommunityPlanningFixture(),
       panel: host,
@@ -1785,6 +1787,20 @@ try {
       launcher.click();
       const ariaHiddenBlocked = !isOpen();
       host.removeAttribute('aria-hidden');
+      // Zero-opacity controls retain layout and script click delivery.
+      host.style.opacity = '0';
+      const opacityStillLaysOut = launcher.getClientRects().length > 0;
+      launcher.click();
+      const hostOpacityBlocked = !isOpen();
+      host.style.opacity = '';
+      launcher.style.opacity = '0';
+      launcher.click();
+      const launcherOpacityBlocked = !isOpen();
+      launcher.style.opacity = '';
+      wrapper.style.opacity = '0';
+      launcher.click();
+      const ancestorOpacityBlocked = !isOpen();
+      wrapper.style.opacity = '';
       launcher.click();
       const visibleOpened = isOpen();
       document.querySelector(
@@ -1793,11 +1809,12 @@ try {
       const cleanAfterClose = !isOpen();
       return {
         hiddenBlocked, collapsedBlocked, visibilityBlocked, inertBlocked,
-        ariaHiddenBlocked, visibleOpened, cleanAfterClose,
+        ariaHiddenBlocked, opacityStillLaysOut, hostOpacityBlocked,
+        launcherOpacityBlocked, ancestorOpacityBlocked, visibleOpened, cleanAfterClose,
       };
     } finally {
       stop();
-      host.remove();
+      wrapper.remove();
     }
   });
   assert.deepEqual(inaccessibleOwnerActivation, {
@@ -1806,6 +1823,10 @@ try {
     visibilityBlocked: true,
     inertBlocked: true,
     ariaHiddenBlocked: true,
+    opacityStillLaysOut: true,
+    hostOpacityBlocked: true,
+    launcherOpacityBlocked: true,
+    ancestorOpacityBlocked: true,
     visibleOpened: true,
     cleanAfterClose: true,
   });

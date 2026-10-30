@@ -30,9 +30,10 @@ function excludedProposalReason(id, record, project) {
   return 'proposal failed another validation rule';
 }
 
-/** Author-supplied source metadata never establishes reuse or municipal rights. */
+/** Source claims never independently establish reuse or municipal rights. */
 function unverifiedPlanningCitation(source) {
-  return `Baseline citation (UNVERIFIED): ${source.id} · revision: ${source.revision} · ` +
+  return `Baseline citation (UNVERIFIED): ${source.id} · ` +
+    `revision: ${source.revision} · ` +
     `claimed attribution: ${source.attribution} · ` +
     `claimed license (NOT rights-cleared): ${source.license} · ` +
     `source URL (not fetched): ${source.url}`;

@@ -817,7 +817,20 @@ try {
     true,
     'keyboard Game entry must focus its revealed selected Inspect control',
   );
-  await page.click('[data-planning-mode="co-op"]');
+  // A scripted/touch-like mode change need not focus the clicked button.
+  // Hiding a still-focused Inspect button would drop focus to the document.
+  await page.$eval('[data-planning-mode="co-op"]', (button) => button.click());
+  assert.deepEqual(
+    await page.$eval('[data-community-planning-preview]', (dialog) => ({
+      coOpFocused: document.activeElement ===
+        dialog.querySelector('[data-planning-mode="co-op"]'),
+      inspectHidden: dialog.querySelector('[data-planning-focus-navigation]').hidden,
+      visibleCount: [...dialog.querySelectorAll('[data-alternative-id]')]
+        .filter((article) => !article.hidden).length,
+    })),
+    { coOpFocused: true, inspectHidden: true, visibleCount: 2 },
+    'closing Game must not strand focus inside hidden Inspect navigation',
+  );
   await page.click('[data-planning-mode="game"]');
   assert.equal(
     await page.$eval('[data-planning-mode="game"]', (button) =>

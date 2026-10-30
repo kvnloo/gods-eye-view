@@ -28,6 +28,10 @@ function syntheticDocument() {
         replaceChildren(...children) {
           this.children = children;
         },
+        contains(target) {
+          return this === target ||
+            this.children.some((child) => child.contains?.(target));
+        },
         focus() {
           doc.activeElement = this;
         },
@@ -396,4 +400,57 @@ test('manual Playground tabs move focus without mounting room or What-if', () =>
   assert.equal(tabs[1].listeners.get('keydown')?.size, 0);
   tabs[2].fire('click');
   assert.deepEqual(events, before, 'disposed controls inert');
+});
+
+test('Escape inside Playground closes it; foreign Scene Escape does not leave room', () => {
+  const { doc, nodes, handlers } = syntheticDocument();
+  const events = [];
+  const dispose = mountPlanetPlayground(
+    { document: doc, window: { location: { search: '' } } },
+    ['park', 'local-room'].map((id) => ({
+      id, title: id,
+      mount() {
+        events.push('mount:' + id);
+        return () => events.push('dispose:' + id);
+      },
+    })),
+  );
+  const launcher = nodes.find((node) => node.id === 'planet-playground-launcher');
+  const panel = nodes.find((node) => node.id === 'planet-playground');
+  const roomTab = nodes.find((node) => node.dataset.mode === 'local-room');
+  assert.ok(launcher && panel && roomTab);
+  function escape(target, handled = false) {
+    const event = {
+      key: 'Escape', target, defaultPrevented: handled,
+      preventDefault() { this.defaultPrevented = true; },
+    };
+    for (const callback of [...(handlers.get('keydown') || [])])
+      callback(event);
+    return event;
+  }
+  launcher.fire('click');
+  roomTab.fire('click');
+  assert.deepEqual(events, ['mount:park', 'dispose:park', 'mount:local-room']);
+  const foreignDialogControl = doc.createElement('button');
+  foreignDialogControl.focus();
+  assert.equal(escape(foreignDialogControl).defaultPrevented, false);
+  assert.equal(panel.hidden, false, 'a separate dialog owns its own Escape');
+  assert.equal(doc.activeElement, foreignDialogControl, 'foreign focus remains');
+  assert.deepEqual(
+    events, ['mount:park', 'dispose:park', 'mount:local-room'],
+    'foreign Escape must not leave a local room',
+  );
+  assert.equal(escape(roomTab, true).defaultPrevented, true);
+  assert.equal(panel.hidden, false, 'handled Escape is ignored');
+  assert.equal(escape(roomTab).defaultPrevented, true);
+  assert.equal(panel.hidden, true);
+  assert.equal(doc.activeElement, launcher, 'own Escape returns launcher focus');
+  assert.equal(events.at(-1), 'dispose:local-room');
+  launcher.fire('click');
+  assert.equal(escape(launcher).defaultPrevented, true);
+  assert.equal(panel.hidden, true, 'launcher Escape closes its own shell');
+  const beforeDispose = [...events];
+  dispose();
+  escape(roomTab);
+  assert.deepEqual(events, beforeDispose, 'detached controls remain inert');
 });

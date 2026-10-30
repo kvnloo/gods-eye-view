@@ -172,7 +172,15 @@ export function mountPlanetPlayground(services, featureOverrides = null) {
   launcher.addEventListener('click', onLauncherClick);
   close.addEventListener('click', onCloseClick);
   const onKeydown = (event) => {
-    if (event.key === 'Escape' && opened && !event.defaultPrevented) {
+    // Escape belongs to the Playground, not an unrelated active Scene dialog.
+    // Foreign overlays keep their focus and cannot silently leave a room.
+    if (
+      event.key === 'Escape' &&
+      opened &&
+      !event.defaultPrevented &&
+      event.target &&
+      (panel.contains(event.target) || event.target === launcher)
+    ) {
       event.preventDefault();
       setOpen(false);
     }

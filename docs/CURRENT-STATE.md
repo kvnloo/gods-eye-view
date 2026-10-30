@@ -1,5 +1,16 @@
 # God's Eye View Current State
 
+## Fork-only Planet Playground Escape ownership — October 30, 2026
+
+Escape from the Playground panel or its launcher closes the optional shell and
+releases its current mode. Escape on an unrelated Scene dialog control does
+not close Playground, leave a local-only room, or steal the other dialog's
+focus. Previously handled Escape is respected. This is keyboard-safe teardown
+for existing Draft #253, not real multiplayer or an official planning action.
+A pinned synthetic DOM regression and isolated source-level V8 probe are not
+supported Node24/26, full Scene/Chromium, screen-reader or mobile proof.
+
+
 **October 30 Planet Playground keyboard tabs (#253, fork-only):**
 ArrowLeft/ArrowRight/Home/End move focus without activating a local room or
 What-if; the roving keyboard tab stop follows focus while aria-selected stays

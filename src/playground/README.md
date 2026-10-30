@@ -113,3 +113,10 @@ still navigate to the coarse peer view; live two-tab/browser proof is pending.
 **Not implemented:** remote internet rooms, global time travel, SUMO/PyPSA
 impact forecasts, operational disaster guidance. Keep provenance and simulated
 states explicitly separated.
+
+### Escape ownership (fork-only)
+
+Escape on the open Playground panel or launcher closes and releases its
+active mode. Another Scene dialog's Escape does not affect an opted-in local
+room or steal that dialog's focus. Native Node24/26, mounted Chromium and
+mobile checks remain required. No real online multiplayer is implemented.

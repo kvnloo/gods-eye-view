@@ -1,5 +1,10 @@
 # Changelog
 
+- Fork-only Planet Playground #253 now scopes Escape to its own panel or
+  launcher. An unrelated Scene dialog cannot silently close Playground, leave
+  an opted-in local room or steal focus. Focused isolated V8 only; native
+  Node24/26, full Scene/Puppeteer, mobile and build gates remain NOT RUN.
+
 ## [Unreleased]
 
 - Keep the sole Planet Playground keyboard tab stop on the focused tab during

@@ -2089,6 +2089,60 @@ try {
     visibleOpened: true,
     cleanAfterClose: true,
   });
+  // Native showModal() inerts the Scene outside another dialog, but a retained
+  // Element.click() still dispatches. Do not stack a World Game modal under it.
+  const foreignSceneModal = await page.evaluate(async () => {
+    const { mountCommunityPlanningPreview } = await import(
+      '/src/ui/communityPlanningPreview.js'
+    );
+    const { createSyntheticCommunityPlanningFixture } = await import(
+      '/src/standalone/communityPlanningFixture.js'
+    );
+    const host = document.createElement('section');
+    const inner = document.createElement('div');
+    inner.className = 'scene-panel-inner';
+    host.append(inner);
+    document.body.append(host);
+    const stop = mountCommunityPlanningPreview({
+      ...createSyntheticCommunityPlanningFixture(),
+      panel: host,
+    });
+    const launcher = host.querySelector(
+      '[data-community-planning-preview-open]',
+    );
+    const foreign = document.createElement('dialog');
+    foreign.textContent = 'Unrelated synthetic Scene dialog';
+    document.body.append(foreign);
+    const preview = () => document.querySelector(
+      '[data-community-planning-preview]',
+    );
+    try {
+      foreign.showModal();
+      const foreignIsTopmost = document.querySelector('dialog:modal') === foreign;
+      launcher.click(); // Browser delivers synthetic click despite modal inertness.
+      const blockedUnderForeign = !preview() && foreign.open;
+      foreign.close();
+      launcher.click();
+      const openedAfterForeignClose = Boolean(preview()?.open);
+      preview()?.querySelector('[data-planning-cancel]')?.click();
+      const cleanAfterClose = !preview();
+      return {
+        foreignIsTopmost, blockedUnderForeign, openedAfterForeignClose,
+        cleanAfterClose,
+      };
+    } finally {
+      if (foreign.open) foreign.close();
+      foreign.remove();
+      stop();
+      host.remove();
+    }
+  });
+  assert.deepEqual(foreignSceneModal, {
+    foreignIsTopmost: true,
+    blockedUnderForeign: true,
+    openedAfterForeignClose: true,
+    cleanAfterClose: true,
+  });
   // A connected Scene owner may be hidden/collapsed during a modal close.
   // Do not restore keyboard focus to a launcher outside the accessible view.
   const hiddenOwnerFocus = await page.evaluate(async () => {

@@ -373,6 +373,9 @@ function isPlanningLauncherInteractive(button, panel, disposed) {
     button.disabled ||
     panel.classList.contains('collapsed') ||
     button.closest('[hidden], [inert], [aria-hidden="true"]') ||
+    // Native modal top-layer inertness has no [inert] attribute; retained
+    // Element.click() still dispatches while another Scene modal is open.
+    button.ownerDocument.querySelector('dialog:modal') ||
     !button.getClientRects().length
   ) return false;
   // A retired owner document can lose its browsing context before disposal.

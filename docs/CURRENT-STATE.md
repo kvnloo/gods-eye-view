@@ -1,5 +1,15 @@
 # God's Eye View Current State
 
+## Fork-only World Game retired Scene owner click safety — October 29, 2026
+
+A retained launcher in a retired document can have no browsing context even
+when a stale layout rect remains accessible. The opt-in Scene guard now
+refuses activation without calling a missing Window's style API, preserving
+normal visible launchers and safe teardown. A pinned detached-document
+Puppeteer negative control was committed but **NOT RUN** in a full GEV Scene.
+Supported Node 24.14/26, full build, mobile and actual-browser proof remain
+unverified. The preview is hypothetical, never municipal approval or live co-op.
+
 ## Fork-only World Game baseline citation authority — October 29, 2026
 
 The opt-in synthetic Scene preview now marks each baseline source row

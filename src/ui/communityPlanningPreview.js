@@ -368,7 +368,15 @@ function isPlanningLauncherInteractive(button, panel, disposed) {
     !button.getClientRects().length
   ) return false;
   // A retired owner document can lose its browsing context before disposal.
-  return button.ownerDocument.defaultView?.getComputedStyle(button).visibility === 'visible';
+  const view = button.ownerDocument.defaultView;
+  if (!view || view.getComputedStyle(button).visibility !== 'visible') return false;
+  // CSS opacity does not remove layout boxes: a transparent Scene launcher
+  // can retain a script-callable click listener despite being invisible.
+  // Unlike visibility, ancestor opacity cannot be overridden by a descendant.
+  for (let ancestor = button; ancestor; ancestor = ancestor.parentElement) {
+    if (Number(view.getComputedStyle(ancestor).opacity) === 0) return false;
+  }
+  return true;
 }
 
 /** Scene-panel entry; no launch or DOM mutation until explicitly opted in. */

@@ -74,7 +74,8 @@ export function mountPlanetPlayground(services, featureOverrides = null) {
     }
   }
   function select(id) {
-    if (disposed) return;
+    // Hidden tabs remain script-clickable; only an open shell may mount modes.
+    if (disposed || !opened) return;
     const feature = features.find((entry) => entry.id === id);
     if (!feature || activeId === id) return;
     releaseFeature();

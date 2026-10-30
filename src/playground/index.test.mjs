@@ -253,3 +253,73 @@ test('transient mount failure allows retrying the same selected tab', (t) => {
   assert.equal(cleaned, 1);
   assert.equal(errors.length, 1);
 });
+
+test('closed Playground tabs cannot join rooms or mount hidden modes', () => {
+  const { doc, nodes } = syntheticDocument();
+  const events = [];
+  const dispose = mountPlanetPlayground(
+    { document: doc, window: { location: { search: '' } } },
+    [
+      {
+        id: 'park',
+        title: 'Park',
+        mount() {
+          events.push('park:mounted');
+          return () => events.push('park:disposed');
+        },
+      },
+      {
+        id: 'local-room',
+        title: 'Local room',
+        mount() {
+          events.push('room:joined');
+          return () => events.push('room:left');
+        },
+      },
+    ],
+  );
+  const launcher = nodes.find(
+    (node) => node.id === 'planet-playground-launcher',
+  );
+  const close = nodes.find(
+    (node) => node.attributes.get('aria-label') === 'Close Planet Playground',
+  );
+  const roomTab = nodes.find(
+    (node) => node.dataset.mode === 'local-room',
+  );
+  const panel = nodes.find((node) => node.id === 'planet-playground');
+  assert.ok(launcher && close && roomTab && panel);
+  assert.equal(panel.hidden, true);
+
+  roomTab.fire('click');
+  assert.deepEqual(events, [], 'unopened hidden tab cannot join a room');
+  launcher.fire('click');
+  assert.deepEqual(events, ['park:mounted']);
+  close.fire('click');
+  assert.deepEqual(events, ['park:mounted', 'park:disposed']);
+
+  roomTab.fire('click');
+  assert.deepEqual(
+    events,
+    ['park:mounted', 'park:disposed'],
+    'tab activation after close must not create hidden room effects',
+  );
+  launcher.fire('click');
+  roomTab.fire('click');
+  assert.deepEqual(events, [
+    'park:mounted',
+    'park:disposed',
+    'park:mounted',
+    'park:disposed',
+    'room:joined',
+  ], 'the same tab still works while the shell is visibly open');
+  close.fire('click');
+  assert.equal(events.at(-1), 'room:left');
+  roomTab.fire('click');
+  assert.equal(
+    events.filter((event) => event === 'room:joined').length,
+    1,
+    'hidden tabs cannot remount a room after it is left',
+  );
+  dispose();
+});

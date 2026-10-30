@@ -1,5 +1,11 @@
 # Changelog
 
+- Fork-only World Game #229 now moves keyboard focus from Game Inspect controls
+  to the visible Co-op mode control when a scripted/touch-like switch hides
+  Inspect navigation, avoiding focus loss to the document. Pinned actual Scene
+  Puppeteer negative control added but **NOT RUN**; supported Node24/26, build,
+  browser and device acceptance remain outstanding.
+
 - Fork-only World Game Scene launchers from retired documents now fail closed
   when their browsing context is gone instead of throwing on a stale click.
   Pinned Puppeteer negative control added, **NOT RUN** on the full GEV app;

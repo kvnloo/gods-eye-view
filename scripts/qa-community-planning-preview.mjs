@@ -378,27 +378,41 @@ async function checkQaGrowingInterceptionNegativeControls() {
     },
   };
   const assertSafe = await guardQaTopLevelNavigation(
-    fakePage, 'http://localhost:4173',
+    fakePage,
+    'http://localhost:4173',
   );
   let finishFirst;
   onRequest({
     isNavigationRequest: () => false,
-    continue: () => new Promise((resolve) => { finishFirst = resolve; }),
+    continue: () =>
+      new Promise((resolve) => {
+        finishFirst = resolve;
+      }),
   });
   let finished = false;
   const check = assertSafe().then(
-    () => { finished = true; return null; },
-    (error) => { finished = true; return error; },
+    () => {
+      finished = true;
+      return null;
+    },
+    (error) => {
+      finished = true;
+      return error;
+    },
   );
   let rejectSecond;
   onRequest({
     isNavigationRequest: () => false,
-    continue: () => new Promise((_, reject) => { rejectSecond = reject; }),
+    continue: () =>
+      new Promise((_, reject) => {
+        rejectSecond = reject;
+      }),
   });
   finishFirst();
   for (let i = 0; i < 8; i++) await Promise.resolve();
   assert.equal(
-    finished, false,
+    finished,
+    false,
     'QA must wait for requests added after its first pending snapshot',
   );
   rejectSecond(new Error('synthetic newly arrived interception failure'));

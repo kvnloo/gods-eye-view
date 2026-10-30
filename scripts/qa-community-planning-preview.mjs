@@ -342,17 +342,48 @@ function checkIdentityNegativeControls() {
 checkIdentityNegativeControls();
 
 /**
- * An opt-in Scene gate cannot report PASS after an uncaught app exception or
- * Chromium page crash, even if the final DOM assertions still happen to pass.
+ * An opt-in Scene gate cannot report PASS after an uncaught exception, crash,
+ * or preview-owned console error, even when final DOM assertions pass.
+ * Unrelated map/provider console errors are outside this focused fixture gate.
  */
-function watchQaPageFailures(page, label) {
+const previewConsoleSourcePaths = new Set([
+  '/src/data/communityPlanning.js',
+  '/src/data/collaborationAuthority.js',
+  '/src/standalone/communityPlanningFixture.js',
+  '/src/standalone/tools.js',
+  '/src/ui/communityPlanningPreview.js',
+  '/src/ui/sceneSharing.js',
+]);
+
+function isPreviewConsoleError(message, expectedOrigin) {
+  if (message.type() !== 'error') return false;
+  // Bootstrap's handled import error is logged without throwing a pageerror.
+  if (message.text().startsWith('Community planning fixture preview failed'))
+    return true;
+  try {
+    const source = new URL(message.location()?.url);
+    return (
+      source.origin === expectedOrigin &&
+      previewConsoleSourcePaths.has(source.pathname)
+    );
+  } catch {
+    return false;
+  }
+}
+
+function watchQaPageFailures(page, label, expectedOrigin) {
   const failures = [];
   const onPageError = (error) =>
     failures.push(`unhandled page exception: ${String(error?.message ?? error)}`);
   const onCrash = (error) =>
     failures.push(`page crash: ${String(error?.message ?? error)}`);
+  const onConsole = (message) => {
+    if (isPreviewConsoleError(message, expectedOrigin))
+      failures.push('preview-owned console error');
+  };
   page.on('pageerror', onPageError);
   page.on('error', onCrash);
+  page.on('console', onConsole);
   return {
     assertClean: () => assert.deepEqual(
       failures, [], `${label} had unhandled browser failures`,
@@ -360,6 +391,7 @@ function watchQaPageFailures(page, label) {
     dispose() {
       page.off('pageerror', onPageError);
       page.off('error', onCrash);
+      page.off('console', onConsole);
     },
   };
 }
@@ -373,17 +405,49 @@ function checkQaPageFailureObserverNegativeControls() {
       handlers.delete(event);
     },
   };
+  const origin = 'http://localhost:4173';
+  const consoleMessage = (type, url, text = 'synthetic preview failure') => ({
+    type: () => type,
+    location: () => ({ url }),
+    text: () => text,
+  });
   for (const [event, message] of [
     ['pageerror', 'synthetic uncaught error'],
     ['error', 'synthetic renderer crash'],
   ]) {
-    const watcher = watchQaPageFailures(fakePage, 'injected failure');
+    const watcher = watchQaPageFailures(fakePage, 'injected failure', origin);
     watcher.assertClean();
     handlers.get(event)(new Error(message));
     assert.throws(() => watcher.assertClean(), /unhandled browser failures/);
     watcher.dispose();
     assert.equal(handlers.size, 0, 'browser failure listeners must be removed');
   }
+  for (const source of [
+    origin + '/src/ui/communityPlanningPreview.js?t=1',
+    origin + '/src/data/communityPlanning.js',
+    origin + '/src/standalone/tools.js',
+  ]) {
+    const watcher = watchQaPageFailures(fakePage, 'preview console', origin);
+    handlers.get('console')(consoleMessage('error', source));
+    assert.throws(() => watcher.assertClean(), /unhandled browser failures/);
+    watcher.dispose();
+    assert.equal(handlers.size, 0, 'console listeners must be removed');
+  }
+  const bootstrap = watchQaPageFailures(fakePage, 'bootstrap console', origin);
+  handlers.get('console')(consoleMessage(
+    'error', '', 'Community planning fixture preview failed',
+  ));
+  assert.throws(() => bootstrap.assertClean(), /unhandled browser failures/);
+  bootstrap.dispose();
+  const unrelated = watchQaPageFailures(fakePage, 'unrelated console', origin);
+  for (const [type, source] of [
+    ['log', origin + '/src/ui/communityPlanningPreview.js'],
+    ['error', origin + '/src/ui/otherFeature.js'],
+    ['error', 'https://tiles.example.test/src/ui/communityPlanningPreview.js'],
+  ]) handlers.get('console')(consoleMessage(type, source));
+  unrelated.assertClean();
+  unrelated.dispose();
+  assert.equal(handlers.size, 0, 'all page listeners must be removed');
 }
 checkQaPageFailureObserverNegativeControls();
 assertCurrentCheckout();
@@ -526,7 +590,7 @@ let moduleRequests;
 let desktopFailures;
 try {
   const page = await browser.newPage();
-  desktopFailures = watchQaPageFailures(page, 'desktop Scene QA');
+  desktopFailures = watchQaPageFailures(page, 'desktop Scene QA', origin);
   const assertDesktopRequestsSafe = await guardQaTopLevelNavigation(page, origin);
   moduleRequests = watchPreviewModuleRequests(page, origin);
   await page.setViewport({ width: 1100, height: 900 });
@@ -847,7 +911,7 @@ try {
   // The mobile tab has an independent request stream. The desktop watcher
   // alone cannot establish that credits stay network-inert during touch QA.
   const mobileRequests = watchPreviewModuleRequests(mobilePage, origin);
-  const mobileFailures = watchQaPageFailures(mobilePage, 'mobile Scene QA');
+  const mobileFailures = watchQaPageFailures(mobilePage, 'mobile Scene QA', origin);
   try {
     await mobilePage.setViewport({
       width: 375,

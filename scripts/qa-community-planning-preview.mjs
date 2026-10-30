@@ -356,7 +356,15 @@ const previewConsoleSourcePaths = new Set([
 ]);
 
 function isPreviewConsoleError(message, expectedOrigin) {
-  if (message.type() !== 'error') return false;
+  const type = message.type();
+  // The Scene owner catches disposal errors and emits console.warn instead of
+  // pageerror. This exact preview-owned failure must fail QA without relying
+  // on Chromium providing a usable source location or stack.
+  if (
+    (type === 'warn' || type === 'error') &&
+    message.text().startsWith('Community planning preview cleanup failed')
+  ) return true;
+  if (type !== 'error') return false;
   // Bootstrap's handled import error is logged without throwing a pageerror.
   if (message.text().startsWith('Community planning fixture preview failed'))
     return true;
@@ -463,6 +471,18 @@ function checkQaPageFailureObserverNegativeControls() {
   ));
   assert.throws(() => bootstrap.assertClean(), /unhandled browser failures/);
   bootstrap.dispose();
+  // Source-level error-path control: createSceneDialog disposal can throw;
+  // mountCommunityPlanningPreview catches it and logs console.warn. A clean
+  // DOM after that failure is NOT a successful cleanup receipt.
+  for (const type of ['warn', 'error']) {
+    const watcher = watchQaPageFailures(fakePage, 'failed cleanup', origin);
+    handlers.get('console')(consoleMessage(
+      type, '', 'Community planning preview cleanup failed Error: synthetic disposer',
+    ));
+    assert.throws(() => watcher.assertClean(), /unhandled browser failures/);
+    watcher.dispose();
+    assert.equal(handlers.size, 0, 'cleanup-warning listeners must be removed');
+  }
   const unrelated = watchQaPageFailures(fakePage, 'unrelated console', origin);
   for (const [type, source] of [
     ['log', origin + '/src/ui/communityPlanningPreview.js'],
@@ -475,6 +495,14 @@ function checkQaPageFailureObserverNegativeControls() {
     ['error', 'https://tiles.example.test/src/ui/communityPlanningPreview.js'],
   ]) handlers.get('console')(consoleMessage(
     type, '', 'unrelated stack', [stackUrl],
+  ));
+  // Avoid upgrading unrelated provider warnings or harmless log text to FAIL.
+  handlers.get('console')(consoleMessage(
+    'warn', origin + '/src/ui/communityPlanningPreview.js',
+    'synthetic unrelated provider warning',
+  ));
+  handlers.get('console')(consoleMessage(
+    'log', '', 'Community planning preview cleanup failed synthetic log',
   ));
   unrelated.assertClean();
   unrelated.dispose();

@@ -1,6 +1,96 @@
 # Changelog
 
+- Fork-only Planet Playground #253 now scopes Escape to its own panel or
+  launcher. An unrelated Scene dialog cannot silently close Playground, leave
+  an opted-in local room or steal focus. Focused isolated V8 only; native
+  Node24/26, full Scene/Puppeteer, mobile and build gates remain NOT RUN.
+
 ## [Unreleased]
+
+- Keep the sole Planet Playground keyboard tab stop on the focused tab during
+  manual arrow/Home/End navigation without selecting a room or What-if; clicking
+  the already-active tab restores its tab stop without remounting. Isolated V8
+  synthetic DOM only; Node 24/26, real browser/mobile and CI NOT RUN.
+
+- Release Planet Playground What-if button/select listeners on feature teardown and
+  make disposal idempotent. A detached Add control cannot resurrect a Cesium
+  proposal after switching tabs. Published source isolated V8 RED→GREEN only;
+  supported Node 24.14/26, real Scene/Puppeteer/mobile and CI NOT RUN.
+
+- Skip superseded Planet Playground scene-inclusive Copy intents before
+  starting a queued clipboard request; rapid room-only Copy must not expose a
+  stale precise location, even transiently. In-flight browser writes cannot
+  be revoked but latest intent still wins. Isolated V8 RED→GREEN; Node 24/26,
+  real browser/phone and CI remain unverified.
+
+- Make repeated Join in the already joined Planet Playground local room
+  idempotent: retain the channel/heartbeat/peer presence without spurious
+  Leave/Join packets; a changed room still switches explicitly. Published
+  source isolated V8 RED→GREEN; supported Node 24/26, two-tab browser/mobile
+  and CI remain NOT RUN.
+
+- When a focused local-room peer Visit view disappears (peer Leave, expiry,
+  or local disconnect), move keyboard focus to the non-action room status
+  instead of losing it or selecting a location-sharing button. Never restore
+  focus during feature teardown. Focused synthetic DOM RED→GREEN only;
+  supported Node 24/26, real two-tab browser/mobile and CI proof pending.
+
+- Limit explicit Planet Playground room-invite scene fragments to the
+  recognized GEV share-link fields and valid bounded camera coordinates;
+  unrelated hash tokens cannot be copied. Invalid scene state falls back to
+  a room-only link with a truthful notice. Isolated V8 controls only;
+  supported Node 24/26, app/browser and CI verification remain outstanding.
+- Prevent Planet Playground local rooms from sending retained coarse camera
+  coordinates after Scene destruction or a throwing lifecycle check. Preserve
+  the joined room for a valid explicit retry. Isolated V8 RED→GREEN only;
+  supported Node 24/26, app/browser and CI verification outstanding.
+- Transfer keyboard focus to a refreshed Planet Playground Visit view button
+  only when that peer's previous button was focused; background peer updates
+  never steal focus. Synthetic V8 RED→GREEN only; Node 24/26 and browser
+  acceptance remain unverified.
+- Keep Planet Playground's keyboard-focused Visit view mounted when a
+  different local-room peer joins, changes its coarse view or leaves. Reconcile
+  only the affected peer row; preserve the existing coarse/opt-in limits.
+  Isolated synthetic V8 RED→GREEN only; supported Node/browser proof pending.
+- Serialize Planet Playground's optional local-room invite clipboard writes
+  so a delayed older scene-inclusive Copy cannot overwrite a newer room-only
+  choice. Only the latest intent reports its result; teardown abandons queued
+  unstarted copies and suppresses stale notices. Deferred clipboard V8
+  regression only; supported Node 24/26 and browser proof remain outstanding.
+- Preserve keyboard focus on a peer's Planet Playground Visit view button
+  across presence-only heartbeats, repeated joins and unchanged coarse-view
+  packets. Re-render only when peer membership or the shared view changes;
+  leaving still removes the action. Fork-only synthetic regression; supported
+  Node 24/26 and real two-tab browser QA remain outstanding.
+
+- Fail closed when Planet Playground's local-room Visit view button outlives
+  its Cesium Scene camera: no thrown navigation, no local view transmission,
+  and no room disconnect. A valid explicit follow still works. Isolated V8
+  RED→GREEN only; supported Node/browser proof remains outstanding.
+
+- Make Planet Playground's optional scene/location inclusion one-shot per
+  copied local-room invitation. Consume consent before asynchronous clipboard
+  access so repeat or rapid copies do not inherit a precise map fragment.
+  Fork-only focused regression; supported Node/browser proof still pending.
+
+- Refuse malformed/invalid Cesium camera snapshots before sending a Planet
+  Playground coarse local-room view; report not shared, retain the joined
+  channel for a valid explicit retry. Isolated V8 RED→GREEN only; native
+  Node and actual browser QA remain outstanding.
+
+- Fail closed on Planet Playground local-room postMessage errors: Join cannot
+  leave ghost membership, failed heartbeat/reply/view sending disconnects, and
+  departure/close failures still release local state. Isolated V8 regression
+  only; supported Node and real-browser QA remain outstanding.
+
+- Keep Planet Playground local-room Join fail-closed when a browser
+  denies BroadcastChannel creation: show an unavailable notice, avoid ghost
+  membership, disable room controls and allow explicit retry. Browser proof
+  remains pending on this fork-only prototype.
+
+- In the fork-only Planet Playground local-room prototype, keep copied invites
+  pinned to the joined room when the editable code changes. No automatic room
+  switch or scene/location disclosure is introduced.
 
 ## [0.2.1] — 2026-10-02 — God's Eye View through Your Agent (with security fixes and other features)
 

@@ -1,5 +1,133 @@
 # God's Eye View Current State
 
+## Fork-only Planet Playground Escape ownership — October 30, 2026
+
+Escape from the Playground panel or its launcher closes the optional shell and
+releases its current mode. Escape on an unrelated Scene dialog control does
+not close Playground, leave a local-only room, or steal the other dialog's
+focus. Previously handled Escape is respected. This is keyboard-safe teardown
+for existing Draft #253, not real multiplayer or an official planning action.
+A pinned synthetic DOM regression and isolated source-level V8 probe are not
+supported Node24/26, full Scene/Chromium, screen-reader or mobile proof.
+
+
+**October 30 Planet Playground keyboard tabs (#253, fork-only):**
+ArrowLeft/ArrowRight/Home/End move focus without activating a local room or
+What-if; the roving keyboard tab stop follows focus while aria-selected stays
+on the mounted mode. Re-selecting that same mode restores its tab stop without
+remounting. Native Enter/Space remains explicit; tablist/tabpanel associations
+and teardown have synthetic DOM regressions. Supported Node24/26,
+browser, screen-reader and mobile QA **NOT RUN**; no live co-op or municipal
+authority.
+
+
+**October 28 What-if teardown lifecycle (#253, fork-only):** Closing or switching away from the Planet Playground What-if mode now detaches all four owned DOM listeners, removes Cesium markers, and makes disposal idempotent. An old retained Add control cannot resurrect a marker after cleanup. Existing synthetic A/B scenario behavior is unchanged. Predecessor published source fails an isolated V8 retained-control negative; patched source passes. Supported Node 24.14/26, real Scene/Puppeteer and mobile remain NOT RUN; no measured urban impact or approval claimed.
+
+**October 28 queued room-link consent safety (#253, fork-only):**
+If a scene-inclusive Copy is queued but a newer room-only Copy occurs before
+browser clipboard access begins, the older request is now skipped entirely;
+the transient scene link never reaches clipboard.writeText. Already-started
+clipboard calls are not revocable: the later intent still writes last.
+One-shot scene consent is unchanged. Isolated exact-source synthetic V8
+RED→GREEN only; native Node 24/26, browser permission/phone and CI are NOT RUN.
+
+**October 28 same-room Join stability (#253, fork-only):** Pressing Join
+again for an already connected normalized room now retains the channel,
+peer membership and timer instead of broadcasting a false Leave and Join.
+A genuinely different room still transitions with explicit departure; no
+remote multiplayer or automatic camera sharing exists. Original exact-source
+V8 reproduced the unnecessary Leave/Join, and patched exact-source V8
+preserved membership while retaining room-switch/leave controls. This is
+NOT native supported Node 24/26, real two-tab Chromium/mobile or CI proof.
+
+**October 28 peer-removal keyboard handoff (#253, fork-only):** If a focused
+**Visit view** action disappears because its peer leaves/expires or the local
+room disconnects, focus moves to the existing non-action status message, not
+onto **Send coarse view** or a detached button. Unrelated UI focus remains
+untouched; teardown cannot resurrect focus. Isolated synthetic DOM testing only;
+supported Node 24/26, real GEV two-tab Chromium/mobile and CI remain **NOT RUN**.
+
+**October 28 room-link scene-fragment boundary (#253, fork-only):**
+Explicit **Include current scene** now copies only recognized GEV share-link
+fragment fields when a bounded, finite camera lat/lon exists. Unsupported
+fragment keys (including unrelated hash credentials) are excluded. An absent,
+malformed or out-of-range camera fragment produces a room-only link with a
+truthful notice; room-only remains the default. The old exact source disclosed
+an unknown hash token in an isolated V8 URL probe (RED), and the new source
+excluded it (GREEN). This is **not** native Node 24/26, actual browser,
+full Scene, mobile, two-tab or CI acceptance; origin product fit remains open.
+
+**October 28 destroyed-Scene coarse-view safety (#253, fork-only):**
+The opt-in same-origin room now refuses **Send coarse view** after the Cesium
+viewer reports destruction, including when the lifecycle check throws during
+teardown; it cannot send a retained camera coordinate. A failed send leaves the
+local room joined for an explicit retry against a valid viewer. Exact published
+source and focused regression passed a synthetic V8 RED→GREEN probe only;
+supported Node 24/26, full GEV Scene/browser and CI are **NOT RUN**.
+
+## Fork-only Planet Playground local-room invitation experiment — October 27, 2026
+
+**October 28 focused-peer view refresh (#253, fork-only):** A received change
+from the keyboard-focused peer now transfers focus from the retired **Visit view**
+button to the new one, while a background peer update cannot steal focus from
+another control. Departed peers are still removed; only an explicitly shared,
+coarsened view is navigable. Isolated source-level synthetic DOM V8 RED→GREEN
+only; native Node 24/26, real browser/phone and CI remain **NOT RUN**.
+
+**October 28 unrelated-peer keyboard focus (#253, fork-only):** Local-room
+peer rows now reconcile individually rather than re-creating every row when
+another peer joins, changes its coarse view or leaves. An existing keyboard-
+focused **Visit view** action remains mounted for unrelated peer updates; an
+actual change to that peer's view updates only its own action. The old exact
+source lost focus in three synthetic cases (RED); the patched source and new
+DOM-like regression passed isolated V8 controls (GREEN). Supported Node 24/26,
+real GEV two-/three-tab Chromium, mobile and hosted CI are **NOT RUN**.
+
+**October 28 local-room focus preservation (#253, fork-only):** A received
+peer's heartbeat, repeated Join or identical coarse-view packet now refreshes
+presence without replacing the keyboard-focusable **Visit view** action. A
+changed coarse view updates the action, and Leave removes it. This remains an
+unverified same-origin tab prototype; isolated synthetic DOM tests do not
+establish Node 24/26, real keyboard/browser or two-tab acceptance.
+
+**October 28 queued clipboard consent (#253, fork-only):** Back-to-back Copy room link actions now serialize browser clipboard writes in click order. A delayed earlier scene-inclusive Copy cannot overwrite the later room-only clipboard result; only the latest Copy reports success/failure. On feature teardown, queued unstarted writes are abandoned and stale status suppressed, but already-started browser clipboard operations cannot be revoked. The regression uses synthetic deferred clipboard promises: supported Node 24/26 project tests, Chromium two-tab/permission-prompt QA and device verification are **NOT RUN**; no real-world location or internet room is used.
+
+**October 28 one-shot invite consent (#253, fork-only):** Checking
+"Include current scene" authorizes only the next Copy room link. The checkbox
+resets *before* awaiting the clipboard, so a later or rapid second Copy is
+room-only unless explicitly rechecked. This prevents accidental repeat
+disclosure of the scene fragment; it does not authenticate participants.
+Regression is isolated source/test coverage; supported Node 24/26 and live
+two-tab browser proof remain unverified.
+
+Downstream Draft #253 keeps Copy room link pointed at the actively joined
+BroadcastChannel room even when its editable room-code field changes. Leaving
+allows a different entered code to be used for another invitation without
+silently switching the connected tab. Invites still strip unrelated query
+state, credentials and scene hashes by default; the scene requires separate
+consent. Same-origin local-tab synthetic prototype only; not internet
+multiplayer or authenticated membership. Supported Node 24/26 and live
+two-tab browser proof remain unverified, and origin has not accepted it.
+When a browser exposes BroadcastChannel but refuses channel construction, Join
+stays disconnected with an unavailable notice and disabled Leave/Send controls.
+A later explicit Join may retry; only an isolated mocked-channel regression
+has been exercised for this failure path, not a real-browser acceptance run.
+If a channel denies posting Join, no ghost membership is announced. A denied
+presence reply, heartbeat or view send disconnects locally and clears timers;
+failure while posting Leave or closing the channel cannot retain local
+membership. An explicit Join is required to retry. Only synthetic V8 proof is
+available, not supported Node or full-app/two-tab browser acceptance.
+A manual coarse-view send also refuses a missing, destroyed, nonfinite or
+out-of-range Cesium camera without posting a view or claiming a successful
+share. The local room stays joined for an explicit valid retry. Only an
+isolated V8 adapter exercised the negative and positive cases; supported
+Node 24/26 and actual GEV browser/device behavior remain unverified.
+A received peer's **Visit view** action now also refuses an absent or destroyed
+Scene camera, failed Cesium coordinate conversion, or failed flyTo without
+throwing or claiming navigation. It leaves the local room intact for an
+explicit valid retry and does not send the user's camera. This has only an
+isolated synthetic V8 regression, not native supported Node or browser proof.
+
 ## God's Eye View in conversations — October 2, 2026
 
 Tool answers that can be shown in God's Eye View include a view: camera, layers,

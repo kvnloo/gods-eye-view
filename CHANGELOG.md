@@ -1,5 +1,11 @@
 # Changelog
 
+- Fork-only World Game Scene launchers moved outside their original connected
+  Scene panel can no longer open a hypothetical modal or regain close focus.
+  Reparenting back restores opt-in. Pinned real-Scene/Puppeteer negative and
+  positive controls added but NOT RUN; supported Node24/26 and browser proof
+  remain pending. This does not authorize real maps or multiplayer.
+
 - Fork-only World Game #229 now moves keyboard focus from Game Inspect controls
   to the visible Co-op mode control when a scripted/touch-like switch hides
   Inspect navigation, avoiding focus loss to the document. Pinned actual Scene

@@ -49,9 +49,12 @@ export function mountPlanetPlayground(services, featureOverrides = null) {
   header.append(heading, close);
   const tabs = doc.createElement('nav');
   tabs.setAttribute('aria-label', 'Playground modes');
+  tabs.setAttribute('role', 'tablist');
   tabs.className = 'gev-playground-tabs';
   const body = doc.createElement('div');
   body.className = 'gev-playground-body';
+  body.id = 'planet-playground-content';
+  body.tabIndex = 0;
   body.setAttribute('role', 'tabpanel');
   panel.append(header, tabs, body);
 
@@ -82,6 +85,8 @@ export function mountPlanetPlayground(services, featureOverrides = null) {
     activeId = id;
     body.replaceChildren();
     body.setAttribute('aria-label', feature.title);
+    const activeTab = buttons.find((button) => button.dataset.mode === id);
+    if (activeTab) body.setAttribute('aria-labelledby', activeTab.id);
     for (const button of buttons) {
       const selected = button.dataset.mode === id;
       button.setAttribute('aria-selected', String(selected));
@@ -115,17 +120,39 @@ export function mountPlanetPlayground(services, featureOverrides = null) {
       launcher.focus();
     }
   }
-  for (const feature of features) {
+  for (const [index, feature] of features.entries()) {
     const button = doc.createElement('button');
     button.type = 'button';
     button.dataset.mode = feature.id;
+    button.id = `planet-playground-tab-${index}`;
     button.textContent = feature.title;
     button.setAttribute('role', 'tab');
+    button.setAttribute('aria-controls', body.id);
     button.setAttribute('aria-selected', 'false');
     button.tabIndex = -1;
     const onSelect = () => select(feature.id);
+    // Focus-only navigation: keyboard browsing must not join a room.
+    const onTabKeydown = (event) => {
+      if (
+        disposed || !opened || panel.hidden || event.defaultPrevented ||
+        event.altKey || event.ctrlKey || event.metaKey
+      ) return;
+      let next = index;
+      if (event.key === 'ArrowRight') next = (index + 1) % buttons.length;
+      else if (event.key === 'ArrowLeft')
+        next = (index - 1 + buttons.length) % buttons.length;
+      else if (event.key === 'Home') next = 0;
+      else if (event.key === 'End') next = buttons.length - 1;
+      else return;
+      event.preventDefault();
+      buttons[next].focus();
+    };
     button.addEventListener('click', onSelect);
-    removeTabListeners.push(() => button.removeEventListener('click', onSelect));
+    button.addEventListener('keydown', onTabKeydown);
+    removeTabListeners.push(() => {
+      button.removeEventListener('click', onSelect);
+      button.removeEventListener('keydown', onTabKeydown);
+    });
     tabs.append(button);
     buttons.push(button);
   }

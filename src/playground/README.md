@@ -7,6 +7,10 @@ Optional EXPLORE panel built on the existing GEV controllers; no separate map or
 Each `features/NN-name.js` exports `feature = { id, title, mount({ root, services }) }`.
 The mount function renders inside the provided panel and may return a cleanup callback.
 The shell owns switching, keyboard dismissal and application-lifetime teardown.
+Tabs use manual keyboard activation: ArrowLeft/ArrowRight wrap focus and Home/End
+focus the first/last tab; native Enter/Space activates the focused button.
+Focus alone cannot join a local room, mount What-if, or share a location.
+Only synthetic DOM proof exists; browser, screen reader and mobile QA pending.
 Features must release their own event listeners, Cesium entities, timers, and opt-in connections.
 The shell removes launcher, tab, close and keyboard handlers on host teardown;
 retained detached controls cannot remount a mode and repeat disposal is inert.

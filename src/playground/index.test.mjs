@@ -41,14 +41,20 @@ function syntheticDocument() {
         removeEventListener(type, callback) {
           listeners.get(type)?.delete(callback);
         },
-        fire(type) {
-          for (const callback of [...(listeners.get(type) || [])]) {
-            callback({
-              defaultPrevented: false,
-              key: type,
-              preventDefault() {},
-            });
-          }
+        fire(type, init = {}) {
+          const event = {
+            defaultPrevented: false,
+            key: init.key ?? type,
+            altKey: Boolean(init.altKey),
+            ctrlKey: Boolean(init.ctrlKey),
+            metaKey: Boolean(init.metaKey),
+            preventDefault() {
+              this.defaultPrevented = true;
+            },
+          };
+          for (const callback of [...(listeners.get(type) || [])])
+            callback(event);
+          return event;
         },
       };
       nodes.push(node);
@@ -322,4 +328,63 @@ test('closed Playground tabs cannot join rooms or mount hidden modes', () => {
     'hidden tabs cannot remount a room after it is left',
   );
   dispose();
+});
+
+
+test('manual Playground tabs move focus without mounting room or What-if', () => {
+  const { doc, nodes } = syntheticDocument();
+  const events = [];
+  const dispose = mountPlanetPlayground(
+    { document: doc, window: { location: { search: '' } } },
+    ['park', 'local-room', 'what-if'].map((id) => ({
+      id, title: id,
+      mount() {
+        events.push('mount:' + id);
+        return () => events.push('dispose:' + id);
+      },
+    })),
+  );
+  const launcher = nodes.find((node) => node.id === 'planet-playground-launcher');
+  const tabs = nodes.filter((node) => node.attributes.get('role') === 'tab');
+  const tablist = nodes.find((node) => node.attributes.get('role') === 'tablist');
+  const panel = nodes.find((node) => node.id === 'planet-playground');
+  const body = nodes.find((node) => node.attributes.get('role') === 'tabpanel');
+  assert.ok(launcher && tablist && panel && body);
+  assert.equal(tabs.length, 3);
+  assert.ok(tabs.every((tab) => tab.attributes.get('aria-controls') === body.id));
+  launcher.fire('click');
+  assert.deepEqual(events, ['mount:park']);
+  assert.equal(body.attributes.get('aria-labelledby'), tabs[0].id);
+  tabs[0].focus();
+  assert.equal(tabs[0].fire('keydown', { key: 'ArrowRight' }).defaultPrevented, true);
+  assert.equal(doc.activeElement, tabs[1]);
+  assert.equal(tabs[1].attributes.get('aria-selected'), 'false');
+  assert.deepEqual(events, ['mount:park'], 'focus alone cannot join a room');
+  tabs[1].fire('keydown', { key: 'ArrowRight' });
+  assert.equal(doc.activeElement, tabs[2]);
+  tabs[2].fire('keydown', { key: 'ArrowRight' });
+  assert.equal(doc.activeElement, tabs[0], 'right wraps');
+  tabs[0].fire('keydown', { key: 'ArrowLeft' });
+  assert.equal(doc.activeElement, tabs[2], 'left wraps');
+  tabs[2].fire('keydown', { key: 'Home' });
+  assert.equal(doc.activeElement, tabs[0]);
+  tabs[0].fire('keydown', { key: 'End' });
+  assert.equal(doc.activeElement, tabs[2]);
+  assert.equal(tabs[2].fire('keydown', { key: 'ArrowLeft', altKey: true }).defaultPrevented, false);
+  assert.equal(doc.activeElement, tabs[2]);
+  assert.equal(tabs[2].fire('keydown', { key: 'ArrowDown' }).defaultPrevented, false);
+  assert.deepEqual(events, ['mount:park'], 'keys cannot mount What-if');
+  tabs[1].fire('click'); // Native Enter/Space on a button dispatches click.
+  assert.deepEqual(events, ['mount:park', 'dispose:park', 'mount:local-room']);
+  assert.equal(body.attributes.get('aria-labelledby'), tabs[1].id);
+  launcher.fire('click');
+  assert.equal(panel.hidden, true);
+  const before = [...events];
+  assert.equal(tabs[1].fire('keydown', { key: 'ArrowRight' }).defaultPrevented, false);
+  tabs[2].fire('click');
+  assert.deepEqual(events, before, 'closed controls inert');
+  dispose();
+  assert.equal(tabs[1].listeners.get('keydown')?.size, 0);
+  tabs[2].fire('click');
+  assert.deepEqual(events, before, 'disposed controls inert');
 });

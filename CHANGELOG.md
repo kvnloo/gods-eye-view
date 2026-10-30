@@ -1,5 +1,11 @@
 # Changelog
 
+- Fork-only World Game #229 blocks retained launcher clicks beneath an unrelated
+  native Scene modal, while normal opt-in works after that modal closes.
+  Browser regression committed but NOT RUN in mounted GEV; standalone Chromium
+  verified only native modal inert-click behavior, exact-source V8 the guard.
+  Supported Node24/26, build and actual Scene/mobile checks remain outstanding.
+
 - Fork-only World Game Scene preview now explains when imported park
   proposals are excluded for unsupported schema, non-hypothetical state,
   unverified modeled impact or unverified approval claims, without echoing

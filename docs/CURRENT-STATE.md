@@ -1,5 +1,185 @@
 # God's Eye View Current State
 
+## Fork-only World Game foreign native modal guard — October 30, 2026
+
+An opt-in park launcher now refuses retained programmatic clicks while
+another native `dialog:modal` is topmost. Native `showModal()` makes
+outside controls inert without adding `[inert]`; synthetic
+`Element.click()` events can otherwise launch a second modal and steal
+top-layer ownership. Once the other dialog closes, normal launcher
+behavior returns; preview cleanup also avoids hidden focus restoration.
+Pinned actual-Scene/Puppeteer negative controls are **NOT RUN**.
+Standalone Chromium verified the browser inert-click primitive; isolated
+V8 checked the guard. Supported Node24.14/26 format/unit/boundaries/
+build/track, mounted Scene/mobile and two-tab QA remain outstanding.
+No observed facts, real co-op, physical impact or civic approval.
+
+## Fork-only World Game excluded authority/impact claims — October 30, 2026
+
+The opt-in Scene park comparison already excluded imported proposals that were
+not hypothetical, used unknown schema revisions, claimed a modeled impact,
+or asserted civic approval. Its exclusion disclosure previously reported only
+a generic validation failure. It now names one bounded, observable mismatch
+for each of these cases, without displaying untrusted claim values or promoting
+excluded proposals into the two-card comparison. This is not a history of
+merge conflicts, a verified permit, a model validation, or proof of land rights.
+The pinned Scene/Puppeteer fixture contains synthetic negative controls but
+has **NOT RUN** in a mounted app; isolated V8 source-helper checks are limited
+and do not prove supported Node24/26, browser, mobile or build acceptance.
+
+## Fork-only World Game zero-opacity Scene guard — October 29, 2026
+
+The existing synthetic park launcher no longer opens its hypothetical modal
+from a CSS `opacity: 0` button, Scene panel, or enclosing ancestor. Opacity
+preserves layout and synthetic click delivery, so connected/visible-geometry
+checks alone were insufficient. Faded-but-visible controls still work; no
+record, map, multiplayer or civic authority changes. The pinned full-Scene
+Puppeteer negative controls are committed but **NOT RUN**. Exact-source
+isolated V8 caught the previous transparent activation and the new guard,
+not a supported Node24/26 or actual browser run.
+
+## Fork-only World Game Scene owner containment — October 29, 2026
+
+A visible opt-in launcher moved into an unrelated connected DOM host no longer
+opens the synthetic park modal or receives close-focus restoration: it must
+remain inside its original live Scene panel. Moving it back restores normal
+opt-in. The pinned real-app Puppeteer reparent/return controls were added but
+**NOT RUN**. Isolated exact-source V8 showed old-head RED and candidate GREEN;
+supported Node24.14/26, actual Scene/Chromium, mobile and full build remain
+unverified. No observed geometry, real shared room or civic authority changes.
+
+## Fork-only World Game Inspect focus safety — October 29, 2026
+
+The optional synthetic Scene comparison can switch from Game to Co-op without
+leaving keyboard focus inside a newly hidden Inspect navigation. When a scripted
+or touch-like activation does not first focus the Co-op mode control, the
+preview rehomes a focused Inspect button to the visible Co-op control before
+hiding that navigation; an already focused mode control is not disturbed.
+The pinned actual Scene/Puppeteer negative control was committed but **NOT RUN**.
+Supported Node24.14/26, full-app browser/keyboard/mobile QA and build are
+unverified. This changes presentation only; no observed map state, municipal
+approval, rights verification, real participants or modeled outcome is implied.
+
+## Fork-only World Game retired Scene owner click safety — October 29, 2026
+
+A retained launcher in a retired document can have no browsing context even
+when a stale layout rect remains accessible. The opt-in Scene guard now
+refuses activation without calling a missing Window's style API, preserving
+normal visible launchers and safe teardown. A pinned detached-document
+Puppeteer negative control was committed but **NOT RUN** in a full GEV Scene.
+Supported Node 24.14/26, full build, mobile and actual-browser proof remain
+unverified. The preview is hypothetical, never municipal approval or live co-op.
+
+## Fork-only World Game baseline citation authority — October 29, 2026
+
+The opt-in synthetic Scene preview now marks each baseline source row
+**UNVERIFIED**. Attribution and license are explicitly **claimed** fields;
+the apparent license never establishes reuse or municipal land rights. The
+source URL is displayed as text, not fetched by the preview. An empty list
+still reports missing provenance. The pinned Scene/Puppeteer gate asserts
+this separation on the versioned synthetic fixture (**NOT RUN**). Isolated
+source-level V8 string controls are not full-app or supported Node proof.
+
+## Fork-only World Game inaccessible Scene activation — October 29, 2026
+
+A connected but hidden, collapsed, inert, accessibility-hidden or
+visibility-hidden Scene launcher can receive a scripted click even though it
+should not be user-interactive. The opt-in hypothetical park preview now
+ignores these stale activations and still opens from a visible launcher.
+The existing pinned Scene/Puppeteer gate adds negative/positive cases but
+remains **NOT RUN**. An isolated source-level V8 check is not supported
+Node 24.14/26, mounted GEV browser or device acceptance.
+
+## Fork-only World Game Scene keyboard focus restoration — October 29, 2026
+
+The hypothetical comparison dialog returns focus to its opt-in Scene launcher
+only when that launcher is still visible and keyboard-reachable. A hidden,
+collapsed, inert, accessibility-hidden or detached Scene owner must not receive
+focus on Cancel/Escape, even if its button remains connected. A new pinned
+Puppeteer regression covers hidden, collapsed, visible and visibility-hidden
+close paths but is **NOT RUN** in the mounted Scene. Isolated source-level V8
+negative controls are not supported Node 24.14/26, full build, device or
+real-browser acceptance. No official map, construction or multiplayer claim.
+
+## Fork-only World Game excluded-record reason disclosure — October 29, 2026
+
+The opt-in hypothetical Scene preview now shows one observed validation
+mismatch for each excluded imported proposal (project, proposal ID, reference
+revision, malformed payload or record ownership), without echoing rejected
+payloads or malformed IDs. The reason is **not exhaustive conflict history**
+or proof of a disputed edit; invalid scenarios remain excluded and unapproved.
+The pinned Puppeteer fixture now asserts the reason labels and negative cases,
+but supported Node 24.14/26, full GEV Scene/Puppeteer, mobile, build and
+`test:track` remain **NOT RUN**.
+
+The fork-only synthetic city-builder Scene bootstrap now requires the exact
+`?planningPreview=fixture` query. Extra/duplicate query keys (including
+credential-shaped canaries) and encoded aliases do not opt in to the
+hypothetical module. The focused browser QA verifies the actual exported
+bootstrap predicate, but full-app GEV Scene/Puppeteer, supported Node 24/26,
+mobile and `test:track` remain **NOT RUN**.
+
+## Fork-only synthetic co-op Scene preview — October 25, 2026
+
+The keyboard Game-view transition now focuses the selected newly revealed
+Inspect control, which precedes the mode footer in DOM tab order. Pointer/touch
+mode selection does not hijack focus. A focused native-keyboard/pointer
+Puppeteer regression was added, but the full GEV browser, supported Node
+24.14/26 tests, and device paths remain **NOT RUN**; the fixture remains
+hypothetical and local-only.
+
+The opt-in synthetic planning modal focuses its hypothetical heading after
+constructing its comparison, before native keyboard Tab proceeds to Cancel.
+Escape/Cancel still restores focus to the surviving Scene launcher. Its focused
+Puppeteer regression has been added but **NOT RUN** in the full GEV browser;
+supported Node 24.14/26 and device acceptance also remain **NOT RUN**.
+
+The hypothetical proposal projection sorts stable IDs independently of browser
+locale, so a two-card comparison drawn from multiple alternatives is consistent
+across languages and imported record order. This order is not an endorsement,
+preference, modeled impact or government ranking. Browser/device QA is NOT_RUN.
+
+Public baseline HTTPS references reject URL userinfo credentials, malformed
+URLs and ASCII control characters before the fixture-only Scene dialog can
+render them as provenance. The validation matches parent city-data Draft #185;
+it does not fetch the source, authenticate an author, prove a parcel or approve
+a proposal. Source fixtures cover accepted URLs and rejected credentials.
+Supported Node 24/26 and mounted Scene/Puppeteer remain NOT_RUN.
+
+Long but schema-valid HTTPS baseline reference URLs wrap within the Scene
+dialog on narrow mobile viewports, retaining their attribution and license.
+The existing opt-in mobile Puppeteer gate now includes a versioned synthetic
+long-URL source and an intentionally unwrapped overflow negative control.
+The actual mounted GEV browser gate remains NOT_RUN; this is not device proof.
+
+The downstream `exp/community-park-preview-20261013` draft adds an opt-in,
+single-browser `?planningPreview=fixture` comparison of two hypothetical
+park proposals in the existing Scene dialog. It displays recorded pseudonymous
+actor credits, recorded operation ID and logical counter when the merge clock
+is valid (otherwise explicitly unknown), and synthetic baseline source ID,
+revision, attribution, license and URL, or an unverified-source notice if none
+exists. Recorded metadata does not authenticate a participant or grant approval. The preview
+reports excluded stale/incompatible authored records and valid proposals beyond
+its two-card limit. A separate disclosure lists up to eight additional valid,
+but unshown, hypothetical proposal titles/IDs with recorded (unverified) authors
+and source revisions. More valid proposals are counted but never silently treated
+as compared, approved or modeled. A keyboard-accessible disclosure lists up to
+eight rejected proposal IDs (masking invalid IDs), with remaining exclusions counted. Those
+IDs are sorted before the eight-item cap, so equivalent imported records show
+the same subset regardless of arrival order. The planning validator owns rejection; the UI does not invent a precise cause or
+display unrelated projects. It cannot reconstruct overwritten edits or certify
+conflict resolution from the winner-only projection. With fewer than two valid
+alternatives, the UI explicitly marks comparison unavailable and disables Game
+view instead of treating excluded records as proposals. The visible Co-op mode is explicitly local-only (no shared room, live
+participants or synchronized edits); switching modes or inspecting a different
+hypothetical proposal updates an accessible polite status announcement with the
+selected proposal title and stable proposal ID; equal-titled alternatives have distinct
+accessible card names, Inspect controls, synthetic SVG descriptions and Game view announcements. Closing the dialog by Escape or Cancel returns focus
+to its surviving Scene launcher; owner teardown removes the launcher first, so
+it cannot receive stale focus. No real parcel, observed-data edit, simulation,
+approval, external transport or live multiplayer is provided. This is **not** a production/origin feature. Supported-runtime
+full-app and browser acceptance remain **NOT_RUN**.
+
 ## God's Eye View in conversations — October 2, 2026
 
 Tool answers that can be shown in God's Eye View include a view: camera, layers,
@@ -5089,3 +5269,4 @@ Imported authored park records must declare `draft-scenario` ownership and the e
 Experimental park alternatives are ordered by bounded ID using code-unit comparison, not device or browser locale collation. This keeps the first two hypothetical proposals selected for the future Scene comparison stable across locales and record arrival order. Ordering is not a vote, ranking, or official approval; the stacked opt-in Scene preview requires separate parity and real-browser verification.
 
 The inherited collaboration authority kernel also compares equal-clock actor and operation IDs, evidence-claim order, and audit receipts by stable UTF-16 code-unit order rather than each viewer's locale. This is deterministic source-level convergence, not an authenticated contributor identity, online room, verified public observation, or civic approval.
+

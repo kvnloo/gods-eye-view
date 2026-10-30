@@ -1,17 +1,170 @@
 # Changelog
 
+- Fork-only World Game #229 blocks retained launcher clicks beneath an unrelated
+  native Scene modal, while normal opt-in works after that modal closes.
+  Browser regression committed but NOT RUN in mounted GEV; standalone Chromium
+  verified only native modal inert-click behavior, exact-source V8 the guard.
+  Supported Node24/26, build and actual Scene/mobile checks remain outstanding.
+
+- Fork-only World Game Scene preview now explains when imported park
+  proposals are excluded for unsupported schema, non-hypothetical state,
+  unverified modeled impact or unverified approval claims, without echoing
+  rejected payloads or granting authority. Pinned real-Scene/Puppeteer
+  negative controls added but **NOT RUN**. Only isolated source-level V8
+  helper checks; supported Node24/26, build and browser gates outstanding.
+
+- Fork-only World Game #229 now refuses script activation of hypothetical
+  park previews from CSS-transparent (zero-opacity) Scene launchers, panels,
+  or ancestors even though they retain layout boxes. Opaque controls still
+  work. Pinned browser negatives added but **NOT RUN**; isolated V8 only,
+  with supported Node24/26, build, and mounted Chromium gates outstanding.
+
+- Fork-only World Game Scene launchers moved outside their original connected
+  Scene panel can no longer open a hypothetical modal or regain close focus.
+  Reparenting back restores opt-in. Pinned real-Scene/Puppeteer negative and
+  positive controls added but NOT RUN; supported Node24/26 and browser proof
+  remain pending. This does not authorize real maps or multiplayer.
+
+- Fork-only World Game #229 now moves keyboard focus from Game Inspect controls
+  to the visible Co-op mode control when a scripted/touch-like switch hides
+  Inspect navigation, avoiding focus loss to the document. Pinned actual Scene
+  Puppeteer negative control added but **NOT RUN**; supported Node24/26, build,
+  browser and device acceptance remain outstanding.
+
+- Fork-only World Game Scene launchers from retired documents now fail closed
+  when their browsing context is gone instead of throwing on a stale click.
+  Pinned Puppeteer negative control added, **NOT RUN** on the full GEV app;
+  supported Node24/26 and browser/device acceptance remain outstanding.
+
+- Fork-only World Game Scene baseline credits now distinguish user-entered
+  attribution/license **claims** from verified reuse rights: the source row
+  reads UNVERIFIED and NOT rights-cleared, without fetching links or changing
+  synthetic scenario data. A pinned Scene/Puppeteer assertion was updated
+  but not executed; supported Node24/26/browser acceptance remains pending.
+
+- Fork-only World Game blocks hidden, collapsed, inert and inaccessible Scene
+  launcher clicks from opening the hypothetical comparison while preserving
+  visible opt-in. Pinned Scene/Puppeteer negative controls added (NOT RUN);
+  isolated source V8 is not a native app or supported Node verification.
+
+- Fork-only World Game Scene comparison now restores dialog-close keyboard
+  focus only to a visible, interactive launcher, not a collapsed/hidden host.
+  Added pinned browser regression for visible and hidden owner teardown
+  (NOT RUN); isolated V8 helper checks do not replace native Scene proof.
+
 - Fork-only park baseline references now reject reserved, documentation, benchmarking and multicast IPv4 source hosts before optional Scene credit display. The check remains syntactic: DNS, licensing and native browser proof are not established.
 
 - Fork-only park baseline citations now reject obvious private/local HTTPS hosts (loopback, private IPv4, local/internal names and IPv6 literals) before source credit display. Public example.org/revision references remain accepted; DNS rights and browser proof are not established.
 
+- Fork-only World Game now explains one directly observed mismatch for
+  excluded imported park proposals while masking malformed IDs. Other
+  validation failures and merge conflicts remain unknown; added synthetic
+  browser QA negative controls (NOT RUN on actual Scene). Supported Node
+  24.14/26, browser and full-checkout verification are still pending.
+
+- Fork-only World Game Scene preview now releases modal ownership, removes a
+  stranded dialog, and allows reopening when native close throws. Teardown
+  blocks stale detached launchers and avoids returning focus after host removal.
+  Added a fault-injected pinned Puppeteer regression (NOT RUN). Isolated
+  source-level V8 RED→GREEN does not establish supported Node/browser proof.
+
 - Fork-only community park source citations now reject `*Key` query aliases (`clientKey`, `access_key`, encoded spellings) before publicly displaying those URLs. Benign revision references remain allowed; this does not establish source rights or official approval.
 
-- Experimental park proposals now have a deterministic, locale-independent ID order; browser languages cannot silently choose different first-two hypothetical comparisons. This is not prioritization or municipal approval.
+- Fork-only World Game keyboard Game-mode entry now moves focus to the selected
+  revealed Inspect control; pointer/touch changes keep focus on the mode button.
+  Pinned real-app Puppeteer assertions were added but are NOT RUN; supported
+  Node 24/26, full build, browser and device proof remain pending.
+
+- The fork-only World Game planning preview now loads only for the exact
+  `?planningPreview=fixture` query; extra/duplicate parameters and encoded
+  aliases cannot activate the synthetic Scene launcher. Added the actual
+  bootstrap-predicate query matrix to the existing browser QA gate; native
+  Node 24/26 and full-app/browser QA remain NOT RUN.
+
+- The fork-only World Game Scene preview now focuses its hypothetical
+  heading after the modal's comparison content is built, rather than leaving
+  initial keyboard focus on the shared Cancel button. The existing Puppeteer
+  gate checks title focus and native Tab to Cancel. Supported Node 24/26,
+  mounted full-app browser and device verification remain NOT_RUN.
 
 - The inherited collaboration authority kernel now resolves equal-clock authored ties and sorts claims/audit receipts consistently across browser locales. This changes only fork-local deterministic proposal semantics; it does not grant authority or create a live room.
 
-- The fork-only park proposal projection now rejects imported authored records with mismatched draft-scenario kind/target ownership, preserving other valid hypothetical proposals without claiming verified identity, site rights or approval.
-- The downstream experimental community-planning baseline now rejects malformed, credential-bearing query and unsafe URL-fragment references before the optional park Scene preview displays them; normal public revisions and simple document anchors are preserved. Credits and licenses remain read-only, not verified planning approval.
+- The fork-only community-planning projection rejects imported proposal records
+  with mismatched draft-scenario kind/target ownership. Independent valid
+  hypotheses remain visible; recorded actors and parcel rights remain unverified.
+
+- The opt-in World Game park preview now compares the same first two versioned
+  hypothetical proposals across browser languages: stable ID sorting is
+  locale-independent, not a preference or municipal approval. A synthetic
+  four-proposal negative-control regression guards the ordering.
+
+- The fork-only World Game Scene preview uses parent #185 validation
+  to reject credential-shaped query keys, unsafe URL fragments, malformed and
+  credentialed HTTPS references before showing public source credits, while
+  retaining safe revision queries and document anchors. Full-app browser and
+  supported Node 24/26 checks remain NOT_RUN.
+
+- The fork-only World Game Scene preview now wraps long, credited HTTPS
+  baseline references inside its mobile-width modal instead of overflowing
+  horizontally. The existing Puppeteer gate adds a schema-valid long-source
+  fixture and a forced-no-wrap overflow negative control. Full-app browser,
+  supported Node 24/26, and device verification remain NOT_RUN.
+
+- The fork-only World Game preview now includes stable proposal IDs in the
+  accessible names of synthetic marker schematics, so equal-titled alternatives
+  remain distinct to screen-reader users. The existing Scene Puppeteer collision
+  fixture checks both SVGs; full-app/native/browser proof remains NOT_RUN.
+
+- The fork-only World Game Scene preview includes stable proposal IDs in card
+  accessible names, Inspect controls and Game view announcements, so two valid
+  authored alternatives sharing a title remain distinguishable. The existing
+  real-app Puppeteer gate now tests that collision; supported Node 24/26 and
+  full-app Scene/browser verification are still NOT_RUN.
+
+- The fork-only World Game Scene dialog returns keyboard focus to its surviving
+  launcher after Escape or Cancel, while owner teardown never targets a
+  detached launcher. The existing real-app Puppeteer gate now asserts both
+  close paths; the gate, supported Node 24/26 and full-app build remain NOT_RUN.
+
+- The fork-only World Game park preview now discloses up to eight additional
+  valid but unshown hypothetical proposals with recorded, unverified authors
+  and source revisions, plus an overflow count. The first two comparisons,
+  observed layers and approval boundaries remain unchanged. The existing Scene
+  Puppeteer gate now includes one/many valid-alternative negative controls;
+  actual full-app/browser and supported Node 24/26 checks remain NOT_RUN.
+
+- The fork-only park proposal preview now sorts rejected record IDs before
+  displaying a capped set of eight, so identical imports produce the same
+  disclosure regardless of arrival order. Its existing Puppeteer gate now
+  checks reversed input order, overflow counts, malformed-ID masking and
+  preservation of the two valid synthetic proposals. Full-app browser and
+  supported Node 24/26 verification remain NOT_RUN.
+
+- The fork-only community planning Scene preview now offers an expandable,
+  keyboard-accessible list of up to eight rejected proposal IDs, masks invalid
+  IDs, and counts additional rejected entries. Unrelated projects are excluded.
+  Rejection remains data-validator-owned: the preview cannot infer the exact
+  reason or reconstruct overwritten/conflicting edits. Actual mounted
+  Scene/Puppeteer, supported Node and device QA remain NOT_RUN.
+
+- The fork-only synthetic park comparison now visibly marks Co-op as a local-only
+  display (no live room, participants or synchronized edits). Game/Co-op changes
+  update a polite accessible status, including the inspected hypothetical proposal
+  title when Game selection changes; the existing Puppeteer gate now asserts both
+  pointer and keyboard announcements. Full-app/browser proof remains NOT_RUN.
+
+- Fork-only planning preview shows a comparison-unavailable status and disables
+  Game view when validation leaves fewer than two usable proposals. Puppeteer
+  fixture gates cover one/zero valid alternatives with stale revisions; full
+  GEV browser, supported Node and native verification are still NOT_RUN.
+
+- Fork-only Scene community planning preview discloses excluded stale/incompatible
+  authored proposals and valid alternatives beyond the two-card comparison.
+  It shows the recorded operation ID/counter only for a valid merge clock and
+  otherwise shows unknown; neither metadata nor actor IDs verify identity.
+  The winner-only snapshot explicitly cannot reconstruct overwritten conflicts.
+  A real-app Puppeteer negative gate supplies a stale/cross-project record;
+  native full-app and browser verification remain NOT_RUN.
 
 - Vector tile sources take their allowed tile origin from the configured
   `tileJsonUrl`, so repointing only that URL at a mirror loads tiles from the
@@ -80,6 +233,11 @@
   stale, moved-camera, invalid and oversized captures still fail closed.
 
 ## [Unreleased]
+
+- Fork-only experimental co-op Scene comparison makes its synthetic baseline
+  source revision, attribution, license and URL explicit (or marks absent
+  provenance unknown). Still single-browser, hypothetical and not an approved
+  city-planning or model result. Live GEV/Puppeteer acceptance is outstanding.
 
 - Add an experimental ChatGPT/Codex OAuth option for cloud voice in Provider
   Settings. API-key voice remains the default. Local sign-in can start from

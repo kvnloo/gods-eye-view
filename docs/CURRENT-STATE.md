@@ -1,5 +1,15 @@
 # God's Eye View Current State
 
+## Fork-only World Game Scene owner containment — October 29, 2026
+
+A visible opt-in launcher moved into an unrelated connected DOM host no longer
+opens the synthetic park modal or receives close-focus restoration: it must
+remain inside its original live Scene panel. Moving it back restores normal
+opt-in. The pinned real-app Puppeteer reparent/return controls were added but
+**NOT RUN**. Isolated exact-source V8 showed old-head RED and candidate GREEN;
+supported Node24.14/26, actual Scene/Chromium, mobile and full build remain
+unverified. No observed geometry, real shared room or civic authority changes.
+
 ## Fork-only World Game Inspect focus safety — October 29, 2026
 
 The optional synthetic Scene comparison can switch from Game to Co-op without

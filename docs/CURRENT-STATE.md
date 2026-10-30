@@ -1,5 +1,17 @@
 # God's Eye View Current State
 
+## Fork-only World Game Inspect focus safety — October 29, 2026
+
+The optional synthetic Scene comparison can switch from Game to Co-op without
+leaving keyboard focus inside a newly hidden Inspect navigation. When a scripted
+or touch-like activation does not first focus the Co-op mode control, the
+preview rehomes a focused Inspect button to the visible Co-op control before
+hiding that navigation; an already focused mode control is not disturbed.
+The pinned actual Scene/Puppeteer negative control was committed but **NOT RUN**.
+Supported Node24.14/26, full-app browser/keyboard/mobile QA and build are
+unverified. This changes presentation only; no observed map state, municipal
+approval, rights verification, real participants or modeled outcome is implied.
+
 ## Fork-only World Game retired Scene owner click safety — October 29, 2026
 
 A retained launcher in a retired document can have no browsing context even

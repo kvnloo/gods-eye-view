@@ -3008,5 +3008,10 @@
   "Left panels": "Painéis à esquerda",
   "Right panels": "Painéis à direita",
   "CONFIRMED": "CONFIRMADA",
-  "PAD / RTLS": "PLATAFORMA / RTLS"
+  "PAD / RTLS": "PLATAFORMA / RTLS",
+  "VEHICLES EXP ON": "VEÍCULOS EXP LIGADO",
+  "VEHICLES EXP OFF": "VEÍCULOS EXP DESLIG.",
+  "VEH OBS {count}": "VEÍC. OBS. {count}",
+  "Traffic roads are required for CCTV vehicles": "Os veículos do CCTV exigem as vias da camada Trânsito urbano",
+  "Experimental: locally detect moving vehicle-shaped blobs in the active CCTV feed and project them onto nearby roads": "Experimental: detecta localmente manchas em movimento com formato de veículo no feed de CCTV ativo e as projeta nas vias próximas"
 }

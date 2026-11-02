@@ -56,6 +56,9 @@ const frameData = computed(() =>
       <UiButton class="scene-btn" :pressed="Boolean(view?.projection.active)" pressed-class="active" id="cctv-projection-btn" :disabled="view?.toggleDisabled">{{ view?.projection.text ?? t('PROJECTION ON') }}</UiButton>
       <UiBadge id="cctv-quality-chip" class="gev-status-badge--box" :data-cal-badge="view?.quality.calBadge">{{ view?.quality.label ?? t('CAL · {badge}', { badge: '--' }) }}</UiBadge>
     </div>
+    <div class="cctv-controls">
+      <UiButton class="scene-btn" :pressed="Boolean(view?.vehicles.active)" pressed-class="active" id="cctv-vehicles-btn" :disabled="view?.toggleDisabled" :title="t('Experimental: locally detect moving vehicle-shaped blobs in the active CCTV feed and project them onto nearby roads')">{{ view?.vehicles.text ?? t('VEHICLES EXP OFF') }}</UiButton>
+    </div>
     <div class="cctv-calibration-block">
       <div class="cctv-calibration-header">
         <div class="cctv-summary-label">{{ t('CALIBRATION') }}</div>

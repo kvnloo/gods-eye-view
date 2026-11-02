@@ -50,6 +50,7 @@ export function presentCctvPanel(state, enabled) {
   const coverage = state?.coverageMode || (state?.showCoverage ? 'on' : 'off');
   const autoHop = !!state?.autoHop;
   const showProjection = state?.showProjection !== false;
+  const vehicles = !!state?.vehicleObservations;
   // CAL badge (cctv-v2 design §3b, amended by LOCKED §9.2 — panel-only, no
   // in-world tint): three states from cctv.js's deriveCalBadge. Unsaved live
   // edits show EDITED over the persisted state (viewshed design §3e): SAVE
@@ -78,6 +79,11 @@ export function presentCctvPanel(state, enabled) {
       active: showProjection,
       text: showProjection ? t('PROJECTION ON') : t('PROJECTION OFF'),
     },
+    // Experimental local motion observations (off by default).
+    vehicles: {
+      active: vehicles,
+      text: vehicles ? t('VEHICLES EXP ON') : t('VEHICLES EXP OFF'),
+    },
     quality: {
       label: dirty
         ? t('CAL · EDITED (UNSAVED)')
@@ -103,6 +109,11 @@ function metaText(state, enabled, activeCamera, catalogCount) {
       ? _calBadgeLabel(activeCamera.calBadge)
       : '';
     const projLabel = state?.showProjection !== false ? t('MONITOR') : t('OFF');
+    // Observed-vehicle count rides with the projection label, so the
+    // translated meta template keeps its key.
+    const observedLabel = state?.vehicleObservations
+      ? ` · ${t('VEH OBS {count}', { count: state?.vehicleObservation?.count || 0 })}`
+      : '';
     return keepCodesWithValues(
       t(
         '{city} · HDG {heading} · FOV {fov} · RANGE {range}m · {projection}{calBadge} · {provider}{status}',
@@ -111,7 +122,7 @@ function metaText(state, enabled, activeCamera, catalogCount) {
           heading: `${roundHeadingDegrees(Number(activeCamera.headingDeg)) ?? 0}°`,
           fov: `${Math.round(activeCamera.fovDeg)}°`,
           range: Math.round(activeCamera.rangeM),
-          projection: projLabel,
+          projection: `${projLabel}${observedLabel}`,
           calBadge: calBadge ? ` · ${calBadge}` : '',
           provider,
           status: `${credit}${statusMsg}`,

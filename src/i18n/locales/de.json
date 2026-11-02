@@ -2938,5 +2938,10 @@
   "Left panels": "Linke Panels",
   "Right panels": "Rechte Panels",
   "CONFIRMED": "BESTÄTIGT",
-  "PAD / RTLS": "STARTPLATZ / RTLS"
+  "PAD / RTLS": "STARTPLATZ / RTLS",
+  "VEHICLES EXP ON": "FAHRZEUGE EXP EIN",
+  "VEHICLES EXP OFF": "FAHRZEUGE EXP AUS",
+  "VEH OBS {count}": "FZG BEOB {count}",
+  "Traffic roads are required for CCTV vehicles": "CCTV-Fahrzeuge benötigen die Straßen der Ebene Straßenverkehr",
+  "Experimental: locally detect moving vehicle-shaped blobs in the active CCTV feed and project them onto nearby roads": "Experimentell: erkennt lokal bewegte, fahrzeugförmige Bereiche im aktiven CCTV-Bild und projiziert sie auf nahe Straßen"
 }

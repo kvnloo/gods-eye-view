@@ -3008,5 +3008,10 @@
   "Edit anchors, data packs and shot details": "Edita anclas, paquetes de datos y detalles de los planos",
   "Download this scene as JSON or an asset bundle": "Descarga esta escena como JSON o como paquete de recursos",
   "Left panels": "Paneles izquierdos",
-  "Right panels": "Paneles derechos"
+  "Right panels": "Paneles derechos",
+  "VEHICLES EXP ON": "VEHÍCULOS EXP ACTIVADO",
+  "VEHICLES EXP OFF": "VEHÍCULOS EXP DESACTIVADO",
+  "VEH OBS {count}": "VEH. OBSERV. {count}",
+  "Traffic roads are required for CCTV vehicles": "Los vehículos de CCTV necesitan las vías de la capa Tráfico urbano",
+  "Experimental: locally detect moving vehicle-shaped blobs in the active CCTV feed and project them onto nearby roads": "Experimental: detecta localmente manchas en movimiento con forma de vehículo en la cámara CCTV activa y las proyecta sobre las vías cercanas"
 }

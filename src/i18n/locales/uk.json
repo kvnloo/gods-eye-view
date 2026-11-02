@@ -3078,5 +3078,10 @@
   "Left panels": "Ліві панелі",
   "Right panels": "Праві панелі",
   "CONFIRMED": "ПІДТВЕРДЖЕНО",
-  "PAD / RTLS": "МІСЦЕ ЗАПУСКУ / RTLS"
+  "PAD / RTLS": "МІСЦЕ ЗАПУСКУ / RTLS",
+  "VEHICLES EXP ON": "ТРАНСПОРТ ЕКСП. УВІМК.",
+  "VEHICLES EXP OFF": "ТРАНСПОРТ ЕКСП. ВИМК.",
+  "VEH OBS {count}": "СПОСТ. ТЗ {count}",
+  "Traffic roads are required for CCTV vehicles": "Для транспорту CCTV потрібні дороги шару «Дорожній рух»",
+  "Experimental: locally detect moving vehicle-shaped blobs in the active CCTV feed and project them onto nearby roads": "Експериментально: локально виявляє рухомі плями розміру транспортного засобу в активному потоці CCTV і проєктує їх на найближчі дороги"
 }

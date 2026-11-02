@@ -2868,5 +2868,10 @@
   "Edit anchors, data packs and shot details": "編輯錨點、數據包和鏡頭詳情",
   "Download this scene as JSON or an asset bundle": "將此場景下載為 JSON 或資源包",
   "Left panels": "左側面板",
-  "Right panels": "右側面板"
+  "Right panels": "右側面板",
+  "VEHICLES EXP ON": "車輛(實驗)開",
+  "VEHICLES EXP OFF": "車輛(實驗)關",
+  "VEH OBS {count}": "觀測車輛 {count}",
+  "Traffic roads are required for CCTV vehicles": "CCTV 車輛需要街道交通圖層的道路",
+  "Experimental: locally detect moving vehicle-shaped blobs in the active CCTV feed and project them onto nearby roads": "實驗功能：在目前 CCTV 畫面中於本機偵測車輛形狀的移動區域，並投影到附近道路上"
 }

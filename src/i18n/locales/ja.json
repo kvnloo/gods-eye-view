@@ -2868,5 +2868,10 @@
   "Left panels": "左パネル",
   "Right panels": "右パネル",
   "CONFIRMED": "確認済み",
-  "PAD / RTLS": "射場 / RTLS"
+  "PAD / RTLS": "射場 / RTLS",
+  "VEHICLES EXP ON": "車両(実験) オン",
+  "VEHICLES EXP OFF": "車両(実験) オフ",
+  "VEH OBS {count}": "観測車両 {count}",
+  "Traffic roads are required for CCTV vehicles": "CCTV車両には道路交通レイヤーの道路が必要です",
+  "Experimental: locally detect moving vehicle-shaped blobs in the active CCTV feed and project them onto nearby roads": "実験的機能：アクティブなCCTV映像内で車両形状の動く領域をローカルで検出し、近くの道路に投影します"
 }

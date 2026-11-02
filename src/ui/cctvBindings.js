@@ -132,7 +132,9 @@ export function _initCctvPanel() {
     if (!current) {
       const trafficReady = await this.actions.ensureTrafficEnabled?.();
       if (!trafficReady) {
-        this.actions.showToast('Traffic roads are required for CCTV vehicles');
+        this.actions.showToast(
+          t('Traffic roads are required for CCTV vehicles'),
+        );
         return;
       }
     }

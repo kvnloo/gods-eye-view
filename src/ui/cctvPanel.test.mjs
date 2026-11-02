@@ -18,6 +18,7 @@ const BUTTONS = {
   _cctvCoverageBtn: 'cctv-coverage-btn',
   _cctvAutoHopBtn: 'cctv-auto-hop-btn',
   _cctvProjectionBtn: 'cctv-projection-btn',
+  _cctvVehiclesBtn: 'cctv-vehicles-btn',
 };
 
 function panel(t) {
@@ -138,6 +139,39 @@ test('an active camera renders the switch, toggles, CAL chip and meta line', asy
   assert.equal(
     byId('cctv-meta').textContent,
     'Austin · HDG 92° · FOV 60° · RANGE 120m · OFF · CURATED · Configured Source',
+  );
+});
+
+test('VEHICLES EXP renders its state and the observed count joins the meta line', async (t) => {
+  const { controls, byId } = panel(t);
+  assert.equal(byId('cctv-vehicles-btn').textContent, 'VEHICLES EXP OFF');
+  const state = (vehicleObservations, count) => ({
+    enabled: true,
+    count: 1,
+    cameraIndex: [camera],
+    activeCameraId: 'a',
+    activeCamera: camera,
+    showProjection: true,
+    vehicleObservations,
+    vehicleObservation: { backend: 'local-motion', count },
+  });
+
+  controls._renderCctvState(state(true, 3));
+  await nextTick();
+  assert.equal(byId('cctv-vehicles-btn').textContent, 'VEHICLES EXP ON');
+  assert.equal(byId('cctv-vehicles-btn').getAttribute('aria-pressed'), 'true');
+  assert.equal(
+    byId('cctv-meta').textContent,
+    'Austin · HDG 92° · FOV 60° · RANGE 120m · MONITOR · VEH OBS 3 · CURATED · Configured Source',
+  );
+
+  controls._renderCctvState(state(false, 3));
+  await nextTick();
+  assert.equal(byId('cctv-vehicles-btn').textContent, 'VEHICLES EXP OFF');
+  assert.equal(byId('cctv-vehicles-btn').getAttribute('aria-pressed'), 'false');
+  assert.equal(
+    byId('cctv-meta').textContent,
+    'Austin · HDG 92° · FOV 60° · RANGE 120m · MONITOR · CURATED · Configured Source',
   );
 });
 

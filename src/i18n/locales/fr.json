@@ -3008,5 +3008,10 @@
   "Left panels": "Panneaux de gauche",
   "Right panels": "Panneaux de droite",
   "CONFIRMED": "CONFIRMÉE",
-  "PAD / RTLS": "PAS DE TIR / RTLS"
+  "PAD / RTLS": "PAS DE TIR / RTLS",
+  "VEHICLES EXP ON": "VÉHICULES EXP ON",
+  "VEHICLES EXP OFF": "VÉHICULES EXP OFF",
+  "VEH OBS {count}": "VÉH. OBS. {count}",
+  "Traffic roads are required for CCTV vehicles": "Les véhicules CCTV nécessitent les routes de la couche Trafic routier",
+  "Experimental: locally detect moving vehicle-shaped blobs in the active CCTV feed and project them onto nearby roads": "Expérimental : détecte localement des zones en mouvement de la taille d’un véhicule dans le flux CCTV actif et les projette sur les routes proches"
 }

@@ -3008,5 +3008,10 @@
   "Left panels": "Pannelli a sinistra",
   "Right panels": "Pannelli a destra",
   "CONFIRMED": "CONFERMATA",
-  "PAD / RTLS": "SITO DI LANCIO / RTLS"
+  "PAD / RTLS": "SITO DI LANCIO / RTLS",
+  "VEHICLES EXP ON": "VEICOLI EXP ON",
+  "VEHICLES EXP OFF": "VEICOLI EXP OFF",
+  "VEH OBS {count}": "VEIC. OSS. {count}",
+  "Traffic roads are required for CCTV vehicles": "I veicoli CCTV richiedono le strade del livello Traffico stradale",
+  "Experimental: locally detect moving vehicle-shaped blobs in the active CCTV feed and project them onto nearby roads": "Sperimentale: rileva localmente macchie in movimento a forma di veicolo nel feed CCTV attivo e le proietta sulle strade vicine"
 }

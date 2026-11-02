@@ -3078,5 +3078,10 @@
   "Edit anchors, data packs and shot details": "Изменить якоря, пакеты данных и параметры кадров",
   "Download this scene as JSON or an asset bundle": "Скачать эту сцену в формате JSON или архивом ресурсов",
   "Left panels": "Левые панели",
-  "Right panels": "Правые панели"
+  "Right panels": "Правые панели",
+  "VEHICLES EXP ON": "ТРАНСПОРТ ЭКСП ВКЛ",
+  "VEHICLES EXP OFF": "ТРАНСПОРТ ЭКСП ВЫКЛ",
+  "VEH OBS {count}": "НАБЛ. ТС {count}",
+  "Traffic roads are required for CCTV vehicles": "Для транспорта CCTV нужны дороги слоя «Дорожный трафик»",
+  "Experimental: locally detect moving vehicle-shaped blobs in the active CCTV feed and project them onto nearby roads": "Экспериментально: локально находит движущиеся пятна размером с автомобиль в активном потоке CCTV и проецирует их на ближайшие дороги"
 }

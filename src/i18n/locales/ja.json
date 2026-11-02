@@ -2061,6 +2061,7 @@
   "Shared military flight follow expired": "共有された軍用機の追従が期限切れになりました",
   "Shared satellite follow expired": "共有された衛星の追従が期限切れになりました",
   "Shared flight could not be restored — feed unavailable": "共有されたフライトを復元できませんでした：フィードを利用できません",
+  "Shared layer selection could not be restored": "共有リンクのレイヤー選択を復元できませんでした",
   "Shared military flight could not be restored — feed unavailable": "共有された軍用機を復元できませんでした：フィードを利用できません",
   "Shared satellite could not be restored — feed unavailable": "共有された衛星を復元できませんでした：フィードを利用できません",
   "Shared flight is unavailable": "共有されたフライトは利用できません",

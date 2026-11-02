@@ -2345,6 +2345,7 @@
   "Shared military flight follow expired": "Verfolgung des geteilten Militärflugs abgelaufen",
   "Shared satellite follow expired": "Verfolgung des geteilten Satelliten abgelaufen",
   "Shared flight could not be restored — feed unavailable": "Geteilter Flug konnte nicht wiederhergestellt werden – Feed nicht verfügbar",
+  "Shared layer selection could not be restored": "Ebenenauswahl aus dem Freigabelink konnte nicht wiederhergestellt werden",
   "Shared military flight could not be restored — feed unavailable": "Geteilter Militärflug konnte nicht wiederhergestellt werden – Feed nicht verfügbar",
   "Shared satellite could not be restored — feed unavailable": "Geteilter Satellit konnte nicht wiederhergestellt werden – Feed nicht verfügbar",
   "Shared flight is unavailable": "Geteilter Flug ist nicht verfügbar",

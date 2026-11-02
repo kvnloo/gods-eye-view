@@ -2168,6 +2168,7 @@
   "Shared military flight follow expired": "Посилання на стеження за військовим рейсом застаріло",
   "Shared satellite follow expired": "Посилання на стеження за супутником застаріло",
   "Shared flight could not be restored — feed unavailable": "Не вдалося відновити рейс за посиланням — потік даних недоступний",
+  "Shared layer selection could not be restored": "Не вдалося відновити вибір шарів за посиланням",
   "Shared military flight could not be restored — feed unavailable": "Не вдалося відновити військовий рейс за посиланням — потік даних недоступний",
   "Shared satellite could not be restored — feed unavailable": "Не вдалося відновити супутник за посиланням — потік даних недоступний",
   "Shared flight is unavailable": "Рейс за посиланням недоступний",

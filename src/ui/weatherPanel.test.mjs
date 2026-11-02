@@ -6,6 +6,7 @@ import { setLocale } from '../i18n/index.js';
 import { createWeatherPanel } from './weatherPanel.js';
 import { railDocumentFixture as railFixture } from './railTestFixture.mjs';
 import { createAirQualityLayer } from '../layers/airQuality/index.js';
+import { weatherDisplay } from '../layers/weather/display.js';
 const ticks = ['2026-09-22T01:00:00Z', '2026-09-22T01:05:00Z'];
 const wind = {
   id: 'wind',
@@ -782,5 +783,65 @@ test('source-supplied legend units are shown as given; catalog units are transla
     view.destroy();
   } finally {
     setLocale('en');
+  }
+});
+
+test('source product units and credits survive card switches, errors and locale changes', () => {
+  const products = [
+    ['weather-radar', 'dBZ source', 'Radar Network'],
+    ['weather-satellite', 'kelvin source', 'Satellite Network'],
+    ['weather-lightning', 'flashes source', 'Lightning Network'],
+  ].map(([id, units, credit], index) => {
+    const manifest = {
+      display: {
+        units,
+        credit,
+        legend: [
+          { label: '0', color: '#000000' },
+          { label: '1', color: '#ffffff' },
+        ],
+      },
+    };
+    const display = weatherDisplay(manifest);
+    return {
+      id,
+      icon: String(index),
+      credit: display.credit,
+      summary: {
+        label: id,
+        coverage: 'Test',
+        status: 'Stale source · fetch failed',
+        units: display.units,
+        unitsVerbatim: true,
+      },
+      legend: display.legend.map(([label, color]) => ({ label, color })),
+    };
+  });
+  const f = fixture();
+  const view = createWeatherPanel(f);
+  setLocale('ru');
+  try {
+    for (let selected = 0; selected < products.length; selected++) {
+      view.update([
+        products[selected],
+        ...products.filter((_, index) => index !== selected),
+      ]);
+      for (const product of products) {
+        const productCard = card(f, product.id);
+        assert.match(
+          f.find((node) => node.className === 'rail-card-scale', productCard)
+            .textContent,
+          new RegExp(`${product.summary.units}$`),
+        );
+        assert.match(
+          line(f, product.id, 'status').textContent,
+          /Stale source · fetch failed/,
+        );
+        assert.match(product.credit, /Network$/);
+      }
+    }
+  } finally {
+    setLocale('en');
+    view.destroy();
   }
 });

@@ -115,6 +115,9 @@ function extent(value) {
  *   extent?: { west: number, south: number, east: number, north: number } }}
  */
 export function weatherDisplay(manifest) {
+  // Keep this projection entirely independent of UI locale and freshness.
+  // A stale (or subsequently failed) snapshot still describes the bytes that
+  // remain on screen, including that product's units and attribution.
   const display = manifest?.display;
   if (!display || typeof display !== 'object' || Array.isArray(display))
     return EMPTY;

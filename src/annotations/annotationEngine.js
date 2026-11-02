@@ -1,6 +1,7 @@
 import { isUnavailableCapability } from '../sources/capability.js';
 import { defaultGeospatial } from '../search/defaults.js';
 import * as Cesium from 'cesium';
+import { greatCircleMeters } from '../geoDistance.js';
 import {
   holdContinuousRender,
   releaseContinuousRender,
@@ -11,6 +12,7 @@ import {
   sampleGroundHeight,
 } from './annotationResolver.js';
 import { ringCentroid } from './drawMode.js';
+import { formatDistanceText } from '../data/distanceFormat.js';
 
 // Dev convenience: expose the app's Cesium instance for console/preview probing
 // (single shared module instance — avoids dual-Cesium state bugs when testing).
@@ -1567,22 +1569,11 @@ async function fetchRoute(coordPairs, mode, signal, service) {
 }
 
 function greatCircleM(a, b) {
-  const R = 6371000;
-  const toRad = (deg) => (deg * Math.PI) / 180;
-  const dLat = toRad(b.lat - a.lat);
-  const dLon = toRad(b.lon - a.lon);
-  const la1 = toRad(a.lat);
-  const la2 = toRad(b.lat);
-  const h =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(la1) * Math.cos(la2) * Math.sin(dLon / 2) ** 2;
-  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+  return greatCircleMeters(a, b);
 }
 
 function formatDistance(m) {
-  if (!Number.isFinite(m)) return null;
-  if (m >= 1000) return `${(m / 1000).toFixed(m >= 10000 ? 0 : 1)} km`;
-  return `${Math.round(m / 10) * 10} m`;
+  return formatDistanceText(m, { metreStep: 10 });
 }
 
 function composeRouteLabel(baseLabel, distM, durS, mode, fallback) {

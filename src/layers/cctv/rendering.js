@@ -155,8 +155,8 @@ export function createRendering({
    * The same pass thins the view so a large catalog stays readable and cheap:
    * icons well off screen hide, and each camera competes for a world-anchored
    * cell sized to VIEW_CELL_PX at its distance (healthiest first, then a stable
-   * id order). The active camera shows whenever it is above the horizon
-   * and near the screen, even in a crowded cell. The shown records become
+   * id order). The active camera remains pinned across horizon, viewport and
+   * cell culling, while no other offscreen camera is restored. The shown records become
    * `_viewRecords`, the working set for geometry, cards and the camera picker;
    * the array keeps its identity while the shown set is unchanged.
    *
@@ -202,6 +202,15 @@ export function createRendering({
     for (const record of layerState._records) {
       const position = record.billboard?.position;
       if (!position) continue;
+      // Selection is a deliberate, single-record pin. Keep that camera's
+      // icon alive even after a pan takes it outside the viewport (or behind
+      // the horizon), while every other record still goes through the normal
+      // horizon, viewport and cell thinning below.
+      if (record.camera.id === activeId) {
+        record.viewPass = pass;
+        shown.push(record);
+        continue;
+      }
       const vx = position.x * inverseRadii.x - cx;
       const vy = position.y * inverseRadii.y - cy;
       const vz = position.z * inverseRadii.z - cz;
@@ -227,7 +236,7 @@ export function createRendering({
         VIEW_CELL_PX *
         metresPerPixelPerMetre *
         Math.sqrt(dx * dx + dy * dy + dz * dz);
-      if (record.camera.id === activeId || !(cellM >= VIEW_MIN_CELL_M)) {
+      if (!(cellM >= VIEW_MIN_CELL_M)) {
         record.viewPass = pass;
         shown.push(record);
         continue;

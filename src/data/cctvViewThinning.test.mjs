@@ -164,6 +164,35 @@ test('the active camera always shows, even in a crowded cell', () => {
   }
 });
 
+test('the active camera stays pinned offscreen without restoring its neighbors', () => {
+  const { records, screenByPosition } = recordsAt(
+    CLUSTER.slice(0, 3),
+    (index) =>
+      index === 1 ? { x: WIDTH * 3, y: HEIGHT / 2 } : { x: 100, y: 100 },
+  );
+  _setCctvCoverageStateForTest({
+    viewer: viewerAt(20_000, screenByPosition),
+    records,
+    activeCameraId: 'cam-1',
+  });
+  refreshHorizonCulling();
+  assert.equal(records[1].billboard.show, true, 'the selection stays visible');
+  assert.equal(
+    shownIds(records).length,
+    2,
+    'only the pinned selection and one thinned neighbor show',
+  );
+
+  _setCctvCoverageStateForTest({
+    viewer: viewerAt(20_000, screenByPosition, WIDTH),
+    records,
+    activeCameraId: 'cam-1',
+  });
+  refreshHorizonCulling();
+  assert.equal(records[1].billboard.show, true, 'the pin survives a pan');
+  assert.ok(shownIds(records).length < records.length, 'offscreen peers stay hidden');
+});
+
 test('close up, every camera near the screen shows and far-off ones hide', () => {
   const { records, screenByPosition } = recordsAt(
     [

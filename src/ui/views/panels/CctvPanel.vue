@@ -29,7 +29,7 @@ const frameData = computed(() =>
 </script>
 
 <template>
-<RailPanel id="cctv-panel" start-collapsed :title="t('CCTV')" sideways scroll rail-scroller>
+<RailPanel id="cctv-panel" start-collapsed :title="t('CCTV')" sideways scroll rail-scroller :data-selected-camera-id="view?.activeCameraId || undefined">
     <div class="cyber-panel-body ui-scroll" data-rail-scroller>
     <div id="cctv-frame-wrap" :class="['cctv-frame-wrap', { loading: frame?.wrapLoading, 'has-frame': frame?.hasFrame }]">
       <span class="cctv-frame-caption" aria-hidden="true">{{ t('ACQUIRING FRAME') }}</span>

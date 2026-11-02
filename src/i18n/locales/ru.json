@@ -3078,5 +3078,23 @@
   "Edit anchors, data packs and shot details": "Изменить якоря, пакеты данных и параметры кадров",
   "Download this scene as JSON or an asset bundle": "Скачать эту сцену в формате JSON или архивом ресурсов",
   "Left panels": "Левые панели",
-  "Right panels": "Правые панели"
+  "Right panels": "Правые панели",
+  "{count}d ago": "{count} дн назад",
+  "TRAFFIC OBS · {state}": "НАБЛ. ТРАФИКА · {state}",
+  "{rate} veh/min": "{rate} ТС/мин",
+  "{count} vehicles": {
+    "one": "{count} автомобиль",
+    "few": "{count} автомобиля",
+    "many": "{count} автомобилей",
+    "other": "{count} автомобиля"
+  },
+  "{count} movements": {
+    "one": "{count} манёвр",
+    "few": "{count} манёвра",
+    "many": "{count} манёвров",
+    "other": "{count} манёвра"
+  },
+  "Measured traffic": "Измеренный трафик",
+  "MEASURED": "ИЗМЕРЕНО",
+  "OBSERVED": "НАБЛЮДАЕТСЯ"
 }

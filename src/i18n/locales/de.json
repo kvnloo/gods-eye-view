@@ -2938,5 +2938,19 @@
   "Left panels": "Linke Panels",
   "Right panels": "Rechte Panels",
   "CONFIRMED": "BESTÄTIGT",
-  "PAD / RTLS": "STARTPLATZ / RTLS"
+  "PAD / RTLS": "STARTPLATZ / RTLS",
+  "{count}d ago": "vor {count} T",
+  "TRAFFIC OBS · {state}": "VERKEHRSBEOB. · {state}",
+  "{rate} veh/min": "{rate} Fzg./min",
+  "{count} vehicles": {
+    "one": "{count} Fahrzeug",
+    "other": "{count} Fahrzeuge"
+  },
+  "{count} movements": {
+    "one": "{count} Bewegung",
+    "other": "{count} Bewegungen"
+  },
+  "Measured traffic": "Gemessener Verkehr",
+  "MEASURED": "GEMESSEN",
+  "OBSERVED": "BEOBACHTET"
 }

@@ -2868,5 +2868,17 @@
   "Left panels": "左パネル",
   "Right panels": "右パネル",
   "CONFIRMED": "確認済み",
-  "PAD / RTLS": "射場 / RTLS"
+  "PAD / RTLS": "射場 / RTLS",
+  "{count}d ago": "{count}日前",
+  "TRAFFIC OBS · {state}": "交通観測 · {state}",
+  "{rate} veh/min": "{rate} 台/分",
+  "{count} vehicles": {
+    "other": "{count}台"
+  },
+  "{count} movements": {
+    "other": "動線 {count}件"
+  },
+  "Measured traffic": "実測交通量",
+  "MEASURED": "実測",
+  "OBSERVED": "観測"
 }

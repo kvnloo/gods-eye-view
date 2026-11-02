@@ -3008,5 +3008,21 @@
   "Left panels": "Painéis à esquerda",
   "Right panels": "Painéis à direita",
   "CONFIRMED": "CONFIRMADA",
-  "PAD / RTLS": "PLATAFORMA / RTLS"
+  "PAD / RTLS": "PLATAFORMA / RTLS",
+  "{count}d ago": "há {count} d",
+  "TRAFFIC OBS · {state}": "OBS. TRÂNSITO · {state}",
+  "{rate} veh/min": "{rate} veíc./min",
+  "{count} vehicles": {
+    "one": "{count} veículo",
+    "many": "{count} de veículos",
+    "other": "{count} veículos"
+  },
+  "{count} movements": {
+    "one": "{count} movimento",
+    "many": "{count} de movimentos",
+    "other": "{count} movimentos"
+  },
+  "Measured traffic": "Trânsito medido",
+  "MEASURED": "MEDIDO",
+  "OBSERVED": "OBSERVADO"
 }

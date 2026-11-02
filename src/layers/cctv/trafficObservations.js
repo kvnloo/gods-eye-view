@@ -1,3 +1,5 @@
+import { t, tn } from '../../i18n/index.js';
+
 const DEFAULT_STALE_AFTER_MS = 5 * 60 * 1000;
 const MAX_FUTURE_OBSERVATION_SKEW_MS = 60 * 1000;
 
@@ -34,10 +36,13 @@ function formatNumber(value) {
 
 export function formatObservedTrafficAge(ageMs) {
   const age = Math.max(0, Number(ageMs) || 0);
-  if (age < 60_000) return `${Math.max(0, Math.round(age / 1000))}s ago`;
-  if (age < 60 * 60_000) return `${Math.round(age / 60_000)}m ago`;
-  if (age < 24 * 60 * 60_000) return `${Math.round(age / (60 * 60_000))}h ago`;
-  return `${Math.round(age / (24 * 60 * 60_000))}d ago`;
+  if (age < 60_000)
+    return t('{count}s ago', { count: Math.max(0, Math.round(age / 1000)) });
+  if (age < 60 * 60_000)
+    return t('{count}m ago', { count: Math.round(age / 60_000) });
+  if (age < 24 * 60 * 60_000)
+    return t('{count}h ago', { count: Math.round(age / (60 * 60_000)) });
+  return t('{count}d ago', { count: Math.round(age / (24 * 60 * 60_000)) });
 }
 
 export function observedTrafficClassMix(counts, { limit = 3 } = {}) {
@@ -89,11 +94,16 @@ export function indexCameraTrafficObservations(snapshot) {
   return index;
 }
 
+/** `TRAFFIC OBS · <state>` in the page language. */
+function trafficObsLabel(state) {
+  return t('TRAFFIC OBS · {state}', { state });
+}
+
 function unavailableSummary(cameraId) {
   return {
     cameraId,
     state: 'unavailable',
-    statusLabel: 'TRAFFIC OBS · UNAVAILABLE',
+    statusLabel: trafficObsLabel(t('UNAVAILABLE')),
     primary: null,
     classMix: null,
     ageMs: null,
@@ -110,7 +120,7 @@ function unknownSummary(cameraId, snapshot) {
   return {
     cameraId,
     state: 'unknown',
-    statusLabel: 'TRAFFIC OBS · UNKNOWN',
+    statusLabel: trafficObsLabel(t('UNKNOWN')),
     primary: null,
     classMix: null,
     ageMs: null,
@@ -179,12 +189,14 @@ export function summarizeCameraTrafficObservation(
       : 0;
   const primary =
     rate !== null
-      ? `${formatNumber(rate)} veh/min`
+      ? t('{rate} veh/min', { rate: formatNumber(rate) })
       : countTotal > 0
-        ? `${formatNumber(countTotal)} vehicles`
+        ? tn(countTotal, '{count} vehicle', '{count} vehicles', {
+            count: formatNumber(countTotal),
+          })
         : Array.isArray(record?.movements) && record.movements.length
-          ? `${record.movements.length} movement${record.movements.length === 1 ? '' : 's'}`
-          : 'Measured traffic';
+          ? tn(record.movements.length, '{count} movement', '{count} movements')
+          : t('Measured traffic');
   const source =
     record?.provenance?.source || record?.sourceId || snapshot?.source || null;
   const qualityStatus = String(record?.quality?.status || '').trim();
@@ -198,14 +210,16 @@ export function summarizeCameraTrafficObservation(
     .filter(Boolean)
     .join(' ');
   const ageLabel = formatObservedTrafficAge(ageMs);
-  const statusLabel = stale
-    ? 'TRAFFIC OBS · STALE'
-    : partial
-      ? 'TRAFFIC OBS · PARTIAL'
-      : 'TRAFFIC OBS · MEASURED';
+  const statusLabel = trafficObsLabel(
+    stale ? t('STALE') : partial ? t('PARTIAL') : t('MEASURED'),
+  );
 
   const cardMix = observedTrafficClassMix(counts, { limit: 2 });
-  const cardStatus = stale ? 'STALE' : partial ? 'PARTIAL' : 'OBSERVED';
+  const cardStatus = stale
+    ? t('STALE')
+    : partial
+      ? t('PARTIAL')
+      : t('OBSERVED');
   const cardDetails = [
     `${cardStatus} · ${primary}`,
     [cardMix, ageLabel].filter(Boolean).join(' · '),

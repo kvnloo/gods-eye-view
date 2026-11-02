@@ -3078,5 +3078,23 @@
   "Left panels": "Ліві панелі",
   "Right panels": "Праві панелі",
   "CONFIRMED": "ПІДТВЕРДЖЕНО",
-  "PAD / RTLS": "МІСЦЕ ЗАПУСКУ / RTLS"
+  "PAD / RTLS": "МІСЦЕ ЗАПУСКУ / RTLS",
+  "{count}d ago": "{count} дн тому",
+  "TRAFFIC OBS · {state}": "СПОСТ. ТРАФІКУ · {state}",
+  "{rate} veh/min": "{rate} ТЗ/хв",
+  "{count} vehicles": {
+    "one": "{count} автомобіль",
+    "few": "{count} автомобілі",
+    "many": "{count} автомобілів",
+    "other": "{count} автомобіля"
+  },
+  "{count} movements": {
+    "one": "{count} маневр",
+    "few": "{count} маневри",
+    "many": "{count} маневрів",
+    "other": "{count} маневру"
+  },
+  "Measured traffic": "Виміряний трафік",
+  "MEASURED": "ВИМІРЯНО",
+  "OBSERVED": "СПОСТЕРЕЖЕНО"
 }

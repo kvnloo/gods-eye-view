@@ -3008,5 +3008,21 @@
   "Edit anchors, data packs and shot details": "Edita anclas, paquetes de datos y detalles de los planos",
   "Download this scene as JSON or an asset bundle": "Descarga esta escena como JSON o como paquete de recursos",
   "Left panels": "Paneles izquierdos",
-  "Right panels": "Paneles derechos"
+  "Right panels": "Paneles derechos",
+  "{count}d ago": "hace {count} d",
+  "TRAFFIC OBS · {state}": "OBS. TRÁFICO · {state}",
+  "{rate} veh/min": "{rate} veh./min",
+  "{count} vehicles": {
+    "one": "{count} vehículo",
+    "many": "{count} de vehículos",
+    "other": "{count} vehículos"
+  },
+  "{count} movements": {
+    "one": "{count} movimiento",
+    "many": "{count} de movimientos",
+    "other": "{count} movimientos"
+  },
+  "Measured traffic": "Tráfico medido",
+  "MEASURED": "MEDIDO",
+  "OBSERVED": "OBSERVADO"
 }

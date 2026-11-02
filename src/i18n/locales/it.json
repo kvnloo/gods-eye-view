@@ -3008,5 +3008,21 @@
   "Left panels": "Pannelli a sinistra",
   "Right panels": "Pannelli a destra",
   "CONFIRMED": "CONFERMATA",
-  "PAD / RTLS": "SITO DI LANCIO / RTLS"
+  "PAD / RTLS": "SITO DI LANCIO / RTLS",
+  "{count}d ago": "{count} g fa",
+  "TRAFFIC OBS · {state}": "OSS. TRAFFICO · {state}",
+  "{rate} veh/min": "{rate} veic./min",
+  "{count} vehicles": {
+    "one": "{count} veicolo",
+    "many": "{count} di veicoli",
+    "other": "{count} veicoli"
+  },
+  "{count} movements": {
+    "one": "{count} movimento",
+    "many": "{count} di movimenti",
+    "other": "{count} movimenti"
+  },
+  "Measured traffic": "Traffico misurato",
+  "MEASURED": "MISURATO",
+  "OBSERVED": "OSSERVATO"
 }

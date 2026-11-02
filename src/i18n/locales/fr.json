@@ -3008,5 +3008,21 @@
   "Left panels": "Panneaux de gauche",
   "Right panels": "Panneaux de droite",
   "CONFIRMED": "CONFIRMÉE",
-  "PAD / RTLS": "PAS DE TIR / RTLS"
+  "PAD / RTLS": "PAS DE TIR / RTLS",
+  "{count}d ago": "il y a {count} j",
+  "TRAFFIC OBS · {state}": "OBS. TRAFIC · {state}",
+  "{rate} veh/min": "{rate} véh./min",
+  "{count} vehicles": {
+    "one": "{count} véhicule",
+    "many": "{count} de véhicules",
+    "other": "{count} véhicules"
+  },
+  "{count} movements": {
+    "one": "{count} mouvement",
+    "many": "{count} de mouvements",
+    "other": "{count} mouvements"
+  },
+  "Measured traffic": "Trafic mesuré",
+  "MEASURED": "MESURÉ",
+  "OBSERVED": "OBSERVÉ"
 }

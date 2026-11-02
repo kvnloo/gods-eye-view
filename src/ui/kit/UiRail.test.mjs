@@ -143,3 +143,30 @@ test('a plain rail has no labels', () => {
     false,
   );
 });
+
+test('unmounting the rail stops measuring its labels', (t) => {
+  const observers = [];
+  const original = globalThis.ResizeObserver;
+  globalThis.ResizeObserver = class {
+    constructor() {
+      this.targets = new Set();
+      this.disconnected = false;
+      observers.push(this);
+    }
+    observe(target) {
+      this.targets.add(target);
+    }
+    unobserve(target) {
+      this.targets.delete(target);
+    }
+    disconnect() {
+      this.disconnected = true;
+    }
+  };
+  t.after(() => (globalThis.ResizeObserver = original));
+  const wrapper = mountRail({ collapsible: true });
+  const [observer] = observers;
+  assert.equal(observer.targets.size, items.length);
+  wrapper.unmount();
+  assert.equal(observer.disconnected, true);
+});

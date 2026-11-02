@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Browser proof of Layers panel replacement and subscription ownership. */
+/** Browser proof of Layers panel replacement, subscription ownership and the panel rails. */
 import puppeteer from 'puppeteer';
 const browser = await puppeteer.launch({
   headless: true,
@@ -137,6 +137,181 @@ try {
     return result;
   });
   for (const [name, passed] of results) check(name, passed);
+
+  // Panel rails: keyboard and voice open exactly one desktop panel per side,
+  // closing leaves nothing behind, and phone sheets keep their own rules.
+  const STACKS = { left: '#left-panel-stack', right: '#right-context-rail' };
+  const sides = () =>
+    page.evaluate((stacks) => {
+      const read = (selector) => {
+        const stack = document.querySelector(selector);
+        const panels = [...stack.querySelectorAll(':scope > [data-panel-id]')];
+        const rail = stack.querySelector(':scope > .gev-panel-rail .ui-rail');
+        return {
+          open: panels
+            .filter((panel) => !panel.hidden)
+            .filter((panel) => !panel.classList.contains('collapsed'))
+            .map((panel) => panel.id),
+          accordion: panels
+            .filter((panel) => panel.classList.contains('accordion-collapsed'))
+            .map((panel) => panel.id),
+          pressed: [
+            ...(rail?.querySelectorAll('[aria-pressed="true"]') ?? []),
+          ].map((item) => item.dataset.railItem),
+          railShown: Boolean(rail?.getClientRects().length),
+          railExpanded: Boolean(rail?.classList.contains('ui-rail--expanded')),
+        };
+      };
+      return { left: read(stacks.left), right: read(stacks.right) };
+    }, STACKS);
+  // Disclosure settles the stacks over a frame or two.
+  const settle = () =>
+    page.evaluate(
+      () =>
+        new Promise((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve)),
+        ),
+    );
+  const voice = (panelId, open = true) =>
+    page.evaluate(
+      (args) => window.__gevVoiceCommands.runner('set_panel_open', args),
+      { panelId, open },
+    );
+  const railKey = async (side, panelId, key) => {
+    await page.focus(`${STACKS[side]} .ui-rail [data-rail-item="${panelId}"]`);
+    await page.keyboard.press(key);
+    await settle();
+  };
+  const oneOpen = (state, side, id) =>
+    state[side].open.length === 1 &&
+    state[side].open[0] === id &&
+    state[side].pressed.length === 1 &&
+    state[side].pressed[0] === id &&
+    !state[side].railExpanded &&
+    state[side].accordion.length === 0;
+  const noneOpen = (state, side) =>
+    state[side].open.length === 0 &&
+    state[side].pressed.length === 0 &&
+    state[side].railExpanded &&
+    state[side].accordion.length === 0;
+
+  await page.setViewport({ width: 1440, height: 900 });
+  await page.waitForFunction(
+    () => !document.body.classList.contains('mobile-shell'),
+  );
+  await page.evaluate(() => {
+    const shell = window.__godsEyeView.styleManager;
+    for (const panel of document.querySelectorAll(
+      '#left-panel-stack > [data-panel-id], #right-context-rail > [data-panel-id]',
+    ))
+      shell.setPanelCollapsed(panel.id, true, { explicit: true });
+  });
+  await settle();
+  let state = await sides();
+  check(
+    'desktop rails show labelled items while no side panel is open',
+    state.left.railShown &&
+      state.right.railShown &&
+      noneOpen(state, 'left') &&
+      noneOpen(state, 'right'),
+  );
+
+  await railKey('left', 'scene-panel', 'Enter');
+  state = await sides();
+  check(
+    'Enter on a rail item opens its panel alone on that side',
+    oneOpen(state, 'left', 'scene-panel') && noneOpen(state, 'right'),
+  );
+  await railKey('left', 'data-panel', 'Space');
+  await railKey('right', 'pp-toggles', 'Enter');
+  state = await sides();
+  check(
+    'Space on another item swaps the side’s panel; the other side opens its own',
+    oneOpen(state, 'left', 'data-panel') &&
+      oneOpen(state, 'right', 'pp-toggles'),
+  );
+  await railKey('right', 'global-context-panel', 'Enter');
+  state = await sides();
+  check(
+    'keyboard leaves exactly one desktop panel per side',
+    oneOpen(state, 'left', 'data-panel') &&
+      oneOpen(state, 'right', 'global-context-panel'),
+  );
+
+  const opened = await voice('utilities');
+  await voice('hud controls');
+  await settle();
+  state = await sides();
+  check(
+    'voice leaves exactly one desktop panel per side',
+    opened?.ok === true &&
+      oneOpen(state, 'left', 'utilities-panel') &&
+      oneOpen(state, 'right', 'pp-toggles'),
+  );
+
+  await page.evaluate(() => {
+    const panel = document.getElementById('utilities-panel');
+    const focusable = panel.querySelector(
+      'button:not([disabled]), input, [tabindex="0"]',
+    );
+    (focusable ?? panel).focus();
+  });
+  await page.keyboard.press('Escape');
+  await settle();
+  state = await sides();
+  const focusedItem = await page.evaluate(
+    () => document.activeElement?.dataset?.railItem ?? null,
+  );
+  check(
+    'Escape closes the open panel, empties its rail and returns focus to its item',
+    noneOpen(state, 'left') &&
+      oneOpen(state, 'right', 'pp-toggles') &&
+      focusedItem === 'utilities-panel',
+  );
+  await voice('hud controls', false);
+  await settle();
+  state = await sides();
+  check(
+    'closing by voice leaves no panel, pressed item or folded peer behind',
+    noneOpen(state, 'left') && noneOpen(state, 'right'),
+  );
+
+  await page.setViewport({ width: 390, height: 844, isMobile: true });
+  await page.waitForFunction(() =>
+    document.body.classList.contains('mobile-shell'),
+  );
+  await settle();
+  state = await sides();
+  check(
+    'phone layout hides the desktop rails',
+    !state.left.railShown && !state.right.railShown,
+  );
+  await page.focus('#mobile-tab-bar [data-mobile-sheet="layers"]');
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(
+    () => document.body.getAttribute('data-mobile-sheet') === 'layers',
+  );
+  await voice('authoring');
+  await settle();
+  state = await sides();
+  check(
+    'a phone sheet keeps several rail panels open at once',
+    state.left.open.includes('data-panel') &&
+      state.left.open.includes('scene-panel') &&
+      state.left.accordion.length === 0,
+  );
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(
+    () => !document.body.hasAttribute('data-mobile-sheet'),
+  );
+  const sheetTab = await page.evaluate(
+    () => document.activeElement?.dataset?.mobileSheet ?? null,
+  );
+  check(
+    'Escape closes the phone sheet and returns to its tab',
+    sheetTab === 'layers',
+  );
+
   check('no uncaught browser errors', errors.length === 0);
 } finally {
   await browser.close();

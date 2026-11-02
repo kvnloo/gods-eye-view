@@ -3,13 +3,13 @@ const MAX_RECORDS = 5000;
 const MAX_GEOMETRY_POINTS = 256;
 const MAX_COUNT_KEYS = 64;
 const MAX_MOVEMENTS = 32;
-const MAX_FUTURE_OBSERVATION_SKEW_MS = 60 * 1000;
 
 export const OBSERVED_TRAFFIC_GEOMETRY_TYPES = Object.freeze([
   ...GEOMETRY_TYPES,
 ]);
 
 export const DEFAULT_OBSERVED_TRAFFIC_STALE_AFTER_MS = 5 * 60 * 1000;
+const MAX_FUTURE_OBSERVATION_SKEW_MS = 60 * 1000;
 
 function safeString(value, maxLength = 160) {
   const text = String(value ?? '').trim();

@@ -40,13 +40,17 @@ function uniqueIds(values) {
   return [...new Set(values.map(nonEmptyText).filter(Boolean))];
 }
 
-/** Copy metadata to a deeply frozen, JSON-compatible evidence snapshot. */
+/**
+ * Copy metadata to a deeply frozen, JSON-compatible evidence snapshot.
+ * Valid Dates become ISO strings; invalid Dates and non-finite numbers become null.
+ */
 function snapshotMetadata(value, ancestors = new WeakSet()) {
   if (value == null) return null;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  if (value instanceof Date)
+    return Number.isFinite(value.getTime()) ? value.toISOString() : null;
   if (typeof value !== 'object') {
-    return ['string', 'number', 'boolean'].includes(typeof value)
-      ? value
-      : null;
+    return ['string', 'boolean'].includes(typeof value) ? value : null;
   }
   if (ancestors.has(value)) return null;
   if (

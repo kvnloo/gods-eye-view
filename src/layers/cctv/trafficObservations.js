@@ -81,10 +81,8 @@ export function indexCameraTrafficObservations(snapshot) {
       !current ||
       nextTime > currentTime ||
       (nextTime === currentTime &&
-        stableTextOrder(
-          String(record?.id || ''),
-          String(current?.id || ''),
-        ) < 0)
+        stableTextOrder(String(record?.id || ''), String(current?.id || '')) <
+          0)
     )
       index.set(cameraId, record);
   }

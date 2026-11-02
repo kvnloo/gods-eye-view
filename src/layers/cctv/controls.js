@@ -216,16 +216,36 @@ export function createControls({ state: layerState, services, parts, source }) {
       const start = seed % stride;
 
       const objects = [];
-      for (let i = start; i < records.length; i += stride) {
-        const camera = records[i].camera;
+      // The view pass deliberately pins the selected camera. Reserve its
+      // place when the detection overlay requests a smaller sample so that
+      // downstream consumers observe the same visibility contract.
+      const active = records.find(
+        (record) => record.camera.id === layerState._activeCameraId,
+      );
+      if (active) {
+        const camera = active.camera;
         objects.push({
-          position: records[i].position,
+          position: active.position,
+          sourceId: camera.id,
+          id: `CAM-${camera.code || camera.id}`,
+          type: 'CAM',
+        });
+      }
+      for (
+        let i = start;
+        objects.length < maxCount && i < records.length;
+        i += stride
+      ) {
+        const record = records[i];
+        if (record === active) continue;
+        const camera = record.camera;
+        objects.push({
+          position: record.position,
           sourceId: camera.id,
           // Short semantic code where the id is opaque (see cameraDisplayCode).
           id: `CAM-${camera.code || camera.id}`,
           type: 'CAM',
         });
-        if (objects.length >= maxCount) break;
       }
       return objects;
     },

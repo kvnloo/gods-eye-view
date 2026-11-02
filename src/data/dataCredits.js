@@ -25,11 +25,11 @@ import * as Cesium from 'cesium';
  * follows DATA_SOURCES.md (live sources, then bundled snapshots).
  * @type {{ key: string, html: string }[]}
  */
-export const OSM_CREDIT = {
+const OSM_CREDIT = {
   key: 'openstreetmap',
   html: 'Map and place data <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a> (<a href="https://opendatacommons.org/licenses/odbl/1-0/" target="_blank" rel="noopener">ODbL</a>)',
 };
-export const OPENMAPTILES_CREDIT = {
+const OPENMAPTILES_CREDIT = {
   key: 'openfreemap',
   html: 'Vector tiles: <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> © <a href="https://openmaptiles.org" target="_blank" rel="noopener">OpenMapTiles</a>',
 };
@@ -259,6 +259,14 @@ export const DATA_CREDITS = [
       '<a href="https://eismoinfo.lt/" target="_blank" rel="noopener">Via Lietuva / Eismoinfo</a>; periodically updated images',
   },
   {
+    key: 'taiwan-cctv',
+    html:
+      'Freeway camera stills (Taiwan): ' +
+      '<a href="https://www.freeway.gov.tw/" target="_blank" rel="noopener">Freeway Bureau, MOTC</a>, ' +
+      'CCTV static data (MOTC 2.0), released under the ' +
+      '<a href="https://data.gov.tw/license" target="_blank" rel="noopener">Open Government Data License, Taiwan (Version 1.0)</a>',
+  },
+  {
     key: 'calgary-cctv',
     html:
       'Traffic cameras (Calgary): contains information licensed under the ' +
@@ -288,6 +296,13 @@ export const DATA_CREDITS = [
       'per the ' +
       '<a href="https://kingcounty.gov/en/dept/kcit/data-information-services/gis-center/about/terms-conditions-copyrights" target="_blank" rel="noopener">KCGIS Center terms</a>. ' +
       'Partner-city cameras hosted on the county image handler (e.g. Newcastle) name their owner in the CCTV panel.',
+  },
+  {
+    key: 'hk-cctv',
+    html:
+      'Traffic snapshot cameras (Hong Kong): ' +
+      '<a href="https://data.gov.hk/en-data/dataset/hk-td-tis_2-traffic-snapshot-images" target="_blank" rel="noopener">Transport Department / DATA.GOV.HK</a> ' +
+      '(<a href="https://data.gov.hk/en/terms-and-conditions" target="_blank" rel="noopener">Terms of Use</a> — attribution required)',
   },
   {
     key: 'vegvesen-cctv',
@@ -327,6 +342,13 @@ export const DATA_CREDITS = [
   {
     key: 'panoramax',
     html: 'Street Level: imagery © <a href="https://panoramax.fr" target="_blank" rel="noopener">Panoramax</a> contributors, licence per picture',
+  },
+  {
+    key: 'a22-cctv',
+    html:
+      'Motorway webcams (A22 Brennero–Modena): images © ' +
+      '<a href="https://www.autobrennero.it/" target="_blank" rel="noopener">Autostrada del Brennero S.p.A.</a>, ' +
+      'camera list via the <a href="https://opendatahub.com/" target="_blank" rel="noopener">Open Data Hub</a> (NOI Techpark)',
   },
   {
     key: 'gbfs',
@@ -415,6 +437,13 @@ export const DATA_CREDITS = [
   },
   // ── Bundled snapshots ───────────────────────────────────────────
   {
+    key: 'sky-background',
+    html:
+      'Stars: <a href="https://cdsarc.cds.unistra.fr/viz-bin/cat/V/50" target="_blank" rel="noopener">Yale Bright Star Catalogue</a> ' +
+      '(Hoffleit &amp; Warren, via CDS). Milky Way: <a href="https://www.eso.org/public/images/eso0932a/" target="_blank" rel="noopener">ESO/S. Brunier</a> ' +
+      '(<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>; stars removed, blurred and reprojected)',
+  },
+  {
     key: 'dams',
     html: 'Dams: Open Infrastructure Map',
   },
@@ -425,6 +454,14 @@ export const DATA_CREDITS = [
       'from NASA’s Fire Information for Resource Management System ' +
       '(<a href="https://earthdata.nasa.gov/firms" target="_blank" rel="noopener">earthdata.nasa.gov/firms</a>), ' +
       'part of NASA’s Earth Observing System Data and Information System (EOSDIS)',
+  },
+  {
+    key: 's2-ghostmaps',
+    html:
+      'S2 GhostMaps intel products: S2 Underground © by S2A1, ' +
+      '<a href="https://github.com/s2underground/GhostMaps" target="_blank" rel="noopener">github.com/s2underground/GhostMaps</a>, ' +
+      'licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener">CC BY-NC-SA 4.0</a>. ' +
+      'Shown as published; reports are S2 assessments, not verified fact.',
   },
   {
     key: 'drivebc-cctv',

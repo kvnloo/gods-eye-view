@@ -199,6 +199,10 @@ export function createWeatherPanel({
           colors: legend.map(({ color }) => color),
           labels: legend.map(({ label }) => label),
           units: categorical ? '' : summary.units,
+          // Provenance belongs to this summary, not to the currently selected
+          // card. Preserve it through card switches, error paints and locale
+          // paints so source-owned units are never run through the catalog
+          // translator.
           ...(summary.unitsVerbatim === true ? { unitsVerbatim: true } : {}),
           zeroIndex: legend.findIndex(({ label }) => label === '0'),
         },

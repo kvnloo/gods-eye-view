@@ -2,7 +2,7 @@
 // CelesTrak and AQHI produce in the UI language.
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { setLocale } from '../i18n/index.js';
+import { setLocale, t } from '../i18n/index.js';
 import { LayerPanel } from './layerPanel.js';
 
 const row = (id, stats) =>
@@ -105,3 +105,24 @@ test('a source a layer marks as data is shown untranslated in the row', () => {
     setLocale('en');
   }
 });
+
+for (const locale of ['es', 'ru']) {
+  test(`${locale}: stale source evidence stays stale through a fetch failure`, () => {
+    setLocale(locale);
+    try {
+      const text = row('weather-radar', {
+        count: 1,
+        error: 'Weather source unavailable; previous observation retained',
+        source: 'Example Weather Network',
+        sourceVerbatim: true,
+        stale: true,
+        lastUpdate: now - 60_000,
+      });
+      assert.match(text, /Example Weather Network/);
+      assert.match(text, new RegExp(t('STALE')));
+      assert.doesNotMatch(text, /\b(?:ON|LIVE)\b/i);
+    } finally {
+      setLocale('en');
+    }
+  });
+}

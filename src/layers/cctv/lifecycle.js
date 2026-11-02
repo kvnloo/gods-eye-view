@@ -107,7 +107,7 @@ export function createLifecycle({
     // Idempotent — also covers a re-init without a prior destroy().
     parts.cards.teardownAmbientCards();
     parts.projection.clearProjectionOverlay();
-    parts.frames.clearVehicleObservationState();
+    parts.frames?.clearVehicleObservationState?.();
     layerState._records = [];
     layerState._recordById = new Map();
     layerState._viewRecords = [];
@@ -551,7 +551,7 @@ export function createLifecycle({
       layerState._removeFocusAppearListener?.();
       layerState._removeFocusAppearListener = null;
       parts.projection.stopProjectionLoop();
-      parts.frames.clearVehicleObservationState();
+      parts.frames?.clearVehicleObservationState?.();
       parts.geometryQueue.stopGeometryLoadQueue();
       stopViewMotionTimer();
       // Ambient cards tear down COMPLETELY on disable (owner design point 6):

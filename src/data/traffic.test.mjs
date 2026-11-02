@@ -316,18 +316,30 @@ test('CCTV transient contacts retain separate overlay identities and producer pr
     _externalObservationTimer: null,
     _viewer: {
       entities: {
-        add: (definition) => ({
-          id: definition.id,
-          label: { text: definition.label.text },
-        }),
+        add: (definition) => {
+          // World text goes through the overlay host, never Cesium labels.
+          assert.equal(definition.label, undefined);
+          return { id: definition.id };
+        },
         remove: () => true,
       },
       scene: { requestRender() {} },
     },
   };
+  const overlay = { source: null, entries: [] };
+  const overlays = {
+    setOverlayEntries(source, entries) {
+      overlay.source = source;
+      overlay.entries = entries;
+    },
+    clearOverlaySource(source) {
+      overlay.source = source;
+      overlay.entries = [];
+    },
+  };
   const renderer = createRendering({
     state,
-    services: {},
+    services: { overlays },
     parts: {},
     source: {},
   });
@@ -351,6 +363,15 @@ test('CCTV transient contacts retain separate overlay identities and producer pr
     );
     const first = renderer.getExternalVehicleDetectableObjects();
     assert.equal(first.length, 3);
+    // One caption per live contact, keyed like the contact itself.
+    assert.equal(overlay.source, 'traffic-cctv-observed');
+    assert.deepEqual(
+      overlay.entries.map((entry) => entry.id).sort(),
+      first.map((item) => item.sourceId.slice('cctv-contact:'.length)).sort(),
+    );
+    assert.ok(
+      overlay.entries.every((entry) => /^CAMERA-[AB] · VEHICLE · 0% · 0s$/.test(entry.title)),
+    );
     assert.equal(
       new Set(first.map((item) => item.sourceId)).size,
       3,
@@ -386,7 +407,9 @@ test('CCTV transient contacts retain separate overlay identities and producer pr
     );
     assert.equal(renderer.clearExternalVehicleObservations('cctv:camera-a'), 1);
     assert.equal(renderer.getExternalVehicleDetectableObjects().length, 1);
+    assert.equal(overlay.entries.length, 1);
   } finally {
     renderer.clearExternalVehicleObservations();
   }
+  assert.deepEqual(overlay.entries, [], 'clearing every producer clears the captions');
 });

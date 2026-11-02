@@ -32,12 +32,59 @@ export function classifyExternalObservationFreshness(
   return 'observed';
 }
 
+/** World-overlay source for the CCTV-observed contact captions. */
+export const CCTV_OBSERVED_OVERLAY_SOURCE_ID = 'traffic-cctv-observed';
+const CCTV_OBSERVED_OVERLAY_MAX_DISTANCE_M = 5000;
+
 export function createRendering({
   state: layerState,
   services,
   parts,
   source,
 }) {
+  /**
+   * Each live contact's caption as a world-overlay entry: main draws world
+   * text through the shared host, never Cesium labels.
+   */
+  function observationOverlayEntry(entry, now) {
+    const ageSec = Math.max(0, Math.floor((now - entry.observedAt) / 1000));
+    const freshness = classifyExternalObservationFreshness(
+      entry.observedAt,
+      entry.staleAt,
+      entry.expiresAt,
+      now,
+    );
+    return {
+      id: entry.entity.id,
+      position: entry.contact.position,
+      variant: 'label',
+      paintLane: 'ambient-label',
+      collisionGroup: 'ambient-label',
+      priority: Math.round(
+        Math.max(0, Math.min(1, Number(entry.contact.confidence) || 0)) * 100,
+      ),
+      title: observationLabel(entry.contact, ageSec, freshness),
+      accent: '#00ffff',
+      interactive: false,
+      placement: 'above',
+      minDistance: 0,
+      maxDistance: CCTV_OBSERVED_OVERLAY_MAX_DISTANCE_M,
+    };
+  }
+
+  /** Publish every live contact's caption, or clear the source when none. */
+  function syncObservationOverlay(now = Date.now()) {
+    const overlays = services?.overlays;
+    if (!overlays?.setOverlayEntries) return;
+    const entries = [];
+    for (const list of layerState._externalVehicleObservations.values())
+      for (const entry of list)
+        entries.push(observationOverlayEntry(entry, now));
+    if (entries.length)
+      overlays.setOverlayEntries(CCTV_OBSERVED_OVERLAY_SOURCE_ID, entries);
+    else overlays.clearOverlaySource?.(CCTV_OBSERVED_OVERLAY_SOURCE_ID);
+  }
+
   function observationLabel(contact, ageSec, freshness = 'observed') {
     const camera = String(
       contact.cameraCode || contact.cameraId || 'CCTV',
@@ -71,25 +118,14 @@ export function createRendering({
           changed = true;
           continue;
         }
-        const ageSec = Math.max(0, Math.floor((now - entry.observedAt) / 1000));
-        const freshness = classifyExternalObservationFreshness(
-          entry.observedAt,
-          entry.staleAt,
-          entry.expiresAt,
-          now,
-        );
-        if (entry.entity?.label)
-          entry.entity.label.text = observationLabel(
-            entry.contact,
-            ageSec,
-            freshness,
-          );
         keep.push(entry);
       }
       if (keep.length)
         layerState._externalVehicleObservations.set(sourceId, keep);
       else layerState._externalVehicleObservations.delete(sourceId);
     }
+    // Captions carry age and freshness, so every tick republishes them.
+    syncObservationOverlay(now);
     stopExternalObservationTimerIfIdle();
     if (changed) layerState._viewer?.scene?.requestRender?.();
   }
@@ -108,6 +144,7 @@ export function createRendering({
       }
       layerState._externalVehicleObservations.delete(id);
     }
+    syncObservationOverlay();
     stopExternalObservationTimerIfIdle();
     if (removed) layerState._viewer?.scene?.requestRender?.();
     return removed;
@@ -160,20 +197,6 @@ export function createRendering({
           disableDepthTestDistance: Number.POSITIVE_INFINITY,
           scaleByDistance: new Cesium.NearFarScalar(100, 1.2, 15000, 0.55),
         },
-        label: {
-          text: observationLabel(contact, 0),
-          font: '11px monospace',
-          fillColor: Cesium.Color.CYAN,
-          outlineColor: Cesium.Color.BLACK,
-          outlineWidth: 3,
-          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-          pixelOffset: new Cesium.Cartesian2(0, -18),
-          disableDepthTestDistance: Number.POSITIVE_INFINITY,
-          distanceDisplayCondition: new Cesium.DistanceDisplayCondition(
-            0,
-            5000,
-          ),
-        },
       });
       entries.push({
         entity,
@@ -186,6 +209,7 @@ export function createRendering({
     }
     if (entries.length) {
       layerState._externalVehicleObservations.set(id, entries);
+      syncObservationOverlay(now);
       if (!layerState._externalObservationTimer) {
         layerState._externalObservationTimer = setInterval(
           pruneExternalVehicleObservations,

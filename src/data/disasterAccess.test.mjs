@@ -280,3 +280,76 @@ test('quality and provenance remain snapshots after input mutation', () => {
   assert.equal(observation.provenance.source.name, 'report');
   assert.throws(() => observation.quality.flags.push('new'), TypeError);
 });
+
+test('valid Date metadata becomes frozen ISO-8601 strings', () => {
+  const date = new Date('2026-10-17T11:39:04Z');
+  const packet = buildDisasterAccessPacket({
+    accessSegments: [
+      {
+        ...segment('a'),
+        quality: { checkedAt: date },
+        provenance: { checkedAt: date },
+      },
+    ],
+  });
+  const observation = packet.access.segments[0];
+
+  assert.equal(observation.quality.checkedAt, '2026-10-17T11:39:04.000Z');
+  assert.equal(observation.provenance.checkedAt, '2026-10-17T11:39:04.000Z');
+  assert.equal(Object.isFrozen(observation.quality), true);
+  assert.equal(Object.isFrozen(observation.provenance), true);
+});
+
+test('invalid Date metadata becomes null', () => {
+  const packet = buildDisasterAccessPacket({
+    accessSegments: [
+      {
+        ...segment('a'),
+        quality: { checkedAt: new Date('invalid') },
+        provenance: { receivedAt: new Date(NaN) },
+      },
+    ],
+  });
+  const observation = packet.access.segments[0];
+
+  assert.equal(observation.quality.checkedAt, null);
+  assert.equal(observation.provenance.receivedAt, null);
+});
+
+test('non-finite metadata numbers become null', () => {
+  const packet = buildDisasterAccessPacket({
+    accessSegments: [
+      {
+        ...segment('a'),
+        quality: { score: NaN, upper: Infinity, lower: -Infinity },
+        provenance: { confidence: NaN },
+      },
+    ],
+  });
+  const observation = packet.access.segments[0];
+
+  assert.deepEqual(observation.quality, {
+    score: null,
+    upper: null,
+    lower: null,
+  });
+  assert.deepEqual(observation.provenance, { confidence: null });
+});
+
+test('mutating an input Date cannot change packet metadata', () => {
+  const date = new Date('2026-10-17T11:39:04Z');
+  const input = {
+    ...segment('a'),
+    quality: { checkedAt: date },
+    provenance: { checkedAt: date },
+  };
+  const packet = buildDisasterAccessPacket({ accessSegments: [input] });
+  const observation = packet.access.segments[0];
+
+  date.setUTCFullYear(2030);
+
+  assert.equal(observation.quality.checkedAt, '2026-10-17T11:39:04.000Z');
+  assert.equal(observation.provenance.checkedAt, '2026-10-17T11:39:04.000Z');
+  assert.equal(Object.isFrozen(observation.quality), true);
+  assert.equal(Object.isFrozen(observation.provenance), true);
+});

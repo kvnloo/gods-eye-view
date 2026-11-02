@@ -2033,6 +2033,7 @@
   "Shared military flight follow expired": "分享的军用航班跟随已过期",
   "Shared satellite follow expired": "分享的卫星跟随已过期",
   "Shared flight could not be restored — feed unavailable": "无法恢复分享的航班——数据源不可用",
+  "Shared layer selection could not be restored": "无法恢复分享链接中的图层选择",
   "Shared military flight could not be restored — feed unavailable": "无法恢复分享的军用航班——数据源不可用",
   "Shared satellite could not be restored — feed unavailable": "无法恢复分享的卫星——数据源不可用",
   "Shared flight is unavailable": "分享的航班不可用",

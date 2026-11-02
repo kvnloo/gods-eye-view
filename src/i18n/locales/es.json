@@ -2401,6 +2401,7 @@
   "Shared military flight follow expired": "El seguimiento del vuelo militar compartido ha caducado",
   "Shared satellite follow expired": "El seguimiento del satélite compartido ha caducado",
   "Shared flight could not be restored — feed unavailable": "No se pudo restaurar el vuelo compartido — fuente no disponible",
+  "Shared layer selection could not be restored": "No se pudo restaurar la selección de capas del enlace compartido",
   "Shared military flight could not be restored — feed unavailable": "No se pudo restaurar el vuelo militar compartido — fuente no disponible",
   "Shared satellite could not be restored — feed unavailable": "No se pudo restaurar el satélite compartido — fuente no disponible",
   "Shared flight is unavailable": "El vuelo compartido no está disponible",

@@ -2133,6 +2133,7 @@
   "Shared military flight follow expired": "Il tracciamento condiviso del volo militare è scaduto",
   "Shared satellite follow expired": "Il tracciamento condiviso del satellite è scaduto",
   "Shared flight could not be restored — feed unavailable": "Impossibile ripristinare il volo condiviso: feed non disponibile",
+  "Shared layer selection could not be restored": "Impossibile ripristinare la selezione dei livelli del link condiviso",
   "Shared military flight could not be restored — feed unavailable": "Impossibile ripristinare il volo militare condiviso: feed non disponibile",
   "Shared satellite could not be restored — feed unavailable": "Impossibile ripristinare il satellite condiviso: feed non disponibile",
   "Shared flight is unavailable": "Il volo condiviso non è disponibile",

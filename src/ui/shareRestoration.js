@@ -146,6 +146,14 @@ export class ShareRestoration {
       : Promise.resolve({ status: 'not-requested', share: null, layers: [] });
     if (savedState) {
       this._hasShareState = true;
+      // The decoder rejected the whole v2 layer payload (fail-closed), so the
+      // recipient sees defaults; say so once the restore has settled.
+      if (savedState.layerStateInvalid)
+        void this._initialShareRestorePromise.then(() =>
+          this._presentAfterStartupCover(
+            t('Shared layer selection could not be restored'),
+          ),
+        );
       // Reserve camera authority now; the delayed mesh-friendly flight may
       // run only if no newer user, voice, or tracking navigation has won.
       this._initialShareNavigationGeneration =
@@ -510,19 +518,21 @@ export class ShareRestoration {
 
   /**
    * Show a status notice once the start-up cover is gone, unless a newer
-   * notice (generation) has taken its place.
+   * notice (generation) has taken its place. A notice without a generation
+   * is outside the share-tracking epochs and yields only to teardown.
    */
-  _presentAfterStartupCover(message, noticeGeneration) {
-    const showAfterStartupCover = () => {
-      this._lifetime.frame(() => {
-        if (
-          !canPresentDeferredStatusNotice(
+  _presentAfterStartupCover(message, noticeGeneration = null) {
+    const canPresent = () =>
+      noticeGeneration === null
+        ? !this._disposed
+        : canPresentDeferredStatusNotice(
             noticeGeneration,
             this._shareTrackingNoticeGeneration,
             this._disposed,
-          )
-        )
-          return;
+          );
+    const showAfterStartupCover = () => {
+      this._lifetime.frame(() => {
+        if (!canPresent()) return;
         const startupCover = document.getElementById('loading-screen');
         if (
           !startupCover ||
@@ -536,14 +546,7 @@ export class ShareRestoration {
         const showOnce = () => {
           removeStartupListener();
           if (fallbackTimer) this._lifetime.cancelTimeout(fallbackTimer);
-          if (
-            canPresentDeferredStatusNotice(
-              noticeGeneration,
-              this._shareTrackingNoticeGeneration,
-              this._disposed,
-            )
-          )
-            this.showStatus(message);
+          if (canPresent()) this.showStatus(message);
         };
         removeStartupListener = this._lifetime.listen(
           startupCover,

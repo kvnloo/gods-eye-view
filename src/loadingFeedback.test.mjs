@@ -117,6 +117,18 @@ test('share-follow failures use the universal top-center status instead of the b
   assert.match(handler, /result\.classification === 'cancelled'\) return/);
 });
 
+test('invalid shared layers use the same deferred top-center status, owned only by teardown', () => {
+  const start = ShareRestoration.prototype.start.toString();
+  const present = shellMethod('_presentAfterStartupCover').toString();
+  assert.match(start, /if \(savedState\.layerStateInvalid\)/);
+  assert.match(
+    start,
+    /this\._initialShareRestorePromise\.then\(\(\) =>\s*this\._presentAfterStartupCover\(\s*t\('Shared layer selection could not be restored'\),?\s*\),?\s*\)/,
+  );
+  assert.match(present, /noticeGeneration === null\s*\?\s*!this\._disposed/);
+  assert.doesNotMatch(start, /this\._showToast\(/);
+});
+
 test('universal notice masks active loading only for its own fixed dwell', () => {
   const summary = aggregateLayerLoading([{ id: 'satellites', name: 'Satellites', lifecycleState: 'enabling' }]);
   let loading = reduceLoadingFeedback(createLoadingFeedbackState(), summary, 0);

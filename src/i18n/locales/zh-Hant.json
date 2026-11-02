@@ -2021,6 +2021,7 @@
   "Shared military flight follow expired": "分享的軍用航班跟隨已過期",
   "Shared satellite follow expired": "分享的衛星跟隨已過期",
   "Shared flight could not be restored — feed unavailable": "無法恢復分享的航班——數據源不可用",
+  "Shared layer selection could not be restored": "無法恢復分享鏈接中的圖層選擇",
   "Shared military flight could not be restored — feed unavailable": "無法恢復分享的軍用航班——數據源不可用",
   "Shared satellite could not be restored — feed unavailable": "無法恢復分享的衛星——數據源不可用",
   "Shared flight is unavailable": "分享的航班不可用",

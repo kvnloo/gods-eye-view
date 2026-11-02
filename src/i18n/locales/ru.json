@@ -2443,6 +2443,7 @@
   "Shared military flight follow expired": "Срок отслеживания военного рейса по ссылке истёк",
   "Shared satellite follow expired": "Срок отслеживания спутника по ссылке истёк",
   "Shared flight could not be restored — feed unavailable": "Не удалось восстановить рейс по ссылке — поток данных недоступен",
+  "Shared layer selection could not be restored": "Не удалось восстановить выбор слоёв из общей ссылки",
   "Shared military flight could not be restored — feed unavailable": "Не удалось восстановить военный рейс по ссылке — поток данных недоступен",
   "Shared satellite could not be restored — feed unavailable": "Не удалось восстановить спутник по ссылке — поток данных недоступен",
   "Shared flight is unavailable": "Рейс по ссылке недоступен",

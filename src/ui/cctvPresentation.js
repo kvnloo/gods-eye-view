@@ -85,7 +85,22 @@ export function presentCctvPanel(state, enabled) {
       calBadge: dirty ? 'edited' : badge || '',
     },
     meta: metaText(state, enabled, activeCamera, catalogCount),
+    trafficObservation: trafficObservationRow(enabled, activeCamera),
     calibration: presentCctvCalibration(state, enabled),
+  };
+}
+
+/**
+ * The active camera's observed-traffic row: `{text, state}`, or null when the
+ * layer is off, no camera is active or no observed source is configured, so a
+ * missing source adds no UI.
+ */
+function trafficObservationRow(enabled, activeCamera) {
+  const observation = activeCamera?.trafficObservation || null;
+  if (!enabled || !activeCamera || !observation) return null;
+  return {
+    text: observation.text || observation.statusLabel || '',
+    state: observation.state || '',
   };
 }
 
@@ -154,7 +169,6 @@ export function _renderCctvState(state) {
   const enabled = !!state?.enabled && !!this.actions.isEnabled();
   const activeId = state?.activeCameraId || '';
   const activeCamera = state?.activeCamera || null;
-  const trafficObservation = activeCamera?.trafficObservation || null;
 
   // Auto-expand the panel when the active camera CHANGES to a new non-null
   // id while the layer is enabled. Covers click-on-globe, panel controls,
@@ -241,17 +255,6 @@ export function _renderCctvState(state) {
   }
 
   this.store.publish(presentCctvPanel(state, enabled));
-
-  if (this._cctvTrafficObservation) {
-    const visible = !!enabled && !!activeCamera && !!trafficObservation;
-    this._cctvTrafficObservation.hidden = !visible;
-    this._cctvTrafficObservation.textContent = visible
-      ? trafficObservation.text || trafficObservation.statusLabel || ''
-      : '';
-    this._cctvTrafficObservation.dataset.state = visible
-      ? trafficObservation.state || ''
-      : '';
-  }
 
   const liveIntent = enabled && !!activeCamera?.isVideo;
   this.store.setLive(liveIntent);

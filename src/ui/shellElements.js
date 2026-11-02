@@ -61,9 +61,6 @@ export function readShellElements(document = globalThis.document) {
     _cctvVideo: document.getElementById('cctv-video'),
     _cctvSourceBadge: document.getElementById('cctv-source-badge'),
     _cctvMeta: document.getElementById('cctv-meta'),
-    _cctvTrafficObservation: document.getElementById(
-      'cctv-traffic-observation',
-    ),
     _cctvSummary: document.getElementById('cctv-summary'),
     _locationSearch: document.getElementById('location-search'),
     _detectionBtn: document.getElementById('detection-toggle'),

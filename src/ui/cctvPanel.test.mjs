@@ -141,6 +141,48 @@ test('an active camera renders the switch, toggles, CAL chip and meta line', asy
   );
 });
 
+test('the observed-traffic row shows camera evidence and is absent without it', async (t) => {
+  const { controls, byId } = panel(t);
+  const row = () => byId('cctv-traffic-observation');
+  assert.equal(row().hidden, true, 'hidden before the controls render');
+  const state = (trafficObservation, enabled = true) => ({
+    enabled,
+    count: 1,
+    cameraIndex: [camera],
+    activeCameraId: 'a',
+    activeCamera: { ...camera, trafficObservation },
+  });
+
+  controls._renderCctvState(
+    state({
+      state: 'fresh',
+      text: 'TRAFFIC OBS · MEASURED · 18 veh/min · 10s ago',
+    }),
+  );
+  await nextTick();
+  assert.equal(row().hidden, false);
+  assert.equal(
+    row().textContent,
+    'TRAFFIC OBS · MEASURED · 18 veh/min · 10s ago',
+  );
+  assert.equal(row().dataset.state, 'fresh');
+
+  // No observed source configured: no row, and no stale state left behind.
+  controls._renderCctvState(state(null));
+  await nextTick();
+  assert.equal(row().hidden, true);
+  assert.equal(row().textContent, '');
+  assert.equal(row().hasAttribute('data-state'), false);
+
+  // A disabled layer never shows retained evidence.
+  controls._renderCctvState(
+    state({ state: 'stale', text: 'TRAFFIC OBS · STALE' }, false),
+  );
+  await nextTick();
+  assert.equal(row().hidden, true);
+  assert.equal(row().textContent, '');
+});
+
 test('the buttons stay the elements the controls listen on', async (t) => {
   const { controls, byId } = panel(t);
   const before = Object.values(BUTTONS).map(byId);

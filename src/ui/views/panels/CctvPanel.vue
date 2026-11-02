@@ -38,6 +38,7 @@ const frameData = computed(() =>
     </div>
     <UiBadge id="cctv-source-badge" role="status" aria-live="polite" :data-frame-state="sourceBadge?.state">{{ sourceBadge?.label ?? t('SOURCE · UNKNOWN') }}</UiBadge>
     <div id="cctv-meta">{{ view?.meta ?? t('Enable CCTV to load camera intersections') }}</div>
+    <div id="cctv-traffic-observation" role="status" aria-live="polite" :hidden="!view?.trafficObservation" :data-state="view?.trafficObservation?.state || undefined">{{ view?.trafficObservation?.text ?? '' }}</div>
     <div class="cctv-controls">
       <UiButton class="scene-btn" :pressed="Boolean(view?.enabled)" pressed-class="active" id="cctv-enable-btn">{{ view?.enabled ? t('CCTV ON') : t('CCTV OFF') }}</UiButton>
       <UiButton id="cctv-nearest-btn" type="button" class="gev-action-button scene-btn" :disabled="view?.navDisabled">{{ t('NEAREST') }}</UiButton>

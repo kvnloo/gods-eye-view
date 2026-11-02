@@ -138,7 +138,6 @@ test('upsert and remove preserve stable ids and normalize persisted rows', () =>
   );
 });
 
-
 test('persisted coordinates require actual finite numbers, not coercions', () => {
   const invalid = [null, '', '30', true, [], Infinity, NaN];
   for (const field of ['latitude', 'longitude']) {
@@ -186,7 +185,10 @@ test('loading, persisting and editing collapse repeated ids deterministically', 
   });
   assert.deepEqual(
     loadSavedLocations(store).map(({ id, label }) => [id, label]),
-    [['a', 'Latest A'], ['b', 'Austin']],
+    [
+      ['a', 'Latest A'],
+      ['b', 'Austin'],
+    ],
   );
   assert.equal(persistSavedLocations(rows, store), true);
   assert.deepEqual(
@@ -194,11 +196,18 @@ test('loading, persisting and editing collapse repeated ids deterministically', 
     ['a', 'b'],
   );
   assert.deepEqual(
-    upsertSavedLocation(rows, { ...record('b'), label: 'New B' })
-      .map(({ id, label }) => [id, label]),
-    [['b', 'New B'], ['a', 'Latest A']],
+    upsertSavedLocation(rows, { ...record('b'), label: 'New B' }).map(
+      ({ id, label }) => [id, label],
+    ),
+    [
+      ['b', 'New B'],
+      ['a', 'Latest A'],
+    ],
   );
-  assert.deepEqual(removeSavedLocation(rows, 'a').map(({ id }) => id), ['b']);
+  assert.deepEqual(
+    removeSavedLocation(rows, 'a').map(({ id }) => id),
+    ['b'],
+  );
 
   const overfull = [record('first'), record('first')];
   for (let index = 0; index < MAX_SAVED_LOCATIONS; index += 1)

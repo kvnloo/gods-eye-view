@@ -46,6 +46,59 @@ test('observed traffic is unconfigured by default and does not alter shipped tra
   assert.equal(stats.mode, 'sim');
 });
 
+test('observed stats mirror snapshot through refresh and reset', async () => {
+  const now = Date.parse('2026-09-29T02:30:00Z');
+  const viewer = { camera: { changed: { removeEventListener() {} } } };
+  const source = createObservedTrafficSource({
+    label: 'stats mirror fixture',
+    read() {
+      return {
+        records: [
+          {
+            id: 'stats-mirror:1',
+            sourceId: 'synthetic-stats-fixture',
+            observedAt: now - 1_000,
+            geometry: { type: 'intersection', coordinates: [0, 0] },
+            flow: { vehiclesPerMin: 2 },
+          },
+        ],
+      };
+    },
+  });
+  const assertMirror = (expectedState) => {
+    const snapshot = getObservedTrafficSnapshot();
+    assert.ok(snapshot, 'traffic state must initialize observed snapshot');
+    assert.equal(snapshot.state, expectedState);
+    assert.deepEqual(trafficLayer.getStats().observedTraffic, {
+      configured: snapshot.configured,
+      state: snapshot.state,
+      source: snapshot.source,
+      count: snapshot.accepted,
+      staleCount: snapshot.staleCount,
+      partial: snapshot.partial,
+      loading: false,
+      error: snapshot.error,
+      latestObservedAt: snapshot.latestObservedAt,
+    });
+  };
+
+  const dispose = configureObservedTrafficSource(source);
+  try {
+    assertMirror('unconfigured');
+    const refreshed = await refreshObservedTraffic({}, { now });
+    assert.equal(refreshed.accepted, 1);
+    assertMirror('fresh');
+    trafficLayer.disable(viewer);
+    assertMirror('unconfigured');
+  } finally {
+    dispose();
+    trafficLayer.disable(viewer);
+  }
+  const absent = await refreshObservedTraffic({}, { now });
+  assert.equal(absent.configured, false);
+  assertMirror('unconfigured');
+});
+
 test('a superseded flow fetch is not an outage', () => {
   assert.equal(
     deriveTrafficFlowError({ name: 'AbortError', message: 'aborted' }),

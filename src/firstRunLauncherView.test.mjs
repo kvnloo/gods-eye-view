@@ -79,6 +79,12 @@ test('the card is hidden until initialized, then revealed with its copy', async 
   const hidden = document.getElementById('first-run-launcher');
   assert.equal(hidden.hidden, true);
   assert.equal(hidden.className, '');
+  // The markup names all three hazard layers before the launcher paints it.
+  assert.equal(
+    hidden.querySelector('[data-first-run-choice="environmental"] small')
+      .textContent,
+    'Live earthquakes, active fires, and wildfire perimeters',
+  );
   app.unmount();
 
   const { root, list } = await launch(t);
@@ -93,6 +99,11 @@ test('the card is hidden until initialized, then revealed with its copy', async 
   assert.equal(
     root.querySelector('[data-first-run-environmental-title]').textContent,
     'ENVIRONMENTAL',
+  );
+  assert.equal(
+    root.querySelector('[data-first-run-choice="environmental"] small')
+      .textContent,
+    'Live earthquakes, active fires, and wildfire perimeters',
   );
   assert.ok(
     document.activeElement === root.querySelector('[data-first-run-choice]'),

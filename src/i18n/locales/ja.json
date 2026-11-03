@@ -298,7 +298,7 @@
   "Starting live contacts…": "ライブコンタクトを開始中…",
   "Opening space missions…": "宇宙ミッションを開いています…",
   "Scanning active events…": "発生中のイベントをスキャン中…",
-  "Live earthquakes and active fires, from USGS and NASA": "USGSとNASAによる地震と火災のライブ情報",
+  "Live earthquakes, active fires, and wildfire perimeters": "地震・発生中の火災・山火事の延焼区域の境界線をリアルタイム表示",
   "It feels like a forbidden cockpit—then you realize the sources are public and the data is real.": "禁断のコックピットのようですが、情報源はすべて公開されており、データは本物です。",
   "Working…": "処理中…",
   "Could not open that mission{detail}. Retry or explore manually.": "ミッションを開けませんでした{detail}。再試行するか、手動で探索してください。",

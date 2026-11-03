@@ -14,7 +14,7 @@ const DESCRIPTION = msg(
   'It feels like a forbidden cockpit—then you realize the sources are public and the data is real.',
 );
 const ENVIRONMENTAL_SUB = msg(
-  'Live earthquakes and active fires, from USGS and NASA',
+  'Live earthquakes, active fires, and wildfire perimeters',
 );
 
 // A refused save puts the box back where the stored preference is.
@@ -54,7 +54,7 @@ function onSuppress(event) {
       <button type="button" data-first-run-choice="environmental" :aria-disabled="launcher?.busy ?? undefined" @click="controls?.choose('environmental')">
         <span class="material-symbols-outlined" aria-hidden="true">local_fire_department</span>
         <!-- The title is ENVIRONMENTAL_LABEL_CHOICE's label once initialized. -->
-        <!-- Subcopy names BOTH feeds this tile turns on, because the launcher
+        <!-- Subcopy names all three hazard layers this tile turns on, because the launcher
              optimizes for the fully configured experience (owner ruling,
              2026-08-23) — see the mission table in src/firstRunExperience.js. -->
         <span><strong data-first-run-environmental-title>{{ launcher?.environmentalTitle ?? environmentalLabel().title }}</strong><small>{{ launcher?.environmentalSub ?? ENVIRONMENTAL_SUB }}</small></span>

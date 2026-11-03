@@ -68,6 +68,8 @@
   "src/standalone/tools.js",
   "build/vite.js",
   "server/standalone/vite.config.js",
+  "server/credentials/resolve.mjs",
+  "src/credentialSources.test.mjs",
   "vite.config.js",
   "src/tooling/viteBuild.test.mjs",
   "src/tooling/vueLoader.test.mjs",

@@ -1,5 +1,19 @@
 # God's Eye View Current State
 
+The continuation of @lleon-at-navteca's Historic Fires work (#609) has a
+backend archive foundation. `/api/fire-history` exposes a reviewed event
+registry from `src/data/local_data/fire_events/` and fetches only those
+registered NASA FIRMS standard-processing windows. Disk cache names include a
+hash of the normalized event definition, so editing dates, bounds, sources, or
+metadata cannot silently reuse an old archive. Failed windows use a bounded
+cooldown/backoff before another keyed request can spend FIRMS quota.
+A complete upstream outage retains failed-window retry deadlines on disk and
+returns HTTP 502 until a window successfully responds; an empty but valid FIRMS
+CSV is a successful zero-record result rather than an upstream failure.
+This slice adds no UI and does not own perimeter acquisition. Event definitions
+carry structured matching metadata only; rendering will consume the shared fire
+perimeters ownership seam when a historical perimeter source has one owner.
+
 Docker Compose mounts the checkout with the shared SELinux `:z` label so
 containers can read it on enforcing SELinux hosts. The separate image-owned
 `node_modules` volume and loopback-only port publishing remain unchanged.

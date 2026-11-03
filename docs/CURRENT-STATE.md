@@ -755,7 +755,11 @@ the one retained image slot, dropped if the camera moved or a newer capture or
 turn started. The pointer path makes at most two bounded fresh-frame requests so
 a slow render loop can recover without accepting a stale frame; a missing camera
 identity, expired snapshot, invalid geometry, black frame or oversized payload
-still fails closed. screenX/screenY against the crop are mapped back to the canvas. Harness: `qa-voice-routing.mjs --layer deixis`,
+still fails closed. screenX/screenY against the crop are mapped back to the canvas.
+`viewportContextDecision` names why a lookup took the crop, the full viewport
+or no image (for example `pointer-ground-crop`, `structured-identity-sufficient`,
+`capture-invalidated`); the codes go only to the local debug log, never image
+contents. Harness: `qa-voice-routing.mjs --layer deixis`,
 `--layer deixis-live`, `--layer behavior --deixis-only`.
 
 The application shell composes focused state owners for navigation, destination

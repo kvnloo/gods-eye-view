@@ -2,8 +2,10 @@ import { createAssetDirectorySource } from '../director/packs/source.js';
 import { createApplicationTools } from '../app/tools.js';
 import { startStandaloneChrome } from './startupChrome.js';
 import { loadToolCatalog } from './toolCatalog.js';
+import { mountPlanetPlayground } from '../playground/index.js';
+
 export function createStandaloneTools(options) {
-  return createApplicationTools({
+  const tools = createApplicationTools({
     startChrome: startStandaloneChrome,
     sceneDataPacks: {
       sources: {
@@ -19,4 +21,17 @@ export function createStandaloneTools(options) {
     ...options,
     voice: { toolCatalog: loadToolCatalog, ...options?.voice },
   });
+  // The playground consumes existing controllers and owns only its UI.
+  // Register its cleanup with the same application lifetime.
+  options.defer(
+    mountPlanetPlayground({
+      document,
+      window,
+      viewer: options.scene.viewer,
+      styleManager: options.controls.styleManager,
+      dataManager: options.data.dataManager,
+      sceneDirector: tools.sceneDirector,
+    }),
+  );
+  return tools;
 }

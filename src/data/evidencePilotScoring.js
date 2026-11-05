@@ -263,6 +263,7 @@ export function scoreEvidencePilot(records) {
   );
   const seen = new Set();
   const pairs = new Map();
+  const gevSessionCoverage = new Map();
 
   for (const record of records) {
     const caseInfo = validateRecord(record);
@@ -273,6 +274,14 @@ export function scoreEvidencePilot(records) {
     ]);
     if (seen.has(key)) fail('duplicate session/condition/case');
     seen.add(key);
+    if (record.condition === 'gev') {
+      if (!gevSessionCoverage.has(record.sessionKey)) {
+        gevSessionCoverage.set(record.sessionKey, new Set());
+      }
+      if (record.status === 'scored') {
+        gevSessionCoverage.get(record.sessionKey).add(caseInfo.id);
+      }
+    }
     const summary = summaries[record.condition];
     if (record.status === 'not-run') {
       summary.notRun += 1;
@@ -326,7 +335,12 @@ export function scoreEvidencePilot(records) {
       summary.revisionRecognitionCount / summary.scored;
   }
   const gev = summaries.gev;
-  if (gev.scored && gev.appUnauditedCases === 0) {
+  const allGevCasesCovered =
+    gevSessionCoverage.size > 0 &&
+    [...gevSessionCoverage.values()].every(
+      (cases) => cases.size === PILOT_CASES.length,
+    );
+  if (allGevCasesCovered && gev.appUnauditedCases === 0) {
     gev.appSafetyGate = gev.appUnsupportedClaims === 0;
   }
   return {

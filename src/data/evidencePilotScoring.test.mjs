@@ -156,6 +156,21 @@ test('unsupported safe/open app assertions are separate from participant mistake
   assert.equal(score.revisionRecognitionRate, 0.5);
 });
 
+test('one audited GEV mutation is insufficient to pass the two-case safety gate', () => {
+  const onlyOne = scoreEvidencePilot([
+    example('gev', 'blocked-update-v1'),
+  ]).byCondition.gev;
+  assert.equal(onlyOne.scored, 1);
+  assert.equal(onlyOne.appAuditedCases, 1);
+  assert.equal(onlyOne.appSafetyGate, null);
+  const unavailableOther = scoreEvidencePilot([
+    example('gev', 'blocked-update-v1'),
+    skip('gev', 'stale-open-v1', 'not-run', 'browser-unverified'),
+  ]).byCondition.gev;
+  assert.equal(unavailableOther.notRun, 1);
+  assert.equal(unavailableOther.appSafetyGate, null);
+});
+
 test('unaudited app output and missing measurements stay unknown, not zero or passed', () => {
   const score = scoreEvidencePilot([
     example('gev', 'blocked-update-v1', {

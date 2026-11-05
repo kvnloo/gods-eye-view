@@ -15,7 +15,13 @@ export function reliefViewModel(packet) {
       !Array.isArray(packet.fieldLite?.rows) || packet.fieldLite.rows.length !== 2 ||
       packet.fieldLite.rows.some((row) => !Array.isArray(row?.evidenceRefs)) ||
       !Array.isArray(packet.fieldLite?.notices) ||
-      !Number.isSafeInteger(packet.delta?.knownOnlyServedUnits)) return null;
+      !Number.isSafeInteger(packet.delta?.knownOnlyServedUnits) ||
+      packet.world?.authority !== 'none' ||
+      !((packet.world.status === 'not-attached' &&
+        packet.world.freshness === 'unknown' && packet.world.revision === null) ||
+        (packet.world.status === 'reference-only' &&
+        packet.world.freshness === 'not-assessed-offline' &&
+        typeof packet.world.revision === 'string'))) return null;
   const [before, after] = packet.stages;
   const validStage = (s) => s && typeof s.accessRevision === 'string' &&
     ['evaluated', 'limited'].includes(s.status) &&
@@ -34,6 +40,7 @@ export function reliefViewModel(packet) {
     studyId: packet.source?.studyId || 'unknown',
     sourceRef: packet.source?.sourceRef || 'unknown',
     status: packet.status,
+    freshness: packet.world.freshness,
     stages: [before, after].map((stage, index) => ({
       label: index === 0 ? 'Before — superseded' : 'After — revised hypothesis',
       revision: stage.accessRevision,
@@ -117,6 +124,8 @@ export function renderReliefFieldView(root, packet) {
   for (const notice of model.notices) noteList.appendChild(element('li', '', notice));
   footer.appendChild(noteList);
   footer.appendChild(element('p', 'field-source', `Source: ${model.sourceRef}`));
+  footer.appendChild(element('p', 'field-source',
+    `Freshness: ${model.freshness}. Historical synthetic receipt only; reconnect does not verify access or refresh this replay.`));
   root.replaceChildren(summary, panels, change, footer);
   return true;
 }

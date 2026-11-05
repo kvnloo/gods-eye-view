@@ -78,7 +78,26 @@ try {
     document.querySelector('#field-feedback').textContent.includes('rejected'));
   assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 0);
   await page.click('#field-demo');
-  assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 2);
+  assert.equal(await page.$eval('.field-card', (cards) => cards.length), 2);
+
+  // The shell must be cached on a real route before simulating an offline reload.
+  await page.waitForFunction(() =>
+    document.querySelector('#field-offline-ready')?.textContent.includes('Offline screen cached'));
+  await page.setOfflineMode(true);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('.field-card');
+  const offlineInput = await page.$('#field-local-file');
+  await offlineInput.uploadFile(inputPath);
+  await page.waitForFunction(() =>
+    document.querySelector('#field-feedback').textContent.includes('Local synthetic replay loaded'));
+  const offlineReceipt = await page.$eval('#field-results', (element) => element.textContent);
+  assert.match(offlineReceipt, /Source: synthetic:fictional-no-live-data/);
+  assert.match(offlineReceipt, /Freshness: unknown/);
+  assert.match(offlineReceipt, /Unknown routes: 0/);
+  assert.match(offlineReceipt, /reconnect does not verify access or refresh this replay/);
+  await page.setOfflineMode(false);
+  const reconnectReceipt = await page.$eval('#field-results', (element) => element.textContent);
+  assert.equal(reconnectReceipt, offlineReceipt);
   const mobile = await checkViewport(390, 844);
   await page.screenshot({
     path: 'qa-artifacts/field-lite-mobile.png',

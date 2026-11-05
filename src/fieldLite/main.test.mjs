@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { MessageChannel } from 'node:worker_threads';
 
 import { createSyntheticReliefDemoReplay } from './demoFixture.js';
 import { initReliefFieldLite } from './main.js';
@@ -12,7 +13,7 @@ function deferred() {
   return { promise, resolve };
 }
 
-function fixture() {
+function fixture(browser = {}) {
   const ownerDocument = {
     createElement(tagName) {
       return {
@@ -43,19 +44,21 @@ function fixture() {
   input.value = '';
   const demo = new EventTarget();
   const feedback = { textContent: '' };
+  const offline = { textContent: '' };
   const nodes = {
     'field-results': root,
     'field-local-file': input,
     'field-demo': demo,
     'field-feedback': feedback,
+    'field-offline-ready': offline,
   };
-  const app = initReliefFieldLite({ getElementById: (id) => nodes[id] });
+  const app = initReliefFieldLite({ getElementById: (id) => nodes[id] }, browser);
   const change = (file) => {
     input.files = [file];
     input.dispatchEvent(new Event('change'));
   };
   const restore = () => demo.dispatchEvent(new Event('click'));
-  return { root, feedback, app, change, restore };
+  return { root, feedback, offline, app, change, restore };
 }
 
 const validReceipt = () => JSON.stringify(createSyntheticReliefDemoReplay());
@@ -119,6 +122,64 @@ test('invalid size supersedes an unfinished valid import', async () => {
     await settle();
     assert.match(f.feedback.textContent, /at most 64 KiB/);
     assert.equal(f.root.children[0].attributes.role, 'alert');
+  } finally {
+    f.app.destroy();
+  }
+});
+
+test('offline shell priming is explicit and never fetches or stores a receipt', async () => {
+  const registrations = [];
+  const browser = {
+    MessageChannel,
+    setTimeout,
+    clearTimeout,
+    performance: { getEntriesByType(type) {
+      assert.equal(type, 'resource');
+      return [{ name: 'http://127.0.0.1:4173/assets/field-lite.js' }];
+    } },
+    navigator: { serviceWorker: {
+      register: async (path, options) => {
+        registrations.push({ path, options });
+      },
+      ready: Promise.resolve({ active: {
+        postMessage(message, [port]) {
+          assert.equal(message.type, 'gev-field-lite-prime');
+          assert.deepEqual(message.urls, ['http://127.0.0.1:4173/assets/field-lite.js']);
+          port.postMessage({ ok: true });
+        },
+      } }),
+    } },
+    fetch() { throw new Error('Field Lite may not fetch a live provider'); },
+  };
+  const f = fixture(browser);
+  try {
+    assert.equal(await f.app.offlineReady, true);
+    assert.deepEqual(registrations, [
+      { path: '/field-lite/offline-sw.js', options: { scope: '/field-lite/' } },
+    ]);
+    assert.match(f.offline.textContent, /Offline screen cached/);
+    f.change({ size: 20, text: () => Promise.resolve(validReceipt()) });
+    await settle();
+    const before = JSON.stringify(f.root.children);
+    // A connectivity change is never a request to revalidate an old receipt.
+    browser.navigator.onLine = false;
+    browser.navigator.onLine = true;
+    assert.equal(JSON.stringify(f.root.children), before);
+    assert.match(f.feedback.textContent, /Local synthetic replay loaded/);
+  } finally {
+    f.app.destroy();
+  }
+});
+
+test('unavailable service worker does not block keyless local replay', async () => {
+  const f = fixture();
+  try {
+    assert.equal(await f.app.offlineReady, false);
+    assert.match(f.offline.textContent, /Offline reload unavailable/);
+    f.change({ size: 20, text: () => Promise.resolve(validReceipt()) });
+    await settle();
+    assert.equal(f.root.children.length, 4);
+    assert.match(f.feedback.textContent, /Local synthetic replay loaded/);
   } finally {
     f.app.destroy();
   }

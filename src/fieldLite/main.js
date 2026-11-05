@@ -2,18 +2,66 @@ import { createSyntheticReliefDemoPacket } from './demoFixture.js';
 import { renderReliefFieldView } from './reliefView.js';
 import { projectReliefOutageFieldPacket } from '../data/reliefReplayFieldPacket.js';
 
+
+/**
+ * Warm only the keyless Field Lite shell, never user receipts or live APIs.
+ * Reopening the local JSON is an explicit action after an offline reload.
+ */
+async function prepareOfflineShell(browser, status, isMounted) {
+  const serviceWorker = browser?.navigator?.serviceWorker;
+  if (!serviceWorker || typeof serviceWorker.register !== 'function' ||
+      !browser.MessageChannel ||
+      typeof browser.performance?.getEntriesByType !== 'function') {
+    status.textContent = 'Offline reload unavailable here. Local files still replay while this tab stays open.';
+    return false;
+  }
+  status.textContent = 'Preparing offline screen. Local receipts are not stored.';
+  try {
+    await serviceWorker.register('/field-lite/offline-sw.js', { scope: '/field-lite/' });
+    const registration = await serviceWorker.ready;
+    if (!registration?.active) throw new Error('Field Lite offline worker unavailable');
+    const urls = browser.performance.getEntriesByType('resource').map((entry) => entry.name);
+    const channel = new browser.MessageChannel();
+    let ready;
+    try {
+      ready = await new Promise((resolve) => {
+        const timer = browser.setTimeout(() => resolve(false), 12000);
+        channel.port1.onmessage = (event) => {
+          browser.clearTimeout(timer);
+          resolve(event.data?.ok === true);
+        };
+        registration.active.postMessage({ type: 'gev-field-lite-prime', urls }, [channel.port2]);
+      });
+    } finally {
+      channel.port1.close();
+      channel.port2.close();
+    }
+    if (isMounted()) {
+      status.textContent = ready
+        ? 'Offline screen cached. Reopen your local JSON after a reload; reconnect does not verify historical evidence.'
+        : 'Offline reload not confirmed. Keep the page open to replay local files.';
+    }
+    return ready;
+  } catch {
+    if (isMounted()) status.textContent = 'Offline reload not confirmed. Keep the page open to replay local files.';
+    return false;
+  }
+}
+
 /** Keyless, opt-in training view: only local synthetic files. */
-export function initReliefFieldLite(documentRef = document) {
+export function initReliefFieldLite(documentRef = document, browser = globalThis) {
   const root = documentRef.getElementById('field-results');
   const fileInput = documentRef.getElementById('field-local-file');
   const demoButton = documentRef.getElementById('field-demo');
   const feedback = documentRef.getElementById('field-feedback');
-  if (!root || !fileInput || !demoButton || !feedback) {
+  const offline = documentRef.getElementById('field-offline-ready');
+  if (!root || !fileInput || !demoButton || !feedback || !offline) {
     throw new Error('Field Lite document missing required controls');
   }
   const controller = new AbortController();
   let generation = 0;
   let destroyed = false;
+  const offlineReady = prepareOfflineShell(browser, offline, () => !destroyed);
   const isCurrent = (ticket) => !destroyed && ticket === generation;
   const show = (packet, status) => {
     const rendered = renderReliefFieldView(root, packet);
@@ -48,6 +96,7 @@ export function initReliefFieldLite(documentRef = document) {
     }
   }, { signal: controller.signal });
   return {
+    offlineReady,
     destroy: () => {
       destroyed = true;
       generation += 1;

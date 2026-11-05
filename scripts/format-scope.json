@@ -26,6 +26,7 @@
   "src/data/reliefReplayFieldPacket.test.mjs",
   "src/fieldLite/reliefView.test.mjs",
   "src/fieldLite/main.test.mjs",
+  "public/field-lite/offline-sw.js",
   "src/fieldLite/fieldLite.css",
   "src/data/reliefReplayFieldPacket.js",
   "src/data/reliefOutageReplay.js",

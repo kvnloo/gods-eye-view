@@ -81,3 +81,27 @@ test('rendering does not mutate the upstream packet or import Cesium', () => {
   assert.equal(JSON.stringify(packet), baseline);
   assert.equal(Object.isFrozen(packet), true);
 });
+
+test('historical packet freshness stays explicit and forged live status fails closed', () => {
+  const packet = createSyntheticReliefDemoPacket();
+  const model = reliefViewModel(packet);
+  assert.equal(model.freshness, 'unknown');
+  const root = fakeRoot();
+  assert.equal(renderReliefFieldView(root, packet), true);
+  const output = values(root);
+  assert.match(output, /Freshness: unknown/);
+  assert.match(output, /reconnect does not verify access or refresh this replay/);
+  assert.match(output, /Unknown routes: 0/);
+  assert.match(output, /Source: synthetic:fictional-no-live-data/);
+  for (const world of [
+    { ...packet.world, freshness: 'current' },
+    { ...packet.world, authority: 'dispatch' },
+    { ...packet.world, status: 'live' },
+  ]) {
+    assert.equal(reliefViewModel({ ...packet, world }), null);
+  }
+  const reference = { ...packet.world, status: 'reference-only',
+    revision: 'world-r1', freshness: 'not-assessed-offline' };
+  const referenced = reliefViewModel({ ...packet, world: reference });
+  assert.equal(referenced.freshness, 'not-assessed-offline');
+});

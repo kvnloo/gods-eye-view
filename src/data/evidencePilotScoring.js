@@ -125,9 +125,11 @@ function validateRecord(record) {
   }
 
   checkFields(record, SCORED_FIELDS);
-  if (!Number.isInteger(record.sequenceIndex) ||
+  if (
+    !Number.isInteger(record.sequenceIndex) ||
     record.sequenceIndex < 1 ||
-    record.sequenceIndex > PILOT_CONDITIONS.length) {
+    record.sequenceIndex > PILOT_CONDITIONS.length
+  ) {
     fail('invalid sequenceIndex');
   }
   if (!DECISIONS.has(record.decision)) fail('invalid decision');
@@ -156,16 +158,18 @@ function validateRecord(record) {
   if (record.condition !== 'gev' && record.appAssertions !== null) {
     fail('only GEV has an application-generated assertion audit');
   }
-  if (!nonnegative(record.elapsedSeconds) ||
-    !nonnegative(record.evidenceNavigationActions, true)) {
+  if (
+    !nonnegative(record.elapsedSeconds) ||
+    !nonnegative(record.evidenceNavigationActions, true)
+  ) {
     fail('timing and navigation must be observed nonnegative values or null');
   }
   return caseInfo;
 }
 
 function grade(record, caseInfo) {
-  const assertedOpen = record.decision === 'open' ||
-    record.decision === 'safe';
+  const assertedOpen =
+    record.decision === 'open' || record.decision === 'safe';
   return {
     decisionErrors: Number(record.decision !== caseInfo.expectedDecision),
     freshnessErrors: Number(record.freshness !== caseInfo.expectedFreshness),

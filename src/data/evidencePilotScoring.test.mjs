@@ -58,7 +58,7 @@ test('empty records never pass the GEV application gate', () => {
   }
 });
 
-test('fixed mutations yield reproducible paired error and citation counts', () => {
+test('fixed mutations yield reproducible paired counts', () => {
   const rows = [
     example('gev', 'blocked-update-v1', {
       elapsedSeconds: 12,

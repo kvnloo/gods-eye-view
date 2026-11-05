@@ -35,6 +35,8 @@ test('explicit build inputs preserve browser-only defines, plugin order and loop
   }
   assert.ok(!csp.includes("script-src 'self' 'unsafe-inline'"));
   assert.deepEqual(config.preview.headers, config.server.headers);
+  assert.match(config.build.rollupOptions.input.app, /index\.html$/);
+  assert.match(config.build.rollupOptions.input.fieldLite, /field-lite\/index\.html$/);
   assert.deepEqual(config.define, {
     'import.meta.env.GOOGLE_MAPS_API_KEY': '"browser-fixture"',
     'import.meta.env.CESIUM_ION_TOKEN': '"ion-fixture"',

@@ -1,0 +1,34 @@
+:root{color-scheme:dark;font-family:system-ui,-apple-system,Segoe UI,sans-serif;line-height:1.5;font-size:16px}
+*{box-sizing:border-box}
+body{margin:0;background:#11191f;color:#edf1f4}
+main{width:min(980px,100%);margin:0 auto;padding:clamp(16px,3vw,36px)}
+a{color:#bee4f5}
+a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid #b8ebc5;outline-offset:3px}
+.field-nav{display:flex;gap:16px;justify-content:space-between;border-bottom:1px solid #465866;padding-bottom:16px;font-size:.9rem}
+header{margin:30px 0 22px}
+.field-kicker,.field-revision{color:#bbd3d8;text-transform:uppercase;letter-spacing:.065em;font-size:.84rem}
+h1{font-size:clamp(1.9rem,5vw,2.7rem);line-height:1.1;margin:10px 0}
+h2{font-size:1.15rem;margin:4px 0 14px}
+header p{max-width:70ch}
+.field-alert{border-left:4px solid #c5b989;background:#27323b;padding:12px 16px;border-radius:6px}
+.field-controls{margin:18px 0 24px;display:flex;gap:14px;align-items:end;flex-wrap:wrap}
+.field-controls label{display:block;margin-bottom:8px;font-size:.9rem}
+.field-controls input{max-width:100%;font-size:.9rem}
+.field-controls button{padding:10px 14px;background:#2f4754;border:1px solid #8aa3ae;color:#e6edf0;border-radius:8px;min-height:44px;cursor:pointer}
+#field-feedback{margin:0;flex-basis:100%;color:#bdcbd0;font-size:.9rem}
+.field-status{font-size:.89rem;font-weight:650;color:#c4d9e2}
+.field-panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.field-card,.field-change,.field-footnote{background:#1e2c35;border:1px solid #445863;border-radius:12px;padding:20px;min-width:0}
+.field-number{font-size:2.5rem;font-weight:750;line-height:1.1;margin:14px 0}
+.field-number span{font-size:.83rem;font-weight:450;display:block;margin-top:8px}
+.field-support{color:#c2d3d9;font-size:.9rem}
+.field-details{border-top:1px solid #3a4d58;padding:8px 0}
+.field-details summary{min-height:40px;cursor:pointer;font-size:.9rem;font-weight:600;padding:7px 0}
+ul{padding-left:20px;margin:10px 0 12px;overflow-wrap:anywhere}
+li{margin:6px 0}
+.field-change{margin:18px 0}
+.field-delta{font-size:1.7rem;margin:4px 0;font-weight:700}
+.field-source{overflow-wrap:anywhere;color:#bcd0db}
+footer{border-top:1px solid #4a5962;margin-top:28px;padding-top:18px;font-size:.85rem;color:#becad0}
+@media(max-width:680px){.field-panels{grid-template-columns:1fr}.field-nav{flex-direction:column;gap:4px}.field-controls{display:block}.field-controls button{margin-top:12px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}

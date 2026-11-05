@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'node:url';
+
 /**
  * The MCP Apps panel build. A panel loads the app through its MCP server,
  * one tool call per file (see src/tools/globePanel.js), so the app must be
@@ -26,6 +28,8 @@ export function panelBuildConfig(config) {
       cssCodeSplit: false,
       rollupOptions: {
         ...config.build?.rollupOptions,
+        // Panel is one bundled document. Never include Field Lite's second HTML.
+        input: fileURLToPath(new URL('../index.html', import.meta.url)),
         output: { inlineDynamicImports: true },
       },
     },

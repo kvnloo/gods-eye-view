@@ -3,7 +3,8 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    # Draft-only fork QA trigger; remove feature ref before origin promotion.
+    branches: [main, exp/relief-field-lite-screen-20261014]
 
 permissions:
   contents: read
@@ -101,6 +102,9 @@ jobs:
           cat preview.log
           exit 1
 
+      - name: Field Lite native-route and synthetic import gate
+        run: npm run qa:field-lite
+
       - name: Street Level gate with Mapillary fixtures
         run: npm run qa:street-level:fixtures -- --strict --url http://localhost:4173
 
@@ -111,6 +115,15 @@ jobs:
       - name: Preview server log
         if: failure()
         run: cat preview.log
+
+      - name: Upload Field Lite visual QA screenshots
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: field-lite-visual-qa
+          path: qa-artifacts/field-lite-*.png
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Upload gate evidence
         if: failure()

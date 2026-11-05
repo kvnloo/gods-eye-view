@@ -12,13 +12,15 @@ function boundedNumber(value, min, max) {
 }
 
 function evidenceRecord(record) {
-  if (!record || typeof record !== 'object' || !record.id) return null;
+  if (!record || typeof record !== 'object') return null;
+  if (Array.isArray(record)) return null;
+  if (typeof record.id !== 'string' || !record.id.trim()) return null;
   const lat = boundedNumber(record.lat, -90, 90);
   const lon = boundedNumber(record.lon, -180, 180);
   const sequence = boundedNumber(record.sequence, 0, Number.MAX_SAFE_INTEGER);
 
   return Object.freeze({
-    id: String(record.id),
+    id: record.id,
     sequence: Number.isSafeInteger(sequence) ? sequence : null,
     title: typeof record.title === 'string' ? record.title : null,
     summary: typeof record.summary === 'string' ? record.summary : null,

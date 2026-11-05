@@ -128,3 +128,105 @@ test('real equator coordinates, valid Nepal coordinates and numeric strings surv
     0, 2, 3,
   ]);
 });
+
+test('all source-owned observation IDs and capture-time evidence survive unchanged', () => {
+  const packet = buildBhoteKoshiDisasterAccessPacket(event);
+  const observationIdentity = (record) => ({
+    id: record.id,
+    sequence: record.sequence,
+    title: record.title,
+    capturedAt: record.timing?.capturedAt ?? null,
+    note: record.timing?.note ?? null,
+  });
+
+  assert.equal(packet.event.id, event.id);
+  assert.equal(packet.event.title, event.title);
+  assert.equal(packet.event.observedDate, event.observedDate);
+  assert.equal(packet.evidence.observations.length, 16);
+  assert.deepEqual(
+    packet.evidence.observations.map(observationIdentity),
+    event.evidenceSpine.map(observationIdentity),
+  );
+  for (const side of ['before', 'after']) {
+    assert.equal(
+      packet.evidence.imagery[side].observedAt,
+      event.imagery[side].observedAt,
+    );
+    assert.equal(
+      packet.evidence.imagery[side].source,
+      event.imagery[side].source,
+    );
+  }
+  assert.deepEqual(packet.access.segments, []);
+  assert.deepEqual(packet.gaps, ['access-not-assessed']);
+});
+
+test('malformed record IDs cannot be coerced into source-owned observations', () => {
+  const packet = buildBhoteKoshiDisasterAccessPacket({
+    ...event,
+    evidenceSpine: [
+      { id: 7 },
+      { id: {} },
+      { id: [] },
+      { id: '' },
+      { id: '  ' },
+      {
+        id: 'source-owned-id',
+        sequence: 1,
+        timing: { capturedAt: '2021-10-16', note: 'source timestamp' },
+      },
+    ],
+  });
+
+  assert.deepEqual(
+    packet.evidence.observations.map((record) => record.id),
+    ['source-owned-id'],
+  );
+  assert.equal(packet.evidence.observations[0].timing.capturedAt, '2021-10-16');
+  assert.deepEqual(packet.gaps, ['access-not-assessed']);
+});
+
+test('simulated open, degraded, blocked and stale access never alter bridge evidence', () => {
+  const originalEvent = JSON.stringify(event);
+  const bridgeId = 'bidur-trishuli-bridge';
+  const originalBridge = event.evidenceSpine.find((record) => record.id === bridgeId);
+  assert.ok(originalBridge);
+
+  for (const [state, freshness] of [
+    ['open', 'fresh'],
+    ['degraded', 'fresh'],
+    ['blocked', 'fresh'],
+    ['open', 'stale'],
+  ]) {
+    const packet = buildBhoteKoshiDisasterAccessPacket(event, {
+      accessSegments: [{
+        id: bridgeId,
+        state,
+        determination: 'simulated',
+        observedAt: '2026-08-26T12:00:00Z',
+        freshness,
+        provenance: { source: 'synthetic-test-only' },
+      }],
+      candidateRoutes: [{ id: 'test-candidate', segmentIds: [bridgeId] }],
+    });
+    const bridge = packet.evidence.observations.find((record) => record.id === bridgeId);
+    assert.ok(bridge);
+    assert.equal(bridge.id, originalBridge.id);
+    assert.equal(bridge.timing.capturedAt, originalBridge.timing.capturedAt);
+    assert.equal(Object.hasOwn(bridge, 'state'), false);
+    assert.equal(Object.hasOwn(bridge, 'determination'), false);
+    assert.equal(packet.evidence.observations.length, 16);
+    assert.deepEqual(
+      packet.evidence.observations.map((record) => record.id),
+      event.evidenceSpine.map((record) => record.id),
+    );
+    assert.equal(packet.access.segments.length, 1);
+    assert.equal(packet.access.segments[0].id, bridgeId);
+    assert.equal(packet.access.segments[0].state, state);
+    assert.equal(packet.access.segments[0].freshness, freshness);
+    assert.equal(packet.access.segments[0].determination, 'simulated');
+    assert.equal(packet.access.segments[0].provenance.source, 'synthetic-test-only');
+    assert.equal(packet.routes[0].routeId, 'test-candidate');
+  }
+  assert.equal(JSON.stringify(event), originalEvent);
+});

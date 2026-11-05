@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Add a pure read-only, source-linked human handoff receipt and Markdown/JSON export for pinned historical evidence, rejecting raw media and decision/action claims (fork draft; no external writes).
+
 ## [0.2.1] — 2026-10-02 — God's Eye View through Your Agent (with security fixes and other features)
 
 - Ship each bundled data pack once. The region, marine, admin-boundary,

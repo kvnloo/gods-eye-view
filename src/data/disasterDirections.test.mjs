@@ -83,6 +83,22 @@ test('one injected blocked segment invalidates the same route deterministically'
   assert.equal(baseline.support, 'supported');
   assert.equal(changed.support, 'unsupported');
   assert.deepEqual(changed.reasons, ['blocked:b']);
+  assert.equal(
+    isDirectionsDisasterAccessCurrent(baseline, {
+      route: candidate,
+      segmentIds: ['a', 'b'],
+      accessRevision: 'access-r2',
+    }),
+    false,
+  );
+  assert.equal(
+    isDirectionsDisasterAccessCurrent(changed, {
+      route: candidate,
+      segmentIds: ['b', 'a'],
+      accessRevision: 'access-r2',
+    }),
+    true,
+  );
 });
 
 test('stale open evidence does not become current-open because OSRM returned a route', () => {

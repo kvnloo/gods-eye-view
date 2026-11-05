@@ -1,5 +1,10 @@
 # God's Eye View Current State
 
+## Crisis brief claim metadata (fork draft)
+
+Situation brief sections now carry a conservative derived claim envelope alongside their existing summaries and data. Claim kinds remain observed, declared, or derived; unavailable sections are unknown and stale sections remain stale. Source and revision are reported only when supplied by the underlying tool. The revision comparison helper requires an exact matching source revision and otherwise treats dependent results as non-current. This does not establish current access or official authority.
+
+
 ## God's Eye View in conversations — October 2, 2026
 
 Tool answers that can be shown in God's Eye View include a view: camera, layers,

@@ -78,7 +78,7 @@ try {
     document.querySelector('#field-feedback').textContent.includes('rejected'));
   assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 0);
   await page.click('#field-demo');
-  assert.equal(await page.$eval('.field-card', (cards) => cards.length), 2);
+  assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 2);
 
   // The shell must be cached on a real route before simulating an offline reload.
   await page.waitForFunction(() =>

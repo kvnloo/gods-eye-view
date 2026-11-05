@@ -37,7 +37,8 @@ self.addEventListener('message', (event) => {
       const urls = event.data.urls;
       if (!Array.isArray(urls) || urls.length > 64) throw new Error('Unbounded asset list');
       const cache = await caches.open(CACHE_NAME);
-      let count = 0;
+      let scriptCount = 0;
+      let styleCount = 0;
       for (const href of new Set(urls)) {
         if (typeof href !== 'string' || href.length > 2048) throw new Error('Invalid asset URL');
         const url = new URL(href);
@@ -45,9 +46,12 @@ self.addEventListener('message', (event) => {
         const response = await fetch(url.href, { cache: 'reload' });
         if (!response.ok || response.type === 'opaque') throw new Error('Asset unavailable');
         await cache.put(url.href, response);
-        count += 1;
+        if (url.pathname.endsWith('.js')) scriptCount += 1;
+        if (url.pathname.endsWith('.css')) styleCount += 1;
       }
-      ok = count > 0 && (await cache.match(SHELL_URL)) !== undefined;
+      // Ready means both executable entry and stylesheet were actually cached.
+      ok = scriptCount > 0 && styleCount > 0 &&
+        (await cache.match(SHELL_URL)) !== undefined;
     } catch {
       // An incomplete cache must never be advertised as offline ready.
     }

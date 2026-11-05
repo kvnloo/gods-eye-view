@@ -1,7 +1,7 @@
 /** Composite queries that combine other tools' answers for one area. */
 
 import { suggestView } from '../views.js';
-import { feedProvenanceEnvelope } from '../../data/layerSnapshot.js';
+import { feedProvenanceEnvelope, evidenceClaim } from '../../data/layerSnapshot.js';
 import { defineTool, ToolError } from '../catalog.js';
 import {
   AREA_SCHEMA,
@@ -149,12 +149,25 @@ async function runSections(all, area, { tools, signal }) {
   sections.forEach(({ key }, index) => {
     const result = results[index];
     if (result.status === 'fulfilled') {
-      answers[key] = { summary: result.value.summary, data: result.value.data };
+      answers[key] = {
+        summary: result.value.summary,
+        data: result.value.data,
+        claim: evidenceClaim({
+          kind: 'derived',
+          status: result.value.data?.freshness === 'stale' ||
+            result.value.data?.stale === true ? 'stale' :
+            result.value.data?.missing_sources?.length ||
+            result.value.data?.unavailable_feeds?.length ? 'unknown' : 'present',
+          source: result.value.data?.source,
+          revision: result.value.data?.revision,
+        }),
+      };
       lines.push(result.value.summary);
     } else {
       const known = result.reason instanceof ToolError;
       answers[key] = {
         unavailable: true,
+        claim: evidenceClaim({ status: 'unknown' }),
         reason: known ? result.reason.message : 'unavailable right now',
       };
     }

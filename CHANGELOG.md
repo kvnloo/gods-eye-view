@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- Attach conservative derived claim metadata to situation brief sections; preserve stale/unknown and source revision identity, with a fail-closed revision check and native regression tests.
+
+
 ## [0.2.1] — 2026-10-02 — God's Eye View through Your Agent (with security fixes and other features)
 
 - Ship each bundled data pack once. The region, marine, admin-boundary,

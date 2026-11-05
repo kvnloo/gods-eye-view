@@ -3029,5 +3029,62 @@
   "The provider rejected the API key. Check it in Provider Settings.": "プロバイダーがAPIキーを拒否しました。プロバイダー設定で確認してください。",
   "Too many chat requests. Try again in {seconds} s.": "チャットのリクエストが多すぎます。{seconds}秒後にもう一度お試しください。",
   "The provider refused access for this key. Check the key's project, region or permissions.": "プロバイダーがこのキーでのアクセスを拒否しました。キーのプロジェクト、リージョン、権限を確認してください。",
-  "The provider account is out of credit. Check its billing, or choose another AI Provider in Settings.": "プロバイダーアカウントのクレジットが不足しています。課金状況を確認するか、設定で別のAIプロバイダーを選んでください。"
+  "The provider account is out of credit. Check its billing, or choose another AI Provider in Settings.": "プロバイダーアカウントのクレジットが不足しています。課金状況を確認するか、設定で別のAIプロバイダーを選んでください。",
+  "(invalid proposal id)": "（無効な提案ID）",
+  "Approval: {value}": "承認: {value}",
+  "Assumption: {assumption}": "前提: {assumption}",
+  "At least two valid alternatives are required": "有効な代替案が2つ以上必要です",
+  "Baseline citation (UNVERIFIED): {id} · revision: {revision} · claimed attribution: {attribution} · claimed license (NOT rights-cleared): {license} · source URL (not fetched): {url}": "基準データの出典（未検証）: {id} · リビジョン: {revision} · 申告された帰属: {attribution} · 申告されたライセンス（権利未確認）: {license} · 出典URL（未取得）: {url}",
+  "Baseline source: absent · verification unavailable": "基準データの出典: なし · 検証できません",
+  "COMPARE PARK PROPOSALS · FIXTURE": "公園案を比較 · テスト用データ",
+  "Co-op view": "協働ビュー",
+  "Community planning · hypothetical preview": "コミュニティ計画 · 仮想プレビュー",
+  "Compare user-authored possibilities, not verified construction or traffic forecasts.": "ユーザーが作成した可能性を比較します。検証済みの工事・交通予測ではありません。",
+  "Excluded {id} · {reason}; other validation failures may exist": "除外 {id} · {reason}。他の検証エラーがある可能性があります",
+  "Game view": "ゲームビュー",
+  "HYPOTHETICAL · NOT APPROVED": "仮想案 · 未承認",
+  "Inspect a hypothetical proposal": "仮想の提案を確認",
+  "Inspect {proposal}": "{proposal} を確認",
+  "LOCAL-ONLY DISPLAY · No shared room, live participants or synchronized edits.": "ローカル表示のみ · 共有ルーム、ライブ参加者、同期編集はありません。",
+  "Modeled impact: {value}": "モデル化された影響: {value}",
+  "No valid proposals to compare; excluded records cannot be displayed as alternatives.": "比較できる有効な提案がありません。除外された記録を代替案として表示することはできません。",
+  "Only one valid proposal is available; comparing requires two.": "有効な提案は1つだけです。比較には2つ必要です。",
+  "Planning records excluded as stale or incompatible: {excluded} · valid beyond this two-proposal preview: {beyond}. This snapshot cannot reconstruct overwritten edits or resolve conflicts.": "古いまたは互換性がないため除外された計画記録: {excluded} · この2案プレビュー以外の有効な提案: {beyond}。このスナップショットでは上書きされた編集の復元や競合の解決はできません。",
+  "Proposed markers: {features}": "提案されたマーカー: {features}",
+  "Recorded author: {author}": "記録された作成者: {author}",
+  "Recorded edit: unknown (no valid recorded operation metadata)": "記録された編集: 不明（有効な操作メタデータがありません）",
+  "Recorded edit: {operation} · logical counter: {counter} (unverified, not approval)": "記録された編集: {operation} · 論理カウンター: {counter}（未検証、承認ではありません）",
+  "SYNTHETIC FIXTURE · NO LAND RIGHTS, MUNICIPAL APPROVAL OR MODELED IMPACT": "合成テストデータ · 土地の権利、自治体の承認、モデル化された影響はありません",
+  "Source revision: {revision}": "出典リビジョン: {revision}",
+  "Synthetic marker positions for {proposal}; not surveyed": "{proposal} の模式的なマーカー位置。測量されていません",
+  "View: co-op · neither mode grants authority": "ビュー: 協働 · どちらのモードも権限を与えません",
+  "View: game · inspecting {proposal} (hypothetical) · neither mode grants authority": "ビュー: ゲーム · {proposal} を確認中（仮想）· どちらのモードも権限を与えません",
+  "baseline revision differs from reference": "基準リビジョンが参照と異なります",
+  "invalid proposal identifier": "無効な提案識別子",
+  "missing or malformed proposal payload": "提案データがないか不正です",
+  "none": "なし",
+  "proposal ID differs from its record key": "提案IDが記録キーと異なります",
+  "proposal belongs to another project": "提案は別のプロジェクトに属しています",
+  "proposal carries an unverified approval claim": "提案に未検証の承認主張が含まれています",
+  "proposal claims an evaluated impact": "提案が評価済みの影響を主張しています",
+  "proposal failed another validation rule": "提案が別の検証ルールを満たしていません",
+  "proposal is not marked hypothetical": "提案が仮想案として示されていません",
+  "record ownership metadata differs": "記録の所有者メタデータが異なります",
+  "unsupported proposal schema revision": "サポートされていない提案スキーマのリビジョン",
+  "{actor} (unverified identity)": "{actor}（本人確認なし）",
+  "{place} · reference-only baseline {revision}": "{place} · 参照専用の基準 {revision}",
+  "{proposal} · Recorded author: {author} · Source revision: {revision} · HYPOTHETICAL · NOT APPROVED": "{proposal} · 記録された作成者: {author} · 出典リビジョン: {revision} · 仮想案 · 未承認",
+  "{title} · proposal {id}": "{title} · 提案 {id}",
+  "Inspect {count} additional valid hypothetical proposals not shown in comparison": {
+    "other": "比較に表示されていない有効な仮想提案 {count} 件を確認"
+  },
+  "{count} more valid proposals not listed": {
+    "other": "ほかに有効な提案 {count} 件は表示されていません"
+  },
+  "Inspect {count} excluded proposal records": {
+    "other": "除外された提案記録 {count} 件を確認"
+  },
+  "{count} more excluded records not listed": {
+    "other": "ほかに除外された記録 {count} 件は表示されていません"
+  }
 }

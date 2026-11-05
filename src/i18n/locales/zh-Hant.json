@@ -3029,5 +3029,62 @@
   "The provider rejected the API key. Check it in Provider Settings.": "服務商拒絕了 API 密鑰。請在服務商設置中檢查。",
   "Too many chat requests. Try again in {seconds} s.": "聊天請求過多。請在 {seconds} 秒後重試。",
   "The provider refused access for this key. Check the key's project, region or permissions.": "服務商拒絕了此密鑰的訪問請求。請檢查該密鑰所屬的項目、區域或權限。",
-  "The provider account is out of credit. Check its billing, or choose another AI Provider in Settings.": "服務商賬戶餘額不足。請檢查賬戶的計費信息，或在設置中選擇其他 AI 服務商。"
+  "The provider account is out of credit. Check its billing, or choose another AI Provider in Settings.": "服務商賬戶餘額不足。請檢查賬戶的計費信息，或在設置中選擇其他 AI 服務商。",
+  "(invalid proposal id)": "（無效的提案 ID）",
+  "Approval: {value}": "核准：{value}",
+  "Assumption: {assumption}": "假設：{assumption}",
+  "At least two valid alternatives are required": "至少需要兩個有效的替代方案",
+  "Baseline citation (UNVERIFIED): {id} · revision: {revision} · claimed attribution: {attribution} · claimed license (NOT rights-cleared): {license} · source URL (not fetched): {url}": "基準引用（未驗證）：{id} · 修訂：{revision} · 聲稱的署名：{attribution} · 聲稱的授權（權利未確認）：{license} · 來源 URL（未擷取）：{url}",
+  "Baseline source: absent · verification unavailable": "基準來源：缺少 · 無法驗證",
+  "COMPARE PARK PROPOSALS · FIXTURE": "比較公園提案 · 測試資料",
+  "Co-op view": "協作檢視",
+  "Community planning · hypothetical preview": "社區規劃 · 假設性預覽",
+  "Compare user-authored possibilities, not verified construction or traffic forecasts.": "比較使用者撰寫的可能方案，而非經驗證的施工或交通預測。",
+  "Excluded {id} · {reason}; other validation failures may exist": "已排除 {id} · {reason}；可能還有其他驗證失敗",
+  "Game view": "遊戲檢視",
+  "HYPOTHETICAL · NOT APPROVED": "假設性 · 未核准",
+  "Inspect a hypothetical proposal": "檢視一個假設性提案",
+  "Inspect {proposal}": "檢視 {proposal}",
+  "LOCAL-ONLY DISPLAY · No shared room, live participants or synchronized edits.": "僅限本機顯示 · 沒有共享房間、即時參與者或同步編輯。",
+  "Modeled impact: {value}": "模擬影響：{value}",
+  "No valid proposals to compare; excluded records cannot be displayed as alternatives.": "沒有可比較的有效提案；被排除的記錄不能顯示為替代方案。",
+  "Only one valid proposal is available; comparing requires two.": "只有一個有效提案；比較需要兩個。",
+  "Planning records excluded as stale or incompatible: {excluded} · valid beyond this two-proposal preview: {beyond}. This snapshot cannot reconstruct overwritten edits or resolve conflicts.": "因過時或不相容而排除的規劃記錄：{excluded} · 此雙提案預覽之外的有效提案：{beyond}。此快照無法重建被覆寫的編輯，也無法解決衝突。",
+  "Proposed markers: {features}": "提議的標記：{features}",
+  "Recorded author: {author}": "記錄的作者：{author}",
+  "Recorded edit: unknown (no valid recorded operation metadata)": "記錄的編輯：未知（沒有有效的已記錄操作中繼資料）",
+  "Recorded edit: {operation} · logical counter: {counter} (unverified, not approval)": "記錄的編輯：{operation} · 邏輯計數器：{counter}（未驗證，並非核准）",
+  "SYNTHETIC FIXTURE · NO LAND RIGHTS, MUNICIPAL APPROVAL OR MODELED IMPACT": "合成測試資料 · 無土地權利、市政核准或模擬影響",
+  "Source revision: {revision}": "來源修訂：{revision}",
+  "Synthetic marker positions for {proposal}; not surveyed": "{proposal} 的示意標記位置；未經測量",
+  "View: co-op · neither mode grants authority": "檢視：協作 · 兩種模式皆不授予權限",
+  "View: game · inspecting {proposal} (hypothetical) · neither mode grants authority": "檢視：遊戲 · 正在檢視 {proposal}（假設性）· 兩種模式皆不授予權限",
+  "baseline revision differs from reference": "基準修訂與參考不同",
+  "invalid proposal identifier": "無效的提案識別碼",
+  "missing or malformed proposal payload": "提案資料缺少或格式錯誤",
+  "none": "無",
+  "proposal ID differs from its record key": "提案 ID 與記錄鍵不一致",
+  "proposal belongs to another project": "提案屬於另一個專案",
+  "proposal carries an unverified approval claim": "提案包含未經驗證的核准聲明",
+  "proposal claims an evaluated impact": "提案聲稱已評估影響",
+  "proposal failed another validation rule": "提案未通過另一項驗證規則",
+  "proposal is not marked hypothetical": "提案未標示為假設性",
+  "record ownership metadata differs": "記錄擁有權中繼資料不一致",
+  "unsupported proposal schema revision": "不支援的提案結構描述修訂",
+  "{actor} (unverified identity)": "{actor}（身分未驗證）",
+  "{place} · reference-only baseline {revision}": "{place} · 僅供參考的基準 {revision}",
+  "{proposal} · Recorded author: {author} · Source revision: {revision} · HYPOTHETICAL · NOT APPROVED": "{proposal} · 記錄的作者：{author} · 來源修訂：{revision} · 假設性 · 未核准",
+  "{title} · proposal {id}": "{title} · 提案 {id}",
+  "Inspect {count} additional valid hypothetical proposals not shown in comparison": {
+    "other": "檢視比較中未顯示的 {count} 個其他有效假設性提案"
+  },
+  "{count} more valid proposals not listed": {
+    "other": "另有 {count} 個有效提案未列出"
+  },
+  "Inspect {count} excluded proposal records": {
+    "other": "檢視 {count} 筆被排除的提案記錄"
+  },
+  "{count} more excluded records not listed": {
+    "other": "另有 {count} 筆被排除的記錄未列出"
+  }
 }

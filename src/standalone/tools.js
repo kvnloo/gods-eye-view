@@ -2,8 +2,14 @@ import { createAssetDirectorySource } from '../director/packs/source.js';
 import { createApplicationTools } from '../app/tools.js';
 import { startStandaloneChrome } from './startupChrome.js';
 import { loadToolCatalog } from './toolCatalog.js';
+
+/** Only the exact, explicit fixture query may load hypothetical planning UI. */
+export function isPlanningFixturePreviewRequested(search) {
+  return search === '?planningPreview=fixture';
+}
+
 export function createStandaloneTools(options) {
-  return createApplicationTools({
+  const tools = createApplicationTools({
     startChrome: startStandaloneChrome,
     sceneDataPacks: {
       sources: {
@@ -24,4 +30,25 @@ export function createStandaloneTools(options) {
       ...options?.voice,
     },
   });
+  // Fixture-only proof: normal startup loads no proposal UI or code.
+  if (isPlanningFixturePreviewRequested(globalThis.location?.search)) {
+    let dispose = null;
+    // Register cleanup before the import, so shutdown never leaks a launcher.
+    options.defer(() => {
+      dispose?.();
+      dispose = () => {};
+    });
+    void Promise.all([
+      import('../ui/communityPlanningPreview.js'),
+      import('./communityPlanningFixture.js'),
+    ])
+      .then(([ui, fixture]) => {
+        if (dispose || options.signal?.aborted) return;
+        dispose = ui.mountCommunityPlanningPreview(
+          fixture.createSyntheticCommunityPlanningFixture(),
+        );
+      })
+      .catch(() => console.error('Community planning fixture preview failed'));
+  }
+  return tools;
 }

@@ -40,7 +40,7 @@ function skip(condition, caseId, status, reason) {
   };
 }
 
-test('zero observations never produces a success score or a passed GEV safety gate', () => {
+test('empty records never pass the GEV application gate', () => {
   const result = scoreEvidencePilot([]);
   assert.equal(result.protocolRevision, PILOT_PROTOCOL_REVISION);
   assert.equal(result.evidenceRevision, PILOT_EVIDENCE_REVISION);
@@ -58,7 +58,7 @@ test('zero observations never produces a success score or a passed GEV safety ga
   }
 });
 
-test('same fixed mutations produce deterministic paired decision and citation scores', () => {
+test('fixed mutations yield reproducible paired error and citation counts', () => {
   const rows = [
     example('gev', 'blocked-update-v1', {
       elapsedSeconds: 12,
@@ -130,7 +130,7 @@ test('same fixed mutations produce deterministic paired decision and citation sc
   assert.equal(tasking.citationRecoveryDifference, 1);
 });
 
-test('unsupported safe/open app assertions are separate from participant mistakes', () => {
+test('app safety assertions count separately from participant errors', () => {
   const score = scoreEvidencePilot([
     example('gev', 'blocked-update-v1', {
       decision: 'safe',
@@ -156,7 +156,7 @@ test('unsupported safe/open app assertions are separate from participant mistake
   assert.equal(score.revisionRecognitionRate, 0.5);
 });
 
-test('one audited GEV mutation is insufficient to pass the two-case safety gate', () => {
+test('one audited mutation cannot pass the two-case app gate', () => {
   const onlyOne = scoreEvidencePilot([
     example('gev', 'blocked-update-v1'),
   ]).byCondition.gev;
@@ -171,7 +171,7 @@ test('one audited GEV mutation is insufficient to pass the two-case safety gate'
   assert.equal(unavailableOther.appSafetyGate, null);
 });
 
-test('unaudited app output and missing measurements stay unknown, not zero or passed', () => {
+test('missing app audit and measurements remain unknown', () => {
   const score = scoreEvidencePilot([
     example('gev', 'blocked-update-v1', {
       appAssertions: null,
@@ -188,7 +188,7 @@ test('unaudited app output and missing measurements stay unknown, not zero or pa
   assert.equal(score.measuredNavigationCount, 0);
 });
 
-test('unmatched incumbent workflows are not scored as failures or as victories', () => {
+test('unmatched incumbent workflows remain unscored', () => {
   const rows = [
     example('gev', 'blocked-update-v1'),
     skip(
@@ -222,7 +222,7 @@ test('unmatched incumbent workflows are not scored as failures or as victories',
   );
 });
 
-test('citation recovery requires the case-specific scripted evidence card', () => {
+test('citation recovery requires the matching evidence card', () => {
   const score = scoreEvidencePilot([
     example('map-docs', 'blocked-update-v1', {
       recoveredEvidenceIds: ['pilot:stale-open-v1'],
@@ -233,14 +233,20 @@ test('citation recovery requires the case-specific scripted evidence card', () =
   assert.equal(score.citationRecoveryScore, 0);
 });
 
-test('the scorer rejects unregistered cases, missing audit, duplicates and shortcuts', () => {
+test('reject unregistered cases, missing audit and duplicates', () => {
   const valid = example('gev', 'blocked-update-v1');
   const badRows = [
     { ...valid, evidenceRevision: 'other-script' },
     { ...valid, caseId: 'invented-access-case' },
     { ...valid, condition: 'fake-incumbent' },
     { ...valid, appAssertions: undefined },
-    { ...valid, recoveredEvidenceIds: ['pilot:blocked-update-v1', 'pilot:blocked-update-v1'] },
+    {
+      ...valid,
+      recoveredEvidenceIds: [
+        'pilot:blocked-update-v1',
+        'pilot:blocked-update-v1',
+      ],
+    },
     { ...valid, recoveredEvidenceIds: ['pilot:invented'] },
     { ...valid, elapsedSeconds: -1 },
     { ...valid, evidenceNavigationActions: 1.5 },

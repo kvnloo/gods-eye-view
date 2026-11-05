@@ -1,5 +1,17 @@
 # God's Eye View Current State
 
+## Source-linked human decision handoff (fork draft)
+
+The pure `createHumanDecisionBrief` and `exportHumanDecisionBrief` helpers in
+`src/tools/queries/brief.js` and `src/tools/queries/share.js` export a bounded,
+versioned historical evidence packet as source-linked JSON and plain Markdown.
+The packet, source revisions, recorded and observation times, redistribution
+rights, explicit unknowns, stale claims, conflicts and modeled/observed lanes
+remain separate. Unknown fields, media and operational-approval assertions
+fail closed. The output only links to external human review; it neither
+approves decisions nor calls any tool or external system. It is not wired to
+the live situation_brief response or any automated action workflow.
+
 ## God's Eye View in conversations — October 2, 2026
 
 Tool answers that can be shown in God's Eye View include a view: camera, layers,

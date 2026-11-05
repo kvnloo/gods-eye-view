@@ -303,3 +303,260 @@ export const militaryAwareness = defineTool({
     };
   },
 });
+
+/**
+ * Build a deterministic, reference-only handoff from one pinned historical
+ * packet. This never queries providers or records an external decision.
+ * Unknown fields are rejected rather than silently carrying raw media or
+ * claims of operational authority into a shareable receipt.
+ */
+const BRIEF_SCHEMA = 'gev-human-readonly-brief/v1';
+const HANDOFF_SOURCE_LIMIT = 25;
+const HANDOFF_CLAIM_LIMIT = 50;
+const SOURCE_RIGHTS = new Set([
+  'redistributable',
+  'reference-only',
+  'restricted',
+  'unknown',
+]);
+const CLAIM_LANES = new Set(['observed', 'modeled']);
+const CLAIM_STATUSES = new Set([
+  'reported',
+  'stale',
+  'unknown',
+  'conflicted',
+  'absent',
+]);
+const REFERENCE_ID = /^[a-z0-9][a-z0-9._:-]{0,63}$/i;
+const UTC_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/;
+const RAW_MEDIA = /(?:data:|blob:|base64|<\s*\/?\s*(?:img|video|audio)\b|!\[)/i;
+const AUTHORITY_CLAIM =
+  /\b(?:approved?|authori[sz]ed|cleared|clearance granted|safe to|dispatch(?:ed)?|deploy(?:ed)?|evacuat(?:e|ed|ion)|permission granted|officially|route (?:is )?open|open for travel|go-ahead)\b/i;
+
+function exactFields(value, allowed, label) {
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    Array.isArray(value) ||
+    ![Object.prototype, null].includes(Object.getPrototypeOf(value))
+  ) {
+    throw new TypeError(label + ' must be a plain object');
+  }
+  for (const key of Object.keys(value)) {
+    if (!allowed.includes(key)) {
+      throw new TypeError(label + ' has unsupported field: ' + key);
+    }
+  }
+  return value;
+}
+
+function handoffText(value, label, limit = 400) {
+  if (
+    typeof value !== 'string' ||
+    !value.length ||
+    value.length > limit ||
+    value.trim() !== value ||
+    /[\u0000-\u001f\u007f]/.test(value) ||
+    RAW_MEDIA.test(value)
+  ) {
+    throw new TypeError(label + ' must be bounded, single-line reference text');
+  }
+  return value;
+}
+
+function referenceId(value, label) {
+  if (!REFERENCE_ID.test(handoffText(value, label, 64))) {
+    throw new TypeError(label + ' must be an opaque reference ID');
+  }
+  return value;
+}
+
+function utcTimestamp(value, label) {
+  if (
+    typeof value !== 'string' ||
+    !UTC_TIME.test(value) ||
+    !Number.isFinite(Date.parse(value))
+  ) {
+    throw new TypeError(label + ' must be an explicit UTC timestamp');
+  }
+  const canonical = new Date(value).toISOString();
+  if (canonical.slice(0, 19) !== value.slice(0, 19)) {
+    throw new TypeError(label + ' is not a calendar timestamp');
+  }
+  return canonical;
+}
+
+function optionalTimestamp(value, label) {
+  return value == null ? null : utcTimestamp(value, label);
+}
+
+function referenceUrl(value, label) {
+  const raw = handoffText(value, label, 2048);
+  let url;
+  try {
+    url = new URL(raw);
+  } catch {
+    throw new TypeError(label + ' must be an absolute source URL');
+  }
+  if (
+    !['https:', 'http:'].includes(url.protocol) ||
+    !url.hostname ||
+    url.username ||
+    url.password ||
+    [...url.searchParams.keys()].some((key) =>
+      /^(?:token|access_token|api_?key|password|session|signature|sig)$/i.test(key),
+    )
+  ) {
+    throw new TypeError(label + ' must be a public, credential-free HTTP(S) URL');
+  }
+  return url.href;
+}
+
+function sortById(left, right) {
+  return left.id < right.id ? -1 : left.id > right.id ? 1 : 0;
+}
+
+function handoffSource(input) {
+  const row = exactFields(
+    input,
+    ['id', 'revision', 'url', 'rights', 'license', 'attribution', 'observedAt', 'recordedAt'],
+    'source',
+  );
+  if (!SOURCE_RIGHTS.has(row.rights)) {
+    throw new TypeError('source.rights must explicitly describe reuse rights');
+  }
+  return {
+    id: referenceId(row.id, 'source.id'),
+    revision: handoffText(row.revision, 'source.revision', 120),
+    url: referenceUrl(row.url, 'source.url'),
+    rights: row.rights,
+    license: handoffText(row.license, 'source.license', 120),
+    attribution: handoffText(row.attribution, 'source.attribution', 200),
+    observedAt: optionalTimestamp(row.observedAt, 'source.observedAt'),
+    recordedAt: utcTimestamp(row.recordedAt, 'source.recordedAt'),
+  };
+}
+
+function handoffClaim(input, knownSources) {
+  const row = exactFields(
+    input,
+    ['id', 'lane', 'status', 'statement', 'uncertainty', 'observedAt', 'sourceIds'],
+    'claim',
+  );
+  if (!CLAIM_LANES.has(row.lane) || !CLAIM_STATUSES.has(row.status)) {
+    throw new TypeError('claim lane/status is unsupported');
+  }
+  if (!Array.isArray(row.sourceIds) || row.sourceIds.length > HANDOFF_SOURCE_LIMIT) {
+    throw new TypeError('claim.sourceIds must be a bounded array');
+  }
+  const sourceIds = row.sourceIds.map((id) => referenceId(id, 'claim.sourceIds'));
+  if (
+    new Set(sourceIds).size !== sourceIds.length ||
+    sourceIds.some((id) => !knownSources.has(id)) ||
+    (sourceIds.length === 0 && row.status !== 'unknown') ||
+    (row.status === 'conflicted' && sourceIds.length < 2)
+  ) {
+    throw new TypeError('claim requires distinct, linked evidence sources');
+  }
+  const statement = handoffText(row.statement, 'claim.statement');
+  const uncertainty = handoffText(row.uncertainty, 'claim.uncertainty');
+  if (AUTHORITY_CLAIM.test(statement) || AUTHORITY_CLAIM.test(uncertainty)) {
+    throw new TypeError('operational or approval assertions cannot be exported');
+  }
+  return {
+    id: referenceId(row.id, 'claim.id'),
+    lane: row.lane,
+    status: row.status,
+    statement,
+    uncertainty,
+    observedAt: optionalTimestamp(row.observedAt, 'claim.observedAt'),
+    sourceIds: sourceIds.sort(),
+  };
+}
+
+/**
+ * @param {object} packet Pinned, historical evidence packet with explicit
+ *   version, revision, source metadata, scoped findings and external workflow.
+ * @returns {object} JSON-safe receipt; not a decision, live status or action.
+ */
+export function createHumanDecisionBrief(packet) {
+  const input = exactFields(
+    packet,
+    [
+      'schemaVersion',
+      'id',
+      'revision',
+      'capturedAt',
+      'question',
+      'authorRef',
+      'sources',
+      'claims',
+      'handoff',
+    ],
+    'packet',
+  );
+  if (input.schemaVersion !== 1) {
+    throw new TypeError('packet schemaVersion 1 is required');
+  }
+  if (
+    !Array.isArray(input.sources) ||
+    input.sources.length === 0 ||
+    input.sources.length > HANDOFF_SOURCE_LIMIT ||
+    !Array.isArray(input.claims) ||
+    input.claims.length > HANDOFF_CLAIM_LIMIT
+  ) {
+    throw new TypeError('packet sources/claims must be bounded arrays');
+  }
+  const sources = input.sources.map(handoffSource).sort(sortById);
+  const sourceIds = new Set(sources.map((source) => source.id));
+  if (sourceIds.size !== sources.length) {
+    throw new TypeError('duplicate source IDs');
+  }
+  const claims = input.claims
+    .map((claim) => handoffClaim(claim, sourceIds))
+    .sort(sortById);
+  if (new Set(claims.map((claim) => claim.id)).size !== claims.length) {
+    throw new TypeError('duplicate claim IDs');
+  }
+  const handoff = exactFields(input.handoff, ['label', 'url'], 'handoff');
+  const externalLabel = handoffText(handoff.label, 'handoff.label', 160);
+  if (AUTHORITY_CLAIM.test(externalLabel)) {
+    throw new TypeError('handoff must name a review destination, not an approval');
+  }
+  return {
+    schema: BRIEF_SCHEMA,
+    packet: {
+      id: referenceId(input.id, 'packet.id'),
+      revision: handoffText(input.revision, 'packet.revision', 120),
+      capturedAt: utcTimestamp(input.capturedAt, 'packet.capturedAt'),
+      authorRef:
+        input.authorRef === undefined
+          ? null
+          : referenceId(input.authorRef, 'packet.authorRef'),
+    },
+    question: handoffText(input.question, 'packet.question', 500),
+    sources,
+    findings: {
+      observed: claims.filter((claim) => claim.lane === 'observed'),
+      modeled: claims.filter((claim) => claim.lane === 'modeled'),
+      unknowns: claims.filter((claim) =>
+        ['unknown', 'absent'].includes(claim.status),
+      ),
+      stale: claims.filter((claim) => claim.status === 'stale'),
+      conflicts: claims.filter((claim) => claim.status === 'conflicted'),
+    },
+    externalDecision: {
+      status: 'not-recorded-by-gev',
+      workflow: {
+        label: externalLabel,
+        url: referenceUrl(handoff.url, 'handoff.url'),
+      },
+    },
+    limitations: [
+      'Historical, pinned evidence only; no present conditions are inferred.',
+      'Source-reported observations are not independently verified by GEV.',
+      'No route clearance, approval, dispatch or allocation is recorded.',
+      'Media is never embedded; source links are reference-only.',
+    ],
+  };
+}

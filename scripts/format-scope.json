@@ -897,5 +897,6 @@
   "src/tools/globePanel.test.mjs",
   "src/costEndpointThrottle.test.mjs",
   "src/playground/index.js",
-  "src/playground/index.test.mjs"
+  "src/playground/index.test.mjs",
+  "scripts/qa-playground-local-rooms.mjs"
 ]

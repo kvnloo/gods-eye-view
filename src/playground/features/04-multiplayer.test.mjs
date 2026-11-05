@@ -2,6 +2,11 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { normalizeRoom, parseRoomMessage, makeRoomInvite, ROOM_PROTOCOL, feature } from './04-multiplayer.js';
 
+test('the opt-in tab is labeled local rooms, not internet multiplayer', () => {
+  assert.equal(feature.id, 'multiplayer', 'preserve the registered feature ID');
+  assert.equal(feature.title, 'Local rooms');
+});
+
 test('local room codes cannot contain path or script characters', () => {
   assert.equal(normalizeRoom(' Team-Earth '), 'team-earth');
   assert.equal(normalizeRoom('../other'), null);
@@ -364,6 +369,7 @@ test('explicit leave, active heartbeats, crashes and stale callbacks stay local'
     const dispose = feature.mount({ root, services: { window: win } });
     return {
       join: () => root.children[3].children[0].click(),
+      setRoom: (name) => { root.children[2].value = name; },
       leave: () => root.children[3].children[1].click(),
       peerCount: () => root.children[5].children.length,
       status: () => root.children[4].textContent,
@@ -381,13 +387,33 @@ test('explicit leave, active heartbeats, crashes and stale callbacks stay local'
       dispose,
     };
   };
-  let observer, visitor, crashing;
+  let observer, visitor, crashing, other, otherPeer;
   try {
     observer = tab();
     visitor = tab();
     observer.join();
     visitor.join();
     assert.equal(observer.peerCount(), 1);
+    // Same-origin BroadcastChannels with different codes are independent.
+    // Neither another room's Join nor its heartbeat grants membership here.
+    other = tab();
+    other.setRoom('other-room');
+    other.join();
+    assert.equal(other.peerCount(), 0);
+    observer.pulse();
+    assert.equal(other.peerCount(), 0);
+    assert.equal(observer.peerCount(), 1);
+    otherPeer = tab();
+    otherPeer.setRoom('other-room');
+    otherPeer.join();
+    assert.equal(other.peerCount(), 1);
+    assert.equal(otherPeer.peerCount(), 1);
+    assert.equal(visitor.peerCount(), 1);
+    assert.equal(observer.peerCount(), 1);
+    otherPeer.leave();
+    assert.equal(other.peerCount(), 0);
+    assert.equal(observer.peerCount(), 1);
+    other.dispose();
     // Repeating Join for the same normalized room must preserve the peer's
     // existing channel/presence; otherwise other tabs see a false Leave/Join.
     const packetsBeforeRepeat = outgoing.length;
@@ -442,10 +468,19 @@ test('explicit leave, active heartbeats, crashes and stale callbacks stay local'
     assert.equal(observer.peerCount(), 0);
     observer.dispose();
     assert.equal(observer.heartbeatActive(), false);
+    const packetsAfterTeardown = outgoing.length;
+    observer.join();
+    observer.leave();
+    assert.equal(observer.heartbeatActive(), false,
+      'a stale Join control cannot restore a timer after teardown');
+    assert.equal(outgoing.length, packetsAfterTeardown,
+      'disposed local-room controls cannot send a new Join or Leave');
   } finally {
     observer?.dispose();
     visitor?.dispose();
     crashing?.dispose();
+    other?.dispose();
+    otherPeer?.dispose();
     Date.now = previousNow;
   }
 });
@@ -830,6 +865,11 @@ test('Visit view fails closed after Scene teardown and still allows explicit ret
     assert.equal(flights.length, 2, 'valid explicit retry still navigates');
     assert.equal(packets.some((packet) => packet.kind === 'view'), false,
       'visiting a peer cannot transmit the local camera view');
+    dispose();
+    const flightsAfterTeardown = flights.length;
+    visit.listeners.get('click')();
+    assert.equal(flights.length, flightsAfterTeardown,
+      'a retained Visit view control cannot navigate after room teardown');
   } finally {
     dispose();
   }

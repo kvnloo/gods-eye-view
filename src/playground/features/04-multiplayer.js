@@ -125,14 +125,14 @@ export function makeRoomInvite(currentUrl, room, { includeScene = false } = {}) 
 
 export const feature = {
   id: 'multiplayer',
-  title: 'Multiplayer',
+  title: 'Local rooms',
   mount({ root, services }) {
     const doc = root.ownerDocument;
     const win = services.window;
     const title = doc.createElement('h3');
     title.textContent = 'Shared Earth · local demo';
     const description = doc.createElement('p');
-    description.textContent = 'Open two same-origin tabs. Presence-only heartbeats expire silent peers; camera views transmit only when you choose Send coarse view. Room links omit the current scene unless separately opted in. No internet rooms or verified identities.';
+    description.textContent = 'Open two same-origin tabs. Presence-only heartbeats expire silent peers; camera views transmit only when you choose Send coarse view. Room links omit the current scene unless separately opted in. No internet rooms, verified identities, contribution scores, or civic authority.';
     const roomInput = doc.createElement('input');
     roomInput.type = 'text';
     roomInput.maxLength = 24;
@@ -254,6 +254,7 @@ export const feature = {
           follow.type = 'button';
           follow.textContent = 'Visit view';
           follow.addEventListener('click', () => {
+            if (!mounted || !channel) return;
             // A peer row may outlive its Scene camera during teardown.
             try {
               const viewer = services.viewer;
@@ -319,6 +320,7 @@ export const feature = {
       }
     }
     join.addEventListener('click', () => {
+      if (!mounted) return;
       const nextRoom = normalizeRoom(roomInput.value);
       if (!nextRoom) {
         notice('Use 3–24 lowercase letters, digits or hyphens.');
@@ -389,11 +391,12 @@ export const feature = {
       notice('Joined local tab room ' + room + '.');
     });
     leave.addEventListener('click', () => {
+      if (!mounted) return;
       leaveRoom();
       notice('Left room; no more messages will be exchanged.');
     });
     share.addEventListener('click', () => {
-      if (!channel) return;
+      if (!mounted || !channel) return;
       // Scene teardown may retain a stale camera position. Never transmit it.
       let view = null;
       try {
@@ -415,6 +418,7 @@ export const feature = {
       notice('Coarse camera view shared with local tabs (about 0.1° precision).');
     });
     invite.addEventListener('click', () => {
+      if (!mounted) return;
       // Invite the active channel, not an edited but unjoined room code.
       const candidate = room || normalizeRoom(roomInput.value);
       if (!candidate) return notice('Enter a valid room first.');

@@ -1,5 +1,21 @@
 # God's Eye View Current State
 
+## GEV-G10 Planet Playground local-room boundary — November 5, 2026
+
+Draft #253's optional feature is visibly labeled **Local rooms**, not internet
+multiplayer. Independent same-origin room codes partition ephemeral presence;
+no room packet grants evidence validity, local stewardship, official approval,
+or verified contribution scores. Source guards revoke retained room controls
+and peer Visit actions after a mode closes or host disposes, preventing a
+stale button from reconnecting or moving the camera. Existing shell keyboard,
+focus and cleanup regressions are supplemented by cross-room and shell-to-mode
+lifecycle assertions, plus a runnable two-tab Chromium QA gate at
+`scripts/qa-playground-local-rooms.mjs`. Native Node 24.14/26, formatting,
+boundaries, full build, track and Chromium gates remain **NOT RUN** here; a
+written browser gate is not executed proof. Public-good missions in #150 stay
+blocked on #143/#144/#148/#151; no production cooperative or humanitarian
+impact claim is authorized.
+
 ## Fork-only Planet Playground Escape ownership — October 30, 2026
 
 Escape from the Playground panel or its launcher closes the optional shell and

@@ -7,6 +7,13 @@
 
 ## [Unreleased]
 
+- Keep Planet Playground #253's optional same-origin prototype labeled **Local
+  rooms**, isolate independently named tab rooms and revoke retained Join/Visit
+  controls on close/teardown. Add synthetic native unit regressions and a
+  runnable two-tab Chromium gate for keyboard, focus, room isolation and
+  teardown. All tests, browser gates and CI remain **NOT RUN / UNVERIFIED**;
+  no real multiplayer, public-good mission score or civic authority implied.
+
 - Keep the sole Planet Playground keyboard tab stop on the focused tab during
   manual arrow/Home/End navigation without selecting a room or What-if; clicking
   the already-active tab restores its tab stop without remounting. Isolated V8

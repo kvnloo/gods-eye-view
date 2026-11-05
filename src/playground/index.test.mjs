@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { mountPlanetPlayground } from './index.js';
+import { feature as localRoomsFeature } from './features/04-multiplayer.js';
 
 /** Deterministic DOM adapter; not a real browser or Cesium acceptance test. */
 function syntheticDocument() {
@@ -453,4 +454,69 @@ test('Escape inside Playground closes it; foreign Scene Escape does not leave ro
   dispose();
   escape(roomTab);
   assert.deepEqual(events, beforeDispose, 'detached controls remain inert');
+});
+
+test('closing a mounted local room revokes retained feature controls', () => {
+  const { doc, nodes } = syntheticDocument();
+  const channels = [];
+  const sent = [];
+  const timers = new Set();
+  let nextTimer = 0;
+  const win = {
+    location: { search: '' },
+    BroadcastChannel: class {
+      constructor(name) {
+        this.name = name;
+        this.closed = false;
+        channels.push(this);
+      }
+      postMessage(packet) { sent.push(packet); }
+      close() { this.closed = true; }
+    },
+    setInterval() {
+      const id = ++nextTimer;
+      timers.add(id);
+      return id;
+    },
+    clearInterval(id) { timers.delete(id); },
+  };
+  const dispose = mountPlanetPlayground(
+    { document: doc, window: win },
+    [localRoomsFeature],
+  );
+  const launcher = nodes.find((node) => node.id === 'planet-playground-launcher');
+  const close = nodes.find(
+    (node) => node.attributes.get('aria-label') === 'Close Planet Playground',
+  );
+  launcher.fire('click');
+  const join = nodes.find((node) => node.textContent === 'Join local room');
+  assert.ok(join && close);
+  join.fire('click');
+  assert.equal(channels.length, 1);
+  assert.equal(sent.filter((packet) => packet.kind === 'join').length, 1);
+  assert.equal(timers.size, 1);
+  close.fire('click');
+  assert.equal(channels[0].closed, true);
+  assert.equal(timers.size, 0);
+  const sentAfterClose = sent.length;
+  join.fire('click');
+  assert.equal(channels.length, 1, 'a hidden, disposed mode cannot reopen a channel');
+  assert.equal(sent.length, sentAfterClose, 'stale mode buttons cannot broadcast');
+
+  launcher.fire('click');
+  const reopenedJoin = nodes.filter(
+    (node) => node.textContent === 'Join local room',
+  ).at(-1);
+  assert.notStrictEqual(reopenedJoin, join);
+  reopenedJoin.fire('click');
+  assert.equal(channels.length, 2, 'a freshly mounted mode can join explicitly');
+  dispose();
+  assert.equal(channels[1].closed, true);
+  assert.equal(timers.size, 0);
+  const sentAfterHostTeardown = sent.length;
+  reopenedJoin.fire('click');
+  join.fire('click');
+  assert.equal(channels.length, 2, 'host teardown revokes all retained room actions');
+  assert.equal(sent.length, sentAfterHostTeardown);
+  assert.equal(timers.size, 0);
 });

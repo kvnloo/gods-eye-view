@@ -24,7 +24,7 @@ Feature cleanup failures are logged and cannot strand tab switching, close, or h
 - **01 Expeditions** — existing Nepal evidence scene; fire and traffic layer scout views
 - **02 Time Machine** — authored SceneDirector clock only
 - **03 What-if** — reversible A/B proposals, labeled hypothetical; no modeled outcomes
-- **04 Multiplayer** — opt-in same-origin tab broadcast, presence-only heartbeat while joined, not a remote presence server
+- **04 Local rooms** — opt-in same-origin tab broadcast, presence-only heartbeat while joined, not remote multiplayer, verified work or civic authority
 - **05 Toybox** — existing GLSL looks and explicit camera trips
 
 ## Verification
@@ -38,6 +38,8 @@ npm run check:boundaries
 npm test
 npm run build
 npm run dev
+# In a second terminal with Chromium available:
+node scripts/qa-playground-local-rooms.mjs
 ```
 
 In a browser, select EXPLORE, visit all five tabs, launch the Nepal scene,
@@ -120,3 +122,15 @@ Escape on the open Playground panel or launcher closes and releases its
 active mode. Another Scene dialog's Escape does not affect an opted-in local
 room or steal that dialog's focus. Native Node24/26, mounted Chromium and
 mobile checks remain required. No real online multiplayer is implemented.
+
+## Local-only boundary regression
+
+Closing the Playground, switching modes, or disposing its host invalidates
+retained Join/Leave/Copy/Send/Visit controls; they cannot reconnect or navigate
+after teardown. Distinct room codes do not exchange presence packets, and
+local peer views only navigate on an explicit Visit click. This is an opt-in
+same-origin demo, not an authenticated collaboration service, contribution
+scoring system, or permission to change civic/evidence authority. The new
+Chromium two-tab gate checks keyboard-only selection, independent rooms,
+peer focus, Escape, departure and stale Join controls. The gate and full native
+validation remain unrun until exercised in an actual browser.

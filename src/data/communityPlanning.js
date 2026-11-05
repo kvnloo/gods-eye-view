@@ -257,6 +257,8 @@ export function listPlanningAlternatives(project, collaborationState) {
         );
         return {
           ...validated,
+          // A cited parcel is not a zoning or ownership determination.
+          siteChecks: { zoning: 'unknown', ownership: 'unknown' },
           authorship: hasRecordedActor
             ? { status: 'recorded', actorId: clock.actorId,
                 operationId: clock.operationId, counter: clock.counter }
@@ -273,6 +275,76 @@ export function listPlanningAlternatives(project, collaborationState) {
     ));
 }
 
+/**
+ * Compare two validated hypothetical forks without merging them or granting
+ * authority. A divergent feature with the same authored ID is an explicit
+ * conflict, not a geometric overlap or a site/approval determination.
+ */
+export function comparePlanningAlternatives(project, collaborationState, firstId, secondId) {
+  const leftId = identifier(firstId, 'first alternative id');
+  const rightId = identifier(secondId, 'second alternative id');
+  if (leftId === rightId) {
+    throw new TypeError('comparison requires distinct alternative ids');
+  }
+
+  const alternatives = listPlanningAlternatives(project, collaborationState);
+  const left = alternatives.find((entry) => entry.alternativeId === leftId);
+  const right = alternatives.find((entry) => entry.alternativeId === rightId);
+  if (!left || !right) {
+    throw new RangeError('comparison requires two current validated hypothetical alternatives');
+  }
+
+  const leftFeatures = new Map(left.features.map((feature) => [feature.id, feature]));
+  const rightFeatures = new Map(right.features.map((feature) => [feature.id, feature]));
+  const ids = [...new Set([...leftFeatures.keys(), ...rightFeatures.keys()])].sort();
+  const changes = {
+    leftOnlyFeatureIds: [],
+    rightOnlyFeatureIds: [],
+    unchangedFeatureIds: [],
+    conflicts: [],
+  };
+  for (const featureId of ids) {
+    const before = leftFeatures.get(featureId);
+    const after = rightFeatures.get(featureId);
+    if (!before) {
+      changes.rightOnlyFeatureIds.push(featureId);
+    } else if (!after) {
+      changes.leftOnlyFeatureIds.push(featureId);
+    } else if (
+      before.kind === after.kind &&
+      before.point[0] === after.point[0] &&
+      before.point[1] === after.point[1] &&
+      before.note === after.note
+    ) {
+      changes.unchangedFeatureIds.push(featureId);
+    } else {
+      changes.conflicts.push({
+        featureId,
+        reason: 'same-id-divergent-feature',
+        left: before,
+        right: after,
+      });
+    }
+  }
+
+  return freeze({
+    schemaVersion: COMMUNITY_PLANNING_SCHEMA_VERSION,
+    projectId: project.id,
+    baselineRevision: project.baseline.revision,
+    baselineState: 'reference-only',
+    // Retain exactly the source credits and licenses validated by the project.
+    baselineSources: project.baseline.sources,
+    alternatives: [
+      { id: leftId, parentRevision: left.baselineRevision, authorship: left.authorship },
+      { id: rightId, parentRevision: right.baselineRevision, authorship: right.authorship },
+    ],
+    changes,
+    siteChecks: { zoning: 'unknown', ownership: 'unknown' },
+    comparisonState: 'hypothetical-only',
+    approval: 'not-requested',
+  });
+}
+
 /** Game/co-op is a local presentation choice; never synced as authority. */
 export function planningView(project, collaborationState, mode = 'co-op') {
   if (!PLANNING_VIEW_MODES.includes(mode)) throw new TypeError('unsupported planning mode');
@@ -281,6 +353,7 @@ export function planningView(project, collaborationState, mode = 'co-op') {
     projectId: project.id,
     baselineRevision: project.baseline.revision,
     baselineState: 'reference-only',
+    siteChecks: { zoning: 'unknown', ownership: 'unknown' },
     alternatives: listPlanningAlternatives(project, collaborationState),
     effectPrediction: 'not-modeled',
     officialApproval: 'not-requested',

@@ -1,5 +1,7 @@
 # Changelog
 
+- Fork-only hypothetical park planning now exposes a read-only, deterministic feature-ID comparison with explicit divergent-feature conflicts, recorded authorship and baseline source/revision credits. Imported rights/approval claims do not validate zoning or ownership; this is not an official merge or observed-city update.
+
 - Fork-only park baseline references now reject reserved, documentation, benchmarking and multicast IPv4 source hosts before optional Scene credit display. The check remains syntactic: DNS, licensing and native browser proof are not established.
 
 - Fork-only park baseline citations now reject obvious private/local HTTPS hosts (loopback, private IPv4, local/internal names and IPv6 literals) before source credit display. Public example.org/revision references remain accepted; DNS rights and browser proof are not established.

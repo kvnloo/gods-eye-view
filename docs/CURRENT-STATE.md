@@ -5089,3 +5089,15 @@ Imported authored park records must declare `draft-scenario` ownership and the e
 Experimental park alternatives are ordered by bounded ID using code-unit comparison, not device or browser locale collation. This keeps the first two hypothetical proposals selected for the future Scene comparison stable across locales and record arrival order. Ordering is not a vote, ranking, or official approval; the stacked opt-in Scene preview requires separate parity and real-browser verification.
 
 The inherited collaboration authority kernel also compares equal-clock actor and operation IDs, evidence-claim order, and audit receipts by stable UTF-16 code-unit order rather than each viewer's locale. This is deterministic source-level convergence, not an authenticated contributor identity, online room, verified public observation, or civic approval.
+
+The read-only `comparePlanningAlternatives` data helper compares two current
+hypothetical forks of the same referenced baseline. It retains the baseline
+revision and source/license credits and recorded (not authenticated) authorship;
+ID-matched features with different kinds, points or notes appear as explicit,
+locale-independent conflicts, with unmatched IDs reported separately. Its
+comparison and projected site checks always show zoning/ownership as unknown,
+approval as not requested and the baseline as reference-only. This is a
+feature-ID diff, not a parcel-overlap test, a merge/approval operation, a
+verified observed-world snapshot or an authority transition. Same-target
+concurrent writes still converge under the separate collaboration kernel;
+that kernel does not retain overwritten losing proposals as conflict history.

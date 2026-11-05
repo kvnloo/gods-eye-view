@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   createCommunityPlanningProject,
   createPlanningAlternativeOperation,
+  comparePlanningAlternatives,
   listPlanningAlternatives,
   planningView,
 } from './communityPlanning.js';
@@ -386,4 +387,90 @@ test('imported authored planning records require matching draft-scenario owner m
     assert.deepEqual(visible.map((entry) => entry.alternativeId), ['play-first']);
     assert.equal(visible[0].authorship.actorId, 'bob');
   }
+});
+
+test('two forked park proposals retain credits and expose deterministic feature conflicts', () => {
+  const base = project();
+  const trees = proposal('trees-first', 'alice', 'alice-op', 'shared-site', 'tree');
+  const play = proposal('play-first', 'bob', 'bob-op', 'shared-site', 'play-area');
+  const compare = (operations) => {
+    const merged = applyCollaborationOperations(createCollaborationState(), operations);
+    return comparePlanningAlternatives(base, merged.state, 'trees-first', 'play-first');
+  };
+  const forward = compare([trees, play]);
+  assert.deepEqual(forward, compare([play, trees, trees]));
+  assert.equal(forward.baselineRevision, 'reference-r1');
+  assert.equal(forward.baselineState, 'reference-only');
+  assert.deepEqual(forward.baselineSources, base.baseline.sources);
+  assert.deepEqual(forward.alternatives, [
+    { id: 'trees-first', parentRevision: 'reference-r1',
+      authorship: { status: 'recorded', actorId: 'alice', operationId: 'alice-op', counter: 1 } },
+    { id: 'play-first', parentRevision: 'reference-r1',
+      authorship: { status: 'recorded', actorId: 'bob', operationId: 'bob-op', counter: 1 } },
+  ]);
+  assert.deepEqual(forward.changes.conflicts, [{
+    featureId: 'shared-site',
+    reason: 'same-id-divergent-feature',
+    left: trees.value.features[0],
+    right: play.value.features[0],
+  }]);
+  assert.deepEqual(forward.changes.leftOnlyFeatureIds, []);
+  assert.deepEqual(forward.changes.rightOnlyFeatureIds, []);
+  assert.deepEqual(forward.siteChecks, { zoning: 'unknown', ownership: 'unknown' });
+  assert.equal(forward.comparisonState, 'hypothetical-only');
+  assert.equal(forward.approval, 'not-requested');
+  assert.equal(Object.isFrozen(forward.changes.conflicts[0]), true);
+});
+
+test('imported planning claims cannot validate site rights or turn proposals into observed facts', () => {
+  const base = project();
+  const trees = proposal('trees-first', 'alice', 'alice-op', 'oak', 'tree');
+  const path = proposal('path-first', 'bob', 'bob-op', 'path', 'path-marker');
+  const forged = {
+    ...trees,
+    value: {
+      ...trees.value,
+      siteChecks: { zoning: 'validated', ownership: 'validated' },
+      observed: true,
+      externalApproval: 'approved',
+    },
+  };
+  const merged = applyCollaborationOperations(createCollaborationState(), [forged, path]);
+  const visible = listPlanningAlternatives(base, merged.state);
+  const treesView = visible.find((item) => item.alternativeId === 'trees-first');
+  assert.deepEqual(treesView.siteChecks, { zoning: 'unknown', ownership: 'unknown' });
+  assert.equal(treesView.observed, undefined);
+  assert.equal(treesView.externalApproval, undefined);
+  assert.deepEqual(planningView(base, merged.state).siteChecks, {
+    zoning: 'unknown', ownership: 'unknown',
+  });
+  const diff = comparePlanningAlternatives(base, merged.state, 'trees-first', 'path-first');
+  assert.deepEqual(diff.changes.leftOnlyFeatureIds, ['oak']);
+  assert.deepEqual(diff.changes.rightOnlyFeatureIds, ['path']);
+  assert.deepEqual(diff.changes.conflicts, []);
+  assert.deepEqual(diff.baselineSources, base.baseline.sources);
+
+  for (const value of [
+    { ...path.value, approval: 'approved' },
+    { ...path.value, state: 'observed' },
+    { ...path.value, baselineRevision: 'stale-reference' },
+    { ...path.value, features: [{ id: 'crossing', kind: 'crosswalk',
+      point: path.value.features[0].point }] },
+  ]) {
+    const imported = applyCollaborationOperations(createCollaborationState(), [
+      trees, { ...path, value },
+    ]);
+    assert.deepEqual(
+      listPlanningAlternatives(base, imported.state).map((item) => item.alternativeId),
+      ['trees-first'],
+    );
+    assert.throws(
+      () => comparePlanningAlternatives(base, imported.state, 'trees-first', 'path-first'),
+      /two current validated hypothetical alternatives/,
+    );
+  }
+  assert.throws(
+    () => comparePlanningAlternatives(base, merged.state, 'trees-first', 'trees-first'),
+    /distinct alternative ids/,
+  );
 });

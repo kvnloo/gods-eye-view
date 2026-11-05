@@ -10,6 +10,7 @@ function pinnedPacket() {
     revision: 'packet-r1',
     capturedAt: '2026-01-03T00:00:00Z',
     question: 'Which claims need human review?',
+    authorRef: 'local-draft',
     sources: [
       {
         id: 'source-b',
@@ -86,6 +87,7 @@ test('pinned packet produces byte-identical source-linked JSON and Markdown', ()
   packet.claims[0].sourceIds.reverse();
   assert.deepEqual(exportHumanDecisionBrief(packet), baseline);
   assert.equal(JSON.parse(baseline.json).packet.revision, 'packet-r1');
+  assert.equal(baseline.receipt.packet.authorRef, 'local-draft');
   assert.match(baseline.markdown, /https:\/\/sources\.example\/evidence\/a/);
   assert.match(baseline.markdown, /https:\/\/review\.example\/queue\/1/);
   assert.doesNotMatch(baseline.markdown, /!\[|data:image|<img/i);
@@ -152,18 +154,40 @@ test('rejects media, arbitrary action claims and claimed approval on import', ()
   const forged = pinnedPacket();
   forged.approval = { status: 'granted' };
   assert.throws(() => exportHumanDecisionBrief(forged), /unsupported field/);
+  const disguised = pinnedPacket();
+  disguised.question = 'Agency approved dispatch';
+  assert.throws(() => exportHumanDecisionBrief(disguised), /approval assertions/);
+  const attribution = pinnedPacket();
+  attribution.sources[0].attribution = 'Agency officially approved dispatch';
+  assert.throws(() => exportHumanDecisionBrief(attribution), /approval assertions/);
 });
 
 test('fails closed on invalid rights, timestamps, source revisions and URLs', () => {
   const altered = [
-    (p) => { p.sources[0].rights = 'permitted'; },
-    (p) => { delete p.sources[0].license; },
-    (p) => { p.sources[0].recordedAt = '2026-02-30T00:00:00Z'; },
-    (p) => { p.sources[0].revision = ''; },
-    (p) => { p.sources[0].url = 'data:text/plain,unsafe'; },
-    (p) => { p.sources[0].url = 'https://u:p@sources.example/evidence'; },
-    (p) => { p.handoff.url = 'javascript:alert(1)'; },
-    (p) => { p.handoff.label = 'Officially approved'; },
+    (p) => {
+      p.sources[0].rights = 'permitted';
+    },
+    (p) => {
+      delete p.sources[0].license;
+    },
+    (p) => {
+      p.sources[0].recordedAt = '2026-02-30T00:00:00Z';
+    },
+    (p) => {
+      p.sources[0].revision = '';
+    },
+    (p) => {
+      p.sources[0].url = 'data:text/plain,unsafe';
+    },
+    (p) => {
+      p.sources[0].url = 'https://u:p@sources.example/evidence';
+    },
+    (p) => {
+      p.handoff.url = 'javascript:alert(1)';
+    },
+    (p) => {
+      p.handoff.label = 'Officially approved';
+    },
   ];
   for (const change of altered) {
     const packet = pinnedPacket();

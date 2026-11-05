@@ -226,8 +226,14 @@ export function exportHumanDecisionBrief(packet) {
         briefMarkdownText(source.attribution),
     ),
     '',
-    ...section('Observed — source-reported, not verified', receipt.findings.observed),
-    ...section('Modeled / hypothetical — not observations', receipt.findings.modeled),
+    ...section(
+      'Observed — source-reported, not verified',
+      receipt.findings.observed,
+    ),
+    ...section(
+      'Modeled / hypothetical — not observations',
+      receipt.findings.modeled,
+    ),
     ...section('Unknowns / absences', receipt.findings.unknowns),
     ...section('Stale evidence', receipt.findings.stale),
     ...section('Conflicts', receipt.findings.conflicts),

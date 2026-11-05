@@ -329,7 +329,8 @@ const CLAIM_STATUSES = new Set([
 ]);
 const REFERENCE_ID = /^[a-z0-9][a-z0-9._:-]{0,63}$/i;
 const UTC_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/;
-const RAW_MEDIA = /(?:data:|blob:|base64|<\s*\/?\s*(?:img|video|audio)\b|!\[)/i;
+const RAW_MEDIA =
+  /(?:data:|blob:|base64|<\s*\/?\s*(?:img|video|audio)\b|!\[)/i;
 const AUTHORITY_CLAIM =
   /\b(?:approved?|authori[sz]ed|cleared|clearance granted|safe to|dispatch(?:ed)?|deploy(?:ed)?|evacuat(?:e|ed|ion)|permission granted|officially|route (?:is )?open|open for travel|go-ahead)\b/i;
 
@@ -356,12 +357,20 @@ function handoffText(value, label, limit = 400) {
     !value.length ||
     value.length > limit ||
     value.trim() !== value ||
-    /[\u0000-\u001f\u007f]/.test(value) ||
+    /[\u0000-\u001f\u007f\u2028\u2029]/.test(value) ||
     RAW_MEDIA.test(value)
   ) {
     throw new TypeError(label + ' must be bounded, single-line reference text');
   }
   return value;
+}
+
+function handoffNarrative(value, label, limit = 400) {
+  const text = handoffText(value, label, limit);
+  if (AUTHORITY_CLAIM.test(text)) {
+    throw new TypeError('operational or approval assertions cannot be exported');
+  }
+  return text;
 }
 
 function referenceId(value, label) {
@@ -419,7 +428,16 @@ function sortById(left, right) {
 function handoffSource(input) {
   const row = exactFields(
     input,
-    ['id', 'revision', 'url', 'rights', 'license', 'attribution', 'observedAt', 'recordedAt'],
+    [
+      'id',
+      'revision',
+      'url',
+      'rights',
+      'license',
+      'attribution',
+      'observedAt',
+      'recordedAt',
+    ],
     'source',
   );
   if (!SOURCE_RIGHTS.has(row.rights)) {
@@ -427,11 +445,11 @@ function handoffSource(input) {
   }
   return {
     id: referenceId(row.id, 'source.id'),
-    revision: handoffText(row.revision, 'source.revision', 120),
+    revision: referenceId(row.revision, 'source.revision'),
     url: referenceUrl(row.url, 'source.url'),
     rights: row.rights,
-    license: handoffText(row.license, 'source.license', 120),
-    attribution: handoffText(row.attribution, 'source.attribution', 200),
+    license: handoffNarrative(row.license, 'source.license', 120),
+    attribution: handoffNarrative(row.attribution, 'source.attribution', 200),
     observedAt: optionalTimestamp(row.observedAt, 'source.observedAt'),
     recordedAt: utcTimestamp(row.recordedAt, 'source.recordedAt'),
   };
@@ -440,16 +458,29 @@ function handoffSource(input) {
 function handoffClaim(input, knownSources) {
   const row = exactFields(
     input,
-    ['id', 'lane', 'status', 'statement', 'uncertainty', 'observedAt', 'sourceIds'],
+    [
+      'id',
+      'lane',
+      'status',
+      'statement',
+      'uncertainty',
+      'observedAt',
+      'sourceIds',
+    ],
     'claim',
   );
   if (!CLAIM_LANES.has(row.lane) || !CLAIM_STATUSES.has(row.status)) {
     throw new TypeError('claim lane/status is unsupported');
   }
-  if (!Array.isArray(row.sourceIds) || row.sourceIds.length > HANDOFF_SOURCE_LIMIT) {
+  if (
+    !Array.isArray(row.sourceIds) ||
+    row.sourceIds.length > HANDOFF_SOURCE_LIMIT
+  ) {
     throw new TypeError('claim.sourceIds must be a bounded array');
   }
-  const sourceIds = row.sourceIds.map((id) => referenceId(id, 'claim.sourceIds'));
+  const sourceIds = row.sourceIds.map((id) =>
+    referenceId(id, 'claim.sourceIds'),
+  );
   if (
     new Set(sourceIds).size !== sourceIds.length ||
     sourceIds.some((id) => !knownSources.has(id)) ||
@@ -458,11 +489,8 @@ function handoffClaim(input, knownSources) {
   ) {
     throw new TypeError('claim requires distinct, linked evidence sources');
   }
-  const statement = handoffText(row.statement, 'claim.statement');
-  const uncertainty = handoffText(row.uncertainty, 'claim.uncertainty');
-  if (AUTHORITY_CLAIM.test(statement) || AUTHORITY_CLAIM.test(uncertainty)) {
-    throw new TypeError('operational or approval assertions cannot be exported');
-  }
+  const statement = handoffNarrative(row.statement, 'claim.statement');
+  const uncertainty = handoffNarrative(row.uncertainty, 'claim.uncertainty');
   return {
     id: referenceId(row.id, 'claim.id'),
     lane: row.lane,
@@ -527,14 +555,14 @@ export function createHumanDecisionBrief(packet) {
     schema: BRIEF_SCHEMA,
     packet: {
       id: referenceId(input.id, 'packet.id'),
-      revision: handoffText(input.revision, 'packet.revision', 120),
+      revision: referenceId(input.revision, 'packet.revision'),
       capturedAt: utcTimestamp(input.capturedAt, 'packet.capturedAt'),
       authorRef:
         input.authorRef === undefined
           ? null
           : referenceId(input.authorRef, 'packet.authorRef'),
     },
-    question: handoffText(input.question, 'packet.question', 500),
+    question: handoffNarrative(input.question, 'packet.question', 500),
     sources,
     findings: {
       observed: claims.filter((claim) => claim.lane === 'observed'),

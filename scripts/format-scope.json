@@ -33,6 +33,8 @@
   "scripts/qa-admin-outlines.mjs",
   "src/data/inputOwnership.test.mjs",
   "src/data/collaborationAuthority.test.mjs",
+  "src/data/communityPlanning.js",
+  "src/data/communityPlanning.test.mjs",
   "docs/CODE-BOUNDARIES.md",
   "src/main.js",
   "docs/APPLICATION.md",

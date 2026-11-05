@@ -251,3 +251,29 @@ export function viewStateLayerRow(layer, options) {
     lastUpdate: snap.lastUpdate,
   };
 }
+
+/**
+ * Normalize an evidence claim without promoting a declaration or inference to
+ * an observation. Missing evidence is unknown, never an observed zero.
+ * Revision is an opaque source-owned identifier, not a freshness guarantee.
+ */
+export function evidenceClaim(input = {}) {
+  const kinds = ['observed', 'declared', 'derived'];
+  const statuses = ['present', 'stale', 'unknown', 'absent'];
+  const kind = kinds.includes(input.kind) ? input.kind : 'derived';
+  const status = statuses.includes(input.status) ? input.status : 'unknown';
+  const revision = typeof input.revision === 'string' && input.revision.trim()
+    ? input.revision : null;
+  const source = typeof input.source === 'string' && input.source.trim()
+    ? input.source : null;
+  const count = status === 'present' && typeof input.count === 'number' &&
+    Number.isFinite(input.count) && input.count >= 0 ? input.count : null;
+  return { kind, status, count, source, revision };
+}
+
+/** Only matching source revisions can support a previously derived result. */
+export function claimRevisionCurrent(claim, revisions = {}) {
+  return Boolean(claim?.source && claim?.revision &&
+    Object.hasOwn(revisions, claim.source) &&
+    revisions[claim.source] === claim.revision);
+}

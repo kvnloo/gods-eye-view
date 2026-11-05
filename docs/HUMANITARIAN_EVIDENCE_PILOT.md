@@ -70,6 +70,57 @@ Optional follow-up: If an older observation and a newer conflicting observation 
 
 **Critical failure:** Any app-generated or participant-accepted unsupported `safe/open` claim must be recorded as an error, regardless of speed.
 
+## Pre-registered evidence correctness comparator (GEV-I07-v1)
+
+**Status: protocol + synthetic test data only.** No participants, trials of real incumbents, browser checks, efficacy results, or current road observations have been obtained. This historical exercise uses the event pack described above. The two *scripted mutations* below refer to a fictional link X; they never assert actual bridge/road conditions. Freeze the scoring rules **before** collecting real responses; any change requires a new protocol/fixture revision and separate report.
+
+The pure scorer is [evidencePilotScoring.js](../src/data/evidencePilotScoring.js), with regression tests in [evidencePilotScoring.test.mjs](../src/data/evidencePilotScoring.test.mjs). Its fixed constants are `PILOT_PROTOCOL_REVISION = 'GEV-I07-v1'` and `PILOT_EVIDENCE_REVISION = 'bhote-koshi-scripted-mutations-v1'`. At an eventual session, separately pin the exact repository/build SHA, event-pack content revision, approved source rights and browser/tool versions; never mix versions in one comparison. Do not expose the facilitator key to a participant.
+
+### Historical-context scripted mutation cards (facilitator key)
+
+Provide the same rights-permitted historical documents, normal map, task prompts, reveal times and *scripted* cards to every applicable condition. X is fictional; T0/T1/T2 are relative script times, not current real observations.
+
+| Case and evidence ID | Script shown after the initial access question | Answer key (not participant-facing) |
+| --- | --- | --- |
+| `blocked-update-v1` / `pilot:blocked-update-v1` | A new scripted, attributed observation at T1 explicitly reports fictional link X **blocked**, superseding an older scripted open note. The source-card ID and time are visible. | Decision `blocked`, freshness `latest` *within this script*, re-evaluate = true, retrieve this card. No conclusion of real-world safety. |
+| `stale-open-v1` / `pilot:stale-open-v1` | The only scripted open note is dated T0 and its stated validity expires by T2; no newer access evidence is supplied. This does **not** establish a closure. | Decision `unknown`, freshness `stale`, re-evaluate = true, retrieve this card. Do not infer safe/open or blocked. |
+
+For this protocol, `latest` means the latest *script card* and never "currently open". **Citation recovery** requires the facilitator to see the participant navigate to the exact matching card and identify its source/time. Guessing or typing an ID is not recovery. Original image/witness link recovery remains separately covered by the existing Q1/Q2 worksheet; the scripted cards are not replacement real-world citations.
+
+### Actual baseline and incumbent comparisons
+
+| Condition | Supported task / setup | Exclusions and fair treatment |
+| --- | --- | --- |
+| `map-docs` — primary baseline | Conventional map and equally accessible original rights-permitted sources, plus the same timed synthetic update cards in ordinary documents. | Do not hide links, degrade the map, restrict search, or withhold facts present in GEV. |
+| `gev` — primary challenger | Historical Nepal scene with provenance and supplied common reference sheet if required; verify UI in a real browser first. | Do not claim proposed #140 access tools or Field Lite already exist. Explicitly audit any app-generated access assertions; a sidecar sheet is disclosed. |
+| `hot-tasking-manager` — actual incumbent | Run a **real HOT Tasking Manager** OSM mapping/validation workflow on a suitable permitted project, recording the actual project/task, editor and version privately. [Capability reference](https://www.osgeo.org/projects/hot-tasking-manager/). | HOT manages mapping/QA, not live access certification. If access reasoning has no matched supported workflow, use `not-applicable`; do not fabricate a HOT project or call a local worksheet a HOT run. |
+| `mapswipe` — actual incumbent | Run a **real MapSwipe** Find Features/Compare Dates imagery project only when an applicable published project and permitted inputs exist. [Project types](https://mapswipe.org/en/) and [workflow](https://docs.mapswipe.org/docs/overview/). | MapSwipe screens imagery; it does not certify road access. Mismatched tasks are `not-applicable`. A relevant but inaccessible task is `not-run`, not a failure or forced zero. |
+
+The primary matched comparison is **GEV versus fair map/docs**. HOT and MapSwipe are real *contextual incumbents*, not substitutes for route-clearance authority; score an incumbent against GEV **only** if participants actually performed a matched supported task with equivalent evidence/navigation. Otherwise record capabilities, workflow fit and why direct numerical comparison is invalid. No outside platform writes are authorized.
+
+### Fixed adjudication input and equations
+
+Record one independently adjudicated row for each anonymous session code × condition × case; publish **aggregates only**. The scorer rejects unregistered cases/conditions, duplicate rows, altered fixture revision, unknown fields and invalid values.
+
+| Field | Allowed input / coding rule |
+| --- | --- |
+| `sessionKey`, `evidenceRevision`, `condition`, `caseId`, `status` | Random non-identifying short session code; exact fixed revision; four registered conditions; two cases; `scored`, `not-run` or `not-applicable`. |
+| `sequenceIndex` | Condition order 1–4. Counterbalance A/B and record order/carryover bias; do not silently drop repeated-task learning. |
+| `decision` | Independent coding of the person's expressed inference as `blocked`, `unknown`, `open` or `safe`. "Safe" is never supported by this evidence exercise. |
+| `freshness`, `revisionRecognized` | `latest`/`stale`/`unknown` relative to the synthetic card; boolean that the decision must be revisited after the new/stale evidence. |
+| `recoveredEvidenceIds` | Facilitator-verified navigated card IDs from the two frozen cards. Empty means no **verified** retrieval, not that no card existed. |
+| `appAssertions` | GEV only: `null` means **not audited**, `[]` means independently inspected output with **no** access assertions; else an array of actually observed `blocked`/`unknown`/`open`/`safe` claims. Non-GEV conditions use `null`. |
+| `elapsedSeconds` / `evidenceNavigationActions` | Directly observed nonnegative number/integer, or explicit `null`. Missing measurements must not turn into zero or modeled estimates. |
+| `reason` | Non-scored: `not-scheduled`, `tool-unavailable`, `rights-blocked`, `source-unavailable`, `browser-unverified`; for unmatched incumbents only `no-matched-workflow` with status `not-applicable`. |
+
+The scorer counts incorrect decisions, incorrect freshness, **false-open** inferences (`open` or `safe`), stale-as-current errors (stale card treated as `latest` or used to say open/safe), unsupported participant `safe` claims, correct revision recognition, and case-specific verified citations. These categories **overlap**; do not add them as if mutually exclusive. `citationRecoveryScore = retrieved matching cards / scored cases`; `revisionRecognitionRate = true recognitions / scored cases`. Both are `null` with zero scored cases. Time and navigation retain measured-only denominators; the scorer does not infer missing data.
+
+For GEV, `appSafetyGate` is **unknown/null** unless *every* scored case has an independently recorded app-output audit. When fully audited, it is true only with **zero** app-generated unsupported `safe/open` claims; an empty/unobserved sample can never pass. Pairing uses the same anonymous session and case, with `GEV decision errors − comparator errors` (negative is better) and `GEV citations recovered − comparator recovered` (positive is better). No applicable matched pair gives `pairedCases = 0` and **null differences**, never a claim of zero incumbent errors.
+
+**Pre-registered decision gate — not evaluated:** zero GEV app-generated unsupported safe/open claims, at least **90%** correct re-evaluation recognition, no correctness regression versus ordinary map/docs, and meaningfully faster source retrieval without worse citations; actual incumbent comparisons only when task-equivalent. Real practitioner recruitment/consent, partner validation [#151](https://github.com/kvnloo/gods-eye-view/issues/151), the [#148](https://github.com/kvnloo/gods-eye-view/issues/148) two-iteration stop gate and real-world field verification remain **unfulfilled**. Unit-test examples use deliberately constructed arithmetic inputs, not genuine user observations. Never infer operational safety, impact or "lives saved" from this scorecard.
+
+**Required verification (all NOT RUN here):** `node --test src/data/evidencePilotScoring.test.mjs`; `npm run format:check`; `npm run check:boundaries`; `npm test`; `npm run build`; `npm run test:track` (dev server); `node scripts/qa-director-timing.mjs` (dev server); manual rights-permitted source-link, accessibility and browser walk-through. Passing pure scorer tests alone does not validate UI, the actual incumbents, or humanitarian benefit.
+
 ## Study and scorecard
 
 Prefer the [#148](https://github.com/kvnloo/gods-eye-view/issues/148) crossover design rather than a separate competing experiment. Counterbalance A→B/B→A, pre-register scoring before observing results, and note learning/carryover bias if the same event and questions are repeated.
@@ -93,7 +144,7 @@ Prefer the [#148](https://github.com/kvnloo/gods-eye-view/issues/148) crossover 
 1. File the smallest reproducible gap using [#191 feedback receipt](https://github.com/kvnloo/gods-eye-view/issues/191), with linked evidence and a dedupe check.
 2. Fix only behavior for which a documented upstream contract, a supported-path failure or verified practitioner need independently establishes the requirement.
 3. Re-run the **same scored task** against the baseline after the change and record any regressions or missing data.
-4. A fork-local docs draft may be proposed upstream only after browser verification, local contribution checks, review-feedback reconciliation and **Linear HITL authorization**. No automatic public-sector claim, origin write, or merge.
+4. A fork-local docs draft may be proposed upstream only after browser verification, local contribution checks, review-feedback reconciliation and **explicit human origin-publication approval**. No automatic public-sector claim, origin write, or merge.
 
 ## Falsification / decision
 

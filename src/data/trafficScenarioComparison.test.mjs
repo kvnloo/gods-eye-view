@@ -148,3 +148,44 @@ test('tiny but finite baselines cannot emit an infinite percentage', () => {
   assert.equal(result.status, 'comparable');
   assert.equal(result.metrics.meanPersonDelaySeconds.percentChange, null);
 });
+
+test('fixed versus actuated receipts preserve simulated accessibility trade-offs', () => {
+  const fixed = receipt({
+    runId: 'fixed-seed-7',
+    planRevision: 'fixed-time',
+    metrics: {
+      meanPersonDelaySeconds: 35,
+      pedestrianWaitSeconds: 12,
+      transitDelaySeconds: 18,
+      emergencyTravelSeconds: 80,
+    },
+  });
+  const actuated = receipt({
+    runId: 'actuated-seed-7',
+    planRevision: 'actuated',
+    metrics: {
+      meanPersonDelaySeconds: 28,
+      pedestrianWaitSeconds: 17,
+      transitDelaySeconds: 21,
+      emergencyTravelSeconds: 90,
+    },
+  });
+
+  const comparison = compareTrafficScenarioRuns(fixed, actuated);
+  assert.equal(comparison.status, 'comparable');
+  assert.equal(comparison.determination, 'simulated');
+  assert.equal(comparison.baselinePlanRevision, 'fixed-time');
+  assert.equal(comparison.candidatePlanRevision, 'actuated');
+  assert.equal(comparison.metrics.meanPersonDelaySeconds.delta, -7);
+  assert.equal(comparison.metrics.pedestrianWaitSeconds.delta, 5);
+  assert.equal(comparison.metrics.transitDelaySeconds.delta, 3);
+  assert.equal(comparison.metrics.emergencyTravelSeconds.delta, 10);
+  assert.equal(comparison.metrics.maxQueueVehicles.status, 'missing');
+  assert.equal('winner' in comparison, false);
+  assert.equal('safe' in comparison, false);
+  assert.equal('controllerCommand' in comparison, false);
+  assert.deepEqual(
+    comparison,
+    compareTrafficScenarioRuns(structuredClone(fixed), structuredClone(actuated)),
+  );
+});

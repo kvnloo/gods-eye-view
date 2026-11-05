@@ -88,7 +88,7 @@ export function initReliefFieldLite(documentRef = document, browser = globalThis
       if (!isCurrent(ticket)) return;
       const replay = JSON.parse(contents);
       const packet = projectReliefOutageFieldPacket(replay);
-      show(packet, 'Local synthetic replay loaded. No network request was made.');
+      show(packet, 'Local synthetic replay loaded. Receipt was not sent to a server or queried against a live provider.');
     } catch {
       if (!isCurrent(ticket)) return;
       renderReliefFieldView(root, null);

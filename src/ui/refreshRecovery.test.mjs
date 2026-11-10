@@ -182,7 +182,11 @@ test('a recovery observed while hidden is consumed, not replayed on return', (t)
   document.hidden = false;
   f.emit('refresh', 3, 5100, { lastUpdate: 3000 });
   assert.notEqual(f.view().label, 'REFRESH RECOVERED');
-  assert.equal(f.owner._refreshEpisodes.get('flights').shown, false, 'consumed is not surfaced');
+  assert.equal(
+    f.owner._refreshEpisodes.get('flights').shown,
+    false,
+    'consumed is not surfaced',
+  );
 });
 
 for (const [locale, expected] of [
@@ -221,7 +225,10 @@ test('later routine work retains the cue, but new unhealthy evidence withdraws i
 test('missing failure stats cannot erase the last successful acceptance baseline', (t) => {
   const f = fixture(t);
   f.emit('refresh', 1, 0, { lastUpdate: 2000 });
-  f.emit('refresh-failed', 2, 100, { lastUpdate: null, error: 'Stats unavailable' });
+  f.emit('refresh-failed', 2, 100, {
+    lastUpdate: null,
+    error: 'Stats unavailable',
+  });
   f.emit('refresh', 3, 1000, { lastUpdate: 2000 });
   f.owner._updateGlobalLoadingFeedback(6001);
   assert.notEqual(f.view().label, 'REFRESH RECOVERED');
@@ -230,7 +237,10 @@ test('missing failure stats cannot erase the last successful acceptance baseline
 test('a second failure cannot roll back the acceptance baseline', (t) => {
   const f = fixture(t);
   f.fail(1, 0);
-  f.emit('refresh-failed', 2, 100, { lastUpdate: null, error: 'Stats unavailable' });
+  f.emit('refresh-failed', 2, 100, {
+    lastUpdate: null,
+    error: 'Stats unavailable',
+  });
   f.emit('refresh', 3, 1000, { lastUpdate: 1000 });
   f.owner._updateGlobalLoadingFeedback(6001);
   assert.notEqual(f.view().label, 'REFRESH RECOVERED');
@@ -271,9 +281,17 @@ test('real manager stats loss cannot turn unchanged cached data into recovery', 
   let failing = false;
   let statsMissing = false;
   manager.register({
-    id: 'qa-stats-loss', name: 'Stats loss QA', updateInterval: -1,
-    init() {}, enable() {}, disable() {}, destroy() {},
-    update() { statsMissing = failing; return !failing; },
+    id: 'qa-stats-loss',
+    name: 'Stats loss QA',
+    updateInterval: -1,
+    init() {},
+    enable() {},
+    disable() {},
+    destroy() {},
+    update() {
+      statsMissing = failing;
+      return !failing;
+    },
     getStats() {
       if (statsMissing) throw new Error('Temporary stats failure');
       return { status: 'ready', count: 2, lastUpdate: 1000 };

@@ -270,9 +270,13 @@ export class ShellFeedback {
       this._refreshEpisodes.set(layer.id, {
         epoch: event.refreshEpoch,
         shown: !failed && previous?.shown === true,
-        health: failed ? 'failed' : recovered ? 'recovered'
-          : healthy && previous?.acceptedAt == null ? 'healthy'
-          : previous?.health || 'healthy',
+        health: failed
+          ? 'failed'
+          : recovered
+            ? 'recovered'
+            : healthy && previous?.acceptedAt == null
+              ? 'healthy'
+              : previous?.health || 'healthy',
         // A throwing getStats() must not erase evidence already observed.
         acceptedAt: Math.max(previous?.acceptedAt || 0, acceptedAt) || null,
       });
@@ -310,9 +314,14 @@ export class ShellFeedback {
     for (const layer of enabled.values()) {
       if (!this._refreshEpisodes.has(layer.id)) {
         this._refreshEpisodes.set(layer.id, {
-          epoch: 0, health: 'healthy', shown: false,
-          acceptedAt: Number.isFinite(layer.stats?.lastUpdate) && layer.stats.lastUpdate > 0
-            ? layer.stats.lastUpdate : null,
+          epoch: 0,
+          health: 'healthy',
+          shown: false,
+          acceptedAt:
+            Number.isFinite(layer.stats?.lastUpdate) &&
+            layer.stats.lastUpdate > 0
+              ? layer.stats.lastUpdate
+              : null,
         });
       }
     }
@@ -329,8 +338,13 @@ export class ShellFeedback {
       summary,
       now,
     );
-    if (presentation?.state === 'recovered' && this._globalStatusNotice?.recovery) {
-      const episode = this._refreshEpisodes.get(this._globalStatusNotice.recovery.layerId);
+    if (
+      presentation?.state === 'recovered' &&
+      this._globalStatusNotice?.recovery
+    ) {
+      const episode = this._refreshEpisodes.get(
+        this._globalStatusNotice.recovery.layerId,
+      );
       if (episode) episode.shown = true;
     }
     if (

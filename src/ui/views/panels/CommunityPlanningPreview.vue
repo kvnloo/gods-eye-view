@@ -17,17 +17,20 @@ const launcherButton = useTemplateRef('launcherButton');
 const inspectNav = useTemplateRef('inspectNav');
 const coopButton = useTemplateRef('coopButton');
 
-// Focus moves stay imperative: entry lands on the heading rather than Cancel,
-// and closing returns to the launcher only while it is still offered.
+// Remember which of the two visible launchers opened this dialog.
+let returnFocus = null;
 watch(
   () => Boolean(preview.value),
   async (open, wasOpen) => {
+    if (open && !wasOpen) returnFocus = document.activeElement?.closest?.('[data-city-builder-open], [data-community-planning-preview-open]');
     await nextTick();
     if (open && !wasOpen) {
       root.value?.showModal?.();
       heading.value?.focus({ preventScroll: true });
     } else if (!open && wasOpen && launcher.value) {
-      launcherButton.value?.$el?.focus?.({ preventScroll: true });
+      const target = returnFocus?.isConnected ? returnFocus : launcherButton.value?.$el;
+      target?.focus?.({ preventScroll: true });
+      returnFocus = null;
     }
   },
 );

@@ -78,6 +78,7 @@
     "@vue/test-utils": "^2.5.1",
     "flag-icons": "7.5.0",
     "happy-dom": "^20.14.6",
+    "playwright-core": "^1.65.0",
     "prettier": "3.9.6",
     "puppeteer": "^25.16.0",
     "sharp": "^0.35.4",

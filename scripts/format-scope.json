@@ -1386,5 +1386,7 @@
   "src/ui/cityBuilder.test.mjs",
   "src/ui/cityBuilderLocales.test.mjs",
   "src/ui/views/cityBuilderView.test.mjs",
-  "scripts/city-builder-locales.mjs"
+  "scripts/city-builder-locales.mjs",
+  "server/standalone/city-concept.test.mjs",
+  "scripts/qa-city-builder.mjs"
 ]

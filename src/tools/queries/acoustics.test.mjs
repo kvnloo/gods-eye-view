@@ -48,6 +48,7 @@ test('tracks that stay beyond the slant limit, or end at their closest point, ar
   assert.equal(flyoverFromTrack(pass({ north: 15000 }), listener), null);
   const approaching = pass().filter((p) => p.timeMs <= T0 - 60000);
   assert.equal(flyoverFromTrack(approaching, listener), null);
+  assert.equal(flyoverFromTrack(pass({ v: 2 }), listener), null);
 });
 
 test('gaps over two minutes are not bridged', () => {

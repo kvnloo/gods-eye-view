@@ -15,6 +15,9 @@ const STEP_S = 1;
 const MAX_GAP_S = 120;
 const MAX_CANDIDATES = 40;
 const CURVE_POINTS = 41;
+// Below this a source (a hovering helicopter, a taxiing aircraft) draws no
+// Doppler curve to match.
+const MIN_SPEED_MPS = 10;
 
 const round = (value, digits) =>
   Number.isFinite(value) ? Number(value.toFixed(digits)) : null;
@@ -36,6 +39,7 @@ function localXYZ(point, listener) {
  * (altitude above sea level), in any order. Positions are interpolated at 1 s
  * across gaps up to two minutes; sound takes R/c to arrive, so heard times are
  * emission times plus travel time. The heard frequency is f0·c/(c + dR/dt).
+ * Sources slower than 10 m/s draw no Doppler curve and are left out.
  */
 export function flyoverFromTrack(points, listener, { maxSlantM = 10000 } = {}) {
   const track = points
@@ -77,6 +81,7 @@ export function flyoverFromTrack(points, listener, { maxSlantM = 10000 } = {}) {
       ),
     ) /
     (samples[at(best + 1)].t - samples[at(best - 1)].t);
+  if (!(speed >= MIN_SPEED_MPS)) return null;
   const heardCpa = samples[best].t + slant / SPEED_OF_SOUND_MPS;
   // Doppler ratio f/f0 against heard time, around the closest approach.
   const curve = [];

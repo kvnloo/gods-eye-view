@@ -178,6 +178,31 @@ test('identical concurrent terrain requests share one transport while callers st
   assert.equal(requests, 1);
 });
 
+test('terrain lifetime cancellation rejects a new waiter on a stalled shared transport', async () => {
+  const lifetime = new AbortController();
+  let calls = 0;
+  const services = createApplicationRequestServices({
+    signal: lifetime.signal,
+    fetchImpl: () => {
+      calls += 1;
+      return new Promise(() => {});
+    },
+  });
+  const points = [{ lat: 30, lon: -97 }];
+  services.terrain.getHeights(points).catch(() => {});
+  await Promise.resolve();
+  assert.equal(calls, 1);
+  lifetime.abort();
+  let outcome = 'pending';
+  services.terrain.getHeights(points).then(
+    () => { outcome = 'resolved'; },
+    (error) => { outcome = error.name; },
+  );
+  await new Promise(setImmediate);
+  assert.equal(outcome, 'AbortError');
+  assert.equal(calls, 1, 'an aborted lifetime cannot start another transport');
+});
+
 test('coalesced terrain failure retains partial heights for the surviving caller', async () => {
   let fetches = 0;
   let respond;

@@ -261,7 +261,7 @@ export class ShellFeedback {
       const recovered =
         !failed &&
         healthy &&
-        ['failed', 'recovered'].includes(previous?.health) &&
+        (previous?.health === 'failed' || previous?.shown === true) &&
         previous.acceptedAt !== null &&
         layer.stats.lastUpdate > previous.acceptedAt;
       const acceptedAt = Number.isFinite(layer.stats?.lastUpdate)
@@ -269,6 +269,7 @@ export class ShellFeedback {
         : 0;
       this._refreshEpisodes.set(layer.id, {
         epoch: event.refreshEpoch,
+        shown: !failed && previous?.shown === true,
         health: failed ? 'failed' : recovered ? 'recovered'
           : healthy && previous?.acceptedAt == null ? 'healthy'
           : previous?.health || 'healthy',
@@ -280,7 +281,7 @@ export class ShellFeedback {
       if (recovered) {
         const decision = resolveAttentionDisposition({
           freshnessTransition: 'recovered',
-          repeated: previous.health === 'recovered',
+          repeated: previous.shown === true,
         });
         const current = this._globalStatusNotice;
         const occupied =
@@ -309,7 +310,7 @@ export class ShellFeedback {
     for (const layer of enabled.values()) {
       if (!this._refreshEpisodes.has(layer.id)) {
         this._refreshEpisodes.set(layer.id, {
-          epoch: 0, health: 'healthy',
+          epoch: 0, health: 'healthy', shown: false,
           acceptedAt: Number.isFinite(layer.stats?.lastUpdate) && layer.stats.lastUpdate > 0
             ? layer.stats.lastUpdate : null,
         });
@@ -328,6 +329,10 @@ export class ShellFeedback {
       summary,
       now,
     );
+    if (presentation?.state === 'recovered' && this._globalStatusNotice?.recovery) {
+      const episode = this._refreshEpisodes.get(this._globalStatusNotice.recovery.layerId);
+      if (episode) episode.shown = true;
+    }
     if (
       this._globalStatusNotice?.persistent !== true &&
       Number.isFinite(this._globalStatusNotice?.hideAt) &&

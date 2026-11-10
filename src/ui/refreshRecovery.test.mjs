@@ -61,10 +61,12 @@ test('a recovered refresh names its layer after failure dwell, once per episode'
   assert.equal(f.view().state, 'error');
   f.emit('refresh', 2, 1000);
   assert.equal(f.view().state, 'error', 'the failure keeps its full dwell');
+  assert.equal(f.owner._refreshEpisodes.get('flights').shown, false);
   f.owner._updateGlobalLoadingFeedback(6001);
   assert.equal(f.view().label, 'REFRESH RECOVERED');
   assert.equal(f.view().detail, 'Flights');
   assert.equal(f.view().hidden, false);
+  assert.equal(f.owner._refreshEpisodes.get('flights').shown, true);
   const deadline = f.owner._globalStatusNotice.hideAt;
   f.emit('refresh', 3, 6500, { lastUpdate: 3000 });
   assert.equal(
@@ -180,6 +182,7 @@ test('a recovery observed while hidden is consumed, not replayed on return', (t)
   document.hidden = false;
   f.emit('refresh', 3, 5100, { lastUpdate: 3000 });
   assert.notEqual(f.view().label, 'REFRESH RECOVERED');
+  assert.equal(f.owner._refreshEpisodes.get('flights').shown, false, 'consumed is not surfaced');
 });
 
 for (const [locale, expected] of [

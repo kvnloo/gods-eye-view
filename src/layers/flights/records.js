@@ -4,6 +4,7 @@ import {
   pickRenderAltitudeM,
 } from '../../data/renderAltitude.js';
 import { classifyAircraft } from '../../data/aircraftClass.js';
+import { aircraftEmergency } from '../../data/aircraftEmergency.js';
 import {
   approxDistanceKm,
   GROUND_FLOOR_CLAMP_RADIUS_KM,
@@ -197,10 +198,16 @@ export class FlightRecords {
       !!prevMeta && (prevMeta.onGround === true) !== onGround;
     // Store flight metadata for click-to-track labels
     const cat = stickyNumber(category, prevMeta?.category, null);
+    const nextCallsign = stickyText(callsign, prevMeta?.callsign);
+    // A route (and its airline) belongs to the callsign it was looked up for;
+    // a new callsign drops it, so an old flight's route never shows under it.
+    const routeHeld =
+      Boolean(prevMeta?.routeCallsign) &&
+      prevMeta.routeCallsign === nextCallsign.toUpperCase();
     const meta = {
       sourceReference: observation.reference,
       observedReceiptMs: Date.now(),
-      callsign: stickyText(callsign, prevMeta?.callsign),
+      callsign: nextCallsign,
       altitude: alt,
       // geoAltitudeM/renderAltitudeM are ADDITIVE fields alongside the
       // untouched aviation `altitude` — never rename/replace it (labels,
@@ -226,6 +233,22 @@ export class FlightRecords {
       // like callsign so a transient blank row doesn't blank the field.
       originCountry:
         stickyText(origin_country, prevMeta?.originCountry) || null,
+      // Per poll, NOT sticky: an emergency code clears when the crew resets
+      // it, so a blank squawk must not hold a stale 7700 on screen.
+      squawk: observation.squawk ?? null,
+      // One source-switch omission may retain an ADS-B status, while an
+      // explicit clear or changed squawk always takes effect immediately.
+      emergency:
+        observation.emergency === undefined &&
+        observation.squawk === prevMeta?.squawk &&
+        prevMeta?.emergency?.source === 'ads-b' &&
+        (prevMeta?.missingEmergencyPolls ?? 0) < 1
+          ? prevMeta.emergency
+          : aircraftEmergency(observation),
+      missingEmergencyPolls:
+        observation.emergency === undefined
+          ? (prevMeta?.missingEmergencyPolls ?? 0) + 1
+          : 0,
       // OpenSky distinguishes the last position epoch from the last
       // transponder message. The fleet coast horizon uses this actual
       // contact time so a temporarily old position does not hard-freeze
@@ -239,8 +262,11 @@ export class FlightRecords {
       typeCode: prevMeta?.typeCode ?? null,
       typeName: prevMeta?.typeName ?? null,
       registration: prevMeta?.registration ?? null,
-      airline: prevMeta?.airline ?? null,
-      route: prevMeta?.route ?? null,
+      airline: routeHeld ? (prevMeta.airline ?? null) : null,
+      route: routeHeld ? (prevMeta.route ?? null) : null,
+      routeCallsign: routeHeld ? prevMeta.routeCallsign : null,
+      // Planespotters photo of the tracked airframe (Core asks it directly).
+      photo: prevMeta?.photo ?? null,
       // The RAW poll fix lat/lon (this tick's OpenSky state-vector
       // coords, pre-dead-reckon) — kept distinct from the continuously
       // dead-reckoned billboard position for any consumer that needs the
@@ -258,10 +284,12 @@ export class FlightRecords {
     return { icao24, prevMeta, meta, groundFlipped, fixEpochMs };
   }
 
-  absence(id, { complete, likelyLanded }) {
-    // Partial admissions do not prove absence, but retention remains bounded.
+  absence(id, { complete, retainIds, likelyLanded }) {
+    // Partial admissions and position-less rows do not prove absence, but
+    // retention remains bounded; a likely-landed position-less contact
+    // still takes the landed limit.
     if (
-      !complete &&
+      (!complete || (retainIds?.has(id) && !likelyLanded)) &&
       Date.now() - (this.data.get(id)?.observedReceiptMs ?? 0) < 300000
     )
       return 'retain';

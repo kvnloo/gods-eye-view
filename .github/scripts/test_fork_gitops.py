@@ -27,6 +27,14 @@ class ForkPolicyTests(unittest.TestCase):
             with self.subTest(branch=branch):
                 self.assertTrue(policy.check(self.event(branch)))
 
+    def test_workflow_executes_only_trusted_base_code(self):
+        workflow = (Path(__file__).parent.parent / 'workflows/fork-gitops.yml').read_text()
+        self.assertIn('  pull_request_target:', workflow)
+        self.assertIn('ref: ${{ github.event.pull_request.base.sha }}', workflow)
+        self.assertIn('persist-credentials: false', workflow)
+        self.assertIn('  contents: read', workflow)
+        self.assertNotIn('pull_request.head', workflow)
+
     def test_missing_payload_fails_closed(self):
         self.assertTrue(policy.check({}))
 

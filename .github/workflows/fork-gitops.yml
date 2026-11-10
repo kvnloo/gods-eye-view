@@ -1,7 +1,7 @@
 name: Fork GitOps
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened, edited, ready_for_review]
 
 permissions:
@@ -17,6 +17,7 @@ jobs:
       - name: Check out source
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
+          ref: ${{ github.event.pull_request.base.sha }}
           persist-credentials: false
       - name: Test policy
         run: python3 -m unittest discover -s .github/scripts -p test_fork_gitops.py -v

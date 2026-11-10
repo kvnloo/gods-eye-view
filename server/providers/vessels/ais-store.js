@@ -1,6 +1,8 @@
 import { isRecognizedAisEnvelope } from '../../../src/data/aisStreamAdapter.js';
 export const AISSTREAM_CACHE_MAX = 50000;
 export const AISSTREAM_STALE_MS = 30 * 60 * 1000;
+const AIS_STATIC_PRUNE_INTERVAL_MS = 60 * 1000;
+let lastStaticPruneAt = null;
 // Per-MMSI recent-path ring buffers (PRD WS-F F3). Float32 lat/lon (~1m
 // precision, fine for 25m thinning) + Uint32 epoch seconds ≈ 12B/sample;
 // 64 samples × 50k MMSIs worst case ≈ 38MB. Tracks exist only while the dev
@@ -42,14 +44,29 @@ export function ingestAisStreamEnvelope(envelope) {
   );
   if (!mmsi) return false;
 
+  const now = Date.now();
+  maybePruneAisStaticCache(now);
+  // A sweep may be up to one interval away; never reuse expired metadata for
+  // the current MMSI while waiting for the next whole-cache sweep.
+  if (_aisStreamStatic.get(mmsi)?._updatedAt < now - AISSTREAM_STALE_MS) {
+    _aisStreamStatic.delete(mmsi);
+  }
+
   if (messageType === 'ShipStaticData' || messageType === 'StaticDataReport') {
     const staticData = {
       name: vesselNameFromAis(metadata, message, _aisStreamStatic.get(mmsi)),
       type: vesselTypeFromAis(message, _aisStreamStatic.get(mmsi)),
       destination: stringValue(message.Destination),
       imo: stringValue(message.ImoNumber ?? message.IMO),
+      _updatedAt: now,
     };
+    // Refresh insertion order so the hard cap evicts the least recently updated
+    // static record without sorting or scanning on every message.
+    _aisStreamStatic.delete(mmsi);
     _aisStreamStatic.set(mmsi, staticData);
+    if (_aisStreamStatic.size > AISSTREAM_CACHE_MAX) {
+      _aisStreamStatic.delete(_aisStreamStatic.keys().next().value);
+    }
     mergeAisStaticIntoLiveVessel(mmsi, staticData);
   }
 
@@ -226,6 +243,22 @@ export function aisStreamRows(maxRows) {
   }
   rows.sort((a, b) => b._updatedAt - a._updatedAt);
   return rows.slice(0, maxRows).map(({ _updatedAt, ...row }) => row);
+}
+
+// Static-only records are valid liveness traffic and return before positional
+// pruning. Give them their own bounded cleanup, reachable for every AIS record.
+function maybePruneAisStaticCache(now) {
+  if (
+    lastStaticPruneAt !== null &&
+    now >= lastStaticPruneAt &&
+    now - lastStaticPruneAt < AIS_STATIC_PRUNE_INTERVAL_MS
+  )
+    return;
+  lastStaticPruneAt = now;
+  const cutoff = now - AISSTREAM_STALE_MS;
+  for (const [mmsi, row] of _aisStreamStatic) {
+    if (row._updatedAt < cutoff) _aisStreamStatic.delete(mmsi);
+  }
 }
 
 function pruneAisStreamCache() {

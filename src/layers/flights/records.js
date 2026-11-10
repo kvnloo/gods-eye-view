@@ -23,6 +23,8 @@ export class FlightRecords {
     };
     this.data = new Map();
     this.missingPolls = new Map();
+    // Monotonic across callsign switches and eviction/re-admission.
+    this.routeAssociationSerial = 0;
     this.geoidNCache = new Map();
     this.geoidReady = false;
   }
@@ -61,6 +63,12 @@ export class FlightRecords {
       Boolean(prevMeta?.callsign && effectiveCallsign) &&
       prevMeta.callsign.trim().toUpperCase() !==
         effectiveCallsign.trim().toUpperCase();
+    // The text can cycle A → B → A while an A lookup is in flight. Keep
+    // a distinct token for each association, including a re-admitted ICAO.
+    const routeAssociationVersion =
+      prevMeta && !callsignChanged
+        ? prevMeta.routeAssociationVersion
+        : ++this.routeAssociationSerial;
     // Grounded planes with no baro reading sit at 0 m, not the 10 km
     // airborne default (a parked plane must never float).
     // NOTE (height-datum fix): `alt` stays the AVIATION field — the sticky
@@ -209,6 +217,7 @@ export class FlightRecords {
       sourceReference: observation.reference,
       observedReceiptMs: Date.now(),
       callsign: effectiveCallsign,
+      routeAssociationVersion,
       altitude: alt,
       // geoAltitudeM/renderAltitudeM are ADDITIVE fields alongside the
       // untouched aviation `altitude` — never rename/replace it (labels,

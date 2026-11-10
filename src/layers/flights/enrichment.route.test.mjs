@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createEnrichment } from './enrichment.js';
+import { FlightRecords } from './records.js';
 
 function harness(callsign = 'UAL123') {
   let resolveLookup;
@@ -81,4 +82,91 @@ test('removed aircraft is not recreated by late route results', async () => {
   h.resolveLookup(result);
   await settle();
   assert.equal(h.flightState.records.data.size, 0);
+});
+
+test('a callsign A-B-A cycle drops the old route and permits a fresh lookup', async () => {
+  const records = new FlightRecords({
+    geoidHeight: () => 0,
+    cachedGroundFloor: () => null,
+    floorAltitudeM: (altitude) => altitude,
+  });
+  const receive = (callsign) =>
+    records.receive(
+      {
+        id: 'abc123',
+        reference: 'abc123',
+        longitude: -77,
+        latitude: 39,
+        callsign,
+        baroAltitudeM: 1000,
+        ellipsoidAltitudeM: null,
+        onGround: false,
+        speedMps: 120,
+        courseDeg: 90,
+      },
+      {
+        viewerLatDeg: null,
+        viewerLonDeg: null,
+        trackedId: null,
+        floorWarmPoints: [],
+      },
+    ).meta;
+
+  const first = receive('UAL123');
+  const requests = [];
+  const flightState = {
+    lifetime: { signal: new AbortController().signal },
+    _enrichSeen: new Set(),
+    _enrichQueue: [],
+    _enrichActive: 0,
+    _enrichLastDispatchMs: 0,
+    _enrichDripTimer: null,
+    records,
+    feed: {
+      _source: {
+        getEnrichment(query) {
+          return new Promise((resolve) => {
+            requests.push({ callsign: query.id, resolve });
+          });
+        },
+      },
+    },
+    _trackedIcao: null,
+    _trackedEntity: null,
+  };
+  const enrich = createEnrichment({
+    flightState,
+    parts: {
+      tracking: {
+        _updateTrackedLabelModel() {
+          throw new Error('unexpected tracking update');
+        },
+      },
+    },
+  });
+
+  enrich._requestRouteEnrichment('abc123');
+  await settle();
+  assert.equal(requests.length, 1);
+  receive('DAL456');
+  const returned = receive('UAL123');
+  requests[0].resolve(result);
+  await settle();
+
+  assert.equal(
+    returned.route,
+    null,
+    'the first UAL123 response belongs to an obsolete association',
+  );
+  assert.notEqual(returned.routeAssociationVersion, first.routeAssociationVersion);
+
+  // A new request for the same callsign is not blocked by the old dedup key.
+  flightState._enrichLastDispatchMs = 0;
+  enrich._requestRouteEnrichment('abc123');
+  await settle();
+  assert.equal(requests.length, 2);
+  assert.equal(requests[1].callsign, 'UAL123');
+  requests[1].resolve({ ...result, origin: { code: 'LAX' } });
+  await settle();
+  assert.equal(records.data.get('abc123').route.origin.code, 'LAX');
 });

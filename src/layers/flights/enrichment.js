@@ -109,12 +109,14 @@ export function createEnrichment({
   }
 
   function _requestRouteEnrichment(icao24) {
-    const cs = String(flightState.records.data.get(icao24)?.callsign || '')
+    const requested = flightState.records.data.get(icao24);
+    const association = requested?.routeAssociationVersion ?? null;
+    const cs = String(requested?.callsign || '')
       .trim()
       .toUpperCase();
     if (!/^[A-Z]{3}\d/.test(cs)) return; // airline-style callsigns only (LLL + digit); GA tails won't resolve
     _enqueueEnrich(
-      `r:${icao24}:${cs}`,
+      `r:${icao24}:${cs}:${association}`,
       { kind: 'route', id: cs },
       (data) => {
         const meta = flightState.records.data.get(icao24);
@@ -123,7 +125,11 @@ export function createEnrichment({
         const currentCallsign = String(meta?.callsign || '')
           .trim()
           .toUpperCase();
-        if (currentCallsign !== cs) return;
+        if (
+          currentCallsign !== cs ||
+          (meta?.routeAssociationVersion ?? null) !== association
+        )
+          return;
         meta.airline = data.airline || meta.airline;
         if (data.origin && data.destination) {
           meta.route = {

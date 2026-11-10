@@ -2794,6 +2794,62 @@ test('control_cockpit enters a tracked aircraft without starting Contacts', asyn
   ]);
 });
 
+test('control_cockpit refuses a tracked aircraft with its layer off without starting Contacts', async () => {
+  globalThis.window = globalThis.window || {
+    clearTimeout,
+    setTimeout,
+    requestIdleCallback: null,
+  };
+  getContextStore().selectedEntityId = null;
+  const calls = [];
+  let flightsEnabled = false;
+  let otherLayerEnabled = true;
+  const dataManager = {
+    layers: new Map(),
+    isEnabled: (layerId) => layerId === 'flights' && flightsEnabled,
+    getAll: () => [],
+  };
+  const styleManager = {
+    getAircraftTrackingTarget: () => ({ layerId: 'flights', id: 'abc123' }),
+    getContextModeState: () => ({ mode: null, active: false, changing: false }),
+    async setContextMode(mode) {
+      calls.push(`context:${mode}`);
+      // Contacts would turn the ridden layer on and replace the other layers.
+      flightsEnabled = mode === 'flights';
+      otherLayerEnabled = false;
+      return { ok: true, mode, active: flightsEnabled, changing: false };
+    },
+    controlCockpit(action, options) {
+      calls.push(`cockpit:${action}`);
+      assert.deepEqual(options.rollbackTarget, {
+        layerId: 'flights',
+        id: 'abc123',
+      });
+      return dataManager.isEnabled('flights')
+        ? { ok: true, action: 'control_cockpit', state: { active: true } }
+        : {
+            ok: false,
+            action: 'control_cockpit',
+            error: 'No aircraft layer is on',
+            state: { active: false, entryBlockedReason: 'subject-layer-off' },
+          };
+    },
+  };
+  const viewer = {
+    clock: { onTick: { addEventListener: () => () => {} } },
+    scene: { canvas: { addEventListener() {}, removeEventListener() {} } },
+    camera: { moveEnd: { addEventListener() {} } },
+  };
+  const runner = createGevActionRunner({ viewer, styleManager, dataManager });
+
+  const result = await runner('control_cockpit', { action: 'enter' });
+  assert.equal(result.ok, false);
+  assert.equal(result.state.entryBlockedReason, 'subject-layer-off');
+  assert.deepEqual(calls, ['cockpit:enter']);
+  assert.equal(flightsEnabled, false);
+  assert.equal(otherLayerEnabled, true);
+});
+
 test('control_cockpit starts Contacts to find an aircraft on another layer', async () => {
   globalThis.window = globalThis.window || {
     clearTimeout,

@@ -41,7 +41,12 @@ export function createGeocodePlaceService({
       keylessGeocoder &&
       (payload?.configured === false || payload?.code === 'NOMINATIM_DISABLED')
     ) {
-      const { place } = await keylessGeocoder.geocode(name, { signal });
+      const { place, answered } = await keylessGeocoder.geocode(name, {
+        signal,
+      });
+      // A Photon outage is not an answer. Throw so the shared place cache
+      // drops this lookup instead of turning a temporary failure into a miss.
+      if (!answered) throw new Error('Keyless geocoder unavailable');
       return place ? placeFromKeylessResult(place) : null;
     }
     if (!response.ok) throw new Error(`Geocode HTTP ${response.status}`);

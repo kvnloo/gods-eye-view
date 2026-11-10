@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { createPhotonGeocoder } from '../keylessGeocoder.js';
 import { createGeocodePlaceService } from './places.js';
 
 const answer = {
@@ -138,4 +139,44 @@ test('without a server geocoder, names resolve through the keyless geocoder', as
   });
   assert.equal(await places.resolve('Nowhere-at-all'), null);
   assert.deepEqual(asked, ['Paris', 'Nowhere-at-all']);
+});
+
+test('a transient keyless outage is retried instead of cached as an unmatched place', async () => {
+  let photonRequests = 0;
+  const fetchImpl = async (url) => {
+    if (url.startsWith('/api/geocode?')) {
+      return Response.json(
+        { code: 'NOMINATIM_DISABLED', configured: false },
+        { status: 503 },
+      );
+    }
+    assert.equal(new URL(url).origin, 'https://photon.komoot.io');
+    photonRequests += 1;
+    if (photonRequests === 1) return new Response(null, { status: 503 });
+    return Response.json({
+      features: [
+        {
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [2.3522, 48.8566] },
+          properties: {
+            name: 'Paris',
+            city: 'Paris',
+            country: 'France',
+            osm_key: 'place',
+            osm_value: 'city',
+          },
+        },
+      ],
+    });
+  };
+  const places = createGeocodePlaceService({
+    fetchImpl,
+    keylessGeocoder: createPhotonGeocoder({ fetchImpl }),
+  });
+
+  await assert.rejects(places.resolve('Paris'), /Keyless geocoder unavailable/);
+  const recovered = await places.resolve('Paris');
+  assert.equal(recovered.name, 'Paris, France');
+  assert.deepEqual(recovered.point, { lat: 48.8566, lon: 2.3522 });
+  assert.equal(photonRequests, 2, 'an unanswered Photon lookup must be retried');
 });

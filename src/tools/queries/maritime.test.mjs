@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { composeCatalog, coreTools } from '../index.js';
 import { LiveSourceError } from '../../sources/live/contract.js';
-import { createAisStreamSource } from '../../sources/live/standalone.js';
+import { createVesselSource } from '../../sources/live/standalone.js';
 import { AISSTREAM_CACHE_MAX } from '../../../server/providers/vessels/ais-store.js';
 
 const vessel = (id, latitude, longitude, extra = {}) => ({
@@ -184,7 +184,7 @@ test('a missing AIS key surfaces as an unavailable feed', async () => {
 
 test('vessel searches ask for every vessel the server retains', async () => {
   const requested = [];
-  const source = createAisStreamSource({
+  const source = createVesselSource({
     origin: () => 'http://localhost',
     fetchImpl: async (url) => {
       requested.push(new URL(url).searchParams.get('maxRows'));
@@ -200,4 +200,220 @@ test('vessel searches ask for every vessel the server retains', async () => {
   assert.equal(requested.length, 2);
   for (const maxRows of requested)
     assert.ok(Number(maxRows) >= AISSTREAM_CACHE_MAX, maxRows);
+});
+
+test('an area search names its area to the server; a vessel lookup asks for every vessel', async () => {
+  const requested = [];
+  const source = createVesselSource({
+    origin: () => 'http://localhost',
+    fetchImpl: async (url) => {
+      requested.push(new URL(url).searchParams);
+      return Response.json({ rows: [], source: 'AISStream', status: 'live' });
+    },
+  });
+  const catalog = composeCatalog({
+    tools: coreTools,
+    services: { vessels: source },
+  });
+  await catalog.call('vessels_in_area', { area: bay });
+  await catalog.call('find_vessel', { mmsi: '366999712' });
+  const [area, lookup] = requested;
+  assert.equal(area.get('lat'), '37.78000');
+  assert.equal(area.get('lon'), '-122.40000');
+  assert.equal(area.get('radius_km'), '20.0');
+  assert.equal(lookup.has('lat'), false);
+  assert.equal(lookup.has('radius_km'), false);
+});
+
+test('AIS type 0 (not available) is counted as unknown, not as a type', async () => {
+  const catalog = composeCatalog({
+    tools: coreTools,
+    services: {
+      vessels: vessels({
+        records: [
+          vessel('366000001', 37.78, -122.4, { type: '0' }),
+          vessel('366000002', 37.79, -122.41, { type: '0' }),
+          vessel('366000003', 37.77, -122.39, { type: 'Cargo' }),
+          vessel('366000004', 37.76, -122.38, { type: 'Tanker' }),
+        ],
+      }),
+    },
+  });
+  const result = await catalog.call('vessels_in_area', {
+    area: bay,
+    group_by: 'type',
+  });
+  assert.deepEqual(result.data.breakdown, {
+    field: 'type',
+    groups: [
+      { value: 'Cargo', count: 1 },
+      { value: 'Tanker', count: 1 },
+    ],
+    other_count: 0,
+    unknown_count: 2,
+  });
+  assert.match(
+    result.summary,
+    /most by type: Cargo \(1\), Tanker \(1\); 2 unknown\./,
+  );
+  assert.doesNotMatch(result.summary, /0 \(/);
+  assert.equal(
+    result.data.rows.find((row) => row.mmsi === '366000001').type,
+    null,
+  );
+});
+
+test('numeric AIS ship-type codes group and filter by their family', async () => {
+  const catalog = composeCatalog({
+    tools: coreTools,
+    services: {
+      vessels: vessels({
+        records: [
+          vessel('366000001', 37.78, -122.4, { type: '70' }),
+          vessel('366000002', 37.79, -122.41, { type: '74' }),
+          vessel('366000003', 37.77, -122.39, { type: '79' }),
+          vessel('366000004', 37.76, -122.38, { type: '80' }),
+          vessel('366000005', 37.75, -122.37, { type: '52' }),
+        ],
+      }),
+    },
+  });
+  const grouped = await catalog.call('vessels_in_area', {
+    area: bay,
+    group_by: 'type',
+  });
+  assert.deepEqual(grouped.data.breakdown.groups, [
+    { value: 'CARGO', count: 3 },
+    { value: 'TANKER', count: 1 },
+    { value: 'TUG', count: 1 },
+  ]);
+  const tankers = await catalog.call('vessels_in_area', {
+    area: bay,
+    type: 'tanker',
+  });
+  assert.deepEqual(
+    tankers.data.rows.map((row) => [row.mmsi, row.type]),
+    [['366000004', 'TANKER']],
+  );
+});
+
+test('reserved AIS ship-type codes 100 to 255 count as unknown', async () => {
+  const catalog = composeCatalog({
+    tools: coreTools,
+    services: {
+      vessels: vessels({
+        records: [
+          vessel('366000001', 37.78, -122.4, { type: '100' }),
+          vessel('366000002', 37.79, -122.41, { type: '255' }),
+          vessel('366000003', 37.77, -122.39, { type: '70' }),
+        ],
+      }),
+    },
+  });
+  const result = await catalog.call('vessels_in_area', {
+    area: bay,
+    group_by: 'type',
+  });
+  assert.deepEqual(result.data.breakdown.groups, [
+    { value: 'CARGO', count: 1 },
+  ]);
+  assert.equal(result.data.breakdown.unknown_count, 2);
+  assert.doesNotMatch(result.summary, /\b(100|255) \(/);
+});
+
+test('find_vessel answers carry normalized types and destinations', async () => {
+  const catalog = composeCatalog({
+    tools: coreTools,
+    services: {
+      vessels: vessels({
+        records: [
+          vessel('366000001', 37.78, -122.4, {
+            type: '71',
+            destination: '---',
+          }),
+          vessel('366000002', 37.79, -122.41, {
+            type: '0',
+            destination: 'NLRTM',
+          }),
+        ],
+      }),
+    },
+  });
+  const cargo = await catalog.call('find_vessel', { mmsi: '366000001' });
+  assert.deepEqual(
+    cargo.data.rows.map((row) => [row.type, row.destination]),
+    [['CARGO', null]],
+  );
+  const unknown = await catalog.call('find_vessel', { mmsi: '366000002' });
+  assert.deepEqual(
+    unknown.data.rows.map((row) => [row.type, row.destination]),
+    [[null, 'NLRTM']],
+  );
+});
+
+test('a vessel course or heading that rounds to 360 reads as 0', async () => {
+  const catalog = composeCatalog({
+    tools: coreTools,
+    services: {
+      vessels: vessels({
+        records: [
+          vessel('366000003', 37.78, -122.4, {
+            courseDeg: 359.7,
+            headingDeg: 359.6,
+          }),
+        ],
+      }),
+    },
+  });
+  const [row] = (await catalog.call('find_vessel', { mmsi: '366000003' })).data
+    .rows;
+  assert.deepEqual([row.course_deg, row.heading_deg], [0, 0]);
+});
+
+test('a destination with no letters counts as unknown', async () => {
+  const catalog = composeCatalog({
+    tools: coreTools,
+    services: {
+      vessels: vessels({
+        records: [
+          vessel('366000001', 37.78, -122.4, { destination: '0' }),
+          vessel('366000002', 37.79, -122.41, { destination: '---' }),
+          vessel('366000003', 37.77, -122.39, { destination: 'NLRTM' }),
+        ],
+      }),
+    },
+  });
+  const result = await catalog.call('vessels_in_area', {
+    area: bay,
+    group_by: 'destination',
+  });
+  assert.deepEqual(result.data.breakdown.groups, [
+    { value: 'NLRTM', count: 1 },
+  ]);
+  assert.equal(result.data.breakdown.unknown_count, 2);
+});
+
+test('vessels in an area can be counted by destination with a speed summary', async () => {
+  const catalog = composeCatalog({
+    tools: coreTools,
+    services: { vessels: vessels() },
+  });
+  const result = await catalog.call('vessels_in_area', {
+    area: bay,
+    group_by: 'destination',
+    stats: true,
+  });
+  assert.equal(
+    result.summary,
+    '2 vessels in 20 km around 37.780, -122.400; most by destination: OAKLAND (1); 1 unknown.',
+  );
+  assert.deepEqual(result.data.breakdown, {
+    field: 'destination',
+    groups: [{ value: 'OAKLAND', count: 1 }],
+    other_count: 0,
+    unknown_count: 1,
+  });
+  assert.deepEqual(result.data.stats, {
+    speed_mps: { count: 2, min: 6.2, median: 6.2, mean: 6.2, max: 6.2 },
+  });
 });

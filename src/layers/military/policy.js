@@ -1,11 +1,5 @@
-export {
-  GROUND_FLOOR_WARM_MAX_ALT_M,
-  POSITION_HISTORY_LIMIT,
-  LANDED_MISSING_POLL_LIMIT,
-  MISSING_POLL_LIMIT,
-  ERROR_BACKOFF_INTERVAL,
-} from './recordPolicy.js';
 import * as Cesium from 'cesium';
+import { EMERGENCY_TINT_CSS } from '../../data/aircraftEmergency.js';
 
 /**
  * @module militaryFlights
@@ -39,6 +33,11 @@ export const MIL_ICON_COLOR = Cesium.Color.fromCssColorString('#FFB800');
 /** @constant {Cesium.Color} Lighter amber tint applied to the actively tracked aircraft */
 
 export const TRACKED_ICON_COLOR = Cesium.Color.fromCssColorString('#FFD166');
+
+/** @constant {Cesium.Color} Red tint for aircraft broadcasting an emergency (mirror of flights) */
+
+export const EMERGENCY_ICON_COLOR =
+  Cesium.Color.fromCssColorString(EMERGENCY_TINT_CSS);
 
 // --- Ground traffic (owner reversal 2026-07-03; mirror of flights.js) ---------------
 // adsb.lol/readsb flags ground traffic with alt_baro === "ground" (no separate
@@ -173,7 +172,7 @@ export const TRAIL_COLOR = '#FFB800';
 
 /** @constant {number} Combined cap on trail vertices (backfill + live accumulation). */
 
-export const TRAIL_MAX_POINTS = 400;
+export const TRAIL_MAX_POINTS = 2000;
 
 // ---------------------------------------------------------------------------
 // Render-behind smoothing (mirrors flights.js): the fleet renders at
@@ -272,3 +271,6 @@ export const TRACKED_MODEL_RETRY_BACKOFF_MS = 1500;
  *  synchronously (single primitive). */
 
 export const IR_RELOAD_BATCH = 40;
+
+/** Alpha of a contact that has missed an update or lost its signal: the stale fade, for the fleet and the tracked aircraft alike. */
+export const STALE_ALPHA = 0.45;

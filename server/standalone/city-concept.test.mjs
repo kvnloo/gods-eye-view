@@ -96,6 +96,9 @@ async function setup(t, options = {}) {
             host,
             origin: `http://${host}`,
             'content-type': 'application/json',
+            ...(headers['transfer-encoding']
+              ? {}
+              : { 'content-length': Buffer.byteLength(data) }),
             ...headers,
           },
         },
@@ -116,6 +119,7 @@ async function setup(t, options = {}) {
     ...fake,
     plugin,
     middleware,
+    server,
     send,
     host,
     port: server.address().port,
@@ -191,6 +195,24 @@ test('endpoint denies missing/foreign origins, foreign hosts, wrong ports, metho
     (await send({ headers: { 'content-type': 'text/plain' } })).status,
     415,
   );
+  assert.equal(calls.length, 0);
+});
+
+test('denied methods use valid HTTP framing without poisoning the next request', async (t) => {
+  const { send, server, calls } = await setup(t);
+  const parserErrors = [];
+  server.on('clientError', (error, socket) => {
+    parserErrors.push(error.code);
+    socket.destroy();
+  });
+  for (let attempt = 0; attempt < 20; attempt++) {
+    assert.equal((await send({ method: 'GET' })).status, 405);
+    assert.equal(
+      (await send({ headers: { origin: 'http://evil.example' } })).status,
+      403,
+    );
+  }
+  assert.deepEqual(parserErrors, []);
   assert.equal(calls.length, 0);
 });
 

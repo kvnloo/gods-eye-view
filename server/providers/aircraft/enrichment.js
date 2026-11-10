@@ -76,11 +76,15 @@ export function adsbdbProxy(options = {}) {
   function toStore(raw) {
     const store = new Map();
     const now = Date.now();
-    for (const [key, entry] of Object.entries(raw ?? {})) {
-      const at = Number(entry?.at);
-      if (!Number.isFinite(at) || now - at >= TTL_MS) continue;
-      store.set(key, entry);
-    }
+    // JSON reorders integer-like callsign keys before string keys. Sort by the
+    // recorded write time so pruning after a restart evicts the oldest write.
+    const entries = Object.entries(raw ?? {})
+      .filter(([, entry]) => {
+        const at = Number(entry?.at);
+        return Number.isFinite(at) && now - at < TTL_MS;
+      })
+      .sort(([, left], [, right]) => Number(left.at) - Number(right.at));
+    for (const [key, entry] of entries) store.set(key, entry);
     prune(store);
     return store;
   }

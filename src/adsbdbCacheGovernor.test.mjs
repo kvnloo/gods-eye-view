@@ -14,6 +14,7 @@
 // Run with: npm test
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { promises as fsp } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { adsbdbProxy } from '../server/providers/aircraft/enrichment.js';
@@ -113,6 +114,49 @@ test('an enrichment lookup still answers, and is cached', async (t) => {
   const second = await request(handler, { url: '/type/abc123' });
   assert.equal(second.body.typeCode, 'B738');
   assert.equal(asked.length, 1, 'a warm key costs no upstream request');
+});
+
+test('cache reload keeps newer numeric callsigns when pruning', async (t) => {
+  const asked = stubUpstream(t);
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'gev-adsbdb-order-'));
+  t.after(() => fsp.rm(dir, { recursive: true, force: true }));
+  const cachePath = path.join(dir, 'adsbdb.json');
+  const now = Date.now();
+  const entry = (age, airline) => ({
+    at: now - age,
+    data: {
+      airline,
+      origin: { code: 'AAA', name: 'Origin', lat: null, lon: null },
+      destination: { code: 'BBB', name: 'Destination', lat: null, lon: null },
+    },
+  });
+
+  // JSON places integer-like "1234" ahead of B1 despite its newer write.
+  // A cache from an older build can also exceed a new entry ceiling.
+  await fsp.writeFile(
+    cachePath,
+    JSON.stringify({
+      routes: {
+        B1: entry(3000, 'oldest'),
+        '1234': entry(2000, 'newer'),
+        C2: entry(1000, 'newest'),
+      },
+      aircraft: {},
+    }),
+    'utf8',
+  );
+  const handler = install(
+    adsbdbProxy({ cachePath, cacheMaxEntries: 2 }),
+  ).get('/api/adsbdb');
+
+  const retained = await request(handler, { url: '/route/1234' });
+  assert.equal(retained.statusCode, 200);
+  assert.equal(retained.body.airline, 'newer');
+  assert.equal(asked.length, 0, 'newer numeric key stays warm after reload');
+
+  await request(handler, { url: '/route/B1' });
+  assert.equal(asked.length, 1, 'oldest written key must be evicted');
+  assert.match(asked[0], /\/callsign\/B1$/);
 });
 
 test('the cache stops growing, and an evicted key is simply re-fetched', async (t) => {

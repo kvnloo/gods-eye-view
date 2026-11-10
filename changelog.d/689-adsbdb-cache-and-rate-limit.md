@@ -8,6 +8,8 @@
   disk or upstream work. A refused lookup is asked for again once the refusal
   has passed instead of leaving that aircraft without metadata for the
   session. Each cache holds at most 20,000 entries, dropping the
-  least-recently-written first, and entries past the existing 24-hour TTL are
-  discarded when the file is read back. Cached answers and response shapes are
-  unchanged (daikaginza, #689).
+  least-recently-written first, including after a restart when numeric
+  callsigns would otherwise be reordered by JSON; entries past the existing
+  24-hour TTL are discarded when the file is read back. Cached answers and
+  response shapes are unchanged (daikaginza, #689; original issue reported
+  by jsawyerdev, #261).

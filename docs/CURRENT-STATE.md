@@ -2842,11 +2842,13 @@ treating the 429 as an answer.
 
 Both enrichment caches hold at most 20,000 entries each, dropping the
 least-recently-written first, and entries past their 24-hour TTL are discarded
-when `.gev-cache/adsbdb.json` is read back. A cache file above 16 MB is skipped
-rather than parsed. An evicted key costs one upstream request the next time it
-is asked for; cached answers are otherwise unchanged.
+when `.gev-cache/adsbdb.json` is read back. Cache reload restores write-age
+order from saved timestamps before pruning, including numeric callsigns that
+JSON enumerates before string keys. A cache file above 16 MB is skipped rather
+than parsed. An evicted key costs one upstream request the next time it is asked
+for; cached answers are otherwise unchanged.
 
-Updated: October 23, 2026
+Updated: November 10, 2026
 
 ## Control names for assistive technology
 

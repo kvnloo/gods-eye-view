@@ -105,14 +105,22 @@ test('time, rights, stale, unknown and conflict status survive round-trip', () =
       ['source-b', 'restricted', null],
     ],
   );
-  assert.deepEqual(receipt.findings.observed.map((row) => row.id), [
-    'conflict',
-    'stale',
-    'unknown',
-  ]);
-  assert.deepEqual(receipt.findings.modeled.map((row) => row.id), ['model']);
-  assert.deepEqual(receipt.findings.stale.map((row) => row.id), ['stale']);
-  assert.deepEqual(receipt.findings.unknowns.map((row) => row.id), ['unknown']);
+  assert.deepEqual(
+    receipt.findings.observed.map((row) => row.id),
+    ['conflict', 'stale', 'unknown'],
+  );
+  assert.deepEqual(
+    receipt.findings.modeled.map((row) => row.id),
+    ['model'],
+  );
+  assert.deepEqual(
+    receipt.findings.stale.map((row) => row.id),
+    ['stale'],
+  );
+  assert.deepEqual(
+    receipt.findings.unknowns.map((row) => row.id),
+    ['unknown'],
+  );
   assert.deepEqual(receipt.findings.conflicts[0].sourceIds, [
     'source-a',
     'source-b',
@@ -147,7 +155,10 @@ test('rejects media, arbitrary action claims and claimed approval on import', ()
   assert.throws(() => exportHumanDecisionBrief(inject), /unsupported field/);
   const approval = pinnedPacket();
   approval.claims[0].statement = 'Agency approved dispatch';
-  assert.throws(() => exportHumanDecisionBrief(approval), /approval assertions/);
+  assert.throws(
+    () => exportHumanDecisionBrief(approval),
+    /approval assertions/,
+  );
   const malicious = pinnedPacket();
   malicious.claims[0].statement = 'data:image/png;base64,AAAA';
   assert.throws(() => exportHumanDecisionBrief(malicious), /reference text/);
@@ -156,10 +167,16 @@ test('rejects media, arbitrary action claims and claimed approval on import', ()
   assert.throws(() => exportHumanDecisionBrief(forged), /unsupported field/);
   const disguised = pinnedPacket();
   disguised.question = 'Agency approved dispatch';
-  assert.throws(() => exportHumanDecisionBrief(disguised), /approval assertions/);
+  assert.throws(
+    () => exportHumanDecisionBrief(disguised),
+    /approval assertions/,
+  );
   const attribution = pinnedPacket();
   attribution.sources[0].attribution = 'Agency officially approved dispatch';
-  assert.throws(() => exportHumanDecisionBrief(attribution), /approval assertions/);
+  assert.throws(
+    () => exportHumanDecisionBrief(attribution),
+    /approval assertions/,
+  );
 });
 
 test('fails closed on invalid rights, timestamps, source revisions and URLs', () => {
@@ -205,5 +222,8 @@ test('Markdown escapes source-owned text rather than executing markup', () => {
   assert.match(result.markdown, /&amp;/);
   assert.doesNotMatch(result.markdown, /<script>/);
   assert.doesNotMatch(result.markdown, /\[hypothesis\]\(unsafe\)/);
-  assert.equal(result.receipt.sources[1].attribution, 'Records <script> & Archive');
+  assert.equal(
+    result.receipt.sources[1].attribution,
+    'Records <script> & Archive',
+  );
 });

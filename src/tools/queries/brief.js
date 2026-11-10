@@ -329,8 +329,7 @@ const CLAIM_STATUSES = new Set([
 ]);
 const REFERENCE_ID = /^[a-z0-9][a-z0-9._:-]{0,63}$/i;
 const UTC_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/;
-const RAW_MEDIA =
-  /(?:data:|blob:|base64|<\s*\/?\s*(?:img|video|audio)\b|!\[)/i;
+const RAW_MEDIA = /(?:data:|blob:|base64|<\s*\/?\s*(?:img|video|audio)\b|!\[)/i;
 const AUTHORITY_CLAIM =
   /\b(?:approved?|authori[sz]ed|cleared|clearance granted|safe to|dispatch(?:ed)?|deploy(?:ed)?|evacuat(?:e|ed|ion)|permission granted|officially|route (?:is )?open|open for travel|go-ahead)\b/i;
 
@@ -368,7 +367,9 @@ function handoffText(value, label, limit = 400) {
 function handoffNarrative(value, label, limit = 400) {
   const text = handoffText(value, label, limit);
   if (AUTHORITY_CLAIM.test(text)) {
-    throw new TypeError('operational or approval assertions cannot be exported');
+    throw new TypeError(
+      'operational or approval assertions cannot be exported',
+    );
   }
   return text;
 }
@@ -413,10 +414,14 @@ function referenceUrl(value, label) {
     url.username ||
     url.password ||
     [...url.searchParams.keys()].some((key) =>
-      /^(?:token|access_token|api_?key|password|session|signature|sig)$/i.test(key),
+      /^(?:token|access_token|api_?key|password|session|signature|sig)$/i.test(
+        key,
+      ),
     )
   ) {
-    throw new TypeError(label + ' must be a public, credential-free HTTP(S) URL');
+    throw new TypeError(
+      label + ' must be a public, credential-free HTTP(S) URL',
+    );
   }
   return url.href;
 }
@@ -549,7 +554,9 @@ export function createHumanDecisionBrief(packet) {
   const handoff = exactFields(input.handoff, ['label', 'url'], 'handoff');
   const externalLabel = handoffText(handoff.label, 'handoff.label', 160);
   if (AUTHORITY_CLAIM.test(externalLabel)) {
-    throw new TypeError('handoff must name a review destination, not an approval');
+    throw new TypeError(
+      'handoff must name a review destination, not an approval',
+    );
   }
   return {
     schema: BRIEF_SCHEMA,

@@ -6,6 +6,7 @@ import {
   canReloadAfterContextLoss,
   markContextLossReload,
 } from './contextLoss.js';
+import { getLocale, setLocale, t } from '../i18n/index.js';
 
 /** A Cesium-style event: addEventListener returns the remover. */
 function createEvent() {
@@ -247,4 +248,42 @@ test('the notice is idempotent and only the terminal case offers reload', () => 
 
 test('the notice returns null without a document (workers, tests)', () => {
   assert.equal(showContextLossNotice({ document: null }), null);
+});
+
+test('context-loss notices translate with the active Spanish and Russian catalogs', () => {
+  const previousLocale = getLocale();
+  try {
+    for (const [locale, loss, reload, restoring] of [
+      [
+        'es',
+        "God's Eye View perdió su contexto de gráficos 3D.",
+        'Recargar',
+        'Restaurando el globo 3D…',
+      ],
+      [
+        'ru',
+        "God's Eye View потеряла графический контекст 3D.",
+        'Перезагрузить',
+        'Восстановление 3D-глобуса…',
+      ],
+    ]) {
+      setLocale(locale);
+      const manual = showContextLossNotice({
+        document: createFakeDocument(),
+        allowManualReload: true,
+        translate: t,
+      });
+      assert.equal(manual.querySelector('span').textContent, loss);
+      assert.equal(manual.querySelector('button').textContent, reload);
+
+      const recovery = showContextLossNotice({
+        document: createFakeDocument(),
+        message: 'Restoring the 3D globe…',
+        translate: t,
+      });
+      assert.equal(recovery.querySelector('span').textContent, restoring);
+    }
+  } finally {
+    setLocale(previousLocale);
+  }
 });

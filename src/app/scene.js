@@ -77,17 +77,20 @@ export async function createApplicationScene({
       if (!canReloadAfterContextLoss()) {
         // Losing another context within the cooldown means this machine
         // (or this boot) cannot hold one — offer the manual way out.
-        showContextLossNotice({ allowManualReload: true });
+        showContextLossNotice({ allowManualReload: true, translate: t });
         return;
       }
       // Fail-closed: reload only when the cooldown flag was durably written.
       // A storage that refuses writes can never arm the cooldown, so an
       // automatic reload here would loop unboundedly on repeated losses.
       if (!markContextLossReload()) {
-        showContextLossNotice({ allowManualReload: true });
+        showContextLossNotice({ allowManualReload: true, translate: t });
         return;
       }
-      showContextLossNotice({ message: msg('Restoring the 3D globe…') });
+      showContextLossNotice({
+        message: msg('Restoring the 3D globe…'),
+        translate: t,
+      });
       window.location.reload();
     },
   });

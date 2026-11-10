@@ -1252,7 +1252,8 @@ Recovery lives with the application lifecycle in `createApplicationScene`:
 the standalone page and iframe embeds reload once — the share-link hash
 already persists camera, layers and style — while a second loss inside the
 30 s cooldown, or refused web storage, degrades to a plain notice with a
-manual reload (never an automatic reload loop). An inline panel never
+manual reload (never an automatic reload loop). The standalone notice and
+manual reload button use the active UI locale. An inline panel never
 reloads its host page; the panel runtime keeps its own notice. Cesium's
 error panel is dismissed when recovery takes over.
 `scripts/qa-context-loss.mjs` drives the whole contract in a real browser:

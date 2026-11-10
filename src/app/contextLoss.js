@@ -108,7 +108,7 @@ export function installContextLossGuard(viewer, { onLost, onRestored } = {}) {
  * `allowManualReload` adds the button for the standalone terminal case (the
  * guarded automatic reload did not run); the inline panel omits it because
  * the host page owns this document.
- * @param {{document?:Document, location?:Location, allowManualReload?:boolean, message?:string}} [options]
+ * @param {{document?:Document, location?:Location, allowManualReload?:boolean, message?:string, translate?:Function}} [options]
  * @returns {HTMLElement|null} The notice element, or null without a document.
  */
 export function showContextLossNotice({
@@ -116,6 +116,7 @@ export function showContextLossNotice({
   location = globalThis.location,
   allowManualReload = false,
   message,
+  translate = (text) => text,
 } = {}) {
   if (!documentRef?.body) return null;
   let notice = documentRef.getElementById(NOTICE_ID);
@@ -140,7 +141,9 @@ export function showContextLossNotice({
     });
     documentRef.body.appendChild(notice);
   }
-  const text = message ?? msg("God's Eye View lost its 3D graphics context.");
+  const text = translate(
+    message ?? msg("God's Eye View lost its 3D graphics context."),
+  );
   let body = notice.querySelector('span');
   if (!body) {
     body = documentRef.createElement('span');
@@ -151,7 +154,7 @@ export function showContextLossNotice({
   if (allowManualReload && !button) {
     button = documentRef.createElement('button');
     button.type = 'button';
-    button.textContent = msg('Reload');
+    button.textContent = translate(msg('Reload'));
     Object.assign(button.style, {
       marginLeft: '12px',
       padding: '4px 14px',

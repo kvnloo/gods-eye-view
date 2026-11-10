@@ -179,8 +179,24 @@ export function createFlightSnapshotRenderer({
         // as the enrichment path — the class's GLB/scale may have changed.
         if (prevMeta?.klass !== meta.klass) rendering._syncModelToClass(icao24);
       } else {
+        // Start where the fleet pass will draw it: the fleet renders behind
+        // real time, so a fresh contact's displayed position is its fix
+        // projected back to that delayed time, and a grounded contact is then
+        // lifted onto the floor under that delayed position. Creating it at
+        // the raw fix drew it ahead until the next fleet tick snapped it back;
+        // skipping the floor started a taxiing contact low and then raised it.
+        const delayed = motion._deadReckon(icao24, new Cesium.Cartesian3());
+        const displayed =
+          (delayed &&
+            motion._floorGroundedDisplayPosition(
+              icao24,
+              flightState.records.data.get(icao24) || meta,
+              delayed,
+              rendering._modelOwnsVisual(icao24),
+            )) ||
+          position;
         const bb = flightState._billboardCollection.add({
-          position,
+          position: displayed,
           image: aircraftIcon(rendering._iconKind(icao24, meta.klass)),
           width: isTracked ? 24 : 20,
           height: isTracked ? 24 : 20,
@@ -214,6 +230,13 @@ export function createFlightSnapshotRenderer({
       // (position updates automatically via dead-reckoning CallbackProperty)
       if (isTracked && flightState._trackedEntity) {
         tracking._updateTrackedLabelModel(icao24);
+        // Re-ask the tracked plane's lookups each poll. Answered and queued
+        // keys return at once; a lookup whose source failed runs again once
+        // its cool-down has passed, and the route uses the callsign this
+        // snapshot just recorded.
+        enrichment._requestTypeEnrichment(icao24, true);
+        enrichment._requestRouteEnrichment(icao24);
+        enrichment._requestPhotoEnrichment(icao24);
       }
     }
 
@@ -227,6 +250,7 @@ export function createFlightSnapshotRenderer({
       if (currentIcaos.has(icao24)) continue;
       const absence = records.absence(icao24, {
         complete: snapshot.complete,
+        retainIds: snapshot.retainIds,
         likelyLanded: queries._likelyLanded(icao24),
       });
       if (absence === 'retain') continue;
@@ -283,8 +307,8 @@ export function createFlightSnapshotRenderer({
     // floor cells collected in the loop (fire-and-forget, single-flight;
     // read synchronously by NEXT poll's clamp — the military-layer pattern).
     warmGroundFloor(floorWarmPoints);
-    // Round 4: sample the RENDERED mesh for those same cells (one-shot per
-    // cell, budget-capped, viewer-proximate, google-3d regime only). Own
+    // Round 4: sample the RENDERED mesh for those same cells (a few probes
+    // per cell, budget-capped, viewer-proximate, google-3d regime only). Own
     // billboards/models are excluded so a vertical probe can't land on an
     // aircraft instead of the pavement.
     sampleMeshFloorCells(flightState._viewer?.scene, floorWarmPoints, {

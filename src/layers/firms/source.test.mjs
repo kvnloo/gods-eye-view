@@ -106,3 +106,17 @@ test('callers without a validator never send a conditional request', async () =>
     );
   }
 });
+
+test('a 304 exposes the proxy clock used for its trailing window', async () => {
+  const windowAt = Date.UTC(2026, 8, 11, 12, 10);
+  const { source } = recordingSource({
+    ok: false,
+    status: 304,
+    headers: new Headers({ 'x-firms-window-at': String(windowAt) }),
+    text: async () => '',
+  });
+  assert.deepEqual(await source.getSnapshot({ etag: 'W/"firms-1-f"' }), {
+    notModified: true,
+    windowAt,
+  });
+});

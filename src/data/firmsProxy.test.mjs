@@ -152,6 +152,8 @@ test('a snapshot carries a validator, and a client holding it gets an empty 304'
   assert.equal(again.status, 304);
   assert.equal(again.body, '', 'no body: the client already holds these rows');
   assert.equal(again.headers.etag, tag);
+  assert.equal(again.headers['x-firms-window-at'], String(world.clock),
+    '304 uses the server clock for the trailing-window cutoff');
   assert.equal(world.upstreamCalls, 4, 'answered from cache, never upstream');
 }));
 

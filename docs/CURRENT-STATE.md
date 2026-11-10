@@ -1352,8 +1352,9 @@ whose `If-None-Match` matches gets an empty `304` (no ~40 MB body is built).
 Only the fire layer sends one, and only for the record set it arrived with;
 on `304` it keeps its records, drops detections that left the window
 (`expireFirmsRecords`; a test pins its bounds to the proxy's filter) and
-rebuilds only if one did. Tool callers send none and
-always receive the full snapshot. Measured in Chrome on a 206k-detection
+rebuilds only if one did. The proxy also sends `X-Firms-Window-At` on 304,
+so the expiry window follows the server clock even if the device clock is
+wrong. Tool callers send none and always receive the full snapshot. Measured in Chrome on a 206k-detection
 snapshot: a full refresh took 258–293 ms with ~150 ms of long tasks; an
 unchanged poll 4–20 ms, or 47–72 ms when aged-out detections forced a rebuild.
 

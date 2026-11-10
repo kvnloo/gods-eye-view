@@ -136,8 +136,8 @@ export function firmsProxy() {
    * Cache entry → response payload. Fires are RE-filtered to the trailing
    * 24 h at serve time so a stale cache never serves >24h-old detections.
    */
-  function buildPayload(entry, stale) {
-    const fires = filterTrailing24h(entry.fires, Date.now());
+  function buildPayload(entry, stale, windowAt = Date.now()) {
+    const fires = filterTrailing24h(entry.fires, windowAt);
     return {
       fetchedAt: entry.at,
       stale,
@@ -201,12 +201,16 @@ export function firmsProxy() {
       const sendSnapshot = (entry, stale) => {
         if (res.headersSent) return;
         const tag = snapshotTag(entry, stale);
+        // A 304 does not carry the rows to filter. Give the browser the same
+        // reference instant the proxy uses, independent of its device clock.
+        const windowAt = Date.now();
+        const headers = { ETag: tag, 'X-Firms-Window-At': String(windowAt) };
         if (req.headers?.['if-none-match'] === tag) {
-          res.writeHead(304, { ETag: tag, 'Cache-Control': 'no-store' });
+          res.writeHead(304, { ...headers, 'Cache-Control': 'no-store' });
           res.end();
           return;
         }
-        sendJson(200, buildPayload(entry, stale), { ETag: tag });
+        sendJson(200, buildPayload(entry, stale, windowAt), headers);
       };
       try {
         const subPath = String(req.url || '').split('?')[0];

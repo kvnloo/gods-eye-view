@@ -53,7 +53,9 @@ export function createIngestion({
         const expired = expireFirmsRecords(
           layerState._fires,
           layerState._firesByFrp,
-          Date.now(),
+          Number.isFinite(payload.windowAt) && payload.windowAt > 0
+            ? payload.windowAt
+            : Date.now(),
         );
         if (!expired) return;
         ({ fires, firesByFrp } = expired);

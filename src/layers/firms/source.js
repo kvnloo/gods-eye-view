@@ -19,7 +19,11 @@ export function createFirmsSource({
       if (etag && response.status === 304) {
         // Read the empty body: an unread one is listed as net::ERR_ABORTED.
         await response.text?.();
-        return { notModified: true };
+        const serverWindowAt = response.headers?.get('x-firms-window-at');
+        const windowAt = serverWindowAt == null ? NaN : Number(serverWindowAt);
+        return Number.isFinite(windowAt) && windowAt > 0
+          ? { notModified: true, windowAt }
+          : { notModified: true };
       }
       let payload;
       try {

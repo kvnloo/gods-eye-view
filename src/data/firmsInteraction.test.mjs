@@ -474,3 +474,35 @@ test('a validator is only offered for the exact records it describes', async () 
     h.cleanup();
   }
 });
+
+test('unchanged polls expire against proxy time even when the browser clock lags', async () => {
+  const proxyNow = Date.UTC(2026, 8, 11, 12);
+  const feed = scriptedFeed([
+    {
+      fires: [
+        proxyRow(proxyNow - 24 * 3600_000 + 5 * 60_000),
+        proxyRow(proxyNow - 3600_000, { lat: 31 }),
+      ],
+      fetchedAt: proxyNow,
+      stale: false,
+      etag: 'W/"firms-1-f"',
+    },
+    { notModified: true, windowAt: proxyNow + 10 * 60_000 },
+  ]);
+  const priorNow = Date.now;
+  Date.now = () => proxyNow - 20 * 60_000;
+  const h = harness({ withDataSource: true, feed });
+  try {
+    await h.layer.update();
+    assert.equal(h.layer.getStats().count, 2);
+    await h.layer.update();
+    assert.equal(feed.calls[1].etag, 'W/"firms-1-f"');
+    assert.equal(h.layer.getStats().count, 1,
+      'server has expired the old detection despite the slow device clock');
+    assert.equal(h.layer.getStrongestFire().latitude, 31);
+  } finally {
+    Date.now = priorNow;
+    h.layer.destroy(h.viewer);
+    h.cleanup();
+  }
+});

@@ -1,5 +1,6 @@
 /** Links that open God's Eye View at a view. */
 
+import { createHumanDecisionBrief } from './brief.js';
 import { VIEW_PROPERTIES, createView, viewUrl } from '../../view/index.js';
 import { defineTool, ToolError } from '../catalog.js';
 import { GLOBE_PANEL_URI } from '../globePanel.js';
@@ -135,3 +136,123 @@ export const showInGodsEyeView = defineTool({
     };
   },
 });
+
+/** Reference-only export: never invoke an app action or external workflow. */
+function briefMarkdownText(value) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/([\\\x60*_{}\[\]()#+.!|])/g, '\\$1');
+}
+
+function briefMarkdownLink(label, url) {
+  return (
+    '[' +
+    briefMarkdownText(label) +
+    '](' +
+    url.replace(/\(/g, '%28').replace(/\)/g, '%29') +
+    ')'
+  );
+}
+
+/**
+ * Render a validated historical evidence packet as plain Markdown and JSON.
+ * Inputs cannot carry arbitrary HTML, media, action endpoints or decisions;
+ * links point only to the source owner and an external human review workflow.
+ * @param {object} packet The frozen-input logical packet (no live tool calls).
+ * @returns {{ receipt: object, json: string, markdown: string }}
+ */
+export function exportHumanDecisionBrief(packet) {
+  const receipt = createHumanDecisionBrief(packet);
+  const sources = new Map(receipt.sources.map((source) => [source.id, source]));
+  const showTime = (value) => value ?? 'unknown';
+  const showClaim = (claim) => {
+    const refs = claim.sourceIds.length
+      ? claim.sourceIds
+          .map((id) => briefMarkdownLink(id, sources.get(id).url))
+          .join(', ')
+      : 'none (explicit evidence gap)';
+    return (
+      '- [' +
+      briefMarkdownText(claim.status) +
+      '] ' +
+      briefMarkdownText(claim.statement) +
+      ' — observation time: ' +
+      showTime(claim.observedAt) +
+      '; uncertainty: ' +
+      briefMarkdownText(claim.uncertainty) +
+      '; sources: ' +
+      refs
+    );
+  };
+  const section = (title, findings) => [
+    '## ' + title,
+    '',
+    ...(findings.length ? findings.map(showClaim) : ['None recorded.']),
+    '',
+  ];
+  const lines = [
+    '# Read-only evidence handoff',
+    '',
+    'Draft reference for human review; not an official report or authorization.',
+    '',
+    'Question: ' + briefMarkdownText(receipt.question),
+    'Packet: ' +
+      briefMarkdownText(receipt.packet.id) +
+      ' (revision ' +
+      briefMarkdownText(receipt.packet.revision) +
+      ')',
+    'Packet captured: ' + receipt.packet.capturedAt,
+    'Local author reference: ' + (receipt.packet.authorRef ?? 'not provided'),
+    '',
+    '## Sources, timestamps and rights',
+    '',
+    ...receipt.sources.map(
+      (source) =>
+        '- ' +
+        briefMarkdownLink(source.id, source.url) +
+        ' — revision ' +
+        briefMarkdownText(source.revision) +
+        '; observed ' +
+        showTime(source.observedAt) +
+        '; recorded ' +
+        source.recordedAt +
+        '; rights ' +
+        briefMarkdownText(source.rights) +
+        '; license ' +
+        briefMarkdownText(source.license) +
+        '; attribution ' +
+        briefMarkdownText(source.attribution),
+    ),
+    '',
+    ...section(
+      'Observed — source-reported, not verified',
+      receipt.findings.observed,
+    ),
+    ...section(
+      'Modeled / hypothetical — not observations',
+      receipt.findings.modeled,
+    ),
+    ...section('Unknowns / absences', receipt.findings.unknowns),
+    ...section('Stale evidence', receipt.findings.stale),
+    ...section('Conflicts', receipt.findings.conflicts),
+    '## External decision / commitment',
+    '',
+    'Not recorded by GEV. Refer to ' +
+      briefMarkdownLink(
+        receipt.externalDecision.workflow.label,
+        receipt.externalDecision.workflow.url,
+      ) +
+      ' for an authorized human decision.',
+    '',
+    '## Limits',
+    '',
+    ...receipt.limitations.map((limit) => '- ' + limit),
+  ];
+  return {
+    receipt,
+    json: JSON.stringify(receipt, null, 2) + '\n',
+    markdown: lines.join('\n') + '\n',
+  };
+}

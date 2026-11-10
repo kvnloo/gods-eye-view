@@ -1,3 +1,10 @@
+import '../testSupport/registerDom.mjs';
+import { createPinia } from 'pinia';
+import { DisplayBindings } from './displayBindings.js';
+import { PanelChrome } from './panelChrome.js';
+import { followPanelState } from './rail/panelState.js';
+import { useDisplayStore } from './stores/display.js';
+import { usePanelChromeStore } from './stores/panelChrome.js';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 // Generated parameter rows render through Vue: styleParameters.test.mjs.
@@ -131,6 +138,79 @@ test('a held key still repeats its shortcut', () => {
   const f = shortcuts();
   f.press('h', new Element(), { repeat: true });
   assert.deepEqual(f.calls, [['toggleHud']]);
+});
+
+test('F collapses Data Layers without hiding its rail entry', (t) => {
+  document.body.innerHTML = [
+    '<section id="data-panel" class="active panel-collapsible">',
+    '<button class="panel-collapse-btn" data-collapse-target="data-panel"></button>',
+    '</section>',
+  ].join('');
+  const panel = document.getElementById('data-panel');
+  const chromeStore = usePanelChromeStore(createPinia());
+  const chrome = new PanelChrome({
+    elements: {},
+    operations: {},
+    readHud: () => ({ visible: false, getVariant: () => null }),
+    readCockpit: () => null,
+    readShareLinks: () => null,
+    readInitialShare: () => null,
+    readScrollRestoreOwner: () => null,
+    readDisplayScrollTop: () => 0,
+    store: chromeStore,
+  });
+  const stopFollowing = followPanelState(chromeStore, 'data-panel', panel);
+  chrome._disclosurePanelIds = new Set(['data-panel']);
+
+  const bindings = new DisplayBindings({
+    viewer: null,
+    services: {
+      cycleDetectionMode() {},
+      isScopeMaskEnabled: () => false,
+    },
+    elements: { _locationSearch: document.createElement('input') },
+    operations: {
+      _setScope() {},
+      _togglePanel: (id) => chrome._togglePanel(id),
+    },
+    readState: () => ({}),
+    claimDetection() {},
+    displayStore: useDisplayStore(createPinia()),
+  });
+  bindings._initUI();
+  t.after(() => {
+    bindings.destroy();
+    stopFollowing();
+    chrome.destroy();
+    document.body.replaceChildren();
+  });
+
+  const pressF = (modifiers = {}) =>
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'f', bubbles: true, ...modifiers }),
+    );
+  pressF();
+  assert.equal(chromeStore.panels['data-panel'].collapsed, true);
+  assert.equal(panel.classList.contains('collapsed'), true);
+  assert.equal(
+    panel.classList.contains('active'),
+    true,
+    'F must leave the Layers rail entry available',
+  );
+
+  // The existing panel button and F use the same disclosure owner.
+  chromeStore.act('toggle', 'data-panel');
+  assert.equal(chromeStore.panels['data-panel'].collapsed, false);
+  assert.equal(panel.classList.contains('active'), true);
+
+  for (const modifier of ['metaKey', 'ctrlKey', 'altKey']) {
+    pressF({ [modifier]: true });
+    assert.equal(chromeStore.panels['data-panel'].collapsed, false);
+  }
+
+  pressF();
+  assert.equal(chromeStore.panels['data-panel'].collapsed, true);
+  assert.equal(panel.classList.contains('active'), true);
 });
 
 test('destroy synchronously removes shortcuts and a replacement binds once', () => {

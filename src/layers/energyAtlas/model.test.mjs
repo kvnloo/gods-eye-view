@@ -93,7 +93,17 @@ test('annual TWh maps to a derived average, never a live rate', () => {
 });
 
 test('invalid energy amounts never silently become zero', () => {
-  for (const amount of [null, undefined, '', '0', '1', false, -1, NaN, Infinity]) {
+  for (const amount of [
+    null,
+    undefined,
+    '',
+    '0',
+    '1',
+    false,
+    -1,
+    NaN,
+    Infinity,
+  ]) {
     assert.equal(annualAveragePowerW(amount, 2024), null);
   }
 });
@@ -123,7 +133,9 @@ test('one observed zero is retained, not conflated with missing', () => {
 
 test('missing/suppressed observation keeps null with an explicit state', () => {
   const missing = normalizeEnergyObservation({
-    ...BASE, status: 'missing', annualTWh: null,
+    ...BASE,
+    status: 'missing',
+    annualTWh: null,
   });
   assert.equal(missing.annualTWh, null);
   assert.equal(missing.status, 'missing');
@@ -132,22 +144,34 @@ test('missing/suppressed observation keeps null with an explicit state', () => {
 
 test('missing cannot masquerade as recorded zero or nonzero amount', () => {
   for (const annualTWh of [0, 1, '', NaN]) {
-    assert.equal(normalizeEnergyObservation({
-      ...BASE, status: 'missing', annualTWh,
-    }), null);
+    assert.equal(
+      normalizeEnergyObservation({
+        ...BASE,
+        status: 'missing',
+        annualTWh,
+      }),
+      null,
+    );
   }
 });
 
 test('all non-missing states require explicit valid numerical amounts', () => {
   for (const annualTWh of [null, undefined, '', '1', -1, NaN, Infinity]) {
     for (const status of ['official_estimate', 'measured', 'modeled']) {
-      assert.equal(normalizeEnergyObservation({ ...BASE, annualTWh, status }), null);
+      assert.equal(
+        normalizeEnergyObservation({ ...BASE, annualTWh, status }),
+        null,
+      );
     }
   }
 });
 
 test('normalization copies immutable typed source and geography metadata', () => {
-  const original = { ...BASE, area: { ...BASE.area }, source: { ...BASE.source } };
+  const original = {
+    ...BASE,
+    area: { ...BASE.area },
+    source: { ...BASE.source },
+  };
   const row = normalizeEnergyObservation(original);
   original.area.id = 'GSS:E09000002';
   original.source.datasetVersion = 'different';
@@ -160,38 +184,62 @@ test('normalization copies immutable typed source and geography metadata', () =>
 
 test('missing source or unattributed dataset is never accepted', () => {
   assert.equal(normalizeEnergyObservation({ ...BASE, source: null }), null);
-  for (const key of ['publisher', 'datasetVersion', 'licence', 'attribution', 'url']) {
-    assert.equal(normalizeEnergyObservation({
-      ...BASE, source: { ...BASE.source, [key]: '' },
-    }), null);
+  for (const key of [
+    'publisher',
+    'datasetVersion',
+    'licence',
+    'attribution',
+    'url',
+  ]) {
+    assert.equal(
+      normalizeEnergyObservation({
+        ...BASE,
+        source: { ...BASE.source, [key]: '' },
+      }),
+      null,
+    );
   }
 });
 
 test('unsafe or invalid source URLs are refused', () => {
   for (const url of [
-    'javascript:alert(1)', 'http://example.com',
-    'https://u:p@example.com/a', 'not-a-url',
+    'javascript:alert(1)',
+    'http://example.com',
+    'https://u:p@example.com/a',
+    'not-a-url',
   ]) {
-    assert.equal(normalizeEnergyObservation({
-      ...BASE, source: { ...BASE.source, url },
-    }), null);
+    assert.equal(
+      normalizeEnergyObservation({
+        ...BASE,
+        source: { ...BASE.source, url },
+      }),
+      null,
+    );
   }
 });
 
 test('source URL must be a string, not a coercible object', () => {
-  assert.equal(normalizeEnergyObservation({
-    ...BASE, source: {
-      ...BASE.source,
-      url: { toString: () => BASE.source.url },
-    },
-  }), null);
+  assert.equal(
+    normalizeEnergyObservation({
+      ...BASE,
+      source: {
+        ...BASE.source,
+        url: { toString: () => BASE.source.url },
+      },
+    }),
+    null,
+  );
 });
 
 test('source publication requires real ISO calendar date', () => {
   for (const releasedAt of ['2024-02-30', '2026-2-7', 'garbage', null]) {
-    assert.equal(normalizeEnergyObservation({
-      ...BASE, source: { ...BASE.source, releasedAt },
-    }), null);
+    assert.equal(
+      normalizeEnergyObservation({
+        ...BASE,
+        source: { ...BASE.source, releasedAt },
+      }),
+      null,
+    );
   }
 });
 
@@ -209,17 +257,31 @@ test('area key must match declared supported administrative scope', () => {
   }
   assert.ok(normalizeEnergyObservation({ ...BASE }));
   assert.ok(normalizeEnergyObservation(world()));
-  assert.ok(normalizeEnergyObservation({ ...BASE, area: {
-    ...BASE.area, id: 'ISO3:GBR', type: 'country',
-  } }));
+  assert.ok(
+    normalizeEnergyObservation({
+      ...BASE,
+      area: {
+        ...BASE.area,
+        id: 'ISO3:GBR',
+        type: 'country',
+      },
+    }),
+  );
 });
 
 test('metric and epistemic status vocabulary is closed', () => {
-  assert.equal(normalizeEnergyObservation({ ...BASE, metric: 'emissions' }), null);
+  assert.equal(
+    normalizeEnergyObservation({ ...BASE, metric: 'emissions' }),
+    null,
+  );
   assert.equal(normalizeEnergyObservation({ ...BASE, status: 'live' }), null);
-  assert.equal(normalizeEnergyObservation({
-    ...BASE, geographyCoverage: 'inferred',
-  }), null);
+  assert.equal(
+    normalizeEnergyObservation({
+      ...BASE,
+      geographyCoverage: 'inferred',
+    }),
+    null,
+  );
 });
 
 test('pure batch validation rejects duplicate area/metric/year, even across revisions', () => {
@@ -233,7 +295,10 @@ test('pure batch validation rejects duplicate area/metric/year, even across revi
 
 test('pure batch validation fails atomically on malformed records', () => {
   assert.equal(normalizeEnergySnapshot(null), null);
-  assert.equal(normalizeEnergySnapshot([BASE, { ...BASE, annualTWh: '' }]), null);
+  assert.equal(
+    normalizeEnergySnapshot([BASE, { ...BASE, annualTWh: '' }]),
+    null,
+  );
   const rows = normalizeEnergySnapshot([BASE, another()]);
   assert.equal(rows.length, 2);
   assert.ok(Object.isFrozen(rows));
@@ -241,32 +306,78 @@ test('pure batch validation fails atomically on malformed records', () => {
 
 test('only same-year, same-source, same-level, complete coverage compares', () => {
   assert.equal(sameComparableMetric(BASE, another()), true);
-  assert.equal(sameComparableMetric(BASE, another({ calendarYear: 2023 })), false);
-  assert.equal(sameComparableMetric(BASE, another({ metric: 'electricity_consumption' })), false);
-  assert.equal(sameComparableMetric(BASE, another({
-    source: { ...BASE.source, datasetVersion: '2027-01-01' },
-  })), false);
-  assert.equal(sameComparableMetric(BASE, another({ geographyCoverage: 'partial' })), false);
-  assert.equal(sameComparableMetric(BASE, another({
-    source: { ...BASE.source, url: 'https://example.com/another-dataset' },
-  })), false);
+  assert.equal(
+    sameComparableMetric(BASE, another({ calendarYear: 2023 })),
+    false,
+  );
+  assert.equal(
+    sameComparableMetric(BASE, another({ metric: 'electricity_consumption' })),
+    false,
+  );
+  assert.equal(
+    sameComparableMetric(
+      BASE,
+      another({
+        source: { ...BASE.source, datasetVersion: '2027-01-01' },
+      }),
+    ),
+    false,
+  );
+  assert.equal(
+    sameComparableMetric(BASE, another({ geographyCoverage: 'partial' })),
+    false,
+  );
+  assert.equal(
+    sameComparableMetric(
+      BASE,
+      another({
+        source: { ...BASE.source, url: 'https://example.com/another-dataset' },
+      }),
+    ),
+    false,
+  );
 });
 
 test('different administrative levels or geography vintages do not compare', () => {
-  assert.equal(sameComparableMetric(BASE, another({
-    area: { ...BASE.area, id: 'GSS:E12000001', type: 'region' },
-  })), false);
-  assert.equal(sameComparableMetric(BASE, another({
-    area: { ...BASE.area, boundaryRevision: '2023-12' },
-  })), false);
+  assert.equal(
+    sameComparableMetric(
+      BASE,
+      another({
+        area: { ...BASE.area, id: 'GSS:E12000001', type: 'region' },
+      }),
+    ),
+    false,
+  );
+  assert.equal(
+    sameComparableMetric(
+      BASE,
+      another({
+        area: { ...BASE.area, boundaryRevision: '2023-12' },
+      }),
+    ),
+    false,
+  );
 });
 
 test('modeled, missing and differently classified readings do not compare', () => {
-  assert.equal(sameComparableMetric(BASE, another({ status: 'modeled' })), false);
-  assert.equal(sameComparableMetric(BASE, another({
-    status: 'missing', annualTWh: null,
-  })), false);
-  assert.equal(sameComparableMetric(BASE, another({ status: 'measured' })), false);
+  assert.equal(
+    sameComparableMetric(BASE, another({ status: 'modeled' })),
+    false,
+  );
+  assert.equal(
+    sameComparableMetric(
+      BASE,
+      another({
+        status: 'missing',
+        annualTWh: null,
+      }),
+    ),
+    false,
+  );
+  assert.equal(
+    sameComparableMetric(BASE, another({ status: 'measured' })),
+    false,
+  );
 });
 
 test('Kardashev display is restricted to world primary-energy observations', () => {
@@ -278,24 +389,60 @@ test('Kardashev display is restricted to world primary-energy observations', () 
   assert.equal(value.averagePowerW, 1e16);
   assert.ok(Object.isFrozen(value));
   assert.equal(worldKardashevEstimate(BASE), null);
-  assert.equal(worldKardashevEstimate({
-    ...observed, area: { ...BASE.area },
-  }), null);
-  assert.equal(worldKardashevEstimate({
-    ...observed, metric: 'electricity_consumption',
-  }), null);
+  assert.equal(
+    worldKardashevEstimate({
+      ...observed,
+      area: { ...BASE.area },
+    }),
+    null,
+  );
+  assert.equal(
+    worldKardashevEstimate({
+      ...observed,
+      metric: 'electricity_consumption',
+    }),
+    null,
+  );
 });
 
 test('planetary partial coverage is explicit, never silently complete', () => {
   const record = world({
-    annualTWh: 200000, geographyCoverage: 'partial',
+    annualTWh: 200000,
+    geographyCoverage: 'partial',
   });
   const result = worldKardashevEstimate(record);
   assert.equal(result.coverage, 'partial');
   assert.equal(result.source.publisher, 'Synthetic test fixture');
   assert.equal(worldKardashevEstimate(world({ annualTWh: 0 })), null);
-  assert.equal(worldKardashevEstimate(world({
-    annualTWh: null, status: 'missing',
-  })), null);
+  assert.equal(
+    worldKardashevEstimate(
+      world({
+        annualTWh: null,
+        status: 'missing',
+      }),
+    ),
+    null,
+  );
   assert.equal(worldKardashevEstimate(world({ status: 'modeled' })), null);
 });
+
+for (const [type, id] of [
+  ['country', 'ISO3:GBR'],
+  ['local_authority', 'GSS:E09000001'],
+]) {
+  test(`${type} rejects non-string geographic IDs without coercion`, () => {
+    for (const malformed of [
+      [id],
+      { toString: () => id },
+      new String(id),
+      Symbol(id),
+    ]) {
+      const row = another({ area: { ...BASE.area, type, id: malformed } });
+      assert.equal(normalizeEnergyObservation(row), null);
+      assert.equal(normalizeEnergySnapshot([row]), null);
+      assert.equal(sameComparableMetric(row, row), false);
+    }
+    const valid = another({ area: { ...BASE.area, type, id } });
+    assert.equal(normalizeEnergyObservation(valid).area.id, id);
+  });
+}

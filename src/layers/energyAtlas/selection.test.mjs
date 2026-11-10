@@ -63,9 +63,11 @@ test('matching ONS boundary and source produce a nonlive readout', () => {
 });
 
 test('explicit measured zero remains zero, not unavailable', () => {
-  const result = resolveEnergySelection(query({
-    observations: [{ ...ROW, annualTWh: 0 }],
-  }));
+  const result = resolveEnergySelection(
+    query({
+      observations: [{ ...ROW, annualTWh: 0 }],
+    }),
+  );
   assert.equal(result.state, 'ready');
   assert.equal(result.annualTWh, 0);
   assert.equal(result.averagePowerGW, 0);
@@ -119,34 +121,46 @@ test('year change refuses to recycle 2024 as 2025 data', () => {
 
 test('distinct 2023 annual sample uses 8760 hours', () => {
   const row = { ...ROW, calendarYear: 2023 };
-  const result = resolveEnergySelection(query({
-    calendarYear: 2023,
-    observations: [row],
-  }));
+  const result = resolveEnergySelection(
+    query({
+      calendarYear: 2023,
+      observations: [row],
+    }),
+  );
   assert.equal(result.state, 'ready');
   assert.equal(result.averagePowerGW, 1000 / 8760);
 });
 
 test('different metrics never inherit totals', () => {
-  const result = resolveEnergySelection(query({
-    metric: 'electricity_consumption',
-  }));
+  const result = resolveEnergySelection(
+    query({
+      metric: 'electricity_consumption',
+    }),
+  );
   assert.equal(result.reason, 'observation-missing');
   assert.equal(result.averagePowerGW, null);
 });
 
 test('same area code with wrong boundary revision fails', () => {
-  const row = { ...ROW, area: {
-    ...ROW.area, boundaryRevision: '2023-12',
-  } };
+  const row = {
+    ...ROW,
+    area: {
+      ...ROW.area,
+      boundaryRevision: '2023-12',
+    },
+  };
   const result = resolveEnergySelection(query({ observations: [row] }));
   assert.equal(result.reason, 'boundary-revision-mismatch');
 });
 
 test('boundary dataset mismatch cannot join same ID', () => {
-  const row = { ...ROW, area: {
-    ...ROW.area, boundaryDataset: 'unverified dataset',
-  } };
+  const row = {
+    ...ROW,
+    area: {
+      ...ROW.area,
+      boundaryDataset: 'unverified dataset',
+    },
+  };
   const result = resolveEnergySelection(query({ observations: [row] }));
   assert.equal(result.reason, 'boundary-revision-mismatch');
 });
@@ -174,9 +188,11 @@ test('incomplete coverage cannot become a whole-area total', () => {
 });
 
 test('modeled values require a separate simulated experience', () => {
-  const result = resolveEnergySelection(query({
-    observations: [{ ...ROW, status: 'modeled' }],
-  }));
+  const result = resolveEnergySelection(
+    query({
+      observations: [{ ...ROW, status: 'modeled' }],
+    }),
+  );
   assert.equal(result.reason, 'modeled-not-observed');
 });
 
@@ -189,11 +205,31 @@ test('invalid or duplicated snapshots reject atomically', () => {
 });
 
 test('selection carries no geometry or network clients', () => {
-  const result = resolveEnergySelection(query({
-    boundary: { ...BOUNDARY, coordinates: [0, 0], geometry: {} },
-  }));
+  const result = resolveEnergySelection(
+    query({
+      boundary: { ...BOUNDARY, coordinates: [0, 0], geometry: {} },
+    }),
+  );
   assert.equal(result.state, 'ready');
   assert.equal('geometry' in result.area, false);
   assert.equal('coordinates' in result.area, false);
   assert.equal('fetch' in result, false);
 });
+
+for (const [name, value] of [
+  ['null', null],
+  ['array carrying query fields', Object.assign([], query())],
+  ['string', 'invalid'],
+  ['number', 42],
+  ['boolean', false],
+]) {
+  test(`malformed ${name} selector returns unavailable without throwing`, () => {
+    const result = resolveEnergySelection(value);
+    assert.equal(result.state, 'unavailable');
+    assert.equal(result.reason, 'selector-incomplete');
+    assert.equal(result.annualTWh, null);
+    assert.equal(result.averagePowerGW, null);
+    assert.equal(result.live, false);
+    assert.ok(Object.isFrozen(result));
+  });
+}

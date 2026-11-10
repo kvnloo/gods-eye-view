@@ -1,13 +1,9 @@
-import {
-  annualAveragePowerW,
-  normalizeEnergySnapshot,
-} from './model.js';
+import { annualAveragePowerW, normalizeEnergySnapshot } from './model.js';
 
 const YEARLY_AVERAGE = 'annual_average_equivalent_not_live';
 const LAD_CODE = /^[EWSN]\d{8}$/;
 
-const label = (value) =>
-  typeof value === 'string' ? value.trim() : '';
+const label = (value) => (typeof value === 'string' ? value.trim() : '');
 
 /**
  * Validate a versioned ONS local-authority identity without claiming to load
@@ -54,13 +50,11 @@ function unavailable(reason, area = null) {
  * This is a data-to-map boundary, not a polygon renderer or telemetry feed.
  * A changed selection, year or source revision must never reuse the last value.
  */
-export function resolveEnergySelection({
-  boundary,
-  observations,
-  metric,
-  calendarYear,
-  sourceRevision,
-} = {}) {
+export function resolveEnergySelection(selection = {}) {
+  if (!selection || typeof selection !== 'object' || Array.isArray(selection))
+    return unavailable('selector-incomplete');
+  const { boundary, observations, metric, calendarYear, sourceRevision } =
+    selection;
   const area = normalizeEnergyBoundary(boundary);
   if (!area) return unavailable('boundary-unverified');
   if (
@@ -88,19 +82,14 @@ export function resolveEnergySelection({
     return unavailable('boundary-revision-mismatch', area);
   if (row.source.datasetVersion !== sourceRevision)
     return unavailable('source-revision-mismatch', area);
-  if (row.annualTWh === null)
-    return unavailable('value-missing', area);
+  if (row.annualTWh === null) return unavailable('value-missing', area);
   if (row.geographyCoverage !== 'complete')
     return unavailable('coverage-incomplete', area);
   if (row.status === 'modeled')
     return unavailable('modeled-not-observed', area);
 
-  const averagePowerW = annualAveragePowerW(
-    row.annualTWh,
-    row.calendarYear,
-  );
-  if (averagePowerW === null)
-    return unavailable('power-unavailable', area);
+  const averagePowerW = annualAveragePowerW(row.annualTWh, row.calendarYear);
+  if (averagePowerW === null) return unavailable('power-unavailable', area);
 
   return Object.freeze({
     schemaVersion: 1,

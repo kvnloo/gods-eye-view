@@ -570,14 +570,12 @@ export function createRecentImageryLayer({
     const list = stripList();
     if (!list.length) return;
     reconcileFocus();
-    const wanted = new Set(
-      thumbnails.requestOrdered(list, _box, {
-        focusIndex: Math.max(0, focusIndexIn(list)),
-        firstVisible: _visible.first,
-        lastVisible: _visible.last,
-        extra: 2,
-      }) || [],
-    );
+    thumbnails.requestOrdered(list, _box, {
+      focusIndex: Math.max(0, focusIndexIn(list)),
+      firstVisible: _visible.first,
+      lastVisible: _visible.last,
+      extra: 2,
+    });
     for (const key of new Set([
       _assigned.a,
       _assigned.b,
@@ -585,11 +583,8 @@ export function createRecentImageryLayer({
       _followKey,
     ])) {
       const candidate = candidateFor(key);
-      if (!sourceOn(candidate)) continue;
-      thumbnails.request(candidate, _box, 0);
-      wanted.add(candidate.key);
+      if (sourceOn(candidate)) thumbnails.request(candidate, _box, 0);
     }
-    thumbnails.retain?.(wanted);
   }
 
   function resetCatalog() {
@@ -822,17 +817,7 @@ export function createRecentImageryLayer({
         // A probe can take a pinned day off the map or let a followed focus
         // preview; both change more than the cards, so a full notification
         // follows the thumbnail one.
-        const previousFollow = _followKey;
-        const previousPreview = _previewKey;
         const pruned = pruneEmpty();
-        if (
-          pruned &&
-          (_followKey !== previousFollow || _previewKey !== previousPreview)
-        ) {
-          // A new automatic day can have had its probe cancelled while offscreen.
-          // Re-request it even when the visible window has not moved.
-          requestThumbnails();
-        }
         if (pruned) syncRender();
         const followed =
           Boolean(_followKey) &&
@@ -1074,7 +1059,6 @@ export function createRecentImageryLayer({
       if (!drapable(candidate)) {
         clearPending();
         _followKey = availability(candidate) === 'empty' ? null : candidate.key;
-        requestThumbnails();
         notify();
         return false;
       }

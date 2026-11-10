@@ -648,7 +648,7 @@ test('a floor that lands after the render deadline lifts the dots off the ellips
     // for that shared late response to land rather than issuing a duplicate.
     for (
       let attempt = 0;
-      attempt < 200 && cachedGroundFloor(lat, lon) == null;
+      attempt < 50 && cachedGroundFloor(lat, lon) == null;
       attempt += 1
     ) {
       await new Promise((resolve) => setTimeout(resolve, 10));

@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import puppeteer from 'puppeteer';
 import { chromeExecutablePath } from './qa-chrome.mjs';
+import { saveFailureArtifacts, watchPage } from './qa-browserEvidence.mjs';
 
 const args = process.argv.slice(2);
 const at = args.indexOf('--url');
@@ -27,11 +28,13 @@ const check = (name, value) => {
   console.log(`PASS ${name}`);
 };
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const monitors = [];
 try {
   const page = await browser.newPage();
   await page.setViewport({ width: 1440, height: 900 });
   const errors = [];
-  page.on('pageerror', (error) => errors.push(error.message));
+  monitors.push(watchPage(page, { name: 'attention', errors }));
+  page.setDefaultNavigationTimeout(60000);
   const focus = await page.createCDPSession();
   await focus.send('Emulation.setFocusEmulationEnabled', { enabled: true });
   await page.goto(url.href, { waitUntil: 'domcontentloaded' });
@@ -110,6 +113,9 @@ try {
   check('no browser page errors', errors.length === 0);
   await writeFile(`${out}/result.json`, JSON.stringify({ checks, errors }, null, 2) + '\n');
   console.log(`RESULT: ${checks.length} passed`);
+} catch (error) {
+  await saveFailureArtifacts({ dir: out, browser, monitors, error });
+  throw error;
 } finally {
   await browser.close();
 }

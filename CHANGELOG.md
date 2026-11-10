@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- Bound AIS static metadata to 50,000 recently updated MMSIs and expire stale
+  metadata during positionless traffic. Sweep at most once per minute and reject
+  expired metadata on lookup without changing static-message liveness.
+
 ## [0.2.1] — 2026-10-02 — God's Eye View through Your Agent (with security fixes and other features)
 
 - Ship each bundled data pack once. The region, marine, admin-boundary,

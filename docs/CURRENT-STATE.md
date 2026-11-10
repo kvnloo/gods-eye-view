@@ -2239,8 +2239,8 @@ fetching, trailing-24-hour filtering and partial-success caching are unchanged.
 > holds belong to slow live feeds (`AMBIENT_OWNERS` in
 > `src/renderGovernor.js`: flights, military, AIS vessels, satellites,
 > launches, traffic, transit, military awareness, wind) and the camera has
-> been still for 500 ms, the governor sets `viewer.targetFrameRate` to 30;
-> any other hold or any camera motion restores the viewer's own rate, and
+> been still for 500 ms, the governor caps `viewer.targetFrameRate` at 30,
+> preserving a viewer limit below 30. Any other hold or camera motion restores the viewer's own rate, and
 > uninstall gives it back. Camera motion is read from the pose after each
 > rendered frame, since a camera nudged a few millimetres a frame never
 > raises `moveEnd`. Wind's GPU flow now holds `'wind'` while it actually

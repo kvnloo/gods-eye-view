@@ -188,6 +188,23 @@ test('a millimetre of camera drift is not motion', () => {
   assert.equal(m.viewer.targetFrameRate, 30);
 });
 
+test('ambient feeds never raise the viewer frame-rate limit', () => {
+  const m = makeMovingViewer({ targetFrameRate: 20 });
+  installRenderGovernor(m.viewer);
+  m.frame(0);
+  m.frame(1000);
+  holdContinuousRender('flights');
+  assert.equal(m.viewer.targetFrameRate, 20);
+  holdContinuousRender('cockpit');
+  assert.equal(m.viewer.targetFrameRate, 20);
+  releaseContinuousRender('cockpit');
+  assert.equal(m.viewer.targetFrameRate, 20);
+  releaseContinuousRender('flights');
+  assert.equal(m.viewer.targetFrameRate, 20);
+  uninstallRenderGovernor(m.viewer);
+  assert.equal(m.viewer.targetFrameRate, 20);
+});
+
 test('the viewer’s own frame rate is the full rate, and uninstall gives it back', () => {
   const m = makeMovingViewer({ targetFrameRate: 45 });
   installRenderGovernor(m.viewer);

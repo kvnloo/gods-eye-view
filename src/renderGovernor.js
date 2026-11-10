@@ -72,7 +72,9 @@ function applyFrameRate() {
       }
     }
   }
-  const target = ambientOnly ? AMBIENT_FRAME_RATE : _fullFrameRate;
+  const target = ambientOnly
+    ? Math.min(AMBIENT_FRAME_RATE, _fullFrameRate)
+    : _fullFrameRate;
   if (_viewer.targetFrameRate !== target) _viewer.targetFrameRate = target;
 }
 

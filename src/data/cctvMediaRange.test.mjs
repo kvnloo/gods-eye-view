@@ -212,9 +212,9 @@ function mount(t, respond) {
   assert.ok(handler, 'the CCTV provider must mount a middleware');
 
   /** Drive one request through the mounted handler. */
-  const call = async (path, headers = {}) => {
+  const call = async (path, headers = {}, method = 'GET') => {
     const { res, done } = recordingResponse();
-    await handler({ url: path, headers, method: 'GET', on() {} }, res);
+    await handler({ url: path, headers, method, on() {} }, res);
     await done;
     return res;
   };
@@ -225,6 +225,23 @@ function mount(t, respond) {
   };
   return { call, health, requests, handler: (req, res) => handler(req, res) };
 }
+
+test('CCTV media 405 advertises GET and DELETE without fetching upstream', async (t) => {
+  const app = mount(t, () => {
+    throw new Error('rejected methods must not fetch camera media');
+  });
+
+  for (const method of ['POST', 'PUT', 'PATCH', 'HEAD']) {
+    const refused = await app.call(`/media/${CAMERA.id}`, {}, method);
+    assert.equal(refused.statusCode, 405, method);
+    assert.equal(refused.headers.Allow, 'GET, DELETE', method);
+    assert.equal(refused.body, '', method);
+  }
+
+  const release = await app.call(`/media/${CAMERA.id}`, {}, 'DELETE');
+  assert.equal(release.statusCode, 204);
+  assert.equal(app.requests.length, 0, 'rejected and lease-release methods do not fetch');
+});
 
 test('a canonical range reaches the upstream and its 206 is passed through', async (t) => {
   const app = mount(t, () =>

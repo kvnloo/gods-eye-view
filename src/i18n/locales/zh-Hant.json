@@ -2087,6 +2087,7 @@
   "subject": "目標",
   "LOADING LIVE DATA": "正在加載實時數據",
   "LOAD COMPLETE": "加載完成",
+  "REFRESH RECOVERED": "更新已恢復",
   "LOAD CANCELLED": "加載已取消",
   "LOAD FAILED": "加載失敗",
   "LIVE DATA OFF": "實時數據已關閉",

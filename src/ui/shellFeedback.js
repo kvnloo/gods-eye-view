@@ -1,6 +1,8 @@
 /** Own loading notices, traffic status, toast timing and visibility cleanup. */
 import {
   aggregateLayerLoading,
+  GUIDANCE_STATUSES,
+  LOADING_FAILURE_DWELL_MS,
   createGlobalStatusNotice,
   createLoadingFeedbackState,
   createTrafficSyncFeedbackState,
@@ -14,6 +16,24 @@ import { translateFeedError } from './statusText.js';
 import { useStatusStore } from './stores/status.js';
 import { createToast } from './toast.js';
 import { applicationPinia } from './vueRuntime.js';
+import { layerFeedState } from './layers.js';
+import { resolveAttentionDisposition } from './attentionPolicy.js';
+
+// Ignore transient work for retention; admission separately requires settlement.
+function hasHealthyRefreshData(layer) {
+  const stats = layer?.stats || {};
+  return (
+    layer?.enabled === true &&
+    layer.lifecycleState === 'enabled' &&
+    !layer.lifecycleUncertain &&
+    Number.isFinite(stats.lastUpdate) &&
+    stats.lastUpdate > 0 &&
+    !stats.keyRequired &&
+    !stats.missingKey &&
+    !GUIDANCE_STATUSES.includes(String(stats.status || '').toLowerCase()) &&
+    layerFeedState({ ...stats, loading: false }) === 'nominal'
+  );
+}
 
 // The server also loads loadingFeedback.js (through the HUD summary), so its
 // labels stay English. Translate the known ones; pass anything else (a live
@@ -21,6 +41,7 @@ import { applicationPinia } from './vueRuntime.js';
 const STATUS_LABEL_KEYS = Object.freeze({
   'LOADING LIVE DATA': msg('LOADING LIVE DATA'),
   'LOAD COMPLETE': msg('LOAD COMPLETE'),
+  'REFRESH RECOVERED': msg('REFRESH RECOVERED'),
   'LOAD CANCELLED': msg('LOAD CANCELLED'),
   'LOAD FAILED': msg('LOAD FAILED'),
   'LIVE DATA OFF': msg('LIVE DATA OFF'),
@@ -135,6 +156,8 @@ export class ShellFeedback {
     this._loadingFeedbackState = createLoadingFeedbackState();
     this._trafficSyncFeedbackState = createTrafficSyncFeedbackState();
     this._loadingFeedbackEvent = null;
+    // Only manager settlements establish failure/recovery episodes.
+    this._refreshEpisodes = new Map();
     this._globalStatusNotice = null;
     this._loadingFeedbackTicker = this._trafficChipTicker = null;
     this._loadingVisibilityHandler = null;
@@ -202,7 +225,96 @@ export class ShellFeedback {
 
   _updateGlobalLoadingFeedback(now = performance.now()) {
     if (this.destroyed) return;
-    const summary = aggregateLayerLoading(this.readLayers() || []);
+    const layers = this.readLayers() || [];
+    const summary = aggregateLayerLoading(layers);
+    const event = this._loadingFeedbackEvent;
+    const enabled = new Map(
+      layers.filter((layer) => layer.enabled).map((layer) => [layer.id, layer]),
+    );
+    for (const id of this._refreshEpisodes.keys()) {
+      if (!enabled.has(id)) this._refreshEpisodes.delete(id);
+    }
+    const notice = this._globalStatusNotice;
+    if (notice?.recovery) {
+      const { layerId, expiresAt } = notice.recovery;
+      if (
+        document.hidden ||
+        !hasHealthyRefreshData(enabled.get(layerId)) ||
+        (!Number.isFinite(notice.hideAt) && now >= expiresAt)
+      )
+        this._globalStatusNotice = null;
+    }
+    const layer = enabled.get(event?.layerId);
+    const previous = this._refreshEpisodes.get(event?.layerId);
+    if (
+      layer &&
+      Number.isSafeInteger(event.refreshEpoch) &&
+      event.refreshEpoch > 0 &&
+      event.refreshEpoch > (previous?.epoch || 0) &&
+      ['refresh-failed', 'refresh'].includes(event.type)
+    ) {
+      const failed = event.type === 'refresh-failed';
+      const healthy =
+        hasHealthyRefreshData(layer) &&
+        !layer.stats.loading &&
+        !layer.stats.refreshing;
+      const recovered =
+        !failed &&
+        healthy &&
+        ['failed', 'recovered'].includes(previous?.health) &&
+        previous.acceptedAt !== null &&
+        layer.stats.lastUpdate > previous.acceptedAt;
+      const acceptedAt = Number.isFinite(layer.stats?.lastUpdate)
+        ? Math.max(0, layer.stats.lastUpdate)
+        : 0;
+      this._refreshEpisodes.set(layer.id, {
+        epoch: event.refreshEpoch,
+        health: failed ? 'failed' : recovered ? 'recovered'
+          : healthy && previous?.acceptedAt == null ? 'healthy'
+          : previous?.health || 'healthy',
+        // A throwing getStats() must not erase evidence already observed.
+        acceptedAt: Math.max(previous?.acceptedAt || 0, acceptedAt) || null,
+      });
+      if (failed && this._globalStatusNotice?.recovery?.layerId === layer.id)
+        this._globalStatusNotice = null;
+      if (recovered) {
+        const decision = resolveAttentionDisposition({
+          freshnessTransition: 'recovered',
+          repeated: previous.health === 'recovered',
+        });
+        const current = this._globalStatusNotice;
+        const occupied =
+          current && (!Number.isFinite(current.hideAt) || now < current.hideAt);
+        if (
+          decision.disposition === 'activity' &&
+          !document.hidden &&
+          !occupied
+        ) {
+          this._globalStatusNotice = {
+            ...createGlobalStatusNotice('REFRESH RECOVERED', now, {
+              state: 'recovered',
+              detail: layer.name || layer.id,
+            }),
+            // A retry can retain a new failure dwell after its success. Bound
+            // waiting separately from the notice's dwell once it is visible.
+            recovery: {
+              layerId: layer.id,
+              expiresAt: now + 2 * LOADING_FAILURE_DWELL_MS,
+            },
+          };
+        }
+      }
+    }
+    // Capture a baseline before the first failure, including enable-time data.
+    for (const layer of enabled.values()) {
+      if (!this._refreshEpisodes.has(layer.id)) {
+        this._refreshEpisodes.set(layer.id, {
+          epoch: 0, health: 'healthy',
+          acceptedAt: Number.isFinite(layer.stats?.lastUpdate) && layer.stats.lastUpdate > 0
+            ? layer.stats.lastUpdate : null,
+        });
+      }
+    }
     this._loadingFeedbackState = reduceLoadingFeedback(
       this._loadingFeedbackState,
       summary,
@@ -337,6 +449,8 @@ export class ShellFeedback {
   }
 
   _stopLoadingFeedbackTicker() {
+    if (document.hidden && this._globalStatusNotice?.recovery)
+      this._globalStatusNotice = null;
     if (!this._loadingFeedbackTicker) return;
     clearInterval(this._loadingFeedbackTicker);
     this._loadingFeedbackTicker = null;
@@ -349,6 +463,8 @@ export class ShellFeedback {
   destroy() {
     if (this.destroyed) return;
     this.destroyed = true;
+    this._refreshEpisodes.clear();
+    this._globalStatusNotice = null;
     this._offLocale();
     this._stopLoadingFeedbackTicker();
     clearInterval(this._trafficChipTicker);

@@ -161,3 +161,21 @@ test('weather shell supplies live imagery hosts to wind and observations and rel
   owner.disconnect();
   for (const id of ids) assert.equal(attached.get(id), null);
 });
+
+test('manager replacement clears recovery evidence without clearing ordinary notices', (t) => {
+  const { owner, manager } = bindings(t);
+  const first = manager('first');
+  owner.attachDataManager(first);
+  owner._feedback._refreshEpisodes.set('flights', { epoch: 7, health: 'failed', acceptedAt: 1000 });
+  owner._feedback._globalStatusNotice = { recovery: { layerId: 'flights' } };
+  owner.attachDataManager(first);
+  assert.equal(owner._feedback._refreshEpisodes.size, 1, 'same manager keeps its evidence');
+  owner.attachDataManager(manager('second'));
+  assert.equal(owner._feedback._refreshEpisodes.size, 0);
+  assert.equal(owner._feedback._globalStatusNotice, null);
+  const notice = { label: 'ACQUIRING', persistent: true };
+  owner._feedback._globalStatusNotice = notice;
+  owner.attachDataManager(manager('third'));
+  assert.equal(owner._feedback._globalStatusNotice, notice);
+  owner.stop(); owner.disconnect();
+});

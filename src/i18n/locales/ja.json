@@ -2131,6 +2131,7 @@
   "subject": "対象",
   "LOADING LIVE DATA": "ライブデータ読込中",
   "LOAD COMPLETE": "読込完了",
+  "REFRESH RECOVERED": "更新が復旧しました",
   "LOAD CANCELLED": "読込中止",
   "LOAD FAILED": "読込失敗",
   "LIVE DATA OFF": "ライブデータ オフ",

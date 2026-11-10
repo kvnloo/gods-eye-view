@@ -3665,6 +3665,21 @@ down | auth-failed` (plus the unchanged `missing-key`/`unsupported`) with
 >   key-required state also outranks generic completion without requiring a
 >   separate manager failure event; AIS first-connect expiry therefore ends as
 >   `LOAD FAILED`, not `LOAD COMPLETE`.
+>   After an observed manager refresh failure, a newer successful refresh with
+>   an advanced accepted timestamp and healthy layer stats can show one
+>   `REFRESH RECOVERED` notice naming that layer. `ShellFeedback` uses the
+>   attention disposition policy to admit the cue once per failure episode.
+>   Existing errors and retries keep priority and their full dwell. The cue
+>   does not replace another live notice, including shared-target acquisition.
+>   It expires after five seconds of visibility; waiting behind failures is
+>   bounded to ten seconds from recovery. Hidden-tab recovery is consumed,
+>   not replayed on return. Disable, removal, manager replacement, or unhealthy
+>   evidence withdraws it. Ordinary later refreshes do not extend its dwell.
+>   Guidance, stale/fallback/partial data, missing keys, and unchanged acceptance
+>   timestamps cannot establish recovery. This confirms a recovered refresh,
+>   not network freshness, all-source health, or completion of a tracking task.
+>   `node scripts/qa-attention-recovery.mjs --url http://localhost:4173` drives
+>   the real manager, shell and rendered banner through the dev-only QA seam.
 >   Slow disable work is labeled as turning live data off rather than
 >   as a completed load. Street Traffic's dedicated sync chip shows genuine
 >   work and one bounded completion; steady TomTom coverage, including 0%, does

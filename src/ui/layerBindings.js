@@ -226,6 +226,12 @@ export class LayerBindings {
 
   attachDataManager(dataManager) {
     if (this._disposed) return;
+    if (this._dataManager !== (dataManager || null)) {
+      this._feedback._refreshEpisodes = new Map();
+      this._feedback._loadingFeedbackEvent = null;
+      if (this._feedback._globalStatusNotice?.recovery)
+        this._feedback._globalStatusNotice = null;
+    }
     this._dataManager = dataManager || null;
     this.hud.attachDataManager(this._dataManager);
     this._updateTrafficSyncChip();

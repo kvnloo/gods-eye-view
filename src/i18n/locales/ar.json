@@ -7,6 +7,7 @@
   "Restoring shared view...": "جارٍ استعادة العرض المشترك…",
   "LOADING LIVE DATA": "جارٍ تحميل البيانات المباشرة",
   "LOAD COMPLETE": "اكتمل التحميل",
+  "REFRESH RECOVERED": "استئناف التحديث",
   "LOAD FAILED": "فشل التحميل",
   "LOAD CANCELLED": "أُلغي التحميل",
   "syncing road network": "جارٍ مزامنة شبكة الطرق",

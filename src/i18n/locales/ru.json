@@ -653,6 +653,7 @@
   "Shared {subject} is unavailable": "{subject} по ссылке недоступен",
   "LOADING LIVE DATA": "ЗАГРУЗКА ОНЛАЙН-ДАННЫХ",
   "LOAD COMPLETE": "ЗАГРУЗКА ЗАВЕРШЕНА",
+  "REFRESH RECOVERED": "ОБНОВЛЕНИЕ ВОССТАНОВЛЕНО",
   "LOAD CANCELLED": "ЗАГРУЗКА ОТМЕНЕНА",
   "LOAD FAILED": "ОШИБКА ЗАГРУЗКИ",
   "LIVE DATA OFF": "ОНЛАЙН-ДАННЫЕ ВЫКЛ.",

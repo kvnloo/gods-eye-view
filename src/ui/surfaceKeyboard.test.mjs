@@ -219,3 +219,53 @@ test('destroy is permanent, releases its listener and never restores focus', () 
   handler(e);
   assert.equal(e.defaultPrevented, false);
 });
+
+test('a modal can capture on window while retaining document focus ownership', () => {
+  const eventTarget = new EventTarget();
+  const opener = {
+    isConnected: true,
+    focus: () => {
+      restored = true;
+    },
+  };
+  let restored = false;
+  let escaped = false;
+  const documentRef = {
+    activeElement: opener,
+    addEventListener() {
+      assert.fail('modal must capture before document shortcuts');
+    },
+  };
+  const controller = createSurfaceKeyboard({
+    root: { ownerDocument: documentRef },
+    eventTarget,
+    isActive: () => true,
+    onEscape: () => {
+      escaped = true;
+    },
+  });
+  controller.activate();
+  const event = Object.assign(new Event('keydown', { cancelable: true }), {
+    key: 'Escape',
+  });
+  eventTarget.dispatchEvent(event);
+  assert.equal(escaped, true);
+  assert.equal(event.defaultPrevented, true);
+  controller.deactivate({ restoreFocus: true });
+  assert.equal(restored, true);
+  escaped = false;
+  eventTarget.dispatchEvent(
+    Object.assign(new Event('keydown'), { key: 'Escape' }),
+  );
+  assert.equal(escaped, false);
+  controller.destroy();
+});
+
+test('composing Escape belongs to the IME rather than the surface', () => {
+  const f = fixture();
+  f.controller.activate();
+  const event = f.send('Escape', { isComposing: true });
+  assert.equal(event.defaultPrevented, false);
+  assert.equal(f.escapes(), 0);
+  f.controller.destroy();
+});

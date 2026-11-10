@@ -1,5 +1,30 @@
 # God's Eye View Current State
 
+The command dock's **Commands** button opens a command palette. Press plain `P`
+when focus is outside an editor to open it from the keyboard. Cmd, Ctrl and Alt
+combinations remain browser or OS shortcuts; Cmd/Ctrl+K is not claimed. Type a
+command, translated layer name, layer id, source or alias. Arrow keys select a
+result, Enter runs it, and Escape closes the palette and returns focus. The native
+modal keeps background controls inert and traps Tab within the search and Close
+controls. It remains usable at phone widths.
+
+The palette restores #888's schema-validated catalog with its reviewer repairs.
+Commands and layer visibility requests run through the existing typed action
+runner without starting a microphone session. Layer results come from the live
+manager and canonical toggle manifest, not a second registry. Each layer result
+advertises an explicit enable or disable target, so an external change cannot
+reverse the requested state. Pending requests cannot execute twice, including
+across dismissal and reopening. Failures remain visible for retry. Search is
+bounded and matches English plus the active translation. The Data Layers finder
+proposed in tamiro44's #696 remains separate; this palette does not claim its
+shortcut or change panel filtering. Modifier handling follows asturksever's #1598.
+
+Run `node scripts/qa-command-palette.mjs --serve` for isolated headless real-app
+checks and desktop, phone, Spanish and Russian screenshots under
+`qa-shots/command-palette`. Catalog/controller and modal keyboard regressions run
+with `npm test`. Thanks to quanticsoul4772 for validating #888 and identifying its
+schema/search gaps, and to samehkhamis for requesting the integrated caller.
+
 Docker Compose mounts the checkout with the shared SELinux `:z` label so
 containers can read it on enforcing SELinux hosts. The separate image-owned
 `node_modules` volume and loopback-only port publishing remain unchanged.

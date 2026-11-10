@@ -8,7 +8,8 @@ import {
 } from '../data/inputOwnership.js';
 import { initGeoFileImport } from '../ui/geoFileImport.js';
 import { useDisplayStore } from '../ui/stores/display.js';
-import { applicationPinia } from '../ui/vueRuntime.js';
+import { applicationPinia, createUiRuntime } from '../ui/vueRuntime.js';
+import CommandPaletteView from '../ui/views/CommandPaletteView.vue';
 import { initImageryBoxTool } from '../ui/imageryBoxTool.js';
 import { createRecentImageryPanel } from '../ui/recentImagery.js';
 import { initGevVoiceCommands } from '../voice/gevRealtime.js';
@@ -241,6 +242,21 @@ export function createApplicationTools({
       delete window.__gevVoiceCommands;
   });
   debug.voiceCommands = voiceCommands;
+  const paletteHost = document.getElementById('command-palette-host');
+  if (paletteHost) {
+    const paletteUi = createUiRuntime({ pinia: applicationPinia() });
+    paletteUi.mount(CommandPaletteView, paletteHost, {
+      getLayers: () => dataManager.getAll(),
+      run: (name, args, options) =>
+        voiceCommands.runner(name, args, {
+          ...options,
+          signal: signal
+            ? AbortSignal.any([signal, options.signal])
+            : options.signal,
+        }),
+    });
+    defer(() => paletteUi.destroy());
+  }
   defer(
     installViews({
       shell: styleManager,

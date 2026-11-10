@@ -5,7 +5,8 @@
  *
  * @param {object} options
  * @param {HTMLElement} options.root Surface containing the keyboard controls.
- * @param {Document} [options.documentRef] Document that dispatches keyboard input.
+ * @param {Document} [options.documentRef] Document owning focus.
+ * @param {EventTarget} [options.eventTarget] Capture target; a native modal can use its window to precede document shortcuts.
  * @param {() => boolean} options.isActive Whether this surface may handle input now.
  * @param {() => void} options.onEscape Caller-owned dismissal action.
  * @param {() => HTMLElement} [options.fallbackFocus] Return target if the opener is gone.
@@ -14,6 +15,7 @@
 export function createSurfaceKeyboard({
   root,
   documentRef = root.ownerDocument,
+  eventTarget = documentRef,
   isActive,
   onEscape,
   fallbackFocus,
@@ -25,7 +27,14 @@ export function createSurfaceKeyboard({
   const onKeyDown = (event) => {
     // Visibility/arbitration belongs to the screen, including overlays that
     // cover a measurable box. Respect another handler's claim on the same key.
-    if (!active || destroyed || !isActive() || event.defaultPrevented) return;
+    if (
+      !active ||
+      destroyed ||
+      !isActive() ||
+      event.defaultPrevented ||
+      event.isComposing
+    )
+      return;
     if (event.key === 'Escape') {
       event.preventDefault();
       event.stopPropagation();
@@ -67,13 +76,13 @@ export function createSurfaceKeyboard({
     if (destroyed || active) return;
     active = true;
     previouslyFocused = documentRef.activeElement;
-    documentRef.addEventListener('keydown', onKeyDown, true);
+    eventTarget.addEventListener('keydown', onKeyDown, true);
   };
 
   const deactivate = ({ restoreFocus = false } = {}) => {
     if (!active) return;
     active = false;
-    documentRef.removeEventListener('keydown', onKeyDown, true);
+    eventTarget.removeEventListener('keydown', onKeyDown, true);
     const target = previouslyFocused;
     previouslyFocused = null;
     if (!restoreFocus) return;

@@ -1,0 +1,373 @@
+import { msg, t } from '../i18n/index.js';
+import { GEV_ACTION_SCHEMAS } from '../voice/actionSchemas.js';
+
+const MAX_COMMAND_QUERY_LENGTH = 256;
+
+const DEFAULT_COMMAND_ENTRIES = [
+  {
+    id: 'open-data-layers',
+    label: msg('Open Data Layers'),
+    group: msg('Panels'),
+    keywords: ['layers', 'data', 'panel'],
+    action: {
+      name: 'set_panel_open',
+      args: { panelId: 'data-panel', open: true },
+    },
+  },
+  {
+    id: 'open-cameras',
+    label: msg('Open Cameras'),
+    group: msg('Panels'),
+    keywords: ['cctv', 'camera', 'panel'],
+    action: {
+      name: 'set_panel_open',
+      args: { panelId: 'cctv-panel', open: true },
+    },
+  },
+  {
+    id: 'open-radio',
+    label: msg('Open Radio'),
+    group: msg('Panels'),
+    keywords: ['radio', 'audio', 'panel'],
+    action: {
+      name: 'set_panel_open',
+      args: { panelId: 'radio-panel', open: true },
+    },
+  },
+  {
+    id: 'open-weather',
+    label: msg('Open Weather'),
+    group: msg('Panels'),
+    keywords: ['weather', 'conditions', 'forecast', 'panel'],
+    action: {
+      name: 'set_panel_open',
+      args: { panelId: 'weather-panel', open: true },
+    },
+  },
+  {
+    id: 'open-context',
+    label: msg('Open Context'),
+    group: msg('Panels'),
+    keywords: ['context', 'contacts', 'missions', 'panel'],
+    action: {
+      name: 'set_panel_open',
+      args: { panelId: 'global-context-panel', open: true },
+    },
+  },
+  {
+    id: 'open-location',
+    label: msg('Open Location'),
+    group: msg('Panels'),
+    keywords: ['location', 'search', 'place', 'panel'],
+    action: {
+      name: 'set_panel_open',
+      args: { panelId: 'location-bar', open: true },
+    },
+  },
+  {
+    id: 'contacts-context',
+    label: msg('Enter Contacts Context'),
+    group: msg('Context'),
+    keywords: ['contacts', 'aircraft', 'vessels', 'nearby'],
+    action: {
+      name: 'set_context_mode',
+      args: { mode: 'contacts' },
+    },
+  },
+  {
+    id: 'space-missions-context',
+    label: msg('Enter Space Missions'),
+    group: msg('Context'),
+    keywords: ['space', 'missions', 'launches', 'rockets'],
+    action: {
+      name: 'set_context_mode',
+      args: { mode: 'space-missions' },
+    },
+  },
+  {
+    id: 'hud-on',
+    label: msg('Show HUD'),
+    group: msg('Display'),
+    keywords: ['hud', 'heads up', 'display', 'show'],
+    action: {
+      name: 'set_hud',
+      args: { visible: 'on' },
+    },
+  },
+  {
+    id: 'hud-off',
+    label: msg('Hide HUD'),
+    group: msg('Display'),
+    keywords: ['hud', 'heads up', 'display', 'hide'],
+    action: {
+      name: 'set_hud',
+      args: { visible: 'off' },
+    },
+  },
+  {
+    id: 'style-normal',
+    label: msg('Normal Visual Style'),
+    group: msg('Visual'),
+    keywords: ['normal', 'style', 'filter', 'visual'],
+    action: {
+      name: 'set_visual_style',
+      args: { style: 'normal' },
+    },
+  },
+  {
+    id: 'style-thermal',
+    label: msg('Thermal Visual Style'),
+    group: msg('Visual'),
+    keywords: ['thermal', 'flir', 'style', 'filter'],
+    action: {
+      name: 'set_visual_style',
+      args: { style: 'thermal' },
+    },
+  },
+  {
+    id: 'map-osm',
+    label: msg('Use OpenStreetMap'),
+    group: msg('Map'),
+    keywords: ['osm', 'openstreetmap', 'map', 'basemap'],
+    action: {
+      name: 'set_map_stack',
+      args: { stack: 'osm' },
+    },
+  },
+];
+
+function boundedText(value, maxLength) {
+  if (typeof value !== 'string') return null;
+  const text = value.trim();
+  return text && text.length <= maxLength ? text : null;
+}
+
+function validateSchemaValue(value, schema, path) {
+  if (!schema || typeof schema !== 'object') return;
+  if (Array.isArray(schema.enum) && !schema.enum.includes(value))
+    throw new TypeError(`${path} must match the action schema enum`);
+
+  if (schema.type === 'string' && typeof value !== 'string')
+    throw new TypeError(`${path} must be a string`);
+  if (schema.type === 'boolean' && typeof value !== 'boolean')
+    throw new TypeError(`${path} must be a boolean`);
+  if (
+    schema.type === 'number' &&
+    (typeof value !== 'number' || !Number.isFinite(value))
+  )
+    throw new TypeError(`${path} must be a finite number`);
+  if (
+    schema.type === 'integer' &&
+    (!Number.isInteger(value) || !Number.isFinite(value))
+  )
+    throw new TypeError(`${path} must be an integer`);
+
+  if (typeof value === 'string') {
+    const length = [...value].length;
+    if (Number.isInteger(schema.minLength) && length < schema.minLength)
+      throw new TypeError(`${path} is shorter than the schema minimum`);
+    if (Number.isInteger(schema.maxLength) && length > schema.maxLength)
+      throw new TypeError(`${path} is longer than the schema maximum`);
+    if (
+      typeof schema.pattern === 'string' &&
+      !new RegExp(schema.pattern).test(value)
+    )
+      throw new TypeError(`${path} does not match the schema pattern`);
+  }
+
+  if (typeof value === 'number') {
+    if (Number.isFinite(schema.minimum) && value < schema.minimum)
+      throw new TypeError(`${path} is below the schema minimum`);
+    if (Number.isFinite(schema.maximum) && value > schema.maximum)
+      throw new TypeError(`${path} is above the schema maximum`);
+  }
+
+  if (schema.type === 'array') {
+    if (!Array.isArray(value)) throw new TypeError(`${path} must be an array`);
+    if (Number.isInteger(schema.minItems) && value.length < schema.minItems)
+      throw new TypeError(`${path} has too few items`);
+    if (Number.isInteger(schema.maxItems) && value.length > schema.maxItems)
+      throw new TypeError(`${path} has too many items`);
+    value.forEach((item, index) =>
+      validateSchemaValue(item, schema.items, `${path}[${index}]`),
+    );
+  }
+
+  if (schema.type === 'object') {
+    if (
+      !value ||
+      typeof value !== 'object' ||
+      Array.isArray(value) ||
+      Object.getPrototypeOf(value) !== Object.prototype
+    )
+      throw new TypeError(`${path} must be a plain object`);
+    const properties = schema.properties || {};
+    for (const required of schema.required || []) {
+      if (!Object.hasOwn(value, required))
+        throw new TypeError(`${path} is missing required ${required}`);
+    }
+    for (const [key, item] of Object.entries(value)) {
+      if (!Object.hasOwn(properties, key)) {
+        if (schema.additionalProperties === false)
+          throw new TypeError(`${path} contains unknown argument ${key}`);
+        continue;
+      }
+      validateSchemaValue(item, properties[key], `${path}.${key}`);
+    }
+  }
+
+  if (Array.isArray(schema.anyOf)) {
+    const matches = schema.anyOf.some((alternative) => {
+      try {
+        validateSchemaValue(value, alternative, path);
+        return true;
+      } catch (error) {
+        if (!(error instanceof TypeError)) throw error;
+        return false;
+      }
+    });
+    if (!matches)
+      throw new TypeError(`${path} must match a schema alternative`);
+  }
+}
+
+function actionSchemaByName(schemas) {
+  return new Map(
+    (Array.isArray(schemas) ? schemas : []).map((schema) => [
+      schema?.name,
+      schema,
+    ]),
+  );
+}
+
+function normalizeKeywords(value) {
+  if (!Array.isArray(value))
+    throw new TypeError('Command keywords must be an array');
+  const keywords = value.map((entry) => boundedText(entry, 80));
+  if (keywords.some((entry) => !entry))
+    throw new TypeError('Command keywords must be bounded text');
+  return [...new Set(keywords)];
+}
+
+function freezeTree(value) {
+  if (value && typeof value === 'object') {
+    Object.values(value).forEach(freezeTree);
+    Object.freeze(value);
+  }
+  return value;
+}
+
+function normalizeCommandEntry(entry, schemaIndex) {
+  if (!entry || typeof entry !== 'object' || Array.isArray(entry))
+    throw new TypeError('Command entries must be objects');
+  const id = boundedText(entry.id, 120);
+  const label = boundedText(entry.label, 120);
+  const group = boundedText(entry.group, 80);
+  const name = boundedText(entry.action?.name, 120);
+  if (!id || !label || !group || !name)
+    throw new TypeError(
+      'Command id, label, group, and action name are required',
+    );
+  const schema = schemaIndex.get(name);
+  if (!schema) throw new TypeError(`Unknown command action: ${name}`);
+  const args = entry.action?.args ?? {};
+  validateSchemaValue(args, schema.parameters, `command ${id}.args`);
+  return Object.freeze({
+    id,
+    label,
+    group,
+    keywords: Object.freeze(normalizeKeywords(entry.keywords || [])),
+    action: Object.freeze({
+      name,
+      args: freezeTree(structuredClone(args)),
+    }),
+  });
+}
+
+/**
+ * Validate human-facing command metadata against the canonical typed action
+ * schema without importing provider/model descriptions.
+ */
+export function createCommandCatalog(
+  entries = DEFAULT_COMMAND_ENTRIES,
+  { schemas = GEV_ACTION_SCHEMAS } = {},
+) {
+  const schemaIndex = actionSchemaByName(schemas);
+  const seen = new Set();
+  return Object.freeze(
+    entries.map((entry) => {
+      const normalized = normalizeCommandEntry(entry, schemaIndex);
+      if (seen.has(normalized.id))
+        throw new TypeError(`Duplicate command id: ${normalized.id}`);
+      seen.add(normalized.id);
+      return normalized;
+    }),
+  );
+}
+
+function searchableText(command) {
+  return [
+    command.label,
+    t(command.label),
+    command.group,
+    t(command.group),
+    ...command.keywords,
+  ]
+    .join(' ')
+    .toLowerCase();
+}
+
+function commandScore(command, query) {
+  const labels = [command.label.toLowerCase(), t(command.label).toLowerCase()];
+  const normalized = query.toLowerCase();
+  const tokens = normalized.split(/\s+/).filter(Boolean);
+  const searchable = searchableText(command);
+  if (!tokens.every((token) => searchable.includes(token))) return 0;
+
+  let score = 100;
+  if (labels.includes(normalized)) score += 1000;
+  else if (labels.some((label) => label.startsWith(normalized))) score += 700;
+  else if (labels.some((label) => label.includes(normalized))) score += 500;
+
+  for (const token of tokens) {
+    if (
+      labels.some((label) =>
+        label.split(/\s+/).some((word) => word.startsWith(token)),
+      )
+    )
+      score += 80;
+    if (command.keywords.some((keyword) => keyword.toLowerCase() === token))
+      score += 60;
+  }
+  return score;
+}
+
+/** Deterministic catalog search; no model call and no execution authority. */
+export function searchCommandCatalog(catalog, query, { limit = 10 } = {}) {
+  const queryText = String(query ?? '');
+  if (queryText.length > MAX_COMMAND_QUERY_LENGTH) return [];
+  const normalizedQuery = queryText.trim();
+  const parsedLimit = Number(limit ?? 10);
+  const requestedLimit = Number.isNaN(parsedLimit) ? 10 : parsedLimit;
+  const boundedLimit = Math.max(1, Math.min(50, Math.floor(requestedLimit)));
+  const commands = Array.isArray(catalog) ? catalog : [];
+  if (!normalizedQuery) return commands.slice(0, boundedLimit);
+
+  return commands
+    .map((command, index) => ({
+      command,
+      index,
+      score: commandScore(command, normalizedQuery),
+    }))
+    .filter(({ score }) => score > 0)
+    .sort(
+      (a, b) =>
+        b.score - a.score ||
+        a.command.label.localeCompare(b.command.label) ||
+        a.index - b.index,
+    )
+    .slice(0, boundedLimit)
+    .map(({ command }) => command);
+}
+
+export const DEFAULT_COMMAND_CATALOG = createCommandCatalog();

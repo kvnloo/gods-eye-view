@@ -161,6 +161,7 @@ function selectMapSource(chip) {
     </div>
   </div>
   </template>
+  <div id="command-palette-host" class="gev-view"></div>
   <PhoneTabBar />
   <Teleport to="body">
     <div v-for="reticle in reticles" :key="reticle.owner.key" class="gev-pointer-reticle" aria-hidden="true" :hidden="!reticle.visible" :data-target="reticle.target" :style="{ left: `${reticle.left}px`, top: `${reticle.top}px` }"></div>

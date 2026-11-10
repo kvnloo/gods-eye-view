@@ -117,10 +117,27 @@ test('the supplied search target retains editing even without form markup', () =
   assert.deepEqual(f.calls, [['dismissSearch']]);
 });
 
-test('shortcut extraction does not change repeat or modifier policy', () => {
+test('browser modifiers never reach application shortcuts, but plain held keys retain repeat', () => {
   const f = shortcuts();
-  f.press('h', new Element(), { repeat: true, ctrlKey: true });
+  for (const modifier of ['metaKey', 'ctrlKey', 'altKey']) {
+    for (const key of ['h', 'f', 'c', '1'])
+      f.press(key, new Element(), { [modifier]: true });
+  }
+  assert.deepEqual(f.calls, []);
+  f.press('h', new Element(), { repeat: true });
   assert.deepEqual(f.calls, [['toggleHud']]);
+  f.press('Escape', new Element(), { ctrlKey: true });
+  assert.deepEqual(f.calls.at(-1), ['dismissSearch']);
+});
+
+test('claimed, composing and contenteditable input never reaches application shortcuts', () => {
+  const f = shortcuts();
+  f.press('h', new Element(), { defaultPrevented: true });
+  f.press('h', new Element(), { isComposing: true });
+  const editor = new Element();
+  editor.isContentEditable = true;
+  f.press('h', editor);
+  assert.deepEqual(f.calls, []);
 });
 
 test('destroy synchronously removes shortcuts and a replacement binds once', () => {

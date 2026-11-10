@@ -2397,6 +2397,9 @@
       "./standalone/catalog"
     ],
     "modules": [
+      "src/ui/commandCatalog.js",
+      "src/ui/commandPalette.js",
+      "src/ui/views/CommandPaletteView.vue",
       "src/sources/adsbFields.js",
       "src/data/headingDegrees.js",
       "src/data/distanceFormat.js",

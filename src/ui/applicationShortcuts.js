@@ -23,10 +23,17 @@ export function bindApplicationShortcuts({
   actions,
 }) {
   const onKeyDown = (event) => {
+    if (event.defaultPrevented || event.isComposing) return;
     const isFormControl =
       event.target?.matches?.('select, input, textarea') ||
+      event.target?.isContentEditable ||
       event.target === searchInput;
     if (isFormControl && event.key !== 'Escape') return;
+    // Preserve browser and OS shortcuts, following asturksever's #1598.
+    if (event.metaKey || event.ctrlKey || event.altKey) {
+      if (event.key === 'Escape') actions.dismissSearch();
+      return;
+    }
 
     if (STYLE_KEYS[event.key]) actions.setStyle(STYLE_KEYS[event.key]);
     if (event.key === 'Escape') actions.dismissSearch();

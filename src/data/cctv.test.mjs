@@ -1973,3 +1973,72 @@ test('CCTV focus pushes a BACK entry and BACK/FORWARD restore the abandoned view
     _setCctvCoverageStateForTest({ enabled: false });
   }
 });
+
+test('CCTV focus abandons Forward when the current pose duplicates the Back tip', () => {
+  const viewer = makeHistoryViewer();
+  const records = [makeDeselectRecord('cam-1', 0)];
+  const setPose = (lon, lat, heading) => {
+    viewer.camera.positionWC = Cesium.Cartesian3.fromDegrees(
+      lon,
+      lat,
+      4_000,
+    );
+    viewer.camera.positionCartographic = Cesium.Cartographic.fromDegrees(
+      lon,
+      lat,
+      4_000,
+    );
+    viewer.camera.heading = heading;
+  };
+  _setCctvOverlayHostForTest({
+    setEntries() {},
+    setVisible() {},
+    clearSource() {},
+  });
+  let unsubscribe = () => {};
+  try {
+    _setCctvCoverageStateForTest({
+      viewer,
+      records,
+      activeCameraId: 'cam-1',
+      enabled: true,
+      coverageMode: 'off',
+      showProjection: false,
+    });
+
+    // P0 -> A -> B -> BACK gives Back=[P0], Forward=[B] and the view at A.
+    cctvLayer.focusCamera('cam-1', 0.2);
+    setPose(-97.74, 30.27, 1.2);
+    cctvLayer.focusCamera('cam-1', 0.2);
+    setPose(-97.735, 30.275, 1.7);
+    assert.equal(cctvLayer.historyBack(), true);
+    assert.equal(cctvLayer.canGoBack(), true);
+    assert.equal(cctvLayer.canGoForward(), true);
+
+    // Pan to P0 (the latest Back entry), then start a new explicit flight.
+    // No duplicate Back entry is needed, but the abandoned B branch must go.
+    setPose(-97.7431, 30.2672, 0.4);
+    const forwardPublished = [];
+    unsubscribe = cctvLayer.subscribe((state) => {
+      forwardPublished.push(state.canGoForward);
+    });
+    assert.equal(
+      cctvLayer.focusCamera('cam-1', 0.2),
+      CCTV_FOCUS_RESULT.FOCUSED,
+    );
+    assert.equal(cctvLayer.canGoForward(), false);
+    assert.equal(cctvLayer.getUIState().canGoForward, false);
+    assert.deepEqual(
+      forwardPublished,
+      [true, false],
+      'a forward-only history reset must notify the controls',
+    );
+    assert.equal(cctvLayer.historyForward(), false);
+    assert.equal(cctvLayer.historyBack(), true);
+    assert.equal(cctvLayer.canGoBack(), false);
+  } finally {
+    unsubscribe();
+    _setCctvOverlayHostForTest();
+    _setCctvCoverageStateForTest({ enabled: false });
+  }
+});

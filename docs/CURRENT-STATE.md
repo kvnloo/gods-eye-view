@@ -5123,3 +5123,13 @@ datacenters, dams and the Nepal locator retain that shared credit while displaye
 
 Military fragments stitch by source identity. Different mapped parcels merge only
 when their footprints touch or contain one another, never across a seam tolerance gap.
+
+## CCTV view-history forward reset (#991)
+
+CCTV Back and Forward preserve camera poses for explicit camera-focus flights.
+Starting a new focus after Back discards the abandoned Forward branch, even
+when the current pose matches the latest Back snapshot and adds no duplicate
+history entry. The Forward control is notified immediately. Tracking and
+cockpit ownership still block focus flights. This branch-reset edge has a
+`node:test` regression in `src/data/cctv.test.mjs`.
+

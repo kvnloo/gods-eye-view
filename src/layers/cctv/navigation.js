@@ -161,7 +161,15 @@ export function createNavigation({
     const pose = captureCameraPose();
     if (!pose) return false;
     const last = layerState._viewHistory.at(-1);
-    if (last && posesEquivalent(last, pose)) return false;
+    if (last && posesEquivalent(last, pose)) {
+      // An explicit new flight abandons Forward even when the current pose
+      // already matches the latest Back snapshot.
+      if (layerState._viewForward.length) {
+        layerState._viewForward.length = 0;
+        parts.presentation.notifyListeners();
+      }
+      return false;
+    }
     layerState._viewHistory.push(pose);
     if (layerState._viewHistory.length > layerState._viewHistoryLimit) {
       layerState._viewHistory.shift();

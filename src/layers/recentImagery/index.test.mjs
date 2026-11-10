@@ -1195,6 +1195,30 @@ test('empty auto VIIRS re-requests a cancelled successor', async () => {
   assert.deepEqual(f.drapes(), { a: `${next}|none`, b: null });
 });
 
+test('explicit preview re-requests a cancelled unknown day without moving focus', async () => {
+  const f = fixture();
+  const days = dailyViirs();
+  const key = days[0].key;
+  f.layer.setSources({ hls: false });
+  await f.ready(days);
+  f.layer.clearPreview();
+  f.layer.setVisibleRange(25, 29);
+  assert.equal(f.thumbnails.retained.at(-1).includes(key), false);
+  const before = f.thumbnails.requests.filter(
+    ([requested]) => requested === key,
+  ).length;
+  f.layer.preview(key);
+  assert.equal(f.diag().following, key);
+  assert.ok(f.thumbnails.retained.at(-1).includes(key));
+  assert.equal(
+    f.thumbnails.requests.filter(([requested]) => requested === key).length,
+    before + 1,
+  );
+  f.thumbnails.probe(key, 'present');
+  assert.equal(f.snap().preview.key, key);
+  f.layer.destroy();
+});
+
 test('restored pins outside the visible strip window are probed and swipe once present', async () => {
   const f = fixture();
   const days = dailyViirs();

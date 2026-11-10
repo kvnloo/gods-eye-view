@@ -176,7 +176,7 @@ export function createApplicationRequestServices({
             }
             return requireOk(response, 'Terrain heights')?.results;
           },
-          { signal },
+          { signal: AbortSignal.any([lifetime, signal].filter(Boolean)) },
         );
       },
     },

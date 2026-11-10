@@ -1074,6 +1074,7 @@ export function createRecentImageryLayer({
       if (!drapable(candidate)) {
         clearPending();
         _followKey = availability(candidate) === 'empty' ? null : candidate.key;
+        requestThumbnails();
         notify();
         return false;
       }

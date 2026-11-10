@@ -245,6 +245,20 @@ test('the viewer gets the starry sky as an option, which keeps the Sun and Moon'
   options.skyBox.destroy();
 });
 
+test('viewer opts out of Cesium CSS-pixel rendering for high-DPI screens (#1320)', async () => {
+  const { applicationViewerOptions } = await import('./viewer.js');
+  const options = applicationViewerOptions({});
+  try {
+    assert.equal(
+      options.useBrowserRecommendedResolution,
+      false,
+      'Cesium must use device pixels so the resolution governor can raise DPR',
+    );
+  } finally {
+    options.skyBox.destroy();
+  }
+});
+
 function pinchFixture({ zoomEventTypes } = {}) {
   const handlers = new Set();
   const relayed = [];

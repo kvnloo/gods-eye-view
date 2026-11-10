@@ -378,6 +378,11 @@ Tool argument string lengths follow JSON Schema Unicode code-point counts, so su
 
 Query timestamps outside the representable Date range are reported as null, preserving the rest of the result row.
 
+Mapped Installations status remains English data for analyst results, including
+site counts, loading states and Overpass retry reasons. The Layers panel,
+nearby-search toast and awareness panel translate the structured feedback when
+they render it, so changing the UI locale does not change the analyst's note.
+
 `gods-eye-view/tools` defines queries that answer questions from the app's data,
 and `gods-eye-view/tools/mcp` exposes a composed catalog over the Model Context
 Protocol. `npm run mcp` serves Core's tools over stdio to a local MCP client,

@@ -9,6 +9,7 @@ import {
   getAircraftInfo,
   getAircraftTrack,
 } from './queries/aviation.js';
+import { aircraftFlyovers } from './queries/acoustics.js';
 import { getWeatherMap, getWind } from './queries/atmosphere.js';
 import { findSubmarineCables } from './queries/cables.js';
 import {
@@ -91,6 +92,7 @@ export const coreTools = Object.freeze([
   findAircraft,
   getAircraftTrack,
   getAircraftInfo,
+  aircraftFlyovers,
   vesselsInArea,
   findVessel,
   getVesselTrack,

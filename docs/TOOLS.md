@@ -267,6 +267,7 @@ and the development server's internal routes. See SECURITY.md.
 | `find_aircraft`       | `aircraft`    | Aircraft anywhere by callsign, ICAO address or registration    |
 | `get_aircraft_track`  | `aircraft`    | Recent positions of one aircraft, thinned to 200 points        |
 | `get_aircraft_info`   | `aircraft`    | Aircraft type and registration, and flight route, from adsbdb  |
+| `aircraft_flyovers` | `aircraft`, optional `terrain` | Flyovers heard at a point from nearby aircraft tracks: heard closest-approach time, slant distance, speed and Doppler pitch ratio |
 | `vessels_in_area` | `vessels` | Ships reported by AIS in an area, nearest first, optionally by type |
 | `find_vessel` | `vessels` | Ships anywhere by MMSI, IMO number or name |
 | `get_vessel_track` | `vessels` | Recent positions of one ship, thinned to 200 points |

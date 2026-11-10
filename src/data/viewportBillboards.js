@@ -232,6 +232,8 @@ export class ViewportBillboardCollection {
     if (contact._resident) {
       contact._snapshot();
       this._collection.remove(contact._resident);
+      // Cesium can retain evicted billboards in its pending-update queue.
+      if (this._collection.length === 0) this._collection.removeAll();
     }
     const last = this._items.pop();
     if (last !== contact) {
@@ -299,6 +301,7 @@ export class ViewportBillboardCollection {
         !Cesium.Matrix4.equals(this._matrix, this._previousMatrix));
     this._collection ??= this._createCollection();
     if (changed) {
+      let evicted = false;
       for (const contact of this._items) {
         const pinned = this._isPinned(contact.id);
         const inViewport =
@@ -325,8 +328,12 @@ export class ViewportBillboardCollection {
           this._collection.remove(contact._resident);
           contact._resident = null;
           this._surfaceRevision++;
+          evicted = true;
         }
       }
+      // Last-resident eviction must also release Cesium's pending-update refs.
+      if (evicted && this._collection.length === 0)
+        this._collection.removeAll();
       this._previousMatrix = Cesium.Matrix4.clone(
         this._matrix,
         this._previousMatrix,

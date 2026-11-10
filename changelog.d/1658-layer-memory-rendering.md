@@ -4,3 +4,6 @@
   Show, Dim and Hide for grounded aircraft with tracked contacts kept visible.
   Preserve search and tracking, document workload-specific measurements, and
   offer an optional low-resource mode (Pierson Marks, @piersonmarks, #1658).
+
+- Clear pending native billboard-update references after the last aircraft
+  resident leaves the viewport or is removed (Pierson Marks follow-up).

@@ -106,6 +106,39 @@ test('camera-only residency changes invalidate cached surface membership', () =>
   h.group.destroy();
 });
 
+test('last viewport eviction and explicit contact removal flush native update references', () => {
+  const h = harness();
+  const contact = h.group.add({
+    id: 'flight',
+    position: new Cesium.Cartesian3(0, 0, 0),
+  });
+  h.group.update({});
+  const native = h.collections[0];
+  assert.equal(native.length, 1);
+
+  h.viewer.camera.viewMatrix[12] = -5;
+  h.group.update({});
+  assert.equal(h.group.renderedCount, 0);
+  assert.equal(
+    native.removeAllCalls,
+    1,
+    'evicting the last resident flushes Cesium pending-update references',
+  );
+  assert.equal(h.group.contains(contact), true, 'logical contact survives');
+
+  h.viewer.camera.viewMatrix[12] = 0;
+  h.group.update({});
+  assert.equal(native.length, 1, 'the contact is readmitted without a poll');
+  assert.equal(h.group.remove(contact), true);
+  assert.equal(native.length, 0);
+  assert.equal(
+    native.removeAllCalls,
+    2,
+    'explicitly removing the last resident also flushes native references',
+  );
+  h.group.destroy();
+});
+
 function harness() {
   const collections = [];
   let pinned = null;
@@ -122,9 +155,13 @@ function harness() {
     keepPaddingPx: 100,
     createCollection() {
       const rows = [];
+      let removeAllCalls = 0;
       const collection = {
         rows,
         destroyed: false,
+        get removeAllCalls() {
+          return removeAllCalls;
+        },
         get length() {
           return rows.length;
         },
@@ -153,6 +190,10 @@ function harness() {
           if (i < 0) return false;
           rows.splice(i, 1);
           return true;
+        },
+        removeAll() {
+          removeAllCalls++;
+          rows.length = 0;
         },
         update() {},
         isDestroyed() {

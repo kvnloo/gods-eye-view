@@ -209,7 +209,7 @@ test('a refused Places or Geocoding answer is not kept by the browser', async (t
   t.mock.method(globalThis, 'fetch', async () =>
     Response.json({ status, results: [] }),
   );
-  for (const denied of ['REQUEST_DENIED', 'OVER_QUERY_LIMIT']) {
+  for (const denied of ['REQUEST_DENIED', 'OVER_QUERY_LIMIT', 'UNKNOWN_ERROR']) {
     status = denied;
     const answer = await request('/api/google/geocode', '?address=Austin');
     assert.equal(answer.statusCode, 200);
@@ -220,6 +220,60 @@ test('a refused Places or Geocoding answer is not kept by the browser', async (t
     status = answered;
     const answer = await request('/api/google/geocode', '?address=Austin');
     assert.equal(answer.headers['cache-control'], 'private, max-age=300');
+  }
+});
+
+test('unreadable Places bodies return uncached 502; real empty answers stay cacheable', async () => {
+  let reply = () => Response.json({});
+  const plugin = googlePlacesContextProxy({
+    resolveApiKey: () => 'fixture-server-key',
+    fetchImpl: async () => reply(),
+  });
+  const request = install((middlewares) =>
+    plugin.configureServer({ middlewares }),
+  );
+  const routes = [
+    ['/api/google/nearby-places', '?lat=30&lon=-97'],
+    ['/api/google/text-search', '?q=museum&lat=30&lon=-97'],
+  ];
+
+  for (const [route, query] of routes) {
+    for (const [scenario, makeReply] of [
+      ['non-JSON body', () => new Response('<not JSON>', { status: 200 })],
+      [
+        'interrupted body',
+        () => {
+          let chunkSent = false;
+          const body = new ReadableStream({
+            pull(controller) {
+              if (!chunkSent) {
+                chunkSent = true;
+                controller.enqueue(new TextEncoder().encode('{"places":['));
+              } else {
+                controller.error(new Error('sensitive upstream detail'));
+              }
+            },
+          });
+          return new Response(body, { status: 200 });
+        },
+      ],
+    ]) {
+      reply = makeReply;
+      const failure = await request(route, query);
+      assert.equal(failure.statusCode, 502, `${route}: ${scenario}`);
+      assert.equal(failure.headers['cache-control'], 'no-store');
+      assert.deepEqual(failure.body, {
+        places: [],
+        error: 'Google Places request failed',
+      });
+    }
+
+    // An actual 200 {} is a valid empty result, not a read failure.
+    reply = () => Response.json({});
+    const empty = await request(route, query);
+    assert.equal(empty.statusCode, 200);
+    assert.equal(empty.headers['cache-control'], 'private, max-age=300');
+    assert.deepEqual(empty.body, { places: [], error: null });
   }
 });
 

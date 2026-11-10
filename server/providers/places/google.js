@@ -197,7 +197,7 @@ export function googlePlacesContextProxy({
             }),
           },
         );
-        const data = await response.json().catch(() => ({}));
+        const data = await response.json();
         const places = projectNearbyPlaces(data, latitude, longitude);
 
         res.statusCode = response.ok ? 200 : response.status;
@@ -216,12 +216,14 @@ export function googlePlacesContextProxy({
               : data.error?.message || 'Google Places request failed',
           }),
         );
-      } catch (error) {
+      } catch {
+        // Unreadable or interrupted upstream bodies are not empty answers.
         res.statusCode = 502;
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-store');
         res.end(
           JSON.stringify({
-            error: error?.message || 'Google Places request failed',
+            error: 'Google Places request failed',
             places: [],
           }),
         );
@@ -323,7 +325,7 @@ export function googlePlacesContextProxy({
             }),
           },
         );
-        const data = await response.json().catch(() => ({}));
+        const data = await response.json();
         const places = projectTextSearchPlaces(data, latitude, longitude);
 
         res.statusCode = response.ok ? 200 : response.status;
@@ -342,12 +344,14 @@ export function googlePlacesContextProxy({
               : data.error?.message || 'Google Places request failed',
           }),
         );
-      } catch (error) {
+      } catch {
+        // Unreadable or interrupted upstream bodies are not empty answers.
         res.statusCode = 502;
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-store');
         res.end(
           JSON.stringify({
-            error: error?.message || 'Google Places request failed',
+            error: 'Google Places request failed',
             places: [],
           }),
         );

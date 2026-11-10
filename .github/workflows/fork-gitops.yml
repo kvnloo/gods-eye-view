@@ -1,0 +1,24 @@
+name: Fork GitOps
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  policy:
+    name: Fork GitOps policy
+    if: github.repository == 'kvnloo/gods-eye-view'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Test policy
+        run: python3 -m unittest discover -s .github/scripts -p test_fork_gitops.py -v
+      - name: Check PR target and branch name
+        run: python3 .github/scripts/check-fork-gitops.py

@@ -287,3 +287,54 @@ test('an honestly empty served total preserves unmet needs and renders zero', ()
   assert.equal(model.stages[1].served, 0);
   assert.equal(renderReliefFieldView(fakeRoot(), packet), true);
 });
+
+for (const index of [0, 1]) {
+  for (const [name, mutate] of [
+    [
+      'unknown zone',
+      (plan) => {
+        plan.assignments[0].zoneId = 'zone-absent';
+      },
+    ],
+    [
+      'wrong zone with equal total',
+      (plan) => {
+        plan.assignments[0].zoneId =
+          plan.assignments[0].zoneId === 'zone-east'
+            ? 'zone-west'
+            : 'zone-east';
+      },
+    ],
+    [
+      'duplicate need zone',
+      (plan) => {
+        plan.unmetNeed[0].zoneId = plan.unmetNeed[1].zoneId;
+      },
+    ],
+  ]) {
+    test(`stage ${index} rejects ${name}`, () => {
+      const packet = structuredClone(createSyntheticReliefDemoPacket());
+      mutate(packet.stages[index].knownOnlyExact);
+      assert.equal(reliefViewModel(packet), null);
+      const root = fakeRoot();
+      assert.equal(renderReliefFieldView(root, packet), false);
+      assert.equal(root.children[0].attributes.role, 'alert');
+    });
+  }
+}
+
+test('the same vehicle cannot supply two assignments', () => {
+  const packet = structuredClone(createSyntheticReliefDemoPacket());
+  const plan = packet.stages[1].knownOnlyExact;
+  plan.assignments[1].vehicleId = plan.assignments[0].vehicleId;
+  assert.equal(reliefViewModel(packet), null);
+});
+
+test('distinct vehicles may jointly satisfy a single zone', () => {
+  const packet = structuredClone(createSyntheticReliefDemoPacket());
+  const plan = packet.stages[0].knownOnlyExact;
+  plan.assignments[0].units = 2;
+  plan.assignments.push({ ...plan.assignments[0], vehicleId: 'truck-c' });
+  assert.equal(reliefViewModel(packet).stages[0].served, 4);
+  assert.equal(renderReliefFieldView(fakeRoot(), packet), true);
+});

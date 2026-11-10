@@ -26,6 +26,25 @@ const validAssignment = (row) =>
   row.units > 0 &&
   validEvidenceRef(row.evidenceRef);
 
+// Aggregate equality alone cannot prove which zone received the units.
+function assignmentsMatchNeeds(plan) {
+  const remaining = new Map();
+  for (const need of plan.unmetNeed) {
+    if (remaining.has(need.zoneId)) return false;
+    remaining.set(need.zoneId, need.servedUnits);
+  }
+  const vehicles = new Set();
+  for (const assignment of plan.assignments) {
+    if (vehicles.has(assignment.vehicleId) || !remaining.has(assignment.zoneId))
+      return false;
+    vehicles.add(assignment.vehicleId);
+    const units = remaining.get(assignment.zoneId) - assignment.units;
+    if (units < 0) return false;
+    remaining.set(assignment.zoneId, units);
+  }
+  return [...remaining.values()].every((units) => units === 0);
+}
+
 export function reliefViewModel(packet) {
   if (
     packet?.kind !== 'gev-relief-replay-field-packet' ||
@@ -72,7 +91,8 @@ export function reliefViewModel(packet) {
       0,
     ) === s.knownOnlyExact.servedUnits &&
     s.knownOnlyExact.assignments.reduce((sum, row) => sum + row.units, 0) ===
-      s.knownOnlyExact.servedUnits;
+      s.knownOnlyExact.servedUnits &&
+    assignmentsMatchNeeds(s.knownOnlyExact);
   if (
     !validStage(before) ||
     !validStage(after) ||

@@ -13,12 +13,7 @@ export const ENERGY_METRICS = Object.freeze([
 ]);
 
 const METRICS = new Set(ENERGY_METRICS);
-const STATES = new Set([
-  'measured',
-  'official_estimate',
-  'modeled',
-  'missing',
-]);
+const STATES = new Set(['measured', 'official_estimate', 'modeled', 'missing']);
 const AREA_TYPES = new Set([
   'world',
   'country',
@@ -29,15 +24,12 @@ const AREA_TYPES = new Set([
 ]);
 const COVERAGE = new Set(['complete', 'partial', 'unknown']);
 
-const text = (value) =>
-  typeof value === 'string' ? value.trim() : '';
+const text = (value) => (typeof value === 'string' ? value.trim() : '');
 
 /** Calendar years only; no local time zones or instantaneous measurements. */
 export function hoursInCalendarYear(year) {
-  if (!Number.isInteger(year) || year < 1800 || year > 2100)
-    return null;
-  const leap =
-    year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  if (!Number.isInteger(year) || year < 1800 || year > 2100) return null;
+  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
   return leap ? 8784 : 8760;
 }
 
@@ -61,9 +53,7 @@ export function annualAveragePowerW(annualTWh, calendarYear) {
  * this scalar formula does not claim that a city has a civilization type.
  */
 export function saganKardashevIndex(powerW) {
-  return typeof powerW === 'number' &&
-    Number.isFinite(powerW) &&
-    powerW > 0
+  return typeof powerW === 'number' && Number.isFinite(powerW) && powerW > 0
     ? (Math.log10(powerW) - 6) / 10
     : null;
 }
@@ -72,15 +62,16 @@ function validIsoDay(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const [year, month, day] = value.split('-').map(Number);
   const date = new Date(Date.UTC(year, month - 1, day));
-  return Number.isFinite(date.getTime()) &&
-    date.toISOString().slice(0, 10) === value;
+  return (
+    Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value
+  );
 }
 
 function validArea(area) {
-  if (!area || typeof area !== 'object' || Array.isArray(area))
-    return false;
+  if (!area || typeof area !== 'object' || Array.isArray(area)) return false;
   if (
     !AREA_TYPES.has(area.type) ||
+    typeof area.id !== 'string' ||
     !text(area.boundaryDataset) ||
     !text(area.boundaryRevision)
   )
@@ -105,10 +96,12 @@ function validSource(source) {
     return false;
   try {
     const url = new URL(source.url);
-    return url.protocol === 'https:' &&
+    return (
+      url.protocol === 'https:' &&
       !url.username &&
       !url.password &&
-      Boolean(url.hostname);
+      Boolean(url.hostname)
+    );
   } catch {
     return false;
   }
@@ -120,8 +113,7 @@ function validSource(source) {
  * the whole record rather than manufacturing an area, metric, or source.
  */
 export function normalizeEnergyObservation(row) {
-  if (!row || typeof row !== 'object' || Array.isArray(row))
-    return null;
+  if (!row || typeof row !== 'object' || Array.isArray(row)) return null;
   if (
     row.schemaVersion !== 1 ||
     !validArea(row.area) ||
@@ -207,7 +199,7 @@ export function sameComparableMetric(a, b) {
     left.area.boundaryRevision === right.area.boundaryRevision &&
     left.source.publisher === right.source.publisher &&
     left.source.url === right.source.url &&
-    left.source.datasetVersion === right.source.datasetVersion
+    left.source.datasetVersion === right.source.datasetVersion,
   );
 }
 

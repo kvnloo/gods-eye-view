@@ -49,13 +49,22 @@ test('rejects unexpected keys, spoofed schema and malformed authorship', () => {
     { ...initial, creative: false },
     { ...initial, id: 'original' },
     { ...initial, author: { name: 'Test Author', basedOn: 'unknown-look' } },
-    { ...initial, author: { name: 'Test Author', basedOn: 'storybook-wilds', sourceUrl: 'https://example.org' } },
-    { ...initial, author: { name: '' , basedOn: 'storybook-wilds' } },
+    {
+      ...initial,
+      author: {
+        name: 'Test Author',
+        basedOn: 'storybook-wilds',
+        sourceUrl: 'https://example.org',
+      },
+    },
+    { ...initial, author: { name: '', basedOn: 'storybook-wilds' } },
     { ...initial, title: 'x'.repeat(81) },
   ]) {
     assert.throws(() => parseLookManifest(JSON.stringify(invalid)));
   }
-  assert.throws(() => parseLookManifest('{ "__proto__": {}, "schema":"gev.visual-look.v1" }'));
+  assert.throws(() =>
+    parseLookManifest('{ "__proto__": {}, "schema":"gev.visual-look.v1" }'),
+  );
 });
 
 test('rejects executable shader keys, nonfinite values and oversized payloads', () => {
@@ -67,10 +76,14 @@ test('rejects executable shader keys, nonfinite values and oversized payloads', 
     null,
     [],
   ]) {
-    assert.throws(() => parseLookManifest(JSON.stringify({
-      ...initial,
-      grade: badGrade,
-    })));
+    assert.throws(() =>
+      parseLookManifest(
+        JSON.stringify({
+          ...initial,
+          grade: badGrade,
+        }),
+      ),
+    );
   }
   assert.throws(() => parseLookManifest(' '.repeat(4100)));
   assert.throws(() => parseLookManifest('not-json'));
@@ -86,4 +99,16 @@ test('prototype and noncanonical runtime records cannot escape typed boundary', 
   const polluted = JSON.parse(JSON.stringify(initial));
   Object.defineProperty(polluted, '__proto__', { value: 1, enumerable: true });
   assert.throws(() => serializeLookManifest(polluted));
+});
+
+test('rejects prototype-named grade fields rather than silently discarding them', () => {
+  const initial = createLookManifest(seed, 'Test Author');
+  for (const key of ['__proto__', 'constructor', 'toString', 'valueOf']) {
+    const grade = JSON.parse(`{"${key}":1}`);
+    assert.throws(
+      () => parseLookManifest(JSON.stringify({ ...initial, grade })),
+      TypeError,
+      key,
+    );
+  }
 });

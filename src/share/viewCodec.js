@@ -31,6 +31,8 @@ import {
 } from '../data/detectionPolicy.js';
 import { clampScopeFeatherPct } from '../scopeMaskPolicy.js';
 import { VIEW_STYLES } from '../view/index.js';
+import { isWorldTime } from '../time/worldClock.js';
+import { RETIRED_STYLES } from '../visualStylePolicy.js';
 import {
   GLOBAL_POST_DEFAULTS,
   STYLE_PRESET_DEFAULTS,
@@ -101,7 +103,7 @@ export const SHARE_VIEW_ENUMS = Object.freeze({
     'thermal',
     'anime',
     'noir',
-    'snow',
+    'snow', // retired (RETIRED_STYLES): decodes as Normal
   ]),
   mapStack: Object.freeze([
     'photoreal',
@@ -221,10 +223,6 @@ export const SHARE_VIEW_STYLE_PARAMS = Object.freeze({
     { key: 'grainAmt', token: 'g', min: 0, max: 1 },
     { key: 'vignetteAmt', token: 'v', min: 0, max: 1 },
   ]),
-  snow: freezeAll([
-    { key: 'density', token: 'd', min: 0, max: 1 },
-    { key: 'wind', token: 'w', min: 0, max: 1 },
-  ]),
 });
 
 /**
@@ -255,7 +253,8 @@ export const SHARE_VIEW_FLAGS = freezeAll([
  * written explicitly.
  */
 export const SHARE_VIEW_LAYER_OPTION_ABSENT = Object.freeze({
-  traffic: Object.freeze({ roadMode: null }),
+  'local-firms': Object.freeze({ minFrp: 0, confidence: 'all' }),
+  traffic: Object.freeze({ roadMode: null, lines: false, dots: true }),
   'weather-lightning': Object.freeze({ opacity: 'strong' }),
   'weather-radar': Object.freeze({ opacity: 'strong' }),
   'weather-satellite': Object.freeze({
@@ -275,7 +274,11 @@ export const SHARE_VIEW_LAYER_OPTION_ABSENT = Object.freeze({
     selectedFlightsTrackingId: null,
     selectedMilitaryTrackingId: null,
   }),
-  satellites: Object.freeze({ catalog: 'core', selectedSatTrackingId: null }),
+  satellites: Object.freeze({
+    catalog: 'core',
+    selectedSatTrackingId: null,
+    classes: 'sitpd',
+  }),
   cctv: Object.freeze({
     coverageMode: 'on',
     showProjection: true,
@@ -299,6 +302,7 @@ export const SHARE_VIEW_LAYER_OPTION_ABSENT = Object.freeze({
     sinceDays: 0,
   }),
   radio: Object.freeze({ filter: 'all', volume: 0.8 }),
+  'wildlife-sightings': Object.freeze({ confirmed: false, taxa: 'all' }),
 });
 
 /** The frozen meaning of an omitted option; unlisted options are always written. */
@@ -376,6 +380,7 @@ export const SHARE_VIEW_FIELDS = freezeAll([
   { number: 25, key: 'scopeFeatherPct', type: 'uint', default: 100 },
   { number: 26, key: 'scopeTerminusPct', type: 'uint', default: null },
   { number: 27, key: 'styleParams', type: 'bytes', default: BY_STYLE },
+  { number: 28, key: 'worldTime', type: 'epoch', default: null },
 ]);
 const FIELD_BY_KEY = new Map(SHARE_VIEW_FIELDS.map((f) => [f.key, f]));
 const fieldNumber = (key) => FIELD_BY_KEY.get(key).number;
@@ -735,6 +740,9 @@ export function normalizeShareViewState(input = {}) {
     : null;
   state.panelState = normalizePanelState(source.panelState);
   state.sharedAtMs = epochMsOr(source.sharedAtMs);
+  state.worldTime = isWorldTime(source.worldTime)
+    ? Math.floor(source.worldTime / 1000) * 1000
+    : null;
   let view = normalizeView(source.view);
   if (state.layerState) view = liftTrackedEntity(state.layerState, view);
   if (view.kind === 'thing') {
@@ -951,8 +959,9 @@ export function encodeShareView(input) {
           writer.sintField(field.number, signedAngle(state[field.key]));
         break;
       case 'sharedAtMs':
-        if (state.sharedAtMs !== null)
-          writer.sintField(field.number, epochSeconds(state.sharedAtMs));
+      case 'worldTime':
+        if (state[field.key] !== null)
+          writer.sintField(field.number, epochSeconds(state[field.key]));
         break;
       case 'flags': {
         let bits = 0;
@@ -1321,8 +1330,12 @@ export function decodeShareView(code, { nowMs = Date.now() } = {}) {
         return { ok: false, reason: 'out-of-range' };
     }
 
+    // A retired style's code stays reserved: the view opens on Normal, and
+    // parameters written for it are dropped rather than reported as unknown.
+    const retiredStyle = RETIRED_STYLES.includes(raw.style);
     if (raw.style !== undefined && !VIEW_STYLES.includes(raw.style)) {
-      if (get('style').len) unknown.code('enum:style', raw.style);
+      if (get('style').len && !retiredStyle)
+        unknown.code('enum:style', raw.style);
       raw.style = undefined;
     }
     for (const key of ['hudVariant', 'mapStack']) {
@@ -1346,6 +1359,12 @@ export function decodeShareView(code, { nowMs = Date.now() } = {}) {
       raw.sharedAtMs =
         createdAtS >= 1 && Number.isSafeInteger(ms) && ms <= nowMs ? ms : null;
     }
+    // The world time the link was made at, when it was away from live. It
+    // may lie ahead of the link's creation (a forecast) or of now.
+    if (get('worldTime')) {
+      const ms = (SHARE_VIEW_EPOCH_S + unz(get('worldTime').varint)) * 1000;
+      raw.worldTime = isWorldTime(ms) ? ms : null;
+    }
 
     if (get('layerState'))
       raw.layerState = decodeLayers(
@@ -1357,7 +1376,7 @@ export function decodeShareView(code, { nowMs = Date.now() } = {}) {
       unknown.code('layer-option', 'without-layers');
     if (get('panelState'))
       raw.panelState = decodePanels(get('panelState').len, unknown);
-    if (get('styleParams'))
+    if (get('styleParams') && !retiredStyle)
       raw.styleParams = decodeStyleParams(
         get('styleParams').len,
         raw.style ?? 'normal',

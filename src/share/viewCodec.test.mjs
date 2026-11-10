@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   LAYER_STATE_REGISTRY,
+  LAYER_STATE_TOKEN_ALPHABET,
   LAYER_STATE_TOKEN_RESERVATIONS,
   REGISTERED_LAYER_IDS,
   createDefaultLayerState,
@@ -360,6 +361,7 @@ test('every registered field round-trips at once', () => {
       })),
     },
     sharedAtMs: NOW_MS,
+    worldTime: NOW_MS - 6 * 3_600_000,
   };
   // A thing view derives its camera (roll 0), so the camera fields are
   // checked on the same state as a place view.
@@ -437,10 +439,20 @@ test('defaults travel as frozen meanings that match today’s app defaults', () 
   assert.equal(defaults.bloomIntensity, BLOOM_INTENSITY_DEFAULT);
   assert.equal(defaults.bloomVersion, BLOOM_SCALE_VERSION);
   assert.equal(defaults.hudVariant, HUD_LAYOUTS[0]);
-  assert.deepEqual(SHARE_VIEW_ENUMS.hudVariant.slice(0, HUD_LAYOUTS.length), [
-    ...HUD_LAYOUTS,
+  // Codes are append-only: the retired Operator layout keeps code 1 so old
+  // links still parse, and the app restores them as Tactical.
+  assert.deepEqual(SHARE_VIEW_ENUMS.hudVariant, [
+    'tactical',
+    'operator',
+    'minimal',
+    'cyber',
   ]);
-  assert.deepEqual(SHARE_VIEW_ENUMS.style, [...VIEW_STYLES]);
+  assert.deepEqual(
+    SHARE_VIEW_ENUMS.hudVariant.filter((variant) => variant !== 'operator'),
+    [...HUD_LAYOUTS],
+  );
+  // Snow is retired; its code stays reserved (see the retired-style test).
+  assert.deepEqual(SHARE_VIEW_ENUMS.style, [...VIEW_STYLES, 'snow']);
   assert.deepEqual(SHARE_VIEW_ENUMS.mapStack, [...VIEW_MAPS]);
   assert.deepEqual(SHARE_VIEW_ENUMS.detectionAllocation, [
     ...ALLOCATION_STRATEGIES,
@@ -490,6 +502,7 @@ test('the field registry is well formed and permanent', () => {
       [25, 'scopeFeatherPct', 100],
       [26, 'scopeTerminusPct', null],
       [27, 'styleParams', BY_STYLE],
+      [28, 'worldTime', null],
     ],
   );
   assert.deepEqual(
@@ -549,7 +562,6 @@ test('the field registry is well formed and permanent', () => {
       ...common,
       styleParams: { contrastAmt: 1.2, grainAmt: 0.5, vignetteAmt: 0.5 },
     },
-    snow: { ...common, styleParams: { density: 0.6, wind: 0.5 } },
   });
   assert.deepEqual(
     SHARE_VIEW_ENTITY_KINDS.map((e) => [e.code, e.kind]),
@@ -966,6 +978,29 @@ test('enum names outside the code tables travel as text', () => {
   ]);
 });
 
+test('links to the retired Snow style open as Normal', () => {
+  const snowCode = SHARE_VIEW_ENUMS.style.indexOf('snow');
+  assert.equal(snowCode, 6, 'a retired code is never reused');
+  const params = new WireWriter()
+    .varint(LAYER_STATE_TOKEN_ALPHABET.indexOf('d'))
+    .varint(90)
+    .varint(LAYER_STATE_TOKEN_ALPHABET.indexOf('w'))
+    .varint(20)
+    .finish();
+  for (const writeStyle of [
+    (writer) => writer.uintField(14, snowCode),
+    (writer) => writer.textField(14, 'snow'),
+  ]) {
+    const writer = new WireWriter();
+    writer.bytes.push(1);
+    writeStyle(writer);
+    writer.bytesField(27, params);
+    const { state, unknownFields } = decodeOk(hashOf(writer.finish()));
+    assert.deepEqual(state, normalizeShareViewState({}));
+    assert.equal(unknownFields, undefined);
+  }
+});
+
 /* ---------------- integrity ---------------- */
 
 test('malformed input is rejected with a reason, never thrown', () => {
@@ -1304,4 +1339,23 @@ test('a layer option filed under a mirror layer is ignored', () => {
   assert.deepEqual(result.unknownFields, [
     { scope: 'layer-option', code: `${military}.${layerTokenNumber('m')}` },
   ]);
+});
+
+test('the world time is written only away from live, and may lie ahead', () => {
+  const at = (worldTime) =>
+    decodeShareView(encodeShareView({ sharedAtMs: NOW_MS, worldTime }), {
+      nowMs: NOW_MS,
+    }).state.worldTime;
+  assert.equal(at(null), null);
+  assert.equal(at(NOW_MS - 3_600_000), NOW_MS - 3_600_000);
+  // A forecast moment ahead of the link's creation is kept.
+  assert.equal(at(NOW_MS + 86_400_000), NOW_MS + 86_400_000);
+  // Before the 2026 epoch too: the field is zigzag.
+  assert.equal(at(Date.UTC(2024, 0, 1)), Date.UTC(2024, 0, 1));
+  // Past what a Date can hold: dropped, so the link opens live.
+  assert.equal(at(8.8e15), null);
+  assert.ok(
+    encodeShareView({ sharedAtMs: NOW_MS, worldTime: NOW_MS - 1000 }).length >
+      encodeShareView({ sharedAtMs: NOW_MS }).length,
+  );
 });

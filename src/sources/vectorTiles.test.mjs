@@ -587,3 +587,34 @@ for (const [label, emptyStatuses] of [
     assert.equal(source.getStats().tilesFetched, fetched);
   });
 }
+
+test('an opted-in empty tile cannot hide a strict reader error in a shared cache', async () => {
+  let requests = 0;
+  const sharedDecodedCache = createSharedDecodedTileCache();
+  const decode = (bytes) => {
+    assert.equal(bytes.byteLength, 0);
+    return [];
+  };
+  const common = {
+    ...options,
+    template: meta.tiles[0],
+    sharedDecodedCache,
+    decode,
+    fetchImpl: async () => {
+      requests++;
+      return new Response('Tile not found', { status: 404 });
+    },
+  };
+  const allow404 = createVectorTileSource({ ...common, emptyStatuses: [404] });
+  const strict = createVectorTileSource(common);
+
+  assert.deepEqual(
+    (await allow404.fetchBounds(box, { zoom: 12 })).tiles,
+    [[]],
+  );
+  await assert.rejects(
+    strict.fetchBounds(box, { zoom: 12 }),
+    /Vector tiles unavailable \(HTTP 404\)/,
+  );
+  assert.equal(requests, 2, 'strict reader must fetch independently');
+});

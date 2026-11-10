@@ -207,6 +207,8 @@ export function createVectorTileSource({
   emptyStatuses = [],
 }) {
   const cache = new Map();
+  // Shared decoded tiles must not cross HTTP empty-status policies.
+  const sharedStatusPolicy = JSON.stringify([...new Set(emptyStatuses)].sort());
   const active = new Set();
   const flights = new Map();
   let cacheBytes = 0;
@@ -437,7 +439,7 @@ export function createVectorTileSource({
     if (epoch !== generation)
       throw new DOMException('Source cleared', 'AbortError');
     const key = `${meta.template}:${tile.z}/${tile.x}/${tile.y}`;
-    const sharedKey = `${sharedDecoderKey(decode)}:${key}`;
+    const sharedKey = `${sharedDecoderKey(decode)}:${sharedStatusPolicy}:${key}`;
     const hit = cache.get(key);
     if (hit && now() - hit.at < ttlMs) {
       cache.delete(key);

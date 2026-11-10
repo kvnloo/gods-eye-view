@@ -7,18 +7,36 @@ function fakeDocument() {
   return {
     createElement(tagName) {
       return {
-        tagName, className: '', children: [], textContent: '', attributes: {},
-        appendChild(x) { this.children.push(x); return x; },
-        setAttribute(key, value) { this.attributes[key] = value; },
+        tagName,
+        className: '',
+        children: [],
+        textContent: '',
+        attributes: {},
+        appendChild(x) {
+          this.children.push(x);
+          return x;
+        },
+        setAttribute(key, value) {
+          this.attributes[key] = value;
+        },
       };
     },
   };
 }
 function fakeRoot() {
   const ownerDocument = fakeDocument();
-  return { ownerDocument, children: [], replaceChildren(...items) { this.children = items; } };
+  return {
+    ownerDocument,
+    children: [],
+    replaceChildren(...items) {
+      this.children = items;
+    },
+  };
 }
-const values = root => JSON.stringify(root, (key, value) => key === 'ownerDocument' ? undefined : value);
+const values = (root) =>
+  JSON.stringify(root, (key, value) =>
+    key === 'ownerDocument' ? undefined : value,
+  );
 
 test('the exact synthetic replay reaches Field Lite with source and zero live authority', () => {
   const packet = createSyntheticReliefDemoPacket();
@@ -30,19 +48,28 @@ test('the exact synthetic replay reaches Field Lite with source and zero live au
   assert.equal(model.delta, -2);
   assert.equal(model.stages[0].revision, 'access-r1');
   assert.equal(model.stages[1].revision, 'access-r2');
-  assert.equal(model.stages[1].evidence.includes('synthetic:road-closure-r2'), true);
+  assert.equal(
+    model.stages[1].evidence.includes('synthetic:road-closure-r2'),
+    true,
+  );
   assert.equal('authority' in model, false);
   assert.equal('safe' in model, false);
 });
 
 test('read-only renderer has before/after cards, source details and no HTML injection', () => {
   const root = fakeRoot();
-  assert.equal(renderReliefFieldView(root, createSyntheticReliefDemoPacket()), true);
+  assert.equal(
+    renderReliefFieldView(root, createSyntheticReliefDemoPacket()),
+    true,
+  );
   const out = values(root);
   assert.match(out, /Before — superseded/);
   assert.match(out, /After — revised hypothesis/);
   assert.match(out, /TRAINING|synthetic only/);
-  assert.match(out, /No operational route or delivery decisions are authorized/);
+  assert.match(
+    out,
+    /No operational route or delivery decisions are authorized/,
+  );
   assert.match(out, /synthetic:road-closure-r2/);
   assert.match(out, /2 known-only synthetic units/);
   assert.equal('winner' in root, false);
@@ -62,12 +89,28 @@ test('invalid shape, authority, stale revision or corrupted evidence fail closed
     { historicalBaselineCurrent: true },
     { status: 'unknown' },
     { delta: { knownOnlyServedUnits: 99 } },
-    { stages: [original.stages[0], { ...original.stages[1], accessRevision: original.stages[0].accessRevision }] },
-    { fieldLite: { rows: [{ evidenceRefs: [] }, {}], notices: original.fieldLite.notices } },
+    {
+      stages: [
+        original.stages[0],
+        {
+          ...original.stages[1],
+          accessRevision: original.stages[0].accessRevision,
+        },
+      ],
+    },
+    {
+      fieldLite: {
+        rows: [{ evidenceRefs: [] }, {}],
+        notices: original.fieldLite.notices,
+      },
+    },
   ]) {
     assert.equal(reliefViewModel({ ...original, ...change }), null);
     const root = fakeRoot();
-    assert.equal(renderReliefFieldView(root, { ...original, ...change }), false);
+    assert.equal(
+      renderReliefFieldView(root, { ...original, ...change }),
+      false,
+    );
     assert.equal(root.children[0].attributes.role, 'alert');
   }
   const root = fakeRoot();
@@ -86,11 +129,21 @@ test('evidence rows cannot be relabelled across before/after revisions', () => {
   const valid = createSyntheticReliefDemoPacket();
   const corruptions = [
     (p) => p.fieldLite.rows.reverse(),
-    (p) => { p.fieldLite.rows[0].phase = 'revised'; },
-    (p) => { p.fieldLite.rows[0].accessRevision = p.stages[1].accessRevision; },
-    (p) => { p.fieldLite.rows[0].exactKnownOnlyServedUnits += 1; },
-    (p) => { p.fieldLite.rows[1].nearestFirstKnownOnlyServedUnits += 1; },
-    (p) => { p.fieldLite.rows[1].unknownRoutes += 1; },
+    (p) => {
+      p.fieldLite.rows[0].phase = 'revised';
+    },
+    (p) => {
+      p.fieldLite.rows[0].accessRevision = p.stages[1].accessRevision;
+    },
+    (p) => {
+      p.fieldLite.rows[0].exactKnownOnlyServedUnits += 1;
+    },
+    (p) => {
+      p.fieldLite.rows[1].nearestFirstKnownOnlyServedUnits += 1;
+    },
+    (p) => {
+      p.fieldLite.rows[1].unknownRoutes += 1;
+    },
   ];
   for (const corrupt of corruptions) {
     const packet = structuredClone(valid);
@@ -105,22 +158,51 @@ test('evidence rows cannot be relabelled across before/after revisions', () => {
 test('malformed nested evidence fails closed instead of crashing the view', () => {
   const original = createSyntheticReliefDemoPacket();
   const mutations = [
-    (p) => { p.stages[0].knownOnlyExact.unmetNeed = [null]; },
-    (p) => { p.stages[1].knownOnlyExact.assignments = [null]; },
-    (p) => { p.stages[0].knownOnlyExact.unmetNeed = [{
-      zoneId: 'zone-west', needUnits: 3, servedUnits: 5, unmetUnits: 0,
-    }]; },
-    (p) => { p.stages[1].knownOnlyExact.assignments = [{
-      vehicleId: 'truck-a', zoneId: 'zone-west',
-      units: -2, evidenceRef: 'synthetic:invalid',
-    }]; },
-    (p) => { p.stages[0].knownOnlyExact.assignments = [{
-      vehicleId: 'truck-a', zoneId: 'zone-west',
-      units: 2, evidenceRef: 'unverified:incident',
-    }]; },
-    (p) => { p.fieldLite.rows[0].evidenceRefs = [null]; },
-    (p) => { p.fieldLite.rows[1].evidenceRefs = ['unverified:incident']; },
-    (p) => { delete p.fieldLite.rows[1]; },
+    (p) => {
+      p.stages[0].knownOnlyExact.unmetNeed = [null];
+    },
+    (p) => {
+      p.stages[1].knownOnlyExact.assignments = [null];
+    },
+    (p) => {
+      p.stages[0].knownOnlyExact.unmetNeed = [
+        {
+          zoneId: 'zone-west',
+          needUnits: 3,
+          servedUnits: 5,
+          unmetUnits: 0,
+        },
+      ];
+    },
+    (p) => {
+      p.stages[1].knownOnlyExact.assignments = [
+        {
+          vehicleId: 'truck-a',
+          zoneId: 'zone-west',
+          units: -2,
+          evidenceRef: 'synthetic:invalid',
+        },
+      ];
+    },
+    (p) => {
+      p.stages[0].knownOnlyExact.assignments = [
+        {
+          vehicleId: 'truck-a',
+          zoneId: 'zone-west',
+          units: 2,
+          evidenceRef: 'unverified:incident',
+        },
+      ];
+    },
+    (p) => {
+      p.fieldLite.rows[0].evidenceRefs = [null];
+    },
+    (p) => {
+      p.fieldLite.rows[1].evidenceRefs = ['unverified:incident'];
+    },
+    (p) => {
+      delete p.fieldLite.rows[1];
+    },
   ];
   for (const mutate of mutations) {
     const packet = structuredClone(original);
@@ -156,4 +238,52 @@ test('display status cannot overstate an uncertain synthetic stage', () => {
   const model = reliefViewModel(limited);
   assert.equal(model?.status, 'limited');
   assert.equal(model?.stages[1].unknownRoutes, 1);
+});
+
+for (const index of [0, 1]) {
+  test(`stage ${index} rejects totals inconsistent with its need and assignment rows`, () => {
+    for (const mutate of [
+      (plan) => {
+        plan.assignments[0].units += 1;
+      },
+      (plan) => {
+        plan.assignments = [];
+      },
+      (plan) => {
+        plan.unmetNeed[0].servedUnits += 1;
+        plan.unmetNeed[0].needUnits += 1;
+      },
+      (plan) => {
+        plan.unmetNeed = [];
+      },
+    ]) {
+      const packet = structuredClone(createSyntheticReliefDemoPacket());
+      mutate(packet.stages[index].knownOnlyExact);
+      assert.equal(reliefViewModel(packet), null);
+      const root = fakeRoot();
+      assert.equal(renderReliefFieldView(root, packet), false);
+      assert.equal(root.children[0].attributes.role, 'alert');
+    }
+  });
+}
+
+test('an honestly empty served total preserves unmet needs and renders zero', () => {
+  const packet = structuredClone(createSyntheticReliefDemoPacket());
+  packet.stages.forEach((stage, index) => {
+    for (const plan of [stage.knownOnlyExact, stage.knownOnlyNearestFirst]) {
+      plan.servedUnits = 0;
+      plan.assignments = [];
+      plan.unmetNeed.forEach((row) => {
+        row.servedUnits = 0;
+        row.unmetUnits = row.needUnits;
+      });
+    }
+    packet.fieldLite.rows[index].exactKnownOnlyServedUnits = 0;
+    packet.fieldLite.rows[index].nearestFirstKnownOnlyServedUnits = 0;
+  });
+  packet.delta.knownOnlyServedUnits = 0;
+  const model = reliefViewModel(packet);
+  assert.equal(model.stages[0].served, 0);
+  assert.equal(model.stages[1].served, 0);
+  assert.equal(renderReliefFieldView(fakeRoot(), packet), true);
 });

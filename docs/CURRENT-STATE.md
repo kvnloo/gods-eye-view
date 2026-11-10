@@ -7636,3 +7636,13 @@ Imported authored park records must declare `draft-scenario` ownership and the e
 Experimental park alternatives are ordered by bounded ID using code-unit comparison, not device or browser locale collation. This keeps the first two hypothetical proposals selected for the future Scene comparison stable across locales and record arrival order. Ordering is not a vote, ranking, or official approval; the stacked opt-in Scene preview requires separate parity and real-browser verification.
 
 The inherited collaboration authority kernel also compares equal-clock actor and operation IDs, evidence-claim order, and audit receipts by stable UTF-16 code-unit order rather than each viewer's locale. This is deterministic source-level convergence, not an authenticated contributor identity, online room, verified public observation, or civic approval.
+
+## City builder possible worlds (fork-only)
+
+The standalone app offers City builder above the globe and in AUTHORING. A user can capture the current Cesium canvas, camera, bounds, selected-map citation and time as a reference-only project; author park, bike-lane or plaza alternatives with descriptions and bounded parameters; save immutable parent-linked versions; restore older versions as new ones; and compare every authored alternative in the existing World Game view. No observed geometry, surveyed parcel facts, approval or impact forecast is created.
+
+A bounded replay document preserves the existing planning and collaboration-authority kernels unchanged. Browser-local persistence restores on reload and reports quota, unreadable-storage and other-tab conflicts. JSON export includes version history and images. Import validates the entire document, citations, constructor-produced draft operations, schema, limits and concept provenance before replacing state; it cannot import authority transitions.
+
+Imagine is an explicit per-alternative action. Its default offline fixture is visibly a sample, not a transformation of the site. The opted-in development-only loopback endpoint reuses the owner's installed comfyui-codex-image ChatGPT subscription route. No image request occurs on mount, edit, selection, import or reload. Every concept records prompt, source view, time and provider and is labeled “AI concept, not a plan or an approval”. Closing cancels pending work. Production and preview do not expose the endpoint.
+
+This is a local authoring and visual pretotype, not multiplayer, civic permission, validated accessibility analysis, live signal control or predicted benefit. See [City builder workflow](city/CITY-BUILDER.md) and `scripts/qa-city-builder.mjs` for the real-app gate.

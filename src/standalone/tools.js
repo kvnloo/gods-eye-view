@@ -2,6 +2,7 @@ import { createAssetDirectorySource } from '../director/packs/source.js';
 import { createApplicationTools } from '../app/tools.js';
 import { startStandaloneChrome } from './startupChrome.js';
 import { loadToolCatalog } from './toolCatalog.js';
+import { mountCityBuilder } from './cityPlanningServices.js';
 
 /** Only the exact, explicit fixture query may load hypothetical planning UI. */
 export function isPlanningFixturePreviewRequested(search) {
@@ -30,8 +31,9 @@ export function createStandaloneTools(options) {
       ...options?.voice,
     },
   });
-  // Fixture-only proof: normal startup loads no proposal UI or code.
-  if (isPlanningFixturePreviewRequested(globalThis.location?.search)) {
+  if (!isPlanningFixturePreviewRequested(globalThis.location?.search)) {
+    options.defer(mountCityBuilder(options));
+  } else {
     let dispose = null;
     // Register cleanup before the import, so shutdown never leaks a launcher.
     options.defer(() => {

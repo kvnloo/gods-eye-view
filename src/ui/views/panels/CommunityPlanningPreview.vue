@@ -4,6 +4,7 @@ import { nextTick, onBeforeUnmount, useTemplateRef, watch } from 'vue';
 import { t } from '../../../i18n/index.js';
 import UiButton from '../../kit/UiButton.vue';
 import { useCommunityPlanningStore } from '../../stores/communityPlanning.js';
+import CityBuilderEditor from './CityBuilderEditor.vue';
 
 // The opt-in park proposal comparison, as src/ui/communityPlanningPreview.js
 // presents it: a Scene panel launcher and, while open, one modal. Choosing a
@@ -59,7 +60,7 @@ const cardStyle = { flex: '1 1 245px', minWidth: '0', padding: '12px', backgroun
     <UiButton ref="launcherButton" type="button" class="gev-action-button scene-btn" data-community-planning-preview-open @click="controls?.open()">{{ launcher.label }}</UiButton>
   </div>
   <Teleport to="body">
-    <dialog v-if="preview" ref="root" data-community-planning-preview :aria-label="preview.title" :style="dialogStyle" @cancel.prevent="controls?.close()">
+    <dialog v-if="preview" ref="root" data-community-planning-preview :aria-label="preview.title" :style="[dialogStyle, preview.city ? { width: 'min(1200px,calc(100vw - 32px))' } : null]" @cancel.prevent="controls?.close()">
       <h2 ref="heading" tabindex="-1" style="margin-bottom: 12px">{{ preview.title }}</h2>
       <p style="color: #aad3db">{{ preview.intro }}</p>
       <p data-planning-local-only style="color: #aad3db">{{ preview.localOnly }}</p>
@@ -84,14 +85,29 @@ const cardStyle = { flex: '1 1 245px', minWidth: '0', padding: '12px', backgroun
       <nav ref="inspectNav" data-planning-focus-navigation :aria-label="t('Inspect a hypothetical proposal')" :hidden="!preview.inspect.length">
         <UiButton v-for="item in preview.inspect" :key="item.id" :style="buttonStyle" :pressed="item.pressed" :data-planning-focus-id="item.id" @click="controls?.inspect(item.id)">{{ item.label }}</UiButton>
       </nav>
+      <CityBuilderEditor v-if="preview.city" :city="preview.city" :controls="controls" />
       <div data-planning-alternatives style="display: flex; flex-wrap: wrap; gap: 12px; align-items: stretch">
+        <article v-if="preview.city?.reference" data-planning-baseline :style="cardStyle">
+          <h3>{{ t('Reference-only baseline') }}</h3>
+          <img :src="preview.city.reference.image" :alt="t('Captured baseline reference')" style="width: 100%; object-fit: contain">
+          <p>{{ t('Captured globe pixels, not verified parcel geometry or permission to build.') }}</p>
+          <time :datetime="preview.city.reference.capturedAt">{{ preview.city.reference.capturedAt }}</time>
+        </article>
         <article v-for="card in preview.cards" :key="card.id" :data-alternative-id="card.id" :aria-label="card.label" :hidden="card.hidden" :style="cardStyle">
           <h3>{{ card.title }}</h3>
+          <p v-if="card.description" data-planning-description>{{ card.description }}</p>
+          <figure v-if="card.concept" data-planning-concept style="margin: 12px 0">
+            <img :src="card.concept.image" :alt="t('AI concept, not a plan or an approval')" style="display: block; width: 100%; object-fit: contain">
+            <figcaption>{{ t('AI concept, not a plan or an approval') }}</figcaption>
+            <p>{{ t('Concept provider') }}: {{ card.concept.provider }}</p>
+            <time :datetime="card.concept.generatedAt">{{ card.concept.generatedAt }}</time>
+            <details><summary>{{ t('Concept prompt') }}</summary><p>{{ card.concept.prompt }}</p></details>
+          </figure>
           <p style="color: #d5b67b">{{ t('HYPOTHETICAL · NOT APPROVED') }}</p>
           <p class="planning-author-credit">{{ card.author }}</p>
           <p class="planning-edit-provenance">{{ card.edit }}</p>
           <p>{{ card.revision }}</p>
-          <svg viewBox="0 0 300 150" width="100%" height="150" role="img" :aria-label="card.plotLabel">
+          <svg v-if="!preview.city" viewBox="0 0 300 150" width="100%" height="150" role="img" :aria-label="card.plotLabel">
             <rect x="1" y="1" width="298" height="148" rx="6" fill="#0b2630" stroke="#3d6372" />
             <circle v-for="marker in card.markers" :key="marker.id" :cx="marker.x" :cy="marker.y" r="7" :fill="marker.color" stroke="#f0f7f8" stroke-width="1.5"><title>{{ marker.label }}</title></circle>
           </svg>

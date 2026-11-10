@@ -94,6 +94,7 @@
       "src/ui/stores/sceneSharing.js",
       "src/ui/stores/communityPlanning.js",
       "src/ui/views/panels/CommunityPlanningPreview.vue",
+      "src/ui/views/panels/CityBuilderEditor.vue",
       "src/ui/stores/voice.js",
       "src/ui/stores/location.js",
       "src/ui/stores/streetLevel.js",

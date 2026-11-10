@@ -96,6 +96,23 @@ try {
   });
   const isOpen = () => page.$eval('#command-palette', (node) => node.open);
   const open = async () => {
+    await page.waitForFunction(
+      () => {
+        const button = document.getElementById('command-palette-toggle');
+        if (!window.__godsEyeView?.voiceCommands?.runner || !button) return false;
+        const rect = button.getBoundingClientRect();
+        const hit = document.elementFromPoint(
+          rect.x + rect.width / 2,
+          rect.y + rect.height / 2,
+        );
+        return (
+          rect.width > 0 &&
+          rect.height > 0 &&
+          (hit === button || button.contains(hit))
+        );
+      },
+      { timeout: 120000 },
+    );
     await page.click('#command-palette-toggle');
     await page.waitForFunction(
       () => document.getElementById('command-palette').open,

@@ -50,21 +50,24 @@ const reservationRows = JSON.parse(
 // Freeze synthetic merge-race fixtures at the pre-coordination published ledger.
 // Real production ownership is checked independently by the complete pin below.
 const coordinatedRows = [
-  ['local-usgs-water', '9'],
+  ['local-usgs-water', '02'],
   ['local-usgs-lakes', '00'],
   ['local-usgs-springs', '01'],
-  ['caba-traffic-enforcement', '02'],
-  ['river-levels', '03'],
+  ['caba-traffic-enforcement', '03'],
   ['shipwrecks', '04'],
   ['air-accidents', '05'],
 ];
 const coordinatedIds = new Set(coordinatedRows.map(([id]) => id));
 const historicalReservationRows = reservationRows.filter(
-  ([id]) => !coordinatedIds.has(id),
+  ([id]) => !coordinatedIds.has(id) && id !== 'wildlife-sightings',
 );
 const historicalReservations = parseLayerStateTokenReservations(
   historicalReservationRows,
 );
+const publishedReservations = parseLayerStateTokenReservations([
+  ...historicalReservationRows,
+  ['wildlife-sightings', '9'],
+]);
 
 test('pre-ledger published ownership is independent of the candidate mapping', () => {
   assert.notStrictEqual(
@@ -162,11 +165,11 @@ test('reservation ledger is complete, pinned, and rejects duplicate or malformed
       'sea-marks': '6',
       'ski-pistes': '7',
       'drone-airspace': '8',
-      'local-usgs-water': '9',
+      'wildlife-sightings': '9',
       'local-usgs-lakes': '00',
       'local-usgs-springs': '01',
-      'caba-traffic-enforcement': '02',
-      'river-levels': '03',
+      'local-usgs-water': '02',
+      'caba-traffic-enforcement': '03',
       shipwrecks: '04',
       'air-accidents': '05',
     },
@@ -209,6 +212,30 @@ test('reservation ledger is complete, pinned, and rejects duplicate or malformed
   assert.throws(
     () => parseLayerStateTokenReservations([...reservationRows, ['future']]),
     /Invalid layer-state token ledger row/,
+  );
+});
+
+test('published Wildlife token 9 cannot be reassigned by a pending layer batch', () => {
+  assert.equal(publishedReservations['wildlife-sightings'], '9');
+  assert.equal(nextLayerStateToken(publishedReservations), '00');
+  assert.equal(LAYER_STATE_TOKEN_RESERVATIONS['wildlife-sightings'], '9');
+  assert.equal(LAYER_STATE_TOKEN_RESERVATIONS['local-usgs-water'], '02');
+  assert.equal(LAYER_STATE_TOKEN_RESERVATIONS['river-levels'], undefined);
+  assert.equal(
+    validateLayerStateAllocations(
+      publishedReservations,
+      LAYER_STATE_TOKEN_RESERVATIONS,
+    ),
+    true,
+  );
+  assert.throws(
+    () =>
+      validateLayerStateAllocations(publishedReservations, {
+        ...LAYER_STATE_TOKEN_RESERVATIONS,
+        'wildlife-sightings': '02',
+        'local-usgs-water': '9',
+      }),
+    /Published layer-state token changed or removed: wildlife-sightings/,
   );
 });
 
@@ -488,16 +515,32 @@ function* permutations(items) {
   }
 }
 
-test('coordinated reservations allow all 120 feature merge orders without reallocating tokens', () => {
+test('coordinated reservations allow all 24 live feature merge orders without reallocating tokens', () => {
   assert.equal(nextLayerStateToken(), '06');
-  assert.equal(validateLayerStateAllocations(historicalReservations), true);
+  assert.equal(
+    validateLayerStateAllocations(
+      publishedReservations,
+      LAYER_STATE_TOKEN_RESERVATIONS,
+    ),
+    true,
+  );
   const groups = [
     coordinatedRows.slice(0, 3),
     ...coordinatedRows.slice(3).map((row) => [row]),
   ];
   let orders = 0;
   for (const order of permutations(groups)) {
+    // The PR predates #1591, which published Wildlife Sightings on main.
+    // Include that published layer in the synthetic mainline registry.
     let registry = [...LAYER_STATE_REGISTRY];
+    if (!registry.some(({ id }) => id === 'wildlife-sightings')) {
+      registry.push({
+        id: 'wildlife-sightings',
+        token: '9',
+        disposition: 'enabled-only',
+      });
+    }
+    registry.sort((a, b) => a.id.localeCompare(b.id));
     for (const group of order) {
       registry = [
         ...registry,
@@ -516,11 +559,13 @@ test('coordinated reservations allow all 120 feature merge orders without reallo
     assert.equal(registry.length, 42);
     orders++;
   }
-  assert.equal(orders, 120);
+  assert.equal(orders, 24);
   assert.equal(
-    LAYER_STATE_REGISTRY.length,
-    35,
-    'reservations do not activate layers',
+    coordinatedRows.some(([id]) =>
+      LAYER_STATE_REGISTRY.some((layer) => layer.id === id),
+    ),
+    false,
+    'reservations alone must not activate a layer',
   );
   assert.equal(
     decodeLayerStateParams(new URLSearchParams('v=2&l=02')),

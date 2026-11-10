@@ -5449,27 +5449,25 @@ and unreachable upstream (502/504) separately from road geometry.
   explicit-empty form); unknown option tokens are ignored. Restoration
   settles independently per layer so one failed or unavailable source cannot
   block its siblings.
-- Layer tokens are permanent public compatibility identifiers. The reservation
-  JSON ledger at `src/data/layerStateTokenReservations.json` pins all existing
-  one-character assignments (all letters plus `0`, `1` and
-  `2` on current `main`) even if a layer is later removed. New layers allocate
-  the remaining unreserved single-character digits first (`3` through `9` on
-  current `main`), then the next unreserved two-character
-  base-36 token (`00` through `zz`) after rebasing onto the merge-time `main`;
-  the dot-delimited v2 codec accepts both widths without changing existing
-  links or the schema version. The contributor
-  check reads the complete published JSON ledger from `origin/main`, including
-  retired reservations, so later assignments cannot silently replace published
-  ones. The pre-ledger base is accepted only at its known source blob; unknown
-  historical shapes fail closed.
-  Pull-request CI runs this check against `origin/main`.
-- `scripts/qa-layer-token-twochar.mjs` simulates exhaustion of the earlier
-  digit slots and injects a no-network `00` layer only into isolated dev-browser
-  responses. It proves encoding, a cold-recipient reload, restoration, explicit
-  OFF, and legacy-token compatibility. This is synthetic
-  end-to-end evidence, not production allocation: `00` remains unreserved until
-  the first eligible real layer receives it after the free digits through the
-  normal allocation process and passes its own application share/reload check.
+- Layer tokens are permanent public compatibility identifiers. All
+  one-character tokens are now assigned on upstream main, including `9` for
+  Wildlife Sightings (#1591). The JSON reservation ledger at
+  `src/data/layerStateTokenReservations.json` preserves every published
+  mapping, even if a feature is later removed. New tokens are assigned from
+  the two-character base-36 space, with no reuse or aliases. The merge-time
+  checker compares against the complete published ledger and rejects
+  changed/removed rows or noncontiguous new allocations.
+- `docs/LAYER-TOKEN-COORDINATION.md` proposes six inactive reservations
+  (`00` through `05`) for four still-open feature PRs, leaving `06`
+  as the next free token. Closing River Levels #1565 in favor of Data
+  Library #1604 means no core token is reserved for that withdrawn layer.
+  Reservations alone do not add an active registry or catalog layer.
+- `scripts/qa-layer-token-twochar.mjs` derives the first still-free
+  two-character token from the production ledger and injects a no-network
+  QA-only layer. The browser scenario checks share encoding, cold reload,
+  explicit OFF, malformed lists, and legacy compatibility; it never
+  publishes its fixture token. Browser acceptance remains separate from
+  ledger/codec unit tests.
 - Stable visible options are limited to aircraft 3D mode, selected civilian and
   military flight IDs, Satellite catalog and selection, CCTV coverage/projection/
   auto-hop, and Radio filter/volume. Playback and tuning, live-data health,

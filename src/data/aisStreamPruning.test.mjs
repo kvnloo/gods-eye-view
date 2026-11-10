@@ -8,7 +8,7 @@ import {
   readAisTrack,
 } from '../../server/providers/vessels/ais-store.js';
 
-// Pruning runs on every AISStream position message, so it evicts from the
+// Pruning runs on every recognized AISStream message, so it evicts from the
 // front of an update-ordered cache instead of scanning or sorting it. These
 // tests pin the observable contract that ordering must preserve: stale and
 // over-cap eviction always removes the least recently updated vessels, even
@@ -85,4 +85,45 @@ test('over the cap, the least recently updated vessel is evicted, not the first 
   assert.ok(live.has('300000000'));
   assert.ok(!live.has('300000001'));
   assert.ok(live.has(String(300000000 + AISSTREAM_CACHE_MAX)));
+});
+
+// Static-only MMSIs also use this cache: traffic with no fixes must still
+// enforce its cap, without evicting metadata used by a reporting vessel.
+const staticReport = (mmsi, name = `Vessel ${mmsi}`) => ({
+  MessageType: 'ShipStaticData',
+  Message: { ShipStaticData: { UserID: Number(mmsi), Name: name, Type: 70 } },
+  MetaData: { MMSI: mmsi },
+});
+
+test('static-only bursts evict old metadata but preserve active vessel name and type', (t) => {
+  t.mock.timers.enable({ apis: ['Date'], now: Date.UTC(2026, 9, 1, 12) });
+  const epochSec = Math.floor(Date.now() / 1000);
+  const active = '400000001';
+  const oldestStaticOnly = '500000000';
+
+  assert.equal(ingestAisStreamEnvelope(staticReport(active, 'Active Vessel')), true);
+  ingestAisStreamEnvelope(positionReport(active, { epochSec }));
+  for (let i = 0; i < AISSTREAM_CACHE_MAX; i++) {
+    ingestAisStreamEnvelope(staticReport(String(500000000 + i)));
+  }
+  // A current position report refreshes the active vessel's static metadata.
+  ingestAisStreamEnvelope(positionReport(active, { epochSec }));
+  for (let i = AISSTREAM_CACHE_MAX; i < AISSTREAM_CACHE_MAX * 2; i++) {
+    ingestAisStreamEnvelope(staticReport(String(500000000 + i)));
+  }
+
+  // No position arrived during the last 50k static reports. The oldest
+  // static-only row should already be gone before its first position.
+  ingestAisStreamEnvelope(positionReport(oldestStaticOnly, { epochSec }));
+  const oldRow = aisStreamRows(AISSTREAM_CACHE_MAX + 10).find(
+    (row) => row.mmsi === oldestStaticOnly,
+  );
+  assert.equal(oldRow?.name, `MMSI ${oldestStaticOnly}`);
+
+  ingestAisStreamEnvelope(positionReport(active, { epochSec }));
+  const activeRow = aisStreamRows(AISSTREAM_CACHE_MAX + 10).find(
+    (row) => row.mmsi === active,
+  );
+  assert.equal(activeRow?.name, 'Active Vessel');
+  assert.equal(activeRow?.type, '70');
 });

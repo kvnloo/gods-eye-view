@@ -254,8 +254,10 @@ vessel's trail, but still counts as feed liveness; the vessel layer also
 refuses any row outside ±90° / ±180°. The live AIS cache and the static-report
 cache are kept in update order, so stale and over-cap eviction removes the
 least recently updated vessels from the front without scanning the cache on
-each message. Static reports are capped at twice the live cache, and the
-pending first-fix sweep runs at most once a minute.
+each message. Static reports are capped at twice the live cache even when
+no position fixes arrive. Position updates refresh the static entry's eviction
+order so active vessels retain known names and types through static-only churn;
+the pending first-fix sweep runs at most once a minute.
 
 Native `<select>` controls declare a dark colour scheme and explicit option
 colours, so the browser-painted option list matches the panel it drops out of.

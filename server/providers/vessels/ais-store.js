@@ -71,9 +71,18 @@ export function ingestAisStreamEnvelope(envelope) {
   // A positionless but well-formed record (static data, or a transponder
   // without a fix) is still the feed delivering AIS traffic, so it counts as
   // liveness.
-  if (!isAvailableAisPosition(lat, lon)) return true;
+  if (!isAvailableAisPosition(lat, lon)) {
+    // Static-only reports must also trigger the bounded-cache eviction.
+    pruneAisStreamCache();
+    return true;
+  }
 
   const staticData = _aisStreamStatic.get(mmsi) || {};
+  if (_aisStreamStatic.has(mmsi)) {
+    // Active position updates keep their metadata ahead of static-only MMSIs.
+    _aisStreamStatic.delete(mmsi);
+    _aisStreamStatic.set(mmsi, staticData);
+  }
   // Re-insert so Map order stays least-recently-updated first; pruning then
   // evicts from the front without scanning or sorting the whole cache.
   _aisStreamVessels.delete(mmsi);
@@ -242,8 +251,8 @@ export function aisStreamRows(maxRows) {
 }
 
 /**
- * Runs on every position message, so it must not scan the cache. Vessel and
- * static maps are kept in update order (delete + set on write), which lets
+ * Runs on every recognized AIS message, so it must not scan the cache. Vessel
+ * and static maps are kept in update order (delete + set on write), which lets
  * stale and over-cap eviction stop at the first entry that survives.
  */
 function pruneAisStreamCache() {

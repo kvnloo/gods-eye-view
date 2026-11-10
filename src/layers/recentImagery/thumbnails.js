@@ -15,6 +15,7 @@ const EMPTY = Object.freeze({
   status: 'unknown',
   objectUrl: null,
   acquisitionTime: null,
+  presentBoxes: null,
   loading: false,
 });
 
@@ -90,6 +91,7 @@ export function createThumbnailLoader({
     let status = 'error';
     let objectUrl = null;
     let acquisitionTime = null;
+    let presentBoxes = null;
     let cancelled = false;
     try {
       const response = await requestThumbnail(entry.candidate, entry.box, {
@@ -99,6 +101,9 @@ export function createThumbnailLoader({
       if (controller.signal.aborted) {
         cancelled = true;
       } else if (response?.ok) {
+        presentBoxes = Array.isArray(response.presentBoxes)
+          ? response.presentBoxes
+          : null;
         const present = String(
           response.headers?.get?.('Data-Present') ?? '',
         ).toLowerCase();
@@ -133,6 +138,7 @@ export function createThumbnailLoader({
     if (status !== 'error' || entry.status !== 'present') {
       entry.status = status;
       entry.acquisitionTime = acquisitionTime;
+      entry.presentBoxes = presentBoxes;
     }
     entry.objectUrl = objectUrl;
     touch(entry);
@@ -183,6 +189,7 @@ export function createThumbnailLoader({
         status: 'unknown',
         objectUrl: null,
         acquisitionTime: null,
+        presentBoxes: null,
         loading: false,
         controller: null,
         touched: 0,
@@ -237,7 +244,7 @@ export function createThumbnailLoader({
     /**
      * Read a day's state. A read is not a use: it never changes residency.
      * @param {string} key Candidate key.
-     * @returns {{ status: 'unknown'|'present'|'empty'|'error', objectUrl: string | null, acquisitionTime: string | null, loading: boolean }}
+     * @returns {{ status: 'unknown'|'present'|'empty'|'error', objectUrl: string | null, acquisitionTime: string | null, presentBoxes: Array<object> | null, loading: boolean }}
      */
     get(key) {
       const entry = entries.get(key);
@@ -246,6 +253,7 @@ export function createThumbnailLoader({
         status: entry.status,
         objectUrl: entry.objectUrl,
         acquisitionTime: entry.acquisitionTime,
+        presentBoxes: entry.presentBoxes,
         loading: entry.loading,
       };
     },

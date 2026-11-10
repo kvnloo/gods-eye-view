@@ -6,6 +6,8 @@ import { MapSourceController } from '../../maps/controller.js';
 import { createDefaultMapSources } from '../../maps/defaultSources.js';
 import { resetPointerOwnership } from '../../data/inputOwnership.js';
 import { initImageryBoxTool } from '../../ui/imageryBoxTool.js';
+import { createRecentImagerySource } from './source.js';
+import { createThumbnailLoader } from './thumbnails.js';
 import {
   FOCUS_DEBOUNCE_MS,
   MODES,
@@ -1405,8 +1407,59 @@ test('a box dragged across the dateline is searched, listed and draped as one bo
   assert.deepEqual(f.catalog.searches.at(-1).request.box, box);
   f.catalog.resolveLast();
   await settle();
+  f.thumbnails.probeRequested('present');
   assert.equal(f.snap().candidates.length, 4);
   assert.equal(f.snap().preview.key, S18);
   assert.equal(f.drapes().a, `${S18}|none`, 'the crossing box is draped');
   assert.equal(f.snap().boxSizeKm.width < 100, true, 'the short arc, not 360°');
+});
+
+test('VIIRS-only dateline admission carries per-half evidence into the live slot', async () => {
+  const box = { west: 179.9, south: 0, east: -179, north: 1 };
+  const good = { west: -180, south: 0, east: -179, north: 1 };
+  const source = createRecentImagerySource({
+    thumbnailUrl: ({ box: half }) => String(half.west),
+    fetchImpl: async (url) =>
+      new Response('image', {
+        headers: { 'Data-Present': url === '-180' ? 'true' : 'false' },
+      }),
+  });
+  const thumbnails = createThumbnailLoader({
+    requestThumbnail: source.getThumbnail,
+    createObjectUrl: () => 'blob:viirs',
+    revokeObjectUrl: () => {},
+  });
+  const renderer = fakeRenderer();
+  const renders = [];
+  const showSlot = renderer.showSlot.bind(renderer);
+  renderer.showSlot = (slot, item, selectedBox, options) => {
+    renders.push({ slot, key: item.key, presentBoxes: options.presentBoxes });
+    return showSlot(slot, item, selectedBox, options);
+  };
+  const day = candidate('VIIRS', '2026-09-21');
+  const layer = createRecentImageryLayer({
+    catalog: {
+      searchHls: async () => ({
+        candidates: [day],
+        truncated: false,
+        errors: [],
+      }),
+    },
+    renderer,
+    thumbnails,
+    host: () => ({ collection: {}, kind: 'globe' }),
+    now: () => NOW,
+  });
+  layer.setSources({ viirs: true });
+  layer.enable();
+  assert.equal(layer.setBox(box), true);
+  await settleTimes(5);
+
+  const snapshot = layer.getSnapshot();
+  assert.equal(snapshot.candidates.length, 1);
+  assert.equal(snapshot.candidates[0].thumbnail.status, 'present');
+  assert.equal(snapshot.candidates[0].drapable, true);
+  assert.equal(snapshot.shown.a, day.key, 'one good side keeps the day');
+  assert.deepEqual(renders.at(-1)?.presentBoxes, [good]);
+  layer.destroy();
 });

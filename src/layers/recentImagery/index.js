@@ -205,7 +205,11 @@ export function createRecentImageryLayer({
     availability: availability(candidate),
   });
   const drapable = (candidate) =>
-    sourceOn(candidate) && availability(candidate) === 'present';
+    sourceOn(candidate) &&
+    availability(candidate) === 'present' &&
+    // CMR evidence cannot substitute for per-half Data-Present at ±180°.
+    (!(_box?.west > _box?.east) ||
+      thumbnails.get(candidate.key)?.status === 'present');
 
   const sourcedCandidates = () => _candidates.filter(sourceOn);
   /** Source-on candidates, minus confirmed-empty days unless asked for. */
@@ -543,6 +547,9 @@ export function createRecentImageryLayer({
       const candidate = candidateFor(shown[slotId]);
       if (candidate && _hostInfo.collection) {
         renderer.showSlot(slotId, candidate, _box, {
+          ...(_box?.west > _box?.east
+            ? { presentBoxes: thumbnails.get(candidate.key)?.presentBoxes ?? null }
+            : {}),
           alpha: _alpha,
           splitDirection: !live
             ? 'none'
@@ -813,7 +820,7 @@ export function createRecentImageryLayer({
       _enabled = true;
       _comparisonError = null;
       _unsubscribeThumbnails?.();
-      _unsubscribeThumbnails = thumbnails.subscribe(() => {
+      _unsubscribeThumbnails = thumbnails.subscribe((key) => {
         // A probe can take a pinned day off the map or let a followed focus
         // preview; both change more than the cards, so a full notification
         // follows the thumbnail one.
@@ -830,9 +837,14 @@ export function createRecentImageryLayer({
         const drapesChanged = SLOT_IDS.some(
           (slotId) => (owned[slotId]?.key || null) !== shown[slotId],
         );
-        if (drapesChanged && !pruned && !followed) syncRender();
+        const datelineProbeChanged =
+          _box?.west > _box?.east &&
+          SLOT_IDS.some((slotId) => shown[slotId] === key);
+        if ((drapesChanged || datelineProbeChanged) && !pruned && !followed)
+          syncRender();
         notify('thumbnail');
-        if (pruned || followed || drapesChanged) notify();
+        if (pruned || followed || drapesChanged || datelineProbeChanged)
+          notify();
       });
       syncHost();
       if (_box && !_candidates.length) void runSearch();

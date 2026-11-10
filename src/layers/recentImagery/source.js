@@ -1,6 +1,8 @@
 import { searchHls } from './catalog.js';
 import { gibsTemplate, nonCrossingBoxes, wvsSnapshotUrl } from './model.js';
 
+const DATELINE_PROBE_TIMEOUT_MS = 10_000;
+
 /**
  * Worldview Snapshots rejects a BBOX with west > east, so a dateline box is
  * probed as its two non-crossing halves, wider first. Granules do not cross
@@ -44,35 +46,83 @@ export function createRecentImagerySource({
   thumbnailUrl = wvsSnapshotUrl,
   tileTemplate = gibsTemplate,
   credit = 'NASA GIBS',
+  setTimeoutImpl = (fn, ms) => globalThis.setTimeout(fn, ms),
+  clearTimeoutImpl = (id) => globalThis.clearTimeout(id),
 } = {}) {
   return {
     credit,
     searchHls: (query) => search({ ...query, fetchImpl }),
     async getThumbnail(candidate, box, { size = 256, signal } = {}) {
       signal?.throwIfAborted();
-      const settled = await Promise.allSettled(
-        requestBoxes(box).map((half) =>
-          fetchImpl(
-            thumbnailUrl({
-              product: candidate.product,
-              day: candidate.day,
-              box: half,
-              width: size,
-              height: size,
-            }),
-            { signal },
-          ),
-        ),
-      );
+      const boxes = requestBoxes(box);
+      const urlFor = (half) =>
+        thumbnailUrl({
+          product: candidate.product,
+          day: candidate.day,
+          box: half,
+          width: size,
+          height: size,
+        });
+      if (boxes.length === 1) {
+        const response = await fetchImpl(urlFor(boxes[0]), { signal });
+        signal?.throwIfAborted();
+        return response;
+      }
+
+      // A slow or non-responsive half must not occupy a loader slot forever.
+      // Each probe retains the parent caller's cancellation independently.
+      const probe = async (half) => {
+        const controller = new AbortController();
+        let timer;
+        let onAbort;
+        const cancelled = signal
+          ? new Promise((_, reject) => {
+              onAbort = () => {
+                controller.abort();
+                reject(
+                  signal.reason ??
+                    new DOMException('Thumbnail cancelled', 'AbortError'),
+                );
+              };
+              signal.addEventListener('abort', onAbort, { once: true });
+            })
+          : null;
+        try {
+          const deadline = new Promise((_, reject) => {
+            timer = setTimeoutImpl(() => {
+              controller.abort();
+              reject(new Error('Worldview dateline probe timed out'));
+            }, DATELINE_PROBE_TIMEOUT_MS);
+          });
+          return await Promise.race([
+            fetchImpl(urlFor(half), { signal: controller.signal }),
+            deadline,
+            ...(cancelled ? [cancelled] : []),
+          ]);
+        } finally {
+          clearTimeoutImpl(timer);
+          signal?.removeEventListener('abort', onAbort);
+        }
+      };
+
+      const settled = await Promise.allSettled(boxes.map(probe));
       signal?.throwIfAborted();
       const responses = settled
         .filter((result) => result.status === 'fulfilled')
         .map((result) => result.value);
-      // A half that data proves present settles the day; otherwise a
-      // rejected half is an error, never an empty day.
+      // A rejected half is an error unless another half proves data present.
       if (responses.length < settled.length && !responses.some(isPresent))
         throw settled.find((result) => result.status === 'rejected').reason;
-      return responses.length > 1 ? combineHalves(responses) : responses[0];
+      const response =
+        responses.length > 1 ? combineHalves(responses) : responses[0];
+      // A day may be present in only one half. Unknown or failed halves may
+      // not drape opaque VIIRS JPEG tiles until they are confirmed present.
+      response.presentBoxes = boxes.filter(
+        (_half, index) =>
+          settled[index].status === 'fulfilled' &&
+          isPresent(settled[index].value),
+      );
+      return response;
     },
     getTileTemplate: (product, day) => tileTemplate(product, day),
   };

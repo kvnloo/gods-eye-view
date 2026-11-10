@@ -28,6 +28,8 @@ function clampAlpha(value) {
 
 const boxKey = (box) =>
   [box.west, box.south, box.east, box.north].map(Number).join(',');
+const presentKey = (boxes) =>
+  Array.isArray(boxes) ? boxes.map(boxKey).sort().join('|') : null;
 
 /**
  * Gate a provider's `requestImage` through the semaphore. Returning
@@ -147,9 +149,13 @@ export function createRecentImageryRenderer({
     }
   }
 
-  function mount(slotId, { candidate, box, alpha, split }) {
-    // [] means "not a box": add no layer rather than drape the raw box.
-    const parts = nonCrossingBoxes(box);
+  function mount(slotId, { candidate, box, alpha, split, presentBoxes }) {
+    // [] means "not a box" or no confirmed imagery: drape nothing.
+    const parts = nonCrossingBoxes(box).filter(
+      (part) =>
+        !Array.isArray(presentBoxes) ||
+        presentBoxes.some((present) => boxKey(present) === boxKey(part)),
+    );
     if (!parts.length) return false;
     // Build every provider before adding any layer, so a throw on the second
     // half of a dateline box cannot leave the first layer untracked.
@@ -173,6 +179,7 @@ export function createRecentImageryRenderer({
       collection: host.collection,
       candidate,
       box,
+      presentBoxes,
       alpha,
       split,
     };
@@ -187,14 +194,14 @@ export function createRecentImageryRenderer({
      * @param {'a'|'b'} slotId
      * @param {object} candidate
      * @param {object} box Degrees box.
-     * @param {{ alpha?: number, splitDirection?: 'left'|'right'|'none' }} [look]
+     * @param {{ alpha?: number, splitDirection?: 'left'|'right'|'none', presentBoxes?: Array<object> | null }} [look]
      * @returns {boolean} Whether a layer is now draped for the slot.
      */
     showSlot(
       slotId,
       candidate,
       box,
-      { alpha = 1, splitDirection = 'none' } = {},
+      { alpha = 1, splitDirection = 'none', presentBoxes = null } = {},
     ) {
       if (destroyed || !candidate?.key || !box) return false;
       if (!host.collection) {
@@ -202,12 +209,17 @@ export function createRecentImageryRenderer({
         return false;
       }
       const current = owned[slotId];
-      const look = { alpha: clampAlpha(alpha), split: splitDirection };
+      const look = {
+        alpha: clampAlpha(alpha),
+        split: splitDirection,
+        presentBoxes,
+      };
       if (
         current &&
         current.collection === host.collection &&
         current.candidate.key === candidate.key &&
-        boxKey(current.box) === boxKey(box)
+        boxKey(current.box) === boxKey(box) &&
+        presentKey(current.presentBoxes) === presentKey(presentBoxes)
       ) {
         if (current.alpha !== look.alpha || current.split !== look.split) {
           Object.assign(current, look);

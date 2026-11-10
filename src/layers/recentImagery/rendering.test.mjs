@@ -257,6 +257,40 @@ test('a dateline box drapes one layer on each side of ±180 and removes both', (
   assert.equal(globe.layers.length, 0);
 });
 
+test('VIIRS drapes only confirmed-present dateline halves and keeps them across a host switch', () => {
+  const { renderer, globe } = fixture();
+  const box = { west: 179.9, south: 0, east: -179, north: 1 };
+  const east = { west: 179.9, south: 0, east: 180, north: 1 };
+  const west = { west: -180, south: 0, east: -179, north: 1 };
+  assert.equal(
+    renderer.showSlot('a', VIIRS, box, { presentBoxes: [west] }),
+    true,
+  );
+  assert.deepEqual(
+    globe.layers.map((layer) => layer.provider.options.rectangle),
+    [west],
+    'the empty side must never paint an opaque black JPEG tile',
+  );
+  assert.equal(globe.layers[0].provider.options.hasAlphaChannel, false);
+
+  renderer.showSlot('a', VIIRS, box, { presentBoxes: [east, west] });
+  assert.equal(globe.layers.length, 2, 'a newly confirmed half is admitted');
+  renderer.showSlot('a', VIIRS, box, { presentBoxes: [east] });
+  assert.deepEqual(
+    globe.layers.map((layer) => layer.provider.options.rectangle),
+    [east],
+    'a half no longer confirmed present is removed',
+  );
+  const next = fakeCollection();
+  renderer.rebind({ collection: next, kind: 'tileset' });
+  assert.equal(globe.layers.length, 0);
+  assert.deepEqual(
+    next.layers.map((layer) => layer.provider.options.rectangle),
+    [east],
+    'rebind preserves the per-half filter',
+  );
+});
+
 test('a dateline provider that fails on the second half adds no layer', () => {
   let built = 0;
   const base = fakeCesium();

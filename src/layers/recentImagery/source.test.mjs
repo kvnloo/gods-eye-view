@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRecentImagerySource } from './source.js';
+import { manualTimers, settle } from './testDoubles.mjs';
 
 test('imagery source routes catalog, thumbnails and tiles through supplied adapters', async () => {
   const controller = new AbortController();
@@ -100,6 +101,9 @@ test('a crossing box probes both halves and is present when only the narrow half
   assert.equal(requested.length, 2);
   assert.equal(response.headers.get('Data-Present'), 'true');
   assert.equal(await response.text(), 'narrow');
+  assert.deepEqual(response.presentBoxes, [
+    { west: 179.9, south: 0, east: 180, north: 1 },
+  ]);
 });
 
 test('a crossing box with data only on the wider half is present and shows the wider side', async () => {
@@ -153,4 +157,52 @@ test('a rejected half does not hide data on the other half, and never reads as e
     failing.source.getThumbnail(candidate, NARROW_WEST),
     /network/,
   );
+});
+
+test('a stalled dateline half has a deadline and cannot block a confirmed VIIRS day', async () => {
+  const timers = manualTimers();
+  const source = createRecentImagerySource({
+    thumbnailUrl: ({ box }) => `${box.west}/${box.east}`,
+    fetchImpl: (url) =>
+      url.startsWith('-180/')
+        ? Promise.resolve(dated('true', 'wide'))
+        : new Promise(() => {}),
+    setTimeoutImpl: timers.setTimeoutImpl,
+    clearTimeoutImpl: timers.clearTimeoutImpl,
+  });
+  const pending = source.getThumbnail(candidate, NARROW_WEST);
+  await settle();
+  assert.equal(timers.armed(), 1, 'only the stalled half retains a deadline');
+  assert.equal([...timers.pending.values()][0].ms, 10_000);
+  timers.flush();
+  const response = await pending;
+  assert.equal(response.headers.get('Data-Present'), 'true');
+  assert.deepEqual(response.presentBoxes, [
+    { west: -180, south: 0, east: -179, north: 1 },
+  ]);
+  assert.equal(timers.armed(), 0);
+});
+
+test('cancelling a dateline thumbnail aborts both half probes and clears timers', async () => {
+  const timers = manualTimers();
+  const controller = new AbortController();
+  const signals = [];
+  const source = createRecentImagerySource({
+    thumbnailUrl: ({ box }) => `${box.west}/${box.east}`,
+    fetchImpl: (_url, { signal }) => {
+      signals.push(signal);
+      return new Promise(() => {});
+    },
+    setTimeoutImpl: timers.setTimeoutImpl,
+    clearTimeoutImpl: timers.clearTimeoutImpl,
+  });
+  const pending = source.getThumbnail(candidate, NARROW_WEST, {
+    signal: controller.signal,
+  });
+  assert.equal(timers.armed(), 2);
+  controller.abort();
+  await assert.rejects(pending, { name: 'AbortError' });
+  assert.equal(timers.armed(), 0);
+  assert.equal(signals.length, 2);
+  assert.ok(signals.every((signal) => signal.aborted));
 });

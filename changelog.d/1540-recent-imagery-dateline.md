@@ -1,7 +1,9 @@
-- Recent Imagery takes a box dragged across the dateline. The drag was turned
-  into a box about 360° wide and refused as too large; it is now the short box
-  across ±180°, which lists the days for that box and drapes a pinned day on
-  both sides. Availability probes both sides of ±180° (a day counts as present when either
-  side has data), voice accepts named areas across the dateline, and EXPORT is
-  disabled up front with the reason, since Worldview Snapshots cannot draw a
-  box that crosses ±180° (Byrd-IT, #1540).
+- Recent Imagery accepts the short arc of a box dragged across ±180°
+  instead of refusing it as nearly 360° wide. A pinned day drapes only
+  dateline halves confirmed present by Worldview, preventing an empty VIIRS
+  JPEG half from painting black; per-half probes have a deadline so a
+  non-responsive side cannot hold the thumbnail strip indefinitely. A day
+  stays available if either half has data and is empty only when both are
+  confirmed empty. Voice accepts named dateline areas; EXPORT is disabled
+  with the reason because Worldview Snapshots does not support crossing
+  boxes (Byrd-IT, #1540; review findings: gekh).

@@ -68,6 +68,7 @@ test('Data-Present decides the day: present with an object URL and sensing time,
     status: 'present',
     objectUrl: 'blob:1',
     acquisitionTime: '2026-09-18T17:12:00Z',
+    presentBoxes: null,
     loading: false,
   });
   assert.equal(loader.get('L30:2026-09-16').status, 'empty');
@@ -335,4 +336,20 @@ test('injected thumbnail acquisition owns requests while the loader releases obj
   assert.equal(loader.get(entry.key).status, 'present');
   loader.destroy();
   assert.deepEqual(revoked, ['blob:1']);
+});
+
+test('decoded thumbnails retain exactly the confirmed-present dateline rectangles', async () => {
+  const good = { west: -180, south: 0, east: -179, north: 1 };
+  const { loader } = fixture({
+    requestThumbnail: async () =>
+      Object.assign(response({ headers: { 'Data-Present': 'true' } }), {
+        presentBoxes: [good],
+      }),
+  });
+  const item = candidate('VIIRS', '2026-09-21');
+  loader.request(item, { west: 179.9, south: 0, east: -179, north: 1 });
+  await settle();
+  assert.equal(loader.get(item.key).status, 'present');
+  assert.deepEqual(loader.get(item.key).presentBoxes, [good]);
+  loader.destroy();
 });

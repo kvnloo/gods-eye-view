@@ -99,7 +99,8 @@ try {
     await page.waitForFunction(
       () => {
         const button = document.getElementById('command-palette-toggle');
-        if (!window.__godsEyeView?.voiceCommands?.runner || !button) return false;
+        if (!window.__godsEyeView?.voiceCommands?.runner || !button)
+          return false;
         const rect = button.getBoundingClientRect();
         const hit = document.elementFromPoint(
           rect.x + rect.width / 2,

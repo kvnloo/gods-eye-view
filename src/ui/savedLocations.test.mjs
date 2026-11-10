@@ -254,3 +254,52 @@ test('remove backfills the unique limit after excluding a saved id', () => {
   assert.equal(withoutFirst[0].id, '1');
   assert.equal(withoutFirst.at(-1).id, String(MAX_SAVED_LOCATIONS));
 });
+
+for (const field of ['id', 'label', 'action']) {
+  test(`malformed ${field} does not discard valid saved locations`, () => {
+    const invalid = { ...record('bad'), [field]: { toString: null } };
+    const store = memoryStorage({
+      [SAVED_LOCATIONS_STORAGE_KEY]: JSON.stringify([
+        record('a'),
+        invalid,
+        record('b'),
+      ]),
+    });
+    assert.deepEqual(
+      loadSavedLocations(store).map((item) => item.id),
+      ['a', 'b'],
+    );
+    assert.equal(normalizeSavedLocation(invalid), null);
+    assert.equal(
+      persistSavedLocations([record('a'), invalid, record('b')], store),
+      true,
+    );
+    assert.deepEqual(
+      loadSavedLocations(store).map((item) => item.id),
+      ['a', 'b'],
+    );
+    assert.deepEqual(upsertSavedLocation([record('a')], invalid), [
+      record('a'),
+    ]);
+  });
+}
+
+test('text fields require strings rather than coercible values', () => {
+  for (const field of ['id', 'label', 'action']) {
+    for (const value of [
+      123,
+      true,
+      ['fly_to_location'],
+      new String('fly_to_location'),
+    ]) {
+      assert.equal(
+        normalizeSavedLocation({ ...record(), [field]: value }),
+        null,
+      );
+    }
+  }
+  assert.equal(
+    normalizeSavedLocation({ ...record(), label: '  Austin  ' }).label,
+    'Austin',
+  );
+});

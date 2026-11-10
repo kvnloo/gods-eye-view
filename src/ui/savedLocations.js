@@ -15,7 +15,8 @@ function finite(value) {
 }
 
 function boundedText(value, maxLength) {
-  const text = String(value || '').trim();
+  if (typeof value !== 'string') return null;
+  const text = value.trim();
   return text && text.length <= maxLength ? text : null;
 }
 
@@ -43,7 +44,7 @@ export function normalizeSavedLocation(value) {
   if (!value || typeof value !== 'object') return null;
   const id = boundedText(value.id, 120);
   const label = boundedText(value.label, 80);
-  const action = String(value.action || '');
+  const action = value.action;
   if (!id || !label || action !== 'fly_to_location') return null;
 
   const rawArgs = value.args;

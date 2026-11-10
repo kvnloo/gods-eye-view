@@ -178,8 +178,9 @@ No page may frame the app by default: every document keeps
 `X-Frame-Options: DENY` and `frame-ancestors 'none'`. Setting
 `GEV_EMBED_FRAME_ANCESTORS` lets the pages it names (CSP frame-ancestors
 sources, separated by spaces or commas, or `*` alone for any page) frame
-embed-mode documents only. Entries that are not CSP sources (a path, a `;`)
-are dropped with a startup warning rather than written into the header. The MCP Apps
+embed-mode documents only. Valid host-source paths, including trailing slashes,
+remain intact. Invalid entries such as URL queries or fragments are dropped with
+a startup warning; a `;` refuses the entire setting. The MCP Apps
 panel loads the app into its own page and needs no framing.
 
 Answers that have something to show include `data.view`: the view that

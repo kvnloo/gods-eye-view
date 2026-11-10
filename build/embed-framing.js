@@ -35,8 +35,8 @@ export function isEmbedDocumentRequest(url) {
 }
 
 const KEYWORDS = new Set(["'self'", "'none'"]);
-/** A CSP host source: scheme, host (optionally `*.`-prefixed) and port, no path or quotes. */
-const HOST_SOURCE = /^(?:[a-z][a-z0-9+.-]*:\/\/)?(?:\*\.)?[a-z0-9.-]+(?::(?:\d{1,5}|\*))?\/?$/i;
+/** A CSP host source with an optional path-part, but no query, fragment or quotes. */
+const HOST_SOURCE = /^(?:[a-z][a-z0-9+.-]*:\/\/)?(?:\*\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)*\.?(?::(?:\d{1,5}|\*))?(?:\/[a-z0-9._~!$&'()*+=:@%/-]*)?$/i;
 const SCHEME_SOURCE = /^[a-z][a-z0-9+.-]*:$/i;
 
 /**
@@ -45,8 +45,9 @@ const SCHEME_SOURCE = /^[a-z][a-z0-9+.-]*:$/i;
  * shape for env lists) used to be pasted verbatim, giving browsers an invalid
  * directive that silently blocks every framing page. Commas and any
  * whitespace now separate sources, bare keywords gain their quotes, and
- * anything that is not a source (a path, a `;`) is dropped with a warning
- * rather than injected into the header.
+ * valid host-source paths retain their trailing slashes. Invalid tokens
+ * (such as a URL query or fragment) are dropped with a warning, and `;`
+ * rejects the whole setting rather than injecting another directive.
  */
 export function parseFrameAncestors(value, { warn = console.warn } = {}) {
   const raw = String(value ?? '').trim();
@@ -63,7 +64,7 @@ export function parseFrameAncestors(value, { warn = console.warn } = {}) {
   const sources = [];
   for (const token of tokens) {
     const keyword = /^'?(self|none)'?$/i.exec(token);
-    const source = keyword ? `'${keyword[1].toLowerCase()}'` : token.replace(/\/$/, '');
+    const source = keyword ? `'${keyword[1].toLowerCase()}'` : token;
     if (token === '*') {
       warn('GEV_EMBED_FRAME_ANCESTORS: "*" must be the whole value to allow any page; ignoring it here');
     } else if (KEYWORDS.has(source) || SCHEME_SOURCE.test(source) || HOST_SOURCE.test(token)) {

@@ -146,6 +146,41 @@ test('each client gets its own quota rather than sharing one bucket', async (t) 
   );
 });
 
+test('IPv6 privacy addresses share a single /64 OpenSky track quota', async (t) => {
+  let upstreamCalls = 0;
+  stubFetch(t, async () => {
+    upstreamCalls += 1;
+    return trackOk();
+  });
+  const track = install(trackBackfillProxies()).get('/api/flights/track');
+
+  for (let i = 0; i < 30; i += 1) {
+    const admitted = await request(track, {
+      url: `/?icao24=${(0x520000 + i).toString(16)}`,
+      remoteAddress: '2001:db8:1:2::1',
+    });
+    assert.equal(admitted.statusCode, 200);
+  }
+
+  const rotated = await request(track, {
+    url: '/?icao24=52ffff',
+    remoteAddress: '2001:db8:1:2::2',
+  });
+  assert.equal(rotated.statusCode, 429, 'rotating within /64 must not mint quota');
+  assert.equal(
+    upstreamCalls,
+    30,
+    'an IPv6 privacy address must not spend a 31st credit-bearing call',
+  );
+
+  const independent = await request(track, {
+    url: '/?icao24=53ffff',
+    remoteAddress: '2001:db8:1:3::1',
+  });
+  assert.equal(independent.statusCode, 200, 'another /64 has its own quota');
+  assert.equal(upstreamCalls, 31);
+});
+
 test('the retired military route is not metered, so the OpenSky limiter never reaches it', async (t) => {
   let militaryUpstreamCalls = 0;
   stubFetch(t, async (url) => {

@@ -1,6 +1,6 @@
 import { getOpenSkyToken, openSkyRateLimitCooldownMs } from './opensky.js';
 import { readCappedResponseText } from '../common/http.js';
-import { makeRateLimiter, clientKey } from '../common/rate-limit.js';
+import { makeRateLimiter, clientNetworkKey } from '../common/rate-limit.js';
 /**
  * Vite plugin: aircraft track-history backfill proxies (PRD WS-F F1/F2).
  *
@@ -21,7 +21,7 @@ export function trackBackfillProxies() {
   const TRACK_CACHE_MAX = 200;
   const RESPONSE_CAP_BYTES = 5 * 1024 * 1024;
   /**
-   * Requests/min/IP. The per-icao cache below bounds MEMORY, not request
+   * Requests/min/client network (IPv6 /64; IPv4 peer). The per-icao cache below bounds MEMORY, not request
    * volume: every distinct `icao24` is a fresh key, and `icao24` is 6 hex
    * digits, so varying it walks straight past the cache into a live call.
    *
@@ -130,7 +130,7 @@ export function trackBackfillProxies() {
   function install(middlewares) {
     middlewares.use('/api/flights/track', async (req, res) => {
       try {
-        if (!allowOpenSky(clientKey(req))) {
+        if (!allowOpenSky(clientNetworkKey(req))) {
           refuse(res, TRACK_RATE_WINDOW_MS / 1000);
           return;
         }

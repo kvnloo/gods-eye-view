@@ -2518,6 +2518,46 @@ test('periodic refresh publishes work, failure, and later manager-owned recovery
   assert.equal(explicitRefreshCalls, 1, 'an enabled layer can be refreshed on demand');
 });
 
+test('a key-required FIRMS refresh stays guidance without masking an independent failure', async () => {
+  const mgr = new DataLayerManager({});
+  const events = [];
+  let lastError = null;
+  mgr.register({
+    id: 'local-firms',
+    name: 'FIRMS Active Fires',
+    icon: '',
+    source: 'NASA FIRMS',
+    init() {},
+    enable() {},
+    disable() {},
+    async update() {},
+    getStats() {
+      return {
+        count: 0,
+        lastUpdate: null,
+        keyRequired: true,
+        error: 'KEY REQUIRED',
+        lastError,
+      };
+    },
+  });
+  const entry = mgr.layers.get('local-firms');
+  entry.initialized = true;
+  entry.enabled = true;
+  entry.lifecycleState = 'enabled';
+  mgr.subscribe((event) => events.push(event.type));
+
+  assert.equal(await mgr._runPeriodicUpdate('local-firms', entry), true);
+  assert.deepEqual(events, ['refresh-transition', 'refresh']);
+  assert.equal(mgr.getAll()[0].stats.managerRefreshError, null);
+  assert.equal(mgr.getAll()[0].stats.keyRequired, true);
+
+  lastError = 'Upstream 503';
+  assert.equal(await mgr._runPeriodicUpdate('local-firms', entry), false);
+  assert.deepEqual(events.slice(-2), ['refresh-transition', 'refresh-failed']);
+  assert.equal(mgr.getAll()[0].stats.managerRefreshError, 'Upstream 503');
+});
+
 test('periodic rejection preserves a module-specific error and recovers independently', async () => {
   const mgr = new DataLayerManager({});
   let moduleError = 'upstream-specific outage';

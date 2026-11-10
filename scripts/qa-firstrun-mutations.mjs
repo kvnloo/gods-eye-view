@@ -287,9 +287,9 @@ const MUTATIONS = [
     to: "It feels like a forbidden cockpit. It isn't — every feed is public, and every contact is live.",
   },
   {
-    defect: 'the ledgered global-chip defect loses its pointer to the real fix',
+    defect: 'the keyless global-chip note loses its pointer to the real fix',
     file: 'module',
-    from: '    // means a KEY REQUIRED terminal state in src/loadingFeedback.js, a state',
+    from: '    // REQUIRED too (src/loadingFeedback.js) rather than LOAD FAILED.',
     to: '    // (note removed)',
   },
   {

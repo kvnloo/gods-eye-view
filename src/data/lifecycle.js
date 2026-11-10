@@ -60,10 +60,13 @@ function cancelPendingLayerRestore(entry, origin, reason) {
 }
 
 function refreshFailureFromStats(stats, label) {
-  const specific = stats?.error || stats?.lastError;
+  // Key-gated layers retain a human-readable error for their row, but a
+  // missing key is guidance, not a failed refresh. Independent errors still fail.
+  const keyRequired = stats?.keyRequired === true || stats?.missingKey === true;
+  const specific = (keyRequired ? null : stats?.error) || stats?.lastError;
   if (specific)
     return specific instanceof Error ? specific : new Error(String(specific));
-  if (stats?.unavailable === true || stats?.available === false) {
+  if (!keyRequired && (stats?.unavailable === true || stats?.available === false)) {
     return new Error(`${label} refresh unavailable`);
   }
   return null;

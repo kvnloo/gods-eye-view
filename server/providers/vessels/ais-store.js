@@ -62,7 +62,11 @@ export function ingestAisStreamEnvelope(envelope) {
   );
   // A positionless but well-formed record (static data) is still the feed
   // delivering AIS traffic, so it counts as liveness.
-  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return true;
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    // Positionless static-only traffic must also expire stale cache entries.
+    maybePruneAisStreamCache();
+    return true;
+  }
 
   const staticData = _aisStreamStatic.get(mmsi) || {};
   _aisStreamVessels.set(mmsi, {

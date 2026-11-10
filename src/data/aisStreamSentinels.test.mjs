@@ -131,3 +131,30 @@ test('pruneAisStreamCache preserves static data for active anchored vessels with
   const row = rowFor(mmsi);
   assert.equal(row.name, 'ANCHORED VESSEL');
 });
+
+test('static-only traffic prunes expired entries without a position packet', (t) => {
+  let now = Date.now();
+  t.mock.method(Date, 'now', () => now);
+
+  const staticReport = (mmsi) => ({
+    MessageType: 'ShipStaticData',
+    Message: {
+      ShipStaticData: { UserID: Number(mmsi), Name: 'STATIC ONLY' },
+    },
+    MetaData: { MMSI: mmsi },
+  });
+  const oldMmsi = '999888779';
+  const newMmsi = '999888780';
+
+  assert.equal(ingestAisStreamEnvelope(staticReport(oldMmsi)), true);
+  assert.equal(hasAisStreamStatic(oldMmsi), true);
+
+  now += AISSTREAM_STALE_MS + 11_000;
+  assert.equal(ingestAisStreamEnvelope(staticReport(newMmsi)), true);
+  assert.equal(
+    hasAisStreamStatic(oldMmsi),
+    false,
+    'the next static-only message must trigger paced stale eviction',
+  );
+  assert.equal(hasAisStreamStatic(newMmsi), true);
+});

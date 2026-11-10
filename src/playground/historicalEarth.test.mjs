@@ -27,10 +27,9 @@ test('historical years accept BCE and CE without inventing a year zero', () => {
     Infinity,
     null,
   ]) {
-    assert.throws(
-      () => historicalYear(bad, 2026),
-      { name: /TypeError|RangeError/ },
-    );
+    assert.throws(() => historicalYear(bad, 2026), {
+      name: /TypeError|RangeError/,
+    });
   }
 });
 
@@ -159,13 +158,11 @@ test('lens links evidence and hides unsupported associations', () => {
   const cleanup = mountHistoricalEarthLens({ root, services });
   const year = nodes.find((node) => node.type === 'number');
   const map = nodes.find(
-    (node) =>
-      node.tag === 'a' && /OpenHistoricalMap/.test(node.textContent),
+    (node) => node.tag === 'a' && /OpenHistoricalMap/.test(node.textContent),
   );
   const sources = nodes.find(
     (node) =>
-      node.tag === 'p' &&
-      node.children.some((child) => child.tag === 'a'),
+      node.tag === 'p' && node.children.some((child) => child.tag === 'a'),
   );
   assert.match(map.href, /date=1880$/);
   assert.match(sources.children[0].href, /nps.gov/);
@@ -180,7 +177,6 @@ test('lens links evidence and hides unsupported associations', () => {
   cleanup();
   assert.equal(root.children[0].removed, true);
 });
-
 
 test('documented-site navigation does not steal a running scene camera', () => {
   const { document, nodes, Node } = fakeLensDocument();
@@ -223,7 +219,10 @@ test('globe center switches to an unsourced custom location', () => {
   const services = {
     Cesium: {
       Cartesian2: class {
-        constructor(x, y) { this.x = x; this.y = y; }
+        constructor(x, y) {
+          this.x = x;
+          this.y = y;
+        }
       },
       Ellipsoid: { WGS84: {} },
       Cartographic: { fromCartesian: (point) => point },
@@ -235,9 +234,12 @@ test('globe center switches to an unsourced custom location', () => {
     },
   };
   const cleanup = mountHistoricalEarthLens({ root, services });
-  nodes.find(
-    (node) => node.tag === 'button' && node.textContent === 'Use globe center',
-  ).dispatch('click');
+  nodes
+    .find(
+      (node) =>
+        node.tag === 'button' && node.textContent === 'Use globe center',
+    )
+    .dispatch('click');
   const map = nodes.find(
     (node) => node.tag === 'a' && /OpenHistoricalMap/.test(node.textContent),
   );
@@ -451,4 +453,50 @@ test('failed site camera flights retain a usable UI without owned motion', () =>
   assert.match(status.textContent, /viewer disconnected/);
   cleanup();
   assert.equal(cancellations, 0);
+});
+
+for (const field of ['associatedFrom', 'associatedUntil']) {
+  test(`association rejects malformed ${field} evidence`, () => {
+    for (const value of [
+      undefined,
+      null,
+      NaN,
+      Infinity,
+      -Infinity,
+      '1880',
+      false,
+      0,
+      1880.5,
+    ]) {
+      const place = { ...HISTORICAL_PLACES[0], [field]: value };
+      assert.equal(
+        historicalPlaceAssociation(place, 1880, 2026),
+        null,
+        String(value),
+      );
+    }
+  });
+}
+
+test('association retains inclusive valid intervals and rejects reversed bounds', () => {
+  const place = HISTORICAL_PLACES[0];
+  for (const year of [place.associatedFrom, place.associatedUntil]) {
+    assert.equal(
+      historicalPlaceAssociation(place, year, 2026).status,
+      'documented-residence',
+    );
+  }
+  assert.equal(
+    historicalPlaceAssociation(
+      { ...place, associatedFrom: 1895, associatedUntil: 1878 },
+      1880,
+      2026,
+    ),
+    null,
+  );
+  const bce = { ...place, associatedFrom: -100, associatedUntil: -44 };
+  assert.equal(
+    historicalPlaceAssociation(bce, -44, 2026).status,
+    'documented-residence',
+  );
 });

@@ -32,9 +32,7 @@ export function historicalYear(
       ? String(value)
       : value;
   if (typeof valueText !== 'string' || !/^-?\d{1,4}$/.test(valueText)) {
-    throw new TypeError(
-      'Enter a whole year, using a negative number for BCE.',
-    );
+    throw new TypeError('Enter a whole year, using a negative number for BCE.');
   }
   const year = Number(valueText);
   if (
@@ -135,13 +133,15 @@ export function historicalAnimationView({
   if (!distance) throw new RangeError('Choose two different historical years.');
   // OHM supports negative years, but the consumer UI has no year zero.
   // Do not silently invent a transition date across that boundary.
-  if ((initial.year < 0) !== (finalYear < 0)) {
+  if (initial.year < 0 !== finalYear < 0) {
     throw new RangeError(
       'For BCE to CE comparisons, open the two years separately.',
     );
   }
   if (Math.abs(distance) > 300) {
-    throw new RangeError('Choose a historical window no longer than 300 years.');
+    throw new RangeError(
+      'Choose a historical window no longer than 300 years.',
+    );
   }
   // At most approximately 40 frames, irrespective of the date span.
   const yearStep = Math.ceil(Math.abs(distance) / 40);
@@ -177,6 +177,11 @@ export function historicalPlaceAssociation(place, year, currentYear) {
   const selectedYear = historicalYear(year, currentYear);
   if (
     !place ||
+    !Number.isSafeInteger(place.associatedFrom) ||
+    !Number.isSafeInteger(place.associatedUntil) ||
+    place.associatedFrom === 0 ||
+    place.associatedUntil === 0 ||
+    place.associatedFrom > place.associatedUntil ||
     selectedYear < place.associatedFrom ||
     selectedYear > place.associatedUntil
   ) {
@@ -195,10 +200,7 @@ function centerCoordinates(services) {
   const { Cesium, viewer } = services;
   const canvas = viewer.scene.canvas;
   const point = viewer.camera.pickEllipsoid(
-    new Cesium.Cartesian2(
-      canvas.clientWidth / 2,
-      canvas.clientHeight / 2,
-    ),
+    new Cesium.Cartesian2(canvas.clientWidth / 2, canvas.clientHeight / 2),
     Cesium.Ellipsoid.WGS84,
   );
   if (!point) return null;
@@ -319,8 +321,7 @@ export function mountHistoricalEarthLens({ root, services }) {
         animateButton.disabled = true;
       }
       const association =
-        selectedPlace &&
-        historicalPlaceAssociation(selectedPlace, view.year);
+        selectedPlace && historicalPlaceAssociation(selectedPlace, view.year);
       context.textContent = association
         ? association.label + ' · ' + association.caveat
         : 'Custom location/year · no person-specific perspective verified.';
@@ -423,8 +424,7 @@ export function mountHistoricalEarthLens({ root, services }) {
       frame.src = url;
       frame.hidden = false;
       previewMode = mode;
-      if (mode === 'animate')
-        animateButton.textContent = 'Close animation';
+      if (mode === 'animate') animateButton.textContent = 'Close animation';
       else previewButton.textContent = 'Close dated map';
       status.textContent =
         'Third-party OpenHistoricalMap preview. Historical coverage can be incomplete; ' +
@@ -461,4 +461,3 @@ export function mountHistoricalEarthLens({ root, services }) {
     section.remove();
   };
 }
-

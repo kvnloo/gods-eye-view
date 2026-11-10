@@ -2321,30 +2321,53 @@ try {
     JSON.stringify(narrowViewActions),
   );
 
-  // The collapsed Display/Radio row on a phone: centred on the Reset/Exit
-  // axis and clear of the ground speed and altitude telemetry it once covered.
-  for (const [width, height] of [[390, 844], [360, 740]]) {
+  // Force a route through the Cockpit's real published state: the usual
+  // fixture flight may not have one. Include cramped landscape dimensions.
+  for (const [width, height] of [[390, 844], [360, 740], [320, 568], [667, 240]]) {
     await page.setViewport({ width, height, deviceScaleFactor: 1 });
     const phoneRow = await page.evaluate(async () => {
       const manager = window.__godsEyeView.styleManager;
+      const cockpit = manager.cockpitView;
       manager._setCockpitDisclosure('display', false);
       manager._setCockpitDisclosure('radio', false);
+      const before = {
+        ...cockpit.routeView,
+        direction: { ...cockpit.routeView.direction },
+      };
+      cockpit.publishRoute({
+        ...before,
+        direction: { visible: true, angle: '0deg', label: 'DEST 090°' },
+      });
       await new Promise(requestAnimationFrame);
-      manager.cockpitView.syncSignalLayout();
+      cockpit.syncSignalLayout();
       await new Promise(requestAnimationFrame);
       const rect = (element) => element?.getBoundingClientRect().toJSON() || null;
       const launchers = [...document.querySelectorAll(
         '#cockpit-utility-controls .cockpit-utility-control',
       )].map(rect);
-      return {
+      const tappable = [...document.querySelectorAll(
+        '#cockpit-utility-controls .cockpit-utility-glyph',
+      )].map((button) => {
+        const bounds = button.getBoundingClientRect();
+        const hit = document.elementFromPoint(
+          (bounds.left + bounds.right) / 2,
+          (bounds.top + bounds.bottom) / 2,
+        );
+        return hit === button || button.contains(hit);
+      });
+      const measured = {
         launchers,
+        tappable,
+        direction: rect(document.getElementById('cockpit-route-direction')),
         speed: rect(document.querySelector('#cockpit-hud .cockpit-speed')),
         altitude: rect(document.querySelector('#cockpit-hud .cockpit-altitude')),
         switcher: rect(document.getElementById('view-switcher')),
         viewport: { width: innerWidth, height: innerHeight },
-        // Cyber parks its row at the top; this check is the default theme's.
         theme: document.documentElement.dataset.uiTheme || 'default',
       };
+      cockpit.publishRoute(before);
+      cockpit.syncSignalLayout();
+      return measured;
     });
     const overlaps = (a, b) => Boolean(a && b)
       && a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
@@ -2354,14 +2377,20 @@ try {
       ? (phoneRow.switcher.left + phoneRow.switcher.right) / 2
       : NaN;
     check(
-      `${width}px Cockpit Display/Radio row is centred and clear of the speed and altitude readouts`,
+      `${width}×${height} Cockpit launchers clear DEST/readouts and remain tappable`,
       phoneRow.launchers.length === 2
-        && phoneRow.launchers.every((launcher) => launcher.width > 0)
+        && phoneRow.tappable.length === 2
+        && phoneRow.tappable.every(Boolean)
         && phoneRow.theme !== 'cyber'
+        && phoneRow.direction?.height > 0
         && phoneRow.speed?.width > 0
         && phoneRow.altitude?.width > 0
         && phoneRow.launchers.every((launcher) => (
-          !overlaps(launcher, phoneRow.speed) && !overlaps(launcher, phoneRow.altitude)
+          !overlaps(launcher, phoneRow.direction)
+          && !overlaps(launcher, phoneRow.speed)
+          && !overlaps(launcher, phoneRow.altitude)
+          && launcher.top >= 0
+          && launcher.bottom <= phoneRow.viewport.height
         ))
         && Math.abs((rowLeft + rowRight) / 2 - switcherCentre) <= 2
         && rowLeft >= 0

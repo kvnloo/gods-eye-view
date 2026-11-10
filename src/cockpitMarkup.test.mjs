@@ -1142,7 +1142,7 @@ test('mobile Cockpit prioritizes flight instruments and collision-safe controls'
   // ground speed and altitude readouts; the compass reads the same anchor.
   assert.match(
     mobileCockpit[1],
-    /body\.cockpit-mode \.cockpit-utility-controls \{[\s\S]*?bottom:\s*calc\(var\(--cockpit-compass-bottom\) \+ 182px\);[\s\S]*?left:\s*12px;[\s\S]*?justify-content:\s*center;/,
+    /body\.cockpit-mode \.cockpit-utility-controls \{[\s\S]*?bottom:\s*var\(\s*--cockpit-phone-utility-bottom,\s*calc\(var\(--cockpit-compass-bottom\) \+ 182px\)\s*\);[\s\S]*?left:\s*12px;[\s\S]*?justify-content:\s*center;/,
   );
   assert.doesNotMatch(mobileCockpit[1], /bottom:\s*152px;/);
   assert.match(css, /\.cockpit-compass \{[\s\S]*?bottom:\s*var\(--cockpit-compass-bottom\);/);

@@ -43,6 +43,7 @@ const visionTitle = computed(() =>
 // the stylesheet's fallback.
 const utilityStyle = computed(() => ({
   '--cockpit-utility-top': utilityLayout.value?.top ?? null,
+  '--cockpit-phone-utility-bottom': utilityLayout.value?.phoneBottom ?? null,
   '--cockpit-utility-max-height': utilityLayout.value?.maxHeight ?? null,
   '--cockpit-utility-expanded-max-height':
     utilityLayout.value?.expandedMaxHeight ?? null,

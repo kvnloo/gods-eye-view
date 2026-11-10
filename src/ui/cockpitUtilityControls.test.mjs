@@ -450,3 +450,75 @@ test('the real layout pass drives the mounted controls: compact hides the collap
   assert.equal(cockpit.utilityLayout.top, '120.00px');
   assert.equal(strip.classList.contains('layout-primary-only'), false);
 });
+
+test('mobile layout positions launchers above the visible DEST cue', async (t) => {
+  document.body.replaceChildren();
+  const host = document.body.appendChild(document.createElement('div'));
+  const pinia = createPinia();
+  const app = createApp(CockpitUtilityControls).use(pinia);
+  app.mount(host);
+  const cockpit = useCockpitStore(pinia);
+  const signalStream = document.body.appendChild(
+    document.createElement('aside'),
+  );
+  const strip = document.getElementById('cockpit-utility-controls');
+  strip.getBoundingClientRect = () => ({ height: 42 });
+  const hud = document.body.appendChild(document.createElement('section'));
+  hud.id = 'cockpit-hud';
+  const preferredBottom =
+    Math.max(44, Math.min(72, window.innerHeight * 0.07)) + 182;
+  const defaultTop = window.innerHeight - preferredBottom - 42;
+  const pointerTop = defaultTop - 10;
+  const rectangle = (top, bottom) => ({
+    top,
+    bottom,
+    height: bottom - top,
+    width: 100,
+    left: 0,
+    right: 100,
+  });
+  const pointer = hud.appendChild(document.createElement('div'));
+  pointer.id = 'cockpit-route-direction';
+  pointer.getBoundingClientRect = () => rectangle(
+    pointerTop,
+    pointerTop + 90,
+  );
+  for (const className of ['cockpit-speed', 'cockpit-altitude']) {
+    const readout = hud.appendChild(document.createElement('div'));
+    readout.className = className;
+    readout.getBoundingClientRect = () =>
+      rectangle(defaultTop + 55, defaultTop + 160);
+  }
+  const originalMatchMedia = window.matchMedia;
+  window.matchMedia = (query) => ({
+    matches: query === '(max-width: 760px)',
+    media: query,
+  });
+  t.after(() => {
+    window.matchMedia = originalMatchMedia;
+    app.unmount();
+  });
+  const owner = {
+    signalStream,
+    publishUtilityLayout: (view) => cockpit.publishUtilityLayout(view),
+  };
+  syncSignalLayout.call(owner);
+  await nextTick();
+  const measuredBottom = Number.parseFloat(cockpit.utilityLayout.phoneBottom);
+  const measuredTop = window.innerHeight - measuredBottom - 42;
+  assert.ok(Number.isFinite(measuredTop));
+  assert.ok(
+    measuredTop + 42 + 8 <= pointerTop,
+    'the displayed DEST bearing stays clear',
+  );
+  assert.ok(measuredTop >= 0, 'the launchers stay on screen');
+  pointer.hidden = true;
+  syncSignalLayout.call(owner);
+  await nextTick();
+  assert.ok(
+    Math.abs(
+      Number.parseFloat(cockpit.utilityLayout.phoneBottom) - preferredBottom,
+    ) < 0.1,
+    'without a destination the compass anchor is retained',
+  );
+});

@@ -180,10 +180,15 @@ export function publishRouteView() {
   const signature = JSON.stringify(this.routeView);
   if (signature === this.routeSignature) return;
   this.routeSignature = signature;
+  const visibilityChanged =
+    this.publishedRouteDirectionVisible !== this.routeView.direction.visible;
+  this.publishedRouteDirectionVisible = this.routeView.direction.visible;
   this.publishRoute({
     ...this.routeView,
     direction: { ...this.routeView.direction },
   });
+  // The new DEST cue is rendered before the next layout frame measures it.
+  if (visibilityChanged && this.active) this.scheduleContextLayout?.();
 }
 
 export function updateRoute(info) {

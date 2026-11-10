@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   resolveCockpitUtilityAnchor,
   resolveCockpitUtilityLayout,
+  resolveCockpitPhoneUtilityTop,
   resolveCyberCockpitPanelLane,
 } from './cockpitUtilityLayout.js';
 
@@ -171,4 +172,39 @@ test('clamps malformed or short corridors to the minimum expanded height', () =>
     primaryOnly: true,
     expandedMaxHeight: 120,
   });
+});
+
+test('phone row avoids the displayed DEST cue and flight readouts', () => {
+  const top = resolveCockpitPhoneUtilityTop({
+    viewportHeight: 740,
+    stripHeight: 42,
+    preferredBottom: 233.8,
+    obstacles: [
+      { top: 415, bottom: 505 },
+      { top: 525, bottom: 635 },
+    ],
+  });
+  assert.equal(top, 365);
+  assert.ok(top + 42 + 8 <= 415);
+});
+
+test('short landscape phones keep the launcher row reachable', () => {
+  const top = resolveCockpitPhoneUtilityTop({
+    viewportHeight: 240,
+    stripHeight: 42,
+    preferredBottom: 226,
+    obstacles: [{ top: 105, bottom: 196 }],
+  });
+  assert.equal(top, 46);
+  assert.ok(top >= 0 && top + 42 <= 240);
+});
+
+test('without a route cue, the phone row keeps its compass anchor', () => {
+  const top = resolveCockpitPhoneUtilityTop({
+    viewportHeight: 740,
+    stripHeight: 42,
+    preferredBottom: 233.8,
+    obstacles: [{ top: 525, bottom: 635 }],
+  });
+  assert.ok(Math.abs(top - 464.2) < 0.001);
 });

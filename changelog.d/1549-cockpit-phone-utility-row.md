@@ -2,4 +2,6 @@
   readouts. At 760 px wide and below, the collapsed row now sits centred on the
   Reset/Exit axis above the compass block instead of right-anchored over the
   ground speed and altitude telemetry; Cyber's top row is centred too (Denis
-  Groshev, @ZloyS, #1549).
+  Groshev (ZloyS), #1549).
+
+- Follow-up to gekh's review: measured phone placement keeps the DEST bearing readable and both launchers on-screen in short landscape windows, preserving ZloyS's centring.

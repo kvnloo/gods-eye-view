@@ -3258,8 +3258,10 @@ down | auth-failed` (plus the unchanged `missing-key`/`unsupported`) with
 >   unobstructed. There the collapsed Display and Radio launchers form one row
 >   centred on the Reset/Exit axis; the default theme anchors it above the
 >   compass block, clear of the ground speed and altitude telemetry it used to
->   cover, while Cyber keeps the row at the top. `scripts/qa-cockpit-utility.mjs`
->   checks the default row's centring and clearance at 390 and 360 px. Outside
+>   cover. A measured mobile lane also clears a visible DEST direction cue and
+>   keeps the row reachable on short landscape screens; Cyber stays at the top.
+>   `scripts/qa-cockpit-utility.mjs` checks centring, pointer and readout
+>   clearance, and button access down to 667×240. Outside
 >   Cockpit, Radio starts collapsed while off and lives
 >   only in its section inside Context; the detailed panel's normal accordion
 >   control owns its disclosure and its Enable/Disable action owns power.

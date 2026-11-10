@@ -2079,14 +2079,17 @@ body.cockpit-mode #intel-hud .hud-right-edge {
   body.cockpit-mode #right-context-rail {
     display: none !important;
   }
-  /* A centred row above the compass block: its ground speed and altitude
-     telemetry tops out ~171px above the block's bottom edge on phones, so
-     the row clears it by ~10px and stays on the same axis as RESET/EXIT.
-     The row spans the width to centre its launchers; only they take input. */
+  /* The row stays centred on RESET/EXIT. Its default compass anchor clears
+     telemetry; the layout owner can raise it past a visible DEST pointer or
+     move it down into view on a short landscape screen. Only launchers take
+     pointer input across its full-width centring lane. */
   body.cockpit-mode .cockpit-utility-controls {
     top: auto;
     right: 12px;
-    bottom: calc(var(--cockpit-compass-bottom) + 182px);
+    bottom: var(
+      --cockpit-phone-utility-bottom,
+      calc(var(--cockpit-compass-bottom) + 182px)
+    );
     left: 12px;
     justify-content: center;
     max-width: none;

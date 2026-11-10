@@ -2,6 +2,7 @@
 import {
   resolveCockpitUtilityAnchor,
   resolveCockpitUtilityLayout,
+  resolveCockpitPhoneUtilityTop,
   resolveCyberCockpitPanelLane,
 } from '../cockpitUtilityLayout.js';
 import {
@@ -134,8 +135,46 @@ export function syncSignalLayout() {
   const utilityControls = document.getElementById('cockpit-utility-controls');
   if (window.matchMedia('(max-width: 760px)').matches) {
     this.signalStream.dataset.layoutMode = 'compact-top';
+    // The collapsed phone row uses a measured lane. Its compass anchor must
+    // also clear the DEST pointer and remain reachable on short viewports.
+    let phoneBottom = null;
+    const expanded = utilityControls?.querySelector(
+      '.cockpit-utility-control.is-expanded',
+    );
+    if (
+      utilityControls &&
+      !expanded &&
+      document.documentElement.dataset.uiTheme !== 'cyber'
+    ) {
+      const stripHeight = utilityControls.getBoundingClientRect().height;
+      if (stripHeight > 0) {
+        const obstacles = [
+          document.querySelector('#cockpit-route-direction:not([hidden])'),
+          document.querySelector('#cockpit-hud .cockpit-speed'),
+          document.querySelector('#cockpit-hud .cockpit-altitude'),
+        ]
+          .filter(
+            (element) =>
+              element && window.getComputedStyle(element).display !== 'none',
+          )
+          .map((element) => element.getBoundingClientRect())
+          .filter((rect) => rect.height > 0);
+        // Match the compass clamp and 182px gap in the mobile stylesheet.
+        const preferredBottom =
+          Math.max(44, Math.min(72, window.innerHeight * 0.07)) + 182;
+        const top = resolveCockpitPhoneUtilityTop({
+          viewportHeight: window.innerHeight,
+          stripHeight,
+          preferredBottom,
+          obstacles,
+        });
+        phoneBottom = `${(window.innerHeight - top - stripHeight).toFixed(1)}px`;
+      }
+    }
     // The compact strip shows only an expanded control.
-    this.publishUtilityLayout(utilityLayoutView({ hideCollapsed: true }));
+    this.publishUtilityLayout(
+      utilityLayoutView({ hideCollapsed: true, phoneBottom }),
+    );
     this.signalStream.style.removeProperty('--cockpit-signal-right');
     this.signalStream.style.removeProperty('--cockpit-signal-top');
     this.signalStream.style.removeProperty('--cockpit-signal-max-height');
@@ -308,6 +347,14 @@ function utilityLayoutView({
   expandedMaxHeight = null,
   primaryOnly = false,
   hideCollapsed = false,
+  phoneBottom = null,
 } = {}) {
-  return { top, maxHeight, expandedMaxHeight, primaryOnly, hideCollapsed };
+  return {
+    top,
+    maxHeight,
+    expandedMaxHeight,
+    primaryOnly,
+    hideCollapsed,
+    phoneBottom,
+  };
 }

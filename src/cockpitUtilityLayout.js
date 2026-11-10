@@ -65,6 +65,58 @@ export function resolveCockpitUtilityAnchor({
 }
 
 /**
+ * Keep the centered phone Display/Radio row on screen and clear of visible
+ * flight instruments. Prefer its CSS compass anchor, then the nearest free
+ * vertical lane with a small gap around each measured obstacle.
+ *
+ * @param {object} input
+ * @param {number} input.viewportHeight
+ * @param {number} input.stripHeight
+ * @param {number} input.preferredBottom CSS compass-relative bottom offset.
+ * @param {Array<{top:number,bottom:number}>} [input.obstacles]
+ * @returns {number} Top coordinate in viewport pixels.
+ */
+export function resolveCockpitPhoneUtilityTop({
+  viewportHeight,
+  stripHeight,
+  preferredBottom,
+  obstacles = [],
+}) {
+  const viewport = Math.max(0, Number(viewportHeight) || 0);
+  const height = Math.max(0, Number(stripHeight) || 0);
+  const gap = 8;
+  const maxTop = Math.max(0, viewport - height - gap);
+  const minTop = Math.min(46, maxTop);
+  const preferred = viewport - (Number(preferredBottom) || 0) - height;
+  const clampTop = (top) => Math.max(minTop, Math.min(maxTop, top));
+  const visible = obstacles.filter(
+    (rect) =>
+      Number.isFinite(rect?.top) &&
+      Number.isFinite(rect?.bottom) &&
+      rect.bottom > rect.top,
+  );
+  const clears = (top) =>
+    visible.every(
+      (rect) => top + height + gap <= rect.top || top >= rect.bottom + gap,
+    );
+  const candidates = [
+    clampTop(preferred),
+    minTop,
+    maxTop,
+    ...visible.flatMap((rect) => [
+      clampTop(rect.top - height - gap),
+      clampTop(rect.bottom + gap),
+    ]),
+  ].filter(clears);
+  // Physically impossible viewports still keep the launchers on screen.
+  if (!candidates.length) return minTop;
+  return candidates.reduce(
+    (best, top) =>
+      Math.abs(top - preferred) < Math.abs(best - preferred) ? top : best,
+  );
+}
+
+/**
  * Resolve whether a collapsed Cockpit utility launcher can share the desktop
  * corridor with the currently expanded utility panel.
  *

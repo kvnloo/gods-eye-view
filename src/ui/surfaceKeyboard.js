@@ -27,14 +27,8 @@ export function createSurfaceKeyboard({
   const onKeyDown = (event) => {
     // Visibility/arbitration belongs to the screen, including overlays that
     // cover a measurable box. Respect another handler's claim on the same key.
-    if (
-      !active ||
-      destroyed ||
-      !isActive() ||
-      event.defaultPrevented ||
-      event.isComposing
-    )
-      return;
+    if (event.isComposing) return;
+    if (!active || destroyed || !isActive() || event.defaultPrevented) return;
     if (event.key === 'Escape') {
       event.preventDefault();
       event.stopPropagation();

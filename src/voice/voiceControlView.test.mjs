@@ -7,6 +7,7 @@ import { createTestVoiceUi } from '../testSupport/voiceUi.mjs';
 import { mountVoiceView } from '../testSupport/voiceView.mjs';
 import { useVoiceStore } from '../ui/stores/voice.js';
 import { createManualVoicePanel } from './panel/manualPanel.js';
+import { GevRealtimeController } from './realtimeController.js';
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -129,4 +130,30 @@ test('Preview is not reported visible while the error tray replaces the card', a
   assert.equal(panel.snapshot().previewVisible, true);
   ui.update('root', { status: 'error' });
   assert.equal(panel.snapshot().previewVisible, false);
+});
+
+test('keyless realtime error shows Provider Settings without microphone advice', async (t) => {
+  const { pinia, settle } = mountVoiceView(t);
+  const ui = createTestVoiceUi({ pinia });
+  const controller = new GevRealtimeController({
+    runner: async () => ({}),
+    ui,
+    debugSink: null,
+  });
+  t.after(() => controller.stop({ removeUi: true }));
+
+  const missingKey = Object.assign(new Error('OPENAI_API_KEY is not set'), {
+    code: 'API_KEY_MISSING',
+  });
+  controller.reportError('Realtime connection', missingKey);
+  await settle();
+  assert.equal($('#gev-voice-control').dataset.status, 'error');
+  assert.match($('#gev-voice-error-detail').textContent, /OPENAI_API_KEY/);
+  assert.match($('#gev-voice-error-detail').textContent, /Provider Settings/);
+  assert.equal($('.gev-voice-error-hint').hidden, true);
+
+  controller.reportError('Realtime connection', new Error('Network unavailable'));
+  await settle();
+  assert.match($('#gev-voice-error-detail').textContent, /Network unavailable/);
+  assert.equal($('.gev-voice-error-hint').hidden, false);
 });

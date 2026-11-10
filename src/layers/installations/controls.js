@@ -1,10 +1,37 @@
 import * as Cesium from 'cesium';
-import { installationFeedback } from '../../data/installationFeedback.js';
+import { describeInstallationFeedback } from '../../data/installationFeedback.js';
 import {
   LAYER_ID,
   DISTANCE_PREFILTER_MARGIN_M,
   ANCHOR_REFRESH_M,
 } from './policy.js';
+import { formatNumber, t, tn } from '../../i18n/index.js';
+
+// installationFeedback.js is shared with the HUD (src/loadingFeedback.js) and
+// hands back msg()-marked English plus values; getStats translates them here.
+function localizeInstallationFeedback(feedback) {
+  if (feedback.text !== undefined) {
+    const values = {};
+    if (feedback.reason !== undefined) values.reason = t(feedback.reason);
+    if (feedback.seconds !== undefined) values.seconds = feedback.seconds;
+    return t(feedback.text, values);
+  }
+  const { count, km } = feedback;
+  if (km) {
+    const kmText = formatNumber(km);
+    return count === 0
+      ? t('No mapped sites within {km} km of the contact', { km: kmText })
+      : tn(
+          count,
+          '{count} mapped site within {km} km of the contact',
+          '{count} mapped sites within {km} km of the contact',
+          { km: kmText },
+        );
+  }
+  return count === 0
+    ? t('No mapped sites in view')
+    : tn(count, '{count} mapped site in view', '{count} mapped sites in view');
+}
 
 export function createControls({ state: layerState, services, parts, source }) {
   const methods = {
@@ -138,6 +165,41 @@ export function createControls({ state: layerState, services, parts, source }) {
     },
 
     /**
+     * A loaded mapped installation by id, as `getNearby` returns it (with its
+     * drawn `position`), or null while the layer is off or the id is not
+     * loaded. Read-only: nothing is selected.
+     * @param {string} id Source-backed installation id.
+     * @returns {object|null}
+     */
+    getById(id) {
+      if (!layerState.enabled || id === null || id === undefined) return null;
+      const record = layerState.recordById.get(String(id));
+      if (!record || record.kind !== 'installation') return null;
+      return {
+        ...record,
+        position: Cesium.Cartesian3.fromDegrees(
+          record.longitude,
+          record.latitude,
+          parts.rendering.installationSurfaceHeightM(record),
+        ),
+      };
+    },
+
+    /**
+     * The mapped installation a `scene.pick()` result landed on: a named
+     * marker point (`{ installationId }`) or a site entity, as this layer's
+     * own click selection reads them. Null for anything else.
+     * @param {object|null|undefined} picked
+     * @returns {object|null} As {@link getById}.
+     */
+    findByPick(picked) {
+      const id =
+        picked?.id?.installationId ||
+        (typeof picked?.id?.id === 'string' ? picked.id.id : null);
+      return id ? methods.getById(id) : null;
+    },
+
+    /**
      * Select and frame a mapped installation from another contextual UI.
      * @param {string} id Source-backed installation id.
      * @returns {boolean} True when an available installation was focused.
@@ -225,13 +287,15 @@ export function createControls({ state: layerState, services, parts, source }) {
         retryAt: layerState.retryAt,
         retrying: layerState.loading && Boolean(layerState.failureReason),
         failureReason: layerState.failureReason,
-        statusMessage: installationFeedback({
-          ...layerState,
-          count: layerState.lastUpdate ? mappedCount : undefined,
-          retrying: layerState.loading && Boolean(layerState.failureReason),
-        }),
+        statusMessage: localizeInstallationFeedback(
+          describeInstallationFeedback({
+            ...layerState,
+            count: layerState.lastUpdate ? mappedCount : undefined,
+            retrying: layerState.loading && Boolean(layerState.failureReason),
+          }),
+        ),
         loadingLabel: layerState.loading
-          ? 'loading mapped installation context'
+          ? t('loading mapped installation context')
           : '',
         coverage: layerState.coverage,
         coverageLabel:

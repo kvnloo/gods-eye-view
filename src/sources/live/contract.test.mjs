@@ -67,6 +67,71 @@ test('mixed-invalid and duplicate admissions are explicitly incomplete; all-inva
   assert.equal(openSkySnapshot({ states: [] }).complete, true);
 });
 
+test('position-less OpenSky rows are seen, not missing; malformed rows stay incomplete', () => {
+  // OpenSky's spec allows null longitude/latitude; every live /states/all
+  // carries such rows.
+  const unpositioned = ['DEF456', ...aircraft.slice(1)];
+  unpositioned[5] = null;
+  unpositioned[6] = null;
+  const snapshot = openSkySnapshot({ states: [aircraft, unpositioned] });
+  assert.equal(snapshot.records.length, 1);
+  assert.equal(snapshot.complete, true);
+  assert.deepEqual([...snapshot.retainIds], ['def456']);
+  assert.equal(snapshot.rejectedCount, 1);
+  const malformed = [...aircraft];
+  malformed[5] = 181;
+  const garbled = openSkySnapshot({
+    states: [aircraft, unpositioned, malformed],
+  });
+  assert.equal(garbled.complete, false);
+  assert.deepEqual([...garbled.retainIds], ['def456']);
+  // No usable id, only half a position, a truncated row, or no row at all.
+  for (const row of [
+    [' ', ...unpositioned.slice(1)],
+    Object.assign([...unpositioned], { 5: -97 }),
+    ['DEF456'],
+    null,
+  ])
+    assert.equal(openSkySnapshot({ states: [aircraft, row] }).complete, false);
+  // Repeated position-less rows stay complete.
+  const repeated = openSkySnapshot({
+    states: [aircraft, unpositioned, unpositioned],
+  });
+  assert.equal(repeated.complete, true);
+  // A feed with no positions at all still cannot prove absence.
+  assert.throws(() => openSkySnapshot({ states: [unpositioned] }), {
+    code: 'malformed',
+  });
+});
+
+test('position-less readsb rows are seen, not missing; malformed rows stay incomplete', () => {
+  // readsb omits lat/lon for a contact heard without a current position; a
+  // live adsb.lol /v2/mil fetch had 82 such rows of 239.
+  const positioned = { hex: 'ae638d', lat: 20.3, lon: -158.5, seen_pos: 0.2 };
+  const heard = { hex: 'ADFAC3', type: 'mode_s', rr_lat: 19.9, seen: 24.2 };
+  const lastPosition = {
+    hex: '3b752d',
+    lastPosition: { lat: 45.3, lon: 5.98, seen_pos: 61.56 },
+  };
+  const read = (ac) => readsbSnapshot({ ac }, { observedAtMs: null });
+  const snapshot = read([positioned, heard, lastPosition]);
+  assert.equal(snapshot.records.length, 1);
+  assert.equal(snapshot.complete, true);
+  assert.deepEqual([...snapshot.retainIds], ['adfac3', '3b752d']);
+  assert.equal(snapshot.rejectedCount, 2);
+  // No usable id, only half a position, an unreadable one, or no row at all.
+  for (const row of [
+    { ...heard, hex: ' ' },
+    { ...heard, lat: 30 },
+    { ...heard, lon: -97 },
+    { ...heard, lat: 'x', lon: 'y' },
+    null,
+  ])
+    assert.equal(read([positioned, heard, row]).complete, false);
+  // A feed with no positions at all still cannot prove absence.
+  assert.throws(() => read([heard]), { code: 'malformed' });
+});
+
 test('readsb units and position/contact ages are normalized once against the source epoch', () => {
   const row = normalizeReadsbAircraft(
     {
@@ -98,6 +163,20 @@ test('readsb units and position/contact ages are normalized once against the sou
   assert.equal(
     readsbSnapshot({ ac: [] }, { observedAtMs: null }).freshness,
     'unknown',
+  );
+});
+
+test('readsb vertical rate falls back to the GNSS rate when no baro rate is sent', () => {
+  // readsb reports the rate under geom_rate when the aircraft's source is
+  // GNSS; 26 of 157 positioned rows in a live /v2/mil fetch had only that.
+  const row = { hex: 'ae638d', lat: 20.3, lon: -158.5, geom_rate: -2432 };
+  assert.equal(
+    normalizeReadsbAircraft(row, now).verticalRateMps,
+    -2432 * 0.00508,
+  );
+  assert.equal(
+    normalizeReadsbAircraft({ ...row, baro_rate: -2400 }, now).verticalRateMps,
+    -2400 * 0.00508,
   );
 });
 
@@ -170,11 +249,10 @@ test('construction is inert; adapters preserve routes, viewport query, cache epo
   assert.equal(mil.observedAtMs, now - 60000);
   assert.equal(mil.records[0].positionTimeMs, now - 75000);
   assert.equal(mil.stale, true);
-  const track = await military.getTrack('abc123');
-  assert.equal(track.complete, false);
-  assert.equal(track.records[0].observedAtMs, now - 50000);
-  assert.equal(track.records[0].baroAltitudeM, 304.8);
-  assert.equal(track.records[0].ellipsoidAltitudeM, null);
+  assert.equal(military.getTrack, undefined);
+  assert.ok(
+    requests.every(({ url }) => !url.startsWith('/api/military/track')),
+  );
 });
 
 test('cancellation after slow body parsing rejects even with a transport that ignores abort', async () => {
@@ -289,7 +367,8 @@ test('classification identities include positionless aircraft without admitting 
     snapshot.records.map((record) => record.id),
     ['def456'],
   );
-  assert.equal(snapshot.complete, false);
+  assert.equal(snapshot.complete, true);
+  assert.deepEqual([...snapshot.retainIds], ['abc123']);
 });
 
 test('identity lookup validates its response and honors body-parse cancellation', async () => {
@@ -312,4 +391,98 @@ test('identity lookup validates its response and honors body-parse cancellation'
   await assert.rejects(source.getIdentities({}, { signal: abort.signal }), {
     name: 'AbortError',
   });
+});
+
+test('squawks are validated and omitted OpenSky status differs from an explicit ADS-B clear', () => {
+  const squawking = [...aircraft, '7700'];
+  const civil = openSkySnapshot({ states: [squawking] }, { now }).records[0];
+  assert.equal(civil.squawk, '7700');
+  assert.equal(civil.emergency, undefined);
+  assert.equal(openSkySnapshot({ states: [aircraft] }).records[0].squawk, null);
+  const mil = normalizeReadsbAircraft(
+    { hex: 'abc123', lat: 30, lon: -97, squawk: '7600', emergency: 'NORDO' },
+    now,
+  );
+  assert.equal(mil.squawk, '7600');
+  assert.equal(mil.emergency, 'nordo');
+  const quiet = normalizeReadsbAircraft(
+    { hex: 'abc123', lat: 30, lon: -97 },
+    now,
+  );
+  assert.equal(quiet.squawk, null);
+  assert.equal(quiet.emergency, null);
+});
+
+test('a photo enrichment asks Planespotters directly and returns the checked photo', async () => {
+  const requests = [];
+  const source = createFlightSource({
+    fetchImpl: async (url, init) => {
+      requests.push({ url, init });
+      return response({
+        photos: [
+          {
+            thumbnail_large: {
+              src: 'https://t.plnspttrs.net/33043/1745410_822dfe330c_280.jpg',
+              size: { width: 420, height: 280 },
+            },
+            link: 'https://www.planespotters.net/photo/1745410/x?utm_source=api',
+            photographer: 'Jan Seler',
+          },
+        ],
+      });
+    },
+  });
+  const signal = new AbortController().signal;
+  const photo = await source.getEnrichment(
+    { kind: 'photo', id: 'a0f1bb' },
+    { signal },
+  );
+  assert.equal(
+    requests[0].url,
+    'https://api.planespotters.net/pub/photos/hex/a0f1bb',
+  );
+  assert.ok(requests[0].init.signal, 'the request is cancellable');
+  assert.equal(requests[0].init.credentials, 'omit');
+  assert.deepEqual(photo, {
+    found: true,
+    src: 'https://t.plnspttrs.net/33043/1745410_822dfe330c_280.jpg',
+    width: 420,
+    height: 280,
+    photographer: 'Jan Seler',
+    link: 'https://www.planespotters.net/photo/1745410/x?utm_source=api',
+  });
+});
+
+test('a photo enrichment reads an empty answer as no photo and refuses a bad hex', async () => {
+  let calls = 0;
+  const source = createFlightSource({
+    fetchImpl: async (_url, _init) => {
+      calls++;
+      return response({ photos: [] });
+    },
+  });
+  assert.deepEqual(
+    await source.getEnrichment({ kind: 'photo', id: 'a0f1bb' }),
+    { found: false },
+  );
+  await assert.rejects(source.getEnrichment({ kind: 'photo', id: '../x' }), {
+    code: 'unsupported',
+  });
+  assert.equal(calls, 1);
+});
+
+test('a photo enrichment outage rejects without echoing the body', async () => {
+  for (const status of [403, 429, 502]) {
+    const source = createFlightSource({
+      fetchImpl: async () => response({ error: 'sensitive' }, {}, status),
+    });
+    await assert.rejects(
+      source.getEnrichment({ kind: 'photo', id: 'a0f1bb' }),
+      (error) => {
+        assert.equal(error.status, status);
+        assert.equal(error.message.includes('sensitive'), false);
+        return true;
+      },
+    );
+  }
 });

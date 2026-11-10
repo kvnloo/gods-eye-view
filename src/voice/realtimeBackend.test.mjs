@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createTestVoiceUi } from '../testSupport/voiceUi.mjs';
 import { createRealtimeBackend } from './realtimeBackend.js';
 import { GevRealtimeController } from './realtimeController.js';
 
@@ -131,11 +132,7 @@ test('controller lifetime stops pending transport and releases resources through
     runner: async () => ({}),
     signal: lifetime.signal,
     debugSink: null,
-    ui: {
-      root: { dataset: {}, querySelectorAll: () => [], remove() {} },
-      status: {},
-      detail: {},
-    },
+    ui: createTestVoiceUi(),
   });
   controller.connectionAbort = new AbortController();
   const connection = controller.connectionAbort.signal;
@@ -147,19 +144,20 @@ test('controller lifetime stops pending transport and releases resources through
   assert.equal(controller.isActive(), false);
 });
 
-test('a token refusal that names a provider key carries it on the error', async () => {
-  const backend = createRealtimeBackend({
+test('a refused voice token carries a named key without guessing on other failures', async () => {
+  const missing = createRealtimeBackend({
     tokenTransport: async () =>
       Response.json(
         { error: 'OPENAI_API_KEY is not set', keyId: 'openai' },
         { status: 503 },
       ),
   });
-  await assert.rejects(backend.requestToken(), (error) => {
+  await assert.rejects(missing.requestToken(), (error) => {
     assert.equal(error.message, 'OPENAI_API_KEY is not set');
     assert.equal(error.keyId, 'openai');
     return true;
   });
+
   const other = createRealtimeBackend({
     tokenTransport: async () =>
       Response.json({ error: 'Rate limited' }, { status: 429 }),

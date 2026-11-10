@@ -1,12 +1,31 @@
 import * as Cesium from 'cesium';
+import { t, msg } from '../../i18n/index.js';
+import { vesselCockpitInfo } from './cockpitSubject.js';
+import { vesselTypeCss } from '../../data/vesselLabels.js';
+import { greatCircleMeters } from '../../geoDistance.js';
+
+// ingestion.js is a portable export (package.json) and writes English labels
+// into state; translate the known ones here, pass anything else through.
+const FEED_STATE_LABEL_KEYS = Object.freeze({
+  'refreshing...': msg('refreshing...'),
+  'loading...': msg('loading...'),
+  'awaiting first AIS position…': msg('awaiting first AIS position…'),
+});
+
+function localizeFeedLabel(raw) {
+  if (typeof raw !== 'string' || !raw.trim()) return raw;
+  const key = FEED_STATE_LABEL_KEYS[raw.trim()];
+  return key ? t(key) : raw;
+}
 import {
   AIS_DEGRADED_STATUSES,
   AIS_HEALTHY_STATUSES,
   AIS_STATUS_REASON,
   REFRESH_MS,
   FOCUS_EVIDENCE_DEV,
-  AIS_FIRST_CONNECT_LABEL,
+  VESSEL_LIFT_M,
 } from './policy.js';
+import { VESSEL_OVERLAY_SOURCE_ID } from '../../data/vesselLabels.js';
 
 export function createQueries({
   vesselState,
@@ -44,20 +63,22 @@ export function createQueries({
     if (status === 'auth-failed') {
       // Actionable, not a countdown: retrying cannot fix a rejected credential,
       // so the chip asks the operator to do the one thing that can.
-      return 'API key rejected — check AISSTREAM_API_KEY';
+      return t('API key rejected — check AISSTREAM_API_KEY');
     }
     if (status === 'stale') {
       const silentSec = Math.round(Number(payload?.silentForMs) / 1000);
       return Number.isFinite(silentSec) && silentSec > 0
-        ? `feed silent ${silentSec}s — no AIS data`
-        : 'feed silent — no AIS data';
+        ? t('feed silent {seconds}s — no AIS data', { seconds: silentSec })
+        : t('feed silent — no AIS data');
     }
     const attempt = Number(payload?.reconnectAttempt);
-    const suffix =
-      Number.isFinite(attempt) && attempt >= 1 ? ` (attempt ${attempt})` : '';
+    if (Number.isFinite(attempt) && attempt >= 1)
+      return status === 'down'
+        ? t('feed down — retrying slowly (attempt {attempt})', { attempt })
+        : t('reconnecting to feed… (attempt {attempt})', { attempt });
     return status === 'down'
-      ? `feed down — retrying slowly${suffix}`
-      : `reconnecting to feed…${suffix}`;
+      ? t('feed down — retrying slowly')
+      : t('reconnecting to feed…');
   }
 
   /**
@@ -82,15 +103,16 @@ export function createQueries({
     if (acceptedRowCount > 0) return null; // accepted rows may be stale while reconnecting, but remain usable
     if (AIS_HEALTHY_STATUSES.has(status)) {
       return payload?.lastMessageAt
-        ? 'awaiting usable AIS positions…'
-        : 'awaiting first AIS message…';
+        ? t('awaiting usable AIS positions…')
+        : t('awaiting first AIS message…');
     }
     if (!status) return null;
     const detail =
       typeof payload.error === 'string' && payload.error.trim()
         ? payload.error.trim()
         : '';
-    const reason = AIS_STATUS_REASON[status] || 'feed unavailable';
+    // The reasons are English in policy.js (msg) and shown in the UI language.
+    const reason = t(AIS_STATUS_REASON[status] || msg('feed unavailable'));
     return detail && !AIS_STATUS_REASON[status]
       ? `${reason} (${detail})`
       : reason;
@@ -107,7 +129,7 @@ export function createQueries({
   /**
    * Classify one server snapshot before any destructive reconciliation.
    * @param {Object|null|undefined} payload - Parsed /api/vessels payload.
-   * @returns {{transportStatus: string|null, lastMessageAt: number|string|null,
+   * @returns {{emptyCoverage: boolean, transportStatus: string|null, lastMessageAt: number|string|null,
    *   rawRows: Array<Object>, acceptedRows: Array<Object>, rawRowCount: number,
    *   acceptedRowCount: number, error: string|null}}
    */
@@ -119,7 +141,16 @@ export function createQueries({
       typeof payload?.status === 'string' ? payload.status : null;
     const lastMessageAt = payload?.lastMessageAt ?? null;
     const acceptedRowCount = acceptedRows.length;
+    const emptyCoverage =
+      rawRows.length === 0 &&
+      payload?.rawRowCount === 0 &&
+      payload?.complete === true &&
+      payload?.freshness === 'current' &&
+      AIS_HEALTHY_STATUSES.has(transportStatus) &&
+      Number.isFinite(Number(lastMessageAt)) &&
+      Number(lastMessageAt) > 0;
     return {
+      emptyCoverage,
       transportStatus,
       lastMessageAt,
       rawRows,
@@ -130,9 +161,10 @@ export function createQueries({
           ? payload.rawRowCount
           : rawRows.length,
       acceptedRowCount,
-      error:
-        deriveAisFeedError(payload, acceptedRowCount) ||
-        (acceptedRowCount === 0 ? 'awaiting usable AIS positions…' : null),
+      error: emptyCoverage
+        ? null
+        : deriveAisFeedError(payload, acceptedRowCount) ||
+          (acceptedRowCount === 0 ? t('awaiting usable AIS positions…') : null),
     };
   }
 
@@ -320,6 +352,59 @@ export function createQueries({
     },
 
     /**
+     * Vessels around a point for the Cockpit bridge radar, nearest first.
+     * The ship whose bridge the Cockpit occupies is left out. Distances are
+     * great-circle from the AIS positions, so no rendered visual is needed.
+     * @param {number} lat Latitude of the centre, degrees.
+     * @param {number} lon Longitude of the centre, degrees.
+     * @param {number} rangeM Max distance in metres.
+     * @param {number} [maxCount=60] Maximum entries to return.
+     * @returns {Array<{ id: string, name: string, latitude: number,
+     *   longitude: number, course: number|null, heading: number|null,
+     *   type: string, color: string, stale: boolean }>} Empty while the
+     *   layer is off. A ship with no MMSI has an `unkeyed:` id.
+     */
+    getRadarContacts(lat, lon, rangeM, maxCount = 60) {
+      const records = state.records.all;
+      if (!state.feed.enabled || !Array.isArray(records) || !records.length)
+        return [];
+      if (!Number.isFinite(rangeM) || rangeM <= 0) return [];
+      const cap =
+        Number.isFinite(maxCount) && maxCount > 0 ? Math.floor(maxCount) : 60;
+      const center = { lat, lon };
+      const subject = state.cockpitSubjectMmsi;
+      const finite = (value) => {
+        if (value === null || value === undefined || value === '') return null;
+        const number = Number(value);
+        return Number.isFinite(number) ? number : null;
+      };
+
+      const entries = [];
+      records.forEach((record, index) => {
+        if (subject && String(record.mmsi) === subject) return;
+        const distanceM = greatCircleMeters(center, {
+          lat: record.lat,
+          lon: record.lon,
+        });
+        if (!(distanceM <= rangeM)) return;
+        entries.push({ record, index, distanceM });
+      });
+      entries.sort((a, b) => a.distanceM - b.distanceM);
+      return entries.slice(0, cap).map(({ record, index }) => ({
+        // A ship with no MMSI still needs a key of its own on the scope.
+        id: record.mmsi ? String(record.mmsi) : `unkeyed:${index}`,
+        name: String(record.name || record.mmsi || ''),
+        latitude: record.lat,
+        longitude: record.lon,
+        course: finite(record.course),
+        heading: finite(record.heading),
+        type: String(record.type || ''),
+        color: vesselTypeCss(record.type),
+        stale: (record.missedRefreshes || 0) > 0,
+      }));
+    },
+
+    /**
      * Get positions of all currently loaded vessels.
      * @param {number} [maxCount=800] Maximum entries to return.
      * @returns {Array<{ id: string, label: string, position: Cesium.Cartesian3, latitude: number, longitude: number }>}
@@ -436,13 +521,62 @@ export function createQueries({
     },
 
     /**
+     * Describe the selected vessel for the Cockpit bridge view.
+     * @returns {object|null} `vesselCockpitInfo` fields plus `seaSurfaceHeightM`
+     *   (the local geoid height the sprite datum uses) and `markHeightM` (the
+     *   height the sprite is drawn at), or null when the layer is off or
+     *   nothing is selected.
+     */
+    getCockpitSubject() {
+      if (!state.feed.enabled) return null;
+      const info = vesselCockpitInfo(state.selectedRecord);
+      if (!info) return null;
+      const geoidN = components.tracking.currentGeoidN(
+        info.latitude,
+        info.longitude,
+      );
+      return {
+        ...info,
+        seaSurfaceHeightM: vesselDatumHeightM(geoidN, 0),
+        markHeightM: vesselDatumHeightM(geoidN, VESSEL_LIFT_M),
+      };
+    },
+
+    /**
+     * Mark the vessel whose bridge the Cockpit camera occupies, or release it.
+     * Its sprite, card and detection bracket stay hidden while it is held.
+     * @param {string|number|null} mmsi Subject MMSI, or null to release.
+     * @returns {boolean} Always true.
+     */
+    setCockpitSubject(mmsi) {
+      const next = normalizeSelectionMmsi(mmsi);
+      if (state.cockpitSubjectMmsi === next) return true;
+      state.cockpitSubjectMmsi = next;
+      // The ridden ship's trail runs from under the eye: hidden, its history
+      // kept, while the bridge holds the ship it belongs to.
+      state.trail?.setVisible?.(!next || next !== state.trailMmsi);
+      components.rendering.updateVisibility(true);
+      return true;
+    },
+
+    /**
+     * Return the camera to the selected vessel's map view, as a click on it does.
+     * @returns {boolean} True when a selected vessel took the camera.
+     */
+    focusSelectedVessel() {
+      const record = state.selectedRecord;
+      if (!record || !state.feed.enabled) return false;
+      return components.selection.selectAndFocusVessel(record);
+    },
+
+    /**
      * Return a subset of vessels for the universal detection overlay.
      * Deterministic stride sampling distributes selections evenly across the
      * current record list while honoring the overlay's per-layer budget.
      * @param {Object} [options={}] - Options from the detection system.
      * @param {number} [options.maxCount] - Maximum objects to return (defaults to all).
      * @param {number} [options.seed] - Seed offset for stride sampling.
-     * @returns {Array<{position: Cesium.Cartesian3, id: string, type: string, skipLabel: boolean}>}
+     * @returns {Array<{position: Cesium.Cartesian3, id: string, type: string, skipLabel: boolean, cardSourceId: string, cardEntryId: string}>}
      */
     getDetectableObjects(options = {}) {
       if (
@@ -477,6 +611,9 @@ export function createQueries({
           id: record.name || record.mmsi || 'VESSEL',
           type: 'SEA',
           skipLabel: record === selected,
+          // Detection hides the callout while this card paints.
+          cardSourceId: VESSEL_OVERLAY_SOURCE_ID,
+          cardEntryId: components.cards.vesselOverlayEntryId(record),
           klass: record.type
             ? String(record.type).toUpperCase().slice(0, 14)
             : undefined,
@@ -504,8 +641,8 @@ export function createQueries({
         lastUpdate: state.feed.lastUpdate,
         loading: state.feed.loading || waitingForFirstPosition,
         loadingLabel: waitingForFirstPosition
-          ? AIS_FIRST_CONNECT_LABEL
-          : state.feed.loadingLabel,
+          ? t('awaiting first AIS position…')
+          : localizeFeedLabel(state.feed.loadingLabel),
         error: state.feed.error,
         stale: state.feed.stale,
         partial: state.feed.partial,
@@ -521,6 +658,8 @@ export function createQueries({
         // backing off, say how long until the next attempt instead of leaving
         // the user to guess whether anything is still happening.
         retryInSec: aisRetryInSec(),
+        // Same field as flights and military, so Contacts names the provider.
+        source: layer.source,
       };
     },
   };

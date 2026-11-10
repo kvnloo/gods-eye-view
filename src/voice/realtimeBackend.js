@@ -42,7 +42,8 @@ export function createRealtimeBackend({
         const error = new Error(
           reason || `Realtime token failed: HTTP ${response.status}`,
         );
-        // The server names a missing provider key so the UI can say which.
+        // The token route identifies a missing provider key; don't infer one
+        // from an unrelated authentication or transport error.
         if (typeof data?.keyId === 'string') error.keyId = data.keyId;
         throw error;
       }

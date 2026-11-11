@@ -21,7 +21,10 @@ export const DESTINATIONS = Object.freeze([
 export function chooseDestination(random = Math.random) {
   const n = Number(random());
   const index = Number.isFinite(n)
-    ? Math.max(0, Math.min(DESTINATIONS.length - 1, Math.floor(n * DESTINATIONS.length)))
+    ? Math.max(
+        0,
+        Math.min(DESTINATIONS.length - 1, Math.floor(n * DESTINATIONS.length)),
+      )
     : 0;
   return DESTINATIONS[index];
 }
@@ -34,7 +37,8 @@ export const feature = {
     const title = doc.createElement('h3');
     title.textContent = 'Planet Toybox';
     const description = doc.createElement('p');
-    description.textContent = 'Reskin Earth, fly somewhere surprising, and keep the look in your normal shareable view.';
+    description.textContent =
+      'Reskin Earth, fly somewhere surprising, and keep the look in your normal shareable view.';
     const lookTitle = doc.createElement('p');
     lookTitle.textContent = 'Pick a sensor lens';
     const looks = doc.createElement('div');
@@ -74,16 +78,25 @@ export const feature = {
       viewer.camera.flyTo({
         destination,
         orientation,
-        duration: doc.defaultView.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 2.5,
-        complete: () => { ownedFlight = false; },
-        cancel: () => { ownedFlight = false; },
+        duration: doc.defaultView.matchMedia('(prefers-reduced-motion: reduce)')
+          .matches
+          ? 0
+          : 2.5,
+        complete: () => {
+          ownedFlight = false;
+        },
+        cancel: () => {
+          ownedFlight = false;
+        },
       });
     }
     surprise.addEventListener('click', () => {
       const destination = chooseDestination();
       fly(
         Cesium.Cartesian3.fromDegrees(
-          destination.lon, destination.lat, destination.altitude,
+          destination.lon,
+          destination.lat,
+          destination.altitude,
         ),
         { heading: 0, pitch: Cesium.Math.toRadians(-63), roll: 0 },
       );
@@ -98,7 +111,8 @@ export const feature = {
       readout.textContent = 'Returning to your starting view.';
     });
     root.append(title, description, lookTitle, looks, actions, readout);
-    readout.textContent = 'Current lens: ' + (styleManager.activeStyle || 'normal') + '.';
+    readout.textContent =
+      'Current lens: ' + (styleManager.activeStyle || 'normal') + '.';
     return () => {
       if (ownedFlight) viewer.camera.cancelFlight();
     };

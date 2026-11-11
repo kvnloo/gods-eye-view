@@ -8,8 +8,8 @@ export function clampSceneProgress(value) {
   return Number.isFinite(number) ? Math.min(1, Math.max(0, number)) : 0;
 }
 export function playableScenes(sceneDirector) {
-  return (sceneDirector?.listScenes?.() || []).filter((scene) =>
-    typeof scene.id === 'string' && Number(scene.shots) > 0,
+  return (sceneDirector?.listScenes?.() || []).filter(
+    (scene) => typeof scene.id === 'string' && Number(scene.shots) > 0,
   );
 }
 export const feature = {
@@ -20,7 +20,8 @@ export const feature = {
     const title = doc.createElement('h3');
     title.textContent = 'Rewind an authored scene';
     const description = doc.createElement('p');
-    description.textContent = 'Step through observed evidence and camera states. This is a scene clock, not a universal historical data feed.';
+    description.textContent =
+      'Step through observed evidence and camera states. This is a scene clock, not a universal historical data feed.';
     const scenes = playableScenes(services.sceneDirector);
     const select = doc.createElement('select');
     select.setAttribute('aria-label', 'Scene to explore');
@@ -58,7 +59,9 @@ export const feature = {
     const notice = doc.createElement('p');
     notice.setAttribute('role', 'status');
     notice.className = 'gev-playground-status';
-    notice.textContent = scenes.length ? 'Choose a point, then jump.' : 'No authored scenes are available.';
+    notice.textContent = scenes.length
+      ? 'Choose a point, then jump.'
+      : 'No authored scenes are available.';
     select.disabled = !scenes.length;
     seek.disabled = !scenes.length;
     play.disabled = !scenes.length;
@@ -77,7 +80,9 @@ export const feature = {
           clampSceneProgress(Number(slider.value) / 100),
         );
         if (alive && generation === seekCounter)
-          notice.textContent = ok ? 'Scene state loaded.' : 'This point is unavailable.';
+          notice.textContent = ok
+            ? 'Scene state loaded.'
+            : 'This point is unavailable.';
       } catch (error) {
         if (alive && generation === seekCounter)
           notice.textContent = 'Seek failed: ' + String(error.message || error);
@@ -96,9 +101,13 @@ export const feature = {
           preview: false,
         });
         if (alive)
-          notice.textContent = result.started ? 'Playback complete.' : 'Playback ended: ' + (result.reason || 'cancelled');
+          notice.textContent = result.started
+            ? 'Playback complete.'
+            : 'Playback ended: ' + (result.reason || 'cancelled');
       } catch (error) {
-        if (alive) notice.textContent = 'Playback failed: ' + String(error.message || error);
+        if (alive)
+          notice.textContent =
+            'Playback failed: ' + String(error.message || error);
       }
     });
     stop.addEventListener('click', () => {
@@ -106,7 +115,16 @@ export const feature = {
       playbackOwned = false;
       notice.textContent = 'Stopped.';
     });
-    if (scenes.length) root.append(title, description, select, slider, progress, actions, notice);
+    if (scenes.length)
+      root.append(
+        title,
+        description,
+        select,
+        slider,
+        progress,
+        actions,
+        notice,
+      );
     else root.append(title, description, notice);
     const disposeHistoryLens = mountHistoricalEarthLens({ root, services });
     return () => {

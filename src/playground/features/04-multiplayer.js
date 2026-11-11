@@ -6,21 +6,33 @@
 export const ROOM_PROTOCOL = 'gev.playground.local-room.v1';
 
 export function normalizeRoom(raw) {
-  const room = String(raw || '').trim().toLowerCase();
+  const room = String(raw || '')
+    .trim()
+    .toLowerCase();
   return /^[a-z0-9-]{3,24}$/.test(room) ? room : null;
 }
 export function parseRoomMessage(raw, room, now = Date.now()) {
-  if (!raw || typeof raw !== 'object' || raw.protocol !== ROOM_PROTOCOL ||
-      raw.room !== room || typeof raw.peer !== 'string' ||
-      !/^[a-z0-9-]{4,32}$/.test(raw.peer) ||
-      !['join', 'hello', 'view'].includes(raw.kind) ||
-      !Number.isFinite(raw.sentAt) || Math.abs(now - raw.sentAt) > 60000)
+  if (
+    !raw ||
+    typeof raw !== 'object' ||
+    raw.protocol !== ROOM_PROTOCOL ||
+    raw.room !== room ||
+    typeof raw.peer !== 'string' ||
+    !/^[a-z0-9-]{4,32}$/.test(raw.peer) ||
+    !['join', 'hello', 'view'].includes(raw.kind) ||
+    !Number.isFinite(raw.sentAt) ||
+    Math.abs(now - raw.sentAt) > 60000
+  )
     return null;
   if (raw.kind !== 'view') return raw;
   const { lat, lon, height } = raw.view || {};
-  if (![lat, lon, height].every(Number.isFinite) ||
-      Math.abs(lat) > 90 || Math.abs(lon) > 180 ||
-      height < 1000 || height > 30000000)
+  if (
+    ![lat, lon, height].every(Number.isFinite) ||
+    Math.abs(lat) > 90 ||
+    Math.abs(lon) > 180 ||
+    height < 1000 ||
+    height > 30000000
+  )
     return null;
   return raw;
 }
@@ -40,13 +52,16 @@ export const feature = {
     const title = doc.createElement('h3');
     title.textContent = 'Shared Earth · local demo';
     const description = doc.createElement('p');
-    description.textContent = 'Open two same-origin tabs to exchange coarse camera views. Explicit join and send; no location broadcast in the background. Internet rooms are not available yet.';
+    description.textContent =
+      'Open two same-origin tabs to exchange coarse camera views. Explicit join and send; no location broadcast in the background. Internet rooms are not available yet.';
     const roomInput = doc.createElement('input');
     roomInput.type = 'text';
     roomInput.maxLength = 24;
     roomInput.placeholder = 'e.g. earth-lab';
     roomInput.setAttribute('aria-label', 'Room code');
-    roomInput.value = normalizeRoom(new URLSearchParams(win.location.search).get('gevRoom')) || 'earth-lab';
+    roomInput.value =
+      normalizeRoom(new URLSearchParams(win.location.search).get('gevRoom')) ||
+      'earth-lab';
     const actions = doc.createElement('div');
     actions.className = 'gev-playground-actions';
     function button(label) {
@@ -68,7 +83,9 @@ export const feature = {
     let room = null;
     const peers = new Map();
     const peerId = 'peer-' + Math.random().toString(36).slice(2, 12);
-    function notice(message) { status.textContent = message; }
+    function notice(message) {
+      status.textContent = message;
+    }
     function leaveRoom() {
       channel?.close();
       channel = null;
@@ -95,7 +112,10 @@ export const feature = {
         const row = doc.createElement('div');
         row.className = 'gev-playground-actions';
         const label = doc.createElement('span');
-        label.textContent = 'Peer ' + id.slice(-6) + (view ? ' · shared a coarse view' : ' · connected');
+        label.textContent =
+          'Peer ' +
+          id.slice(-6) +
+          (view ? ' · shared a coarse view' : ' · connected');
         row.append(label);
         if (view) {
           const follow = doc.createElement('button');
@@ -104,7 +124,9 @@ export const feature = {
           follow.addEventListener('click', () => {
             services.viewer.camera.flyTo({
               destination: services.Cesium.Cartesian3.fromDegrees(
-                view.lon, view.lat, view.height,
+                view.lon,
+                view.lat,
+                view.height,
               ),
               duration: 2,
             });
@@ -158,7 +180,9 @@ export const feature = {
         height: Math.round(rawHeight / 1000) * 1000,
       };
       send('view', view);
-      notice('Coarse camera view shared with local tabs (about 0.1° precision).');
+      notice(
+        'Coarse camera view shared with local tabs (about 0.1° precision).',
+      );
     });
     invite.addEventListener('click', async () => {
       const candidate = normalizeRoom(roomInput.value);
@@ -166,7 +190,9 @@ export const feature = {
       const link = makeRoomInvite(win.location.href, candidate);
       try {
         await win.navigator.clipboard.writeText(link);
-        notice('Room link copied. Shared presence works only in same-origin tabs.');
+        notice(
+          'Room link copied. Shared presence works only in same-origin tabs.',
+        );
       } catch {
         notice('Clipboard unavailable; copy this room code: ' + candidate);
       }

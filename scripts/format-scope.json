@@ -897,5 +897,6 @@
   "src/tools/globePanel.test.mjs",
   "src/costEndpointThrottle.test.mjs",
   "src/playground/lookPacks.test.mjs",
-  "scripts/qa-playground-looks.mjs"
+  "scripts/qa-playground-looks.mjs",
+  "src/playground/lookManifest.test.mjs"
 ]

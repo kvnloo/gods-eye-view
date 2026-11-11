@@ -29,7 +29,8 @@ try {
   url.searchParams.set('welcome', '0');
   await page.goto(url.href, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(
-    () => window.__godsEyeView?.viewer?.scene &&
+    () =>
+      window.__godsEyeView?.viewer?.scene &&
       document.querySelector('#planet-playground-launcher') &&
       document.querySelector('#loading-screen')?.classList.contains('hidden'),
     { timeout: 60_000 },
@@ -37,10 +38,13 @@ try {
 
   await page.click('#planet-playground-launcher');
   const toyboxOpened = await page.evaluate(() => {
-    const tab = [...document.querySelectorAll('.gev-playground-tabs [role="tab"]')]
-      .find((node) => node.textContent === 'Toybox');
+    const tab = [
+      ...document.querySelectorAll('.gev-playground-tabs [role="tab"]'),
+    ].find((node) => node.textContent === 'Toybox');
     tab?.click();
-    return Boolean(tab && document.querySelector('[data-look-pack="original"]'));
+    return Boolean(
+      tab && document.querySelector('[data-look-pack="original"]'),
+    );
   });
   assert.ok(toyboxOpened, 'Toybox catalog must be reachable in EXPLORE');
 
@@ -75,7 +79,11 @@ try {
     assert.equal(sample.style, expectedStyle, id + ' base style');
     assert.equal(sample.stage, 'godsEyeView_creativeGrade');
     assert.equal(sample.enabled, true, id + ' grade is active');
-    assert.equal(sample.chipVisible, true, id + ' creative disclosure remains visible');
+    assert.equal(
+      sample.chipVisible,
+      true,
+      id + ' creative disclosure remains visible',
+    );
     assert.ok(sample.chipLabel.includes('Reset'));
     if (firstStage !== null) assert.equal(sample.stage, firstStage);
     firstStage = sample.stage;
@@ -85,20 +93,39 @@ try {
   await page.click('.gev-playground-close');
   const persistent = await page.evaluate(() => {
     const chip = document.querySelector('.gev-playground-creative-chip');
-    const stage = window.__godsEyeView.viewer.scene.postProcessStages
-      .getStageByName('godsEyeView_creativeGrade');
-    return { chipVisible: Boolean(chip && !chip.hidden), stageEnabled: stage?.enabled };
+    const stage =
+      window.__godsEyeView.viewer.scene.postProcessStages.getStageByName(
+        'godsEyeView_creativeGrade',
+      );
+    return {
+      chipVisible: Boolean(chip && !chip.hidden),
+      stageEnabled: stage?.enabled,
+    };
   });
-  assert.equal(persistent.chipVisible, true, 'disclosure survives closing tray');
-  assert.equal(persistent.stageEnabled, true, 'creative grade intentionally persists');
+  assert.equal(
+    persistent.chipVisible,
+    true,
+    'disclosure survives closing tray',
+  );
+  assert.equal(
+    persistent.stageEnabled,
+    true,
+    'creative grade intentionally persists',
+  );
 
   await page.click('.gev-playground-creative-chip');
   const reset = await page.evaluate(() => {
     const chip = document.querySelector('.gev-playground-creative-chip');
     const manager = window.__godsEyeView.styleManager;
-    const stage = window.__godsEyeView.viewer.scene.postProcessStages
-      .getStageByName('godsEyeView_creativeGrade');
-    return { style: manager.activeStyle, enabled: stage?.enabled, chipHidden: chip?.hidden };
+    const stage =
+      window.__godsEyeView.viewer.scene.postProcessStages.getStageByName(
+        'godsEyeView_creativeGrade',
+      );
+    return {
+      style: manager.activeStyle,
+      enabled: stage?.enabled,
+      chipHidden: chip?.hidden,
+    };
   });
   assert.equal(reset.style, 'normal');
   assert.equal(reset.enabled, false);
@@ -109,20 +136,28 @@ try {
   await page.click('#planet-playground-launcher');
   await page.evaluate(() => {
     [...document.querySelectorAll('.gev-playground-tabs [role="tab"]')]
-      .find((node) => node.textContent === 'Toybox')?.click();
+      .find((node) => node.textContent === 'Toybox')
+      ?.click();
   });
   await page.click('[data-look-pack="storybook-wilds"]');
-  await page.$eval('.style-btn[data-style="anime"]', (button) => button.click());
+  await page.$eval('.style-btn[data-style="anime"]', (button) =>
+    button.click(),
+  );
   const superseded = await page.evaluate(() => ({
     hidden: document.querySelector('.gev-playground-creative-chip')?.hidden,
-    enabled: window.__godsEyeView.viewer.scene.postProcessStages
-      .getStageByName('godsEyeView_creativeGrade')?.enabled,
+    enabled: window.__godsEyeView.viewer.scene.postProcessStages.getStageByName(
+      'godsEyeView_creativeGrade',
+    )?.enabled,
   }));
   assert.equal(superseded.hidden, true);
   assert.equal(superseded.enabled, false);
   assert.deepEqual(errors, [], 'no browser page errors');
-  console.log('[PASS] Visual Universe gallery, grade ownership, persistent disclosure and reset');
-  console.log('[INFO] Screenshots: qa-shots/visual-universe/ (not GPU-performance evidence)');
+  console.log(
+    '[PASS] Visual Universe gallery, grade ownership, persistent disclosure and reset',
+  );
+  console.log(
+    '[INFO] Screenshots: qa-shots/visual-universe/ (not GPU-performance evidence)',
+  );
 } finally {
   await browser.close();
 }

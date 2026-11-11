@@ -23,7 +23,10 @@ export const DESTINATIONS = Object.freeze([
 export function chooseDestination(random = Math.random) {
   const n = Number(random());
   const index = Number.isFinite(n)
-    ? Math.max(0, Math.min(DESTINATIONS.length - 1, Math.floor(n * DESTINATIONS.length)))
+    ? Math.max(
+        0,
+        Math.min(DESTINATIONS.length - 1, Math.floor(n * DESTINATIONS.length)),
+      )
     : 0;
   return DESTINATIONS[index];
 }
@@ -36,7 +39,8 @@ export const feature = {
     const title = doc.createElement('h3');
     title.textContent = 'Planet Toybox';
     const description = doc.createElement('p');
-    description.textContent = 'Reimagine Earth with built-in creative color grades. Filters never change the underlying data; cinematic grades are session-only.';
+    description.textContent =
+      'Reimagine Earth with built-in creative color grades. Filters never change the underlying data; cinematic grades are session-only.';
     const lookTitle = doc.createElement('p');
     lookTitle.textContent = 'Pick a sensor lens';
     const looks = doc.createElement('div');
@@ -82,12 +86,19 @@ export const feature = {
       card.addEventListener('click', () => {
         const applied = services.lookPacks?.apply(pack.id) || false;
         readout.textContent = applied
-          ? pack.title + ' active. Artistic color only; not an observed-data transformation.'
+          ? pack.title +
+            ' active. Artistic color only; not an observed-data transformation.'
           : 'This creative look is unavailable on the current renderer.';
         for (const option of gallery.querySelectorAll('[data-look-pack]'))
-          option.setAttribute('aria-pressed', String(applied && option === card));
+          option.setAttribute(
+            'aria-pressed',
+            String(applied && option === card),
+          );
       });
-      card.setAttribute('aria-pressed', String(services.lookPacks?.activeId === pack.id));
+      card.setAttribute(
+        'aria-pressed',
+        String(services.lookPacks?.activeId === pack.id),
+      );
       gallery.append(card);
     }
     const actions = doc.createElement('div');
@@ -106,16 +117,25 @@ export const feature = {
       viewer.camera.flyTo({
         destination,
         orientation,
-        duration: doc.defaultView.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 2.5,
-        complete: () => { ownedFlight = false; },
-        cancel: () => { ownedFlight = false; },
+        duration: doc.defaultView.matchMedia('(prefers-reduced-motion: reduce)')
+          .matches
+          ? 0
+          : 2.5,
+        complete: () => {
+          ownedFlight = false;
+        },
+        cancel: () => {
+          ownedFlight = false;
+        },
       });
     }
     surprise.addEventListener('click', () => {
       const destination = chooseDestination();
       fly(
         Cesium.Cartesian3.fromDegrees(
-          destination.lon, destination.lat, destination.altitude,
+          destination.lon,
+          destination.lat,
+          destination.altitude,
         ),
         { heading: 0, pitch: Cesium.Math.toRadians(-63), roll: 0 },
       );
@@ -129,8 +149,19 @@ export const feature = {
       });
       readout.textContent = 'Returning to your starting view.';
     });
-    root.append(title, description, galleryTitle, gallery, lookTitle, looks, actions, readout);
-    const currentPack = LOOK_PACKS.find((pack) => pack.id === services.lookPacks?.activeId);
+    root.append(
+      title,
+      description,
+      galleryTitle,
+      gallery,
+      lookTitle,
+      looks,
+      actions,
+      readout,
+    );
+    const currentPack = LOOK_PACKS.find(
+      (pack) => pack.id === services.lookPacks?.activeId,
+    );
     readout.textContent = currentPack
       ? 'Creative look: ' + currentPack.title + ' (reset any time).'
       : 'Current lens: ' + (styleManager.activeStyle || 'normal') + '.';

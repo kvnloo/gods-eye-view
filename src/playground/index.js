@@ -14,12 +14,19 @@ export function mountPlanetPlayground(services) {
   const features = Object.entries(discovered)
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([, module]) => module.feature)
-    .filter((item) => item && typeof item.id === 'string' && typeof item.mount === 'function');
+    .filter(
+      (item) =>
+        item && typeof item.id === 'string' && typeof item.mount === 'function',
+    );
   const doc = services.document || document;
   if (doc.querySelector('#planet-playground-launcher') || !features.length)
     return () => {};
   // An embedded globe is controlled by its host; it must not acquire a second UI.
-  if (new URLSearchParams(services.window?.location?.search || '').get('embed') === '1')
+  if (
+    new URLSearchParams(services.window?.location?.search || '').get(
+      'embed',
+    ) === '1'
+  )
     return () => {};
 
   // An opt-in creative filter must remain visibly labeled even after the
@@ -36,7 +43,9 @@ export function mountPlanetPlayground(services) {
     onChange: (id) => {
       const pack = LOOK_PACKS.find((entry) => entry.id === id);
       creativeChip.hidden = !pack || id === 'original';
-      creativeChip.textContent = pack ? 'CREATIVE · ' + pack.title + ' · Reset' : '';
+      creativeChip.textContent = pack
+        ? 'CREATIVE · ' + pack.title + ' · Reset'
+        : '';
     },
   });
   creativeChip.addEventListener('click', () => lookPacks.apply('original'));
@@ -104,13 +113,15 @@ export function mountPlanetPlayground(services) {
       button.tabIndex = selected ? 0 : -1;
     }
     try {
-      disposeFeature = feature.mount({
-        root: body,
-        services: { ...services, Cesium, lookPacks },
-      }) || null;
+      disposeFeature =
+        feature.mount({
+          root: body,
+          services: { ...services, Cesium, lookPacks },
+        }) || null;
     } catch (error) {
       const problem = doc.createElement('p');
-      problem.textContent = 'This mode could not open. Other modes remain available.';
+      problem.textContent =
+        'This mode could not open. Other modes remain available.';
       body.replaceChildren(problem);
       console.error('Planet Playground mode failed:', feature.id, error);
     }

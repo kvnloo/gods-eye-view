@@ -11,12 +11,18 @@ export const PROPOSAL_TYPES = Object.freeze([
 const CATEGORIES = new Set(PROPOSAL_TYPES.map(([id]) => id));
 
 export function createProposal({ scenario, type, lat, lon }) {
-  if (!['A', 'B'].includes(scenario) || !CATEGORIES.has(type) ||
-      !Number.isFinite(lat) || !Number.isFinite(lon) ||
-      Math.abs(lat) > 90 || Math.abs(lon) > 180)
+  if (
+    !['A', 'B'].includes(scenario) ||
+    !CATEGORIES.has(type) ||
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lon) ||
+    Math.abs(lat) > 90 ||
+    Math.abs(lon) > 180
+  )
     throw new TypeError('Invalid hypothetical proposal');
   return Object.freeze({
-    scenario, type,
+    scenario,
+    type,
     lat: Number(lat.toFixed(5)),
     lon: Number(lon.toFixed(5)),
   });
@@ -26,7 +32,8 @@ export function makeScenarioReceipt(proposals, generatedAt) {
   return {
     schema: 'gev.hypothetical-proposals.v1',
     generatedAt,
-    provenance: 'User-authored hypothetical placements; no impact model was run.',
+    provenance:
+      'User-authored hypothetical placements; no impact model was run.',
     modeledOutcomes: false,
     scenarios: {
       A: proposals.filter((entry) => entry.scenario === 'A'),
@@ -44,7 +51,8 @@ export const feature = {
     const title = doc.createElement('h3');
     title.textContent = 'What-if World Builder';
     const intro = doc.createElement('p');
-    intro.textContent = 'Place alternative ideas at the center of your map. No forecast or claimed benefits — just a reversible planning sketch.';
+    intro.textContent =
+      'Place alternative ideas at the center of your map. No forecast or claimed benefits — just a reversible planning sketch.';
     const controlRow = doc.createElement('div');
     controlRow.className = 'gev-playground-actions';
     const scenarioSelect = doc.createElement('select');
@@ -87,10 +95,16 @@ export const feature = {
     const items = [];
     function update() {
       const selected = scenarioSelect.value;
-      for (const item of items) item.entity.show = item.proposal.scenario === selected;
-      count.textContent = 'A: ' + items.filter((item) => item.proposal.scenario === 'A').length +
-        ' markers · B: ' + items.filter((item) => item.proposal.scenario === 'B').length +
-        ' markers (showing ' + selected + ')';
+      for (const item of items)
+        item.entity.show = item.proposal.scenario === selected;
+      count.textContent =
+        'A: ' +
+        items.filter((item) => item.proposal.scenario === 'A').length +
+        ' markers · B: ' +
+        items.filter((item) => item.proposal.scenario === 'B').length +
+        ' markers (showing ' +
+        selected +
+        ')';
       viewer.scene.requestRender();
     }
     function centerCoordinates() {
@@ -101,12 +115,16 @@ export const feature = {
       );
       if (!position) return null;
       const c = Cesium.Cartographic.fromCartesian(position);
-      return { lat: Cesium.Math.toDegrees(c.latitude), lon: Cesium.Math.toDegrees(c.longitude) };
+      return {
+        lat: Cesium.Math.toDegrees(c.latitude),
+        lon: Cesium.Math.toDegrees(c.longitude),
+      };
     }
     add.addEventListener('click', () => {
       const center = centerCoordinates();
       if (!center) {
-        status.textContent = 'No globe intersection at the crosshair. Try zooming out.';
+        status.textContent =
+          'No globe intersection at the crosshair. Try zooming out.';
         return;
       }
       const proposal = createProposal({
@@ -118,13 +136,17 @@ export const feature = {
         position: Cesium.Cartesian3.fromDegrees(proposal.lon, proposal.lat),
         point: {
           pixelSize: 11,
-          color: proposal.scenario === 'A' ? Cesium.Color.LIME : Cesium.Color.CYAN,
+          color:
+            proposal.scenario === 'A' ? Cesium.Color.LIME : Cesium.Color.CYAN,
           outlineColor: Cesium.Color.BLACK,
           outlineWidth: 2,
           disableDepthTestDistance: 200000,
         },
         label: {
-          text: proposal.scenario + ' · ' + PROPOSAL_TYPES.find(([id]) => id === proposal.type)[1],
+          text:
+            proposal.scenario +
+            ' · ' +
+            PROPOSAL_TYPES.find(([id]) => id === proposal.type)[1],
           font: '12px sans-serif',
           fillColor: Cesium.Color.WHITE,
           showBackground: true,
@@ -134,10 +156,18 @@ export const feature = {
       });
       items.push({ proposal, entity });
       update();
-      status.textContent = proposal.type + ' proposed at ' + proposal.lat + ', ' + proposal.lon + '.';
+      status.textContent =
+        proposal.type +
+        ' proposed at ' +
+        proposal.lat +
+        ', ' +
+        proposal.lon +
+        '.';
     });
     undo.addEventListener('click', () => {
-      const index = items.findLastIndex(({ proposal }) => proposal.scenario === scenarioSelect.value);
+      const index = items.findLastIndex(
+        ({ proposal }) => proposal.scenario === scenarioSelect.value,
+      );
       if (index < 0) {
         status.textContent = 'No proposals to undo in this branch.';
         return;
@@ -149,8 +179,15 @@ export const feature = {
     });
     scenarioSelect.addEventListener('change', update);
     exportButton.addEventListener('click', () => {
-      const receipt = makeScenarioReceipt(items.map(({ proposal }) => proposal), new Date().toISOString());
-      const url = URL.createObjectURL(new Blob([JSON.stringify(receipt, null, 2)], { type: 'application/json' }));
+      const receipt = makeScenarioReceipt(
+        items.map(({ proposal }) => proposal),
+        new Date().toISOString(),
+      );
+      const url = URL.createObjectURL(
+        new Blob([JSON.stringify(receipt, null, 2)], {
+          type: 'application/json',
+        }),
+      );
       const link = doc.createElement('a');
       link.href = url;
       link.download = 'gev-what-if.json';
@@ -158,7 +195,8 @@ export const feature = {
       link.click();
       link.remove();
       setTimeout(() => URL.revokeObjectURL(url), 0);
-      status.textContent = 'Exported hypothetical proposals. No predictions included.';
+      status.textContent =
+        'Exported hypothetical proposals. No predictions included.';
     });
     root.append(title, intro, controlRow, buttons, count, status);
     update();

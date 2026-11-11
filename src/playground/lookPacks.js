@@ -37,25 +37,47 @@ const RAW_PACKS = [
     id: 'cinematic-earth',
     title: 'Cinematic Earth',
     family: 'Realism',
-    description: 'Clean detail, filmic contrast and restrained warmth. Not HDR reconstruction.',
+    description:
+      'Clean detail, filmic contrast and restrained warmth. Not HDR reconstruction.',
     style: 'normal',
-    grade: { exposure: 0.04, contrast: 1.13, saturation: 1.08, warmth: 0.12, vignette: 0.16 },
+    grade: {
+      exposure: 0.04,
+      contrast: 1.13,
+      saturation: 1.08,
+      warmth: 0.12,
+      vignette: 0.16,
+    },
   },
   {
     id: 'storybook-wilds',
     title: 'Storybook Wilds',
     family: 'Fantasy',
-    description: 'Warm, vivid cel-shaded exploration, inspired by painterly open-world adventures.',
+    description:
+      'Warm, vivid cel-shaded exploration, inspired by painterly open-world adventures.',
     style: 'anime',
-    grade: { exposure: 0.08, contrast: 1.06, saturation: 1.17, warmth: 0.48, vignette: 0.08 },
+    grade: {
+      exposure: 0.08,
+      contrast: 1.06,
+      saturation: 1.17,
+      warmth: 0.48,
+      vignette: 0.08,
+    },
   },
   {
     id: 'frontier-film',
     title: 'Frontier Film',
     family: 'Cinema',
-    description: 'Dusty golden-hour western color grade. It does not create new terrain or weather.',
+    description:
+      'Dusty golden-hour western color grade. It does not create new terrain or weather.',
     style: 'normal',
-    grade: { exposure: 0.03, contrast: 1.17, saturation: 0.83, warmth: 0.7, vignette: 0.38, grain: 0.36 },
+    grade: {
+      exposure: 0.03,
+      contrast: 1.17,
+      saturation: 0.83,
+      warmth: 0.7,
+      vignette: 0.38,
+      grain: 0.36,
+    },
   },
   {
     id: 'witchwood',
@@ -63,29 +85,53 @@ const RAW_PACKS = [
     family: 'Fantasy',
     description: 'Cold, brooding dark-fantasy contrast and muted foliage.',
     style: 'normal',
-    grade: { exposure: -0.12, contrast: 1.26, saturation: 0.68, warmth: -0.5, vignette: 0.64, grain: 0.12 },
+    grade: {
+      exposure: -0.12,
+      contrast: 1.26,
+      saturation: 0.68,
+      warmth: -0.5,
+      vignette: 0.64,
+      grain: 0.12,
+    },
   },
   {
     id: 'neon-nocturne',
     title: 'Neon Nocturne',
     family: 'Sci-fi',
-    description: 'Electric color and magenta shadows. Works best with nighttime source imagery.',
+    description:
+      'Electric color and magenta shadows. Works best with nighttime source imagery.',
     style: 'normal',
-    grade: { exposure: -0.06, contrast: 1.31, saturation: 1.45, warmth: -0.32, tint: 0.58, vignette: 0.4 },
+    grade: {
+      exposure: -0.06,
+      contrast: 1.31,
+      saturation: 1.45,
+      warmth: -0.32,
+      tint: 0.58,
+      vignette: 0.4,
+    },
   },
   {
     id: 'space-opera',
     title: 'Space Opera',
     family: 'Sci-fi',
-    description: 'A cool cyan holographic surveillance lens, not a spaceship or 3D asset generator.',
+    description:
+      'A cool cyan holographic surveillance lens, not a spaceship or 3D asset generator.',
     style: 'surveillance',
-    grade: { exposure: -0.04, contrast: 1.1, saturation: 0.65, warmth: -0.7, tint: -0.25, vignette: 0.32 },
+    grade: {
+      exposure: -0.04,
+      contrast: 1.1,
+      saturation: 0.65,
+      warmth: -0.7,
+      tint: -0.25,
+      vignette: 0.32,
+    },
   },
   {
     id: 'arcade-racer',
     title: 'Arcade Racer',
     family: 'Play',
-    description: 'Punchy animation colors and playful outlines for sweeping globe flyovers.',
+    description:
+      'Punchy animation colors and playful outlines for sweeping globe flyovers.',
     style: 'anime',
     grade: { exposure: 0.09, contrast: 1.16, saturation: 1.58, warmth: 0.24 },
   },
@@ -93,47 +139,75 @@ const RAW_PACKS = [
     id: 'polar-dream',
     title: 'Polar Dream',
     family: 'Atmosphere',
-    description: 'An icy fantasy treatment over GEV’s existing snow visual effect.',
+    description:
+      'An icy fantasy treatment over GEV’s existing snow visual effect.',
     style: 'snow',
-    grade: { exposure: 0.04, contrast: 1.07, saturation: 0.74, warmth: -0.52, vignette: 0.14 },
+    grade: {
+      exposure: 0.04,
+      contrast: 1.07,
+      saturation: 0.74,
+      warmth: -0.52,
+      vignette: 0.14,
+    },
   },
 ];
 
 const VALID_STYLES = new Set([
-  'normal', 'retro', 'surveillance', 'thermal', 'anime', 'noir', 'snow',
+  'normal',
+  'retro',
+  'surveillance',
+  'thermal',
+  'anime',
+  'noir',
+  'snow',
 ]);
 
 /** Validate a pack as data, never interpreted as executable shader source. */
 export function isValidLookPack(pack) {
-  if (!pack || typeof pack !== 'object' || typeof pack.id !== 'string' ||
-      !/^[a-z0-9-]+$/.test(pack.id) ||
-      !VALID_STYLES.has(pack.style) ||
-      typeof pack.title !== 'string' || !pack.title ||
-      typeof pack.family !== 'string' || !pack.family ||
-      typeof pack.description !== 'string' || !pack.description ||
-      (pack.grade === null && pack.id !== 'original') ||
-      (pack.id === 'original' && (pack.grade !== null || pack.style !== 'normal')))
+  if (
+    !pack ||
+    typeof pack !== 'object' ||
+    typeof pack.id !== 'string' ||
+    !/^[a-z0-9-]+$/.test(pack.id) ||
+    !VALID_STYLES.has(pack.style) ||
+    typeof pack.title !== 'string' ||
+    !pack.title ||
+    typeof pack.family !== 'string' ||
+    !pack.family ||
+    typeof pack.description !== 'string' ||
+    !pack.description ||
+    (pack.grade === null && pack.id !== 'original') ||
+    (pack.id === 'original' && (pack.grade !== null || pack.style !== 'normal'))
+  )
     return false;
-  return pack.grade === null || (
-    typeof pack.grade === 'object' && !Array.isArray(pack.grade) &&
-    Object.entries(pack.grade).every(([key, value]) =>
-      Object.hasOwn(GRADE_LIMITS, key) &&
-      Number.isFinite(value) &&
-      value >= GRADE_LIMITS[key][0] &&
-      value <= GRADE_LIMITS[key][1])
+  return (
+    pack.grade === null ||
+    (typeof pack.grade === 'object' &&
+      !Array.isArray(pack.grade) &&
+      Object.entries(pack.grade).every(
+        ([key, value]) =>
+          Object.hasOwn(GRADE_LIMITS, key) &&
+          Number.isFinite(value) &&
+          value >= GRADE_LIMITS[key][0] &&
+          value <= GRADE_LIMITS[key][1],
+      ))
   );
 }
 
-if (new Set(RAW_PACKS.map((pack) => pack.id)).size !== RAW_PACKS.length ||
-    RAW_PACKS.some((pack) => !isValidLookPack(pack)))
+if (
+  new Set(RAW_PACKS.map((pack) => pack.id)).size !== RAW_PACKS.length ||
+  RAW_PACKS.some((pack) => !isValidLookPack(pack))
+)
   throw new Error('Invalid curated GEV look pack registry');
 
-export const LOOK_PACKS = Object.freeze(RAW_PACKS.map((pack) =>
-  Object.freeze({
-    ...pack,
-    grade: pack.grade && Object.freeze({ ...pack.grade }),
-  }),
-));
+export const LOOK_PACKS = Object.freeze(
+  RAW_PACKS.map((pack) =>
+    Object.freeze({
+      ...pack,
+      grade: pack.grade && Object.freeze({ ...pack.grade }),
+    }),
+  ),
+);
 
 /** One static color sample, no camera/depth inference or continuous render loop. */
 export const COLOR_GRADE_SHADER = /* glsl */ `
@@ -172,7 +246,12 @@ export const COLOR_GRADE_SHADER = /* glsl */ `
  * Own a single optional grade stage for the whole Playground lifetime.
  * No persistent GPU work until the first creative grade is selected.
  */
-export function createLookPackController({ viewer, Cesium, styleManager, onChange = () => {} }) {
+export function createLookPackController({
+  viewer,
+  Cesium,
+  styleManager,
+  onChange = () => {},
+}) {
   let stage = null;
   let destroyed = false;
   let active = null;
@@ -181,12 +260,19 @@ export function createLookPackController({ viewer, Cesium, styleManager, onChang
   const render = () => viewer.scene.requestRender?.();
 
   return {
-    get activeId() { return active; },
-    get applyingBaseStyle() { return applyingBaseStyle; },
+    get activeId() {
+      return active;
+    },
+    get applyingBaseStyle() {
+      return applyingBaseStyle;
+    },
     apply(id) {
       if (destroyed) return false;
       const pack = LOOK_PACKS.find((entry) => entry.id === id);
-      if (!pack || (pack.style !== 'normal' && !styleManager.stages?.[pack.style]))
+      if (
+        !pack ||
+        (pack.style !== 'normal' && !styleManager.stages?.[pack.style])
+      )
         return false;
       // Construct before changing the user's chosen GEV style, so a
       // shader-creation failure cannot leave the selector in a false state.

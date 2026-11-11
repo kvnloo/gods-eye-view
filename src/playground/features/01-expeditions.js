@@ -12,7 +12,8 @@ export const MISSIONS = Object.freeze([
   {
     id: 'wildfire',
     title: 'California · Fire scout',
-    description: 'Explore terrain and available current fire observations. Not a historic replay.',
+    description:
+      'Explore terrain and available current fire observations. Not a historic replay.',
     camera: { lat: 39.25, lon: -120.15, altitude: 260000 },
     layers: ['local-firms', 'fire-perimeters'],
   },
@@ -29,7 +30,11 @@ export function availableExpeditions(missions, sceneDirector) {
   return missions.map((mission) => {
     if (!mission.sceneQuery) return { ...mission, available: true };
     const scene = sceneDirector?.findSceneByQuery?.(mission.sceneQuery);
-    return { ...mission, available: Boolean(scene), sceneId: scene?.id || null };
+    return {
+      ...mission,
+      available: Boolean(scene),
+      sceneId: scene?.id || null,
+    };
   });
 }
 
@@ -41,7 +46,8 @@ export const feature = {
     const heading = doc.createElement('h3');
     heading.textContent = 'Choose an expedition';
     const intro = doc.createElement('p');
-    intro.textContent = 'Fly to a mission, then investigate real public layers or authored evidence.';
+    intro.textContent =
+      'Fly to a mission, then investigate real public layers or authored evidence.';
     const status = doc.createElement('p');
     status.className = 'gev-playground-status';
     status.setAttribute('role', 'status');
@@ -58,7 +64,9 @@ export const feature = {
       const title = doc.createElement('strong');
       title.textContent = mission.title;
       const detail = doc.createElement('span');
-      detail.textContent = mission.available ? mission.description : 'Required authored scene unavailable in this project.';
+      detail.textContent = mission.available
+        ? mission.description
+        : 'Required authored scene unavailable in this project.';
       button.append(title, detail);
       button.disabled = !mission.available;
       button.addEventListener('click', async () => {
@@ -68,10 +76,13 @@ export const feature = {
         try {
           if (mission.sceneId) {
             ownedScene = true;
-            const outcome = await services.sceneDirector.startScene(mission.sceneId, {
-              single: true,
-              preview: false,
-            });
+            const outcome = await services.sceneDirector.startScene(
+              mission.sceneId,
+              {
+                single: true,
+                preview: false,
+              },
+            );
             if (alive)
               status.textContent = outcome.started
                 ? 'Expedition complete. Explore the evidence in the scene panel.'
@@ -94,22 +105,31 @@ export const feature = {
                 roll: 0,
               },
               duration: 2.5,
-              complete: () => { ownedFlight = false; },
-              cancel: () => { ownedFlight = false; },
+              complete: () => {
+                ownedFlight = false;
+              },
+              cancel: () => {
+                ownedFlight = false;
+              },
             });
             const requestedLayers = (mission.layers || []).filter((id) =>
               services.dataManager.layers.has(id),
             );
-            await Promise.all(requestedLayers.map((id) =>
-              services.dataManager.setEnabled(id, true, { origin: 'user' }),
-            ));
+            await Promise.all(
+              requestedLayers.map((id) =>
+                services.dataManager.setEnabled(id, true, { origin: 'user' }),
+              ),
+            );
             if (alive)
-              status.textContent = 'Arrived. Requested: ' +
+              status.textContent =
+                'Arrived. Requested: ' +
                 (requestedLayers.join(', ') || 'terrain only') +
                 '. Feed freshness is shown by each layer.';
           }
         } catch (error) {
-          if (alive) status.textContent = 'Expedition unavailable: ' + String(error.message || error);
+          if (alive)
+            status.textContent =
+              'Expedition unavailable: ' + String(error.message || error);
         } finally {
           if (alive) button.disabled = false;
         }

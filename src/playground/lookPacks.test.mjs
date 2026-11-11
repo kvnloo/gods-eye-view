@@ -13,34 +13,63 @@ function fixture() {
   const selections = [];
   const notifications = [];
   const activeStages = {};
-  for (const name of ['retro', 'surveillance', 'thermal', 'anime', 'noir', 'snow'])
+  for (const name of [
+    'retro',
+    'surveillance',
+    'thermal',
+    'anime',
+    'noir',
+    'snow',
+  ])
     activeStages[name] = { uniforms: {} };
   let renders = 0;
   let created = 0;
   const controller = createLookPackController({
-    viewer: { scene: {
-      postProcessStages: {
-        add(stage) { owned.add(stage); },
-        remove(stage) { owned.delete(stage); },
+    viewer: {
+      scene: {
+        postProcessStages: {
+          add(stage) {
+            owned.add(stage);
+          },
+          remove(stage) {
+            owned.delete(stage);
+          },
+        },
+        requestRender() {
+          renders++;
+        },
       },
-      requestRender() { renders++; },
-    } },
-    Cesium: { PostProcessStage: class {
-      constructor(options) {
-        created++;
-        Object.assign(this, options);
-      }
-    } },
-    onChange(id) { notifications.push(id); },
+    },
+    Cesium: {
+      PostProcessStage: class {
+        constructor(options) {
+          created++;
+          Object.assign(this, options);
+        }
+      },
+    },
+    onChange(id) {
+      notifications.push(id);
+    },
     styleManager: {
       stages: activeStages,
-      setStyle(name, options) { selections.push({ name, options }); },
+      setStyle(name, options) {
+        selections.push({ name, options });
+      },
     },
   });
   return {
-    controller, owned, selections, notifications, activeStages,
-    get renders() { return renders; },
-    get created() { return created; },
+    controller,
+    owned,
+    selections,
+    notifications,
+    activeStages,
+    get renders() {
+      return renders;
+    },
+    get created() {
+      return created;
+    },
   };
 }
 
@@ -49,8 +78,11 @@ test('the curated catalog has unique bounded data-only packs', () => {
   assert.equal(new Set(LOOK_PACKS.map((pack) => pack.id)).size, 9);
   assert.ok(LOOK_PACKS.every(isValidLookPack));
   assert.ok(LOOK_PACKS.every(Object.isFrozen));
-  assert.ok(LOOK_PACKS.filter((pack) => pack.grade).every((pack) =>
-    Object.isFrozen(pack.grade)));
+  assert.ok(
+    LOOK_PACKS.filter((pack) => pack.grade).every((pack) =>
+      Object.isFrozen(pack.grade),
+    ),
+  );
   assert.equal(LOOK_PACKS.find((pack) => pack.id === 'original').grade, null);
 });
 
@@ -58,9 +90,15 @@ test('invalid, unsafe, and nonfinite pack metadata is rejected', () => {
   const base = LOOK_PACKS.find((pack) => pack.id === 'cinematic-earth');
   assert.equal(isValidLookPack({ ...base, id: 'javascript:evil' }), false);
   assert.equal(isValidLookPack({ ...base, style: 'remoteShader' }), false);
-  assert.equal(isValidLookPack({ ...base, grade: { exposure: Infinity } }), false);
+  assert.equal(
+    isValidLookPack({ ...base, grade: { exposure: Infinity } }),
+    false,
+  );
   assert.equal(isValidLookPack({ ...base, grade: { exposure: 15 } }), false);
-  assert.equal(isValidLookPack({ ...base, grade: { fragmentShader: 'anything' } }), false);
+  assert.equal(
+    isValidLookPack({ ...base, grade: { fragmentShader: 'anything' } }),
+    false,
+  );
   assert.equal(isValidLookPack({ ...base, grade: ['bad'] }), false);
 });
 
@@ -96,7 +134,9 @@ test('creative styles reuse one owned stage and can be reset to original', () =>
   assert.equal(f.controller.activeId, 'original');
   assert.equal(f.selections.at(-1).name, 'normal');
   assert.deepEqual(f.notifications.slice(0, 3), [
-    'cinematic-earth', 'storybook-wilds', 'original',
+    'cinematic-earth',
+    'storybook-wilds',
+    'original',
   ]);
   assert.ok(f.renders >= 3);
   f.controller.destroy();

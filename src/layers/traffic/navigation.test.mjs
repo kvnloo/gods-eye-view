@@ -12,6 +12,7 @@ function deferred() {
 }
 
 function setup(t, requestRoads, getStatus = async () => ({ hasKey: false })) {
+  t.mock.method(performance, 'now', () => 0);
   t.mock.timers.enable({ apis: ['setTimeout', 'setInterval'] });
   const camera = {
     positionCartographic: Cesium.Cartographic.fromDegrees(

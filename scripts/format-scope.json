@@ -43,6 +43,12 @@
   "scripts/build-admin-packs.mjs",
   "scripts/qa-admin-outlines.mjs",
   "src/data/inputOwnership.test.mjs",
+  "src/data/collaborationAuthority.test.mjs",
+  "src/data/communityPlanning.js",
+  "src/data/communityPlanning.test.mjs",
+  "src/standalone/communityPlanningFixture.test.mjs",
+  "src/ui/communityPlanningPreview.test.mjs",
+  "src/ui/views/communityPlanningPreviewView.test.mjs",
   "docs/CODE-BOUNDARIES.md",
   "src/main.js",
   "docs/APPLICATION.md",
@@ -1422,5 +1428,14 @@
   "src/ui/ownerFlagSheet.js",
   "src/data/placePacksLoading.test.mjs",
   "src/ui/placePacksLoading.js",
-  "src/ui/placePacksLoading.test.mjs"
+  "src/ui/placePacksLoading.test.mjs",
+  "src/data/cityPlanningDocument.test.mjs",
+  "src/data/planningConceptGenerator.test.mjs",
+  "src/standalone/cityPlanningServices.test.mjs",
+  "src/ui/cityBuilder.test.mjs",
+  "src/ui/cityBuilderLocales.test.mjs",
+  "src/ui/views/cityBuilderView.test.mjs",
+  "scripts/city-builder-locales.mjs",
+  "server/standalone/city-concept.test.mjs",
+  "scripts/qa-city-builder.mjs"
 ]

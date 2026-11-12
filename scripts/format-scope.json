@@ -846,6 +846,7 @@
   "src/layers/localAdsb/motion.test.mjs",
   "src/data/modelEligibility.test.mjs",
   "src/layers/energyAtlas/model.test.mjs",
+  "src/layers/energyAtlas/selection.test.mjs",
   "src/layers/recentImagery/model.test.mjs",
   "src/layers/recentImagery/catalog.test.mjs",
   "src/maps/imageryHost.test.mjs",

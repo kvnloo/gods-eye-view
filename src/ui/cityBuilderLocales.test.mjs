@@ -5,6 +5,11 @@ import { checkCityBuilderLocales } from '../../scripts/city-builder-locales.mjs'
 test('every City builder and legacy preview message is translated in every catalog', () => {
   const { messages, locales, problems } = checkCityBuilderLocales();
   assert.ok(messages.has('City builder'));
+  assert.ok(
+    messages.has('Keep this revision'),
+    'room panel strings are covered',
+  );
+  assert.ok(messages.has('contributor access was revoked'));
   assert.ok(locales.includes('he.json'));
   assert.deepEqual(problems, []);
 });

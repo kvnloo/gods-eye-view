@@ -1396,5 +1396,10 @@
   "src/ui/views/cityBuilderView.test.mjs",
   "scripts/city-builder-locales.mjs",
   "server/standalone/city-concept.test.mjs",
-  "scripts/qa-city-builder.mjs"
+  "scripts/qa-city-builder.mjs",
+  "src/data/cityRoom.test.mjs",
+  "src/data/localRoom.test.mjs",
+  "src/ui/cityRoom.test.mjs",
+  "src/ui/views/cityRoomPanelView.test.mjs",
+  "scripts/qa-city-coop.mjs"
 ]

@@ -5,8 +5,10 @@ import { checkCatalog, unmarkedScript } from './i18n.mjs';
 const root = new URL('../', import.meta.url);
 const sources = [
   'src/ui/cityBuilder.js',
+  'src/ui/cityRoom.js',
   'src/ui/communityPlanningPreview.js',
   'src/ui/views/panels/CityBuilderEditor.vue',
+  'src/ui/views/panels/CityRoomPanel.vue',
   'src/ui/views/panels/CommunityPlanningPreview.vue',
   'src/ui/views/panels/GlobeActions.vue',
 ];

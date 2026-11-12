@@ -443,6 +443,11 @@ export function replayCityDocument(document) {
   );
 }
 
+/** The exact title/description/parameters rules a saved version obeys. */
+export function validateCityEdit(input) {
+  return editValue(input);
+}
+
 export function cityAlternatives(document) {
   const doc = documentValue(document);
   return freeze(

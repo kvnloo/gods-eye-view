@@ -218,6 +218,13 @@ async function selectPlotWithWheel(viewport) {
     20000,
   );
 }
+async function reopenWheel() {
+  // A landed concept closes the wheel; clicking the plot brings it back.
+  const at = (await probe()).anchors?.plot;
+  assert.ok(at, 'selected plot is projected on screen');
+  await page.mouse.click(at.x, at.y);
+  await locator(S.ring).waitFor({ state: 'visible', timeout: 20000 });
+}
 async function reimagine(action, alternativeId) {
   await locator(`[data-city-play-action="${action}"]`).click();
   await until(
@@ -371,6 +378,12 @@ try {
     async () => {
       plotId = (await probe()).plot.id;
       await reimagine('reimagine', 'world-1');
+      assert.equal(
+        await locator(S.wheel).count(),
+        0,
+        'the concept takes the stage',
+      );
+      await locator('[data-city-play-holo-tag]').waitFor({ state: 'visible' });
       const doc = await persisted();
       assert.equal(doc.alternatives.length, 1);
       assert.equal(doc.alternatives[0].site.plot.id, plotId);
@@ -420,6 +433,12 @@ try {
   await check(
     'Zoom in: INSPECT reaches the detail tier with callouts and a stats card',
     async () => {
+      await reopenWheel();
+      assert.equal(
+        (await probe()).plot.id,
+        plotId,
+        'the same plot is selected again',
+      );
       await locator('[data-city-play-action="inspect"]').click();
       await until(
         () => window.__gevCityPlay.snapshot().tier === 'detail',

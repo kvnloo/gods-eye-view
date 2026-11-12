@@ -10,3 +10,6 @@
 - After a reload, City builder play mode frames the latest restored concept on
   its plot instead of a wide view with nothing on screen (Kevin Rajan,
   kvnloo#302).
+- Ground the play-mode concept on its plot: the card stands on the ground with
+  a contact band and a shadow cast from the scene clock's sun, which also shades
+  its face (Kevin Rajan, kvnloo#302).

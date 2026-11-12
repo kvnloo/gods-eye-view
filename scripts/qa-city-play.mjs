@@ -499,10 +499,62 @@ try {
           await locator('[data-city-play-ai-label]').innerText(),
           /AI concept, not a plan or an approval/i,
         );
+        // Grounded: the card stands on the plot with a contact band, and casts
+        // a shadow away from the scene sun exactly when that sun is up.
+        const ground = (await probe()).grounding['world-1'];
+        report.measurements.grounding = ground;
+        assert.ok(ground.baseGapMeters < 1, 'the concept stands on its plot');
+        assert.equal(ground.contact, true, 'a contact shadow under the card');
+        const sunUp = ground.sun?.elevationDeg > 2;
+        assert.equal(ground.cast, sunUp, 'cast shadow iff the scene sun is up');
+        if (sunUp)
+          assert.ok(
+            Math.abs(
+              ground.shadowMeters -
+                Math.min(
+                  32 / Math.tan((ground.sun.elevationDeg * Math.PI) / 180),
+                  80,
+                ),
+            ) < 0.01,
+            'shadow length is h / tan(sun elevation), capped',
+          );
         await page.waitForTimeout(1600);
         await tilesLoaded(30000);
         await pixelEvidence('reimaginedGlobe');
         await screenshot('04-reimagined');
+        // Evidence only: a steeper look shows the shadow beyond the card, then
+        // the camera returns to the reimagine frame.
+        await page.evaluate(
+          ({ lat, lon }) => {
+            const v = window.__godsEyeView.viewer;
+            const c = v.camera;
+            window.__qaView = {
+              destination: c.positionWC.clone(),
+              orientation: { heading: c.heading, pitch: c.pitch, roll: c.roll },
+            };
+            c.setView({
+              destination: v.scene.globe.ellipsoid.cartographicToCartesian({
+                latitude: ((lat - 150 / 111_320) * Math.PI) / 180,
+                longitude: (lon * Math.PI) / 180,
+                height: 280,
+              }),
+              orientation: {
+                heading: 0,
+                pitch: (-62 * Math.PI) / 180,
+                roll: 0,
+              },
+            });
+          },
+          (await probe()).plot.center,
+        );
+        await page.waitForTimeout(800);
+        await tilesLoaded(30000).catch(() => {});
+        await screenshot('04b-grounded-shadow');
+        await page.evaluate(() => {
+          window.__godsEyeView.viewer.camera.setView(window.__qaView);
+          delete window.__qaView;
+        });
+        await page.waitForTimeout(400);
       },
     );
 

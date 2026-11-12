@@ -17,6 +17,7 @@ import {
   playReducer,
   plotCode,
   resumeAlternative,
+  groundShadow,
 } from './cityPlayModel.js';
 
 const plotA = snapPlot({ lat: 37.8007, lon: -122.4103 });
@@ -385,4 +386,70 @@ test('playReducer resume selects the restored plot with the concept leading and 
     'never overrides a plot the user picked',
   );
   assert.equal(playReducer(entered, { type: 'resume', plot: null }), entered);
+});
+
+test('groundShadow grounds a standing card with a contact band and a sun-cast shadow', () => {
+  const lat = 37.8;
+  const mLon = 111_320 * Math.cos((lat * Math.PI) / 180);
+  // A 48 m card running west to east, facing south toward the capture camera.
+  const a0 = [-122.41 - 24 / mLon, lat];
+  const a1 = [-122.41 + 24 / mLon, lat];
+  const card = { a0, a1, heightMeters: 32, faceAzimuthDeg: 180, lat };
+  const meters = ([lon, la]) => ({
+    east: (lon - -122.41) * mLon,
+    north: (la - lat) * 111_320,
+  });
+  const near = (a, b, tolerance = 0.05) => Math.abs(a - b) < tolerance;
+
+  // Sun due south at 30 degrees: the shadow falls north, h / tan(elevation) long.
+  const noon = groundShadow({
+    ...card,
+    sun: { azimuthDeg: 180, elevationDeg: 30 },
+  });
+  assert.ok(
+    near(noon.lengthMeters, 32 / Math.tan(Math.PI / 6)),
+    String(noon.lengthMeters),
+  );
+  assert.deepEqual(
+    noon.cast.slice(0, 2),
+    [a0, a1],
+    'the shadow starts at the card base',
+  );
+  assert.ok(near(meters(noon.cast[2]).north, noon.lengthMeters));
+  assert.ok(near(meters(noon.cast[2]).east, 24));
+  // A sunlit face is bright; the contact band straddles the base 3 m each side.
+  assert.ok(near(noon.shade, 0.62 + 0.38 * Math.cos(Math.PI / 6), 1e-9));
+  assert.deepEqual(
+    noon.contact.map(meters).map((p) => Math.round(p.north)),
+    [-3, -3, 3, 3],
+  );
+
+  // Afternoon sun in the south-west: the shadow falls north-east.
+  const late = groundShadow({
+    ...card,
+    sun: { azimuthDeg: 225, elevationDeg: 20 },
+  });
+  const tip = meters(late.cast[3]);
+  assert.ok(tip.north > 0 && tip.east > -24, 'away from the sun');
+  // Sun behind the card: its face is in shade, never brighter than ambient.
+  const behind = groundShadow({
+    ...card,
+    sun: { azimuthDeg: 0, elevationDeg: 40 },
+  });
+  assert.equal(behind.shade, 0.62);
+  assert.ok(meters(behind.cast[2]).north < 0, 'shadow falls toward the viewer');
+  // A grazing sun cannot stretch the shadow across the district.
+  const low = groundShadow({
+    ...card,
+    sun: { azimuthDeg: 180, elevationDeg: 4 },
+  });
+  assert.equal(low.lengthMeters, 2.5 * 32);
+  // Sun down (or unknown): contact band only, ambient shade.
+  for (const sun of [{ azimuthDeg: 180, elevationDeg: -10 }, null]) {
+    const dark = groundShadow({ ...card, sun });
+    assert.equal(dark.cast, null);
+    assert.equal(dark.lengthMeters, 0);
+    assert.equal(dark.shade, 0.62);
+    assert.equal(dark.contact.length, 4);
+  }
 });

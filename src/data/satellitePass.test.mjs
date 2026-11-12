@@ -9,6 +9,7 @@ import {
   solarPositionECI,
   isSatelliteSunlit,
   observerSolarElevation,
+  observerSolarPosition,
   isObserverDark,
 } from './satellitePass.js';
 
@@ -279,4 +280,35 @@ test('a pass already underway clips rise to the requested start', () => {
   assert.ok(
     clipped.maxElevMs >= clipped.riseMs && clipped.maxElevMs <= clipped.setMs,
   );
+});
+
+test('observerSolarPosition adds azimuth clockwise from north to the same elevation', () => {
+  const sf = [37.8007, -122.4103];
+  // 2026-11-12: solar noon in San Francisco is about 19:53 UTC (11:53 PST).
+  const noon = observerSolarPosition(...sf, Date.UTC(2026, 10, 12, 19, 53));
+  assert.ok(
+    Math.abs(noon.azimuthDeg - 180) < 4,
+    `noon sun due south: ${noon.azimuthDeg}`,
+  );
+  assert.equal(
+    noon.elevationDeg,
+    observerSolarElevation(...sf, Date.UTC(2026, 10, 12, 19, 53)),
+  );
+  assert.ok(
+    noon.elevationDeg > 28 && noon.elevationDeg < 36,
+    'November noon is low',
+  );
+  const morning = observerSolarPosition(...sf, Date.UTC(2026, 10, 12, 16, 30));
+  assert.ok(
+    morning.azimuthDeg > 110 && morning.azimuthDeg < 160,
+    `morning sun south-east: ${morning.azimuthDeg}`,
+  );
+  const afternoon = observerSolarPosition(...sf, Date.UTC(2026, 10, 12, 23, 0));
+  assert.ok(
+    afternoon.azimuthDeg > 200 && afternoon.azimuthDeg < 250,
+    `afternoon sun south-west: ${afternoon.azimuthDeg}`,
+  );
+  const night = observerSolarPosition(...sf, Date.UTC(2026, 10, 13, 8, 0));
+  assert.ok(night.elevationDeg < 0);
+  assert.ok(night.azimuthDeg >= 0 && night.azimuthDeg < 360);
 });

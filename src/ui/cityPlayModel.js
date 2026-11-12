@@ -199,6 +199,60 @@ export function districtPins(alternatives, built) {
   return pins;
 }
 
+const CONTACT_METERS = 3;
+const MAX_SHADOW_RATIO = 2.5;
+const AMBIENT_SHADE = 0.62;
+
+/**
+ * Ground a concept card standing on its plot: a dark contact band under its
+ * base and, while the sun is up, the shadow it casts away from the sun
+ * (h / tan(elevation), capped at 2.5 h). `shade` lights the card face from the
+ * same sun (ambient plus Lambert on the vertical face). Corners are [lon, lat].
+ */
+export function groundShadow({
+  a0,
+  a1,
+  heightMeters,
+  faceAzimuthDeg,
+  sun,
+  lat,
+}) {
+  const rad = (deg) => (deg * Math.PI) / 180;
+  const metersLat = 111_320;
+  const metersLon = metersLat * Math.cos(rad(lat));
+  const move = ([lon, la], east, north) => [
+    lon + east / metersLon,
+    la + north / metersLat,
+  ];
+  const fe = Math.sin(rad(faceAzimuthDeg)) * CONTACT_METERS;
+  const fn = Math.cos(rad(faceAzimuthDeg)) * CONTACT_METERS;
+  const contact = [
+    move(a0, fe, fn),
+    move(a1, fe, fn),
+    move(a1, -fe, -fn),
+    move(a0, -fe, -fn),
+  ];
+  if (!(sun?.elevationDeg > 2))
+    return { contact, cast: null, lengthMeters: 0, shade: AMBIENT_SHADE };
+  const lengthMeters = Math.min(
+    heightMeters / Math.tan(rad(sun.elevationDeg)),
+    MAX_SHADOW_RATIO * heightMeters,
+  );
+  const se = -Math.sin(rad(sun.azimuthDeg)) * lengthMeters;
+  const sn = -Math.cos(rad(sun.azimuthDeg)) * lengthMeters;
+  const lambert = Math.max(
+    0,
+    Math.cos(rad(sun.elevationDeg)) *
+      Math.cos(rad(sun.azimuthDeg - faceAzimuthDeg)),
+  );
+  return {
+    contact,
+    cast: [a0, a1, move(a1, se, sn), move(a0, se, sn)],
+    lengthMeters,
+    shade: AMBIENT_SHADE + (1 - AMBIENT_SHADE) * lambert,
+  };
+}
+
 // Play mode resumes a restored plot only near the camera, never across cities.
 const RESUME_MIN_METERS = 3000;
 

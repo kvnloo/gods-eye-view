@@ -2,6 +2,7 @@ import * as Cesium from 'cesium';
 import { msg, t } from '../i18n/index.js';
 import { claimPointer, releasePointer } from '../data/inputOwnership.js';
 import { neighborPlots, plotPoint, snapPlot } from '../data/cityPlot.js';
+import { observerSolarPosition } from '../data/satellitePass.js';
 import {
   holdContinuousRender,
   releaseContinuousRender,
@@ -12,6 +13,7 @@ import {
   createPlayState,
   detailCallouts,
   districtPins,
+  groundShadow,
   nextKind,
   playReducer,
   plotAlternatives,
@@ -25,7 +27,10 @@ import {
 const OWNER = 'city-play';
 const BODY_CLASS = 'gev-city-play';
 const BOX_HEIGHT = 26;
-const HOLO_WIDTH = 64;
+// The concept card stands on its plot: 48 m wide, 32 m tall, base on the ground.
+const HOLO_WIDTH = 48;
+const HOLO_HEIGHT = 32;
+const GROUND_LIFT = 0.3;
 const SCAN_MS = 1400;
 const BEACON_HEIGHT = 160;
 // Narrow screens lead the framing so the plot sits above the bottom carousel.
@@ -217,27 +222,28 @@ export function mountCityPlay({
           },
         }),
       );
-    select.push(
-      ...plot.corners.map(([lon, lat]) =>
-        ds.entities.add({
-          polyline: {
-            positions: Cesium.Cartesian3.fromDegreesArrayHeights([
-              lon,
-              lat,
-              base,
-              lon,
-              lat,
-              base + (choosing ? BOX_HEIGHT : BOX_HEIGHT + 4),
-            ]),
-            width: choosing ? 4 : 2,
-            material: new Cesium.PolylineGlowMaterialProperty({
-              glowPower: 0.3,
-              color: ACCENT,
-            }),
-          },
-        }),
-      ),
-    );
+    if (choosing)
+      select.push(
+        ...plot.corners.map(([lon, lat]) =>
+          ds.entities.add({
+            polyline: {
+              positions: Cesium.Cartesian3.fromDegreesArrayHeights([
+                lon,
+                lat,
+                base,
+                lon,
+                lat,
+                base + BOX_HEIGHT,
+              ]),
+              width: 4,
+              material: new Cesium.PolylineGlowMaterialProperty({
+                glowPower: 0.3,
+                color: ACCENT,
+              }),
+            },
+          }),
+        ),
+      );
   }
 
   // The world shown on each plot: focused card, else kept world, else latest concept.
@@ -279,8 +285,31 @@ export function mountCityPlay({
       plot.center.lon + east / metersLon,
       plot.center.lat + north / metersLat,
     ];
-    const lift = base + BOX_HEIGHT + 4;
-    return { base, lift, top: lift + (HOLO_WIDTH * 2) / 3, a0, a1 };
+    const lift = base + GROUND_LIFT;
+    // The card faces back toward the capture camera.
+    const face = (Cesium.Math.toDegrees(heading) + 540) % 360;
+    return { base, lift, top: lift + HOLO_HEIGHT, a0, a1, face };
+  }
+
+  // The sun of the scene clock, the same time Cesium lights the globe with.
+  function sunAt(plot) {
+    try {
+      return observerSolarPosition(
+        plot.center.lat,
+        plot.center.lon,
+        Cesium.JulianDate.toDate(viewer.clock.currentTime).getTime(),
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  function removeHolo(plotId) {
+    const holo = holos.get(plotId);
+    if (!holo) return;
+    for (const shadow of holo._cityShadows) ds.entities.remove(shadow);
+    ds.entities.remove(holo);
+    holos.delete(plotId);
   }
 
   function drawConcepts() {
@@ -288,10 +317,7 @@ export function mountCityPlay({
     const tier = state.tier;
     for (const [plotId, entity] of holos) {
       const a = shown.get(plotId);
-      if (!a || entity._cityKey !== `${a.id}:${a.revision}`) {
-        ds.entities.remove(entity);
-        holos.delete(plotId);
-      }
+      if (!a || entity._cityKey !== `${a.id}:${a.revision}`) removeHolo(plotId);
     }
     for (const [plotId, entity] of tints) {
       if (
@@ -338,6 +364,30 @@ export function mountCityPlay({
           return [h, h];
         };
         const animating = now() - start < SCAN_MS;
+        const sun = sunAt(a.site.plot);
+        const ground = groundShadow({
+          a0: g.a0,
+          a1: g.a1,
+          heightMeters: HOLO_HEIGHT,
+          faceAzimuthDeg: g.face,
+          sun,
+          lat: a.site.plot.center.lat,
+        });
+        // Contact band and cast shadow drape on tiles and terrain.
+        const shadows = [
+          [ground.contact, 0.62],
+          [ground.cast, 0.4],
+        ]
+          .filter(([corners]) => corners)
+          .map(([corners, alpha]) =>
+            ds.entities.add({
+              polygon: {
+                hierarchy: Cesium.Cartesian3.fromDegreesArray(corners.flat()),
+                material: Cesium.Color.BLACK.withAlpha(alpha),
+                classificationType: CLASSIFY,
+              },
+            }),
+          );
         const holo = ds.entities.add({
           id: `${OWNER}-concept-${a.id}`,
           wall: {
@@ -354,7 +404,13 @@ export function mountCityPlay({
             material: new Cesium.ImageMaterialProperty({
               image: a.concept.image,
               transparent: true,
-              color: Cesium.Color.WHITE.withAlpha(0.94),
+              // Cesium lights walls from the eye; shade the face by the sun instead.
+              color: new Cesium.Color(
+                ground.shade,
+                ground.shade,
+                ground.shade,
+                0.94,
+              ),
             }),
             outline: true,
             outlineColor: ACCENT,
@@ -363,6 +419,15 @@ export function mountCityPlay({
         holo._cityKey = key;
         holo._cityPlot = a.site.plot;
         holo._cityAlternative = a.id;
+        holo._cityShadows = shadows;
+        holo._cityGround = {
+          sun,
+          baseGapMeters: g.lift - g.base,
+          shadowMeters: ground.lengthMeters,
+          shade: ground.shade,
+          contact: Boolean(ground.contact),
+          cast: Boolean(ground.cast),
+        };
         holos.set(plotId, holo);
         if (animating) {
           holdContinuousRender(OWNER);
@@ -375,7 +440,9 @@ export function mountCityPlay({
           }, SCAN_MS + 50);
         }
       }
-      holos.get(plotId).show = tier !== 'district';
+      const holo = holos.get(plotId);
+      holo.show = tier !== 'district';
+      for (const shadow of holo._cityShadows) shadow.show = holo.show;
     }
   }
 
@@ -720,9 +787,7 @@ export function mountCityPlay({
     const before = heights.get(plot.id);
     heights.delete(plot.id);
     if (Math.abs(baseHeight(plot) - before) < 0.5) return;
-    const holo = holos.get(plot.id);
-    if (holo) ds.entities.remove(holo);
-    holos.delete(plot.id);
+    removeHolo(plot.id);
     const tint = tints.get(plot.id);
     if (tint) {
       ds.entities.remove(tint._cityBeacon);
@@ -866,6 +931,9 @@ export function mountCityPlay({
         concepts: [...holos.values()]
           .filter((e) => e.show !== false && ds.show)
           .map((e) => e._cityAlternative),
+        grounding: Object.fromEntries(
+          [...holos.values()].map((e) => [e._cityAlternative, e._cityGround]),
+        ),
         anchors: lastAnchors ? JSON.parse(lastAnchors) : null,
         bodyClass: doc.body.classList.contains(BODY_CLASS),
       }),

@@ -4,7 +4,7 @@
 
 1. Fly to a public place and wait for the map to load. Click **City builder** above the globe. The pill turns cyan, the side panels slide away and a resource bar appears. Its values come from your project; without a project they show a dash.
 2. Click a plot of land. The app snaps the point to a 40 m grid cell, not a surveyed parcel, and outlines it on the map with an action wheel.
-3. Click **Reimagine** (or **Park**, **Plaza** or **Bike lane**). The camera frames the plot, the app captures that view and the selected provider imagines it. The concept stands on the plot and appears as a card in the bottom carousel. It is labeled "AI concept, not a plan or an approval".
+3. Click **Reimagine** (or **Park**, **Plaza** or **Bike lane**). The camera frames the plot, the app captures that view and the selected provider imagines it. The concept stands on the plot, base on the ground, with a dark contact band and a shadow cast away from the sun of the scene clock (length = card height / tan(sun elevation), capped at 2.5 times the height); the card face is shaded by the same sun. Photoreal tiles carry their own capture-time lighting, which no API exposes, so the shadow follows the scene clock rather than the imagery. The concept also appears as a card in the bottom carousel. It is labeled "AI concept, not a plan or an approval".
 4. **Reroll** saves a new version of the selected card with a new concept. **Build** keeps that world on the plot for this session. **Project records** opens the editor below, with export, import, history and comparison.
 5. Zoom in for parameter callouts and a stats card, or zoom out for district pins. Press Esc or click the pill to leave the mode.
 

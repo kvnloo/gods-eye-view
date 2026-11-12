@@ -165,6 +165,7 @@
       "src/ui/views/panels/CityPlayOverlay.vue",
       "src/ui/stores/cityPlay.js",
       "src/ui/cityPlayModel.js",
+      "src/data/cityLandUse.js",
       "src/ui/views/panels/GlobeCompass.vue",
       "src/ui/stores/recording.js",
       "src/ui/styleParameters.js",

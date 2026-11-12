@@ -3,7 +3,7 @@ import { msg, t } from '../i18n/index.js';
 import { claimPointer, releasePointer } from '../data/inputOwnership.js';
 import { neighborPlots, plotPoint, snapPlot } from '../data/cityPlot.js';
 import { observerSolarPosition } from '../data/satellitePass.js';
-import { CITY_LAND_USES } from '../data/cityPlanningDocument.js';
+import { CITY_LAND_USES } from '../data/cityLandUse.js';
 import { presentCityWalkAccess } from '../ui/cityWalkAccess.js';
 import {
   holdContinuousRender,

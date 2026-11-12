@@ -7,19 +7,15 @@ import {
   createCollaborationState,
 } from './collaborationAuthority.js';
 import { plotValue } from './cityPlot.js';
+import { CITY_LAND_USES } from './cityLandUse.js';
+
+export { CITY_LAND_USES };
 
 const MAX_DOCUMENT_BYTES = 4 * 1024 * 1024;
 const MAX_IMAGE_LENGTH = 600_000;
 const CONCEPT_LABEL = 'AI concept, not a plan or an approval';
 const BASELINE_REVISION = 'city-reference-v1';
 const ID_PATTERN = /^[a-z][a-z0-9-]{0,63}$/;
-/** Proposed land uses for play-mode plots: hypothetical, never a city's zoning. */
-export const CITY_LAND_USES = Object.freeze([
-  'housing',
-  'mixed-use',
-  'civic',
-  'open-space',
-]);
 const MAX_ZONED_PLOTS = 60;
 const encoder = new TextEncoder();
 

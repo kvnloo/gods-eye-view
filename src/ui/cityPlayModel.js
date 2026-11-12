@@ -1,6 +1,6 @@
 // Pure view-model for City builder play mode. No Cesium, DOM or i18n here:
 // the globe adapter supplies ranges and screen points, the view supplies text.
-import { CITY_LAND_USES } from '../data/cityPlanningDocument.js';
+import { CITY_LAND_USES } from '../data/cityLandUse.js';
 
 export const ZOOM_TIERS = Object.freeze({ near: 260, far: 1500 });
 const HYSTERESIS = 0.15;

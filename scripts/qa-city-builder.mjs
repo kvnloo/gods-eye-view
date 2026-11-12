@@ -38,6 +38,8 @@ const S = {
   dialog: '[data-community-planning-preview]',
   editor: '[data-city-builder-editor]',
   top: '#top-center-actions [data-city-builder-open]',
+  // The pill enters play mode; the editor is its Project records drawer.
+  records: '[data-city-play-records="bar"]',
   scene: '#scene-panel [data-community-planning-preview-open]',
   sceneToggle: '[data-collapse-target="scene-panel"]',
   cards: '[data-planning-alternatives]',
@@ -178,6 +180,12 @@ async function imageReady(target) {
     if (!img.complete || img.naturalWidth <= 0 || img.naturalHeight <= 0)
       throw new Error('Image must decode');
   });
+}
+async function openRecords(target = page) {
+  if ((await target.locator(S.top).getAttribute('aria-pressed')) !== 'true')
+    await target.locator(S.top).click();
+  await target.locator(S.records).click();
+  await target.locator(S.dialog).waitFor({ state: 'visible' });
 }
 async function startup(url) {
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 90000 });
@@ -617,10 +625,9 @@ try {
     },
   );
   await check(
-    'Top-center City builder starts a titled project and saves the reference',
+    'Top-center City builder (play mode records) starts a titled project and saves the reference',
     async () => {
-      await locator(S.top).click();
-      await locator(S.dialog).waitFor({ state: 'visible' });
+      await openRecords();
       await locator('#city-builder-project-title').fill(
         'QA Washington Square community project',
       );
@@ -980,7 +987,7 @@ try {
         null,
         { timeout: 120000 },
       );
-      await locator(S.top).click();
+      await openRecords();
       await settled();
       assert.deepEqual(await persisted(), exported);
       assert.match(
@@ -1010,7 +1017,7 @@ try {
           null,
           { timeout: 120000 },
         );
-        await other.locator(S.top).click();
+        await openRecords(other);
         await other.locator('[data-city-builder-edit]').first().click();
         await other
           .locator('#city-builder-description')
@@ -1041,10 +1048,15 @@ try {
       await locator('[data-planning-cancel]').click();
       await locator(S.dialog).waitFor({ state: 'detached' });
       assert.equal(
-        await locator(S.top).evaluate((el) => el === document.activeElement),
+        await locator(S.records).evaluate(
+          (el) => el === document.activeElement,
+        ),
         true,
-        'Close returns focus to the top-center launcher that opened the dialog',
+        'Close returns focus to the play-mode records button that opened the dialog',
       );
+      // Leave play mode through the pill so the side rails return.
+      await locator(S.top).click();
+      await expectAttribute(locator(S.top), 'aria-pressed', 'false');
       const rail = locator('[data-rail-item="scene-panel"]');
       await rail.waitFor({ state: 'visible' });
       if ((await rail.getAttribute('aria-pressed')) !== 'true')

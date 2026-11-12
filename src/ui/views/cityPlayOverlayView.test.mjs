@@ -154,7 +154,7 @@ test('the carousel lists this plot\'s worlds with chips, Build, Reroll and recor
   assert.match($('[data-city-play-ai-label]').textContent, /AI concept, not a plan or an approval/);
   $('[data-city-play-build]').click();
   $('[data-city-play-reroll]').click();
-  $('[data-city-play-records]').click();
+  $('[data-city-play-records="carousel"]').click();
   cards[0].click();
   assert.deepEqual(calls, [
     ['build', 'world-1'],
@@ -165,7 +165,8 @@ test('the carousel lists this plot\'s worlds with chips, Build, Reroll and recor
   store.publish(playView({ pending: true }));
   await settle();
   assert.equal($('[data-city-play-reroll]').disabled, true);
-  assert.equal($('[data-city-play-records]').disabled, true);
+  assert.equal($('[data-city-play-records="carousel"]').disabled, true);
+  assert.equal($('[data-city-play-records="bar"]').disabled, true);
 });
 
 test('zoom tiers swap the wheel for detail callouts or district pins', async (t) => {

@@ -22,7 +22,7 @@ let returnFocus = null;
 watch(
   () => Boolean(preview.value),
   async (open, wasOpen) => {
-    if (open && !wasOpen) returnFocus = document.activeElement?.closest?.('[data-city-builder-open], [data-community-planning-preview-open]');
+    if (open && !wasOpen) returnFocus = document.activeElement?.closest?.('[data-city-builder-open], [data-community-planning-preview-open], [data-city-play-records]');
     await nextTick();
     if (open && !wasOpen) {
       root.value?.showModal?.();

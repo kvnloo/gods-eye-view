@@ -112,6 +112,9 @@ const bars = computed(() => {
         <span class="city-play-stat-label">{{ statLabels[stat.id] }}</span>
         <span class="city-play-stat-value" translate="no">{{ stat.value }}</span>
       </span>
+      <button type="button" class="city-play-bar-records" data-city-play-records="bar" :disabled="view.pending" :aria-label="t('Project records')" :title="t('Project records')" @click="controls?.openRecords()">
+        <UiIcon name="folder_open" :size="16" />
+      </button>
     </div>
     <p v-if="!view.plot" class="city-play-hint" data-city-play-hint>
       <span>{{ t('Click a plot of land to reimagine it') }}</span>
@@ -227,7 +230,7 @@ const bars = computed(() => {
           <UiIcon name="casino" :size="20" />
           <span>{{ t('Reroll') }}</span>
         </button>
-        <button type="button" class="city-play-action city-play-action--quiet" data-city-play-records :disabled="view.pending" @click="controls?.openRecords()">
+        <button type="button" class="city-play-action city-play-action--quiet" data-city-play-records="carousel" :disabled="view.pending" @click="controls?.openRecords()">
           <UiIcon name="folder_open" :size="18" />
           <span>{{ t('Project records') }}</span>
         </button>

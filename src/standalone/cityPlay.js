@@ -149,13 +149,16 @@ export function mountCityPlay({
     const plot = state.plot;
     if (!plot) return;
     const base = baseHeight(plot);
-    for (const cell of neighborPlots(plot, 2)) {
+    // Choosing shows the prism and neighbour grid; once a concept stands on the
+    // plot only its outline and projector edges remain, so the concept leads.
+    const choosing = state.wheel || !shownByPlot().has(plot.id);
+    for (const cell of choosing ? neighborPlots(plot, 1) : []) {
       grid.push(
         ds.entities.add({
           polyline: {
             positions: ring(cell),
             width: 2,
-            material: ACCENT.withAlpha(0.42),
+            material: ACCENT.withAlpha(0.36),
             clampToGround: true,
             classificationType: CLASSIFY,
           },
@@ -167,7 +170,7 @@ export function mountCityPlay({
         id: `${OWNER}-footprint`,
         polygon: {
           hierarchy: ring(plot).slice(0, 4),
-          material: ACCENT.withAlpha(0.28),
+          material: ACCENT.withAlpha(choosing ? 0.28 : 0.14),
           classificationType: CLASSIFY,
         },
       }),
@@ -183,14 +186,29 @@ export function mountCityPlay({
           classificationType: CLASSIFY,
         },
       }),
-      ds.entities.add({
-        wall: {
-          positions: ring(plot, base),
-          minimumHeights: Array(5).fill(base),
-          maximumHeights: Array(5).fill(base + BOX_HEIGHT),
-          material: ACCENT.withAlpha(0.22),
-        },
-      }),
+    );
+    if (choosing)
+      select.push(
+        ds.entities.add({
+          wall: {
+            positions: ring(plot, base),
+            minimumHeights: Array(5).fill(base),
+            maximumHeights: Array(5).fill(base + BOX_HEIGHT),
+            material: ACCENT.withAlpha(0.22),
+          },
+        }),
+        ds.entities.add({
+          polyline: {
+            positions: ring(plot, base + BOX_HEIGHT),
+            width: 6,
+            material: new Cesium.PolylineGlowMaterialProperty({
+              glowPower: 0.25,
+              color: ACCENT,
+            }),
+          },
+        }),
+      );
+    select.push(
       ...plot.corners.map(([lon, lat]) =>
         ds.entities.add({
           polyline: {
@@ -200,9 +218,9 @@ export function mountCityPlay({
               base,
               lon,
               lat,
-              base + BOX_HEIGHT,
+              base + (choosing ? BOX_HEIGHT : BOX_HEIGHT + 4),
             ]),
-            width: 4,
+            width: choosing ? 4 : 2,
             material: new Cesium.PolylineGlowMaterialProperty({
               glowPower: 0.3,
               color: ACCENT,
@@ -210,16 +228,6 @@ export function mountCityPlay({
           },
         }),
       ),
-      ds.entities.add({
-        polyline: {
-          positions: ring(plot, base + BOX_HEIGHT),
-          width: 6,
-          material: new Cesium.PolylineGlowMaterialProperty({
-            glowPower: 0.25,
-            color: ACCENT,
-          }),
-        },
-      }),
     );
   }
 
@@ -262,7 +270,8 @@ export function mountCityPlay({
       plot.center.lon + east / metersLon,
       plot.center.lat + north / metersLat,
     ];
-    return { base, top: base + 6 + (HOLO_WIDTH * 2) / 3, a0, a1 };
+    const lift = base + BOX_HEIGHT + 4;
+    return { base, lift, top: lift + (HOLO_WIDTH * 2) / 3, a0, a1 };
   }
 
   function drawConcepts() {
@@ -301,7 +310,7 @@ export function mountCityPlay({
         const g = holoGeometry(a);
         if (!appeared.has(key)) appeared.set(key, now());
         const start = appeared.get(key);
-        const lift = g.base + 6;
+        const lift = g.lift;
         const heights = () => {
           const k = Math.min(1, (now() - start) / SCAN_MS);
           const h = lift + (g.top - lift) * (1 - (1 - k) ** 3);
@@ -324,9 +333,10 @@ export function mountCityPlay({
             material: new Cesium.ImageMaterialProperty({
               image: a.concept.image,
               transparent: true,
-              color: Cesium.Color.WHITE.withAlpha(0.92),
+              color: Cesium.Color.WHITE.withAlpha(0.94),
             }),
-            outline: false,
+            outline: true,
+            outlineColor: ACCENT,
           },
         });
         holo._cityKey = key;

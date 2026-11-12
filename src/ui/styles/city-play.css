@@ -407,6 +407,20 @@ body.gev-city-play #cesiumContainer {
   cursor: pointer;
   border-color: var(--glass-border-hover);
 }
+.city-play-card--ghost {
+  flex-basis: 168px;
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  background: rgba(8, 14, 20, 0.55);
+  color: var(--text-secondary);
+}
+.city-play-card--ghost:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+.city-play-card--ghost .city-play-card-image {
+  background: none;
+}
 .city-play-card.is-focused {
   border: 2px solid var(--accent);
   box-shadow:
@@ -573,9 +587,11 @@ body.gev-city-play #cesiumContainer {
 @media (max-width: 600px) {
   .city-play-bar {
     top: 76px;
+    left: 12px;
+    transform: none;
     flex-wrap: wrap;
     justify-content: center;
-    width: calc(100vw - 24px);
+    width: calc(100vw - 72px);
     box-sizing: border-box;
     padding: 6px 10px;
     gap: 2px 12px;
@@ -594,7 +610,7 @@ body.gev-city-play #cesiumContainer {
   }
   .city-play-dock {
     flex-direction: column-reverse;
-    bottom: 104px;
+    bottom: 166px;
     width: calc(100vw - 16px);
     gap: 8px;
   }
@@ -615,6 +631,9 @@ body.gev-city-play #cesiumContainer {
   }
   .city-play-card {
     flex-basis: 196px;
+  }
+  .city-play-card--ghost {
+    flex-basis: 132px;
   }
   .city-play-card-image {
     height: 84px;

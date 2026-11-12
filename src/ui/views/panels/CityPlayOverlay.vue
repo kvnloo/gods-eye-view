@@ -26,18 +26,32 @@ const active = computed(() => Boolean(view.value?.active));
 const mobile = computed(() => viewport.value.width < 600);
 const tier = computed(() => view.value?.tier ?? 'plot');
 const plotPoint = computed(() => anchors.value?.plot ?? null);
+const wheelWanted = computed(() => Boolean(view.value?.plot && view.value.wheelOpen && tier.value === 'plot'));
+// On a phone the wheel and the carousel take turns; on desktop both fit.
 const showCarousel = computed(
-  () => Boolean(view.value?.plot) && tier.value !== 'district' && (view.value.cards.length > 0 || view.value.pending),
+  () =>
+    Boolean(view.value?.plot) &&
+    tier.value !== 'district' &&
+    !(mobile.value && wheelWanted.value) &&
+    (view.value.cards.length > 0 || view.value.pending),
 );
 
 const size = computed(() => wheelSize(viewport.value));
 const inset = computed(() => ({
-  top: mobile.value ? 150 : 128,
-  bottom: showCarousel.value ? (mobile.value ? 330 : 300) : mobile.value ? 150 : 120,
+  top: mobile.value ? 196 : 128,
+  bottom: mobile.value ? 176 : showCarousel.value ? 300 : 120,
   side: 12,
 }));
+// Untried kinds fill the carousel as ghost slots that reimagine the plot.
+const ghosts = computed(() =>
+  view.value?.plot
+    ? ['park', 'plaza', 'bike-lane']
+        .filter((kind) => !view.value.cards.some((c) => c.kind === kind))
+        .map((kind) => ({ kind, icon: kind === 'park' ? 'park' : kind === 'plaza' ? 'deck' : 'pedal_bike' }))
+    : [],
+);
 const wheel = computed(() => {
-  if (!view.value?.plot || !view.value.wheelOpen || tier.value !== 'plot') return null;
+  if (!wheelWanted.value) return null;
   return placeWheel(plotPoint.value, viewport.value, size.value, inset.value);
 });
 const offsets = computed(() => wheelLayout(view.value?.actions.length ?? 0, size.value.radius));
@@ -93,7 +107,7 @@ const tag = computed(() => {
   if (x + width > viewport.value.width - 8) x = Math.max(8, wheel.value.x - reach - 14 - width);
   if (mobile.value) x = Math.min(Math.max(8, wheel.value.x - width / 2), viewport.value.width - width - 8);
   const y = mobile.value
-    ? Math.max(inset.value.top - 40, wheel.value.y - reach - 56)
+    ? Math.max(inset.value.top - 64, wheel.value.y - reach - 46)
     : Math.max(inset.value.top, wheel.value.y - size.value.radius);
   return { x, y, from };
 });
@@ -138,7 +152,7 @@ const bars = computed(() => {
     <div v-if="tag" class="city-play-tag" data-city-play-tag :style="{ left: `${tag.x}px`, top: `${tag.y}px` }">
       <strong translate="no">{{ t('Plot {code}', { code: view.plot.code }) }}</strong>
       <span>{{ t('{area} m²', { area: formatNumber(view.plot.area) }) }}</span>
-      <span class="city-play-tag-note">{{ t('40 m grid cell, not a surveyed parcel') }}</span>
+      <span v-if="!mobile" class="city-play-tag-note">{{ t('40 m grid cell, not a surveyed parcel') }}</span>
     </div>
 
     <nav v-if="wheel" class="city-play-wheel" data-city-play-wheel :aria-label="t('City builder actions for this plot')" :style="{ left: `${wheel.x}px`, top: `${wheel.y}px`, '--wheel-radius': `${size.radius}px`, '--wheel-button': `${size.button}px` }">
@@ -230,6 +244,19 @@ const bars = computed(() => {
               <strong translate="no">{{ chipValue(chip) }}</strong>
             </span>
           </span>
+        </button>
+        <button
+          v-for="ghost in view.framing ? [] : ghosts"
+          :key="ghost.kind"
+          type="button"
+          class="city-play-card city-play-card--ghost"
+          :data-city-play-ghost="ghost.kind"
+          :disabled="view.pending"
+          @click="controls?.act(ghost.kind)"
+        >
+          <span class="city-play-card-image"><span class="city-play-card-empty"><UiIcon :name="ghost.icon" :size="30" /><span>+ {{ kindLabel(ghost.kind) }}</span></span></span>
+          <span class="city-play-card-title">{{ t('Reimagine') }}</span>
+          <span class="city-play-card-meta">{{ kindLabel(ghost.kind) }}</span>
         </button>
         <div v-if="view.framing" class="city-play-card is-pending city-play-card--framing" data-city-play-framing>
           <span class="city-play-card-image"><span class="city-play-card-empty"><UiIcon name="auto_awesome" :size="30" /><span>{{ t('Framing plot…') }}</span></span></span>

@@ -179,6 +179,14 @@ test("the carousel lists this plot's worlds with chips, Build, Reroll and record
     $$('[data-city-play-chip]').map((c) => c.dataset.cityPlayChip),
     ['trees', 'shade', 'width'],
   );
+  assert.deepEqual(
+    [...document.querySelectorAll('[data-city-play-ghost]')].map(
+      (c) => c.dataset.cityPlayGhost,
+    ),
+    ['park', 'bike-lane'],
+    'untried kinds appear as ghost slots',
+  );
+  document.querySelector('[data-city-play-ghost="park"]').click();
   assert.match(
     $('[data-city-play-ai-label]').textContent,
     /AI concept, not a plan or an approval/,
@@ -188,6 +196,7 @@ test("the carousel lists this plot's worlds with chips, Build, Reroll and record
   $('[data-city-play-records="carousel"]').click();
   cards[0].click();
   assert.deepEqual(calls, [
+    ['act', 'park'],
     ['build', 'world-1'],
     ['reroll', 'world-1'],
     ['openRecords'],

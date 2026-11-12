@@ -60,8 +60,14 @@ function playView(patch = {}) {
 async function mount(t) {
   document.body.replaceChildren();
   // A desktop viewport so the wheel fits between the resource bar and carousel.
-  Object.defineProperty(window, 'innerWidth', { value: 1440, configurable: true });
-  Object.defineProperty(window, 'innerHeight', { value: 1000, configurable: true });
+  Object.defineProperty(window, 'innerWidth', {
+    value: 1440,
+    configurable: true,
+  });
+  Object.defineProperty(window, 'innerHeight', {
+    value: 1000,
+    configurable: true,
+  });
   const pinia = createPinia();
   const store = useCityPlayStore(pinia);
   const planning = useCommunityPlanningStore(pinia);
@@ -91,25 +97,40 @@ async function mount(t) {
 test('the launcher toggles play mode and shows its pressed state', async (t) => {
   const { store, calls, settle, $ } = await mount(t);
   await settle();
-  assert.equal($('[data-city-play]'), null, 'nothing over the globe until entered');
+  assert.equal(
+    $('[data-city-play]'),
+    null,
+    'nothing over the globe until entered',
+  );
   $('[data-city-builder-open]').click();
   assert.deepEqual(calls, [['toggle']]);
   store.publish(playView({ plot: null, cards: [], focused: null }));
   await settle();
-  assert.equal($('[data-city-builder-open]').getAttribute('aria-pressed'), 'true');
+  assert.equal(
+    $('[data-city-builder-open]').getAttribute('aria-pressed'),
+    'true',
+  );
   assert.ok($('[data-city-play-bar]'));
   assert.ok($('[data-city-play-hint]'), 'hint until a plot is chosen');
   assert.equal($('[data-city-play-wheel]'), null);
   store.publish({ ...playView(), active: false });
   await settle();
   assert.equal($('[data-city-play]'), null);
-  assert.equal($('[data-city-builder-open]').getAttribute('aria-pressed'), 'false');
+  assert.equal(
+    $('[data-city-builder-open]').getAttribute('aria-pressed'),
+    'false',
+  );
 });
 
 test('the wheel follows the projected plot and sends honest actions', async (t) => {
   const { store, calls, settle, $, $$ } = await mount(t);
   store.publish(playView());
-  store.place({ plot: { x: 700, y: 460 }, tag: { x: 760, y: 400 }, callouts: {}, pins: {} });
+  store.place({
+    plot: { x: 700, y: 460 },
+    tag: { x: 760, y: 400 },
+    callouts: {},
+    pins: {},
+  });
   await settle();
   const wheel = $('[data-city-play-wheel]');
   assert.equal(wheel.style.left, '700px');
@@ -124,9 +145,15 @@ test('the wheel follows the projected plot and sends honest actions', async (t) 
     ['act', 'reimagine'],
     ['act', 'inspect'],
   ]);
-  assert.match($('[data-city-play-tag]').textContent, /40 m grid cell, not a surveyed parcel/);
+  assert.match(
+    $('[data-city-play-tag]').textContent,
+    /40 m grid cell, not a surveyed parcel/,
+  );
   const stats = Object.fromEntries(
-    $$('[data-city-play-stat]').map((s) => [s.dataset.cityPlayStat, s.querySelector('.city-play-stat-value').textContent]),
+    $$('[data-city-play-stat]').map((s) => [
+      s.dataset.cityPlayStat,
+      s.querySelector('.city-play-stat-value').textContent,
+    ]),
   );
   assert.deepEqual(stats, {
     plots: '1',
@@ -138,7 +165,7 @@ test('the wheel follows the projected plot and sends honest actions', async (t) 
   });
 });
 
-test('the carousel lists this plot\'s worlds with chips, Build, Reroll and records', async (t) => {
+test("the carousel lists this plot's worlds with chips, Build, Reroll and records", async (t) => {
   const { store, calls, settle, $, $$ } = await mount(t);
   store.publish(playView());
   store.place({ plot: { x: 700, y: 460 }, callouts: {}, pins: {} });
@@ -151,7 +178,10 @@ test('the carousel lists this plot\'s worlds with chips, Build, Reroll and recor
     $$('[data-city-play-chip]').map((c) => c.dataset.cityPlayChip),
     ['trees', 'shade', 'width'],
   );
-  assert.match($('[data-city-play-ai-label]').textContent, /AI concept, not a plan or an approval/);
+  assert.match(
+    $('[data-city-play-ai-label]').textContent,
+    /AI concept, not a plan or an approval/,
+  );
   $('[data-city-play-build]').click();
   $('[data-city-play-reroll]').click();
   $('[data-city-play-records="carousel"]').click();
@@ -209,7 +239,11 @@ test('zoom tiers swap the wheel for detail callouts or district pins', async (t)
       ],
     }),
   );
-  store.place({ plot: null, callouts: {}, pins: { [plot.id]: { x: 500, y: 300 } } });
+  store.place({
+    plot: null,
+    callouts: {},
+    pins: { [plot.id]: { x: 500, y: 300 } },
+  });
   await settle();
   assert.equal($('[data-city-play-carousel]'), null);
   assert.equal($('[data-city-play-stats]'), null);

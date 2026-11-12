@@ -635,7 +635,14 @@ test('key order is irrelevant but omitted, inherited and extra keys are never re
 function plotReference() {
   return {
     ...reference(),
-    camera: { lat: 40.04, lon: -88.16, alt: 320, heading: 15, pitch: -35, roll: 0 },
+    camera: {
+      lat: 40.04,
+      lon: -88.16,
+      alt: 320,
+      heading: 15,
+      pitch: -35,
+      roll: 0,
+    },
     bounds: [-88.17, 40.045, -88.14, 40.07],
     capturedAt: '2026-11-12T12:00:00.000Z',
   };
@@ -652,12 +659,14 @@ test('a sited alternative keeps its snapped plot and own captured view through h
   const [, latest] = cityAlternatives(doc);
   assert.deepEqual(latest.site.plot, plot);
   assert.deepEqual(latest.site.reference, own);
-  assert.equal(cityAlternatives(doc)[0].site, null, 'unsited alternatives stay unsited');
+  assert.equal(
+    cityAlternatives(doc)[0].site,
+    null,
+    'unsited alternatives stay unsited',
+  );
   assert.equal(Object.hasOwn(doc.alternatives[0], 'site'), false);
   // The concept's provenance must be the plot's own capture, not the project baseline.
-  assert.throws(() =>
-    attachCityConcept(doc, 'plot-world', 1, concept()),
-  );
+  assert.throws(() => attachCityConcept(doc, 'plot-world', 1, concept()));
   const attached = attachCityConcept(doc, 'plot-world', 1, {
     ...concept(),
     sourceView: own,
@@ -703,12 +712,18 @@ test('sites reject edited plots, plots outside their captured view and extra key
   }, base);
   const outside = snapPlot({ lat: 41, lon: -88.155 });
   assert.throws(() =>
-    addCityAlternative(populated(), sited({ plot: outside, reference: plotReference() })),
+    addCityAlternative(
+      populated(),
+      sited({ plot: outside, reference: plotReference() }),
+    ),
   );
   assert.throws(() =>
     addCityAlternative(populated(), sited({ plot: outside, reference: null })),
   );
   assert.throws(() =>
-    addCityAlternative(populated(), sited({ plot, reference: plotReference(), x: 1 })),
+    addCityAlternative(
+      populated(),
+      sited({ plot, reference: plotReference(), x: 1 }),
+    ),
   );
 });

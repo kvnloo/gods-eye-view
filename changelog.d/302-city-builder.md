@@ -3,3 +3,7 @@
   and World Game comparison. An offline fixture and an explicit development-only
   ChatGPT-subscription bridge provide labeled AI concepts without granting
   approval or controlling live infrastructure (Kevin Rajan, kvnloo#302).
+- Turn City builder into a play mode on the globe: click a 40 m plot, use the
+  anchored action wheel to reimagine it, see the labeled concept stand on the
+  plot, then Build, Reroll or zoom between district, plot and detail tiers
+  (Kevin Rajan, kvnloo#302).

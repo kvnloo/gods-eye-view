@@ -205,7 +205,11 @@ test('play mode: reimagining a plot creates the project, a sited alternative and
   const [a] = play.alternatives;
   assert.equal(a.parameters.kind, 'plaza');
   assert.deepEqual(a.site.plot, plot);
-  assert.equal(a.site.reference, null, 'the first capture is the project baseline');
+  assert.equal(
+    a.site.reference,
+    null,
+    'the first capture is the project baseline',
+  );
   assert.equal(a.concept.label, 'AI concept, not a plan or an approval');
   assert.deepEqual(a.concept.sourceView, reference);
   assert.ok(a.title && a.description);
@@ -256,10 +260,18 @@ test('play mode: busy, full and failed generations never write partial concepts 
   fail = true;
   assert.equal(await h.controls.reimagine({ plot, kind: 'plaza' }), null);
   assert.ok(play.error, 'failure is visible');
-  assert.equal(play.alternatives[1].concept, null, 'saved proposal, no concept');
+  assert.equal(
+    play.alternatives[1].concept,
+    null,
+    'saved proposal, no concept',
+  );
   fail = false;
   await h.controls.reroll('world-2');
-  assert.equal(play.alternatives[1].revision, 1, 'retry fills the empty version');
+  assert.equal(
+    play.alternatives[1].revision,
+    1,
+    'retry fills the empty version',
+  );
   assert.ok(play.alternatives[1].concept);
   for (let i = 0; i < 4; i++)
     await h.controls.reimagine({ plot, kind: 'bike-lane' });

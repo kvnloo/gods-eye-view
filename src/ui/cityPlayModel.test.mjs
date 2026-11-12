@@ -136,7 +136,10 @@ test('carouselCards lists one card per alternative of the selected plot with par
       concept: { image, provider: 'fixture' },
     }),
     alternative('world-2', plotB, 'plaza'),
-    alternative('world-3', plotA, 'bike-lane', { revision: 2, versionCount: 2 }),
+    alternative('world-3', plotA, 'bike-lane', {
+      revision: 2,
+      versionCount: 2,
+    }),
     alternative('world-4', null, 'park'),
   ];
   const cards = carouselCards(list, plotA.id, {
@@ -196,7 +199,12 @@ test('resourceStats derives counts from the project and never shows missing as z
     alternative('world-1', plotA, 'park', { concept: { image } }),
     alternative('world-2', plotA, 'plaza'),
     alternative('world-3', null, 'bike-lane', {
-      parameters: { kind: 'bike-lane', trees: 5, widthMeters: 2, shadePercent: 10 },
+      parameters: {
+        kind: 'bike-lane',
+        trees: 5,
+        widthMeters: 2,
+        shadePercent: 10,
+      },
     }),
   ];
   assert.deepEqual(
@@ -259,9 +267,16 @@ test('playReducer enters and exits the mode and restores a clean HUD state', () 
   assert.equal(s3.hover, null);
   const s4 = playReducer(s3, { type: 'focus', id: 'world-1' });
   assert.equal(s4.focusId, 'world-1');
-  assert.equal(playReducer(s4, { type: 'select', plot: plotA }).focusId, 'world-1');
+  assert.equal(
+    playReducer(s4, { type: 'select', plot: plotA }).focusId,
+    'world-1',
+  );
   assert.equal(playReducer(s4, { type: 'select', plot: plotB }).focusId, null);
-  const s5 = playReducer(s4, { type: 'build', plotId: plotA.id, id: 'world-1' });
+  const s5 = playReducer(s4, {
+    type: 'build',
+    plotId: plotA.id,
+    id: 'world-1',
+  });
   assert.deepEqual(s5.built, { [plotA.id]: 'world-1' });
   const s6 = playReducer(s5, { type: 'tier', tier: 'detail' });
   assert.equal(s6.tier, 'detail');

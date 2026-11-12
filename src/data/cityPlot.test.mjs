@@ -25,7 +25,8 @@ test('snapPlot returns one deterministic ~40 m grid cell around the picked point
   assert.ok(west <= SF.lon && SF.lon < east, 'cell contains the longitude');
   assert.ok(south <= SF.lat && SF.lat < north, 'cell contains the latitude');
   assert.ok(near(meters(north - south), 40, 1e-6), 'north-south edge is 40 m');
-  const ew = (east - west) * 111_320 * Math.cos((plot.center.lat * Math.PI) / 180);
+  const ew =
+    (east - west) * 111_320 * Math.cos((plot.center.lat * Math.PI) / 180);
   assert.ok(near(ew, 40, 1e-6), 'east-west edge is 40 m at the cell centre');
   assert.ok(near(plot.center.lat, (south + north) / 2));
   assert.ok(near(plot.center.lon, (west + east) / 2));

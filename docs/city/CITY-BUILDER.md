@@ -1,7 +1,19 @@
 # Create and compare possible worlds
 
+## Play on the globe
+
+1. Fly to a public place and wait for the map to load. Click **City builder** above the globe. The pill turns cyan, the side panels slide away and a resource bar appears. Its values come from your project; without a project they show a dash.
+2. Click a plot of land. The app snaps the point to a 40 m grid cell, not a surveyed parcel, and outlines it on the map with an action wheel.
+3. Click **Reimagine** (or **Park**, **Plaza** or **Bike lane**). The camera frames the plot, the app captures that view and the selected provider imagines it. The concept stands on the plot and appears as a card in the bottom carousel. It is labeled "AI concept, not a plan or an approval".
+4. **Reroll** saves a new version of the selected card with a new concept. **Build** keeps that world on the plot for this session. **Project records** opens the editor below, with export, import, history and comparison.
+5. Zoom in for parameter callouts and a stats card, or zoom out for district pins. Press Esc or click the pill to leave the mode.
+
+Each reimagined plot keeps its own captured view; the first plot's capture also becomes the project baseline. The project still holds at most six alternatives.
+
+## Records editor
+
 1. Fly to a public place with Location search. Wait for the map to load.
-2. Click **City builder** above the globe, or open **AUTHORING** and click **City builder**.
+2. Open **AUTHORING** and click **City builder**, or click **City builder** above the globe and then **Project records**.
 3. Enter a project title and click **Start from current view**. The app captures the Cesium canvas, camera, geographic bounds, time, and selected-map citation. It does not infer your location.
 4. Enter an alternative title and description. Choose park, bike lane, or plaza and set the proposed tree count, width, and shade percentage. Click **Save possible world**.
 5. Click **New alternative** and save another option. These parameters describe your proposal. They do not predict effects or establish feasibility.
@@ -36,7 +48,10 @@ Run the development server on an isolated loopback port, then:
 
 ```sh
 QA_BASE_URL=http://127.0.0.1:4187 node scripts/qa-city-builder.mjs
+QA_BASE_URL=http://127.0.0.1:4187 node scripts/qa-city-play.mjs
 ```
+
+`qa-city-play.mjs` drives the play mode on the real globe: enter, plot click with the wheel within 40 px of the projected plot, Reimagine, Reroll, detail and district tiers, Esc, reload and the 390x844 layout. With `QA_VIDEO_DIR` it records the journey and converts it to MP4 when ffmpeg is available.
 
 The gate uses Playwright and an owned headless Chromium profile. It checks real globe pixels, authoring, version restore, more than two alternatives, comparison, local persistence, JSON round-trip, malformed import, Scene entry, mobile layout, and no implicit generator calls. Set `CHROME_PATH` if Chromium is not at `/usr/bin/chromium`.
 

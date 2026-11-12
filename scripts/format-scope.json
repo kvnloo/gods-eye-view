@@ -1389,6 +1389,7 @@
   "src/ui/placePacksLoading.js",
   "src/ui/placePacksLoading.test.mjs",
   "src/data/cityPlanningDocument.test.mjs",
+  "src/data/walkAccess.test.mjs",
   "src/data/planningConceptGenerator.test.mjs",
   "src/standalone/cityPlanningServices.test.mjs",
   "src/ui/cityBuilder.test.mjs",

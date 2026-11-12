@@ -33,6 +33,7 @@ function playView(patch = {}) {
   return {
     active: true,
     tier: 'plot',
+    wheelOpen: true,
     pending: false,
     framing: false,
     error: null,
@@ -234,6 +235,8 @@ test('zoom tiers swap the wheel for detail callouts or district pins', async (t)
           kind: 'plaza',
           icon: 'deck',
           title: 'Public plaza',
+          trees: 12,
+          shade: 45,
           built: true,
         },
       ],

@@ -191,6 +191,8 @@ export function districtPins(alternatives, built) {
       kind: shown.parameters.kind,
       icon: KIND_ICONS[shown.parameters.kind],
       title: shown.title,
+      trees: shown.parameters.trees,
+      shade: shown.parameters.shadePercent,
       built: Boolean(kept),
     });
   }
@@ -205,6 +207,7 @@ export function createPlayState() {
     tier: 'plot',
     focusId: null,
     built: {},
+    wheel: false,
   };
 }
 
@@ -214,7 +217,14 @@ export function playReducer(state, action) {
     case 'enter':
       return state.active
         ? state
-        : { ...state, active: true, plot: null, hover: null, focusId: null };
+        : {
+            ...state,
+            active: true,
+            plot: null,
+            hover: null,
+            focusId: null,
+            wheel: false,
+          };
     case 'exit':
       return {
         ...state,
@@ -222,6 +232,7 @@ export function playReducer(state, action) {
         plot: null,
         hover: null,
         focusId: null,
+        wheel: false,
       };
     case 'hover':
       return state.active && state.hover !== action.plot
@@ -234,9 +245,14 @@ export function playReducer(state, action) {
         plot: action.plot,
         hover: null,
         focusId: state.plot?.id === action.plot?.id ? state.focusId : null,
+        wheel: true,
       };
+    case 'wheel':
+      return state.active && state.wheel !== Boolean(action.open)
+        ? { ...state, wheel: Boolean(action.open) }
+        : state;
     case 'clear':
-      return { ...state, plot: null, focusId: null };
+      return { ...state, plot: null, focusId: null, wheel: false };
     case 'tier':
       return ['district', 'plot', 'detail'].includes(action.tier) &&
         action.tier !== state.tier

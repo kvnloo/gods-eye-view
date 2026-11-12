@@ -361,6 +361,17 @@ body.gev-city-play #cesiumContainer {
 .city-play-pin--plaza .ui-icon {
   color: #ffc25c;
 }
+.city-play-pin-text {
+  display: grid;
+  gap: 2px;
+}
+.city-play-pin-yields {
+  display: flex;
+  gap: 8px;
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
 .city-play-pin-kept {
   color: var(--accent);
 }
@@ -531,6 +542,7 @@ body.gev-city-play #cesiumContainer {
 .city-play-ai-chip {
   align-self: center;
   padding: 3px 8px;
+  background: var(--glass-bg);
   border: 1px solid var(--glass-border-hover);
   border-radius: 4px;
   color: var(--text-secondary);

@@ -241,6 +241,8 @@ test('districtPins mark each plot that has a concept, preferring the built world
   assert.equal(latest[0].alternativeId, 'world-2');
   assert.equal(latest[0].kind, 'plaza');
   assert.deepEqual(latest[0].center, plotA.center);
+  assert.equal(latest[0].trees, 20, 'pins carry the proposal yields as badges');
+  assert.equal(latest[0].shade, 40);
   const built = districtPins(list, { [plotA.id]: 'world-1' });
   assert.equal(built[0].alternativeId, 'world-1');
   assert.equal(built[0].built, true);
@@ -255,6 +257,7 @@ test('playReducer enters and exits the mode and restores a clean HUD state', () 
     tier: 'plot',
     focusId: null,
     built: {},
+    wheel: false,
   });
   assert.equal(playReducer(s0, { type: 'select', plot: plotA }), s0);
   assert.equal(playReducer(s0, { type: 'hover', plot: plotA }), s0);
@@ -265,6 +268,15 @@ test('playReducer enters and exits the mode and restores a clean HUD state', () 
   const s3 = playReducer(s2, { type: 'select', plot: plotA });
   assert.equal(s3.plot, plotA);
   assert.equal(s3.hover, null);
+  assert.equal(s3.wheel, true, 'selecting a plot opens its wheel');
+  const closed = playReducer(s3, { type: 'wheel', open: false });
+  assert.equal(closed.wheel, false, 'a landed concept closes the wheel');
+  assert.equal(
+    playReducer(closed, { type: 'select', plot: plotA }).wheel,
+    true,
+    'clicking the plot again reopens it',
+  );
+  assert.equal(playReducer(s0, { type: 'wheel', open: true }), s0);
   const s4 = playReducer(s3, { type: 'focus', id: 'world-1' });
   assert.equal(s4.focusId, 'world-1');
   assert.equal(
@@ -286,6 +298,7 @@ test('playReducer enters and exits the mode and restores a clean HUD state', () 
   assert.equal(out.plot, null);
   assert.equal(out.focusId, null);
   assert.equal(out.hover, null);
+  assert.equal(out.wheel, false);
   assert.deepEqual(out.built, s5.built, 'kept worlds survive leaving the mode');
   const again = playReducer(out, { type: 'enter' });
   assert.equal(again.plot, null);

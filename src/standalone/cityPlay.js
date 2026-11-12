@@ -23,8 +23,8 @@ import {
 
 const OWNER = 'city-play';
 const BODY_CLASS = 'gev-city-play';
-const BOX_HEIGHT = 18;
-const HOLO_WIDTH = 46;
+const BOX_HEIGHT = 26;
+const HOLO_WIDTH = 64;
 const SCAN_MS = 1400;
 const ACCENT = Cesium.Color.fromCssColorString('#2ec8e8');
 const KIND_COLORS = {
@@ -34,7 +34,7 @@ const KIND_COLORS = {
 };
 const CLASSIFY = Cesium.ClassificationType.BOTH;
 const FRAMES = {
-  oblique: { pitch: -32, range: 340 },
+  oblique: { pitch: -34, range: 290 },
   detail: { pitch: -38, range: 170 },
 };
 
@@ -90,7 +90,9 @@ export function mountCityPlay({
   const grid = [];
 
   function baseHeight(plot, picked) {
-    if (Number.isFinite(picked)) heights.set(plot.id, picked);
+    // The first pick on a plot fixes its ground; later picks may hit our own holo.
+    if (Number.isFinite(picked) && !heights.has(plot.id))
+      heights.set(plot.id, picked);
     if (heights.has(plot.id)) return heights.get(plot.id);
     let h = 0;
     try {
@@ -152,8 +154,8 @@ export function mountCityPlay({
         ds.entities.add({
           polyline: {
             positions: ring(cell),
-            width: 1.5,
-            material: ACCENT.withAlpha(0.32),
+            width: 2,
+            material: ACCENT.withAlpha(0.42),
             clampToGround: true,
             classificationType: CLASSIFY,
           },
@@ -186,9 +188,28 @@ export function mountCityPlay({
           positions: ring(plot, base),
           minimumHeights: Array(5).fill(base),
           maximumHeights: Array(5).fill(base + BOX_HEIGHT),
-          material: ACCENT.withAlpha(0.16),
+          material: ACCENT.withAlpha(0.22),
         },
       }),
+      ...plot.corners.map(([lon, lat]) =>
+        ds.entities.add({
+          polyline: {
+            positions: Cesium.Cartesian3.fromDegreesArrayHeights([
+              lon,
+              lat,
+              base,
+              lon,
+              lat,
+              base + BOX_HEIGHT,
+            ]),
+            width: 4,
+            material: new Cesium.PolylineGlowMaterialProperty({
+              glowPower: 0.3,
+              color: ACCENT,
+            }),
+          },
+        }),
+      ),
       ds.entities.add({
         polyline: {
           positions: ring(plot, base + BOX_HEIGHT),
@@ -309,6 +330,7 @@ export function mountCityPlay({
           },
         });
         holo._cityKey = key;
+        holo._cityPlot = a.site.plot;
         holo._cityAlternative = a.id;
         holos.set(plotId, holo);
         if (animating) {
@@ -352,6 +374,7 @@ export function mountCityPlay({
     store.publish({
       active: state.active,
       tier: state.tier,
+      wheelOpen: state.wheel,
       pending: data.pending || framing,
       framing,
       provider: data.provider,
@@ -513,8 +536,25 @@ export function mountCityPlay({
       height: carto.height,
     };
   }
+  function ownPlot(position) {
+    let picked = null;
+    try {
+      picked = scene.pick(position);
+    } catch {
+      return null;
+    }
+    const entity = picked?.id;
+    if (!entity || !ds.entities.contains(entity)) return null;
+    return entity._cityPlot ?? state.plot;
+  }
   function onClick({ position }) {
     if (framing) return;
+    // Clicking a concept card or the selected footprint selects that plot again.
+    const mine = ownPlot(position);
+    if (mine) {
+      dispatch({ type: 'select', plot: mine });
+      return;
+    }
     const point = pickPoint(position);
     const plot = point && snapPlot(point);
     if (!plot) {
@@ -523,7 +563,10 @@ export function mountCityPlay({
     }
     baseHeight(plot, point.height);
     notice = null;
+    const far = state.tier === 'district';
     dispatch({ type: 'select', plot });
+    // From the district view a plot click flies in to plot range, like a game map.
+    if (far) void fly(plot, 'oblique');
   }
   function onMove({ endPosition }) {
     hoverQueued = endPosition;
@@ -622,8 +665,11 @@ export function mountCityPlay({
     }
     if (disposed || !state.active || state.plot !== plot) return sync();
     const id = await builder.reimagine({ plot, kind });
-    if (id && state.plot?.id === plot.id) dispatch({ type: 'focus', id });
-    else sync();
+    if (id && state.plot?.id === plot.id) {
+      // The concept takes the stage; clicking the plot brings the wheel back.
+      dispatch({ type: 'focus', id });
+      dispatch({ type: 'wheel', open: false });
+    } else sync();
   }
 
   const controls = {

@@ -37,7 +37,7 @@ const inset = computed(() => ({
   side: 12,
 }));
 const wheel = computed(() => {
-  if (!view.value?.plot || tier.value !== 'plot') return null;
+  if (!view.value?.plot || !view.value.wheelOpen || tier.value !== 'plot') return null;
   return placeWheel(plotPoint.value, viewport.value, size.value, inset.value);
 });
 const offsets = computed(() => wheelLayout(view.value?.actions.length ?? 0, size.value.radius));
@@ -82,16 +82,24 @@ const pins = computed(() =>
     .map((p) => ({ ...p, at: anchors.value?.pins?.[p.plotId] }))
     .filter((p) => p.at),
 );
+// The plot tag sits outside the wheel ring (upper right, or left near the edge),
+// tethered to the projected plot centre.
 const tag = computed(() => {
-  const at = anchors.value?.tag;
-  if (!at || !view.value?.plot || tier.value === 'district') return null;
-  const x = Math.min(Math.max(at.x + 28, 12), viewport.value.width - (mobile.value ? 200 : 330));
-  const y = Math.max(at.y - 64, inset.value.top);
-  return { x, y, from: at };
+  const from = plotPoint.value;
+  if (!from || !wheel.value) return null;
+  const width = mobile.value ? 200 : 330;
+  const reach = size.value.radius + size.value.button / 2;
+  let x = wheel.value.x + reach + 14;
+  if (x + width > viewport.value.width - 8) x = Math.max(8, wheel.value.x - reach - 14 - width);
+  if (mobile.value) x = Math.min(Math.max(8, wheel.value.x - width / 2), viewport.value.width - width - 8);
+  const y = mobile.value
+    ? Math.max(inset.value.top - 40, wheel.value.y - reach - 56)
+    : Math.max(inset.value.top, wheel.value.y - size.value.radius);
+  return { x, y, from };
 });
 const holoTag = computed(() => {
   const at = anchors.value?.holo;
-  if (!at || !view.value?.focused?.concept || tier.value === 'district') return null;
+  if (!at || wheel.value || !view.value?.focused?.concept || tier.value === 'district') return null;
   return { x: Math.min(Math.max(at.x, 140), viewport.value.width - 140), y: Math.max(at.y - 18, inset.value.top) };
 });
 const bars = computed(() => {
@@ -187,8 +195,14 @@ const bars = computed(() => {
       :style="{ left: `${pin.at.x}px`, top: `${pin.at.y}px` }"
     >
       <UiIcon :name="pin.icon" :size="18" />
-      <span>{{ pin.title }}</span>
-      <span v-if="pin.built" class="city-play-pin-kept">{{ t('Kept') }}</span>
+      <span class="city-play-pin-text">
+        <span>{{ pin.title }}</span>
+        <span class="city-play-pin-yields">
+          <span>{{ t('Trees') }} +{{ formatNumber(pin.trees) }}</span>
+          <span>{{ t('Shade') }} {{ formatNumber(pin.shade) }}%</span>
+          <span v-if="pin.built" class="city-play-pin-kept">{{ t('Kept') }}</span>
+        </span>
+      </span>
     </button>
 
     <section v-if="showCarousel" class="city-play-dock" data-city-play-carousel :aria-label="t('Possible worlds for this plot')">

@@ -238,7 +238,9 @@
     "ΔN",
     "Ⅱ PAUSE",
     "≥ {value} MW",
-    "▲ {frp} MW"
+    "▲ {frp} MW",
+    "{value} m",
+    "{low}–{high} m"
   ],
   "es": [
     "1 min/s",
@@ -395,7 +397,9 @@
     "Reptiles",
     "acartia.io ↗",
     "iNaturalist ↗",
-    "iNaturalist"
+    "iNaturalist",
+    "{value} m",
+    "{low}–{high} m"
   ],
   "fr": [
     "1 min/s",
@@ -610,7 +614,9 @@
     "≥ {value} MW",
     "▲ {frp} MW",
     "SATELLITE",
-    "Photo © {photographer}"
+    "Photo © {photographer}",
+    "{value} m",
+    "{low}–{high} m"
   ],
   "it": [
     "1 min/s",
@@ -810,7 +816,9 @@
     "acartia.io ↗",
     "iNaturalist ↗",
     "iNaturalist",
-    "SATELLITE"
+    "SATELLITE",
+    "{value} m",
+    "{low}–{high} m"
   ],
   "ja": [
     "1090 MHz",
@@ -873,7 +881,9 @@
     "ΔE",
     "ΔN",
     "≥ {value} MW",
-    "▲ {frp} MW"
+    "▲ {frp} MW",
+    "{value} m",
+    "{low}–{high} m"
   ],
   "pt": [
     "1 min/s",
@@ -1031,7 +1041,9 @@
     "CC BY 4.0",
     "acartia.io ↗",
     "iNaturalist ↗",
-    "iNaturalist"
+    "iNaturalist",
+    "{value} m",
+    "{low}–{high} m"
   ],
   "ru": [
     "1900–1945",

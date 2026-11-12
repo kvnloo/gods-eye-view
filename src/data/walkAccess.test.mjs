@@ -53,7 +53,7 @@ test('fixture is a vetted, tiny, connected network with explicit sites', () => {
   assert.equal(reach.size, ids.length, 'every fixture node is reachable');
   for (const p of [...F.zones, ...F.parks, ...F.sites]) {
     const node = F.nodes.find((n) => n.id === nearestNode(p));
-    assert.ok(Math.hypot(node.x - p.x, node.y - p.y) <= 50, `${p.id} snaps`);
+    assert.ok(Math.hypot(node.x - p.x, node.y - p.y) <= 60, `${p.id} snaps`);
   }
 });
 

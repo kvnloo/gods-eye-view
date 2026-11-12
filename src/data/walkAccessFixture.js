@@ -42,20 +42,20 @@ export const WALK_ACCESS_FIXTURE = freeze({
   kind: 'synthetic',
   nodes,
   edges,
-  // Aggregated demand zones (no residents, homes or trips), uniform weight.
+  // Aggregated demand zones inside blocks (no residents, homes or trips).
   zones: [
-    [25, 20],
-    [300, 25],
-    [470, 30],
-    [20, 140],
-    [465, 150],
-    [170, 245],
-    [490, 270],
-    [15, 380],
-    [470, 400],
+    [40, 35],
+    [280, 35],
+    [440, 35],
+    [40, 165],
+    [440, 165],
+    [200, 225],
+    [440, 295],
+    [40, 355],
+    [440, 355],
   ].map(([x, y], i) => ({ id: `zone-${i + 1}`, x, y })),
   // The park that exists in the synthetic baseline.
-  parks: [{ id: 'park-existing', x: 165, y: 385 }],
+  parks: [{ id: 'park-existing', x: 160, y: 390 }],
   // Candidate public sites a park or plaza alternative may be placed on.
   sites: [
     { id: 'site-a', label: 'A', x: 320, y: 130 },

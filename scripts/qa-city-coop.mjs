@@ -330,14 +330,11 @@ try {
   const shared = await browser.newContext(options);
   await shared.route('**/api/city-concept*', (route) => route.abort());
   pages.a = await shared.newPage();
-  pages.b = await shared.newPage();
   watch(pages.a, 'a');
-  watch(pages.b, 'b');
-  for (const page of Object.values(pages)) page.setDefaultTimeout(30000);
+  pages.a.setDefaultTimeout(30000);
 
-  await check('Both tabs start the real app', async () => {
-    await Promise.all([startup(pages.a, true), startup(pages.b, false)]);
-    stopRecording = await recorder();
+  await check('Ana’s tab starts the real app at a public site', async () => {
+    await startup(pages.a, true);
   });
 
   let localBefore;
@@ -370,10 +367,13 @@ try {
         SITE,
         { timeout: 240000 },
       );
+      await a.bringToFront();
+      report.visibility = await a.evaluate(() => document.visibilityState);
       await a.locator(S.open).click();
       await a.locator(S.dialog).waitFor({ state: 'visible' });
       await a.locator('#city-builder-project-title').fill('Elm street commons');
-      // A loaded, CPU-starved software renderer can miss one fresh frame.
+      // Capture waits at most 400 ms for a fresh frame; a CPU-starved
+      // software renderer can miss it, so retry the visible button.
       for (let attempt = 1; ; attempt++) {
         await a.locator('[data-city-builder-start]').click();
         await settled(a);
@@ -397,14 +397,21 @@ try {
       assert.ok(
         localBefore && JSON.parse(localBefore).alternatives.length === 1,
       );
-      await pages.b.locator(S.open).click();
-      await pages.b.locator(S.dialog).waitFor({ state: 'visible' });
-      await pair('local-project-before-room', {
-        a: '[data-city-room]',
-        b: '[data-city-room]',
-      });
+      await a.locator('[data-city-room]').scrollIntoViewIfNeeded();
+      await single(a, 'ana-local-project-before-room');
     },
   );
+
+  await check('Ben opens the app in a second tab of the same browser', async () => {
+    // A second resident arrives after Ana's capture, as in real use.
+    pages.b = await shared.newPage();
+    watch(pages.b, 'b');
+    pages.b.setDefaultTimeout(30000);
+    await startup(pages.b, false);
+    await pages.b.locator(S.open).click();
+    await pages.b.locator(S.dialog).waitFor({ state: 'visible' });
+    stopRecording = await recorder();
+  });
 
   await check(
     'Ana shares the project in a room; Ben joins by code as a viewer',

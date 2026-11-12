@@ -42,6 +42,8 @@ export const PERSISTENCE_REFERENCE = Object.freeze({
   image,
 });
 export const PERSISTENCE_PLOT = snapPlot({ lat: 37.8007, lon: -122.4103 });
+/** The cell east of the placed plot, zoned without any possible world. */
+export const PERSISTENCE_NEIGHBOR = snapPlot({ lat: 37.8007, lon: -122.4098 });
 
 function memoryStorage() {
   let value = null;
@@ -97,6 +99,9 @@ export async function runCityPersistenceRoundTrip() {
   });
   // Version 2 of the placed world, with its own concept.
   await builder.reroll(placedId);
+  // Proposed land use: the placed plot and a neighbour with no possible world.
+  await builder.setZone({ plot: PERSISTENCE_PLOT, use: 'open-space' });
+  await builder.setZone({ plot: PERSISTENCE_NEIGHBOR, use: 'housing' });
   const saved = storage.value;
   builder.destroy();
 

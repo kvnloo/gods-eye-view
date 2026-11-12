@@ -3763,5 +3763,16 @@
   "Zones known": "אזורים ידועים",
   "Change from baseline": "שינוי לעומת הבסיס",
   "Circles are demand zones labelled with metres to the nearest park. Green squares are existing parks; a gold square is the proposed site.": "העיגולים הם אזורי ביקוש עם מספר המטרים לפארק הקרוב. ריבועים ירוקים הם פארקים קיימים; ריבוע זהוב הוא האתר המוצע.",
-  "Sample network for {option}": "רשת לדוגמה עבור {option}"
+  "Sample network for {option}": "רשת לדוגמה עבור {option}",
+  "Zone": "ייעוד",
+  "Housing": "מגורים",
+  "Mixed use": "שימוש מעורב",
+  "Civic": "ציבורי",
+  "Open space": "שטח פתוח",
+  "Back": "חזרה",
+  "Proposed land use": "ייעוד קרקע מוצע",
+  "Land area": "שטח קרקע",
+  "Share": "נתח",
+  "Hypothetical land use for 40 m grid cells, not the city’s zoning.": "ייעוד קרקע היפותטי לתאי רשת של 40 מ׳, לא תוכנית הבנייה של העיר.",
+  "Walk access shows the existing estimate; land use does not recompute it.": "נגישות להליכה מציגה את ההערכה הקיימת; ייעוד הקרקע אינו מחשב אותה מחדש."
 }

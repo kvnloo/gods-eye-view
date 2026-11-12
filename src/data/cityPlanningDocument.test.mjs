@@ -9,7 +9,11 @@ import {
   serializeCityDocument,
   replayCityDocument,
   cityAlternatives,
+  cityZoning,
+  setCityZoning,
+  CITY_LAND_USES,
 } from './cityPlanningDocument.js';
+import { snapPlot } from './cityPlot.js';
 import {
   createPlanningAlternativeOperation,
   listPlanningAlternatives,
@@ -759,4 +763,61 @@ test('a park or plaza site is an optional proposal parameter; documents without 
   rejectImport((d) => {
     d.alternatives[0].versions[0].parameters.site = 'site-b';
   });
+});
+
+test('a proposed land use per plot is optional, validated, replaceable and removable', () => {
+  assert.deepEqual(CITY_LAND_USES, [
+    'housing',
+    'mixed-use',
+    'civic',
+    'open-space',
+  ]);
+  const doc = createCityDocument({
+    id: 'zoning',
+    title: 'Zoning',
+    reference: reference(),
+  });
+  assert.deepEqual(cityZoning(doc), []);
+  assert.equal(
+    Object.hasOwn(JSON.parse(serializeCityDocument(doc)), 'zoning'),
+    false,
+    'unzoned documents keep their v1 bytes',
+  );
+  const a = snapPlot({ lat: 40.05, lon: -88.15 });
+  const b = snapPlot({ lat: 40.0505, lon: -88.15 });
+  let next = setCityZoning(doc, a, 'housing');
+  next = setCityZoning(next, b, 'open-space');
+  assert.deepEqual(
+    cityZoning(next).map((z) => [z.plot.id, z.use]),
+    [
+      [a.id, 'housing'],
+      [b.id, 'open-space'],
+    ],
+  );
+  // Changing a plot's use replaces it; null clears it.
+  next = setCityZoning(next, a, 'civic');
+  assert.deepEqual(
+    cityZoning(next)
+      .map((z) => z.use)
+      .sort(),
+    ['civic', 'open-space'],
+  );
+  const round = parseCityDocument(serializeCityDocument(next));
+  assert.deepEqual(cityZoning(round), cityZoning(next));
+  const cleared = setCityZoning(setCityZoning(next, a, null), b, null);
+  assert.equal(
+    serializeCityDocument(cleared),
+    serializeCityDocument(doc),
+    'clearing every use restores the unzoned bytes',
+  );
+  assert.throws(() => setCityZoning(doc, a, 'industrial'), /land use/);
+  assert.throws(() => setCityZoning(doc, { ...a, row: a.row + 1 }, 'housing'));
+  const json = JSON.parse(serializeCityDocument(next));
+  for (const zoning of [
+    [],
+    [...json.zoning, json.zoning[0]],
+    [{ ...json.zoning[0], height: 12 }],
+    [{ ...json.zoning[0], use: 'industrial' }],
+  ])
+    assert.throws(() => parseCityDocument(JSON.stringify({ ...json, zoning })));
 });

@@ -1,5 +1,6 @@
 // Pure view-model for City builder play mode. No Cesium, DOM or i18n here:
 // the globe adapter supplies ranges and screen points, the view supplies text.
+import { CITY_LAND_USES } from '../data/cityPlanningDocument.js';
 
 export const ZOOM_TIERS = Object.freeze({ near: 260, far: 1500 });
 const HYSTERESIS = 0.15;
@@ -8,6 +9,12 @@ export const KIND_ICONS = Object.freeze({
   park: 'park',
   plaza: 'deck',
   'bike-lane': 'pedal_bike',
+});
+export const LAND_USE_ICONS = Object.freeze({
+  housing: 'location_city',
+  'mixed-use': 'layers',
+  civic: 'public',
+  'open-space': 'eco',
 });
 
 /** District (far), plot (mid) or detail (near) from the camera range in metres. */
@@ -77,8 +84,28 @@ export function placeWheel(anchor, viewport, size, inset) {
   return { x, y, clamped: x !== anchor.x || y !== anchor.y };
 }
 
-/** The wheel offers the existing proposal kinds only, plus Reimagine and Inspect. */
-export function wheelActions({ pending = false, full = false } = {}) {
+/**
+ * The wheel offers the existing proposal kinds only, plus Reimagine, Zone and
+ * Inspect. Zone swaps in the land-use menu (`use` is the plot's current one).
+ */
+export function wheelActions({
+  pending = false,
+  full = false,
+  zoneMenu = false,
+  use = null,
+} = {}) {
+  if (zoneMenu)
+    return [
+      ...CITY_LAND_USES.map((id) => ({
+        id,
+        kind: null,
+        icon: LAND_USE_ICONS[id],
+        selected: id === use,
+        disabled: pending,
+      })),
+      { id: 'clear-use', kind: null, icon: 'close', disabled: pending || !use },
+      { id: 'back', kind: null, icon: 'arrow_left', disabled: false },
+    ];
   const locked = pending || full;
   return [
     { id: 'reimagine', kind: null, icon: 'auto_awesome', disabled: locked },
@@ -88,8 +115,31 @@ export function wheelActions({ pending = false, full = false } = {}) {
       icon: KIND_ICONS[kind],
       disabled: locked,
     })),
+    { id: 'zone', kind: null, icon: 'category', disabled: pending },
     { id: 'inspect', kind: null, icon: 'search', disabled: false },
   ];
+}
+
+/**
+ * Proposed land-use legend: plots, area and share of zoned area per use, all
+ * derived from the zoned 40 m plots. Nothing zoned: shares are unknown (null).
+ */
+export function zoneLegend(zoning) {
+  const total = zoning.reduce((sum, z) => sum + z.plot.areaSquareMeters, 0);
+  return {
+    plots: zoning.length,
+    areaSquareMeters: total,
+    rows: CITY_LAND_USES.map((use) => {
+      const plots = zoning.filter((z) => z.use === use);
+      const area = plots.reduce((sum, z) => sum + z.plot.areaSquareMeters, 0);
+      return {
+        use,
+        plots: plots.length,
+        areaSquareMeters: area,
+        sharePercent: total ? Math.round((100 * area) / total) : null,
+      };
+    }),
+  };
 }
 
 /** Reimagine picks the first kind this plot has not tried, then cycles. */
@@ -182,8 +232,17 @@ export function detailCallouts(alternative) {
   ];
 }
 
-/** Far-tier pins: one per plot with a concept, showing its kept world. */
-export function districtPins(alternatives, built) {
+/**
+ * Far-tier pins: one per plot with a concept (its kept world) or a land use.
+ * `walk` maps alternative ids to the existing walk-access estimate, passed
+ * through unchanged; land use never recomputes it.
+ */
+export function districtPins(
+  alternatives,
+  built,
+  { zoning = [], walk = {} } = {},
+) {
+  const uses = new Map(zoning.map((z) => [z.plot.id, z.use]));
   const byPlot = new Map();
   for (const a of alternatives) {
     if (!a.site) continue;
@@ -207,6 +266,24 @@ export function districtPins(alternatives, built) {
       trees: shown.parameters.trees,
       shade: shown.parameters.shadePercent,
       built: Boolean(kept),
+      use: uses.get(plotId) ?? null,
+      walk: walk[shown.id] ?? null,
+    });
+  }
+  for (const z of zoning) {
+    if (pins.some((p) => p.plotId === z.plot.id)) continue;
+    pins.push({
+      plotId: z.plot.id,
+      alternativeId: null,
+      center: z.plot.center,
+      kind: null,
+      icon: LAND_USE_ICONS[z.use],
+      title: null,
+      trees: null,
+      shade: null,
+      built: false,
+      use: z.use,
+      walk: null,
     });
   }
   return pins;
@@ -396,6 +473,27 @@ export function resumeAlternative(alternatives, camera) {
   return best;
 }
 
+/**
+ * District pins hang above their plot (bottom-centre anchor). Adjacent plots
+ * collide at district range, so a pin that would cover an earlier one is
+ * lifted by whole rows until clear; `lift` is how far, for its tether.
+ */
+export function stackPins(pins, size = { width: 240, height: 48 }, gap = 6) {
+  const placed = [];
+  return pins.map((pin) => {
+    const box = (bottom) => ({
+      left: pin.at.x - size.width / 2,
+      right: pin.at.x + size.width / 2,
+      top: bottom - size.height,
+      bottom,
+    });
+    let top = pin.at.y;
+    while (placed.some((r) => overlap(box(top), r))) top -= size.height + gap;
+    placed.push(box(top));
+    return { ...pin, top, lift: pin.at.y - top };
+  });
+}
+
 export function createPlayState() {
   return {
     active: false,
@@ -405,6 +503,7 @@ export function createPlayState() {
     focusId: null,
     built: {},
     wheel: false,
+    zoneMenu: false,
   };
 }
 
@@ -421,6 +520,7 @@ export function playReducer(state, action) {
             hover: null,
             focusId: null,
             wheel: false,
+            zoneMenu: false,
           };
     case 'exit':
       return {
@@ -430,6 +530,7 @@ export function playReducer(state, action) {
         hover: null,
         focusId: null,
         wheel: false,
+        zoneMenu: false,
       };
     case 'hover':
       return state.active && state.hover !== action.plot
@@ -443,6 +544,7 @@ export function playReducer(state, action) {
         hover: null,
         focusId: state.plot?.id === action.plot?.id ? state.focusId : null,
         wheel: true,
+        zoneMenu: false,
       };
     case 'wheel':
       return state.active && state.wheel !== Boolean(action.open)
@@ -462,10 +564,20 @@ export function playReducer(state, action) {
     case 'landed':
       // A finished Reimagine or Reroll: the concept leads and the wheel closes.
       return state.active
-        ? { ...state, focusId: action.id, wheel: false }
+        ? { ...state, focusId: action.id, wheel: false, zoneMenu: false }
+        : state;
+    case 'zone-menu':
+      return state.active && state.plot
+        ? { ...state, wheel: true, zoneMenu: Boolean(action.open) }
         : state;
     case 'clear':
-      return { ...state, plot: null, focusId: null, wheel: false };
+      return {
+        ...state,
+        plot: null,
+        focusId: null,
+        wheel: false,
+        zoneMenu: false,
+      };
     case 'tier':
       return ['district', 'plot', 'detail'].includes(action.tier) &&
         action.tier !== state.tier

@@ -250,6 +250,12 @@ body.gev-city-play #scope-mask {
     0 0 0 1px var(--accent) inset;
   outline: none;
 }
+.city-play-wheel-button.is-selected {
+  background: color-mix(in srgb, var(--accent) 30%, rgba(8, 14, 20, 0.9));
+  box-shadow:
+    0 0 24px var(--accent-glow),
+    0 0 0 2px var(--accent) inset;
+}
 .city-play-wheel-button:disabled {
   opacity: 0.45;
   cursor: progress;
@@ -619,6 +625,79 @@ body.gev-city-play #scope-mask {
   color: #ffd2d2;
 }
 
+/* Proposed land use: existing GEV colours, a swatch per use. */
+.city-play-use--housing {
+  --city-play-use: #ffc25c;
+}
+.city-play-use--mixed-use {
+  --city-play-use: #ff5c6e;
+}
+.city-play-use--civic {
+  --city-play-use: var(--accent);
+}
+.city-play-use--open-space {
+  --city-play-use: #5ee08a;
+}
+.city-play-legend {
+  position: absolute;
+  top: 150px;
+  inset-inline-start: 24px;
+  width: 340px;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  background: var(--city-play-glass);
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  backdrop-filter: blur(16px) saturate(1.3);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+}
+.city-play-legend h3 {
+  margin: 0 0 8px;
+  font: 600 12px var(--font-mono);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.city-play-legend-row {
+  display: grid;
+  grid-template-columns: 14px 1fr 44px 82px 44px;
+  gap: 8px;
+  align-items: center;
+  margin: 5px 0;
+}
+.city-play-legend-row > :nth-child(n + 3) {
+  text-align: end;
+}
+.city-play-legend-head {
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+.city-play-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: var(--city-play-use);
+  box-shadow: 0 0 8px var(--city-play-use);
+}
+.city-play-legend-note {
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+.city-play-tag-use,
+.city-play-pin-use {
+  color: var(--city-play-use);
+  font-weight: 600;
+}
+.city-play-pin.city-play-use--housing,
+.city-play-pin.city-play-use--mixed-use,
+.city-play-pin.city-play-use--civic,
+.city-play-pin.city-play-use--open-space {
+  border-color: var(--city-play-use);
+}
+
 @media (max-width: 600px) {
   .city-play-bar {
     top: 76px;
@@ -686,5 +765,11 @@ body.gev-city-play #scope-mask {
   }
   .city-play-tag {
     max-width: 200px;
+  }
+  .city-play-legend {
+    top: auto;
+    bottom: 192px;
+    inset-inline: 12px;
+    width: auto;
   }
 }

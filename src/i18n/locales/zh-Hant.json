@@ -3593,5 +3593,16 @@
   "Zones known": "已知區",
   "Change from baseline": "相對基線的變化",
   "Circles are demand zones labelled with metres to the nearest park. Green squares are existing parks; a gold square is the proposed site.": "圓圈是需求區，標示到最近公園的公尺數。綠色方塊是現有公園；金色方塊是擬議地塊。",
-  "Sample network for {option}": "{option} 的範例網路"
+  "Sample network for {option}": "{option} 的範例網路",
+  "Zone": "用途",
+  "Housing": "住宅",
+  "Mixed use": "混合用途",
+  "Civic": "公共",
+  "Open space": "開放空間",
+  "Back": "返回",
+  "Proposed land use": "擬議土地用途",
+  "Land area": "用地面積",
+  "Share": "占比",
+  "Hypothetical land use for 40 m grid cells, not the city’s zoning.": "40 公尺網格單元的假設土地用途，並非城市分區規劃。",
+  "Walk access shows the existing estimate; land use does not recompute it.": "步行可達性顯示現有估算；土地用途不會重新計算它。"
 }

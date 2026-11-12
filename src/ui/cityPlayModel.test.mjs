@@ -21,6 +21,8 @@ import {
   boundsOf,
   placeBeside,
   wheelBounds,
+  zoneLegend,
+  stackPins,
 } from './cityPlayModel.js';
 
 const plotA = snapPlot({ lat: 37.8007, lon: -122.4103 });
@@ -112,18 +114,26 @@ test('wheelActions offers only honest proposal kinds and disables writes while b
       ['park', 'park', 'park'],
       ['plaza', 'plaza', 'deck'],
       ['bike-lane', 'bike-lane', 'pedal_bike'],
+      ['zone', null, 'category'],
       ['inspect', null, 'search'],
     ],
   );
   assert.ok(idle.every((a) => !a.disabled));
-  for (const state of [
-    { pending: true, full: false },
-    { pending: false, full: true },
+  for (const [state, disabled] of [
+    [
+      { pending: true, full: false },
+      ['reimagine', 'park', 'plaza', 'bike-lane', 'zone'],
+    ],
+    // Six worlds stop new proposals, not land use.
+    [
+      { pending: false, full: true },
+      ['reimagine', 'park', 'plaza', 'bike-lane'],
+    ],
   ]) {
     const busy = wheelActions(state);
     assert.deepEqual(
       busy.filter((a) => a.disabled).map((a) => a.id),
-      ['reimagine', 'park', 'plaza', 'bike-lane'],
+      disabled,
     );
   }
 });
@@ -264,6 +274,7 @@ test('playReducer enters and exits the mode and restores a clean HUD state', () 
     focusId: null,
     built: {},
     wheel: false,
+    zoneMenu: false,
   });
   assert.equal(playReducer(s0, { type: 'select', plot: plotA }), s0);
   assert.equal(playReducer(s0, { type: 'hover', plot: plotA }), s0);
@@ -585,4 +596,164 @@ test('a landed concept closes the wheel; the plot tag never overlaps the wheel',
   assert.equal(above.side, 'above');
   assert.ok(above.y + 40 <= small.top);
   assert.equal(above.clear, true);
+});
+
+test('the wheel opens a land-use menu and returns to its actions', () => {
+  const entered = playReducer(createPlayState(), { type: 'enter' });
+  const open = playReducer(entered, { type: 'select', plot: plotA });
+  const menu = playReducer(open, { type: 'zone-menu', open: true });
+  assert.equal(menu.zoneMenu, true);
+  assert.equal(menu.wheel, true);
+  assert.equal(
+    playReducer(menu, { type: 'zone-menu', open: false }).zoneMenu,
+    false,
+  );
+  assert.equal(
+    playReducer(menu, { type: 'select', plot: plotB }).zoneMenu,
+    false,
+  );
+  assert.equal(
+    playReducer(menu, { type: 'landed', id: 'world-1' }).zoneMenu,
+    false,
+  );
+  assert.equal(playReducer(menu, { type: 'exit' }).zoneMenu, false);
+  assert.equal(
+    playReducer(entered, { type: 'zone-menu', open: true }),
+    entered,
+    'no plot, no menu',
+  );
+  assert.deepEqual(
+    wheelActions({ zoneMenu: true, use: 'housing' }).map((a) => [
+      a.id,
+      a.icon,
+      Boolean(a.selected),
+      a.disabled,
+    ]),
+    [
+      ['housing', 'location_city', true, false],
+      ['mixed-use', 'layers', false, false],
+      ['civic', 'public', false, false],
+      ['open-space', 'eco', false, false],
+      ['clear-use', 'close', false, false],
+      ['back', 'arrow_left', false, false],
+    ],
+  );
+  assert.equal(
+    wheelActions({ zoneMenu: true, use: null }).find(
+      (a) => a.id === 'clear-use',
+    ).disabled,
+    true,
+  );
+  assert.equal(
+    wheelActions({ zoneMenu: true, pending: true }).find(
+      (a) => a.id === 'civic',
+    ).disabled,
+    true,
+  );
+  assert.equal(
+    wheelActions({ zoneMenu: true, pending: true }).find((a) => a.id === 'back')
+      .disabled,
+    false,
+  );
+});
+
+test('zoneLegend derives plots, area and share per land use from the plots themselves', () => {
+  const plotC = snapPlot({ lat: 37.8027, lon: -122.4083 });
+  const z = (plot, use) => ({ plot, use });
+  const legend = zoneLegend([
+    z(plotA, 'housing'),
+    z(plotB, 'housing'),
+    z(plotC, 'open-space'),
+  ]);
+  assert.deepEqual(
+    legend.rows.map((r) => [
+      r.use,
+      r.plots,
+      r.areaSquareMeters,
+      r.sharePercent,
+    ]),
+    [
+      ['housing', 2, 3200, 67],
+      ['mixed-use', 0, 0, 0],
+      ['civic', 0, 0, 0],
+      ['open-space', 1, 1600, 33],
+    ],
+  );
+  assert.equal(legend.plots, 3);
+  assert.equal(legend.areaSquareMeters, 4800);
+  // Changing one plot's use changes the derived numbers.
+  const changed = zoneLegend([
+    z(plotA, 'civic'),
+    z(plotB, 'housing'),
+    z(plotC, 'open-space'),
+  ]);
+  assert.deepEqual(
+    changed.rows.map((r) => r.sharePercent),
+    [33, 0, 33, 33],
+  );
+  assert.deepEqual(
+    changed.rows.map((r) => r.plots),
+    [1, 0, 1, 1],
+  );
+  const none = zoneLegend([]);
+  assert.equal(none.areaSquareMeters, 0);
+  assert.ok(
+    none.rows.every((r) => r.plots === 0 && r.sharePercent === null),
+    'nothing zoned: shares are unknown, not zero',
+  );
+});
+
+test('district pins add each plot use and pass the existing walk-access estimate through unchanged', () => {
+  const list = [alternative('world-1', plotA, 'park', { concept: { image } })];
+  const walk = { 'world-1': '212 m' };
+  const zoned = (use) => [
+    { plot: plotA, use: 'open-space' },
+    { plot: plotB, use },
+  ];
+  const pins = districtPins(list, {}, { zoning: zoned('housing'), walk });
+  const byPlot = Object.fromEntries(pins.map((p) => [p.plotId, p]));
+  assert.equal(byPlot[plotA.id].use, 'open-space');
+  assert.equal(byPlot[plotA.id].walk, '212 m');
+  assert.equal(byPlot[plotA.id].trees, 20);
+  // A zoned plot without a concept still gets a pin, with nothing invented.
+  assert.equal(byPlot[plotB.id].use, 'housing');
+  assert.equal(byPlot[plotB.id].alternativeId, null);
+  assert.equal(byPlot[plotB.id].trees, null);
+  assert.equal(byPlot[plotB.id].walk, null);
+  // Rezoning never changes the walk-access estimate (it is not recomputed).
+  const rezoned = districtPins(list, {}, { zoning: zoned('civic'), walk });
+  assert.deepEqual(
+    rezoned.map((p) => p.walk),
+    pins.map((p) => p.walk),
+  );
+  assert.equal(districtPins(list, {}).length, 1, 'zoning stays optional');
+});
+
+test('stackPins lifts colliding district pins until every label is clear', () => {
+  const size = { width: 240, height: 48 };
+  const pins = stackPins(
+    [
+      { plotId: 'a', at: { x: 700, y: 360 } },
+      { plotId: 'b', at: { x: 730, y: 362 } },
+      { plotId: 'c', at: { x: 1200, y: 360 } },
+    ],
+    size,
+  );
+  assert.deepEqual(
+    pins.map((p) => [p.plotId, p.top, p.lift]),
+    [
+      ['a', 360, 0],
+      ['b', 362 - 54, 54],
+      ['c', 360, 0],
+    ],
+  );
+  // Neighbours of neighbours keep climbing.
+  const three = stackPins(
+    [0, 1, 2].map((i) => ({ plotId: `p${i}`, at: { x: 700, y: 400 } })),
+    size,
+  );
+  assert.deepEqual(
+    three.map((p) => p.lift),
+    [0, 54, 108],
+  );
 });

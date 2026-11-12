@@ -8,6 +8,8 @@ import {
   serializeCityDocument,
   replayCityDocument,
   cityAlternatives,
+  cityZoning,
+  setCityZoning,
 } from '../data/cityPlanningDocument.js';
 import { presentCommunityPlanningPreview } from './communityPlanningPreview.js';
 import { presentCityWalkAccess } from './cityWalkAccess.js';
@@ -104,6 +106,7 @@ export function createCityBuilder({
     publishPlay({
       projectTitle: document?.project.title ?? null,
       alternatives: document ? cityAlternatives(document) : null,
+      zoning: document ? cityZoning(document) : [],
       pending: Boolean(pending),
       pendingId,
       full: (document?.alternatives.length ?? 0) >= 6,
@@ -541,6 +544,49 @@ export function createCityBuilder({
           pendingId = null;
           present();
         }
+      }
+    },
+    /** Play mode: set or clear one plot's proposed land use; true once saved. */
+    async setZone({ plot, use }) {
+      if (disposed || pending || !plot) return false;
+      error = null;
+      status = null;
+      try {
+        if (storageBlocked) throw new Error('storage blocked');
+        if (!document && use !== null) {
+          const request = new AbortController();
+          pending = request;
+          present();
+          let reference;
+          try {
+            reference = await captureReference();
+          } catch {
+            error = msg(
+              'Could not capture this view. Zoom to a place, stop moving, and try again.',
+            );
+            return false;
+          } finally {
+            if (pending === request) pending = null;
+          }
+          if (disposed) return false;
+          commit(
+            createCityDocument({
+              id: uid(),
+              title: t('Reimagined plots'),
+              reference,
+            }),
+          );
+        }
+        if (!document) return false;
+        commit(setCityZoning(document, plot, use));
+        return true;
+      } catch {
+        error ??= msg(
+          'Could not save this change. Check the fields and current revision.',
+        );
+        return false;
+      } finally {
+        present();
       }
     },
     /** Play mode: a new version of the same proposal with a new concept; true once it lands. */

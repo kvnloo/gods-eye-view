@@ -3848,5 +3848,16 @@
   "Zones known": "Відомі зони",
   "Change from baseline": "Зміна відносно бази",
   "Circles are demand zones labelled with metres to the nearest park. Green squares are existing parks; a gold square is the proposed site.": "Кола — зони попиту з відстанню в метрах до найближчого парку. Зелені квадрати — наявні парки; золотий квадрат — запропонована ділянка.",
-  "Sample network for {option}": "Приклад мережі для {option}"
+  "Sample network for {option}": "Приклад мережі для {option}",
+  "Zone": "Зонувати",
+  "Housing": "Житло",
+  "Mixed use": "Змішане",
+  "Civic": "Громадське",
+  "Open space": "Відкритий простір",
+  "Back": "Назад",
+  "Proposed land use": "Запропоноване землекористування",
+  "Land area": "Площа ділянки",
+  "Share": "Частка",
+  "Hypothetical land use for 40 m grid cells, not the city’s zoning.": "Гіпотетичне землекористування для клітинок 40 м, а не міське зонування.",
+  "Walk access shows the existing estimate; land use does not recompute it.": "Пішохідна доступність показує наявну оцінку; землекористування її не перераховує."
 }

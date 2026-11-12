@@ -3,6 +3,8 @@ import { msg, t } from '../i18n/index.js';
 import { claimPointer, releasePointer } from '../data/inputOwnership.js';
 import { neighborPlots, plotPoint, snapPlot } from '../data/cityPlot.js';
 import { observerSolarPosition } from '../data/satellitePass.js';
+import { CITY_LAND_USES } from '../data/cityPlanningDocument.js';
+import { presentCityWalkAccess } from '../ui/cityWalkAccess.js';
 import {
   holdContinuousRender,
   releaseContinuousRender,
@@ -21,6 +23,7 @@ import {
   resourceStats,
   resumeAlternative,
   wheelActions,
+  zoneLegend,
   zoomTier,
 } from '../ui/cityPlayModel.js';
 
@@ -40,6 +43,13 @@ const KIND_COLORS = {
   park: Cesium.Color.fromCssColorString('#5ee08a'),
   plaza: Cesium.Color.fromCssColorString('#ffc25c'),
   'bike-lane': ACCENT,
+};
+// Proposed land-use tints reuse GEV's existing palette.
+const ZONE_COLORS = {
+  housing: Cesium.Color.fromCssColorString('#ffc25c'),
+  'mixed-use': Cesium.Color.fromCssColorString('#ff5c6e'),
+  civic: ACCENT,
+  'open-space': Cesium.Color.fromCssColorString('#5ee08a'),
 };
 const CLASSIFY = Cesium.ClassificationType.BOTH;
 const FRAMES = {
@@ -77,7 +87,13 @@ export function mountCityPlay({
   const scene = viewer?.scene;
   if (!scene || !doc) return { receive() {}, destroy() {} };
   let state = createPlayState();
-  let data = { alternatives: null, pending: false, pendingId: null };
+  let data = {
+    alternatives: null,
+    zoning: [],
+    pending: false,
+    pendingId: null,
+  };
+  let walkCache = { list: undefined, map: {} };
   let lease = null;
   let handler = null;
   let saved = null;
@@ -96,6 +112,7 @@ export function mountCityPlay({
   const added = viewer.dataSources.add(ds);
   const holos = new Map();
   const tints = new Map();
+  const zoneTints = new Map();
   const select = [];
   const hover = [];
   const grid = [];
@@ -352,6 +369,8 @@ export function mountCityPlay({
         });
         tints.set(plotId, tint);
       }
+      // A proposed land use takes the plot's ground tint; the beacon stays.
+      tints.get(plotId).show = !useOf(plotId);
       tints.get(plotId)._cityBeacon.show = tier === 'district';
       if (!holos.has(plotId)) {
         const g = holoGeometry(a);
@@ -446,11 +465,73 @@ export function mountCityPlay({
     }
   }
 
+  const zoning = () => data.zoning ?? [];
+  const useOf = (plotId) =>
+    zoning().find((z) => z.plot.id === plotId)?.use ?? null;
+
+  // Each zoned plot drapes its proposed land-use tint and edge on the map.
+  function drawZones() {
+    const wanted = new Map(
+      (state.active ? zoning() : []).map((z) => [z.plot.id, z]),
+    );
+    for (const [plotId, tint] of zoneTints) {
+      if (wanted.get(plotId)?.use === tint._cityUse) continue;
+      ds.entities.remove(tint._cityEdge);
+      ds.entities.remove(tint);
+      zoneTints.delete(plotId);
+    }
+    for (const [plotId, z] of wanted) {
+      if (zoneTints.has(plotId)) continue;
+      const color = ZONE_COLORS[z.use];
+      const tint = ds.entities.add({
+        polygon: {
+          hierarchy: ring(z.plot).slice(0, 4),
+          material: color.withAlpha(0.42),
+          classificationType: CLASSIFY,
+        },
+      });
+      tint._cityUse = z.use;
+      tint._cityEdge = ds.entities.add({
+        polyline: {
+          positions: ring(z.plot),
+          width: 3,
+          material: color.withAlpha(0.9),
+          clampToGround: true,
+          classificationType: CLASSIFY,
+        },
+      });
+      zoneTints.set(plotId, tint);
+    }
+  }
+
+  // The existing walk-access estimate (#206) per alternative, never recomputed here.
+  function walkByAlternative() {
+    const list = data.alternatives ?? [];
+    if (walkCache.list !== list)
+      walkCache = {
+        list,
+        map: Object.fromEntries(
+          presentCityWalkAccess(list)
+            .rows.filter((r) => r.id !== 'baseline' && r.state === 'evaluated')
+            .map((r) => [r.id, r.mean]),
+        ),
+      };
+    return walkCache.map;
+  }
+
+  function pinsNow() {
+    return districtPins(data.alternatives ?? [], state.built, {
+      zoning: zoning(),
+      walk: walkByAlternative(),
+    });
+  }
+
   function render() {
     ds.show = state.active;
     drawHover();
     drawSelection();
     drawConcepts();
+    drawZones();
     scene.requestRender();
   }
 
@@ -484,11 +565,18 @@ export function mountCityPlay({
         code: plotCode(plot),
         area: plot.areaSquareMeters,
         size: plot.sizeMeters,
+        use: useOf(plot.id),
       },
       actions: wheelActions({
         pending: data.pending || framing,
         full: data.full,
+        zoneMenu: state.zoneMenu,
+        use: plot && useOf(plot.id),
       }),
+      legend:
+        state.zoneMenu || (state.tier === 'district' && zoning().length)
+          ? zoneLegend(zoning())
+          : null,
       cards: carouselCards(alternatives, plot?.id, {
         builtId: plot ? state.built[plot.id] : null,
         focusId: focused?.id,
@@ -505,10 +593,7 @@ export function mountCityPlay({
         built: state.built[plot.id] === focused.id,
       },
       callouts: state.tier === 'detail' ? detailCallouts(focused) : [],
-      pins:
-        state.tier === 'district'
-          ? districtPins(alternatives, state.built)
-          : [],
+      pins: state.tier === 'district' ? pinsNow() : [],
     });
   }
 
@@ -602,7 +687,7 @@ export function mountCityPlay({
       }
     }
     if (state.tier === 'district') {
-      for (const pin of districtPins(data.alternatives ?? [], state.built)) {
+      for (const pin of pinsNow()) {
         const h = heights.get(pin.plotId) ?? 0;
         anchors.pins[pin.plotId] = project(pin.center.lon, pin.center.lat, h);
       }
@@ -647,7 +732,9 @@ export function mountCityPlay({
     }
     const entity = hit?.id;
     if (!entity || !ds.entities.contains(entity)) return null;
-    return entity._cityPlot ?? state.plot;
+    // Only a standing concept names its plot; tints and footprints fall through
+    // to the ground pick, which snaps to the plot under the cursor.
+    return entity._cityPlot ?? null;
   }
   function onClick({ position }) {
     if (framing) return;
@@ -889,6 +976,17 @@ export function mountCityPlay({
     },
     act(id) {
       if (!state.plot) return;
+      if (id === 'zone' || id === 'back') {
+        dispatch({ type: 'zone-menu', open: id === 'zone' });
+        return;
+      }
+      if (id === 'clear-use' || CITY_LAND_USES.includes(id)) {
+        void builder.setZone({
+          plot: state.plot,
+          use: id === 'clear-use' ? null : id,
+        });
+        return;
+      }
       if (id === 'inspect') {
         void fly(state.plot, 'detail');
         return;
@@ -938,6 +1036,8 @@ export function mountCityPlay({
         ),
         anchors: lastAnchors ? JSON.parse(lastAnchors) : null,
         bodyClass: doc.body.classList.contains(BODY_CLASS),
+        zoning: zoning().map((z) => ({ plotId: z.plot.id, use: z.use })),
+        zoneTints: ds.show ? zoneTints.size : 0,
       }),
   });
   if (win) win.__gevCityPlay = probe;

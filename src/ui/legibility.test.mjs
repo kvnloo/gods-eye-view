@@ -24,6 +24,20 @@ test('parseColor reads the computed colour forms browsers return', () => {
     'fully transparent paints nothing',
   );
   assert.equal(parseColor('none'), null);
+  // Chrome serializes transitioning colours in OKLab: rgba(8, 14, 20, 0.88).
+  const glass = parseColor('oklab(0.160464 -0.00592797 -0.0149219 / 0.878431)');
+  assert.deepEqual(
+    glass.map((n) => Math.round(n * 100) / 100),
+    [8, 14, 20, 0.88],
+  );
+  assert.deepEqual(
+    parseColor('oklch(1 0 0)').map(Math.round),
+    [255, 255, 255, 1],
+  );
+  assert.deepEqual(
+    parseColor('oklch(0.160464 0.016 248.33 / 0.5)').map(Math.round),
+    parseColor('oklab(0.160464 -0.00592797 -0.0149219 / 0.5)').map(Math.round),
+  );
 });
 
 test('contrastRatio follows WCAG 2 relative luminance', () => {

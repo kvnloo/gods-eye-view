@@ -308,11 +308,13 @@ async function legibility(label) {
   const results = texts.map((t) => ({ ...t, ...textLegibility(t) }));
   const failures = results
     .filter((r) => !r.ok)
-    .map(({ text, ratio, fontSize, reason }) => ({
+    .map(({ text, ratio, fontSize, reason, color, layers }) => ({
       text,
       ratio,
       fontSize,
       reason,
+      color,
+      layers,
     }));
   (report.measurements.legibility ??= {})[label] = {
     labels: results.length,
@@ -349,6 +351,32 @@ async function noOverlap(a, b) {
     [a, b],
   );
   assert.deepEqual(hits, [], `${a} must not overlap ${b}`);
+}
+async function legend() {
+  return page.evaluate(() =>
+    Object.fromEntries(
+      [...document.querySelectorAll('[data-city-play-legend-row]')].map(
+        (row) => [
+          row.dataset.cityPlayLegendRow,
+          ['plots', 'area', 'share'].map(
+            (k) => row.querySelector(`[data-legend-${k}]`).textContent,
+          ),
+        ],
+      ),
+    ),
+  );
+}
+async function pickUse(use) {
+  await locator(`[data-city-play-action="${use}"]`).click();
+  await until(
+    (u) =>
+      document
+        .querySelector(`[data-city-play-action="${u}"]`)
+        ?.getAttribute('aria-pressed') === 'true',
+    `${use} saved for the plot`,
+    20000,
+    use,
+  );
 }
 async function clickGlobe(x, y) {
   await page.mouse.move(x, y);
@@ -391,6 +419,7 @@ async function selectPlotWithWheel(viewport) {
 }
 async function reopenWheel() {
   // A landed concept closes the wheel; clicking the plot brings it back.
+  if (await locator(S.ring).isVisible()) return;
   const at = (await probe()).anchors?.plot;
   assert.ok(at, 'selected plot is projected on screen');
   await page.mouse.click(at.x, at.y);
@@ -600,7 +629,7 @@ try {
           await locator('[data-city-play-action]').evaluateAll((els) =>
             els.map((e) => e.dataset.cityPlayAction),
           ),
-          ['reimagine', 'park', 'plaza', 'bike-lane', 'inspect'],
+          ['reimagine', 'park', 'plaza', 'bike-lane', 'zone', 'inspect'],
         );
         await locator('[data-city-play-tag]').waitFor({ state: 'visible' });
         await insideViewport('[data-city-play-action]', DESKTOP);
@@ -751,6 +780,91 @@ try {
     );
 
     await check(
+      'ZONE: proposed land uses tint plots, and changing one changes the computed legend',
+      async () => {
+        await reopenWheel();
+        const first = await probe();
+        const firstAt = first.anchors.plot;
+        const foot = rectOf(first.anchors.footprint);
+        await locator('[data-city-play-action="zone"]').click();
+        await locator('[data-city-play-legend]').waitFor({ state: 'visible' });
+        assert.deepEqual(
+          (await legend()).housing,
+          ['0', '0 m²', '—'],
+          'nothing zoned yet: share unknown, not zero',
+        );
+        await pickUse('housing');
+        assert.deepEqual((await legend()).housing, ['1', '1,600 m²', '100%']);
+        // A second plot east of the first, beyond the wheel's reach, on its near
+        // half (clear of the standing card and the plot tag).
+        const wheelBox = await locator(S.ring).boundingBox();
+        await page.mouse.click(
+          Math.max(
+            foot.right + (foot.right - foot.left) * 0.75,
+            wheelBox.x + wheelBox.width + 70,
+          ),
+          (firstAt.y + foot.bottom) / 2,
+        );
+        await until(
+          (id) => window.__gevCityPlay.snapshot().plot?.id !== id,
+          'a second plot is selected',
+          20000,
+          first.plot.id,
+        );
+        await locator('[data-city-play-action="zone"]').click();
+        await pickUse('open-space');
+        const before = await legend();
+        assert.deepEqual(before.housing, ['1', '1,600 m²', '50%']);
+        assert.deepEqual(before['open-space'], ['1', '1,600 m²', '50%']);
+        await screenshot('05b-zoning-legend');
+        // Change the first plot from housing to civic: the derived numbers move.
+        await page.mouse.click(firstAt.x, (firstAt.y + foot.bottom) / 2);
+        await until(
+          (id) => window.__gevCityPlay.snapshot().plot?.id === id,
+          'the first plot is selected again',
+          20000,
+          first.plot.id,
+        );
+        await locator('[data-city-play-action="zone"]').click();
+        await pickUse('civic');
+        const after = await legend();
+        report.measurements.zoning = { before, after };
+        assert.deepEqual(after.housing, ['0', '0 m²', '0%']);
+        assert.deepEqual(after.civic, ['1', '1,600 m²', '50%']);
+        assert.notDeepEqual(
+          after,
+          before,
+          'changing a zone changes the derived numbers',
+        );
+        const s = await probe();
+        assert.deepEqual(s.zoning.map((z) => z.use).sort(), [
+          'civic',
+          'open-space',
+        ]);
+        assert.equal(s.zoneTints, 2, 'both zoned plots are tinted on the map');
+        const doc = await persisted();
+        assert.deepEqual(
+          doc.zoning.map((z) => [z.plot.id, z.use]).sort(),
+          s.zoning.map((z) => [z.plotId, z.use]).sort(),
+          'saved in the project document',
+        );
+        await legibility('zoning-legend');
+        await clearOfCredits('[data-city-play-legend]');
+        await noOverlap(
+          '[data-city-play-legend]',
+          '[data-city-play-wheel] button',
+        );
+        await screenshot('05c-zoning-changed');
+        await locator('[data-city-play-action="back"]').click();
+        await locator('[data-city-play-action="inspect"]').waitFor({
+          state: 'visible',
+        });
+        await page.mouse.move(DESKTOP.width - 40, DESKTOP.height / 2);
+        assert.equal((await probe()).tier, 'plot', 'Back only closes the menu');
+      },
+    );
+
+    await check(
       'Zoom in: INSPECT reaches the detail tier with callouts and a stats card',
       async () => {
         await reopenWheel();
@@ -855,7 +969,29 @@ try {
           timeout: 20000,
         });
         await tilesLoaded(60000).catch(() => {});
+        // District v0: the land-use legend and per-plot badges; walk access is
+        // the existing estimate (unknown for play worlds), never recomputed.
+        await locator('[data-city-play-legend]').waitFor({ state: 'visible' });
+        const badges = await page.evaluate(() =>
+          [...document.querySelectorAll('[data-city-play-pin]')].map((pin) => ({
+            plot: pin.dataset.cityPlayPin,
+            walk: pin
+              .querySelector('[data-city-play-pin-walk]')
+              ?.textContent.trim(),
+            use:
+              pin
+                .querySelector('[data-city-play-pin-use]')
+                ?.textContent.trim() ?? null,
+          })),
+        );
+        report.measurements.districtBadges = badges;
+        assert.ok(badges.length >= 2, 'a badge per reimagined or zoned plot');
+        assert.ok(
+          badges.every((b) => /—$/.test(b.walk)),
+          'play worlds have no walk-access site: unknown, never 0',
+        );
         await legibility('district-pins');
+        await clearOfCredits('[data-city-play-legend], [data-city-play-pin]');
         await screenshot('07-district-pin');
       },
     );
@@ -982,6 +1118,11 @@ try {
           ),
         );
         assert.equal(stats.walk, '—');
+        assert.equal(
+          (await probe()).zoning.length,
+          (before.zoning ?? []).length,
+          'proposed land uses restored',
+        );
         // The restored concept must be on screen, not just counted.
         await until(
           ({ id, plotId }) => {

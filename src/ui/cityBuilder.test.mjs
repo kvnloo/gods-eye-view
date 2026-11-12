@@ -353,3 +353,29 @@ test('walk access shows the baseline beside every alternative without changing p
   // Estimates are derived for display; the saved document holds no metric.
   assert.doesNotMatch(h.saved, /meanMeters|worst|access/);
 });
+test('play mode: a proposed land use per plot saves through the same document', async () => {
+  const { snapPlot } = await import('../data/cityPlot.js');
+  let play = null;
+  const h = harness({ publishPlay: (v) => (play = v) });
+  const plot = snapPlot({ lat: 0.1, lon: 0.1 });
+  assert.deepEqual(play.zoning, [], 'no project, no land use');
+  // Zoning first creates the project from the current view, like Reimagine.
+  assert.equal(await h.controls.setZone({ plot, use: 'housing' }), true);
+  assert.deepEqual(
+    play.zoning.map((z) => [z.plot.id, z.use]),
+    [[plot.id, 'housing']],
+  );
+  assert.equal(JSON.parse(h.saved).zoning[0].use, 'housing');
+  assert.equal(play.alternatives.length, 0, 'land use is not a possible world');
+  assert.equal(await h.controls.setZone({ plot, use: 'civic' }), true);
+  assert.deepEqual(
+    play.zoning.map((z) => z.use),
+    ['civic'],
+  );
+  assert.equal(await h.controls.setZone({ plot, use: null }), true);
+  assert.deepEqual(play.zoning, []);
+  assert.equal(Object.hasOwn(JSON.parse(h.saved), 'zoning'), false);
+  assert.equal(await h.controls.setZone({ plot, use: 'industrial' }), false);
+  assert.ok(play.error, 'an invalid use is refused visibly');
+  assert.equal(await h.controls.setZone({ plot: null, use: 'civic' }), false);
+});

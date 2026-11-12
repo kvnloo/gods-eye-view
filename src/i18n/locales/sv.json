@@ -3678,5 +3678,16 @@
   "Zones known": "Kända zoner",
   "Change from baseline": "Förändring mot baslinjen",
   "Circles are demand zones labelled with metres to the nearest park. Green squares are existing parks; a gold square is the proposed site.": "Cirklar är efterfrågezoner märkta med meter till närmaste park. Gröna kvadrater är befintliga parker; en guldfärgad kvadrat är den föreslagna platsen.",
-  "Sample network for {option}": "Exempelnät för {option}"
+  "Sample network for {option}": "Exempelnät för {option}",
+  "Zone": "Zonindela",
+  "Housing": "Bostäder",
+  "Mixed use": "Blandad användning",
+  "Civic": "Offentligt",
+  "Open space": "Öppen yta",
+  "Back": "Tillbaka",
+  "Proposed land use": "Föreslagen markanvändning",
+  "Land area": "Markyta",
+  "Share": "Andel",
+  "Hypothetical land use for 40 m grid cells, not the city’s zoning.": "Hypotetisk markanvändning för 40 m-rutor, inte stadens detaljplan.",
+  "Walk access shows the existing estimate; land use does not recompute it.": "Gångtillgång visar den befintliga uppskattningen; markanvändningen räknar inte om den."
 }

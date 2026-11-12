@@ -3763,5 +3763,16 @@
   "Zones known": "Zonas conocidas",
   "Change from baseline": "Cambio respecto a la base",
   "Circles are demand zones labelled with metres to the nearest park. Green squares are existing parks; a gold square is the proposed site.": "Los círculos son zonas de demanda con los metros hasta el parque más cercano. Los cuadrados verdes son parques existentes; un cuadrado dorado es el sitio propuesto.",
-  "Sample network for {option}": "Red de ejemplo para {option}"
+  "Sample network for {option}": "Red de ejemplo para {option}",
+  "Zone": "Zonificar",
+  "Housing": "Vivienda",
+  "Mixed use": "Uso mixto",
+  "Civic": "Cívico",
+  "Open space": "Espacio abierto",
+  "Back": "Atrás",
+  "Proposed land use": "Uso del suelo propuesto",
+  "Land area": "Superficie",
+  "Share": "Proporción",
+  "Hypothetical land use for 40 m grid cells, not the city’s zoning.": "Uso del suelo hipotético para celdas de 40 m, no la zonificación de la ciudad.",
+  "Walk access shows the existing estimate; land use does not recompute it.": "Acceso a pie muestra la estimación existente; el uso del suelo no la recalcula."
 }

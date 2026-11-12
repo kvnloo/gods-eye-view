@@ -2,18 +2,42 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
+  PERSISTENCE_NEIGHBOR,
   PERSISTENCE_PLOT,
   PERSISTENCE_REFERENCE,
   runCityPersistenceRoundTrip,
   savedKeySnapshot,
 } from '../testSupport/cityPersistenceFixture.mjs';
 import { presentCityWalkAccess } from '../ui/cityWalkAccess.js';
+import { zoneLegend } from '../ui/cityPlayModel.js';
 
 test('shared fixture: create, save, reload and reselect round-trip every saved key', async () => {
   const run = await runCityPersistenceRoundTrip();
   // Reload reads the saved bytes and never rewrites them.
   assert.equal(run.afterSaved, run.saved);
   assert.deepEqual(run.after.alternatives, run.before.alternatives);
+  // Proposed land use round-trips and still derives the same legend.
+  assert.deepEqual(run.after.zoning, run.before.zoning);
+  assert.deepEqual(
+    run.after.zoning.map((z) => [z.plot.id, z.use]),
+    [
+      [PERSISTENCE_PLOT.id, 'open-space'],
+      [PERSISTENCE_NEIGHBOR.id, 'housing'],
+    ],
+  );
+  assert.deepEqual(
+    zoneLegend(run.after.zoning).rows.map((r) => [
+      r.use,
+      r.plots,
+      r.sharePercent,
+    ]),
+    [
+      ['housing', 1, 50],
+      ['mixed-use', 0, 0],
+      ['civic', 0, 0],
+      ['open-space', 1, 50],
+    ],
+  );
   assert.equal(run.after.persisted, true);
   assert.equal(run.after.error, null);
   const byId = Object.fromEntries(run.after.alternatives.map((a) => [a.id, a]));

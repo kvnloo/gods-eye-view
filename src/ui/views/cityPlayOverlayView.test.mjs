@@ -138,7 +138,7 @@ test('the wheel follows the projected plot and sends honest actions', async (t) 
   assert.equal(wheel.style.top, '460px');
   assert.deepEqual(
     $$('[data-city-play-action]').map((b) => b.dataset.cityPlayAction),
-    ['reimagine', 'park', 'plaza', 'bike-lane', 'inspect'],
+    ['reimagine', 'park', 'plaza', 'bike-lane', 'zone', 'inspect'],
   );
   $('[data-city-play-action="reimagine"]').click();
   $('[data-city-play-action="inspect"]').click();

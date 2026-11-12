@@ -3593,5 +3593,16 @@
   "Zones known": "既知のゾーン",
   "Change from baseline": "ベースラインからの変化",
   "Circles are demand zones labelled with metres to the nearest park. Green squares are existing parks; a gold square is the proposed site.": "円は需要ゾーンで、最寄りの公園までのメートル数を示します。緑の四角は既存の公園、金色の四角は提案された候補地です。",
-  "Sample network for {option}": "{option} のサンプルネットワーク"
+  "Sample network for {option}": "{option} のサンプルネットワーク",
+  "Zone": "用途",
+  "Housing": "住宅",
+  "Mixed use": "複合用途",
+  "Civic": "公共",
+  "Open space": "オープンスペース",
+  "Back": "戻る",
+  "Proposed land use": "提案された土地利用",
+  "Land area": "敷地面積",
+  "Share": "割合",
+  "Hypothetical land use for 40 m grid cells, not the city’s zoning.": "40 m グリッドセルの仮想の土地利用であり、市の用途地域ではありません。",
+  "Walk access shows the existing estimate; land use does not recompute it.": "徒歩アクセスは既存の推定値を表示します。土地利用で再計算はしません。"
 }

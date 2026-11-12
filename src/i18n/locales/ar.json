@@ -4018,5 +4018,16 @@
   "Zones known": "المناطق المعروفة",
   "Change from baseline": "التغير عن الأساس",
   "Circles are demand zones labelled with metres to the nearest park. Green squares are existing parks; a gold square is the proposed site.": "الدوائر مناطق طلب تحمل عدد الأمتار إلى أقرب حديقة. المربعات الخضراء حدائق قائمة؛ والمربع الذهبي هو الموقع المقترح.",
-  "Sample network for {option}": "شبكة نموذجية لـ {option}"
+  "Sample network for {option}": "شبكة نموذجية لـ {option}",
+  "Zone": "تخصيص",
+  "Housing": "سكن",
+  "Mixed use": "استخدام مختلط",
+  "Civic": "مدني",
+  "Open space": "مساحة مفتوحة",
+  "Back": "رجوع",
+  "Proposed land use": "استخدام الأرض المقترح",
+  "Land area": "مساحة الأرض",
+  "Share": "الحصة",
+  "Hypothetical land use for 40 m grid cells, not the city’s zoning.": "استخدام افتراضي للأرض لخلايا شبكة 40 م، وليس تقسيم المدينة إلى مناطق.",
+  "Walk access shows the existing estimate; land use does not recompute it.": "تعرض سهولة المشي التقدير الحالي؛ ولا يعيد استخدام الأرض حسابه."
 }

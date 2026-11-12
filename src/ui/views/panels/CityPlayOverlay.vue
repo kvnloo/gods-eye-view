@@ -4,7 +4,7 @@ import { computed, onBeforeUnmount, onMounted, onUpdated, ref } from 'vue';
 import { formatNumber, t } from '../../../i18n/index.js';
 import UiIcon from '../../kit/UiIcon.vue';
 import { useCityPlayStore } from '../../stores/cityPlay.js';
-import { boundsOf, placeBeside, placeWheel, wheelBounds, wheelLayout, wheelSize } from '../../cityPlayModel.js';
+import { boundsOf, placeBeside, placeWheel, stackPins, wheelBounds, wheelLayout, wheelSize } from '../../cityPlayModel.js';
 
 // City builder play mode on the globe: the resource bar, the plot's radial
 // wheel and tag, in-world callouts and pins, and the concept carousel. The
@@ -70,7 +70,15 @@ const actionLabels = computed(() => ({
   plaza: t('Plaza'),
   'bike-lane': t('Bike lane'),
   inspect: t('Inspect'),
+  zone: t('Zone'),
+  housing: t('Housing'),
+  'mixed-use': t('Mixed use'),
+  civic: t('Civic'),
+  'open-space': t('Open space'),
+  'clear-use': t('Clear'),
+  back: t('Back'),
 }));
+const useLabel = (use) => actionLabels.value[use] ?? use;
 const chipLabels = computed(() => ({
   trees: t('Trees'),
   shade: t('Shade'),
@@ -97,9 +105,11 @@ const callouts = computed(() =>
     }),
 );
 const pins = computed(() =>
-  (view.value?.pins ?? [])
-    .map((p) => ({ ...p, at: anchors.value?.pins?.[p.plotId] }))
-    .filter((p) => p.at),
+  stackPins(
+    (view.value?.pins ?? [])
+      .map((p) => ({ ...p, at: anchors.value?.pins?.[p.plotId] }))
+      .filter((p) => p.at),
+  ),
 );
 // The plot tag sits beside the wheel's bounds (never across a button), clear of
 // the resource bar, tethered to the projected plot centre.
@@ -185,13 +195,14 @@ const bars = computed(() => {
       <span class="city-play-hint-key">{{ t('Esc exits') }}</span>
     </p>
 
-    <svg v-if="tag || holoTag || statsPlace || (wheel && plotPoint) || callouts.length" class="city-play-tethers" aria-hidden="true" :viewBox="`0 0 ${viewport.width} ${viewport.height}`">
+    <svg v-if="tag || holoTag || statsPlace || (wheel && plotPoint) || callouts.length || pins.some((p) => p.lift)" class="city-play-tethers" aria-hidden="true" :viewBox="`0 0 ${viewport.width} ${viewport.height}`">
       <line v-if="tag" :x1="tag.from.x" :y1="tag.from.y" :x2="tag.to.x" :y2="tag.to.y" />
       <line v-if="holoTag" :x1="holoTag.from.x" :y1="holoTag.from.y" :x2="holoTag.side > 0 ? holoTag.x : holoTag.x + (mobile ? 170 : 240)" :y2="holoTag.y" />
       <circle v-if="holoTag" class="city-play-tether-end" :cx="holoTag.from.x" :cy="holoTag.from.y" r="4" />
       <line v-if="wheel && plotPoint && wheel.clamped" class="city-play-tether-dim" :x1="wheel.x" :y1="wheel.y" :x2="plotPoint.x" :y2="plotPoint.y" />
       <circle v-if="plotPoint && tier !== 'detail'" :cx="plotPoint.x" :cy="plotPoint.y" r="5" />
       <line v-for="callout in callouts" :key="callout.id" class="city-play-leader" :x1="callout.at.x" :y1="callout.at.y" :x2="callout.end.x" :y2="callout.end.y" />
+      <line v-for="pin in pins.filter((p) => p.lift)" :key="`pin-${pin.plotId}`" class="city-play-leader" :x1="pin.at.x" :y1="pin.at.y" :x2="pin.at.x" :y2="pin.top" />
       <template v-if="statsPlace">
         <line class="city-play-leader" data-city-play-stats-leader :x1="statsPlace.leader.from.x" :y1="statsPlace.leader.from.y" :x2="statsPlace.leader.to.x" :y2="statsPlace.leader.to.y" />
         <circle class="city-play-tether-end" :cx="statsPlace.leader.to.x" :cy="statsPlace.leader.to.y" r="3.5" />
@@ -201,6 +212,7 @@ const bars = computed(() => {
     <div v-if="tag" ref="tagEl" class="city-play-tag" data-city-play-tag :style="{ left: `${tag.x}px`, top: `${tag.y}px` }">
       <strong translate="no">{{ t('Plot {code}', { code: view.plot.code }) }}</strong>
       <span>{{ t('{area} m²', { area: formatNumber(view.plot.area) }) }}</span>
+      <span v-if="view.plot.use" class="city-play-tag-use" :class="`city-play-use--${view.plot.use}`" data-city-play-tag-use>{{ useLabel(view.plot.use) }}</span>
       <span v-if="!mobile" class="city-play-tag-note">{{ t('40 m grid cell, not a surveyed parcel') }}</span>
     </div>
 
@@ -211,7 +223,9 @@ const bars = computed(() => {
         :key="action.id"
         type="button"
         class="city-play-wheel-button"
+        :class="{ 'is-selected': action.selected }"
         :data-city-play-action="action.id"
+        :aria-pressed="action.selected === undefined ? undefined : String(action.selected)"
         :disabled="action.disabled"
         :style="{ transform: `translate(${offsets[index].x}px, ${offsets[index].y}px)` }"
         @click="controls?.act(action.id)"
@@ -253,20 +267,42 @@ const bars = computed(() => {
       :key="pin.plotId"
       type="button"
       class="city-play-pin"
-      :class="`city-play-pin--${pin.kind}`"
+      :class="pin.kind ? `city-play-pin--${pin.kind}` : `city-play-use--${pin.use}`"
       :data-city-play-pin="pin.plotId"
-      :style="{ left: `${pin.at.x}px`, top: `${pin.at.y}px` }"
+      :style="{ left: `${pin.at.x}px`, top: `${pin.top}px` }"
     >
       <UiIcon :name="pin.icon" :size="18" />
       <span class="city-play-pin-text">
-        <span>{{ pin.title }}</span>
+        <span>{{ pin.title ?? useLabel(pin.use) }}</span>
         <span class="city-play-pin-yields">
-          <span>{{ t('Trees') }} +{{ formatNumber(pin.trees) }}</span>
-          <span>{{ t('Shade') }} {{ formatNumber(pin.shade) }}%</span>
+          <span v-if="pin.trees !== null">{{ t('Trees') }} +{{ formatNumber(pin.trees) }}</span>
+          <span v-if="pin.shade !== null">{{ t('Shade') }} {{ formatNumber(pin.shade) }}%</span>
+          <span v-if="pin.use && pin.title" class="city-play-pin-use" :class="`city-play-use--${pin.use}`" data-city-play-pin-use>{{ useLabel(pin.use) }}</span>
+          <span data-city-play-pin-walk>{{ t('Walk access') }} {{ pin.walk ?? '—' }}</span>
           <span v-if="pin.built" class="city-play-pin-kept">{{ t('Kept') }}</span>
         </span>
       </span>
     </button>
+
+    <aside v-if="view.legend" class="city-play-legend" data-city-play-legend :aria-label="t('Proposed land use')">
+      <h3>{{ t('Proposed land use') }}</h3>
+      <div class="city-play-legend-row city-play-legend-head">
+        <span></span>
+        <span></span>
+        <span>{{ t('Plots') }}</span>
+        <span>{{ t('Land area') }}</span>
+        <span>{{ t('Share') }}</span>
+      </div>
+      <div v-for="row in view.legend.rows" :key="row.use" class="city-play-legend-row" :data-city-play-legend-row="row.use">
+        <span class="city-play-swatch" :class="`city-play-use--${row.use}`" aria-hidden="true"></span>
+        <span>{{ useLabel(row.use) }}</span>
+        <span translate="no" data-legend-plots>{{ formatNumber(row.plots) }}</span>
+        <span translate="no" data-legend-area>{{ t('{area} m²', { area: formatNumber(row.areaSquareMeters) }) }}</span>
+        <span translate="no" data-legend-share>{{ row.sharePercent === null ? '—' : `${formatNumber(row.sharePercent)}%` }}</span>
+      </div>
+      <p class="city-play-legend-note">{{ t('Hypothetical land use for 40 m grid cells, not the city’s zoning.') }}</p>
+      <p class="city-play-legend-note">{{ t('Walk access shows the existing estimate; land use does not recompute it.') }}</p>
+    </aside>
 
     <section v-if="showCarousel" class="city-play-dock" data-city-play-carousel :aria-label="t('Possible worlds for this plot')">
       <div class="city-play-cards">

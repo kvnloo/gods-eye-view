@@ -25,3 +25,7 @@
 - Keep the play-mode browser journey in one page session: restore is checked in
   a fresh page after the journey page closes, so the recording has no reload
   splash (Kevin Rajan, kvnloo#302).
+- Add a district view v0 to play mode: assign a proposed land use per plot,
+  see draped tints, a computed legend (plots, area, share) that changes as you
+  rezone, and district badges with the existing walk-access estimate (Kevin
+  Rajan, kvnloo#302).

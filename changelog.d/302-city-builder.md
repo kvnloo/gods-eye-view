@@ -19,3 +19,6 @@
 - Make every play-mode label legible over bright photoreal roofs: 4.5:1 contrast
   on darkened glass and caps labels at 12 px or more, audited in the browser
   journey (Kevin Rajan, kvnloo#302).
+- Close the play-mode action wheel whenever a Reimagine or Reroll lands, and
+  place the plot tag beside the wheel so it never covers a button (Kevin Rajan,
+  kvnloo#302).

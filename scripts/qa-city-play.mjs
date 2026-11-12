@@ -739,6 +739,7 @@ try {
         await locator('[data-city-play-holo-tag]').waitFor({
           state: 'visible',
         });
+        await page.waitForTimeout(1600); // the new version scans in over 1.4 s
         await screenshot('05-reroll-v2');
       },
     );

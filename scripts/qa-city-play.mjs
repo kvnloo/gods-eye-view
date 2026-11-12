@@ -200,6 +200,47 @@ async function insideViewport(selector, viewport) {
     );
   }
 }
+function rectOf(points) {
+  const list = (points ?? []).filter(Boolean);
+  if (list.length < 2) return null;
+  const xs = list.map((p) => p.x);
+  const ys = list.map((p) => p.y);
+  return {
+    left: Math.min(...xs),
+    top: Math.min(...ys),
+    right: Math.max(...xs),
+    bottom: Math.max(...ys),
+  };
+}
+function overlapArea(a, b) {
+  const w = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+  const h = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+  return w > 0 && h > 0 ? w * h : 0;
+}
+function gapBetween(a, b) {
+  const dx = Math.max(0, a.left - b.right, b.left - a.right);
+  const dy = Math.max(0, a.top - b.bottom, b.top - a.bottom);
+  return Math.hypot(dx, dy);
+}
+// Map attribution (Google/Cesium/Esri) must stay readable: nothing may cover it.
+async function clearOfCredits(selector) {
+  const hits = await page.evaluate((sel) => {
+    const c = document
+      .querySelector('#cesium-credits .cesium-widget-credits')
+      ?.getBoundingClientRect();
+    if (!c?.width) return ['no visible map credits'];
+    return [...document.querySelectorAll(sel)]
+      .map((el) => [el, el.getBoundingClientRect()])
+      .filter(
+        ([, r]) =>
+          r.width &&
+          Math.min(r.right, c.right) > Math.max(r.left, c.left) &&
+          Math.min(r.bottom, c.bottom) > Math.max(r.top, c.top),
+      )
+      .map(([el]) => el.className || el.tagName);
+  }, selector);
+  assert.deepEqual(hits, [], `${selector} must stay clear of the map credits`);
+}
 async function clickGlobe(x, y) {
   await page.mouse.move(x, y);
   await page.mouse.click(x, y);
@@ -465,6 +506,9 @@ try {
         );
         await locator('[data-city-play-tag]').waitFor({ state: 'visible' });
         await insideViewport('[data-city-play-action]', DESKTOP);
+        await clearOfCredits(
+          '[data-city-play-wheel] button, [data-city-play-tag]',
+        );
         await pixelEvidence('plotSelectedGlobe');
         await screenshot('03-plot-wheel');
       },
@@ -498,6 +542,9 @@ try {
         assert.match(
           await locator('[data-city-play-ai-label]').innerText(),
           /AI concept, not a plan or an approval/i,
+        );
+        await clearOfCredits(
+          '[data-city-play-carousel], [data-city-play-holo-tag], [data-city-play-build]',
         );
         // Grounded: the card stands on the plot with a contact band, and casts
         // a shadow away from the scene sun exactly when that sun is up.
@@ -607,6 +654,61 @@ try {
         report.measurements.detailCallouts = await locator(
           '[data-city-play-callout]',
         ).count();
+        // The stats card is anchored beside the plot on a leader, not docked at
+        // the screen edge, and covers neither the plot nor the map credits.
+        await page.waitForTimeout(300);
+        const placed = await page.evaluate(() => {
+          const box = (el) => {
+            const r = el.getBoundingClientRect();
+            return {
+              left: r.left,
+              top: r.top,
+              right: r.right,
+              bottom: r.bottom,
+            };
+          };
+          const line = document.querySelector('[data-city-play-stats-leader]');
+          return {
+            card: box(document.querySelector('[data-city-play-stats]')),
+            leader:
+              line &&
+              ['x1', 'y1', 'x2', 'y2'].map((k) => Number(line.getAttribute(k))),
+          };
+        });
+        const foot = rectOf((await probe()).anchors.footprint);
+        report.measurements.statsCard = { ...placed, footprint: foot };
+        assert.ok(foot, 'footprint projected on screen');
+        assert.ok(placed.leader, 'a leader line joins the card to the plot');
+        const [x1, y1, x2, y2] = placed.leader;
+        const { card } = placed;
+        const onEdge =
+          (Math.abs(x1 - card.left) < 1.5 || Math.abs(x1 - card.right) < 1.5) &&
+          y1 >= card.top - 1.5 &&
+          y1 <= card.bottom + 1.5;
+        const onTopOrBottom =
+          (Math.abs(y1 - card.top) < 1.5 || Math.abs(y1 - card.bottom) < 1.5) &&
+          x1 >= card.left - 1.5 &&
+          x1 <= card.right + 1.5;
+        assert.ok(onEdge || onTopOrBottom, 'leader starts on the card edge');
+        assert.ok(
+          x2 >= foot.left - 1.5 &&
+            x2 <= foot.right + 1.5 &&
+            y2 >= foot.top - 1.5 &&
+            y2 <= foot.bottom + 1.5,
+          'leader ends on the plot footprint',
+        );
+        assert.ok(
+          gapBetween(card, foot) <= 96,
+          `card beside the plot (${gapBetween(card, foot).toFixed(0)} px away)`,
+        );
+        assert.equal(
+          overlapArea(card, foot),
+          0,
+          'the card does not cover the plot',
+        );
+        await clearOfCredits(
+          '[data-city-play-stats], [data-city-play-holo-tag], .city-play-callout-label',
+        );
         await tilesLoaded(30000);
         await screenshot('06-detail-callouts');
       },
@@ -783,6 +885,7 @@ try {
             '[data-city-play-build], [data-city-play-reroll], [data-city-play-records="carousel"]',
             MOBILE,
           );
+          await clearOfCredits('[data-city-play-carousel]');
           const strip = await locator('.city-play-cards').evaluate((el) => ({
             w: el.clientWidth,
             sw: el.scrollWidth,

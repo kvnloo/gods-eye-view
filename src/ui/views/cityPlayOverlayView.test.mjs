@@ -220,8 +220,15 @@ test('zoom tiers swap the wheel for detail callouts or district pins', async (t)
       ],
     }),
   );
+  const footprint = [
+    { x: 640, y: 420 },
+    { x: 760, y: 420 },
+    { x: 760, y: 500 },
+    { x: 640, y: 500 },
+  ];
   store.place({
     plot: { x: 700, y: 460 },
+    footprint,
     callouts: { kind: { x: 760, y: 480 }, trees: null },
     pins: {},
   });
@@ -232,7 +239,28 @@ test('zoom tiers swap the wheel for detail callouts or district pins', async (t)
     ['kind'],
     'a callout behind the camera or off screen is not drawn',
   );
-  assert.ok($('[data-city-play-stats]'));
+  const stats = $('[data-city-play-stats]');
+  assert.ok(stats);
+  // Anchored beside the plot on a leader, not docked at the screen edge.
+  const left = parseFloat(stats.style.left);
+  const gap = Math.min(Math.abs(640 - (left + 260)), Math.abs(left - 760));
+  assert.ok(gap <= 96, `beside the plot: left ${left}, ${gap} px away`);
+  const leader = $('[data-city-play-stats-leader]');
+  assert.ok(leader, 'a leader joins the stats card to the plot');
+  const x2 = Number(leader.getAttribute('x2'));
+  const y2 = Number(leader.getAttribute('y2'));
+  assert.ok(
+    x2 >= 640 && x2 <= 760 && y2 >= 420 && y2 <= 500,
+    'on the footprint',
+  );
+  store.place({
+    plot: { x: 700, y: 460 },
+    footprint: [null, null, null, null],
+    callouts: {},
+    pins: {},
+  });
+  await settle();
+  assert.equal($('[data-city-play-stats]'), null, 'no plot on screen, no card');
   store.publish(
     playView({
       tier: 'district',

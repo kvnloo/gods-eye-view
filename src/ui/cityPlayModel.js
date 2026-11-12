@@ -199,6 +199,107 @@ export function districtPins(alternatives, built) {
   return pins;
 }
 
+/** Screen rectangle around at least two projected points, or null. */
+export function boundsOf(points) {
+  const list = (points ?? []).filter(
+    (p) => p && Number.isFinite(p.x) && Number.isFinite(p.y),
+  );
+  if (list.length < 2) return null;
+  const xs = list.map((p) => p.x);
+  const ys = list.map((p) => p.y);
+  return {
+    left: Math.min(...xs),
+    top: Math.min(...ys),
+    right: Math.max(...xs),
+    bottom: Math.max(...ys),
+  };
+}
+
+function overlap(a, b) {
+  const w = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+  const h = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+  return w > 0 && h > 0 ? w * h : 0;
+}
+
+/**
+ * Place an info card beside a target rectangle (the plot footprint on screen):
+ * right, left, above, then below, taking the first spot inside the viewport
+ * that covers neither the target nor a keep-out rectangle (map credits, HUD
+ * bars, docks), else the least-overlapping one. The leader joins the card edge
+ * facing the plot to the nearest point of the footprint.
+ */
+export function placeBeside({
+  target,
+  size,
+  viewport,
+  keepOut = [],
+  gap = 48,
+  margin = 12,
+}) {
+  if (!target) return null;
+  const clamp = (v, low, high) =>
+    high < low ? low : Math.min(high, Math.max(low, v));
+  const cx = (target.left + target.right) / 2;
+  const cy = (target.top + target.bottom) / 2;
+  const y = clamp(
+    cy - size.height / 2,
+    margin,
+    viewport.height - margin - size.height,
+  );
+  const x = clamp(
+    cx - size.width / 2,
+    margin,
+    viewport.width - margin - size.width,
+  );
+  const spots = [
+    { side: 'right', x: target.right + gap, y },
+    { side: 'left', x: target.left - gap - size.width, y },
+    { side: 'above', x, y: target.top - gap - size.height },
+    { side: 'below', x, y: target.bottom + gap },
+  ];
+  const cost = ({ x: left, y: top }) => {
+    const r = {
+      left,
+      top,
+      right: left + size.width,
+      bottom: top + size.height,
+    };
+    const outside =
+      r.left < margin ||
+      r.top < margin ||
+      r.right > viewport.width - margin ||
+      r.bottom > viewport.height - margin;
+    return (
+      (outside ? 1e9 : 0) +
+      [target, ...keepOut].reduce((sum, k) => sum + overlap(r, k), 0)
+    );
+  };
+  const best = spots.reduce((a, b) => (cost(b) < cost(a) ? b : a));
+  const from = {
+    right: { x: best.x, y: clamp(cy, best.y, best.y + size.height) },
+    left: {
+      x: best.x + size.width,
+      y: clamp(cy, best.y, best.y + size.height),
+    },
+    above: {
+      x: clamp(cx, best.x, best.x + size.width),
+      y: best.y + size.height,
+    },
+    below: { x: clamp(cx, best.x, best.x + size.width), y: best.y },
+  }[best.side];
+  return {
+    ...best,
+    clear: cost(best) === 0,
+    leader: {
+      from,
+      to: {
+        x: clamp(from.x, target.left, target.right),
+        y: clamp(from.y, target.top, target.bottom),
+      },
+    },
+  };
+}
+
 const CONTACT_METERS = 3;
 const MAX_SHADOW_RATIO = 2.5;
 const AMBIENT_SHADE = 0.62;

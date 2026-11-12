@@ -18,6 +18,8 @@ import {
   plotCode,
   resumeAlternative,
   groundShadow,
+  boundsOf,
+  placeBeside,
 } from './cityPlayModel.js';
 
 const plotA = snapPlot({ lat: 37.8007, lon: -122.4103 });
@@ -452,4 +454,85 @@ test('groundShadow grounds a standing card with a contact band and a sun-cast sh
     assert.equal(dark.shade, 0.62);
     assert.equal(dark.contact.length, 4);
   }
+});
+
+test('placeBeside anchors an info card next to the plot, clear of credits and HUD', () => {
+  assert.equal(boundsOf([]), null);
+  assert.equal(
+    boundsOf([{ x: 5, y: 5 }]),
+    null,
+    'one point is not a footprint',
+  );
+  const target = boundsOf([
+    { x: 620, y: 400 },
+    { x: 820, y: 410 },
+    { x: 800, y: 500 },
+    { x: 640, y: 490 },
+  ]);
+  assert.deepEqual(target, { left: 620, top: 400, right: 820, bottom: 500 });
+  const desktop = { width: 1440, height: 900 };
+  const size = { width: 260, height: 170 };
+  const credits = { left: 20, top: 770, right: 370, bottom: 805 };
+  const bar = { left: 370, top: 78, right: 1070, bottom: 112 };
+  const right = placeBeside({
+    target,
+    size,
+    viewport: desktop,
+    keepOut: [credits, bar],
+  });
+  assert.equal(right.side, 'right');
+  assert.equal(right.clear, true);
+  assert.deepEqual(
+    [right.x, right.y],
+    [868, 365],
+    'beside the plot, not at the screen edge',
+  );
+  assert.deepEqual(right.leader, {
+    from: { x: 868, y: 450 },
+    to: { x: 820, y: 450 },
+  });
+
+  // Near the right edge the card flips to the left of the plot.
+  const edge = { left: 1180, top: 400, right: 1380, bottom: 500 };
+  const left = placeBeside({ target: edge, size, viewport: desktop });
+  assert.equal(left.side, 'left');
+  assert.equal(left.x, 1180 - 48 - 260);
+  assert.deepEqual(left.leader.from, { x: 1180 - 48, y: 450 });
+  assert.deepEqual(left.leader.to, { x: 1180, y: 450 });
+
+  // A keep-out (here the credits) on the right side also flips it.
+  const blocked = placeBeside({
+    target,
+    size,
+    viewport: desktop,
+    keepOut: [{ left: 860, top: 300, right: 1200, bottom: 600 }],
+  });
+  assert.equal(blocked.side, 'left');
+  assert.equal(blocked.clear, true);
+
+  // Phone: no room beside the plot and the bar sits above, so it goes below.
+  const phone = { width: 390, height: 844 };
+  const small = { left: 150, top: 300, right: 240, bottom: 380 };
+  const below = placeBeside({
+    target: small,
+    size: { width: 366, height: 150 },
+    viewport: phone,
+    keepOut: [{ left: 12, top: 76, right: 318, bottom: 200 }],
+  });
+  assert.equal(below.side, 'below');
+  assert.deepEqual([below.x, below.y], [12, 428]);
+  assert.deepEqual(below.leader, {
+    from: { x: 195, y: 428 },
+    to: { x: 195, y: 380 },
+  });
+
+  // Nowhere fully clear: the least-overlapping spot, flagged as not clear.
+  const crowded = placeBeside({
+    target,
+    size,
+    viewport: desktop,
+    keepOut: [{ left: 0, top: 0, right: 1440, bottom: 900 }],
+  });
+  assert.equal(crowded.clear, false);
+  assert.equal(placeBeside({ target: null, size, viewport: desktop }), null);
 });

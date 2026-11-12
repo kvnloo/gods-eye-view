@@ -13,3 +13,6 @@
 - Ground the play-mode concept on its plot: the card stands on the ground with
   a contact band and a shadow cast from the scene clock's sun, which also shades
   its face (Kevin Rajan, kvnloo#302).
+- Anchor the play-mode stats card beside the selected plot on a leader line and
+  keep cards and the carousel clear of the map credits on desktop and phones
+  (Kevin Rajan, kvnloo#302).

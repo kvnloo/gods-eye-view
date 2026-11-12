@@ -575,6 +575,7 @@ export function mountCityPlay({
     if (tier !== state.tier) dispatch({ type: 'tier', tier });
     const anchors = {
       plot: null,
+      footprint: null,
       tag: null,
       holo: null,
       callouts: {},
@@ -583,6 +584,9 @@ export function mountCityPlay({
     if (plot) {
       const base = baseHeight(plot);
       anchors.plot = project(plot.center.lon, plot.center.lat, base);
+      anchors.footprint = plot.corners.map(([lon, lat]) =>
+        project(lon, lat, base),
+      );
       const [lon, lat] = plot.corners[2];
       anchors.tag = project(lon, lat, base + BOX_HEIGHT);
       const a = shownByPlot().get(plot.id);

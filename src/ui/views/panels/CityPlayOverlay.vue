@@ -1,10 +1,10 @@
 <script setup>
 import { storeToRefs } from 'pinia';
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, onUpdated, ref } from 'vue';
 import { formatNumber, t } from '../../../i18n/index.js';
 import UiIcon from '../../kit/UiIcon.vue';
 import { useCityPlayStore } from '../../stores/cityPlay.js';
-import { placeWheel, wheelLayout, wheelSize } from '../../cityPlayModel.js';
+import { boundsOf, placeBeside, placeWheel, wheelLayout, wheelSize } from '../../cityPlayModel.js';
 
 // City builder play mode on the globe: the resource bar, the plot's radial
 // wheel and tag, in-world callouts and pins, and the concept carousel. The
@@ -39,7 +39,7 @@ const showCarousel = computed(
 const size = computed(() => wheelSize(viewport.value));
 const inset = computed(() => ({
   top: mobile.value ? 196 : 128,
-  bottom: mobile.value ? 176 : showCarousel.value ? 300 : 120,
+  bottom: mobile.value ? 176 : showCarousel.value ? 324 : 120,
   side: 12,
 }));
 // Untried kinds fill the carousel as ghost slots that reimagine the plot.
@@ -126,6 +126,31 @@ const holoTag = computed(() => {
   const y = Math.min(Math.max(at.y, inset.value.top + 40), viewport.value.height - 260);
   return { x, y, from: { x: at.x + side * 60, y: Math.max(at.y + 24, inset.value.top + 40) }, side };
 });
+// The stats card sits beside the plot footprint on a leader, clear of the map
+// credits, the command dock, the resource bar, the callouts and the holo tag.
+const KEEP_OUT = ['#cesium-credits .cesium-widget-credits', '#command-dock', '#top-center-actions', '[data-city-play-bar]'];
+const statsEl = ref(null);
+const statsSize = ref({ width: 260, height: 172 });
+onUpdated(() => {
+  const el = statsEl.value;
+  if (el?.offsetWidth && (el.offsetWidth !== statsSize.value.width || el.offsetHeight !== statsSize.value.height))
+    statsSize.value = { width: el.offsetWidth, height: el.offsetHeight };
+});
+const statsPlace = computed(() => {
+  if (tier.value !== 'detail' || !view.value?.focused) return null;
+  const keepOut = KEEP_OUT.flatMap((selector) => [...document.querySelectorAll(selector)])
+    .map((el) => el.getBoundingClientRect())
+    .filter((r) => r.width && r.height);
+  for (const c of callouts.value) {
+    const left = c.side === 'end' ? c.at.x + 40 : c.at.x - 200;
+    keepOut.push({ left, right: left + 160, top: c.at.y - 62, bottom: c.at.y - 28 });
+  }
+  if (holoTag.value) {
+    const width = mobile.value ? 170 : 240;
+    keepOut.push({ left: holoTag.value.x, right: holoTag.value.x + width, top: holoTag.value.y - 26, bottom: holoTag.value.y + 26 });
+  }
+  return placeBeside({ target: boundsOf(anchors.value?.footprint), size: statsSize.value, viewport: viewport.value, keepOut });
+});
 const bars = computed(() => {
   const p = view.value?.focused?.parameters;
   if (!p) return [];
@@ -153,13 +178,17 @@ const bars = computed(() => {
       <span class="city-play-hint-key">{{ t('Esc exits') }}</span>
     </p>
 
-    <svg v-if="tag || holoTag || (wheel && plotPoint) || callouts.length" class="city-play-tethers" aria-hidden="true" :viewBox="`0 0 ${viewport.width} ${viewport.height}`">
+    <svg v-if="tag || holoTag || statsPlace || (wheel && plotPoint) || callouts.length" class="city-play-tethers" aria-hidden="true" :viewBox="`0 0 ${viewport.width} ${viewport.height}`">
       <line v-if="tag" :x1="tag.from.x" :y1="tag.from.y" :x2="tag.x" :y2="tag.y + 18" />
       <line v-if="holoTag" :x1="holoTag.from.x" :y1="holoTag.from.y" :x2="holoTag.side > 0 ? holoTag.x : holoTag.x + (mobile ? 170 : 240)" :y2="holoTag.y" />
       <circle v-if="holoTag" class="city-play-tether-end" :cx="holoTag.from.x" :cy="holoTag.from.y" r="4" />
       <line v-if="wheel && plotPoint && wheel.clamped" class="city-play-tether-dim" :x1="wheel.x" :y1="wheel.y" :x2="plotPoint.x" :y2="plotPoint.y" />
       <circle v-if="plotPoint && tier !== 'detail'" :cx="plotPoint.x" :cy="plotPoint.y" r="5" />
       <line v-for="callout in callouts" :key="callout.id" class="city-play-leader" :x1="callout.at.x" :y1="callout.at.y" :x2="callout.end.x" :y2="callout.end.y" />
+      <template v-if="statsPlace">
+        <line class="city-play-leader" data-city-play-stats-leader :x1="statsPlace.leader.from.x" :y1="statsPlace.leader.from.y" :x2="statsPlace.leader.to.x" :y2="statsPlace.leader.to.y" />
+        <circle class="city-play-tether-end" :cx="statsPlace.leader.to.x" :cy="statsPlace.leader.to.y" r="3.5" />
+      </template>
     </svg>
 
     <div v-if="tag" class="city-play-tag" data-city-play-tag :style="{ left: `${tag.x}px`, top: `${tag.y}px` }">
@@ -198,7 +227,7 @@ const bars = computed(() => {
       </span>
     </div>
 
-    <aside v-if="tier === 'detail' && view.focused" class="city-play-stats" data-city-play-stats>
+    <aside v-if="statsPlace" ref="statsEl" class="city-play-stats" data-city-play-stats :data-city-play-stats-side="statsPlace.side" :style="{ left: `${statsPlace.x}px`, top: `${statsPlace.y}px` }">
       <h3>{{ t('Proposed parameters') }}</h3>
       <p class="city-play-stats-title">
         <UiIcon :name="view.focused.icon" :size="16" />

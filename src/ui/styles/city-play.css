@@ -305,8 +305,7 @@ body.gev-city-play #scope-mask {
 }
 .city-play-stats {
   position: absolute;
-  top: 150px;
-  inset-inline-end: 24px;
+  box-sizing: border-box;
   width: 260px;
   padding: 14px 16px;
   border-radius: 12px;
@@ -401,10 +400,11 @@ body.gev-city-play #scope-mask {
   color: var(--accent);
 }
 
+/* Raised above the map attribution (bottom-left credits end 126 px up at 900 px). */
 .city-play-dock {
   position: absolute;
   left: 50%;
-  bottom: 112px;
+  bottom: 136px;
   transform: translateX(-50%);
   display: flex;
   gap: 14px;
@@ -635,7 +635,7 @@ body.gev-city-play #scope-mask {
   }
   .city-play-dock {
     flex-direction: column-reverse;
-    bottom: 166px;
+    bottom: 192px;
     width: calc(100vw - 16px);
     gap: 8px;
   }
@@ -674,10 +674,7 @@ body.gev-city-play #scope-mask {
     padding: 2px;
   }
   .city-play-stats {
-    top: auto;
-    bottom: 112px;
-    inset-inline: 12px;
-    width: auto;
+    width: calc(100vw - 24px);
   }
   .city-play-tag {
     max-width: 200px;

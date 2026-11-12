@@ -22,3 +22,6 @@
 - Close the play-mode action wheel whenever a Reimagine or Reroll lands, and
   place the plot tag beside the wheel so it never covers a button (Kevin Rajan,
   kvnloo#302).
+- Keep the play-mode browser journey in one page session: restore is checked in
+  a fresh page after the journey page closes, so the recording has no reload
+  splash (Kevin Rajan, kvnloo#302).

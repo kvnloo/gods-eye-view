@@ -55,6 +55,24 @@ const report = {
 };
 let browser;
 let page;
+const videos = {};
+async function openPage(context, role) {
+  const next = await context.newPage();
+  next.setDefaultTimeout(20000);
+  next.on('console', (m) =>
+    report.console.push({
+      phase,
+      type: m.type(),
+      text: m.text(),
+      location: m.location(),
+    }),
+  );
+  next.on('pageerror', (e) =>
+    report.pageErrors.push({ phase, message: e.message, stack: e.stack }),
+  );
+  if (next.video()) videos[role] = next.video().path();
+  return next;
+}
 let phase = 'launch';
 const locator = (selector) => page.locator(selector);
 const probe = () => page.evaluate(() => window.__gevCityPlay?.snapshot());
@@ -436,19 +454,7 @@ try {
     serviceWorkers: 'block',
     ...(videoDir && { recordVideo: { dir: videoDir, size: DESKTOP } }),
   });
-  page = await context.newPage();
-  page.setDefaultTimeout(20000);
-  page.on('console', (m) =>
-    report.console.push({
-      phase,
-      type: m.type(),
-      text: m.text(),
-      location: m.location(),
-    }),
-  );
-  page.on('pageerror', (e) =>
-    report.pageErrors.push({ phase, message: e.message, stack: e.stack }),
-  );
+  page = await openPage(context, 'journey');
   // Fixture only: any concept network request is a regression. --real allows one.
   let allowOne = false;
   await context.route('**/api/city-concept*', async (route) => {
@@ -872,103 +878,16 @@ try {
     });
 
     await check(
-      'Reload restores the project; play mode frames the restored concept in view',
-      async () => {
-        const before = await persisted();
-        await page.reload({ waitUntil: 'domcontentloaded', timeout: 90000 });
-        await until(
-          () =>
-            window.__godsEyeView?.viewer &&
-            document
-              .querySelector('#loading-screen')
-              ?.classList.contains('hidden'),
-          'app ready after reload',
-          120000,
-        );
-        assert.deepEqual(await persisted(), before);
-        // The app restores the shared view with its own flight; let it land first.
-        await until(
-          () => !window.__godsEyeView.viewer.camera._currentFlight,
-          'camera settled after reload',
-          60000,
-        );
-        await page.waitForTimeout(1500);
-        await locator(S.pill).click();
-        await locator(S.play).waitFor({ state: 'visible' });
-        const stats = Object.fromEntries(
-          await locator('[data-city-play-stat]').evaluateAll((els) =>
-            els.map((e) => [
-              e.dataset.cityPlayStat,
-              e.querySelector('.city-play-stat-value').textContent,
-            ]),
-          ),
-        );
-        assert.equal(stats.plots, '1');
-        assert.equal(stats.worlds, '1');
-        assert.equal(stats.concepts, '1');
-        assert.equal(stats.walk, '—');
-        // The restored concept must be on screen, not just counted.
-        await until(
-          (id) => {
-            const s = window.__gevCityPlay.snapshot();
-            return (
-              s.plot?.id === id &&
-              s.concepts.includes('world-1') &&
-              !window.__godsEyeView.viewer.camera._currentFlight
-            );
-          },
-          'restored plot framed with its concept',
-          30000,
-          plotId,
-        );
-        await tilesLoaded(60000).catch(() => {});
-        await page.waitForTimeout(600);
-        await locator('[data-city-play-holo-tag]').waitFor({
-          state: 'visible',
-        });
-        await locator('[data-city-play-card="world-1"] img').waitFor({
-          state: 'visible',
-        });
-        await insideViewport(
-          '[data-city-play-holo-tag], [data-city-play-card="world-1"]',
-          DESKTOP,
-        );
-        const s = await probe();
-        for (const [name, p] of Object.entries({
-          plot: s.anchors?.plot,
-          concept: s.anchors?.holo,
-        }))
-          assert.ok(
-            p &&
-              p.x >= 0 &&
-              p.y >= 0 &&
-              p.x <= DESKTOP.width &&
-              p.y <= DESKTOP.height,
-            `restored ${name} projects inside the viewport: ${JSON.stringify(p)}`,
-          );
-        assert.equal(
-          await page.evaluate(
-            ({ x, y }) =>
-              document.elementFromPoint(x, y) ===
-              document.querySelector('#cesiumContainer canvas'),
-            s.anchors.plot,
-          ),
-          true,
-          'no HUD panel covers the restored plot',
-        );
-        report.measurements.restoredInView = {
-          plot: s.anchors.plot,
-          concept: s.anchors.holo,
-          tier: s.tier,
-          range: Math.round(s.range),
-        };
-        await screenshot('09-reload-restored');
-      },
-    );
-
-    await check(
       'Project records drawer opens from the carousel with the same document',
       async () => {
+        // Same page session: re-enter the mode and let any resume flight land.
+        await locator(S.pill).click();
+        await locator(S.play).waitFor({ state: 'visible' });
+        await until(
+          () => !window.__godsEyeView.viewer.camera._currentFlight,
+          'camera settled after re-entering',
+          30000,
+        );
         await selectPlotWithWheel(DESKTOP);
         await reimagine('plaza', 'world-2');
         await locator('[data-city-play-records="carousel"]').click();
@@ -1022,6 +941,108 @@ try {
     }
 
     await check(
+      'A fresh page session restores the project and frames its latest concept in view',
+      async () => {
+        // The journey page closes first: its recording never shows a reload splash.
+        const before = await persisted();
+        const latest = before.alternatives
+          .filter((a) => a.site && a.versions.at(-1).concept)
+          .map((a) => ({
+            id: a.id,
+            plotId: a.site.plot.id,
+            at: Date.parse(a.versions.at(-1).concept.generatedAt),
+          }))
+          .reduce((best, a) => (a.at >= best.at ? a : best));
+        const journey = page;
+        await journey.close();
+        page = await openPage(context, 'restore');
+        await startup();
+        assert.deepEqual(
+          await persisted(),
+          before,
+          'storage round-trips intact',
+        );
+        await locator(S.pill).click();
+        await locator(S.play).waitFor({ state: 'visible' });
+        const stats = Object.fromEntries(
+          await locator('[data-city-play-stat]').evaluateAll((els) =>
+            els.map((e) => [
+              e.dataset.cityPlayStat,
+              e.querySelector('.city-play-stat-value').textContent,
+            ]),
+          ),
+        );
+        const plots = new Set(before.alternatives.map((a) => a.site?.plot.id));
+        assert.equal(stats.plots, String(plots.size));
+        assert.equal(stats.worlds, String(before.alternatives.length));
+        assert.equal(
+          stats.concepts,
+          String(
+            before.alternatives.filter((a) => a.versions.at(-1).concept).length,
+          ),
+        );
+        assert.equal(stats.walk, '—');
+        // The restored concept must be on screen, not just counted.
+        await until(
+          ({ id, plotId }) => {
+            const s = window.__gevCityPlay.snapshot();
+            return (
+              s.plot?.id === plotId &&
+              s.concepts.includes(id) &&
+              !window.__godsEyeView.viewer.camera._currentFlight
+            );
+          },
+          'restored plot framed with its concept',
+          30000,
+          latest,
+        );
+        await tilesLoaded(60000).catch(() => {});
+        await page.waitForTimeout(600);
+        await locator('[data-city-play-holo-tag]').waitFor({
+          state: 'visible',
+        });
+        await locator(`[data-city-play-card="${latest.id}"] img`).waitFor({
+          state: 'visible',
+        });
+        await insideViewport(
+          `[data-city-play-holo-tag], [data-city-play-card="${latest.id}"]`,
+          DESKTOP,
+        );
+        const s = await probe();
+        for (const [name, p] of Object.entries({
+          plot: s.anchors?.plot,
+          concept: s.anchors?.holo,
+        }))
+          assert.ok(
+            p &&
+              p.x >= 0 &&
+              p.y >= 0 &&
+              p.x <= DESKTOP.width &&
+              p.y <= DESKTOP.height,
+            `restored ${name} projects inside the viewport: ${JSON.stringify(p)}`,
+          );
+        assert.equal(
+          await page.evaluate(
+            ({ x, y }) =>
+              document.elementFromPoint(x, y) ===
+              document.querySelector('#cesiumContainer canvas'),
+            s.anchors.plot,
+          ),
+          true,
+          'no HUD panel covers the restored plot',
+        );
+        report.measurements.restoredInView = {
+          alternative: latest.id,
+          plot: s.anchors.plot,
+          concept: s.anchors.holo,
+          tier: s.tier,
+          range: Math.round(s.range),
+        };
+        await screenshot('09-reload-restored');
+      },
+    );
+
+    await check(
       'No concept network calls, page errors, console errors or Vue warnings',
       async () => {
         assert.deepEqual(report.forbiddenConceptRequests, []);
@@ -1062,12 +1083,21 @@ try {
   if (browser)
     await browser.close().catch((e) => (report.cleanupError = String(e)));
   if (videoDir) {
-    // Playwright writes .webm; keep it and add an .mp4 for players that need one.
+    // Playwright writes .webm; keep it and add an .mp4 named for its page
+    // (journey: the one recorded session; restore: the fresh page).
+    const roles = new Map();
+    for (const [role, pending] of Object.entries(videos))
+      roles.set(await pending.catch(() => null), role);
+    report.video = [];
     for (const name of (await readdir(videoDir).catch(() => [])).filter((n) =>
       n.endsWith('.webm'),
     )) {
       const webm = path.join(videoDir, name);
-      const mp4 = webm.replace(/\.webm$/, '.mp4');
+      const role = roles.get(webm) ?? null;
+      const mp4 = path.join(
+        videoDir,
+        `${role ?? name.replace(/\.webm$/, '')}.mp4`,
+      );
       const r = spawnSync('ffmpeg', [
         '-y',
         '-loglevel',
@@ -1082,11 +1112,12 @@ try {
         '+faststart',
         mp4,
       ]);
-      report.video = {
+      report.video.push({
+        role,
         webm,
         mp4: r.status === 0 ? mp4 : null,
         ffmpeg: r.status,
-      };
+      });
     }
   }
   report.finishedAt = new Date().toISOString();

@@ -143,7 +143,7 @@ export function normalizeEnergyObservation(row) {
     publisher: text(row.source.publisher),
     url: row.source.url,
     datasetVersion: text(row.source.datasetVersion),
-    releasedAt: row.source.releasedAt,
+    releasedAt: text(row.source.releasedAt),
     licence: text(row.source.licence),
     attribution: text(row.source.attribution),
   });

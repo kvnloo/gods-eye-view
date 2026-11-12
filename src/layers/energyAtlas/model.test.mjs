@@ -446,3 +446,35 @@ for (const [type, id] of [
     assert.equal(normalizeEnergyObservation(valid).area.id, id);
   });
 }
+
+test('validated source release dates are emitted as canonical ISO days', () => {
+  for (const padding of [' ', '\t', '\n']) {
+    const row = another({
+      source: {
+        ...BASE.source,
+        releasedAt: `${padding}${BASE.source.releasedAt}${padding}`,
+      },
+    });
+    const normalized = normalizeEnergyObservation(row);
+    assert.equal(normalized.source.releasedAt, BASE.source.releasedAt);
+    assert.equal(
+      normalizeEnergySnapshot([row])[0].source.releasedAt,
+      BASE.source.releasedAt,
+    );
+    assert.deepEqual(normalizeEnergyObservation(normalized), normalized);
+    const estimate = worldKardashevEstimate(world({ source: row.source }));
+    assert.equal(estimate.source.releasedAt, BASE.source.releasedAt);
+    assert.equal(
+      row.source.releasedAt,
+      `${padding}${BASE.source.releasedAt}${padding}`,
+    );
+  }
+  assert.equal(
+    normalizeEnergyObservation(
+      another({
+        source: { ...BASE.source, releasedAt: ' 2024-02-30 ' },
+      }),
+    ),
+    null,
+  );
+});

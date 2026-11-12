@@ -233,3 +233,21 @@ for (const [name, value] of [
     assert.ok(Object.isFrozen(result));
   });
 }
+
+test('ready readouts retain canonical source dates without mutating observations', () => {
+  for (const padding of [' ', '\t', '\n']) {
+    const source = {
+      ...SOURCE,
+      releasedAt: `${padding}${SOURCE.releasedAt}${padding}`,
+    };
+    const result = resolveEnergySelection(
+      query({ observations: [{ ...ROW, source }] }),
+    );
+    assert.equal(result.state, 'ready');
+    assert.equal(result.source.releasedAt, SOURCE.releasedAt);
+    assert.equal(result.annualTWh, ROW.annualTWh);
+    assert.equal(result.live, false);
+    assert.ok(Object.isFrozen(result.source));
+    assert.equal(source.releasedAt, `${padding}${SOURCE.releasedAt}${padding}`);
+  }
+});

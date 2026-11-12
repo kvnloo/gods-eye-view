@@ -44,6 +44,7 @@ try {
   await writeFile(badPath, '{bad json', 'utf8');
   await writeFile(oversizedPath, 'x'.repeat(65537), 'utf8');
   const page = await browser.newPage();
+  await page.setCacheEnabled(false);
   page.on('pageerror', (error) => errors.push(error.message));
   await page.setRequestInterception(true);
   page.on('request', (request) => {

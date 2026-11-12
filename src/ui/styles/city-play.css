@@ -257,12 +257,17 @@ body.gev-city-play #cesiumContainer {
 
 .city-play-callout {
   position: absolute;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transform: translate(-7px, -50%);
+  width: 0;
+  height: 0;
+}
+.city-play-tethers .city-play-leader {
+  stroke-width: 1.25;
+  opacity: 0.85;
 }
 .city-play-callout-dot {
+  position: absolute;
+  left: -5px;
+  top: -5px;
   width: 10px;
   height: 10px;
   border-radius: 50%;
@@ -270,6 +275,8 @@ body.gev-city-play #cesiumContainer {
   box-shadow: 0 0 10px var(--accent-glow);
 }
 .city-play-callout-label {
+  position: absolute;
+  top: -58px;
   padding: 5px 12px;
   border-radius: 999px;
   font-size: 12px;
@@ -278,6 +285,12 @@ body.gev-city-play #cesiumContainer {
   white-space: nowrap;
 }
 
+.city-play-callout-label--end {
+  left: 40px;
+}
+.city-play-callout-label--start {
+  right: 40px;
+}
 .city-play-stats {
   position: absolute;
   top: 150px;

@@ -31,7 +31,7 @@ const wheelWanted = computed(() => Boolean(view.value?.plot && view.value.wheelO
 const showCarousel = computed(
   () =>
     Boolean(view.value?.plot) &&
-    tier.value !== 'district' &&
+    tier.value === 'plot' &&
     !(mobile.value && wheelWanted.value) &&
     (view.value.cards.length > 0 || view.value.pending),
 );
@@ -86,10 +86,15 @@ function kindLabel(kind) {
   return kind === 'park' ? t('Park') : kind === 'plaza' ? t('Plaza') : t('Bike lane');
 }
 const focusedCard = computed(() => view.value?.cards.find((c) => c.focused) ?? view.value?.cards.at(-1) ?? null);
+// Callout labels sit on a short leader above their point, outward from the plot centre.
 const callouts = computed(() =>
   (view.value?.callouts ?? [])
     .map((c) => ({ ...c, at: anchors.value?.callouts?.[c.id] }))
-    .filter((c) => c.at),
+    .filter((c) => c.at)
+    .map((c) => {
+      const dx = c.fx < 0.5 ? -46 : 46;
+      return { ...c, end: { x: c.at.x + dx, y: c.at.y - 44 }, side: c.fx < 0.5 ? 'start' : 'end' };
+    }),
 );
 const pins = computed(() =>
   (view.value?.pins ?? [])
@@ -114,7 +119,8 @@ const tag = computed(() => {
 const holoTag = computed(() => {
   const at = anchors.value?.holo;
   if (!at || wheel.value || !view.value?.focused?.concept || tier.value === 'district') return null;
-  return { x: Math.min(Math.max(at.x, 140), viewport.value.width - 140), y: Math.max(at.y - 18, inset.value.top) };
+  // The tag hangs above the holo but never under the resource bar.
+  return { x: Math.min(Math.max(at.x, 140), viewport.value.width - 140), y: Math.max(at.y - 18, inset.value.top + 62) };
 });
 const bars = computed(() => {
   const p = view.value?.focused?.parameters;
@@ -143,10 +149,11 @@ const bars = computed(() => {
       <span class="city-play-hint-key">{{ t('Esc exits') }}</span>
     </p>
 
-    <svg v-if="tag || (wheel && plotPoint)" class="city-play-tethers" aria-hidden="true" :viewBox="`0 0 ${viewport.width} ${viewport.height}`">
+    <svg v-if="tag || (wheel && plotPoint) || callouts.length" class="city-play-tethers" aria-hidden="true" :viewBox="`0 0 ${viewport.width} ${viewport.height}`">
       <line v-if="tag" :x1="tag.from.x" :y1="tag.from.y" :x2="tag.x" :y2="tag.y + 18" />
       <line v-if="wheel && plotPoint && wheel.clamped" class="city-play-tether-dim" :x1="wheel.x" :y1="wheel.y" :x2="plotPoint.x" :y2="plotPoint.y" />
-      <circle v-if="plotPoint" :cx="plotPoint.x" :cy="plotPoint.y" r="5" />
+      <circle v-if="plotPoint && tier !== 'detail'" :cx="plotPoint.x" :cy="plotPoint.y" r="5" />
+      <line v-for="callout in callouts" :key="callout.id" class="city-play-leader" :x1="callout.at.x" :y1="callout.at.y" :x2="callout.end.x" :y2="callout.end.y" />
     </svg>
 
     <div v-if="tag" class="city-play-tag" data-city-play-tag :style="{ left: `${tag.x}px`, top: `${tag.y}px` }">
@@ -179,7 +186,7 @@ const bars = computed(() => {
 
     <div v-for="callout in callouts" :key="callout.id" class="city-play-callout" :data-city-play-callout="callout.id" :style="{ left: `${callout.at.x}px`, top: `${callout.at.y}px` }">
       <span class="city-play-callout-dot" aria-hidden="true"></span>
-      <span class="city-play-callout-label">
+      <span class="city-play-callout-label" :class="`city-play-callout-label--${callout.side}`">
         <template v-if="callout.id === 'kind'">{{ kindLabel(callout.kind) }}</template>
         <template v-else>{{ chipLabels[callout.id] }} · {{ chipValue(callout) }}</template>
       </span>

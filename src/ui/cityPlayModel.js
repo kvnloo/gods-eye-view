@@ -73,8 +73,8 @@ export function placeWheel(anchor, viewport, size, inset) {
     high < low ? (low + high) / 2 : Math.min(high, Math.max(low, value));
   const x = clamp(
     anchor.x,
-    inset.side + reach,
-    viewport.width - inset.side - reach,
+    (inset.left ?? inset.side) + reach,
+    viewport.width - (inset.right ?? inset.side) - reach,
   );
   const y = clamp(
     anchor.y,
@@ -93,6 +93,7 @@ export function wheelActions({
   full = false,
   zoneMenu = false,
   use = null,
+  zoneFull = false,
 } = {}) {
   if (zoneMenu)
     return [
@@ -101,7 +102,7 @@ export function wheelActions({
         kind: null,
         icon: LAND_USE_ICONS[id],
         selected: id === use,
-        disabled: pending,
+        disabled: pending || zoneFull,
       })),
       { id: 'clear-use', kind: null, icon: 'close', disabled: pending || !use },
       { id: 'back', kind: null, icon: 'arrow_left', disabled: false },
@@ -481,9 +482,10 @@ export function resumeAlternative(alternatives, camera) {
 export function stackPins(pins, size = { width: 240, height: 48 }, gap = 6) {
   const placed = [];
   return pins.map((pin) => {
+    const half = (pin.width ?? size.width) / 2;
     const box = (bottom) => ({
-      left: pin.at.x - size.width / 2,
-      right: pin.at.x + size.width / 2,
+      left: pin.at.x - half,
+      right: pin.at.x + half,
       top: bottom - size.height,
       bottom,
     });

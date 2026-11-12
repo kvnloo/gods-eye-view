@@ -698,6 +698,11 @@ body.gev-city-play #scope-mask {
   border-color: var(--city-play-use);
 }
 
+/* Read-only: the legend never takes a tap meant for the map or the wheel. */
+.city-play .city-play-legend {
+  pointer-events: none;
+}
+
 @media (max-width: 600px) {
   .city-play-bar {
     top: 76px;

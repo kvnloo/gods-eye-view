@@ -126,16 +126,17 @@ test('the launcher toggles play mode and shows its pressed state', async (t) => 
 test('the wheel follows the projected plot and sends honest actions', async (t) => {
   const { store, calls, settle, $, $$ } = await mount(t);
   store.publish(playView());
+  // Above the carousel dock, so the wheel is not clamped.
   store.place({
-    plot: { x: 700, y: 460 },
-    tag: { x: 760, y: 400 },
+    plot: { x: 700, y: 400 },
+    tag: { x: 760, y: 340 },
     callouts: {},
     pins: {},
   });
   await settle();
   const wheel = $('[data-city-play-wheel]');
   assert.equal(wheel.style.left, '700px');
-  assert.equal(wheel.style.top, '460px');
+  assert.equal(wheel.style.top, '400px');
   assert.deepEqual(
     $$('[data-city-play-action]').map((b) => b.dataset.cityPlayAction),
     ['reimagine', 'park', 'plaza', 'bike-lane', 'zone', 'inspect'],

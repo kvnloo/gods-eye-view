@@ -26,7 +26,9 @@ for (let i = 0; i < args.length; i++) {
   else throw new Error(`Unknown or incomplete argument: ${args[i]}`);
 }
 const output = path.resolve(process.env.QA_SHOTS_DIR || 'qa-shots/city-play');
-const videoDir = process.env.QA_VIDEO_DIR;
+// Absolute, like Playwright's own video paths, so videos map to their pages.
+const videoDir =
+  process.env.QA_VIDEO_DIR && path.resolve(process.env.QA_VIDEO_DIR);
 const KEY = 'godsEyeView.cityBuilder.v1';
 // Camera south of Washington Square, San Francisco, looking north at 45°.
 const SITE = { lat: 37.7953, lon: -122.4103, alt: 600, heading: 0, pitch: -45 };

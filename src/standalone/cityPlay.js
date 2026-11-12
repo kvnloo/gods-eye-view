@@ -3,7 +3,7 @@ import { msg, t } from '../i18n/index.js';
 import { claimPointer, releasePointer } from '../data/inputOwnership.js';
 import { neighborPlots, plotPoint, snapPlot } from '../data/cityPlot.js';
 import { observerSolarPosition } from '../data/satellitePass.js';
-import { CITY_LAND_USES } from '../data/cityLandUse.js';
+import { CITY_LAND_USES, MAX_ZONED_PLOTS } from '../data/cityLandUse.js';
 import { presentCityWalkAccess } from '../ui/cityWalkAccess.js';
 import {
   holdContinuousRender,
@@ -105,6 +105,8 @@ export function mountCityPlay({
   let hoverQueued = null;
   let range = Number.NaN;
   let resumed = false;
+  // While Reimagine captures and generates, the map shows the plot as it is.
+  let capturing = false;
   const heights = new Map();
   const picked = new Set();
   const appeared = new Map();
@@ -183,7 +185,7 @@ export function mountCityPlay({
     // Choosing shows the prism and neighbour grid; once a concept stands on the
     // plot only its outline and projector edges remain, so the concept leads.
     const choosing = state.wheel || !shownByPlot().has(plot.id);
-    for (const cell of choosing ? neighborPlots(plot, 1) : []) {
+    for (const cell of choosing && !capturing ? neighborPlots(plot, 1) : []) {
       grid.push(
         ds.entities.add({
           polyline: {
@@ -369,8 +371,9 @@ export function mountCityPlay({
         });
         tints.set(plotId, tint);
       }
+      tints.get(plotId)._cityBeacon._cityPlot = a.site.plot;
       // A proposed land use takes the plot's ground tint; the beacon stays.
-      tints.get(plotId).show = !useOf(plotId);
+      tints.get(plotId).show = !useOf(plotId) && !capturing;
       tints.get(plotId)._cityBeacon.show = tier === 'district';
       if (!holos.has(plotId)) {
         const g = holoGeometry(a);
@@ -460,7 +463,7 @@ export function mountCityPlay({
         }
       }
       const holo = holos.get(plotId);
-      holo.show = tier !== 'district';
+      holo.show = tier !== 'district' && !capturing;
       for (const shadow of holo._cityShadows) shadow.show = holo.show;
     }
   }
@@ -480,6 +483,8 @@ export function mountCityPlay({
       ds.entities.remove(tint);
       zoneTints.delete(plotId);
     }
+    for (const tint of zoneTints.values())
+      tint.show = tint._cityEdge.show = !capturing;
     for (const [plotId, z] of wanted) {
       if (zoneTints.has(plotId)) continue;
       const color = ZONE_COLORS[z.use];
@@ -572,6 +577,8 @@ export function mountCityPlay({
         full: data.full,
         zoneMenu: state.zoneMenu,
         use: plot && useOf(plot.id),
+        zoneFull:
+          zoning().length >= MAX_ZONED_PLOTS && !(plot && useOf(plot.id)),
       }),
       legend:
         state.zoneMenu || (state.tier === 'district' && zoning().length)
@@ -688,7 +695,7 @@ export function mountCityPlay({
     }
     if (state.tier === 'district') {
       for (const pin of pinsNow()) {
-        const h = heights.get(pin.plotId) ?? 0;
+        const h = baseHeight({ id: pin.plotId, center: pin.center });
         anchors.pins[pin.plotId] = project(pin.center.lon, pin.center.lat, h);
       }
     }
@@ -863,7 +870,15 @@ export function mountCityPlay({
       framing = false;
     }
     if (disposed || !state.active || state.plot !== plot) return sync();
-    const id = await builder.reimagine({ plot, kind });
+    // builder.reimagine publishes before it captures: keep the old concept,
+    // its shadows and tints off the map until the new concept lands.
+    capturing = true;
+    let id = null;
+    try {
+      id = await builder.reimagine({ plot, kind });
+    } finally {
+      capturing = false;
+    }
     // The concept takes the stage; clicking the plot brings the wheel back.
     if (id && state.plot?.id === plot.id) dispatch({ type: 'landed', id });
     else sync();
@@ -889,6 +904,7 @@ export function mountCityPlay({
   // The first entry after a page load frames the latest restored concept.
   function resume() {
     if (resumed) return;
+    resumed = true;
     const c = viewer.camera.positionCartographic;
     const a = resumeAlternative(
       data.alternatives,
@@ -902,10 +918,9 @@ export function mountCityPlay({
     const plot = a.site.plot;
     dispatch({ type: 'resume', plot, id: a.id });
     if (state.plot !== plot) return;
-    resumed = true;
-    void fly(plot, 'oblique')
-      .then((landed) => landed && settled(8000))
-      .then(() => reground(plot));
+    void fly(plot, 'oblique').then(
+      (landed) => landed && settled(8000).then(() => reground(plot)),
+    );
   }
 
   const controls = {
@@ -1006,8 +1021,11 @@ export function mountCityPlay({
       dispatch({ type: 'build', plotId: state.plot.id, id });
     },
     async reroll(id) {
+      const plotId = state.plot?.id;
       const landed = await builder.reroll(id);
-      if (state.active) dispatch({ type: landed ? 'landed' : 'focus', id });
+      // Only the plot that was rerolled hands the stage to its new concept.
+      if (state.active && state.plot?.id === plotId)
+        dispatch({ type: landed ? 'landed' : 'focus', id });
     },
     openRecords() {
       builder.open();

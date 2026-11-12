@@ -7,7 +7,7 @@ import {
   createCollaborationState,
 } from './collaborationAuthority.js';
 import { plotValue } from './cityPlot.js';
-import { CITY_LAND_USES } from './cityLandUse.js';
+import { CITY_LAND_USES, MAX_ZONED_PLOTS } from './cityLandUse.js';
 
 export { CITY_LAND_USES };
 
@@ -16,7 +16,6 @@ const MAX_IMAGE_LENGTH = 600_000;
 const CONCEPT_LABEL = 'AI concept, not a plan or an approval';
 const BASELINE_REVISION = 'city-reference-v1';
 const ID_PATTERN = /^[a-z][a-z0-9-]{0,63}$/;
-const MAX_ZONED_PLOTS = 60;
 const encoder = new TextEncoder();
 
 function fail(message) {

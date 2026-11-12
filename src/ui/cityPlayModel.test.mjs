@@ -757,3 +757,46 @@ test('stackPins lifts colliding district pins until every label is clear', () =>
     [0, 54, 108],
   );
 });
+
+test('review fixes: wheel side insets, per-pin widths and a full zoning list', () => {
+  const desktop = { width: 1440, height: 900 };
+  const size = wheelSize(desktop);
+  const reach = size.radius + size.button / 2;
+  // A legend on the left pushes the wheel right of it; the right side keeps 12 px.
+  const left = placeWheel({ x: 200, y: 450 }, desktop, size, {
+    top: 128,
+    bottom: 120,
+    side: 12,
+    left: 376,
+  });
+  assert.equal(left.x, 376 + reach);
+  assert.equal(left.clamped, true);
+  const right = placeWheel({ x: 1430, y: 450 }, desktop, size, {
+    top: 128,
+    bottom: 120,
+    side: 12,
+    left: 376,
+  });
+  assert.equal(right.x, desktop.width - 12 - reach);
+  // Pins carry their own width: two wide pins 300 px apart still stack.
+  const wide = stackPins([
+    { plotId: 'a', at: { x: 600, y: 400 }, width: 360 },
+    { plotId: 'b', at: { x: 900, y: 400 }, width: 360 },
+  ]);
+  assert.deepEqual(
+    wide.map((p) => p.lift),
+    [0, 54],
+  );
+  // Sixty zoned plots: a new plot cannot take a use, a zoned one can still change.
+  const full = wheelActions({ zoneMenu: true, use: null, zoneFull: true });
+  assert.ok(
+    full
+      .filter((a) =>
+        ['housing', 'mixed-use', 'civic', 'open-space'].includes(a.id),
+      )
+      .every((a) => a.disabled),
+  );
+  assert.equal(full.find((a) => a.id === 'back').disabled, false);
+  const zoned = wheelActions({ zoneMenu: true, use: 'civic', zoneFull: false });
+  assert.ok(zoned.every((a) => !a.disabled));
+});

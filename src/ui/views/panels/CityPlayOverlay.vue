@@ -37,10 +37,12 @@ const showCarousel = computed(
 );
 
 const size = computed(() => wheelSize(viewport.value));
+// The desktop dock stands about 360 px above the bottom; the legend owns the left.
 const inset = computed(() => ({
   top: mobile.value ? 196 : 128,
-  bottom: mobile.value ? 176 : showCarousel.value ? 324 : 120,
+  bottom: mobile.value ? 176 : showCarousel.value ? 372 : 120,
   side: 12,
+  ...(view.value?.legend && !mobile.value ? { left: 376 } : {}),
 }));
 // Untried kinds fill the carousel as ghost slots that reimagine the plot.
 const ghosts = computed(() =>
@@ -104,10 +106,20 @@ const callouts = computed(() =>
       return { ...c, end: { x: c.at.x + dx, y: c.at.y - 44 }, side: c.fx < 0.5 ? 'start' : 'end' };
     }),
 );
+// Pins do not wrap: estimate each width from its longest line (12 px mono).
+const pinWidth = (p) =>
+  70 +
+  7.8 *
+    Math.max(
+      (p.title ?? useLabel(p.use)).length,
+      [p.trees !== null && `${t('Trees')} +${p.trees}`, p.shade !== null && `${t('Shade')} ${p.shade}%`, p.title && p.use && useLabel(p.use), `${t('Walk access')} ${p.walk ?? '—'}`, p.built && t('Kept')]
+        .filter(Boolean)
+        .join('  ').length,
+    );
 const pins = computed(() =>
   stackPins(
     (view.value?.pins ?? [])
-      .map((p) => ({ ...p, at: anchors.value?.pins?.[p.plotId] }))
+      .map((p) => ({ ...p, at: anchors.value?.pins?.[p.plotId], width: pinWidth(p) }))
       .filter((p) => p.at),
   ),
 );
@@ -166,7 +178,9 @@ const statsPlace = computed(() => {
     const width = mobile.value ? 170 : 240;
     keepOut.push({ left: holoTag.value.x, right: holoTag.value.x + width, top: holoTag.value.y - 26, bottom: holoTag.value.y + 26 });
   }
-  return placeBeside({ target: boundsOf(anchors.value?.footprint), size: statsSize.value, viewport: viewport.value, keepOut });
+  // Only a fully projected footprint anchors the card; up close it would land on the plot.
+  const footprint = anchors.value?.footprint;
+  return placeBeside({ target: footprint?.every(Boolean) ? boundsOf(footprint) : null, size: statsSize.value, viewport: viewport.value, keepOut });
 });
 const bars = computed(() => {
   const p = view.value?.focused?.parameters;
@@ -284,7 +298,7 @@ const bars = computed(() => {
       </span>
     </button>
 
-    <aside v-if="view.legend" class="city-play-legend" data-city-play-legend :aria-label="t('Proposed land use')">
+    <aside v-if="view.legend && !(mobile && wheel)" class="city-play-legend" data-city-play-legend :aria-label="t('Proposed land use')">
       <h3>{{ t('Proposed land use') }}</h3>
       <div class="city-play-legend-row city-play-legend-head">
         <span></span>

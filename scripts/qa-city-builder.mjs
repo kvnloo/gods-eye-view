@@ -45,7 +45,13 @@ const park = {
   title: 'QA neighborhood park',
   description:
     'Replace surplus paving with a public pocket park, native trees, permeable paths and shaded seating.',
-  parameters: { kind: 'park', trees: 36, widthMeters: 3, shadePercent: 65 },
+  parameters: {
+    kind: 'park',
+    trees: 36,
+    widthMeters: 3,
+    shadePercent: 65,
+    site: 'site-b',
+  },
 };
 const bike = {
   title: 'QA protected bike lane',
@@ -56,13 +62,20 @@ const bike = {
     trees: 12,
     widthMeters: 2.5,
     shadePercent: 35,
+    site: null,
   },
 };
 const plaza = {
   title: 'QA accessible plaza',
   description:
     'Create an accessible public plaza with level pedestrian routes, removable seating and a shaded gathering area.',
-  parameters: { kind: 'plaza', trees: 18, widthMeters: 6, shadePercent: 50 },
+  parameters: {
+    kind: 'plaza',
+    trees: 18,
+    widthMeters: 6,
+    shadePercent: 50,
+    site: 'site-c',
+  },
 };
 const report = {
   startedAt: new Date().toISOString(),
@@ -237,6 +250,7 @@ async function fillAlternative(value) {
   await locator('#city-builder-shade').fill(
     String(value.parameters.shadePercent),
   );
+  await locator('#city-builder-site').selectOption(value.parameters.site ?? '');
   await locator('[data-city-builder-save]').click();
   await settled();
 }
@@ -821,6 +835,51 @@ try {
       await locator('[data-planning-mode="co-op"]').click();
       assert.equal(await locator('[data-alternative-id]:visible').count(), 3);
       await screenshot('07-all-three-compare', locator(S.cards));
+    },
+  );
+  await check(
+    'Walk access shows the reference baseline beside each alternative',
+    async () => {
+      const access = locator('[data-city-access]');
+      await access.waitFor({ state: 'visible' });
+      assert.match(
+        await access.locator('[data-city-access-label]').innerText(),
+        /HYPOTHETICAL ESTIMATE/,
+      );
+      assert.match(
+        await access.locator('[data-city-access-network]').innerText(),
+        /synthetic sample.*not the streets at this site/,
+      );
+      const rows = await access
+        .locator('[data-city-access-row]')
+        .evaluateAll((list) =>
+          list.map((row) => [
+            row.dataset.cityAccessRow,
+            row.dataset.cityAccessState,
+          ]),
+        );
+      assert.deepEqual(rows, [
+        ['baseline', 'evaluated'],
+        ['world-1', 'evaluated'],
+        ['world-2', 'not-applicable'],
+        ['world-3', 'evaluated'],
+      ]);
+      const cell = (id, name) =>
+        access
+          .locator(`[data-city-access-row="${id}"] [data-city-access-${name}]`)
+          .innerText();
+      assert.equal(await cell('baseline', 'mean'), '432 m');
+      assert.equal(await cell('world-1', 'worst'), '480 m');
+      assert.match(await cell('world-1', 'delta'), /−201 m/);
+      assert.equal(
+        await access.locator('[data-city-access-map]').count(),
+        3,
+        'Each evaluated option has a network schematic',
+      );
+      const doc = await persisted();
+      assert.doesNotMatch(JSON.stringify(doc), /meanMeters|worstMeters/);
+      await access.scrollIntoViewIfNeeded();
+      await screenshot('07b-walk-access', access);
     },
   );
 

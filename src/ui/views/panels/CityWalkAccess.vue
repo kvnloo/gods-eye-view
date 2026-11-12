@@ -52,7 +52,7 @@ const cell = { padding: '4px 8px', borderBottom: '1px solid #26404b', textAlign:
               <text :x="zone.x" :y="zone.y + 8" text-anchor="middle" font-size="22" fill="#e3faff">{{ zone.label }}</text>
             </g>
           </svg>
-          <figcaption>{{ row.label }} · {{ row.site }} · {{ row.mean }}</figcaption>
+          <figcaption><strong>{{ row.label }}</strong><br>{{ row.site }} · {{ row.mean }}</figcaption>
         </figure>
       </template>
     </div>

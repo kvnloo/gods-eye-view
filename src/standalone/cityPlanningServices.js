@@ -25,6 +25,13 @@ const SOURCE_CITATIONS = Object.freeze({
   ],
 });
 const degrees = (radians) => radians * (180 / Math.PI);
+// [JPEG quality, frame scale] attempts, best first.
+const CAPTURE_STEPS = [
+  [0.78, 1],
+  [0.62, 1],
+  [0.62, 0.75],
+  [0.5, 0.6],
+];
 
 function captureFailure() {
   return new Error('City reference capture unavailable');
@@ -135,13 +142,25 @@ export async function captureCityReference({
         pixels[i] * 0.2126 + pixels[i + 1] * 0.7152 + pixels[i + 2] * 0.0722;
     }
     if (!visible || luminance / visible < 2) throw captureFailure();
-    const image = canvas.toDataURL('image/jpeg', 0.78);
-    if (
-      typeof image !== 'string' ||
-      !image.startsWith('data:image/jpeg;base64,') ||
-      image.length > 600_000
-    )
-      throw captureFailure();
+    // Detailed photoreal frames can exceed the stored-image limit at the first
+    // setting; step quality, then size, down before refusing the capture.
+    const base = [canvas.width, canvas.height];
+    let image = null;
+    for (const [quality, shrink] of CAPTURE_STEPS) {
+      if (shrink !== 1) {
+        canvas.width = Math.max(1, Math.floor(base[0] * shrink));
+        canvas.height = Math.max(1, Math.floor(base[1] * shrink));
+        context.drawImage(source, 0, 0, canvas.width, canvas.height);
+      }
+      image = canvas.toDataURL('image/jpeg', quality);
+      if (
+        typeof image !== 'string' ||
+        !image.startsWith('data:image/jpeg;base64,')
+      )
+        throw captureFailure();
+      if (image.length <= 600_000) break;
+    }
+    if (image.length > 600_000) throw captureFailure();
     return { ...view, sources, capturedAt, image };
   } catch {
     // The owner translates a fixed error key. Canvas/provider error text is not UI.

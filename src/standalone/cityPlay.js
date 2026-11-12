@@ -38,7 +38,7 @@ const KIND_COLORS = {
 const CLASSIFY = Cesium.ClassificationType.BOTH;
 const FRAMES = {
   oblique: { pitch: -34, range: 290 },
-  detail: { pitch: -38, range: 170 },
+  detail: { pitch: -30, range: 225 },
 };
 
 function ring(plot, height) {

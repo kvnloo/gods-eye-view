@@ -2,7 +2,9 @@
 // City builder play mode journey. The parent starts the app; this script owns
 // only its headless browser and output files (same conventions as
 // qa-city-builder.mjs).
-// node scripts/qa-city-play.mjs [--url http://127.0.0.1:4187] [--only-desktop]
+// node scripts/qa-city-play.mjs [--url http://127.0.0.1:4187] [--only-desktop] [--real]
+// --real makes exactly one request through the opted-in local ChatGPT bridge
+// (GEV_CITY_CONCEPT_LOCAL=1 dev server) and records that concept in the world.
 // QA_SHOTS_DIR defaults to qa-shots/city-play. QA_VIDEO_DIR records .webm and,
 // when ffmpeg is on PATH, an .mp4 of the journey.
 import assert from 'node:assert/strict';
@@ -15,9 +17,11 @@ import sharp from 'sharp';
 const args = process.argv.slice(2);
 let base = process.env.QA_BASE_URL || 'http://127.0.0.1:4187';
 let onlyDesktop = false;
+let real = false;
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--url' && args[i + 1]) base = args[++i];
   else if (args[i] === '--only-desktop') onlyDesktop = true;
+  else if (args[i] === '--real') real = true;
   else throw new Error(`Unknown or incomplete argument: ${args[i]}`);
 }
 const output = path.resolve(process.env.QA_SHOTS_DIR || 'qa-shots/city-play');
@@ -306,318 +310,404 @@ try {
   page.on('pageerror', (e) =>
     report.pageErrors.push({ phase, message: e.message, stack: e.stack }),
   );
-  // Fixture only: any concept network request is a regression.
+  // Fixture only: any concept network request is a regression. --real allows one.
+  let allowOne = false;
   await context.route('**/api/city-concept*', async (route) => {
+    if (real && allowOne && route.request().method() === 'POST') {
+      allowOne = false;
+      report.realConceptRequests = (report.realConceptRequests ?? 0) + 1;
+      await route.continue();
+      return;
+    }
     report.forbiddenConceptRequests.push({ phase, url: route.request().url() });
     await route.abort('blockedbyclient');
   });
-
-  await check('Real globe loads at the site with real map pixels', async () => {
-    await startup();
-    await pixelEvidence('startupGlobe');
-    assert.equal(
-      await page.evaluate((k) => localStorage.getItem(k), KEY),
-      null,
+  if (real) {
+    await check(
+      'One real local-bridge concept stands on the plot',
+      async () => {
+        await startup();
+        await pixelEvidence('startupGlobe');
+        await locator(S.pill).click();
+        await locator(S.play).waitFor({ state: 'visible' });
+        await locator('[data-city-play-records="bar"]').click();
+        await locator(S.dialog).waitFor({ state: 'visible' });
+        await locator('#city-builder-provider').selectOption('local');
+        await locator('[data-city-builder-remote-notice]').waitFor({
+          state: 'visible',
+        });
+        await screenshot('r01-provider-disclosed');
+        await locator('[data-planning-cancel]').click();
+        await locator(S.dialog).waitFor({ state: 'detached' });
+        await selectPlotWithWheel(DESKTOP);
+        await screenshot('r02-plot-wheel');
+        allowOne = true;
+        await locator('[data-city-play-action="park"]').click();
+        await until(
+          () => {
+            const s = window.__gevCityPlay.snapshot();
+            return (
+              !s.framing &&
+              !s.pending &&
+              (s.concepts.length > 0 ||
+                document.querySelector('[data-city-play-error]'))
+            );
+          },
+          'real concept generated or failed visibly',
+          420000,
+        );
+        const doc = await persisted();
+        const concept = doc?.alternatives?.[0]?.versions?.[0]?.concept;
+        report.realConcept = concept && {
+          provider: concept.provider,
+          chars: concept.image.length,
+          generatedAt: concept.generatedAt,
+        };
+        assert.equal(
+          concept?.provider,
+          'chatgpt-subscription/comfyui-codex-image',
+          'real provider recorded',
+        );
+        await page.waitForTimeout(1800);
+        await screenshot('r03-real-concept-in-world');
+        await reopenWheel();
+        await locator('[data-city-play-action="inspect"]').click();
+        await until(
+          () => window.__gevCityPlay.snapshot().tier === 'detail',
+          'detail tier',
+          30000,
+        );
+        await page.waitForTimeout(1500);
+        await screenshot('r04-real-concept-detail');
+        assert.equal(report.realConceptRequests, 1, 'exactly one real request');
+        assert.deepEqual(report.forbiddenConceptRequests, []);
+      },
     );
-    await screenshot('01-hud');
-  });
+    report.status = 'pass';
+  }
 
-  await check(
-    'City builder pill enters play mode: rails collapse, resource bar shows unknowns',
-    async () => {
-      await locator(S.pill).click();
-      await locator(S.play).waitFor({ state: 'visible' });
-      assert.equal(await locator(S.pill).getAttribute('aria-pressed'), 'true');
+  if (!real) {
+    await check(
+      'Real globe loads at the site with real map pixels',
+      async () => {
+        await startup();
+        await pixelEvidence('startupGlobe');
+        assert.equal(
+          await page.evaluate((k) => localStorage.getItem(k), KEY),
+          null,
+        );
+        await screenshot('01-hud');
+      },
+    );
+
+    await check(
+      'City builder pill enters play mode: rails collapse, resource bar shows unknowns',
+      async () => {
+        await locator(S.pill).click();
+        await locator(S.play).waitFor({ state: 'visible' });
+        assert.equal(
+          await locator(S.pill).getAttribute('aria-pressed'),
+          'true',
+        );
+        const s = await probe();
+        assert.equal(s.active, true);
+        assert.equal(s.bodyClass, true);
+        await until(
+          () =>
+            getComputedStyle(document.querySelector('#left-panel-stack'))
+              .visibility === 'hidden',
+          'left rail collapsed',
+          5000,
+        );
+        const values = await locator(
+          '[data-city-play-stat] .city-play-stat-value',
+        ).allInnerTexts();
+        assert.deepEqual(
+          values,
+          ['—', '—', '—', '—', '—', '—'],
+          'no project: missing is never zero',
+        );
+        await locator('[data-city-play-hint]').waitFor({ state: 'visible' });
+        await screenshot('02-play-mode');
+      },
+    );
+
+    await check(
+      'Clicking the globe selects a plot; the wheel is anchored within 40 px',
+      async () => {
+        await page.mouse.move(DESKTOP.width * 0.4, DESKTOP.height * 0.45);
+        await page.waitForTimeout(400);
+        await selectPlotWithWheel(DESKTOP);
+        const s = await probe();
+        assert.equal(s.footprint, true, 'footprint entity drawn on the globe');
+        const wheel = await center(S.ring);
+        const d = Math.hypot(
+          wheel.x - s.anchors.plot.x,
+          wheel.y - s.anchors.plot.y,
+        );
+        report.measurements.wheelOffsetPx = d;
+        assert.ok(
+          d <= 40,
+          `wheel centre ${JSON.stringify(wheel)} within 40 px of plot ${JSON.stringify(s.anchors.plot)} (${d.toFixed(1)} px)`,
+        );
+        assert.deepEqual(
+          await locator('[data-city-play-action]').evaluateAll((els) =>
+            els.map((e) => e.dataset.cityPlayAction),
+          ),
+          ['reimagine', 'park', 'plaza', 'bike-lane', 'inspect'],
+        );
+        await locator('[data-city-play-tag]').waitFor({ state: 'visible' });
+        await insideViewport('[data-city-play-action]', DESKTOP);
+        await pixelEvidence('plotSelectedGlobe');
+        await screenshot('03-plot-wheel');
+      },
+    );
+
+    let plotId;
+    await check(
+      'REIMAGINE frames the plot, saves a sited alternative and stands its concept in the world',
+      async () => {
+        plotId = (await probe()).plot.id;
+        await reimagine('reimagine', 'world-1');
+        assert.equal(
+          await locator(S.wheel).count(),
+          0,
+          'the concept takes the stage',
+        );
+        await locator('[data-city-play-holo-tag]').waitFor({
+          state: 'visible',
+        });
+        const doc = await persisted();
+        assert.equal(doc.alternatives.length, 1);
+        assert.equal(doc.alternatives[0].site.plot.id, plotId);
+        assert.equal(
+          doc.alternatives[0].versions[0].concept.provider,
+          'fixture',
+        );
+        assert.equal(
+          doc.alternatives[0].versions[0].concept.label,
+          'AI concept, not a plan or an approval',
+        );
+        assert.match(
+          await locator('[data-city-play-ai-label]').innerText(),
+          /AI concept, not a plan or an approval/i,
+        );
+        await page.waitForTimeout(1600);
+        await tilesLoaded(30000);
+        await pixelEvidence('reimaginedGlobe');
+        await screenshot('04-reimagined');
+      },
+    );
+
+    await check('REROLL saves version 2 with a new concept', async () => {
+      await locator('[data-city-play-reroll]').click();
+      await until(
+        (key) =>
+          JSON.parse(localStorage.getItem(key)).alternatives[0].versions
+            .length === 2,
+        'version 2 saved',
+        60000,
+        KEY,
+      );
+      await until(
+        () => !window.__gevCityPlay.snapshot().pending,
+        'reroll settled',
+        60000,
+      );
+      const doc = await persisted();
+      assert.ok(
+        doc.alternatives[0].versions[1].concept,
+        'version 2 has its concept',
+      );
+      assert.match(
+        await locator('[data-city-play-card="world-1"]').innerText(),
+        /2/,
+      );
+      await screenshot('05-reroll-v2');
+    });
+
+    await check(
+      'Zoom in: INSPECT reaches the detail tier with callouts and a stats card',
+      async () => {
+        await reopenWheel();
+        assert.equal(
+          (await probe()).plot.id,
+          plotId,
+          'the same plot is selected again',
+        );
+        await locator('[data-city-play-action="inspect"]').click();
+        await until(
+          () => window.__gevCityPlay.snapshot().tier === 'detail',
+          'detail tier',
+          30000,
+        );
+        await locator('[data-city-play-callout] .city-play-callout-label')
+          .first()
+          .waitFor({ state: 'visible', timeout: 20000 });
+        await locator('[data-city-play-stats]').waitFor({ state: 'visible' });
+        report.measurements.detailCallouts = await locator(
+          '[data-city-play-callout]',
+        ).count();
+        await tilesLoaded(30000);
+        await screenshot('06-detail-callouts');
+      },
+    );
+
+    await check(
+      'Zoom out: the district tier shows a pin for the reimagined plot',
+      async () => {
+        const steps = await wheelZoom('district', 900);
+        report.measurements.zoomOutWheelSteps = steps;
+        if (steps < 0) {
+          // Recorded, not hidden: fall back to a camera move if wheel input is too slow here.
+          report.measurements.zoomOutFallback = 'camera.zoomOut';
+          await page.evaluate(() =>
+            window.__godsEyeView.viewer.camera.zoomOut(2500),
+          );
+          await until(
+            () => window.__gevCityPlay.snapshot().tier === 'district',
+            'district tier',
+            20000,
+          );
+        }
+        await locator(`[data-city-play-pin="${plotId}"]`).waitFor({
+          state: 'visible',
+          timeout: 20000,
+        });
+        await tilesLoaded(60000).catch(() => {});
+        await screenshot('07-district-pin');
+      },
+    );
+
+    await check('Esc exits play mode and restores the HUD', async () => {
+      await page.keyboard.press('Escape');
+      await locator(S.play).waitFor({ state: 'detached' });
       const s = await probe();
-      assert.equal(s.active, true);
-      assert.equal(s.bodyClass, true);
+      assert.equal(s.active, false);
+      assert.equal(s.bodyClass, false);
+      assert.equal(await locator(S.pill).getAttribute('aria-pressed'), 'false');
       await until(
         () =>
           getComputedStyle(document.querySelector('#left-panel-stack'))
-            .visibility === 'hidden',
-        'left rail collapsed',
+            .visibility !== 'hidden',
+        'left rail restored',
         5000,
       );
-      const values = await locator(
-        '[data-city-play-stat] .city-play-stat-value',
-      ).allInnerTexts();
-      assert.deepEqual(
-        values,
-        ['—', '—', '—', '—', '—', '—'],
-        'no project: missing is never zero',
-      );
-      await locator('[data-city-play-hint]').waitFor({ state: 'visible' });
-      await screenshot('02-play-mode');
-    },
-  );
+      await screenshot('08-exit-hud');
+    });
 
-  await check(
-    'Clicking the globe selects a plot; the wheel is anchored within 40 px',
-    async () => {
-      await page.mouse.move(DESKTOP.width * 0.4, DESKTOP.height * 0.45);
-      await page.waitForTimeout(400);
-      await selectPlotWithWheel(DESKTOP);
-      const s = await probe();
-      assert.equal(s.footprint, true, 'footprint entity drawn on the globe');
-      const wheel = await center(S.ring);
-      const d = Math.hypot(
-        wheel.x - s.anchors.plot.x,
-        wheel.y - s.anchors.plot.y,
-      );
-      report.measurements.wheelOffsetPx = d;
-      assert.ok(
-        d <= 40,
-        `wheel centre ${JSON.stringify(wheel)} within 40 px of plot ${JSON.stringify(s.anchors.plot)} (${d.toFixed(1)} px)`,
-      );
-      assert.deepEqual(
-        await locator('[data-city-play-action]').evaluateAll((els) =>
-          els.map((e) => e.dataset.cityPlayAction),
-        ),
-        ['reimagine', 'park', 'plaza', 'bike-lane', 'inspect'],
-      );
-      await locator('[data-city-play-tag]').waitFor({ state: 'visible' });
-      await insideViewport('[data-city-play-action]', DESKTOP);
-      await pixelEvidence('plotSelectedGlobe');
-      await screenshot('03-plot-wheel');
-    },
-  );
-
-  let plotId;
-  await check(
-    'REIMAGINE frames the plot, saves a sited alternative and stands its concept in the world',
-    async () => {
-      plotId = (await probe()).plot.id;
-      await reimagine('reimagine', 'world-1');
-      assert.equal(
-        await locator(S.wheel).count(),
-        0,
-        'the concept takes the stage',
-      );
-      await locator('[data-city-play-holo-tag]').waitFor({ state: 'visible' });
-      const doc = await persisted();
-      assert.equal(doc.alternatives.length, 1);
-      assert.equal(doc.alternatives[0].site.plot.id, plotId);
-      assert.equal(doc.alternatives[0].versions[0].concept.provider, 'fixture');
-      assert.equal(
-        doc.alternatives[0].versions[0].concept.label,
-        'AI concept, not a plan or an approval',
-      );
-      assert.match(
-        await locator('[data-city-play-ai-label]').innerText(),
-        /AI concept, not a plan or an approval/i,
-      );
-      await page.waitForTimeout(1600);
-      await tilesLoaded(30000);
-      await pixelEvidence('reimaginedGlobe');
-      await screenshot('04-reimagined');
-    },
-  );
-
-  await check('REROLL saves version 2 with a new concept', async () => {
-    await locator('[data-city-play-reroll]').click();
-    await until(
-      (key) =>
-        JSON.parse(localStorage.getItem(key)).alternatives[0].versions
-          .length === 2,
-      'version 2 saved',
-      60000,
-      KEY,
-    );
-    await until(
-      () => !window.__gevCityPlay.snapshot().pending,
-      'reroll settled',
-      60000,
-    );
-    const doc = await persisted();
-    assert.ok(
-      doc.alternatives[0].versions[1].concept,
-      'version 2 has its concept',
-    );
-    assert.match(
-      await locator('[data-city-play-card="world-1"]').innerText(),
-      /2/,
-    );
-    await screenshot('05-reroll-v2');
-  });
-
-  await check(
-    'Zoom in: INSPECT reaches the detail tier with callouts and a stats card',
-    async () => {
-      await reopenWheel();
-      assert.equal(
-        (await probe()).plot.id,
-        plotId,
-        'the same plot is selected again',
-      );
-      await locator('[data-city-play-action="inspect"]').click();
-      await until(
-        () => window.__gevCityPlay.snapshot().tier === 'detail',
-        'detail tier',
-        30000,
-      );
-      await locator('[data-city-play-callout] .city-play-callout-label')
-        .first()
-        .waitFor({ state: 'visible', timeout: 20000 });
-      await locator('[data-city-play-stats]').waitFor({ state: 'visible' });
-      report.measurements.detailCallouts = await locator(
-        '[data-city-play-callout]',
-      ).count();
-      await tilesLoaded(30000);
-      await screenshot('06-detail-callouts');
-    },
-  );
-
-  await check(
-    'Zoom out: the district tier shows a pin for the reimagined plot',
-    async () => {
-      const steps = await wheelZoom('district', 900);
-      report.measurements.zoomOutWheelSteps = steps;
-      if (steps < 0) {
-        // Recorded, not hidden: fall back to a camera move if wheel input is too slow here.
-        report.measurements.zoomOutFallback = 'camera.zoomOut';
-        await page.evaluate(() =>
-          window.__godsEyeView.viewer.camera.zoomOut(2500),
-        );
-        await until(
-          () => window.__gevCityPlay.snapshot().tier === 'district',
-          'district tier',
-          20000,
-        );
-      }
-      await locator(`[data-city-play-pin="${plotId}"]`).waitFor({
-        state: 'visible',
-        timeout: 20000,
-      });
-      await tilesLoaded(60000).catch(() => {});
-      await screenshot('07-district-pin');
-    },
-  );
-
-  await check('Esc exits play mode and restores the HUD', async () => {
-    await page.keyboard.press('Escape');
-    await locator(S.play).waitFor({ state: 'detached' });
-    const s = await probe();
-    assert.equal(s.active, false);
-    assert.equal(s.bodyClass, false);
-    assert.equal(await locator(S.pill).getAttribute('aria-pressed'), 'false');
-    await until(
-      () =>
-        getComputedStyle(document.querySelector('#left-panel-stack'))
-          .visibility !== 'hidden',
-      'left rail restored',
-      5000,
-    );
-    await screenshot('08-exit-hud');
-  });
-
-  await check(
-    'Reload restores the project; play mode shows its stats and in-world concept',
-    async () => {
-      const before = await persisted();
-      await page.reload({ waitUntil: 'domcontentloaded', timeout: 90000 });
-      await until(
-        () =>
-          window.__godsEyeView?.viewer &&
-          document
-            .querySelector('#loading-screen')
-            ?.classList.contains('hidden'),
-        'app ready after reload',
-        120000,
-      );
-      assert.deepEqual(await persisted(), before);
-      // The app restores the shared view with its own flight; let it land first.
-      await until(
-        () => !window.__godsEyeView.viewer.camera._currentFlight,
-        'camera settled after reload',
-        60000,
-      );
-      await page.waitForTimeout(1500);
-      await locator(S.pill).click();
-      await locator(S.play).waitFor({ state: 'visible' });
-      const stats = Object.fromEntries(
-        await locator('[data-city-play-stat]').evaluateAll((els) =>
-          els.map((e) => [
-            e.dataset.cityPlayStat,
-            e.querySelector('.city-play-stat-value').textContent,
-          ]),
-        ),
-      );
-      assert.equal(stats.plots, '1');
-      assert.equal(stats.worlds, '1');
-      assert.equal(stats.concepts, '1');
-      assert.equal(stats.walk, '—');
-      await tilesLoaded(60000).catch(() => {});
-      await screenshot('09-reload-restored');
-    },
-  );
-
-  await check(
-    'Project records drawer opens from the carousel with the same document',
-    async () => {
-      await selectPlotWithWheel(DESKTOP);
-      await reimagine('plaza', 'world-2');
-      await locator('[data-city-play-records="carousel"]').click();
-      await locator(S.dialog).waitFor({ state: 'visible' });
-      assert.equal(await locator('[data-city-builder-alternative]').count(), 2);
-      await screenshot('10-records-drawer');
-      await locator('[data-planning-cancel]').click();
-      await locator(S.dialog).waitFor({ state: 'detached' });
-    },
-  );
-
-  if (!onlyDesktop) {
     await check(
-      'Mobile 390x844: wheel and carousel adapt and every control is reachable',
+      'Reload restores the project; play mode shows its stats and in-world concept',
       async () => {
-        await page.setViewportSize(MOBILE);
-        await page.waitForTimeout(800);
-        await locator(S.play).waitFor({ state: 'visible' });
-        await selectPlotWithWheel(MOBILE);
-        await insideViewport('[data-city-play-action]', MOBILE);
-        await insideViewport('[data-city-play-bar]', MOBILE);
-        await screenshot('11-mobile-wheel');
-        await reimagine('park', 'world-3');
-        await insideViewport(
-          '[data-city-play-build], [data-city-play-reroll], [data-city-play-records="carousel"]',
-          MOBILE,
+        const before = await persisted();
+        await page.reload({ waitUntil: 'domcontentloaded', timeout: 90000 });
+        await until(
+          () =>
+            window.__godsEyeView?.viewer &&
+            document
+              .querySelector('#loading-screen')
+              ?.classList.contains('hidden'),
+          'app ready after reload',
+          120000,
         );
-        const strip = await locator('.city-play-cards').evaluate((el) => ({
-          w: el.clientWidth,
-          sw: el.scrollWidth,
-        }));
-        report.measurements.mobileCarousel = strip;
-        await locator('[data-city-play-build]').click();
-        await locator('[data-city-play-card="world-3"].is-built').waitFor({
-          state: 'visible',
-        });
-        await screenshot('12-mobile-carousel');
-        await page.setViewportSize(DESKTOP);
+        assert.deepEqual(await persisted(), before);
+        // The app restores the shared view with its own flight; let it land first.
+        await until(
+          () => !window.__godsEyeView.viewer.camera._currentFlight,
+          'camera settled after reload',
+          60000,
+        );
+        await page.waitForTimeout(1500);
+        await locator(S.pill).click();
+        await locator(S.play).waitFor({ state: 'visible' });
+        const stats = Object.fromEntries(
+          await locator('[data-city-play-stat]').evaluateAll((els) =>
+            els.map((e) => [
+              e.dataset.cityPlayStat,
+              e.querySelector('.city-play-stat-value').textContent,
+            ]),
+          ),
+        );
+        assert.equal(stats.plots, '1');
+        assert.equal(stats.worlds, '1');
+        assert.equal(stats.concepts, '1');
+        assert.equal(stats.walk, '—');
+        await tilesLoaded(60000).catch(() => {});
+        await screenshot('09-reload-restored');
+      },
+    );
+
+    await check(
+      'Project records drawer opens from the carousel with the same document',
+      async () => {
+        await selectPlotWithWheel(DESKTOP);
+        await reimagine('plaza', 'world-2');
+        await locator('[data-city-play-records="carousel"]').click();
+        await locator(S.dialog).waitFor({ state: 'visible' });
+        assert.equal(
+          await locator('[data-city-builder-alternative]').count(),
+          2,
+        );
+        await screenshot('10-records-drawer');
+        await locator('[data-planning-cancel]').click();
+        await locator(S.dialog).waitFor({ state: 'detached' });
+      },
+    );
+
+    if (!onlyDesktop) {
+      await check(
+        'Mobile 390x844: wheel and carousel adapt and every control is reachable',
+        async () => {
+          await page.setViewportSize(MOBILE);
+          await page.waitForTimeout(800);
+          await locator(S.play).waitFor({ state: 'visible' });
+          await selectPlotWithWheel(MOBILE);
+          await insideViewport('[data-city-play-action]', MOBILE);
+          await insideViewport('[data-city-play-bar]', MOBILE);
+          await screenshot('11-mobile-wheel');
+          await reimagine('park', 'world-3');
+          await insideViewport(
+            '[data-city-play-build], [data-city-play-reroll], [data-city-play-records="carousel"]',
+            MOBILE,
+          );
+          const strip = await locator('.city-play-cards').evaluate((el) => ({
+            w: el.clientWidth,
+            sw: el.scrollWidth,
+          }));
+          report.measurements.mobileCarousel = strip;
+          await locator('[data-city-play-build]').click();
+          await locator('[data-city-play-card="world-3"].is-built').waitFor({
+            state: 'visible',
+          });
+          await screenshot('12-mobile-carousel');
+          await page.setViewportSize(DESKTOP);
+        },
+      );
+    }
+
+    await check(
+      'No concept network calls, page errors, console errors or Vue warnings',
+      async () => {
+        assert.deepEqual(report.forbiddenConceptRequests, []);
+        assert.deepEqual(report.pageErrors, []);
+        const noise =
+          /Failed to load resource|net::ERR_|NetworkError|Failed to fetch|\[Data:(?:Flights|Satellites|Ships|CCTV)\]/i;
+        const errors = report.console.filter(
+          (e) =>
+            /\[Vue warn\]|vue warn|Unhandled error during execution/i.test(
+              e.text,
+            ) ||
+            (e.type === 'error' && !noise.test(e.text)),
+        );
+        report.unexpectedErrors = errors;
+        assert.deepEqual(
+          errors,
+          [],
+          'unexpected browser errors; see summary.json',
+        );
       },
     );
   }
-
-  await check(
-    'No concept network calls, page errors, console errors or Vue warnings',
-    async () => {
-      assert.deepEqual(report.forbiddenConceptRequests, []);
-      assert.deepEqual(report.pageErrors, []);
-      const noise =
-        /Failed to load resource|net::ERR_|NetworkError|Failed to fetch|\[Data:(?:Flights|Satellites|Ships|CCTV)\]/i;
-      const errors = report.console.filter(
-        (e) =>
-          /\[Vue warn\]|vue warn|Unhandled error during execution/i.test(
-            e.text,
-          ) ||
-          (e.type === 'error' && !noise.test(e.text)),
-      );
-      report.unexpectedErrors = errors;
-      assert.deepEqual(
-        errors,
-        [],
-        'unexpected browser errors; see summary.json',
-      );
-    },
-  );
   report.status = 'pass';
 } catch (error) {
   report.status = 'fail';

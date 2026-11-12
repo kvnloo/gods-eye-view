@@ -154,6 +154,11 @@ export function openLocalRoom({
       )
         publishPeers();
     }
+    // Answer a newcomer at once so it need not wait for a heartbeat.
+    if (packet.kind === 'join' && !send('hello', presence())) {
+      close('unavailable', false);
+      return;
+    }
     onPacket?.(packet);
   };
   heartbeat = timers.setInterval(() => {

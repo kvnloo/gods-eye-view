@@ -1,5 +1,7 @@
 import { createPlanningConceptGenerator } from '../data/planningConceptGenerator.js';
 import { createCityBuilder } from '../ui/cityBuilder.js';
+import { createCityRoomSession } from '../ui/cityRoom.js';
+import { openLocalRoom } from '../data/localRoom.js';
 import { useCommunityPlanningStore } from '../ui/stores/communityPlanning.js';
 import { useSceneSharingStore } from '../ui/stores/sceneSharing.js';
 import { applicationPinia } from '../ui/vueRuntime.js';
@@ -210,6 +212,59 @@ function downloadDocument(text, filename) {
   }
 }
 
+/** Hold a per-identity Web Locks lease so a duplicated tab cannot reuse it. */
+export function claimRoomIdentity(locks = globalThis.navigator?.locks) {
+  return (actorId) =>
+    new Promise((resolve) => {
+      if (typeof locks?.request !== 'function') {
+        resolve({ release() {} });
+        return;
+      }
+      let release;
+      const held = new Promise((done) => {
+        release = done;
+      });
+      Promise.resolve(
+        locks.request(
+          `godsEyeView.cityRoom.v1:${actorId}`,
+          { ifAvailable: true },
+          async (lock) => {
+            if (!lock) {
+              resolve(null);
+              return;
+            }
+            resolve({ release });
+            await held;
+          },
+        ),
+      ).catch(() => resolve(null));
+    });
+}
+
+function roomActorId() {
+  const bytes = crypto.getRandomValues(new Uint8Array(12));
+  return `p-${Array.from(bytes, (byte) => (byte % 36).toString(36)).join('')}`;
+}
+
+/** Same-origin tab rooms when this browser offers per-tab storage and BroadcastChannel. */
+export function browserRoomFactory({
+  storage = globalThis.sessionStorage,
+  Channel = globalThis.BroadcastChannel,
+  download = downloadDocument,
+} = {}) {
+  if (!storage || typeof Channel !== 'function') return null;
+  return ({ changed }) =>
+    createCityRoomSession({
+      storage,
+      openRoom: (options) =>
+        openLocalRoom({ ...options, BroadcastChannel: Channel }),
+      claimIdentity: claimRoomIdentity(),
+      randomId: roomActorId,
+      download,
+      changed,
+    });
+}
+
 /** Connect the framework-free owner to this application's stores and browser services. */
 export function mountCityBuilder(options = {}) {
   const {
@@ -227,6 +282,7 @@ export function mountCityBuilder(options = {}) {
     download = downloadDocument,
     uid,
     canLocal = import.meta.env?.DEV === true,
+    createRoom = browserRoomFactory({ download }),
   } = options;
   const ownsStorage = options.storage === undefined;
   let controls = null;
@@ -263,6 +319,14 @@ export function mountCityBuilder(options = {}) {
     sharingDialogOpen: () => !current() || Boolean(sharing.dialog),
     uid,
     canLocal,
+    createRoom:
+      createRoom &&
+      ((hooks) =>
+        createRoom({
+          changed: () => {
+            if (current()) hooks.changed();
+          },
+        })),
   });
   controls = owner;
   store.connect(controls);

@@ -5,6 +5,7 @@ import { t } from '../../../i18n/index.js';
 import UiButton from '../../kit/UiButton.vue';
 import { useCommunityPlanningStore } from '../../stores/communityPlanning.js';
 import CityBuilderEditor from './CityBuilderEditor.vue';
+import CityRoomPanel from './CityRoomPanel.vue';
 
 // The opt-in park proposal comparison, as src/ui/communityPlanningPreview.js
 // presents it: a Scene panel launcher and, while open, one modal. Choosing a
@@ -88,8 +89,8 @@ const cardStyle = { flex: '1 1 245px', minWidth: '0', padding: '12px', backgroun
       <nav ref="inspectNav" data-planning-focus-navigation :aria-label="t('Inspect a hypothetical proposal')" :hidden="!preview.inspect.length">
         <UiButton v-for="item in preview.inspect" :key="item.id" :style="buttonStyle" :pressed="item.pressed" :data-planning-focus-id="item.id" @click="controls?.inspect(item.id)">{{ item.label }}</UiButton>
       </nav>
-      <CityBuilderEditor v-if="preview.city" :city="preview.city" :controls="controls" />
-      <div data-planning-alternatives style="display: flex; flex-wrap: wrap; gap: 12px; align-items: stretch">
+      <CityBuilderEditor v-if="preview.city && !preview.city.room?.active" :city="preview.city" :controls="controls" />
+      <div v-if="!preview.city?.room?.active" data-planning-alternatives style="display: flex; flex-wrap: wrap; gap: 12px; align-items: stretch">
         <article v-if="preview.city?.reference" data-planning-baseline :style="cardStyle">
           <h3>{{ t('Reference-only baseline') }}</h3>
           <img :src="preview.city.reference.image" :alt="t('Captured baseline reference')" style="width: 100%; object-fit: contain">
@@ -120,12 +121,13 @@ const cardStyle = { flex: '1 1 245px', minWidth: '0', padding: '12px', backgroun
           <p v-for="(assumption, index) in card.assumptions" :key="index">{{ assumption }}</p>
         </article>
       </div>
+      <CityRoomPanel v-if="preview.city?.room" :room="preview.city.room" :controls="controls?.room" />
       <p data-planning-mode-status role="status" aria-live="polite" aria-atomic="true">{{ preview.modeStatus }}</p>
       <p role="status">{{ preview.status }}</p>
       <div>
         <UiButton :style="buttonStyle" data-planning-cancel @click="controls?.close()">{{ t('Cancel') }}</UiButton>
-        <UiButton ref="coopButton" :style="buttonStyle" data-planning-mode="co-op" :pressed="preview.mode === 'co-op'" @click="setMode('co-op', $event)">{{ t('Co-op view') }}</UiButton>
-        <UiButton :style="buttonStyle" data-planning-mode="game" :pressed="preview.mode === 'game'" :disabled="preview.gameDisabled" :title="preview.gameDisabled ? preview.gameDisabledReason : undefined" @click="setMode('game', $event)">{{ t('Game view') }}</UiButton>
+        <UiButton v-if="!preview.city?.room?.active" ref="coopButton" :style="buttonStyle" data-planning-mode="co-op" :pressed="preview.mode === 'co-op'" @click="setMode('co-op', $event)">{{ t('Co-op view') }}</UiButton>
+        <UiButton v-if="!preview.city?.room?.active" :style="buttonStyle" data-planning-mode="game" :pressed="preview.mode === 'game'" :disabled="preview.gameDisabled" :title="preview.gameDisabled ? preview.gameDisabledReason : undefined" @click="setMode('game', $event)">{{ t('Game view') }}</UiButton>
       </div>
     </dialog>
   </Teleport>

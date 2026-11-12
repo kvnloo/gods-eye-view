@@ -32,6 +32,7 @@ export function createCityBuilder({
   sharingDialogOpen = () => false,
   uid = () => `city-${crypto.randomUUID()}`,
   canLocal = false,
+  createRoom = null,
 }) {
   let document = null;
   let observed = null;
@@ -68,9 +69,13 @@ export function createCityBuilder({
     let view = {
       title: t('City builder'),
       intro: t('Start a community project over the current globe view.'),
-      localOnly: t(
-        'LOCAL-ONLY DISPLAY · No shared room, live participants or synchronized edits.',
-      ),
+      localOnly: room?.active
+        ? t(
+            'LOCAL ROOM · Only tabs of this browser on this device take part. Names are self-reported, not verified.',
+          )
+        : t(
+            'LOCAL-ONLY DISPLAY · No shared room, live participants or synchronized edits.',
+          ),
       sources: [],
       compareNote: '',
       recordSummary: '',
@@ -158,6 +163,7 @@ export function createCityBuilder({
       provider,
       canLocal,
       persisted,
+      room: room ? room.view({ canShare: Boolean(document) }) : null,
     };
     publish(view);
   }
@@ -414,6 +420,7 @@ export function createCityBuilder({
     },
     destroy() {
       if (disposed) return;
+      room?.controls.destroy();
       cancel();
       stopLocale();
       publish(null);
@@ -422,6 +429,13 @@ export function createCityBuilder({
       document = null;
     },
   };
+  // The room is a mode of this owner: it renders through the same present().
+  const room = createRoom?.({ changed: () => present() }) ?? null;
+  if (room)
+    controls.room = {
+      ...room.controls,
+      share: () => room.controls.share(document),
+    };
   const stopLocale = onLocaleChange(present);
   present();
   return controls;

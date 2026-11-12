@@ -43,6 +43,17 @@ body.gev-city-play #scope-mask {
   font-family: var(--font-mono);
   color: var(--text-primary);
 }
+/* Soft top and bottom scrims keep HUD text legible over bright photoreal roofs,
+   standing in for the vignette the game view drops. */
+.city-play::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(4, 8, 12, 0.62) 0, transparent 150px),
+    linear-gradient(0deg, rgba(4, 8, 12, 0.55) 0, transparent 190px);
+}
 .city-play :is(button, nav, aside, section, .city-play-bar) {
   pointer-events: auto;
 }

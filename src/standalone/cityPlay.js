@@ -17,6 +17,7 @@ import {
   plotAlternatives,
   plotCode,
   resourceStats,
+  resumeAlternative,
   wheelActions,
   zoomTier,
 } from '../ui/cityPlayModel.js';
@@ -82,7 +83,9 @@ export function mountCityPlay({
   let lastAnchors = '';
   let hoverQueued = null;
   let range = Number.NaN;
+  let resumed = false;
   const heights = new Map();
+  const picked = new Set();
   const appeared = new Map();
   const ds = new Cesium.CustomDataSource('gev-city-play');
   const added = viewer.dataSources.add(ds);
@@ -92,18 +95,21 @@ export function mountCityPlay({
   const hover = [];
   const grid = [];
 
-  function baseHeight(plot, picked) {
+  function baseHeight(plot, pickedHeight) {
     // The first pick on a plot fixes its ground; later picks may hit our own holo.
-    if (Number.isFinite(picked) && !heights.has(plot.id))
-      heights.set(plot.id, picked);
+    if (Number.isFinite(pickedHeight) && !heights.has(plot.id)) {
+      heights.set(plot.id, pickedHeight);
+      picked.add(plot.id);
+    }
     if (heights.has(plot.id)) return heights.get(plot.id);
     let h = 0;
     try {
       const surface = Cesium.Cartographic.toCartesian(
         Cesium.Cartographic.fromDegrees(plot.center.lon, plot.center.lat),
       );
+      // Our own holo stands across the plot centre; never clamp onto it.
       const clamped = scene.clampToHeightSupported
-        ? scene.clampToHeight(surface)
+        ? scene.clampToHeight(surface, ds.entities.values)
         : null;
       const sampled = clamped
         ? Cesium.Cartographic.fromCartesian(clamped).height
@@ -562,13 +568,13 @@ export function mountCityPlay({
     };
   }
   function ownPlot(position) {
-    let picked = null;
+    let hit = null;
     try {
-      picked = scene.pick(position);
+      hit = scene.pick(position);
     } catch {
       return null;
     }
-    const entity = picked?.id;
+    const entity = hit?.id;
     if (!entity || !ds.entities.contains(entity)) return null;
     return entity._cityPlot ?? state.plot;
   }
@@ -707,6 +713,47 @@ export function mountCityPlay({
     } else sync();
   }
 
+  // A sampled (not picked) ground is re-measured once the framed tiles load,
+  // so a restored concept stands on the surface instead of a coarse tile.
+  function reground(plot) {
+    if (disposed || !state.active || picked.has(plot.id)) return;
+    const before = heights.get(plot.id);
+    heights.delete(plot.id);
+    if (Math.abs(baseHeight(plot) - before) < 0.5) return;
+    const holo = holos.get(plot.id);
+    if (holo) ds.entities.remove(holo);
+    holos.delete(plot.id);
+    const tint = tints.get(plot.id);
+    if (tint) {
+      ds.entities.remove(tint._cityBeacon);
+      ds.entities.remove(tint);
+    }
+    tints.delete(plot.id);
+    sync();
+  }
+
+  // The first entry after a page load frames the latest restored concept.
+  function resume() {
+    if (resumed) return;
+    const c = viewer.camera.positionCartographic;
+    const a = resumeAlternative(
+      data.alternatives,
+      c && {
+        lat: Cesium.Math.toDegrees(c.latitude),
+        lon: Cesium.Math.toDegrees(c.longitude),
+        height: c.height,
+      },
+    );
+    if (!a) return;
+    const plot = a.site.plot;
+    dispatch({ type: 'resume', plot, id: a.id });
+    if (state.plot !== plot) return;
+    resumed = true;
+    void fly(plot, 'oblique')
+      .then((landed) => landed && settled(8000))
+      .then(() => reground(plot));
+  }
+
   const controls = {
     toggle() {
       if (state.active) controls.exit();
@@ -741,6 +788,7 @@ export function mountCityPlay({
       doc.body.classList.add(BODY_CLASS);
       dispatch({ type: 'enter' });
       frame();
+      resume();
     },
     exit() {
       if (!state.active) return;

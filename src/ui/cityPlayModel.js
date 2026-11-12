@@ -199,6 +199,35 @@ export function districtPins(alternatives, built) {
   return pins;
 }
 
+// Play mode resumes a restored plot only near the camera, never across cities.
+const RESUME_MIN_METERS = 3000;
+
+/**
+ * The restored concept to bring back into view when play mode opens: the most
+ * recently generated concept on a plot within reach of the camera, or null.
+ */
+export function resumeAlternative(alternatives, camera) {
+  if (!Number.isFinite(camera?.lat) || !Number.isFinite(camera?.lon))
+    return null;
+  const reach = Math.max(RESUME_MIN_METERS, 2 * (camera.height || 0));
+  let best = null;
+  let bestAt = -Infinity;
+  for (const a of alternatives ?? []) {
+    if (!a.site || !a.concept) continue;
+    const { lat, lon } = a.site.plot.center;
+    const north = (lat - camera.lat) * 111_320;
+    const east =
+      (lon - camera.lon) * 111_320 * Math.cos((camera.lat * Math.PI) / 180);
+    if (Math.hypot(north, east) > reach) continue;
+    const at = Date.parse(a.concept.generatedAt);
+    if ((Number.isFinite(at) ? at : -Infinity) >= bestAt) {
+      best = a;
+      bestAt = Number.isFinite(at) ? at : -Infinity;
+    }
+  }
+  return best;
+}
+
 export function createPlayState() {
   return {
     active: false,
@@ -250,6 +279,17 @@ export function playReducer(state, action) {
     case 'wheel':
       return state.active && state.wheel !== Boolean(action.open)
         ? { ...state, wheel: Boolean(action.open) }
+        : state;
+    case 'resume':
+      // Reopening the mode brings a restored concept back; a user's pick wins.
+      return state.active && !state.plot && action.plot
+        ? {
+            ...state,
+            plot: action.plot,
+            hover: null,
+            focusId: action.id ?? null,
+            wheel: false,
+          }
         : state;
     case 'clear':
       return { ...state, plot: null, focusId: null, wheel: false };

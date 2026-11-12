@@ -10,6 +10,8 @@
 
 Each reimagined plot keeps its own captured view; the first plot's capture also becomes the project baseline. The project still holds at most six alternatives.
 
+After a reload, the first time you open play mode it frames your most recent concept again: the camera flies to that plot, the concept stands on it and its card opens in the carousel. It does this only when the plot is within 3 km of the camera (or twice the camera height), so opening the mode in another city never flies you away.
+
 ## Records editor
 
 1. Fly to a public place with Location search. Wait for the map to load.
@@ -51,7 +53,7 @@ QA_BASE_URL=http://127.0.0.1:4187 node scripts/qa-city-builder.mjs
 QA_BASE_URL=http://127.0.0.1:4187 node scripts/qa-city-play.mjs
 ```
 
-`qa-city-play.mjs` drives the play mode on the real globe: enter, plot click with the wheel within 40 px of the projected plot, Reimagine, Reroll, detail and district tiers, Esc, reload and the 390x844 layout. With `QA_VIDEO_DIR` it records the journey and converts it to MP4 when ffmpeg is available.
+`qa-city-play.mjs` drives the play mode on the real globe: enter, plot click with the wheel within 40 px of the projected plot, Reimagine, Reroll, detail and district tiers, Esc, reload (the restored concept, its tag and card must be on screen and not covered by the HUD) and the 390x844 layout. With `QA_VIDEO_DIR` it records the journey and converts it to MP4 when ffmpeg is available.
 
 The gate uses Playwright and an owned headless Chromium profile. It checks real globe pixels, authoring, version restore, more than two alternatives, comparison, local persistence, JSON round-trip, malformed import, Scene entry, mobile layout, and no implicit generator calls. Set `CHROME_PATH` if Chromium is not at `/usr/bin/chromium`.
 

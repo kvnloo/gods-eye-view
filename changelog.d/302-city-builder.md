@@ -7,3 +7,6 @@
   anchored action wheel to reimagine it, see the labeled concept stand on the
   plot, then Build, Reroll or zoom between district, plot and detail tiers
   (Kevin Rajan, kvnloo#302).
+- After a reload, City builder play mode frames the latest restored concept on
+  its plot instead of a wide view with nothing on screen (Kevin Rajan,
+  kvnloo#302).

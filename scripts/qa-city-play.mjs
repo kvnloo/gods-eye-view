@@ -604,7 +604,7 @@ try {
     });
 
     await check(
-      'Reload restores the project; play mode shows its stats and in-world concept',
+      'Reload restores the project; play mode frames the restored concept in view',
       async () => {
         const before = await persisted();
         await page.reload({ waitUntil: 'domcontentloaded', timeout: 90000 });
@@ -639,7 +639,61 @@ try {
         assert.equal(stats.worlds, '1');
         assert.equal(stats.concepts, '1');
         assert.equal(stats.walk, '—');
+        // The restored concept must be on screen, not just counted.
+        await until(
+          (id) => {
+            const s = window.__gevCityPlay.snapshot();
+            return (
+              s.plot?.id === id &&
+              s.concepts.includes('world-1') &&
+              !window.__godsEyeView.viewer.camera._currentFlight
+            );
+          },
+          'restored plot framed with its concept',
+          30000,
+          plotId,
+        );
         await tilesLoaded(60000).catch(() => {});
+        await page.waitForTimeout(600);
+        await locator('[data-city-play-holo-tag]').waitFor({
+          state: 'visible',
+        });
+        await locator('[data-city-play-card="world-1"] img').waitFor({
+          state: 'visible',
+        });
+        await insideViewport(
+          '[data-city-play-holo-tag], [data-city-play-card="world-1"]',
+          DESKTOP,
+        );
+        const s = await probe();
+        for (const [name, p] of Object.entries({
+          plot: s.anchors?.plot,
+          concept: s.anchors?.holo,
+        }))
+          assert.ok(
+            p &&
+              p.x >= 0 &&
+              p.y >= 0 &&
+              p.x <= DESKTOP.width &&
+              p.y <= DESKTOP.height,
+            `restored ${name} projects inside the viewport: ${JSON.stringify(p)}`,
+          );
+        assert.equal(
+          await page.evaluate(
+            ({ x, y }) =>
+              document.elementFromPoint(x, y) ===
+              document.querySelector('#cesiumContainer canvas'),
+            s.anchors.plot,
+          ),
+          true,
+          'no HUD panel covers the restored plot',
+        );
+        report.measurements.restoredInView = {
+          plot: s.anchors.plot,
+          concept: s.anchors.holo,
+          tier: s.tier,
+          range: Math.round(s.range),
+        };
         await screenshot('09-reload-restored');
       },
     );

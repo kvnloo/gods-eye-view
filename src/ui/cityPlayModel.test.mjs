@@ -16,6 +16,7 @@ import {
   createPlayState,
   playReducer,
   plotCode,
+  resumeAlternative,
 } from './cityPlayModel.js';
 
 const plotA = snapPlot({ lat: 37.8007, lon: -122.4103 });
@@ -311,4 +312,77 @@ test('plotCode is a short stable label for a grid cell, not a parcel number', ()
   assert.equal(plotCode(plotA), plotCode(snapPlot(plotA.center)));
   assert.notEqual(plotCode(plotA), plotCode(plotB));
   assert.match(plotCode(snapPlot({ lat: -33.85, lon: 151.2 })), /^S/);
+});
+
+test('resumeAlternative brings back the latest concept on a plot near the camera', () => {
+  const at = (generatedAt) => ({ concept: { image, generatedAt } });
+  const camera = { lat: 37.7953, lon: -122.4103, height: 600 };
+  assert.equal(
+    resumeAlternative(null, camera),
+    null,
+    'no project, nothing to resume',
+  );
+  assert.equal(resumeAlternative([], camera), null);
+  assert.equal(
+    resumeAlternative([alternative('world-1', plotA, 'park')], camera),
+    null,
+    'a plot without a concept is not resumed',
+  );
+  assert.equal(
+    resumeAlternative(
+      [alternative('world-1', null, 'park', at('2026-11-12T20:00:00Z'))],
+      camera,
+    ),
+    null,
+    'an unplaced proposal has no plot to show',
+  );
+  const list = [
+    alternative('world-1', plotA, 'park', at('2026-11-12T20:00:05.500Z')),
+    alternative('world-2', plotB, 'plaza', at('2026-11-12T20:00:05Z')),
+  ];
+  // generatedAt compares as time, not text ("05Z" sorts after "05.500Z" as text).
+  assert.equal(resumeAlternative(list, camera).id, 'world-1');
+  const tie = [
+    alternative('world-1', plotA, 'park', at('2026-11-12T20:00:05Z')),
+    alternative('world-2', plotB, 'plaza', at('2026-11-12T20:00:05Z')),
+  ];
+  assert.equal(
+    resumeAlternative(tie, camera).id,
+    'world-2',
+    'a tie keeps the later proposal',
+  );
+  // Far from the camera (another city), play mode does not fly the user away.
+  const tokyo = { lat: 35.68, lon: 139.76, height: 600 };
+  assert.equal(resumeAlternative(list, tokyo), null);
+  // Reach grows with altitude: from 20 km up a plot 8 km away is still in view.
+  const high = {
+    lat: 37.8007 - 8000 / 111_320,
+    lon: -122.4103,
+    height: 20_000,
+  };
+  assert.equal(resumeAlternative(list, high).id, 'world-1');
+  assert.equal(resumeAlternative(list, { ...high, height: 600 }), null);
+  assert.equal(resumeAlternative(list, { lat: Number.NaN, lon: 0 }), null);
+});
+
+test('playReducer resume selects the restored plot with the concept leading and the wheel closed', () => {
+  const inactive = createPlayState();
+  const resume = { type: 'resume', plot: plotA, id: 'world-1' };
+  assert.equal(playReducer(inactive, resume), inactive, 'only inside the mode');
+  const entered = playReducer(inactive, { type: 'enter' });
+  const resumed = playReducer(entered, resume);
+  assert.equal(resumed.plot, plotA);
+  assert.equal(resumed.focusId, 'world-1');
+  assert.equal(
+    resumed.wheel,
+    false,
+    'the concept leads; clicking the plot opens the wheel',
+  );
+  const chosen = playReducer(entered, { type: 'select', plot: plotB });
+  assert.equal(
+    playReducer(chosen, resume),
+    chosen,
+    'never overrides a plot the user picked',
+  );
+  assert.equal(playReducer(entered, { type: 'resume', plot: null }), entered);
 });

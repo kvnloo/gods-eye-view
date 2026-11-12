@@ -119,8 +119,12 @@ const tag = computed(() => {
 const holoTag = computed(() => {
   const at = anchors.value?.holo;
   if (!at || wheel.value || !view.value?.focused?.concept || tier.value === 'district') return null;
-  // The tag hangs above the holo but never under the resource bar.
-  return { x: Math.min(Math.max(at.x, 140), viewport.value.width - 140), y: Math.max(at.y - 18, inset.value.top + 62) };
+  // The tag sits beside the holo's top edge on a short leader, clear of the resource bar.
+  const width = mobile.value ? 170 : 240;
+  const side = at.x + 150 + width < viewport.value.width - 12 ? 1 : -1;
+  const x = side > 0 ? at.x + 150 : Math.max(12, at.x - 150 - width);
+  const y = Math.min(Math.max(at.y, inset.value.top + 40), viewport.value.height - 260);
+  return { x, y, from: { x: at.x + side * 60, y: Math.max(at.y + 24, inset.value.top + 40) }, side };
 });
 const bars = computed(() => {
   const p = view.value?.focused?.parameters;
@@ -149,8 +153,10 @@ const bars = computed(() => {
       <span class="city-play-hint-key">{{ t('Esc exits') }}</span>
     </p>
 
-    <svg v-if="tag || (wheel && plotPoint) || callouts.length" class="city-play-tethers" aria-hidden="true" :viewBox="`0 0 ${viewport.width} ${viewport.height}`">
+    <svg v-if="tag || holoTag || (wheel && plotPoint) || callouts.length" class="city-play-tethers" aria-hidden="true" :viewBox="`0 0 ${viewport.width} ${viewport.height}`">
       <line v-if="tag" :x1="tag.from.x" :y1="tag.from.y" :x2="tag.x" :y2="tag.y + 18" />
+      <line v-if="holoTag" :x1="holoTag.from.x" :y1="holoTag.from.y" :x2="holoTag.side > 0 ? holoTag.x : holoTag.x + (mobile ? 170 : 240)" :y2="holoTag.y" />
+      <circle v-if="holoTag" class="city-play-tether-end" :cx="holoTag.from.x" :cy="holoTag.from.y" r="4" />
       <line v-if="wheel && plotPoint && wheel.clamped" class="city-play-tether-dim" :x1="wheel.x" :y1="wheel.y" :x2="plotPoint.x" :y2="plotPoint.y" />
       <circle v-if="plotPoint && tier !== 'detail'" :cx="plotPoint.x" :cy="plotPoint.y" r="5" />
       <line v-for="callout in callouts" :key="callout.id" class="city-play-leader" :x1="callout.at.x" :y1="callout.at.y" :x2="callout.end.x" :y2="callout.end.y" />

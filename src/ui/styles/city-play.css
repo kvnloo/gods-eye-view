@@ -7,18 +7,17 @@ body.gev-city-play #pp-toggles {
   opacity: 0;
   visibility: hidden;
   pointer-events: none !important;
-  transform: translateX(var(--city-play-slide, -24px));
   transition:
     opacity var(--transition-smooth),
-    transform var(--transition-smooth),
     visibility 0s linear 300ms;
-}
-body.gev-city-play #right-context-rail,
-body.gev-city-play #pp-toggles {
-  --city-play-slide: 24px;
 }
 body.gev-city-play #cesiumContainer {
   cursor: crosshair;
+}
+/* The game view is full-bleed like a strategy map; the scope vignette returns on exit. */
+body.gev-city-play #scope-mask {
+  opacity: 0;
+  transition: opacity var(--transition-smooth);
 }
 
 #top-center-actions .city-play-pill {
@@ -241,7 +240,9 @@ body.gev-city-play #cesiumContainer {
 
 .city-play-holo-tag {
   position: absolute;
-  transform: translate(-50%, -100%);
+  transform: translateY(-50%);
+  min-width: 200px;
+  box-sizing: border-box;
   display: grid;
   padding: 6px 14px;
   border-radius: 4px;

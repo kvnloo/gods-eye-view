@@ -1259,7 +1259,9 @@
     "NORAD: {id}",
     "MMSI: {id}",
     "Park",
-    "Version"
+    "Version",
+    "{value} m",
+    "{low}–{high} m"
   ],
   "uk": [
     "1900–1945",

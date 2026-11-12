@@ -2,6 +2,7 @@
 // Parent starts the app. This script owns only its headless browser and output files.
 // node scripts/qa-city-builder.mjs [--real] [--url http://127.0.0.1:4187]
 // QA_SHOTS_DIR defaults to qa-shots/city-builder, relative to the invocation cwd.
+// QA_VIDEO_DIR, when set, records the journey as .webm files there.
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -423,6 +424,13 @@ try {
     acceptDownloads: true,
     reducedMotion: 'reduce',
     serviceWorkers: 'block',
+    // Opt-in journey recording (.webm per page), finalized when the browser closes.
+    ...(process.env.QA_VIDEO_DIR && {
+      recordVideo: {
+        dir: process.env.QA_VIDEO_DIR,
+        size: { width: 1440, height: 1000 },
+      },
+    }),
   });
   page = await context.newPage();
   page.setDefaultTimeout(20000);

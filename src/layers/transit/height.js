@@ -78,6 +78,8 @@ export function createHeight({ state, services, parts }) {
     cameraLat = NaN,
     cameraHeight = NaN;
   const terrainStats = { reads: 0, reused: 0, deferred: 0, borrowed: 0 };
+  let heightGlobe;
+  let heightProvider;
 
   /** A number unique to a point on a `scale`-per-degree grid. */
   function gridKey(lat, lon, scale) {
@@ -216,14 +218,19 @@ export function createHeight({ state, services, parts }) {
       entry?.qaFloorM ?? state._qaFixtureFloors?.get(entry?.key);
     if (Number.isFinite(fixtureFloor))
       return { cell, height: fixtureFloor, prior: null };
+    // A terrain height belongs to the surface that supplied it. Switching
+    // basemap providers or replacing the globe must not reuse old heights.
+    const globe = state._viewer?.scene?.globe;
+    const provider = state._viewer?.terrainProvider;
+    if (globe !== heightGlobe || provider !== heightProvider) {
+      clearTerrainHeights();
+      heightGlobe = globe;
+      heightProvider = provider;
+    }
     // On a terrain globe, use the loaded surface under the marker. This reads
     // tiles already loaded and does not launch a terrain request.
-    const globe = state._viewer?.scene?.globe;
     if (globe?.show === true) {
-      if (
-        state._viewer?.terrainProvider instanceof
-        Cesium.EllipsoidTerrainProvider
-      )
+      if (provider instanceof Cesium.EllipsoidTerrainProvider)
         return { cell, height: GROUND_FLOOR_LIFT_M, prior: null };
       const rendered = globe.getHeight
         ? terrainHeight(globe, lat, lon, need)

@@ -262,6 +262,34 @@ test('once the camera and the tiles have settled a height is kept until either c
   assert.equal(reads.length, 5);
 });
 
+test('terrain heights from a replaced globe or provider are not reused', (t) => {
+  const originalProvider = {};
+  const { height, state, globe, world, reads, clock } = terrain(t, {
+    provider: originalProvider,
+    surface: () => 10,
+  });
+  const read = () => height.requestHeight(42.36, -71.06).height;
+  assert.equal(read(), 10 + LIFT);
+  clock.now += TERRAIN_SETTLE_MS;
+  assert.equal(read(), 10 + LIFT, 'the settled point is held');
+
+  world.surface = () => 20;
+  state._viewer.terrainProvider = {};
+  assert.equal(read(), 20 + LIFT, 'a new provider must not inherit its predecessor’s height');
+
+  world.surface = () => 30;
+  state._viewer.scene.globe = { ...globe };
+  assert.equal(read(), 30 + LIFT, 'a new globe must not inherit its predecessor’s height');
+
+  state._viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider();
+  assert.equal(read(), LIFT, 'the flat globe reads no terrain');
+
+  world.surface = () => 40;
+  state._viewer.terrainProvider = originalProvider;
+  assert.equal(read(), 40 + LIFT, 'returning to a provider must not revive stale heights');
+  assert.equal(reads.length, 5, 'only the four terrain reads and the settled reread');
+});
+
 test('a flat globe answers without reading terrain', (t) => {
   const { height, reads } = terrain(t, {
     provider: new Cesium.EllipsoidTerrainProvider(),

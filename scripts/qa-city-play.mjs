@@ -941,7 +941,7 @@ try {
     }
 
     await check(
-      'A fresh page session restores the project and frames its latest concept in view',
+      'A fresh page session restores the project, frames its latest concept and reselects its plot',
       async () => {
         // The journey page closes first: its recording never shows a reload splash.
         const before = await persisted();
@@ -1039,6 +1039,35 @@ try {
           range: Math.round(s.range),
         };
         await screenshot('09-reload-restored');
+        // Reselect: clicking the restored plot brings back its anchored wheel.
+        await reopenWheel();
+        const again = await probe();
+        const ring = await center(S.ring);
+        assert.equal(
+          again.plot.id,
+          latest.plotId,
+          'the restored plot is reselected',
+        );
+        const offset = Math.hypot(
+          ring.x - again.anchors.plot.x,
+          ring.y - again.anchors.plot.y,
+        );
+        // Above the carousel the wheel may be clamped; then a tether joins it to the plot.
+        const tethered = await page.evaluate(
+          ({ x, y }) =>
+            [...document.querySelectorAll('.city-play-tether-dim')].some(
+              (l) =>
+                Math.abs(Number(l.getAttribute('x2')) - x) < 2 &&
+                Math.abs(Number(l.getAttribute('y2')) - y) < 2,
+            ),
+          again.anchors.plot,
+        );
+        report.measurements.reselectWheel = { offset, tethered };
+        assert.ok(
+          offset <= 40 || tethered,
+          `the wheel is anchored (${offset.toFixed(0)} px) or tethered to the reselected plot`,
+        );
+        await screenshot('09b-reselect-wheel');
       },
     );
 

@@ -80,7 +80,11 @@ let step = 0;
 async function shot(name, selector) {
   const filename = `${String(++step).padStart(2, '0')}-${name}.png`;
   const target = selector ? await page.$(selector) : page;
-  await target.screenshot({ path: path.join(output, filename) });
+  // Keep the viewport fixed so element shots do not flash into the screencast.
+  await target.screenshot({
+    path: path.join(output, filename),
+    captureBeyondViewport: false,
+  });
   report.screenshots.push(filename);
 }
 async function check(name, run) {
@@ -161,7 +165,22 @@ try {
     { timeout: 60000 },
     SITE,
   );
-  await beat(5000);
+  // Capture needs settled map data, as in qa-city-builder.mjs.
+  await page.waitForFunction(
+    () => {
+      const { viewer, mapStackController } = window.__godsEyeView;
+      const primitives = viewer.scene.primitives;
+      const tileset = Array.from({ length: primitives.length }, (_, i) =>
+        primitives.get(i),
+      ).some((item) => item.show && item.tilesLoaded === true);
+      const surface = viewer.scene.globe?.show
+        ? viewer.scene.globe.tilesLoaded
+        : tileset;
+      return surface && mapStackController?.getState?.().status === 'ready';
+    },
+    { timeout: 120000 },
+  );
+  await beat(1500);
   recorder = await page.screencast({
     path: path.join(output, 'city-access-journey.mp4'),
     format: 'mp4',

@@ -9,6 +9,8 @@ const sources = [
   'src/ui/views/panels/CityBuilderEditor.vue',
   'src/ui/views/panels/CommunityPlanningPreview.vue',
   'src/ui/views/panels/GlobeActions.vue',
+  'src/ui/views/panels/CityPlayOverlay.vue',
+  'src/standalone/cityPlay.js',
 ];
 const string = String.raw`'(?:\\.|[^'\\\n])*'|"(?:\\.|[^"\\\n])*"|\`(?:\\.|[^\`\\$])*\``;
 const call = new RegExp(

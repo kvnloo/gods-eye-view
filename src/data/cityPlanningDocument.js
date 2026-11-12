@@ -305,7 +305,10 @@ function documentValue(value) {
   const ids = new Set();
   const alternatives = value.alternatives.map((alternative, index) => {
     const isSited = Object.hasOwn(alternative ?? {}, 'site');
-    keys(alternative, isSited ? ['id', 'site', 'versions'] : ['id', 'versions']);
+    keys(
+      alternative,
+      isSited ? ['id', 'site', 'versions'] : ['id', 'versions'],
+    );
     const id = identifier(alternative.id);
     if (ids.has(id)) fail('duplicate alternative id');
     ids.add(id);

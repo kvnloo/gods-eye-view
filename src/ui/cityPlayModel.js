@@ -21,6 +21,12 @@ export function zoomTier(range, previous = null) {
   return 'plot';
 }
 
+/** A short stable label for a grid cell (hemisphere, row and column digits). */
+export function plotCode(plot) {
+  const pad = (n) => String(Math.abs(n) % 10000).padStart(4, '0');
+  return `${plot.row < 0 ? 'S' : 'N'}${pad(plot.row)}-${pad(plot.col)}`;
+}
+
 /** Button offsets around the wheel centre, clockwise from twelve o'clock. */
 export function wheelLayout(count, radius) {
   return Array.from({ length: count }, (_, i) => {
@@ -45,7 +51,11 @@ export function placeWheel(anchor, viewport, size, inset) {
   const reach = size.radius + size.button / 2;
   const clamp = (value, low, high) =>
     high < low ? (low + high) / 2 : Math.min(high, Math.max(low, value));
-  const x = clamp(anchor.x, inset.side + reach, viewport.width - inset.side - reach);
+  const x = clamp(
+    anchor.x,
+    inset.side + reach,
+    viewport.width - inset.side - reach,
+  );
   const y = clamp(
     anchor.y,
     inset.top + reach,
@@ -86,9 +96,7 @@ function chips(parameters) {
 }
 
 export function plotAlternatives(alternatives, plotId) {
-  return plotId
-    ? alternatives.filter((a) => a.site?.plot.id === plotId)
-    : [];
+  return plotId ? alternatives.filter((a) => a.site?.plot.id === plotId) : [];
 }
 
 /** One card per alternative of the selected plot. */
@@ -100,7 +108,8 @@ export function carouselCards(
   return plotAlternatives(alternatives, plotId).map((a) => {
     const list = chips(a.parameters);
     const delta = access?.[a.id]?.delta;
-    if (Number.isFinite(delta)) list.push({ id: 'walk', value: delta, unit: '' });
+    if (Number.isFinite(delta))
+      list.push({ id: 'walk', value: delta, unit: '' });
     return {
       id: a.id,
       title: a.title,
@@ -207,7 +216,13 @@ export function playReducer(state, action) {
         ? state
         : { ...state, active: true, plot: null, hover: null, focusId: null };
     case 'exit':
-      return { ...state, active: false, plot: null, hover: null, focusId: null };
+      return {
+        ...state,
+        active: false,
+        plot: null,
+        hover: null,
+        focusId: null,
+      };
     case 'hover':
       return state.active && state.hover !== action.plot
         ? { ...state, hover: action.plot ?? null }

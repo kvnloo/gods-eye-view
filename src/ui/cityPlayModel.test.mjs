@@ -15,6 +15,7 @@ import {
   districtPins,
   createPlayState,
   playReducer,
+  plotCode,
 } from './cityPlayModel.js';
 
 const plotA = snapPlot({ lat: 37.8007, lon: -122.4103 });
@@ -275,4 +276,11 @@ test('playReducer enters and exits the mode and restores a clean HUD state', () 
   assert.equal(again.plot, null);
   assert.equal(playReducer(again, { type: 'enter' }), again);
   assert.equal(playReducer(again, { type: 'clear' }).plot, null);
+});
+
+test('plotCode is a short stable label for a grid cell, not a parcel number', () => {
+  assert.match(plotCode(plotA), /^[NS]\d{4}-\d{4}$/);
+  assert.equal(plotCode(plotA), plotCode(snapPlot(plotA.center)));
+  assert.notEqual(plotCode(plotA), plotCode(plotB));
+  assert.match(plotCode(snapPlot({ lat: -33.85, lon: 151.2 })), /^S/);
 });

@@ -244,7 +244,9 @@
     "▲ {frp} MW",
     "ICAO: {id}",
     "MMSI: {id}",
-    "NORAD: {id}"
+    "NORAD: {id}",
+    "{value} m",
+    "{area} m²"
   ],
   "es": [
     "1 min/s",
@@ -404,7 +406,9 @@
     "iNaturalist",
     "ICAO: {id}",
     "MMSI: {id}",
-    "NORAD: {id}"
+    "NORAD: {id}",
+    "{value} m",
+    "{area} m²"
   ],
   "fr": [
     "1 min/s",
@@ -619,7 +623,10 @@
     "≥ {value} MW",
     "▲ {frp} MW",
     "SATELLITE",
-    "Photo © {photographer}"
+    "Photo © {photographer}",
+    "Concepts",
+    "{value} m",
+    "{area} m²"
   ],
   "it": [
     "1 min/s",
@@ -822,7 +829,9 @@
     "SATELLITE",
     "ICAO: {id}",
     "MMSI: {id}",
-    "NORAD: {id}"
+    "NORAD: {id}",
+    "{value} m",
+    "{area} m²"
   ],
   "ja": [
     "1090 MHz",
@@ -888,7 +897,9 @@
     "▲ {frp} MW",
     "ICAO: {id}",
     "MMSI: {id}",
-    "NORAD: {id}"
+    "NORAD: {id}",
+    "{value} m",
+    "{area} m²"
   ],
   "pt": [
     "1 min/s",
@@ -1049,7 +1060,9 @@
     "iNaturalist",
     "ICAO: {id}",
     "MMSI: {id}",
-    "NORAD: {id}"
+    "NORAD: {id}",
+    "{value} m",
+    "{area} m²"
   ],
   "ru": [
     "1900–1945",
@@ -1247,7 +1260,9 @@
     "NORAD: {id}",
     "MMSI: {id}",
     "Park",
-    "Version"
+    "Version",
+    "{value} m",
+    "{area} m²"
   ],
   "uk": [
     "1900–1945",
@@ -1349,7 +1364,9 @@
     "CC BY 4.0",
     "acartia.io ↗",
     "iNaturalist ↗",
-    "iNaturalist"
+    "iNaturalist",
+    "{value} m",
+    "{area} m²"
   ],
   "zh-Hant": [
     "1090 MHz",
@@ -1420,7 +1437,9 @@
     "CC BY 4.0",
     "acartia.io ↗",
     "iNaturalist ↗",
-    "iNaturalist"
+    "iNaturalist",
+    "{value} m",
+    "{area} m²"
   ],
   "he": [
     "{speed} kn",

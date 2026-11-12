@@ -1,6 +1,8 @@
 import { createPlanningConceptGenerator } from '../data/planningConceptGenerator.js';
 import { createCityBuilder } from '../ui/cityBuilder.js';
 import { useCommunityPlanningStore } from '../ui/stores/communityPlanning.js';
+import { useCityPlayStore } from '../ui/stores/cityPlay.js';
+import { mountCityPlay } from './cityPlay.js';
 import { useSceneSharingStore } from '../ui/stores/sceneSharing.js';
 import { applicationPinia } from '../ui/vueRuntime.js';
 import { renderFreshCesiumFrame } from '../voice/realtimeViewport.js';
@@ -217,6 +219,7 @@ export function mountCityBuilder(options = {}) {
     pinia = applicationPinia(),
     store = useCommunityPlanningStore(pinia),
     sharing = useSceneSharingStore(pinia),
+    playStore = useCityPlayStore(pinia),
     captureReference = () =>
       captureCityReference({
         viewer: scene?.viewer,
@@ -233,6 +236,8 @@ export function mountCityBuilder(options = {}) {
   let disposed = false;
   let preview = null;
   let launcher = null;
+  let play = null;
+  let playView = null;
   const current = () => !disposed && (!controls || store.controls === controls);
   const owner = createCityBuilder({
     publish(next) {
@@ -263,8 +268,20 @@ export function mountCityBuilder(options = {}) {
     sharingDialogOpen: () => !current() || Boolean(sharing.dialog),
     uid,
     canLocal,
+    publishPlay(next) {
+      playView = next;
+      if (current()) play?.receive(next);
+    },
   });
   controls = owner;
+  // Play mode needs a live globe; without one the records dialog still works.
+  if (scene?.viewer)
+    play = mountCityPlay({
+      viewer: scene.viewer,
+      builder: owner,
+      store: playStore,
+    });
+  play?.receive(playView);
   store.connect(controls);
   store.publish(preview);
   store.offerLauncher(launcher);
@@ -272,6 +289,7 @@ export function mountCityBuilder(options = {}) {
     if (disposed) return;
     disposed = true;
     try {
+      play?.destroy();
       owner.destroy();
     } finally {
       if (ownsStorage) storage.destroy?.();

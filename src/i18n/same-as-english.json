@@ -246,7 +246,8 @@
     "MMSI: {id}",
     "NORAD: {id}",
     "{value} m",
-    "{area} m²"
+    "{area} m²",
+    "{low}–{high} m"
   ],
   "es": [
     "1 min/s",
@@ -408,7 +409,8 @@
     "MMSI: {id}",
     "NORAD: {id}",
     "{value} m",
-    "{area} m²"
+    "{area} m²",
+    "{low}–{high} m"
   ],
   "fr": [
     "1 min/s",
@@ -626,7 +628,8 @@
     "Photo © {photographer}",
     "Concepts",
     "{value} m",
-    "{area} m²"
+    "{area} m²",
+    "{low}–{high} m"
   ],
   "it": [
     "1 min/s",
@@ -831,7 +834,8 @@
     "MMSI: {id}",
     "NORAD: {id}",
     "{value} m",
-    "{area} m²"
+    "{area} m²",
+    "{low}–{high} m"
   ],
   "ja": [
     "1090 MHz",
@@ -899,7 +903,8 @@
     "MMSI: {id}",
     "NORAD: {id}",
     "{value} m",
-    "{area} m²"
+    "{area} m²",
+    "{low}–{high} m"
   ],
   "pt": [
     "1 min/s",
@@ -1062,7 +1067,8 @@
     "MMSI: {id}",
     "NORAD: {id}",
     "{value} m",
-    "{area} m²"
+    "{area} m²",
+    "{low}–{high} m"
   ],
   "ru": [
     "1900–1945",
@@ -1262,7 +1268,8 @@
     "Park",
     "Version",
     "{value} m",
-    "{area} m²"
+    "{area} m²",
+    "{low}–{high} m"
   ],
   "uk": [
     "1900–1945",
@@ -1365,7 +1372,6 @@
     "acartia.io ↗",
     "iNaturalist ↗",
     "iNaturalist",
-    "{value} m",
     "{area} m²"
   ],
   "zh-Hant": [
@@ -1438,7 +1444,6 @@
     "acartia.io ↗",
     "iNaturalist ↗",
     "iNaturalist",
-    "{value} m",
     "{area} m²"
   ],
   "he": [

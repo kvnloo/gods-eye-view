@@ -6,6 +6,8 @@ const root = new URL('../', import.meta.url);
 const sources = [
   'src/ui/cityBuilder.js',
   'src/ui/communityPlanningPreview.js',
+  'src/ui/cityWalkAccess.js',
+  'src/ui/views/panels/CityWalkAccess.vue',
   'src/ui/views/panels/CityBuilderEditor.vue',
   'src/ui/views/panels/CommunityPlanningPreview.vue',
   'src/ui/views/panels/GlobeActions.vue',

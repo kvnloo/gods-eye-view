@@ -727,3 +727,36 @@ test('sites reject edited plots, plots outside their captured view and extra key
     ),
   );
 });
+
+test('a park or plaza site is an optional proposal parameter; documents without it still import', () => {
+  const placed = addCityAlternative(document(), {
+    ...alternative(),
+    parameters: { ...parameters(), site: 'site-b' },
+  });
+  assert.equal(cityAlternatives(placed)[0].parameters.site, 'site-b');
+  assert.deepEqual(parseCityDocument(serializeCityDocument(placed)), placed);
+  const moved = reviseCityAlternative(placed, 'green', 1, {
+    title: 'Moved',
+    description: 'Same park, another candidate site.',
+    parameters: { ...parameters(), site: null },
+  });
+  assert.equal(cityAlternatives(moved)[0].parameters.site, null);
+  assert.equal(moved.alternatives[0].versions[0].parameters.site, 'site-b');
+  // Documents saved before sites existed keep their exact v1 shape.
+  assert.equal('site' in cityAlternatives(populated())[0].parameters, false);
+  assert.deepEqual(
+    parseCityDocument(serializeCityDocument(populated())),
+    populated(),
+  );
+  for (const site of ['', 'Site B', 7, {}, `s${'x'.repeat(64)}`]) {
+    assert.throws(() =>
+      addCityAlternative(document(), {
+        ...alternative(),
+        parameters: { ...parameters(), site },
+      }),
+    );
+  }
+  rejectImport((d) => {
+    d.alternatives[0].versions[0].parameters.site = 'site-b';
+  });
+});

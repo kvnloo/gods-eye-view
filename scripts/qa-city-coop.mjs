@@ -402,16 +402,19 @@ try {
     },
   );
 
-  await check('Ben opens the app in a second tab of the same browser', async () => {
-    // A second resident arrives after Ana's capture, as in real use.
-    pages.b = await shared.newPage();
-    watch(pages.b, 'b');
-    pages.b.setDefaultTimeout(30000);
-    await startup(pages.b, false);
-    await pages.b.locator(S.open).click();
-    await pages.b.locator(S.dialog).waitFor({ state: 'visible' });
-    stopRecording = await recorder();
-  });
+  await check(
+    'Ben opens the app in a second tab of the same browser',
+    async () => {
+      // A second resident arrives after Ana's capture, as in real use.
+      pages.b = await shared.newPage();
+      watch(pages.b, 'b');
+      pages.b.setDefaultTimeout(30000);
+      await startup(pages.b, false);
+      await pages.b.locator(S.open).click();
+      await pages.b.locator(S.dialog).waitFor({ state: 'visible' });
+      stopRecording = await recorder();
+    },
+  );
 
   await check(
     'Ana shares the project in a room; Ben joins by code as a viewer',

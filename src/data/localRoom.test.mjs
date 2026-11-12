@@ -160,27 +160,25 @@ test('joining announces presence, peers answer at once, and silent peers expire'
   assert.equal(timers.count, 0);
 });
 
-test('a second tab holding the same identity disconnects instead of splitting the room', () => {
+test('a second tab holding the same identity yields to the first instead of splitting the room', () => {
   const { Channel } = hub();
   const timers = manualTimers();
-  let reason = null;
-  const first = openLocalRoom({
-    BroadcastChannel: Channel,
-    room: 'elm-street',
-    peer: 'p-ana0000001',
-    presence: () => ({ name: 'Ana', viewing: null }),
-    onClosed: (why) => {
-      reason = why;
-    },
-    timers,
-  });
-  openLocalRoom({
-    BroadcastChannel: Channel,
-    room: 'elm-street',
-    peer: 'p-ana0000001',
-    presence: () => ({ name: 'Ana', viewing: null }),
-    timers,
-  });
-  assert.equal(reason, 'duplicate-identity');
-  assert.equal(first.closed, true);
+  const reasons = { first: null, second: null };
+  const open = (key) =>
+    openLocalRoom({
+      BroadcastChannel: Channel,
+      room: 'elm-street',
+      peer: 'p-ana0000001',
+      presence: () => ({ name: 'Ana', viewing: null }),
+      onClosed: (why) => {
+        reasons[key] = why;
+      },
+      timers,
+    });
+  const first = open('first');
+  const second = open('second');
+  assert.equal(reasons.second, 'duplicate-identity');
+  assert.equal(second.closed, true);
+  assert.equal(first.closed, false, 'the incumbent keeps its identity');
+  first.close();
 });

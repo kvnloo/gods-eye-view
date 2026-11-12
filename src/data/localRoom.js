@@ -134,8 +134,11 @@ export function openLocalRoom({
     const packet = parseLocalRoomPacket(event.data, room, now());
     if (!packet) return;
     if (packet.peer === peer) {
-      // Another tab holds this identity (for example a duplicated tab).
-      close('duplicate-identity', false);
+      // Another tab holds this identity (for example a duplicated tab). The
+      // tab that was here first answers the join; the newcomer, hearing its
+      // own identity answer, yields so the incumbent keeps its authorship.
+      if (packet.kind === 'join') send('hello', presence());
+      else if (packet.kind === 'hello') close('duplicate-identity', false);
       return;
     }
     if (packet.kind === 'leave') {

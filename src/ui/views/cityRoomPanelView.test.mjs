@@ -49,8 +49,8 @@ class Channel {
 const timers = {
   setInterval: () => 1,
   clearInterval() {},
-  setTimeout: () => 1,
-  clearTimeout() {},
+  setTimeout: (fn) => setImmediate(fn),
+  clearTimeout: (id) => clearImmediate(id),
 };
 let ids = 0;
 function mountTab() {
@@ -85,7 +85,8 @@ function mountTab() {
   return { root, controls, view, app };
 }
 const settle = async () => {
-  await new Promise((resolve) => setImmediate(resolve));
+  for (let i = 0; i < 6; i++)
+    await new Promise((resolve) => setImmediate(resolve));
   await nextTick();
 };
 

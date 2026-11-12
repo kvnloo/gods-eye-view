@@ -240,9 +240,10 @@ export function validateRoomOperation(raw) {
  * are dropped and counted. Two different operations claiming one id keep the
  * canonical (smaller serialized) one, so every replica keeps the same.
  */
-export function mergeRoomOperations(current = [], incoming = []) {
+export function mergeRoomOperations(current = [], incoming = [], { room } = {}) {
   const byId = new Map(current.map((op) => [op.id, op]));
   let added = 0;
+  let replaced = 0;
   let invalid = 0;
   for (const raw of Array.isArray(incoming) ? incoming : []) {
     const existing = raw && typeof raw === 'object' ? byId.get(raw.id) : null;
@@ -250,12 +251,16 @@ export function mergeRoomOperations(current = [], incoming = []) {
     let op;
     try {
       op = validateRoomOperation(raw);
+      if (room !== undefined && op.room !== room) throw new TypeError('room');
     } catch {
       invalid++;
       continue;
     }
     if (existing) {
-      if (JSON.stringify(op) < JSON.stringify(existing)) byId.set(op.id, op);
+      if (JSON.stringify(op) < JSON.stringify(existing)) {
+        byId.set(op.id, op);
+        replaced++;
+      }
       continue;
     }
     if (byId.size >= CITY_ROOM_LIMITS.ops) {
@@ -268,16 +273,21 @@ export function mergeRoomOperations(current = [], incoming = []) {
   return {
     ops: Object.freeze([...byId.values()].sort(foldOrder)),
     added,
+    changed: added + replaced,
     invalid,
   };
 }
+
+// An honest clock never exceeds the number of operations its author knew,
+// so a forged far-future clock is ignored instead of inflating every later one.
+const plausible = (op, ops) => op.clock <= ops.length;
 
 function nextIndexes(ops, actorId) {
   let seq = 0;
   let clock = 0;
   for (const op of ops) {
     if (op.actorId === actorId) seq = Math.max(seq, op.seq);
-    clock = Math.max(clock, op.clock);
+    if (plausible(op, ops)) clock = Math.max(clock, op.clock);
   }
   return { seq: seq + 1, clock: clock + 1 };
 }
@@ -356,7 +366,7 @@ export function projectRoom(ops = [], { self = null } = {}) {
     let expected = 1;
     let clock = 0;
     for (const op of list) {
-      if (op.seq === expected && op.clock > clock) {
+      if (op.seq === expected && op.clock > clock && plausible(op, sorted)) {
         live.add(op.id);
         expected++;
         clock = op.clock;

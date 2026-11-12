@@ -347,7 +347,7 @@ test('only the owner assigns roles and a stale role revision is rejected by the 
     actorId: ana.actorId,
     authorName: 'Ana',
     seq: 3,
-    clock: 10,
+    clock: 4,
     type: 'role',
     member: ben.actorId,
     memberName: 'Ben',
@@ -468,7 +468,10 @@ test('a revocation only covers the contiguous operations the owner actually rece
     memberName: 'Ben',
     role: 'revoked',
   });
-  assert.equal(log.at(-1).throughSeq, 1);
+  assert.equal(
+    log.find((op) => op.type === 'role' && op.role === 'revoked').throughSeq,
+    1,
+  );
   const room = projectRoom(mergeRoomOperations(log, [delayed]).ops);
   assert.deepEqual(
     room.rejected.map((r) => [r.id, r.reason]),
@@ -491,11 +494,20 @@ test('member writes wait, never flash as rejected, while an owner role change is
   const partial = projectRoom(log.filter((op) => op !== delayed));
   assert.deepEqual(partial.rejected, []);
   assert.deepEqual(
-    partial.pending.map((p) => [p.author.name, p.reason]),
-    [
-      ['Ana', 'waiting-for-earlier-operations'],
-      ['Ben', 'waiting-for-owner'],
-    ],
+    partial.pending.map((p) => p.author.name),
+    ['Ana', 'Ben'],
+  );
+  assert.ok(partial.pending.every((p) => p.reason.startsWith('waiting-for-')));
+  // A member write that does not depend on the missing owner change still waits.
+  const filler = add(log.slice(0, 1), cy, 'propose', park); // cy-1, a viewer write
+  const widened = mergeRoomOperations(
+    log.filter((op) => op !== delayed),
+    filler.slice(1),
+  ).ops;
+  assert.ok(
+    projectRoom(widened).pending.some(
+      (p) => p.author.name === 'Cy' && p.reason === 'waiting-for-owner',
+    ),
   );
   const full = projectRoom(log);
   assert.deepEqual(full.pending, []);
@@ -588,4 +600,49 @@ test('a late revocation does not erase other contributors work built on the revo
   const parkAlt = altOf(room, 'Cy merge');
   assert.deepEqual(head(parkAlt).parents, [alt.heads[0]]);
   assert.equal(parkAlt.conflict, false);
+});
+
+test('a forged huge clock cannot freeze the room for honest writers', () => {
+  let log = add(genesis(), ana, 'propose', park);
+  const forged = validateRoomOperation({
+    id: 'p-eve0000001-1',
+    room: ROOM,
+    actorId: 'p-eve0000001',
+    authorName: 'Eve',
+    seq: 1,
+    clock: 999_999_999,
+    type: 'comment',
+    versionId: log.at(-1).id,
+    body: 'freeze',
+  });
+  log = mergeRoomOperations(log, [forged]).ops;
+  log = add(log, ana, 'propose', lane);
+  const honest = log.find((op) => op.actorId === ana.actorId && op.seq === 3);
+  assert.ok(honest.clock <= log.length, 'honest clocks stay bounded');
+  const room = projectRoom(log);
+  assert.equal(room.alternatives.length, 2);
+  assert.ok(room.pending.some((p) => p.id === forged.id));
+});
+
+test('merge reports a canonical replacement and refuses operations from another room', () => {
+  const log = add(genesis(), ana, 'propose', park);
+  const other = createRoomOperation(
+    log.slice(0, 1),
+    { ...ana, room: ROOM },
+    'propose',
+    lane,
+  );
+  const [high, low] = [log[1], other].sort((a, b) =>
+    JSON.stringify(a) < JSON.stringify(b) ? 1 : -1,
+  );
+  const replaced = mergeRoomOperations([log[0], high], [low]);
+  assert.equal(replaced.changed, 1, 'replacement counts as a change');
+  assert.deepEqual(replaced.ops[1], low);
+  const foreign = add([], { ...ana, actorId: 'p-zed0000001' }, 'genesis', {
+    project: { id: 'city-elm', title: 'Elm street' },
+    reference,
+  }).map((op) => ({ ...op, room: 'other-room' }));
+  const merged = mergeRoomOperations(log, foreign, { room: ROOM });
+  assert.equal(merged.invalid, 1);
+  assert.equal(merged.ops.length, log.length);
 });

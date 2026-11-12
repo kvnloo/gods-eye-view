@@ -66,8 +66,8 @@ function memoryStorage(initial = {}) {
 const timers = {
   setInterval: () => 1,
   clearInterval() {},
-  setTimeout: () => 1,
-  clearTimeout() {},
+  setTimeout: (fn) => setImmediate(fn),
+  clearTimeout: (id) => clearImmediate(id),
 };
 let ids = 0;
 function tab(env, storage = memoryStorage()) {
@@ -100,7 +100,10 @@ function tab(env, storage = memoryStorage()) {
     },
   };
 }
-const settle = () => new Promise((resolve) => setImmediate(resolve));
+const settle = async () => {
+  for (let i = 0; i < 6; i++)
+    await new Promise((resolve) => setImmediate(resolve));
+};
 async function enter(t, name, room, document) {
   t.c.editDraft('name', name);
   t.c.editDraft('room', room);
@@ -280,11 +283,13 @@ test('a duplicated tab never reuses a held identity', async () => {
   const ana = tab(env);
   await enter(ana, 'Ana', 'elm-street', localDocument());
   const copy = tab(env, memoryStorage({ ...ana.storage.data }));
-  copy.c.reconnect();
   await settle();
   assert.notEqual(copy.v.self.actorId, ana.v.self.actorId);
   assert.match(copy.v.status, /joined as a new participant/);
+  copy.c.reconnect();
+  await settle();
   assert.equal(ana.v.connected, true);
+  assert.equal(copy.v.connected, true);
   assert.equal(copy.v.self.role, 'viewer');
 });
 
@@ -311,4 +316,77 @@ test('an invalid room file changes nothing; joining an absent room says so hones
   await lone.c.importRoom({ size: 9, text: async () => '{"kind":' });
   assert.match(lone.v.error, /Invalid room file/);
   assert.equal(lone.v.active, false);
+});
+
+test('sharing into a room code another tab already uses is refused, not a takeover', async () => {
+  const env = browser();
+  let fire = null;
+  const owner = tab(env);
+  await enter(owner, 'Zoe', 'elm-street', localDocument());
+  const digest = owner.v.digest;
+  const late = createCityRoomSession({
+    storage: memoryStorage(),
+    openRoom: (options) =>
+      openLocalRoom({ ...options, BroadcastChannel: env.Channel, timers }),
+    randomId: () => 'p-late000001',
+    download() {},
+    changed() {},
+    timers: { ...timers, setTimeout: (fn) => ((fire = fn), 9) },
+  });
+  late.controls.editDraft('name', 'Ana');
+  late.controls.editDraft('room', 'elm-street');
+  late.controls.share(localDocument());
+  await settle();
+  fire?.();
+  await settle();
+  assert.equal(late.view().active, false);
+  assert.match(late.view().error, /already in use/);
+  assert.equal(owner.v.digest, digest, 'the existing room is unchanged');
+  assert.equal(owner.v.self.role, 'owner');
+});
+
+test('the identity lease survives going offline, so a duplicated offline tab gets a new identity', async () => {
+  const env = browser();
+  const ana = tab(env);
+  await enter(ana, 'Ana', 'elm-street', localDocument());
+  ana.c.leave();
+  const copy = tab(env, memoryStorage({ ...ana.storage.data }));
+  await settle();
+  assert.notEqual(copy.v.self.actorId, ana.v.self.actorId);
+  copy.c.reconnect();
+  await settle();
+  assert.equal(copy.v.connected, true);
+});
+
+test('without Web Locks a duplicate identity rotates instead of looping', async () => {
+  const env = browser();
+  const first = tab(env);
+  await enter(first, 'Ana', 'elm-street', localDocument());
+  const copy = createCityRoomSession({
+    storage: memoryStorage({ ...first.storage.data }),
+    openRoom: (options) =>
+      openLocalRoom({ ...options, BroadcastChannel: env.Channel, timers }),
+    claimIdentity: async () => ({ release() {} }),
+    randomId: () => 'p-rotated0001',
+    download() {},
+    changed() {},
+    timers,
+  });
+  await settle();
+  copy.controls.reconnect();
+  await settle();
+  assert.equal(first.v.connected, true, 'the incumbent keeps its identity');
+  assert.equal(first.v.self.role, 'owner');
+  assert.equal(copy.view().self.actorId, 'p-rotated0001');
+  assert.equal(copy.view().connected, true);
+});
+
+test('the search notice clears once the room arrives', async () => {
+  const env = browser();
+  const ana = tab(env);
+  await enter(ana, 'Ana', 'elm-street', localDocument());
+  const ben = tab(env);
+  await enter(ben, 'Ben', 'elm-street');
+  assert.equal(ben.v.ready, true);
+  assert.equal(ben.v.status, null);
 });

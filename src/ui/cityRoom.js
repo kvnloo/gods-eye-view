@@ -66,12 +66,14 @@ export function createCityRoomSession({
   let error = null;
   let searching = null;
   let connecting = false;
+  let claiming = null;
+  let pendingShare = null;
   let disposed = false;
   let cache = { ops: null, projection: null };
   try {
     const saved = JSON.parse(storage.getItem(KEY));
     if (saved) {
-      const ops = mergeRoomOperations([], saved.ops).ops;
+      const ops = mergeRoomOperations([], saved.ops, { room: saved.room }).ops;
       if (
         normalizeRoomCode(saved.room) === saved.room &&
         typeof saved.archive === 'boolean' &&
@@ -90,6 +92,10 @@ export function createCityRoomSession({
   } catch {
     session = null;
   }
+
+  queueMicrotask(() => {
+    if (session && !session.archive) claim();
+  });
 
   function projection() {
     if (!session) return null;
@@ -119,10 +125,21 @@ export function createCityRoomSession({
     }
   }
   function absorb(incoming) {
-    const merged = mergeRoomOperations(session.ops, incoming);
-    if (!merged.added) return false;
+    const own = session.ops.find((op) => op.type === 'genesis');
+    // A second room that reused this code never replaces the room held here.
+    const accepted = own
+      ? incoming.filter((op) => op?.type !== 'genesis' || op.id === own.id)
+      : incoming;
+    const merged = mergeRoomOperations(session.ops, accepted, {
+      room: session.room,
+    });
+    if (!merged.changed) return false;
     session = { ...session, ops: merged.ops };
     persist();
+    if (searching !== null && projection().status === 'ready') {
+      stopSearching();
+      status = null;
+    }
     return true;
   }
   function presence() {
@@ -134,12 +151,51 @@ export function createCityRoomSession({
   }
   function disconnect(notify = true) {
     stopSearching();
+    pendingShare = null;
     const open = channel;
     channel = null;
     peers = new Map();
     open?.close('left', notify);
+  }
+  function release() {
     lease?.release();
     lease = null;
+    claiming = null;
+  }
+  function rotate() {
+    release();
+    session = {
+      ...session,
+      identity: { actorId: randomId(), name: session.identity.name },
+    };
+    persist();
+    status = msg(
+      'This identity is open in another tab. You joined as a new participant.',
+    );
+  }
+  /**
+   * Hold this tab's identity for as long as it holds the room, online or not,
+   * so a duplicated tab can never write under the same author sequence.
+   */
+  function claim() {
+    if (lease || !session || session.archive) return Promise.resolve(lease);
+    claiming ??= (async () => {
+      const wanted = session.identity.actorId;
+      let held = await claimIdentity(wanted);
+      if (!held && !disposed && session?.identity.actorId === wanted) {
+        rotate();
+        held = await claimIdentity(session.identity.actorId);
+      }
+      if (disposed || !session || session.archive) {
+        held?.release();
+        return null;
+      }
+      lease = held;
+      claiming = null;
+      changed();
+      return lease;
+    })();
+    return claiming;
   }
   async function connect() {
     if (disposed || !session || session.archive || channel || connecting)
@@ -148,25 +204,9 @@ export function createCityRoomSession({
     error = null;
     changed();
     try {
-      let claimed = await claimIdentity(session.identity.actorId);
-      if (disposed || !session) {
-        claimed?.release();
-        return;
-      }
-      if (!claimed) {
-        // A duplicated tab copied this identity; continue as a new participant.
-        session = {
-          ...session,
-          identity: { actorId: randomId(), name: session.identity.name },
-        };
-        persist();
-        claimed = await claimIdentity(session.identity.actorId);
-        status = msg(
-          'This identity is open in another tab. You joined as a new participant.',
-        );
-      }
-      lease = claimed;
-      channel = openRoom({
+      await claim();
+      if (disposed || !session || session.archive || !lease) return;
+      const opened = openRoom({
         room: session.room,
         peer: session.identity.actorId,
         presence,
@@ -174,26 +214,39 @@ export function createCityRoomSession({
           if (packet.kind === 'join' && session.ops.length)
             channel?.send('ops', { ops: session.ops });
           if (packet.kind === 'ops' && absorb(packet.ops)) changed();
+          // Only an existing room blocks a share; an early joiner does not.
+          if (pendingShare && session.ops.some((op) => op.type === 'genesis'))
+            abandonShare();
         },
         onPeers(next) {
           peers = next;
           changed();
         },
         onClosed(reason) {
-          if (reason === 'duplicate-identity')
-            error = msg(
-              'Another tab uses this identity. Reload this tab to join as a new participant.',
-            );
-          if (channel) {
-            channel = null;
-            peers = new Map();
-            lease?.release();
-            lease = null;
-            changed();
+          const wasOpen = Boolean(channel);
+          channel = null;
+          peers = new Map();
+          if (reason === 'duplicate-identity' && session && !disposed) {
+            // Without Web Locks the newcomer yields: new identity, then rejoin.
+            rotate();
+            queueMicrotask(() => connect());
           }
+          if (wasOpen) changed();
         },
       });
-      if (!channel) throw new Error('room unavailable');
+      if (!opened) throw new Error('room unavailable');
+      // A duplicate identity, an occupied room code or teardown can end the
+      // attempt while the channel opens.
+      if (opened.closed) return;
+      if (disposed || !session) {
+        opened.close('left');
+        return;
+      }
+      channel = opened;
+      if (pendingShare) {
+        searching = timers.setTimeout(finishShare, SEARCH_MS);
+        return;
+      }
       if (session.ops.length) channel.send('ops', { ops: session.ops });
       if (projection().status !== 'ready') {
         status = msg('Looking for this room in this browser…');
@@ -208,8 +261,6 @@ export function createCityRoomSession({
         }, SEARCH_MS);
       }
     } catch {
-      lease?.release();
-      lease = null;
       channel = null;
       error = msg('Local rooms are unavailable in this browser.');
     } finally {
@@ -219,6 +270,10 @@ export function createCityRoomSession({
   }
   function write(type, payload) {
     if (!session || session.archive) return null;
+    if (!lease) {
+      error = msg('This tab is still claiming its room identity. Try again.');
+      return null;
+    }
     const self = projection();
     if (type !== 'genesis') {
       const role = self.members.find(
@@ -239,7 +294,12 @@ export function createCityRoomSession({
       type,
       payload,
     );
-    session = { ...session, ops: mergeRoomOperations(session.ops, [op]).ops };
+    const merged = mergeRoomOperations(session.ops, [op]);
+    if (!merged.added) {
+      error = msg('the room limit was reached');
+      return null;
+    }
+    session = { ...session, ops: merged.ops };
     // Keep the replica before any other tab can see the operation.
     persist();
     channel?.send('ops', { ops: [op] });
@@ -258,12 +318,59 @@ export function createCityRoomSession({
   }
   function begin(next, ops, message) {
     disconnect();
+    release();
     session = next;
-    session.ops = mergeRoomOperations([], ops).ops;
+    session.ops = mergeRoomOperations([], ops, { room: next.room }).ops;
     editor = freshEditor();
     viewing = null;
     status = message;
     persist();
+  }
+  // A room code another tab already answers for is never taken over.
+  function abandonShare() {
+    pendingShare = null;
+    disconnect();
+    release();
+    session = null;
+    persist();
+    status = null;
+    error = msg(
+      'This room code is already in use in this browser. Join it or choose another code.',
+    );
+    changed();
+  }
+  function finishShare() {
+    searching = null;
+    const document = pendingShare;
+    pendingShare = null;
+    if (!document || !session || !channel) return;
+    const author = { ...session.identity, room: session.room };
+    let ops = [
+      createRoomOperation([], author, 'genesis', {
+        project: { id: document.project.id, title: document.project.title },
+        reference: document.reference,
+      }),
+    ];
+    for (const alternative of document.alternatives) {
+      const latest = alternative.versions.at(-1);
+      ops = mergeRoomOperations(ops, [
+        createRoomOperation(ops, author, 'propose', {
+          title: latest.title,
+          description: latest.description,
+          parameters: latest.parameters,
+        }),
+      ]).ops;
+    }
+    session = {
+      ...session,
+      ops: mergeRoomOperations(session.ops, ops, { room: session.room }).ops,
+    };
+    persist();
+    channel.send('ops', { ops: session.ops });
+    status = msg(
+      'Room created. Other tabs in this browser can join with its code.',
+    );
+    changed();
   }
   function version(id) {
     for (const alternative of projection()?.alternatives ?? [])
@@ -289,31 +396,17 @@ export function createCityRoomSession({
           );
           return;
         }
-        const identity = { actorId: randomId(), name };
-        const author = { ...identity, room };
-        let ops = [
-          createRoomOperation([], author, 'genesis', {
-            project: { id: document.project.id, title: document.project.title },
-            reference: document.reference,
-          }),
-        ];
-        for (const alternative of document.alternatives) {
-          const latest = alternative.versions.at(-1);
-          ops = mergeRoomOperations(ops, [
-            createRoomOperation(ops, author, 'propose', {
-              title: latest.title,
-              description: latest.description,
-              parameters: latest.parameters,
-            }),
-          ]).ops;
-        }
+        // Validate the reference before anything is announced.
+        createRoomOperation([], { actorId: 'p-check000001', name, room }, 'genesis', {
+          project: { id: document.project.id, title: document.project.title },
+          reference: document.reference,
+        });
         begin(
-          { room, identity, ops: [], archive: false },
-          ops,
-          msg(
-            'Room created. Other tabs in this browser can join with its code.',
-          ),
+          { room, identity: { actorId: randomId(), name }, ops: [], archive: false },
+          [],
+          msg('Checking that this room code is free in this browser…'),
         );
+        pendingShare = document;
         connect();
       });
     },
@@ -354,6 +447,7 @@ export function createCityRoomSession({
     close() {
       act(() => {
         disconnect();
+        release();
         session = null;
         editor = freshEditor();
         persist();
@@ -497,6 +591,7 @@ export function createCityRoomSession({
     destroy() {
       disposed = true;
       disconnect(true);
+      release();
     },
   };
 

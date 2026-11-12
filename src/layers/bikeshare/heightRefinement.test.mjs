@@ -29,6 +29,24 @@ function busyWait(ms) {
   while (performance.now() < until);
 }
 
+/** Count per-event-loop-turn depth samples with bounded memory. */
+function createBurstMeter() {
+  let current = 0;
+  let peak = 0;
+  return {
+    sample() {
+      current += 1;
+    },
+    nextTurn() {
+      peak = Math.max(peak, current);
+      current = 0;
+    },
+    longestBurst() {
+      return Math.max(peak, current);
+    },
+  };
+}
+
 /** `count` stations on a line through Boston. */
 function stations(count, prefix = 's') {
   return {
@@ -57,12 +75,12 @@ function makeLayer({
   unloaded = () => false,
 } = {}) {
   const calls = { sampleHeight: 0, getHeight: 0, sharedHeight: 0, render: 0 };
-  /** sampleHeight calls per turn of the event loop. */
-  const perTurn = [0];
+  /** Peak depth reads per event-loop turn, independent of test duration. */
+  const burst = createBurstMeter();
   let ticking = true;
   const tick = () => {
     if (!ticking) return;
-    perTurn.push(0);
+    burst.nextTurn();
     setImmediate(tick);
   };
   setImmediate(tick);
@@ -80,7 +98,7 @@ function makeLayer({
       sampleHeightSupported: true,
       sampleHeight(carto) {
         calls.sampleHeight += 1;
-        perTurn[perTurn.length - 1] += 1;
+        burst.sample();
         busyWait(SAMPLE_COST_MS);
         return groundAt(...degrees(carto));
       },
@@ -176,7 +194,7 @@ function makeLayer({
     },
     /** The most sampleHeight calls made without yielding to the loop. */
     longestBurst() {
-      return Math.max(...perTurn);
+      return burst.longestBurst();
     },
     done() {
       ticking = false;
@@ -186,6 +204,18 @@ function makeLayer({
 }
 
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+test('burst accounting stays bounded across 200,000 idle event-loop turns', () => {
+  const burst = createBurstMeter();
+  burst.sample();
+  burst.sample();
+  burst.nextTurn();
+  for (let i = 0; i < 200_000; i += 1) burst.nextTurn();
+  burst.sample();
+  assert.equal(burst.longestBurst(), 2);
+  burst.nextTurn();
+  assert.equal(burst.longestBurst(), 2);
+});
 
 test('a city of stations is drawn at once without sampling heights', (t) => {
   const layer = makeLayer();

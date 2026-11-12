@@ -454,7 +454,7 @@ try {
         'detail tier',
         30000,
       );
-      await locator('[data-city-play-callout]')
+      await locator('[data-city-play-callout] .city-play-callout-label')
         .first()
         .waitFor({ state: 'visible', timeout: 20000 });
       await locator('[data-city-play-stats]').waitFor({ state: 'visible' });

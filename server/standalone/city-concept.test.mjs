@@ -4,10 +4,17 @@ import { createServer, request } from 'node:http';
 import { EventEmitter } from 'node:events';
 import { PassThrough, Readable } from 'node:stream';
 import { spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { cityConceptPlugin } from './city-concept.js';
 import { createPlanningConceptGenerator } from '../../src/data/planningConceptGenerator.js';
+
+// The real-Python bridge tests need the interpreter the endpoint pins; skip, never fake, elsewhere.
+const BRIDGE_PYTHON = '/mnt/zer0models/comfyui/.venv/bin/python';
+const bridgeSkip = existsSync(BRIDGE_PYTHON)
+  ? false
+  : `needs the pinned bridge interpreter ${BRIDGE_PYTHON}`;
 
 const PNG =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aP1sAAAAASUVORK5CYII=';
@@ -455,38 +462,51 @@ test('child process errors cannot release a still-running generation slot', asyn
   assert.equal((await pending).status, 502);
 });
 
-test('Python CLI rejects invalid input and arbitrary arguments with generic errors before generation', () => {
-  for (const [args, input] of [
-    [[], 'not JSON'],
-    [[], JSON.stringify({ prompt: 'x', image: 'https://example.org/ref.png' })],
-    [
-      [],
-      JSON.stringify({ prompt: 'x', image: 'data:image/png;base64,PHN2Zy8+' }),
-    ],
-    [[], 'x'.repeat(1024 * 1024 + 1)],
-    [['--generator=/tmp/not-allowed.py'], '{}'],
-  ]) {
-    const result = spawnSync(
-      '/usr/bin/env',
+test(
+  'Python CLI rejects invalid input and arbitrary arguments with generic errors before generation',
+  { skip: bridgeSkip },
+  () => {
+    for (const [args, input] of [
+      [[], 'not JSON'],
       [
-        '-i',
-        `HOME=${homedir()}`,
-        'PATH=/usr/bin:/bin',
-        '/mnt/zer0models/comfyui/.venv/bin/python',
-        '-B',
-        script,
-        ...args,
+        [],
+        JSON.stringify({ prompt: 'x', image: 'https://example.org/ref.png' }),
       ],
-      { input, encoding: 'utf8', env: {} },
-    );
-    assert.equal(result.status, 1);
-    assert.equal(result.stdout, '');
-    assert.equal(result.stderr, 'Local concept generation failed\n');
-  }
-});
+      [
+        [],
+        JSON.stringify({
+          prompt: 'x',
+          image: 'data:image/png;base64,PHN2Zy8+',
+        }),
+      ],
+      [[], 'x'.repeat(1024 * 1024 + 1)],
+      [['--generator=/tmp/not-allowed.py'], '{}'],
+    ]) {
+      const result = spawnSync(
+        '/usr/bin/env',
+        [
+          '-i',
+          `HOME=${homedir()}`,
+          'PATH=/usr/bin:/bin',
+          '/mnt/zer0models/comfyui/.venv/bin/python',
+          '-B',
+          script,
+          ...args,
+        ],
+        { input, encoding: 'utf8', env: {} },
+      );
+      assert.equal(result.status, 1);
+      assert.equal(result.stdout, '');
+      assert.equal(result.stderr, 'Local concept generation failed\n');
+    }
+  },
+);
 
-test('Python bridge converts JPEG references to PNG, calls installed generate once, and bounds its JPEG output without network', () => {
-  const code = String.raw`
+test(
+  'Python bridge converts JPEG references to PNG, calls installed generate once, and bounds its JPEG output without network',
+  { skip: bridgeSkip },
+  () => {
+    const code = String.raw`
 import base64, contextlib, importlib.util, io, json, pathlib, random, runpy, sys, types
 from unittest.mock import patch
 from PIL import Image
@@ -529,20 +549,21 @@ assert calls[0][0] == payload['prompt']
 assert calls[0][2] == {'size': '1536x1024'}
 print('Python bridge passed without real generation')
 `;
-  const result = spawnSync(
-    '/usr/bin/env',
-    [
-      '-i',
-      `HOME=${homedir()}`,
-      'PATH=/usr/bin:/bin',
-      '/mnt/zer0models/comfyui/.venv/bin/python',
-      '-B',
-      '-c',
-      code,
-      script,
-    ],
-    { encoding: 'utf8', env: {} },
-  );
-  assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /passed without real generation/);
-});
+    const result = spawnSync(
+      '/usr/bin/env',
+      [
+        '-i',
+        `HOME=${homedir()}`,
+        'PATH=/usr/bin:/bin',
+        '/mnt/zer0models/comfyui/.venv/bin/python',
+        '-B',
+        '-c',
+        code,
+        script,
+      ],
+      { encoding: 'utf8', env: {} },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /passed without real generation/);
+  },
+);

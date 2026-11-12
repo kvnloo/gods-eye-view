@@ -375,7 +375,7 @@ try {
           'chatgpt-subscription/comfyui-codex-image',
           'real provider recorded',
         );
-        await page.waitForTimeout(1800);
+        await page.waitForTimeout(7000); // a real ~460 KB concept texture needs time to upload
         await screenshot('r03-real-concept-in-world');
         await reopenWheel();
         await locator('[data-city-play-action="inspect"]').click();

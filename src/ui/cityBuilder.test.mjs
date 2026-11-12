@@ -191,3 +191,81 @@ test('sharing dialog excludes open and local provider requires development capab
   other.controls.setProvider('local');
   assert.equal(other.view.city.provider, 'fixture');
 });
+test('play mode: reimagining a plot creates the project, a sited alternative and its concept', async () => {
+  const { snapPlot } = await import('../data/cityPlot.js');
+  let play = null;
+  const h = harness({ publishPlay: (v) => (play = v) });
+  assert.equal(play.alternatives, null, 'no project yet: stats stay unknown');
+  assert.equal(play.pending, false);
+  const plot = snapPlot({ lat: 0.1, lon: 0.1 });
+  const id = await h.controls.reimagine({ plot, kind: 'plaza' });
+  assert.equal(id, 'world-1');
+  assert.equal(h.calls, 1, 'exactly one explicit generation');
+  assert.equal(h.view, null, 'the records dialog stays closed');
+  const [a] = play.alternatives;
+  assert.equal(a.parameters.kind, 'plaza');
+  assert.deepEqual(a.site.plot, plot);
+  assert.equal(a.site.reference, null, 'the first capture is the project baseline');
+  assert.equal(a.concept.label, 'AI concept, not a plan or an approval');
+  assert.deepEqual(a.concept.sourceView, reference);
+  assert.ok(a.title && a.description);
+  const doc = JSON.parse(h.saved);
+  assert.equal(doc.alternatives[0].site.plot.id, plot.id);
+  // A second plot gets its own captured view.
+  const other = snapPlot({ lat: -0.2, lon: 0.3 });
+  const id2 = await h.controls.reimagine({ plot: other, kind: 'park' });
+  assert.equal(id2, 'world-2');
+  assert.deepEqual(play.alternatives[1].site.reference, reference);
+  assert.equal(h.calls, 2);
+  // Reroll makes version 2 with a new concept; history keeps version 1.
+  await h.controls.reroll('world-1');
+  assert.equal(play.alternatives[0].revision, 2);
+  assert.equal(play.alternatives[0].versionCount, 2);
+  assert.ok(play.alternatives[0].concept);
+  assert.equal(h.calls, 3);
+  assert.equal(JSON.parse(h.saved).alternatives[0].versions.length, 2);
+  // The records dialog shows the same document.
+  h.controls.open();
+  assert.equal(h.view.city.alternatives.length, 2);
+  assert.equal(h.view.city.alternatives[0].history.length, 2);
+});
+test('play mode: busy, full and failed generations never write partial concepts silently', async () => {
+  const { snapPlot } = await import('../data/cityPlot.js');
+  let play = null;
+  let fail = false;
+  const h = harness({
+    publishPlay: (v) => (play = v),
+    generator: () => ({
+      generate: async () => {
+        if (fail) throw new Error('offline');
+        return createPlanningConceptGenerator({
+          now: () => reference.capturedAt,
+        }).generate({
+          description: 'd',
+          parameters: { kind: 'park' },
+          sourceView: reference,
+        });
+      },
+    }),
+  });
+  const plot = snapPlot({ lat: 0.1, lon: 0.1 });
+  const first = h.controls.reimagine({ plot, kind: 'park' });
+  assert.equal(play.pending, true);
+  assert.equal(await h.controls.reimagine({ plot, kind: 'park' }), null);
+  await first;
+  fail = true;
+  assert.equal(await h.controls.reimagine({ plot, kind: 'plaza' }), null);
+  assert.ok(play.error, 'failure is visible');
+  assert.equal(play.alternatives[1].concept, null, 'saved proposal, no concept');
+  fail = false;
+  await h.controls.reroll('world-2');
+  assert.equal(play.alternatives[1].revision, 1, 'retry fills the empty version');
+  assert.ok(play.alternatives[1].concept);
+  for (let i = 0; i < 4; i++)
+    await h.controls.reimagine({ plot, kind: 'bike-lane' });
+  assert.equal(play.alternatives.length, 6);
+  assert.equal(play.full, true);
+  assert.equal(await h.controls.reimagine({ plot, kind: 'park' }), null);
+  assert.equal(play.alternatives.length, 6);
+  assert.equal(await h.controls.reimagine({ plot: null, kind: 'park' }), null);
+});

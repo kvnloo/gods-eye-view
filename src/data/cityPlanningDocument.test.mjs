@@ -630,3 +630,85 @@ test('key order is irrelevant but omitted, inherited and extra keys are never re
   const inherited = Object.create(document());
   assert.throws(() => serializeCityDocument(inherited));
 });
+
+// Play mode: an alternative may carry the plot it reimagines and that plot's own captured view.
+function plotReference() {
+  return {
+    ...reference(),
+    camera: { lat: 40.04, lon: -88.16, alt: 320, heading: 15, pitch: -35, roll: 0 },
+    bounds: [-88.17, 40.045, -88.14, 40.07],
+    capturedAt: '2026-11-12T12:00:00.000Z',
+  };
+}
+function sited(site, id = 'plot-world') {
+  return { ...alternative(id), site };
+}
+
+test('a sited alternative keeps its snapped plot and own captured view through history, export and import', async () => {
+  const { snapPlot } = await import('./cityPlot.js');
+  const plot = snapPlot({ lat: 40.05, lon: -88.155 });
+  const own = plotReference();
+  const doc = addCityAlternative(populated(), sited({ plot, reference: own }));
+  const [, latest] = cityAlternatives(doc);
+  assert.deepEqual(latest.site.plot, plot);
+  assert.deepEqual(latest.site.reference, own);
+  assert.equal(cityAlternatives(doc)[0].site, null, 'unsited alternatives stay unsited');
+  assert.equal(Object.hasOwn(doc.alternatives[0], 'site'), false);
+  // The concept's provenance must be the plot's own capture, not the project baseline.
+  assert.throws(() =>
+    attachCityConcept(doc, 'plot-world', 1, concept()),
+  );
+  const attached = attachCityConcept(doc, 'plot-world', 1, {
+    ...concept(),
+    sourceView: own,
+  });
+  assert.deepEqual(cityAlternatives(attached)[1].concept.sourceView, own);
+  // Reroll: a new version on the same plot keeps the site and accepts a new concept.
+  const { id: _ignored, ...edit } = alternative('x');
+  const rerolled = reviseCityAlternative(attached, 'plot-world', 1, edit);
+  assert.deepEqual(cityAlternatives(rerolled)[1].site, latest.site);
+  const second = attachCityConcept(rerolled, 'plot-world', 2, {
+    ...concept(),
+    sourceView: own,
+  });
+  assert.equal(cityAlternatives(second)[1].versionCount, 2);
+  const text = serializeCityDocument(second);
+  assert.deepEqual(parseCityDocument(text), second);
+  // A null site reference means the project baseline was captured for this plot.
+  const first = addCityAlternative(
+    document(),
+    sited({ plot: snapPlot({ lat: 40.05, lon: -88.15 }), reference: null }),
+  );
+  attachCityConcept(first, 'plot-world', 1, concept());
+});
+
+test('sites reject edited plots, plots outside their captured view and extra keys', async () => {
+  const { snapPlot } = await import('./cityPlot.js');
+  const plot = snapPlot({ lat: 40.05, lon: -88.155 });
+  const base = addCityAlternative(
+    populated(),
+    sited({ plot, reference: plotReference() }),
+  );
+  rejectImport((d) => {
+    d.alternatives[1].site.plot.corners[0][0] += 0.0001;
+  }, base);
+  rejectImport((d) => {
+    d.alternatives[1].site.extra = true;
+  }, base);
+  rejectImport((d) => {
+    d.alternatives[1].site = null;
+  }, base);
+  rejectImport((d) => {
+    d.alternatives[1].site.reference.image = 'data:image/png;base64,AAAA';
+  }, base);
+  const outside = snapPlot({ lat: 41, lon: -88.155 });
+  assert.throws(() =>
+    addCityAlternative(populated(), sited({ plot: outside, reference: plotReference() })),
+  );
+  assert.throws(() =>
+    addCityAlternative(populated(), sited({ plot: outside, reference: null })),
+  );
+  assert.throws(() =>
+    addCityAlternative(populated(), sited({ plot, reference: plotReference(), x: 1 })),
+  );
+});

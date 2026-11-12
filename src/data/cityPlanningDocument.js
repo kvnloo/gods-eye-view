@@ -6,6 +6,7 @@ import {
   applyCollaborationOperations,
   createCollaborationState,
 } from './collaborationAuthority.js';
+import { plotValue } from './cityPlot.js';
 
 const MAX_DOCUMENT_BYTES = 4 * 1024 * 1024;
 const MAX_IMAGE_LENGTH = 600_000;
@@ -220,6 +221,24 @@ function editValue(input) {
   };
 }
 
+// A play-mode site: the snapped plot and the view captured for it. A null
+// reference means the project baseline was captured for this plot.
+function siteValue(value, baseline) {
+  keys(value, ['plot', 'reference']);
+  const plot = plotValue(value.plot);
+  const reference =
+    value.reference === null ? null : referenceValue(value.reference);
+  const [west, south, east, north] = (reference ?? baseline).bounds;
+  const { lat, lon } = plot.center;
+  if (lon < west || lon > east || lat < south || lat > north)
+    fail('plot must lie inside its captured view');
+  return { plot, reference };
+}
+
+function sourceOf(alternative, baseline) {
+  return alternative.site?.reference ?? baseline;
+}
+
 function operationFor(project, alternativeId, index, revision, edit) {
   return createPlanningAlternativeOperation(project, {
     // Slots are stable because alternatives cannot be deleted or reordered.
@@ -285,10 +304,13 @@ function documentValue(value) {
   list(value.alternatives, 0, 6);
   const ids = new Set();
   const alternatives = value.alternatives.map((alternative, index) => {
-    keys(alternative, ['id', 'versions']);
+    const isSited = Object.hasOwn(alternative ?? {}, 'site');
+    keys(alternative, isSited ? ['id', 'site', 'versions'] : ['id', 'versions']);
     const id = identifier(alternative.id);
     if (ids.has(id)) fail('duplicate alternative id');
     ids.add(id);
+    const site = isSited ? siteValue(alternative.site, reference) : null;
+    const source = site?.reference ?? reference;
     list(alternative.versions, 1, 20);
     const versions = alternative.versions.map((version, versionIndex) => {
       keys(version, [
@@ -307,14 +329,14 @@ function documentValue(value) {
       });
       const expected = versionFor(project, id, index, versionIndex + 1, edit);
       if (version.concept !== null)
-        expected.concept = conceptValue(version.concept, reference, true);
+        expected.concept = conceptValue(version.concept, source, true);
       if (!same(version, expected))
         fail(
           'version or proposal differs from its constructor-produced history',
         );
       return expected;
     });
-    return { id, versions };
+    return site ? { id, site, versions } : { id, versions };
   });
   const result = {
     schemaVersion: 1,
@@ -344,8 +366,15 @@ export function createCityDocument(input) {
 export function addCityAlternative(document, input) {
   const doc = documentValue(document);
   boundedJson(input);
-  keys(input, ['id', 'title', 'description', 'parameters']);
+  const isSited = Object.hasOwn(input ?? {}, 'site');
+  keys(
+    input,
+    isSited
+      ? ['id', 'title', 'description', 'parameters', 'site']
+      : ['id', 'title', 'description', 'parameters'],
+  );
   const id = identifier(input.id);
+  const site = isSited ? siteValue(input.site, doc.reference) : null;
   if (
     doc.alternatives.length >= 6 ||
     doc.alternatives.some((alternative) => alternative.id === id)
@@ -359,7 +388,10 @@ export function addCityAlternative(document, input) {
   const version = versionFor(doc.project, id, doc.alternatives.length, 1, edit);
   return documentValue({
     ...doc,
-    alternatives: [...doc.alternatives, { id, versions: [version] }],
+    alternatives: [
+      ...doc.alternatives,
+      site ? { id, site, versions: [version] } : { id, versions: [version] },
+    ],
   });
 }
 
@@ -400,7 +432,7 @@ export function attachCityConcept(document, id, revision, concept) {
   if (alternative.versions.at(-1).concept !== null)
     fail('save a new version before attaching another concept');
   boundedJson(concept);
-  const attached = conceptValue(concept, doc.reference);
+  const attached = conceptValue(concept, sourceOf(alternative, doc.reference));
   return documentValue({
     ...doc,
     alternatives: doc.alternatives.map((entry, i) =>
@@ -450,6 +482,7 @@ export function cityAlternatives(document) {
       ...alternative.versions.at(-1),
       id: alternative.id,
       versionCount: alternative.versions.length,
+      site: alternative.site ?? null,
     })),
   );
 }

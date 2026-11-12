@@ -500,3 +500,45 @@ test('association retains inclusive valid intervals and rejects reversed bounds'
     'documented-residence',
   );
 });
+
+for (const field of ['title', 'sourceName', 'context']) {
+  test(`association requires nonempty ${field} provenance`, () => {
+    for (const value of [undefined, null, '', ' \t ', 12, ['citation']]) {
+      assert.equal(
+        historicalPlaceAssociation(
+          { ...HISTORICAL_PLACES[0], [field]: value },
+          1880,
+          2026,
+        ),
+        null,
+      );
+    }
+  });
+}
+
+test('association requires a usable credential-free HTTPS source reference', () => {
+  for (const sourceUrl of [
+    undefined,
+    null,
+    '',
+    '/relative',
+    'not a URL',
+    'javascript:alert(1)',
+    'http://example.org/',
+    'https://user:secret@example.org/',
+    ['https://example.org/'],
+  ]) {
+    assert.equal(
+      historicalPlaceAssociation(
+        { ...HISTORICAL_PLACES[0], sourceUrl },
+        1880,
+        2026,
+      ),
+      null,
+    );
+  }
+  assert.equal(
+    historicalPlaceAssociation(HISTORICAL_PLACES[0], 1880, 2026).sourceUrl,
+    HISTORICAL_PLACES[0].sourceUrl,
+  );
+});

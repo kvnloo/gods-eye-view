@@ -173,10 +173,31 @@ export function historicalAnimationView({
   });
 }
 
+function hasHistoricalSource(place) {
+  if (
+    !['title', 'sourceName', 'context', 'sourceUrl'].every(
+      (field) => typeof place[field] === 'string' && place[field].trim(),
+    )
+  )
+    return false;
+  try {
+    const url = new URL(place.sourceUrl);
+    return (
+      url.protocol === 'https:' &&
+      Boolean(url.hostname) &&
+      !url.username &&
+      !url.password
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function historicalPlaceAssociation(place, year, currentYear) {
   const selectedYear = historicalYear(year, currentYear);
   if (
     !place ||
+    !hasHistoricalSource(place) ||
     !Number.isSafeInteger(place.associatedFrom) ||
     !Number.isSafeInteger(place.associatedUntil) ||
     place.associatedFrom === 0 ||

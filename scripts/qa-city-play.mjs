@@ -205,12 +205,21 @@ async function clickGlobe(x, y) {
     20000,
   );
 }
+async function mapPoint(viewport) {
+  // The middle of the free map area: walk up from 52 % height past any overlay.
+  return page.evaluate(({ width, height }) => {
+    const canvas = document.querySelector('#cesiumContainer canvas');
+    const x = Math.round(width / 2);
+    for (let y = Math.round(height * 0.52); y > 140; y -= 12) {
+      if (document.elementFromPoint(x, y) === canvas) return { x, y };
+    }
+    return { x, y: Math.round(height * 0.4) };
+  }, viewport);
+}
 async function selectPlotWithWheel(viewport) {
-  // Click near the middle of the free map area; the wheel must follow the plot.
-  await clickGlobe(
-    Math.round(viewport.width / 2),
-    Math.round(viewport.height * 0.52),
-  );
+  // Click the free map; the wheel must follow the plot.
+  const at = await mapPoint(viewport);
+  await clickGlobe(at.x, at.y);
   await locator(S.ring).waitFor({ state: 'visible', timeout: 20000 });
   await until(
     () => window.__gevCityPlay.snapshot().anchors?.plot,

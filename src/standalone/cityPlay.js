@@ -26,6 +26,9 @@ const BODY_CLASS = 'gev-city-play';
 const BOX_HEIGHT = 26;
 const HOLO_WIDTH = 64;
 const SCAN_MS = 1400;
+const BEACON_HEIGHT = 160;
+// Narrow screens lead the framing so the plot sits above the bottom carousel.
+const NARROW_LEAD = { oblique: 120, detail: 50 };
 const ACCENT = Cesium.Color.fromCssColorString('#2ec8e8');
 const KIND_COLORS = {
   park: Cesium.Color.fromCssColorString('#5ee08a'),
@@ -290,6 +293,7 @@ export function mountCityPlay({
         entity._cityKind !== shown.get(plotId).parameters.kind
       ) {
         ds.entities.remove(entity);
+        ds.entities.remove(entity._cityBeacon);
         tints.delete(plotId);
       }
     }
@@ -304,8 +308,19 @@ export function mountCityPlay({
           },
         });
         tint._cityKind = a.parameters.kind;
+        // A tall kind-coloured beacon makes a 40 m plot readable from the district view.
+        const base = baseHeight(a.site.plot);
+        tint._cityBeacon = ds.entities.add({
+          wall: {
+            positions: ring(a.site.plot, base),
+            minimumHeights: Array(5).fill(base),
+            maximumHeights: Array(5).fill(base + BEACON_HEIGHT),
+            material: KIND_COLORS[a.parameters.kind].withAlpha(0.42),
+          },
+        });
         tints.set(plotId, tint);
       }
+      tints.get(plotId)._cityBeacon.show = tier === 'district';
       if (!holos.has(plotId)) {
         const g = holoGeometry(a);
         if (!appeared.has(key)) appeared.set(key, now());
@@ -614,11 +629,18 @@ export function mountCityPlay({
     const frameOf = FRAMES[kind];
     const base = baseHeight(plot);
     const camera = viewer.camera;
+    const lead = scene.canvas.clientWidth < 600 ? NARROW_LEAD[kind] : 0;
+    // Aim at a point between the camera and the plot, which lifts the plot on screen.
+    const metersLon = 111_320 * Math.cos((plot.center.lat * Math.PI) / 180);
+    const aimLat =
+      plot.center.lat - (Math.cos(camera.heading) * lead) / 111_320;
+    const aimLon =
+      plot.center.lon - (Math.sin(camera.heading) * lead) / metersLon;
     return new Promise((resolve) => {
       camera.cancelFlight?.();
       camera.flyToBoundingSphere(
         new Cesium.BoundingSphere(
-          Cesium.Cartesian3.fromDegrees(plot.center.lon, plot.center.lat, base),
+          Cesium.Cartesian3.fromDegrees(aimLon, aimLat, base),
           plot.sizeMeters,
         ),
         {

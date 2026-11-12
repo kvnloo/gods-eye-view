@@ -646,10 +646,20 @@ body.gev-city-play #cesiumContainer {
     flex-basis: 196px;
   }
   .city-play-card--ghost {
-    flex-basis: 132px;
+    flex-basis: 112px;
   }
   .city-play-card-image {
-    height: 84px;
+    height: 64px;
+  }
+  .city-play-card {
+    gap: 4px;
+    padding: 6px;
+  }
+  .city-play-card-title {
+    font-size: 11px;
+  }
+  .city-play-chip {
+    padding: 2px;
   }
   .city-play-stats {
     top: auto;

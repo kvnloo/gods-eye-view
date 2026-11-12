@@ -220,7 +220,8 @@ async function selectPlotWithWheel(viewport) {
   // Click the free map; the wheel must follow the plot.
   const at = await mapPoint(viewport);
   await clickGlobe(at.x, at.y);
-  await locator(S.ring).waitFor({ state: 'visible', timeout: 20000 });
+  // From the district view the plot click flies in before the wheel opens.
+  await locator(S.ring).waitFor({ state: 'visible', timeout: 30000 });
   await until(
     () => window.__gevCityPlay.snapshot().anchors?.plot,
     'plot projected',
@@ -524,6 +525,13 @@ try {
         120000,
       );
       assert.deepEqual(await persisted(), before);
+      // The app restores the shared view with its own flight; let it land first.
+      await until(
+        () => !window.__godsEyeView.viewer.camera._currentFlight,
+        'camera settled after reload',
+        60000,
+      );
+      await page.waitForTimeout(1500);
       await locator(S.pill).click();
       await locator(S.play).waitFor({ state: 'visible' });
       const stats = Object.fromEntries(

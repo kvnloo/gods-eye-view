@@ -13,14 +13,23 @@ export function mountPlanetPlayground(services, featureOverrides = null) {
   const discoveredFeatures = Object.entries(discovered)
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([, module]) => module.feature)
-    .filter((item) => item && typeof item.id === 'string' && typeof item.mount === 'function');
+    .filter(
+      (item) =>
+        item && typeof item.id === 'string' && typeof item.mount === 'function',
+    );
   // Injectable local feature registry keeps lifetime tests independent of Vite.
-  const features = Array.isArray(featureOverrides) ? featureOverrides : discoveredFeatures;
+  const features = Array.isArray(featureOverrides)
+    ? featureOverrides
+    : discoveredFeatures;
   const doc = services.document || document;
   if (doc.querySelector('#planet-playground-launcher') || !features.length)
     return () => {};
   // An embedded globe is controlled by its host; it must not acquire a second UI.
-  if (new URLSearchParams(services.window?.location?.search || '').get('embed') === '1')
+  if (
+    new URLSearchParams(services.window?.location?.search || '').get(
+      'embed',
+    ) === '1'
+  )
     return () => {};
 
   const launcher = doc.createElement('button');
@@ -66,8 +75,7 @@ export function mountPlanetPlayground(services, featureOverrides = null) {
   const removeTabListeners = [];
   // One keyboard tab stop follows focus, not the currently mounted mode.
   function setTabStop(target) {
-    for (const button of buttons)
-      button.tabIndex = button === target ? 0 : -1;
+    for (const button of buttons) button.tabIndex = button === target ? 0 : -1;
   }
   // A failing feature cleanup must not trap the shell in its previous mode.
   // Only the feature can guarantee that its partially released resources are safe.
@@ -98,15 +106,17 @@ export function mountPlanetPlayground(services, featureOverrides = null) {
       button.tabIndex = selected ? 0 : -1;
     }
     try {
-      disposeFeature = feature.mount({
-        root: body,
-        services: { ...services, Cesium },
-      }) || null;
+      disposeFeature =
+        feature.mount({
+          root: body,
+          services: { ...services, Cesium },
+        }) || null;
     } catch (error) {
       // Retry the same tab after a transient mount failure.
       activeId = null;
       const problem = doc.createElement('p');
-      problem.textContent = 'This mode could not open. Other modes remain available.';
+      problem.textContent =
+        'This mode could not open. Other modes remain available.';
       body.replaceChildren(problem);
       console.error('Planet Playground mode failed:', feature.id, error);
     }
@@ -144,9 +154,15 @@ export function mountPlanetPlayground(services, featureOverrides = null) {
     // Focus-only navigation: keyboard browsing must not join a room.
     const onTabKeydown = (event) => {
       if (
-        disposed || !opened || panel.hidden || event.defaultPrevented ||
-        event.altKey || event.ctrlKey || event.metaKey
-      ) return;
+        disposed ||
+        !opened ||
+        panel.hidden ||
+        event.defaultPrevented ||
+        event.altKey ||
+        event.ctrlKey ||
+        event.metaKey
+      )
+        return;
       let next = index;
       if (event.key === 'ArrowRight') next = (index + 1) % buttons.length;
       else if (event.key === 'ArrowLeft')

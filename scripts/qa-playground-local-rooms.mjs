@@ -33,8 +33,9 @@ async function joinRoom(page, name) {
     name,
   );
   await page.evaluate(() => {
-    const join = [...document.querySelectorAll('#planet-playground-content button')]
-      .find((button) => button.textContent.trim() === 'Join local room');
+    const join = [
+      ...document.querySelectorAll('#planet-playground-content button'),
+    ].find((button) => button.textContent.trim() === 'Join local room');
     if (!join) throw new Error('Local-room Join control is missing');
     join.click();
   });
@@ -80,18 +81,25 @@ try {
   }
   await first.click('#planet-playground-launcher');
   await first.focus('[role="tab"][aria-selected="true"]');
-  for (let index = 0; index < 3; index++) await first.keyboard.press('ArrowRight');
+  for (let index = 0; index < 3; index++)
+    await first.keyboard.press('ArrowRight');
   assert.equal(
     await first.$eval(roomTab, (tab) => tab === document.activeElement),
     true,
     'arrow navigation should focus Local rooms',
   );
-  assert.equal(await first.$eval(roomTab, (tab) => tab.getAttribute('aria-selected')),
-    'false', 'focus-only navigation must not activate a room');
+  assert.equal(
+    await first.$eval(roomTab, (tab) => tab.getAttribute('aria-selected')),
+    'false',
+    'focus-only navigation must not activate a room',
+  );
   assert.equal(await first.evaluate(() => window.__qaRoomsOpened), 0);
   await first.keyboard.press('Enter');
   await first.waitForSelector(roomInput);
-  assert.equal(await first.$eval(roomTab, (tab) => tab.textContent), 'Local rooms');
+  assert.equal(
+    await first.$eval(roomTab, (tab) => tab.textContent),
+    'Local rooms',
+  );
   assert.match(
     await first.$eval('#planet-playground-content', (node) => node.textContent),
     /No internet rooms, verified identities/,
@@ -122,16 +130,21 @@ try {
     });
   });
   await first.waitForFunction(
-    () => [...document.querySelectorAll('#planet-playground-content button')]
-      .some((button) => button.textContent === 'Visit view'),
+    () =>
+      [...document.querySelectorAll('#planet-playground-content button')].some(
+        (button) => button.textContent === 'Visit view',
+      ),
     { timeout: 10_000 },
   );
   await first.evaluate(() => {
-    window.__qaVisit = [...document.querySelectorAll('#planet-playground-content button')]
-      .find((button) => button.textContent === 'Visit view');
+    window.__qaVisit = [
+      ...document.querySelectorAll('#planet-playground-content button'),
+    ].find((button) => button.textContent === 'Visit view');
     window.__qaVisit.focus();
   });
-  const receivedBeforeHello = await first.evaluate(() => window.__qaRoomReceipts);
+  const receivedBeforeHello = await first.evaluate(
+    () => window.__qaRoomReceipts,
+  );
   await second.evaluate(() => {
     window.__qaPeer.postMessage({
       protocol: 'gev.playground.local-room.v1',
@@ -146,9 +159,11 @@ try {
     { timeout: 10_000 },
     receivedBeforeHello,
   );
-  assert.equal(await first.evaluate(
-    () => document.activeElement === window.__qaVisit,
-  ), true, 'a peer heartbeat must not detach focused Visit view');
+  assert.equal(
+    await first.evaluate(() => document.activeElement === window.__qaVisit),
+    true,
+    'a peer heartbeat must not detach focused Visit view',
+  );
   await second.evaluate(() => {
     window.__qaPeer.postMessage({
       protocol: 'gev.playground.local-room.v1',
@@ -167,9 +182,9 @@ try {
   await waitForPeers(second, 1);
 
   await first.evaluate(() => {
-    window.__qaRetainedJoin = [...document.querySelectorAll(
-      '#planet-playground-content button',
-    )].find((button) => button.textContent === 'Join local room');
+    window.__qaRetainedJoin = [
+      ...document.querySelectorAll('#planet-playground-content button'),
+    ].find((button) => button.textContent === 'Join local room');
   });
   await first.focus(roomInput);
   await first.keyboard.press('Escape');
@@ -181,8 +196,11 @@ try {
     () => window.__qaRoomsOpened,
   );
   await first.evaluate(() => window.__qaRetainedJoin.click());
-  assert.equal(await first.evaluate(() => window.__qaRoomsOpened),
-    channelsBeforeStaleClick, 'stale hidden Join must not reopen a room');
+  assert.equal(
+    await first.evaluate(() => window.__qaRoomsOpened),
+    channelsBeforeStaleClick,
+    'stale hidden Join must not reopen a room',
+  );
   console.log('PASS: Chromium keyboard, focus, independent rooms and teardown');
 } finally {
   await browser.close();

@@ -8,15 +8,23 @@ const HEARTBEAT_MS = 15_000;
 const PEER_EXPIRE_MS = 75_000;
 
 export function normalizeRoom(raw) {
-  const room = String(raw || '').trim().toLowerCase();
+  const room = String(raw || '')
+    .trim()
+    .toLowerCase();
   return /^[a-z0-9-]{3,24}$/.test(room) ? room : null;
 }
 export function parseRoomMessage(raw, room, now = Date.now()) {
-  if (!raw || typeof raw !== 'object' || raw.protocol !== ROOM_PROTOCOL ||
-      raw.room !== room || typeof raw.peer !== 'string' ||
-      !/^[a-z0-9-]{4,32}$/.test(raw.peer) ||
-      !['join', 'hello', 'leave', 'view'].includes(raw.kind) ||
-      !Number.isFinite(raw.sentAt) || Math.abs(now - raw.sentAt) > 60000)
+  if (
+    !raw ||
+    typeof raw !== 'object' ||
+    raw.protocol !== ROOM_PROTOCOL ||
+    raw.room !== room ||
+    typeof raw.peer !== 'string' ||
+    !/^[a-z0-9-]{4,32}$/.test(raw.peer) ||
+    !['join', 'hello', 'leave', 'view'].includes(raw.kind) ||
+    !Number.isFinite(raw.sentAt) ||
+    Math.abs(now - raw.sentAt) > 60000
+  )
     return null;
   // Presence and departure packets must not retain private metadata or
   // fine-grained views, even when another same-origin tab sends extras.
@@ -58,13 +66,22 @@ export function coarseRoomView(Cesium, cameraPosition) {
   try {
     if (!cameraPosition) return null;
     const position = Cesium.Cartographic.fromCartesian(cameraPosition);
-    if (!position || ![
-      position.latitude, position.longitude, position.height,
-    ].every(Number.isFinite)) return null;
+    if (
+      !position ||
+      ![position.latitude, position.longitude, position.height].every(
+        Number.isFinite,
+      )
+    )
+      return null;
     const lat = Cesium.Math.toDegrees(position.latitude);
     const lon = Cesium.Math.toDegrees(position.longitude);
-    if (!Number.isFinite(lat) || !Number.isFinite(lon) ||
-        Math.abs(lat) > 90 || Math.abs(lon) > 180) return null;
+    if (
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lon) ||
+      Math.abs(lat) > 90 ||
+      Math.abs(lon) > 180
+    )
+      return null;
     const height = Math.min(30000000, Math.max(1000, position.height));
     return {
       lat: Math.round(lat * 10) / 10,
@@ -85,10 +102,35 @@ export function coarseRoomView(Cesium, cameraPosition) {
 // room invitation must never forward unrelated fragment keys (e.g. OAuth
 // tokens) just because the user opted to include the *scene*.
 const ROOM_SCENE_HASH_KEYS = new Set([
-  'v', 'lat', 'lon', 'alt', 'heading', 'pitch', 'roll', 'style',
-  'bloom', 'bi', 'bv', 'sharpen', 'si', 'hud', 'hv',
-  'dm', 'dd', 'da', 'kf', 'ko', 'cr', 'sc', 'scf', 'sce',
-  'map', 'l', 'ui', 'sp', 'at',
+  'v',
+  'lat',
+  'lon',
+  'alt',
+  'heading',
+  'pitch',
+  'roll',
+  'style',
+  'bloom',
+  'bi',
+  'bv',
+  'sharpen',
+  'si',
+  'hud',
+  'hv',
+  'dm',
+  'dd',
+  'da',
+  'kf',
+  'ko',
+  'cr',
+  'sc',
+  'scf',
+  'sce',
+  'map',
+  'l',
+  'ui',
+  'sp',
+  'at',
 ]);
 function roomSceneHash(hash) {
   const params = new URLSearchParams(hash.replace(/^#/, ''));
@@ -96,20 +138,34 @@ function roomSceneHash(hash) {
   const longitude = params.get('lon');
   // A miscellaneous hash is not a camera scene. Reject incomplete,
   // nonfinite or out-of-range coordinates before copying any fragment state.
-  if (latitude === null || longitude === null ||
-      !latitude.trim() || !longitude.trim()) return '';
-  const lat = Number(latitude), lon = Number(longitude);
-  if (!Number.isFinite(lat) || !Number.isFinite(lon) ||
-      Math.abs(lat) > 90 || Math.abs(lon) > 180) return '';
+  if (
+    latitude === null ||
+    longitude === null ||
+    !latitude.trim() ||
+    !longitude.trim()
+  )
+    return '';
+  const lat = Number(latitude),
+    lon = Number(longitude);
+  if (
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lon) ||
+    Math.abs(lat) > 90 ||
+    Math.abs(lon) > 180
+  )
+    return '';
   const safe = new URLSearchParams();
   for (const [key, value] of params) {
-    if (ROOM_SCENE_HASH_KEYS.has(key) && !safe.has(key))
-      safe.set(key, value);
+    if (ROOM_SCENE_HASH_KEYS.has(key) && !safe.has(key)) safe.set(key, value);
   }
   return '#' + safe.toString();
 }
 
-export function makeRoomInvite(currentUrl, room, { includeScene = false } = {}) {
+export function makeRoomInvite(
+  currentUrl,
+  room,
+  { includeScene = false } = {},
+) {
   if (!normalizeRoom(room)) throw new TypeError('Invalid room');
   const link = new URL(currentUrl);
   if (link.protocol !== 'https:' && link.protocol !== 'http:')
@@ -132,13 +188,16 @@ export const feature = {
     const title = doc.createElement('h3');
     title.textContent = 'Shared Earth · local demo';
     const description = doc.createElement('p');
-    description.textContent = 'Open two same-origin tabs. Presence-only heartbeats expire silent peers; camera views transmit only when you choose Send coarse view. Room links omit the current scene unless separately opted in. No internet rooms, verified identities, contribution scores, or civic authority.';
+    description.textContent =
+      'Open two same-origin tabs. Presence-only heartbeats expire silent peers; camera views transmit only when you choose Send coarse view. Room links omit the current scene unless separately opted in. No internet rooms, verified identities, contribution scores, or civic authority.';
     const roomInput = doc.createElement('input');
     roomInput.type = 'text';
     roomInput.maxLength = 24;
     roomInput.placeholder = 'e.g. earth-lab';
     roomInput.setAttribute('aria-label', 'Room code');
-    roomInput.value = normalizeRoom(new URLSearchParams(win.location.search).get('gevRoom')) || 'earth-lab';
+    roomInput.value =
+      normalizeRoom(new URLSearchParams(win.location.search).get('gevRoom')) ||
+      'earth-lab';
     const actions = doc.createElement('div');
     actions.className = 'gev-playground-actions';
     function button(label) {
@@ -171,14 +230,19 @@ export const feature = {
     const peers = new Map();
     const renderedPeers = new Map();
     const lastSeen = new Map();
-    const timerHost = typeof win.setInterval === 'function' &&
-      typeof win.clearInterval === 'function' ? win : globalThis;
+    const timerHost =
+      typeof win.setInterval === 'function' &&
+      typeof win.clearInterval === 'function'
+        ? win
+        : globalThis;
     let heartbeat = null;
     let inviteWriteTail = Promise.resolve();
     let latestInviteIntent = 0;
     let mounted = true;
     const peerId = 'peer-' + Math.random().toString(36).slice(2, 12);
-    function notice(message) { status.textContent = message; }
+    function notice(message) {
+      status.textContent = message;
+    }
     function leaveRoom(notifyPeers = true) {
       const focusedPeerRemoved = [...renderedPeers.values()].some(
         ({ row }) => row.querySelector?.('button') === doc.activeElement,
@@ -242,11 +306,16 @@ export const feature = {
         const prior = renderedPeers.get(id);
         if (prior && prior.view === view) continue;
         const previousVisit = prior?.row.querySelector?.('button');
-        const restoreVisitFocus = Boolean(previousVisit && previousVisit === doc.activeElement);
+        const restoreVisitFocus = Boolean(
+          previousVisit && previousVisit === doc.activeElement,
+        );
         const row = doc.createElement('div');
         row.className = 'gev-playground-actions';
         const label = doc.createElement('span');
-        label.textContent = 'Peer ' + id.slice(-6) + (view ? ' · shared a coarse view' : ' · connected');
+        label.textContent =
+          'Peer ' +
+          id.slice(-6) +
+          (view ? ' · shared a coarse view' : ' · connected');
         row.append(label);
         let follow = null;
         if (view) {
@@ -269,7 +338,9 @@ export const feature = {
               }
               viewer.camera.flyTo({
                 destination: services.Cesium.Cartesian3.fromDegrees(
-                  view.lon, view.lat, view.height,
+                  view.lon,
+                  view.lat,
+                  view.height,
                 ),
                 duration: 2,
               });
@@ -280,7 +351,8 @@ export const feature = {
           row.append(follow);
         }
         if (prior) {
-          if (typeof prior.row.replaceWith === 'function') prior.row.replaceWith(row);
+          if (typeof prior.row.replaceWith === 'function')
+            prior.row.replaceWith(row);
           else needsMockFallback = true;
         } else {
           peersContainer.append(row);
@@ -294,7 +366,9 @@ export const feature = {
       // Minimal DOM fakes in the existing unit tests have replaceChildren
       // but no Element.remove/replaceWith. Real browsers take the keyed path.
       if (needsMockFallback)
-        peersContainer.replaceChildren(...[...renderedPeers.values()].map(({ row }) => row));
+        peersContainer.replaceChildren(
+          ...[...renderedPeers.values()].map(({ row }) => row),
+        );
       // Peer Leave/expiry never moves focus onto an outbound sharing action.
       if (focusedPeerRemoved && mounted && status.isConnected)
         status.focus({ preventScroll: true });
@@ -364,11 +438,12 @@ export const feature = {
         const nextView = packet.kind === 'view' ? packet.view : previous;
         // A liveness-only heartbeat must never replace a focused Visit view
         // button. Rebuild only when membership or the coarse view changes.
-        const changed = !wasPresent || (packet.kind === 'view' && (
-          previous?.lat !== nextView.lat ||
-          previous?.lon !== nextView.lon ||
-          previous?.height !== nextView.height
-        ));
+        const changed =
+          !wasPresent ||
+          (packet.kind === 'view' &&
+            (previous?.lat !== nextView.lat ||
+              previous?.lon !== nextView.lon ||
+              previous?.height !== nextView.height));
         peers.set(packet.peer, nextView);
         lastSeen.set(packet.peer, Date.now());
         if (changed) presentPeers();
@@ -415,7 +490,9 @@ export const feature = {
         notice('Local room messaging unavailable; view not shared.');
         return;
       }
-      notice('Coarse camera view shared with local tabs (about 0.1° precision).');
+      notice(
+        'Coarse camera view shared with local tabs (about 0.1° precision).',
+      );
     });
     invite.addEventListener('click', () => {
       if (!mounted) return;
@@ -442,11 +519,13 @@ export const feature = {
         try {
           await win.navigator.clipboard.writeText(link);
           if (mounted && intent === latestInviteIntent)
-            notice(includedScene
-              ? 'Room and scene link copied; the scene may disclose map location. Same-origin tabs only.'
-              : shareScene
-                ? 'Room-only link copied; no valid scene state to include. Same-origin tabs only.'
-                : 'Room-only link copied without scene or map state. Same-origin tabs only.');
+            notice(
+              includedScene
+                ? 'Room and scene link copied; the scene may disclose map location. Same-origin tabs only.'
+                : shareScene
+                  ? 'Room-only link copied; no valid scene state to include. Same-origin tabs only.'
+                  : 'Room-only link copied without scene or map state. Same-origin tabs only.',
+            );
         } catch {
           if (mounted && intent === latestInviteIntent)
             notice('Clipboard unavailable; copy this room code: ' + candidate);

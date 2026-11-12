@@ -30,8 +30,10 @@ function syntheticDocument() {
           this.children = children;
         },
         contains(target) {
-          return this === target ||
-            this.children.some((child) => child.contains?.(target));
+          return (
+            this === target ||
+            this.children.some((child) => child.contains?.(target))
+          );
         },
         focus() {
           doc.activeElement = this;
@@ -69,7 +71,8 @@ function syntheticDocument() {
       if (selector !== '#planet-playground-launcher') return null;
       return (
         nodes.find(
-          (node) => node.id === 'planet-playground-launcher' && node.isConnected,
+          (node) =>
+            node.id === 'planet-playground-launcher' && node.isConnected,
         ) || null
       );
     },
@@ -110,9 +113,7 @@ test('shell revokes detached controls and cleans each feature only once', () => 
   const close = nodes.find(
     (node) => node.attributes.get('aria-label') === 'Close Planet Playground',
   );
-  const secondTab = nodes.find(
-    (node) => node.dataset.mode === 'world-builder',
-  );
+  const secondTab = nodes.find((node) => node.dataset.mode === 'world-builder');
   assert.ok(launcher && close && secondTab);
   assert.equal(launcher.listeners.get('click')?.size, 1);
   launcher.fire('click');
@@ -198,7 +199,9 @@ test('throwing mode cleanup cannot strand tab changes, close or host teardown', 
       },
     ],
   );
-  const launcher = nodes.find((node) => node.id === 'planet-playground-launcher');
+  const launcher = nodes.find(
+    (node) => node.id === 'planet-playground-launcher',
+  );
   const close = nodes.find(
     (node) => node.attributes.get('aria-label') === 'Close Planet Playground',
   );
@@ -210,28 +213,42 @@ test('throwing mode cleanup cannot strand tab changes, close or host teardown', 
   assert.deepEqual(events, ['mount:what-if', 'dispose:what-if', 'mount:room']);
   close.fire('click');
   launcher.fire('click');
-  assert.equal(events.at(-1), 'mount:what-if', 'closing must reset selected mode');
+  assert.equal(
+    events.at(-1),
+    'mount:what-if',
+    'closing must reset selected mode',
+  );
   assert.doesNotThrow(() => close.fire('click'));
   assert.doesNotThrow(() => launcher.fire('click'));
   assert.equal(
-    events.filter((event) => event === 'mount:what-if').length, 3,
+    events.filter((event) => event === 'mount:what-if').length,
+    3,
     'reopening after a failed cleanup must remount, not reuse stale state',
   );
   assert.doesNotThrow(dispose);
   assert.equal(
-    events.filter((event) => event === 'dispose:what-if').length, 3,
+    events.filter((event) => event === 'dispose:what-if').length,
+    3,
     'every distinct mount has exactly one cleanup attempt',
   );
   assert.equal(errors.length, 3);
-  assert.ok(errors.every(([message, error]) =>
-    message === 'Planet Playground mode cleanup failed:' &&
-    error.message === 'synthetic feature cleanup failure'));
+  assert.ok(
+    errors.every(
+      ([message, error]) =>
+        message === 'Planet Playground mode cleanup failed:' &&
+        error.message === 'synthetic feature cleanup failure',
+    ),
+  );
   const completed = [...events];
   launcher.fire('click');
   roomTab.fire('click');
   close.fire('click');
   dispose();
-  assert.deepEqual(events, completed, 'detached controls and double dispose are inert');
+  assert.deepEqual(
+    events,
+    completed,
+    'detached controls and double dispose are inert',
+  );
   assert.equal(launcher.isConnected, false);
   assert.equal(handlers.get('keydown')?.size, 0);
 });
@@ -244,17 +261,23 @@ test('transient mount failure allows retrying the same selected tab', (t) => {
   let cleaned = 0;
   const dispose = mountPlanetPlayground(
     { document: doc, window: { location: { search: '' } } },
-    [{
-      id: 'world-builder',
-      title: 'What-if',
-      mount() {
-        attempts++;
-        if (attempts === 1) throw new Error('synthetic mount failure');
-        return () => { cleaned++; };
+    [
+      {
+        id: 'world-builder',
+        title: 'What-if',
+        mount() {
+          attempts++;
+          if (attempts === 1) throw new Error('synthetic mount failure');
+          return () => {
+            cleaned++;
+          };
+        },
       },
-    }],
+    ],
   );
-  const launcher = nodes.find((node) => node.id === 'planet-playground-launcher');
+  const launcher = nodes.find(
+    (node) => node.id === 'planet-playground-launcher',
+  );
   const tab = nodes.find((node) => node.dataset.mode === 'world-builder');
   launcher.fire('click');
   assert.equal(attempts, 1);
@@ -295,9 +318,7 @@ test('closed Playground tabs cannot join rooms or mount hidden modes', () => {
   const close = nodes.find(
     (node) => node.attributes.get('aria-label') === 'Close Planet Playground',
   );
-  const roomTab = nodes.find(
-    (node) => node.dataset.mode === 'local-room',
-  );
+  const roomTab = nodes.find((node) => node.dataset.mode === 'local-room');
   const panel = nodes.find((node) => node.id === 'planet-playground');
   assert.ok(launcher && close && roomTab && panel);
   assert.equal(panel.hidden, true);
@@ -317,13 +338,17 @@ test('closed Playground tabs cannot join rooms or mount hidden modes', () => {
   );
   launcher.fire('click');
   roomTab.fire('click');
-  assert.deepEqual(events, [
-    'park:mounted',
-    'park:disposed',
-    'park:mounted',
-    'park:disposed',
-    'room:joined',
-  ], 'the same tab still works while the shell is visibly open');
+  assert.deepEqual(
+    events,
+    [
+      'park:mounted',
+      'park:disposed',
+      'park:mounted',
+      'park:disposed',
+      'room:joined',
+    ],
+    'the same tab still works while the shell is visibly open',
+  );
   close.fire('click');
   assert.equal(events.at(-1), 'room:left');
   roomTab.fire('click');
@@ -335,66 +360,106 @@ test('closed Playground tabs cannot join rooms or mount hidden modes', () => {
   dispose();
 });
 
-
 test('manual Playground tabs move focus without mounting room or What-if', () => {
   const { doc, nodes } = syntheticDocument();
   const events = [];
   const dispose = mountPlanetPlayground(
     { document: doc, window: { location: { search: '' } } },
     ['park', 'local-room', 'what-if'].map((id) => ({
-      id, title: id,
+      id,
+      title: id,
       mount() {
         events.push('mount:' + id);
         return () => events.push('dispose:' + id);
       },
     })),
   );
-  const launcher = nodes.find((node) => node.id === 'planet-playground-launcher');
+  const launcher = nodes.find(
+    (node) => node.id === 'planet-playground-launcher',
+  );
   const tabs = nodes.filter((node) => node.attributes.get('role') === 'tab');
-  const tablist = nodes.find((node) => node.attributes.get('role') === 'tablist');
+  const tablist = nodes.find(
+    (node) => node.attributes.get('role') === 'tablist',
+  );
   const panel = nodes.find((node) => node.id === 'planet-playground');
   const body = nodes.find((node) => node.attributes.get('role') === 'tabpanel');
   assert.ok(launcher && tablist && panel && body);
   assert.equal(tabs.length, 3);
-  assert.ok(tabs.every((tab) => tab.attributes.get('aria-controls') === body.id));
+  assert.ok(
+    tabs.every((tab) => tab.attributes.get('aria-controls') === body.id),
+  );
   launcher.fire('click');
   assert.deepEqual(events, ['mount:park']);
-  assert.deepEqual(tabs.map((tab) => tab.tabIndex), [0, -1, -1]);
+  assert.deepEqual(
+    tabs.map((tab) => tab.tabIndex),
+    [0, -1, -1],
+  );
   assert.equal(body.attributes.get('aria-labelledby'), tabs[0].id);
   tabs[0].focus();
-  assert.equal(tabs[0].fire('keydown', { key: 'ArrowRight' }).defaultPrevented, true);
+  assert.equal(
+    tabs[0].fire('keydown', { key: 'ArrowRight' }).defaultPrevented,
+    true,
+  );
   assert.equal(doc.activeElement, tabs[1]);
-  assert.deepEqual(tabs.map((tab) => tab.tabIndex), [-1, 0, -1]);
+  assert.deepEqual(
+    tabs.map((tab) => tab.tabIndex),
+    [-1, 0, -1],
+  );
   assert.equal(tabs[1].attributes.get('aria-selected'), 'false');
   assert.deepEqual(events, ['mount:park'], 'focus alone cannot join a room');
   tabs[1].fire('keydown', { key: 'ArrowRight' });
   assert.equal(doc.activeElement, tabs[2]);
-  assert.deepEqual(tabs.map((tab) => tab.tabIndex), [-1, -1, 0]);
+  assert.deepEqual(
+    tabs.map((tab) => tab.tabIndex),
+    [-1, -1, 0],
+  );
   tabs[2].fire('keydown', { key: 'ArrowRight' });
   assert.equal(doc.activeElement, tabs[0], 'right wraps');
-  assert.deepEqual(tabs.map((tab) => tab.tabIndex), [0, -1, -1]);
+  assert.deepEqual(
+    tabs.map((tab) => tab.tabIndex),
+    [0, -1, -1],
+  );
   tabs[0].fire('keydown', { key: 'ArrowLeft' });
   assert.equal(doc.activeElement, tabs[2], 'left wraps');
   tabs[2].fire('keydown', { key: 'Home' });
   assert.equal(doc.activeElement, tabs[0]);
   tabs[0].fire('keydown', { key: 'End' });
   assert.equal(doc.activeElement, tabs[2]);
-  assert.deepEqual(tabs.map((tab) => tab.tabIndex), [-1, -1, 0]);
-  assert.equal(tabs[2].fire('keydown', { key: 'ArrowLeft', altKey: true }).defaultPrevented, false);
+  assert.deepEqual(
+    tabs.map((tab) => tab.tabIndex),
+    [-1, -1, 0],
+  );
+  assert.equal(
+    tabs[2].fire('keydown', { key: 'ArrowLeft', altKey: true })
+      .defaultPrevented,
+    false,
+  );
   assert.equal(doc.activeElement, tabs[2]);
-  assert.equal(tabs[2].fire('keydown', { key: 'ArrowDown' }).defaultPrevented, false);
+  assert.equal(
+    tabs[2].fire('keydown', { key: 'ArrowDown' }).defaultPrevented,
+    false,
+  );
   assert.deepEqual(events, ['mount:park'], 'keys cannot mount What-if');
   tabs[0].fire('click'); // Already-active tab still reclaims the tab stop.
-  assert.deepEqual(tabs.map((tab) => tab.tabIndex), [0, -1, -1]);
+  assert.deepEqual(
+    tabs.map((tab) => tab.tabIndex),
+    [0, -1, -1],
+  );
   assert.deepEqual(events, ['mount:park'], 'repeat selection cannot remount');
   tabs[1].fire('click'); // Native Enter/Space on a button dispatches click.
-  assert.deepEqual(tabs.map((tab) => tab.tabIndex), [-1, 0, -1]);
+  assert.deepEqual(
+    tabs.map((tab) => tab.tabIndex),
+    [-1, 0, -1],
+  );
   assert.deepEqual(events, ['mount:park', 'dispose:park', 'mount:local-room']);
   assert.equal(body.attributes.get('aria-labelledby'), tabs[1].id);
   launcher.fire('click');
   assert.equal(panel.hidden, true);
   const before = [...events];
-  assert.equal(tabs[1].fire('keydown', { key: 'ArrowRight' }).defaultPrevented, false);
+  assert.equal(
+    tabs[1].fire('keydown', { key: 'ArrowRight' }).defaultPrevented,
+    false,
+  );
   tabs[2].fire('click');
   assert.deepEqual(events, before, 'closed controls inert');
   dispose();
@@ -409,21 +474,28 @@ test('Escape inside Playground closes it; foreign Scene Escape does not leave ro
   const dispose = mountPlanetPlayground(
     { document: doc, window: { location: { search: '' } } },
     ['park', 'local-room'].map((id) => ({
-      id, title: id,
+      id,
+      title: id,
       mount() {
         events.push('mount:' + id);
         return () => events.push('dispose:' + id);
       },
     })),
   );
-  const launcher = nodes.find((node) => node.id === 'planet-playground-launcher');
+  const launcher = nodes.find(
+    (node) => node.id === 'planet-playground-launcher',
+  );
   const panel = nodes.find((node) => node.id === 'planet-playground');
   const roomTab = nodes.find((node) => node.dataset.mode === 'local-room');
   assert.ok(launcher && panel && roomTab);
   function escape(target, handled = false) {
     const event = {
-      key: 'Escape', target, defaultPrevented: handled,
-      preventDefault() { this.defaultPrevented = true; },
+      key: 'Escape',
+      target,
+      defaultPrevented: handled,
+      preventDefault() {
+        this.defaultPrevented = true;
+      },
     };
     for (const callback of [...(handlers.get('keydown') || [])])
       callback(event);
@@ -436,16 +508,25 @@ test('Escape inside Playground closes it; foreign Scene Escape does not leave ro
   foreignDialogControl.focus();
   assert.equal(escape(foreignDialogControl).defaultPrevented, false);
   assert.equal(panel.hidden, false, 'a separate dialog owns its own Escape');
-  assert.equal(doc.activeElement, foreignDialogControl, 'foreign focus remains');
+  assert.equal(
+    doc.activeElement,
+    foreignDialogControl,
+    'foreign focus remains',
+  );
   assert.deepEqual(
-    events, ['mount:park', 'dispose:park', 'mount:local-room'],
+    events,
+    ['mount:park', 'dispose:park', 'mount:local-room'],
     'foreign Escape must not leave a local room',
   );
   assert.equal(escape(roomTab, true).defaultPrevented, true);
   assert.equal(panel.hidden, false, 'handled Escape is ignored');
   assert.equal(escape(roomTab).defaultPrevented, true);
   assert.equal(panel.hidden, true);
-  assert.equal(doc.activeElement, launcher, 'own Escape returns launcher focus');
+  assert.equal(
+    doc.activeElement,
+    launcher,
+    'own Escape returns launcher focus',
+  );
   assert.equal(events.at(-1), 'dispose:local-room');
   launcher.fire('click');
   assert.equal(escape(launcher).defaultPrevented, true);
@@ -470,21 +551,28 @@ test('closing a mounted local room revokes retained feature controls', () => {
         this.closed = false;
         channels.push(this);
       }
-      postMessage(packet) { sent.push(packet); }
-      close() { this.closed = true; }
+      postMessage(packet) {
+        sent.push(packet);
+      }
+      close() {
+        this.closed = true;
+      }
     },
     setInterval() {
       const id = ++nextTimer;
       timers.add(id);
       return id;
     },
-    clearInterval(id) { timers.delete(id); },
+    clearInterval(id) {
+      timers.delete(id);
+    },
   };
-  const dispose = mountPlanetPlayground(
-    { document: doc, window: win },
-    [localRoomsFeature],
+  const dispose = mountPlanetPlayground({ document: doc, window: win }, [
+    localRoomsFeature,
+  ]);
+  const launcher = nodes.find(
+    (node) => node.id === 'planet-playground-launcher',
   );
-  const launcher = nodes.find((node) => node.id === 'planet-playground-launcher');
   const close = nodes.find(
     (node) => node.attributes.get('aria-label') === 'Close Planet Playground',
   );
@@ -500,23 +588,39 @@ test('closing a mounted local room revokes retained feature controls', () => {
   assert.equal(timers.size, 0);
   const sentAfterClose = sent.length;
   join.fire('click');
-  assert.equal(channels.length, 1, 'a hidden, disposed mode cannot reopen a channel');
-  assert.equal(sent.length, sentAfterClose, 'stale mode buttons cannot broadcast');
+  assert.equal(
+    channels.length,
+    1,
+    'a hidden, disposed mode cannot reopen a channel',
+  );
+  assert.equal(
+    sent.length,
+    sentAfterClose,
+    'stale mode buttons cannot broadcast',
+  );
 
   launcher.fire('click');
-  const reopenedJoin = nodes.filter(
-    (node) => node.textContent === 'Join local room',
-  ).at(-1);
+  const reopenedJoin = nodes
+    .filter((node) => node.textContent === 'Join local room')
+    .at(-1);
   assert.notStrictEqual(reopenedJoin, join);
   reopenedJoin.fire('click');
-  assert.equal(channels.length, 2, 'a freshly mounted mode can join explicitly');
+  assert.equal(
+    channels.length,
+    2,
+    'a freshly mounted mode can join explicitly',
+  );
   dispose();
   assert.equal(channels[1].closed, true);
   assert.equal(timers.size, 0);
   const sentAfterHostTeardown = sent.length;
   reopenedJoin.fire('click');
   join.fire('click');
-  assert.equal(channels.length, 2, 'host teardown revokes all retained room actions');
+  assert.equal(
+    channels.length,
+    2,
+    'host teardown revokes all retained room actions',
+  );
   assert.equal(sent.length, sentAfterHostTeardown);
   assert.equal(timers.size, 0);
 });

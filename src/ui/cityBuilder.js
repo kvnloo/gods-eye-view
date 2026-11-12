@@ -268,7 +268,11 @@ export function createCityBuilder({
           description: editor.description,
           parameters: editor.parameters,
         };
-        const id = editor.id ?? `world-${document.alternatives.length + 1}`;
+        // Imported documents can already contain the next generated world ID.
+        const occupied = new Set(document.alternatives.map((a) => a.id));
+        let ordinal = document.alternatives.length + 1;
+        while (occupied.has(`world-${ordinal}`)) ordinal++;
+        const id = editor.id ?? `world-${ordinal}`;
         commit(
           editor.id
             ? reviseCityAlternative(document, id, editor.parentRevision, edit)

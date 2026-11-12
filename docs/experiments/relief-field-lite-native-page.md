@@ -19,7 +19,7 @@ On an inexpensive phone/laptop, find **what changed** in a hypothetical relief p
 
 - Local Node **22.16.0** with exact source blobs: **64/64 focused tests PASS** (60 inherited relief tests + four new view tests); remote file SHA must be checked before relying on published parity.
 - Chromium desktop 1280x920 and mobile 390x844: two cards, native evidence disclosures, no horizontal overflow, valid local JSON accepted, malformed JSON rejected, restore-demo works, **zero external requests and zero JS errors**.
-- Browser smoke used `set_content` and a **local inlined equivalent** of the modules because localhost navigation was blocked by the environment's administrator. This proves DOM behavior, *not* the Vite production/development route or CSP behavior.
+- Browser smoke used `set_content` and a **local inlined equivalent** of the modules because localhost navigation was blocked by the environment's administrator. This proves DOM behavior, _not_ the Vite production/development route or CSP behavior.
 - **Not run:** Node 24.14+/Node 26, pinned Prettier format:check, full npm test/build, package-boundaries, real dev/preview route, actual low-end Android/GPU interaction, offline caching/service worker, 2D map, GEV World Packet integration, humanitarian user studies or independent operator signoff. This remains a **draft**.
 - Upstream [World Packet #880](https://github.com/bilawalsidhu/gods-eye-view/pull/880) and [access support #882](https://github.com/bilawalsidhu/gods-eye-view/pull/882) are independently owned review threads. This page does **not** copy or depend on their unmerged code.
 

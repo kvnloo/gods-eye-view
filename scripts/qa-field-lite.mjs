@@ -21,7 +21,11 @@ const external = [];
 try {
   const inputPath = join(temp, 'synthetic-replay.json');
   const badPath = join(temp, 'invalid-replay.json');
-  await writeFile(inputPath, JSON.stringify(createSyntheticReliefDemoReplay()), 'utf8');
+  await writeFile(
+    inputPath,
+    JSON.stringify(createSyntheticReliefDemoReplay()),
+    'utf8',
+  );
   await writeFile(badPath, '{bad json', 'utf8');
   const page = await browser.newPage();
   page.on('pageerror', (error) => errors.push(error.message));
@@ -39,19 +43,26 @@ try {
   async function checkViewport(width, height) {
     await page.setViewport({ width, height, deviceScaleFactor: 1 });
     const documentUrl = new URL('field-lite/', base);
-    const result = await page.goto(documentUrl.href, { waitUntil: 'networkidle0' });
+    const result = await page.goto(documentUrl.href, {
+      waitUntil: 'networkidle0',
+    });
     assert.equal(result.status(), 200);
     await page.waitForSelector('.field-card');
     const view = await page.evaluate(() => ({
       cards: document.querySelectorAll('.field-card').length,
-      values: [...document.querySelectorAll('.field-number')].map((e) => e.textContent),
+      values: [...document.querySelectorAll('.field-number')].map(
+        (e) => e.textContent,
+      ),
       overflow: document.documentElement.scrollWidth > window.innerWidth + 1,
       warning: document.querySelector('.field-alert')?.textContent,
       delta: document.querySelector('.field-delta')?.textContent,
       hasCesium: !!document.querySelector('#cesiumContainer'),
     }));
     assert.equal(view.cards, 2);
-    assert.deepEqual(view.values.map((v) => Number.parseInt(v, 10)), [4, 2]);
+    assert.deepEqual(
+      view.values.map((v) => Number.parseInt(v, 10)),
+      [4, 2],
+    );
     assert.equal(view.overflow, false);
     assert.equal(view.hasCesium, false);
     assert.match(view.warning, /Synthetic training only/);
@@ -71,11 +82,15 @@ try {
   const input = await page.$('#field-local-file');
   await input.uploadFile(inputPath);
   await page.waitForFunction(() =>
-    document.querySelector('#field-feedback').textContent.includes('Local synthetic replay loaded'));
+    document
+      .querySelector('#field-feedback')
+      .textContent.includes('Local synthetic replay loaded'),
+  );
   assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 2);
   await input.uploadFile(badPath);
   await page.waitForFunction(() =>
-    document.querySelector('#field-feedback').textContent.includes('rejected'));
+    document.querySelector('#field-feedback').textContent.includes('rejected'),
+  );
   assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 0);
   await page.click('#field-demo');
   assert.equal(await page.$$eval('.field-card', (cards) => cards.length), 2);
@@ -86,7 +101,9 @@ try {
   });
   assert.deepEqual(errors, []);
   assert.deepEqual(external, []);
-  console.log(JSON.stringify({ status: 'PASS', desktop, mobile, externalRequests: 0 }));
+  console.log(
+    JSON.stringify({ status: 'PASS', desktop, mobile, externalRequests: 0 }),
+  );
 } finally {
   await browser.close();
   await rm(temp, { recursive: true, force: true });

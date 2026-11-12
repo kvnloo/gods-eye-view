@@ -4,13 +4,14 @@
 
 ## User question
 
-For a tiny **synthetic** set of interchangeable one-unit resources and requests, how many one-to-one pairs can be matched **using only explicitly supported pairs**? How many *might* be matchable if all currently unknown pairs become supported?
+For a tiny **synthetic** set of interchangeable one-unit resources and requests, how many one-to-one pairs can be matched **using only explicitly supported pairs**? How many _might_ be matchable if all currently unknown pairs become supported?
 
 This is **not** capacity-constrained humanitarian logistics, a vehicle-route optimizer, a beneficiary/need allocation policy, a safety assessment, or operational dispatch.
 
 ## Input / output contract
 
 `solveSyntheticReliefMatching(input)` requires:
+
 - `determination: hypothetical` and `datasetKind: synthetic`;
 - explicit study, world, source, access, request, resource, and policy revisions;
 - non-person identifiers for at most eight resources and eight requests;

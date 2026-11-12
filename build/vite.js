@@ -116,10 +116,14 @@ export function createBrowserViteConfig({
     build: {
       chunkSizeWarningLimit: 1500,
       // Keep the Cesium globe and the no-Cesium Field Lite entry independent.
-      rollupOptions: { input: {
-        app: fileURLToPath(new URL('../index.html', import.meta.url)),
-        fieldLite: fileURLToPath(new URL('../field-lite/index.html', import.meta.url)),
-      } },
+      rollupOptions: {
+        input: {
+          app: fileURLToPath(new URL('../index.html', import.meta.url)),
+          fieldLite: fileURLToPath(
+            new URL('../field-lite/index.html', import.meta.url),
+          ),
+        },
+      },
     },
   };
 }

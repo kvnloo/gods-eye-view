@@ -17,15 +17,25 @@ function id(value, label) {
 }
 
 function source(value, label) {
-  if (typeof value !== 'string' || !/^synthetic:[a-zA-Z0-9_.:-]{1,100}$/.test(value)) {
-    throw new TypeError(`${label} must be a versioned synthetic evidence reference`);
+  if (
+    typeof value !== 'string' ||
+    !/^synthetic:[a-zA-Z0-9_.:-]{1,100}$/.test(value)
+  ) {
+    throw new TypeError(
+      `${label} must be a versioned synthetic evidence reference`,
+    );
   }
   return value;
 }
 
 function revision(value, label, previous) {
-  if (typeof value !== 'string' || value.length < 1 || value.length > 160 ||
-      value.trim() !== value || value === previous) {
+  if (
+    typeof value !== 'string' ||
+    value.length < 1 ||
+    value.length > 160 ||
+    value.trim() !== value ||
+    value === previous
+  ) {
     throw new TypeError(`${label} must be a distinct nonempty revision`);
   }
   return value;
@@ -66,7 +76,8 @@ function snapshot(run) {
     unknownRoutes: run.unknownRoutes,
     knownOnlyExhaustive: run.exhaustive,
     knownOnlyNearestFirst: run.nearestFirst,
-    upperBoundIfUnknownPassableUnits: run.theoreticalUpperBoundIfUnknownPassableUnits,
+    upperBoundIfUnknownPassableUnits:
+      run.theoreticalUpperBoundIfUnknownPassableUnits,
   };
 }
 
@@ -76,14 +87,28 @@ function snapshot(run) {
  * pair. The before-receipt is historical after a new evidence revision arrives.
  */
 export function replaySyntheticReliefOutage({ baseline, change } = {}) {
-  if (!baseline || typeof baseline !== 'object' || Array.isArray(baseline) ||
-      !change || typeof change !== 'object' || Array.isArray(change)) {
+  if (
+    !baseline ||
+    typeof baseline !== 'object' ||
+    Array.isArray(baseline) ||
+    !change ||
+    typeof change !== 'object' ||
+    Array.isArray(change)
+  ) {
     throw new TypeError('baseline and explicit change objects required');
   }
   const vehicleId = id(change.vehicleId, 'vehicle id');
   const zoneId = id(change.zoneId, 'zone id');
-  const accessRevision = revision(change.accessRevision, 'accessRevision', baseline.accessRevision);
-  const routeRevision = revision(change.routeRevision, 'routeRevision', baseline.routeRevision);
+  const accessRevision = revision(
+    change.accessRevision,
+    'accessRevision',
+    baseline.accessRevision,
+  );
+  const routeRevision = revision(
+    change.routeRevision,
+    'routeRevision',
+    baseline.routeRevision,
+  );
   const evidenceRef = source(change.evidenceRef, 'evidenceRef');
 
   // Verify the complete starting fixture first. An incomplete matrix does not
@@ -100,14 +125,20 @@ export function replaySyntheticReliefOutage({ baseline, change } = {}) {
   );
   if (matches.length !== 1) {
     return response('unknown', 'outage-route-not-mapped', {
-      context: { accessRevision: baseline.accessRevision, routeRevision: baseline.routeRevision },
+      context: {
+        accessRevision: baseline.accessRevision,
+        routeRevision: baseline.routeRevision,
+      },
     });
   }
   const original = matches[0];
   if (original.status !== 'supported') {
     return response('unknown', 'outage-route-not-supported', {
       previousStatus: original.status,
-      context: { accessRevision: baseline.accessRevision, routeRevision: baseline.routeRevision },
+      context: {
+        accessRevision: baseline.accessRevision,
+        routeRevision: baseline.routeRevision,
+      },
     });
   }
   if (original.evidenceRef === evidenceRef) {
@@ -134,7 +165,9 @@ export function replaySyntheticReliefOutage({ baseline, change } = {}) {
   const baselineSummary = snapshot(before);
   const currentSummary = snapshot(after);
   return response(
-    before.status === 'limited' || after.status === 'limited' ? 'limited' : 'evaluated',
+    before.status === 'limited' || after.status === 'limited'
+      ? 'limited'
+      : 'evaluated',
     null,
     {
       comparison: 'same-synthetic-inputs-except-explicit-access-evidence',
@@ -162,7 +195,8 @@ export function replaySyntheticReliefOutage({ baseline, change } = {}) {
         knownOnlyServedUnits:
           after.exhaustive.servedUnits - before.exhaustive.servedUnits,
         knownOnlyPriorityWeightedServedUnits:
-          after.exhaustive.priorityWeightedServedUnits - before.exhaustive.priorityWeightedServedUnits,
+          after.exhaustive.priorityWeightedServedUnits -
+          before.exhaustive.priorityWeightedServedUnits,
         knownOnlyNearestFirstUnits:
           after.nearestFirst.servedUnits - before.nearestFirst.servedUnits,
       },

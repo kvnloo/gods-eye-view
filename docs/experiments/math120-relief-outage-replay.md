@@ -13,18 +13,18 @@ The example is a completely **fictional Idai-style** scenario. It has no histori
 - `src/data/reliefCapacityBenchmark.js` is the existing single-stop, one-vehicle-one-zone exact finite reference and deterministic nearest-first control. All numerics come from that owner.
 - `src/data/reliefOutageReplay.js` takes a complete `hypothetical/synthetic` baseline fixture and an explicit changed vehicle–zone access edge, distinct access + route revisions and a new synthetic evidence reference. It rejects absent, unknown or already blocked edges as closure targets.
 - The adapter runs the **same** solver before and after changing one edge from `supported` to `blocked`, copies no external feeds, retains unchanged need/stock/fleet/policy/world revisions, declares the earlier result stale, and emits a neutral delta. Unknown access elsewhere stays unknown, and the outcome is labeled `limited`.
-- Missing route rows, missing revisions, unauthorized data, stale evidence labels, or unsupported model sizes do not generate a comparable result. Numeric upper bounds under unknown access are *not achievable delivery promises*.
+- Missing route rows, missing revisions, unauthorized data, stale evidence labels, or unsupported model sizes do not generate a comparable result. Numeric upper bounds under unknown access are _not achievable delivery promises_.
 - It returns an immutable, versioned, local-only receipt with `authority: none`, `implementation: not-authorized`, and `accessClaim: not-evaluated`. No routing directions, controller actions, dispatch or field claims.
 
 ## Synthetic example (not a field result)
 
 One source depot has 5 fictional aid units; vehicle capacities are 4 and 1. Two zones request 4 and 1. On synthetic r1, a critical route is declared supported; under explicitly authored r2 it is blocked.
 
-| Comparison | Exact served units | Nearest-first served units |
-| --- | ---: | ---: |
-| Baseline synthetic access r1 | 4 | 2 |
-| Modified synthetic access r2 | 2 | 2 |
-| Delta r2 - r1 | -2 | 0 |
+| Comparison                   | Exact served units | Nearest-first served units |
+| ---------------------------- | -----------------: | -------------------------: |
+| Baseline synthetic access r1 |                  4 |                          2 |
+| Modified synthetic access r2 |                  2 |                          2 |
+| Delta r2 - r1                |                 -2 |                          0 |
 
 The unchanged nearest-first value does not imply resilience; the exact method's sensitivity does not prove a better real-world policy. A **non-critical** outage test intentionally reports zero change rather than manufacturing a gain.
 

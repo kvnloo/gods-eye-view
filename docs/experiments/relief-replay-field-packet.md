@@ -12,9 +12,9 @@ The adapter `projectReliefOutageFieldPacket(replay, {worldPacketReference?})` ac
 
 - Frozen schema `gev-relief-replay-field-packet`, version 1, `hypothetical` and `authority: none`.
 - Versioned synthetic source, stock, fleet, need, policy and world references; historical and revised access/route revisions; explicit selected-edge closure evidence.
-- Distinguishes the **superseded baseline** from the newer *synthetic revision*, never calls a real road open or gives dispatch guidance.
+- Distinguishes the **superseded baseline** from the newer _synthetic revision_, never calls a real road open or gives dispatch guidance.
 - Each stage contains exact-vs-nearest-first synthetic served units, weighted totals, one-way travel minutes, per-zone need/served/unmet quantities, selected single-stop assignments and their synthetic route evidence. Both unknown route counts and optimistic theoretical upper bounds remain explicit. Bounds are **not guaranteed achievable**.
-- `fieldLite` is a small single-column, touch-friendly *data projection* with structured rows, source references and clear notices; `formatReliefReplayFieldText` provides offline non-interactive text, no browser/3D/network dependencies. **No actual GEV field UI, 2D map, World Packet code, or application state is connected yet.** That must be a separate, independently tested UI leaf after the source contracts settle.
+- `fieldLite` is a small single-column, touch-friendly _data projection_ with structured rows, source references and clear notices; `formatReliefReplayFieldText` provides offline non-interactive text, no browser/3D/network dependencies. **No actual GEV field UI, 2D map, World Packet code, or application state is connected yet.** That must be a separate, independently tested UI leaf after the source contracts settle.
 - Invalid/falsified status, source, world revision, route evidence, stage totals, closure assignment or objective delta returns `unknown` without fabricated quantities; external mutable input cannot change the frozen output.
 
 ## Synthetic fixture and reproducibility

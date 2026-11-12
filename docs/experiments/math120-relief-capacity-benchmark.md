@@ -1,6 +1,6 @@
 # Relief matching versus capacity-aware assignment: synthetic benchmark
 
-**Status:** fork-only, bounded *hypothetical* research for [HUM-15 #152](https://github.com/kvnloo/gods-eye-view/issues/152) and [MATH-GEV-03 #207](https://github.com/kvnloo/gods-eye-view/issues/207). Stacks on the [one-to-one matching reference #224](https://github.com/kvnloo/gods-eye-view/pull/224).
+**Status:** fork-only, bounded _hypothetical_ research for [HUM-15 #152](https://github.com/kvnloo/gods-eye-view/issues/152) and [MATH-GEV-03 #207](https://github.com/kvnloo/gods-eye-view/issues/207). Stacks on the [one-to-one matching reference #224](https://github.com/kvnloo/gods-eye-view/pull/224).
 
 ## Question and counterexample
 
@@ -10,10 +10,10 @@ A maximum number of one-to-one resource/request matches can fail to maximize uni
 - Vehicle A has capacity **4**, vehicle B **1**.
 - Zone A needs **4** units, zone B **1**.
 - A can reach A in 8 minutes or B in 1 minute. B can reach only A (1 minute).
-- The maximum matching selects *two pairs*: A→B and B→A, but may deliver just **2 units**.
-- The exact capacity-aware solver selects *one delivery*: A→A carrying **4 units**; nearest-first also serves only 2.
+- The maximum matching selects _two pairs_: A→B and B→A, but may deliver just **2 units**.
+- The exact capacity-aware solver selects _one delivery_: A→A carrying **4 units**; nearest-first also serves only 2.
 
-The latter is **2× more units** than the greedy control in this *synthetic input*. This is not a humanitarian outcome, validated route state, live fleet plan or field performance claim.
+The latter is **2× more units** than the greedy control in this _synthetic input_. This is not a humanitarian outcome, validated route state, live fleet plan or field performance claim.
 
 ## Precise benchmark scope
 

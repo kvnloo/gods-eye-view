@@ -6,7 +6,7 @@
 2. Click a plot of land. The app snaps the point to a 40 m grid cell, not a surveyed parcel, and outlines it on the map with an action wheel.
 3. Click **Reimagine** (or **Park**, **Plaza** or **Bike lane**). The camera frames the plot, the app captures that view and the selected provider imagines it. The concept stands on the plot, base on the ground, with a dark contact band and a shadow cast away from the sun of the scene clock (length = card height / tan(sun elevation), capped at 2.5 times the height); the card face is shaded by the same sun. Photoreal tiles carry their own capture-time lighting, which no API exposes, so the shadow follows the scene clock rather than the imagery. The concept also appears as a card in the bottom carousel. It is labeled "AI concept, not a plan or an approval".
 4. **Reroll** saves a new version of the selected card with a new concept. **Build** keeps that world on the plot for this session. **Project records** opens the editor below, with export, import, history and comparison.
-5. Zoom in for parameter callouts and a stats card that sits beside the plot on a leader line, or zoom out for district pins. Cards and the carousel never cover the map credits. Press Esc or click the pill to leave the mode.
+5. Zoom in for parameter callouts and a stats card that sits beside the plot on a leader line, or zoom out for district pins. Cards and the carousel never cover the map credits. Every play-mode label keeps at least 4.5:1 contrast on its glass even over a white roof, and capital-letter labels are at least 12 px. Press Esc or click the pill to leave the mode.
 
 Each reimagined plot keeps its own captured view; the first plot's capture also becomes the project baseline. The project still holds at most six alternatives.
 
@@ -53,7 +53,7 @@ QA_BASE_URL=http://127.0.0.1:4187 node scripts/qa-city-builder.mjs
 QA_BASE_URL=http://127.0.0.1:4187 node scripts/qa-city-play.mjs
 ```
 
-`qa-city-play.mjs` drives the play mode on the real globe: enter, plot click with the wheel within 40 px of the projected plot, Reimagine, Reroll, detail and district tiers, Esc, reload (the restored concept, its tag and card must be on screen and not covered by the HUD) and the 390x844 layout. With `QA_VIDEO_DIR` it records the journey and converts it to MP4 when ffmpeg is available.
+`qa-city-play.mjs` drives the play mode on the real globe: enter, plot click with the wheel within 40 px of the projected plot, Reimagine, Reroll, detail and district tiers, Esc, reload (the restored concept, its tag and card must be on screen and not covered by the HUD) and the 390x844 layout. At each step it audits every visible play-mode label (computed colour composited through its glass over white: 4.5:1 or better; caps at least 12 px) and checks that nothing covers the map credits. With `QA_VIDEO_DIR` it records the journey and converts it to MP4 when ffmpeg is available.
 
 The gate uses Playwright and an owned headless Chromium profile. It checks real globe pixels, authoring, version restore, more than two alternatives, comparison, local persistence, JSON round-trip, malformed import, Scene entry, mobile layout, and no implicit generator calls. Set `CHROME_PATH` if Chromium is not at `/usr/bin/chromium`.
 

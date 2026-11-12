@@ -16,3 +16,6 @@
 - Anchor the play-mode stats card beside the selected plot on a leader line and
   keep cards and the carousel clear of the map credits on desktop and phones
   (Kevin Rajan, kvnloo#302).
+- Make every play-mode label legible over bright photoreal roofs: 4.5:1 contrast
+  on darkened glass and caps labels at 12 px or more, audited in the browser
+  journey (Kevin Rajan, kvnloo#302).

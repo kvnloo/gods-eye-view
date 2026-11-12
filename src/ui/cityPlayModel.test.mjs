@@ -71,13 +71,14 @@ test('wheelLayout spreads actions clockwise from twelve o clock', () => {
 });
 
 test('wheelSize and placeWheel keep every wheel button inside the viewport', () => {
+  // Buttons fit a 12 px caps label ("REIMAGINE", "BIKE LANE").
   assert.deepEqual(wheelSize({ width: 1440, height: 900 }), {
-    radius: 132,
-    button: 78,
+    radius: 150,
+    button: 96,
   });
   assert.deepEqual(wheelSize({ width: 390, height: 844 }), {
-    radius: 98,
-    button: 62,
+    radius: 116,
+    button: 80,
   });
   const desktop = { width: 1440, height: 900 };
   const size = wheelSize(desktop);

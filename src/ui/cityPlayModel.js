@@ -39,9 +39,10 @@ export function wheelLayout(count, radius) {
 }
 
 export function wheelSize(viewport) {
+  // Buttons fit a 12 px caps label.
   return viewport.width < 600
-    ? { radius: 98, button: 62 }
-    : { radius: 132, button: 78 };
+    ? { radius: 116, button: 80 }
+    : { radius: 150, button: 96 };
 }
 
 /** Clamp the wheel centre so every button stays inside the free viewport. */

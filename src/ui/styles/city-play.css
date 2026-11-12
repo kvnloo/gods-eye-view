@@ -42,6 +42,11 @@ body.gev-city-play #scope-mask {
   pointer-events: none;
   font-family: var(--font-mono);
   color: var(--text-primary);
+  /* Legible over bright photoreal roofs: darkened theme glass and stronger muted
+     text keep every label at 4.5:1 or better even over white (qa-city-play audits). */
+  --text-secondary: color-mix(in srgb, var(--text-primary) 76%, transparent);
+  --city-play-glass:
+    linear-gradient(rgba(4, 8, 12, 0.46), rgba(4, 8, 12, 0.46)), var(--glass-bg);
 }
 /* Soft top and bottom scrims keep HUD text legible over bright photoreal roofs,
    standing in for the vignette the game view drops. */
@@ -69,7 +74,7 @@ body.gev-city-play #scope-mask {
 .city-play-pin,
 .city-play-status,
 .city-play-hint {
-  background: var(--glass-bg);
+  background: var(--city-play-glass);
   border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
   backdrop-filter: blur(16px) saturate(1.3);
   box-shadow:
@@ -131,8 +136,8 @@ body.gev-city-play #scope-mask {
   align-items: center;
   padding: 6px 14px;
   border-radius: 8px;
-  font-size: 11px;
-  letter-spacing: 0.16em;
+  font-size: 12px;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-primary);
   white-space: nowrap;
@@ -184,7 +189,8 @@ body.gev-city-play #scope-mask {
 }
 .city-play-tag-note {
   flex-basis: 100%;
-  font-size: 9px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
   color: var(--text-secondary);
 }
 
@@ -221,8 +227,8 @@ body.gev-city-play #scope-mask {
   background: rgba(8, 14, 20, 0.88);
   border: 1.5px solid var(--accent);
   color: var(--text-primary);
-  font: 600 9px/1.1 var(--font-mono);
-  letter-spacing: 0.12em;
+  font: 600 12px/1.1 var(--font-mono);
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   cursor: pointer;
   box-shadow:
@@ -309,8 +315,8 @@ body.gev-city-play #scope-mask {
   width: 260px;
   padding: 14px 16px;
   border-radius: 12px;
-  font-size: 11px;
-  letter-spacing: 0.1em;
+  font-size: 12px;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 .city-play-stats h3 {
@@ -351,7 +357,9 @@ body.gev-city-play #scope-mask {
 }
 .city-play-stats-note {
   margin: 10px 0 0;
-  font-size: 9px;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  text-transform: none;
   color: var(--text-secondary);
 }
 
@@ -364,8 +372,8 @@ body.gev-city-play #scope-mask {
   padding: 5px 10px;
   border-radius: 6px;
   color: var(--text-primary);
-  font: 600 11px var(--font-mono);
-  letter-spacing: 0.14em;
+  font: 600 12px var(--font-mono);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   cursor: default;
   white-space: nowrap;
@@ -392,7 +400,8 @@ body.gev-city-play #scope-mask {
 .city-play-pin-yields {
   display: flex;
   gap: 8px;
-  font-size: 9px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
   font-weight: 500;
   color: var(--text-secondary);
 }
@@ -427,8 +436,8 @@ body.gev-city-play #scope-mask {
   border-radius: 10px;
   color: var(--text-primary);
   text-align: start;
-  font: 500 10px var(--font-mono);
-  letter-spacing: 0.1em;
+  font: 500 12px var(--font-mono);
+  letter-spacing: 0.06em;
   cursor: pointer;
   border-color: var(--glass-border-hover);
 }
@@ -436,7 +445,7 @@ body.gev-city-play #scope-mask {
   flex-basis: 168px;
   border-style: dashed;
   border-color: color-mix(in srgb, var(--accent) 45%, transparent);
-  background: rgba(8, 14, 20, 0.55);
+  background: rgba(8, 14, 20, 0.86);
   color: var(--text-secondary);
 }
 .city-play-card--ghost:hover:not(:disabled) {
@@ -536,7 +545,8 @@ body.gev-city-play #scope-mask {
   border-radius: 4px;
   text-transform: uppercase;
   color: var(--text-secondary);
-  font-size: 9px;
+  font-size: 12px;
+  letter-spacing: 0.02em;
 }
 .city-play-chip strong {
   color: var(--text-primary);
@@ -570,7 +580,7 @@ body.gev-city-play #scope-mask {
   box-shadow: 0 0 22px var(--accent-glow);
 }
 .city-play-action--quiet {
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 0.14em;
   padding: 8px 12px;
 }
@@ -581,12 +591,12 @@ body.gev-city-play #scope-mask {
 .city-play-ai-chip {
   align-self: center;
   padding: 3px 8px;
-  background: var(--glass-bg);
+  background: var(--city-play-glass);
   border: 1px solid var(--glass-border-hover);
   border-radius: 4px;
   color: var(--text-secondary);
-  font-size: 8px;
-  letter-spacing: 0.12em;
+  font-size: 12px;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   text-align: center;
   max-width: 168px;
@@ -600,7 +610,7 @@ body.gev-city-play #scope-mask {
   margin: 0;
   padding: 4px 12px;
   border-radius: 6px;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.1em;
   max-width: min(640px, calc(100vw - 24px));
 }
@@ -619,8 +629,9 @@ body.gev-city-play #scope-mask {
     width: calc(100vw - 72px);
     box-sizing: border-box;
     padding: 6px 10px;
-    gap: 2px 12px;
-    font-size: 10px;
+    gap: 2px 10px;
+    font-size: 12px;
+    letter-spacing: 0.04em;
     border-radius: 12px;
   }
   .city-play-hint {
@@ -628,10 +639,7 @@ body.gev-city-play #scope-mask {
     white-space: normal;
     width: calc(100vw - 40px);
     box-sizing: border-box;
-    font-size: 10px;
-  }
-  .city-play-wheel-button {
-    font-size: 8px;
+    letter-spacing: 0.06em;
   }
   .city-play-dock {
     flex-direction: column-reverse;
@@ -647,8 +655,8 @@ body.gev-city-play #scope-mask {
   .city-play-action {
     flex: 1 1 0;
     padding: 9px 8px;
-    font-size: 11px;
-    letter-spacing: 0.14em;
+    font-size: 12px;
+    letter-spacing: 0.08em;
   }
   .city-play-ai-chip {
     max-width: none;
@@ -668,7 +676,7 @@ body.gev-city-play #scope-mask {
     padding: 6px;
   }
   .city-play-card-title {
-    font-size: 11px;
+    font-size: 12px;
   }
   .city-play-chip {
     padding: 2px;

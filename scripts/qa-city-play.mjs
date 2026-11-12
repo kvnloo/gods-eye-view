@@ -13,6 +13,7 @@ import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from 'playwright-core';
 import sharp from 'sharp';
+import { textLegibility } from '../src/ui/legibility.js';
 
 const args = process.argv.slice(2);
 let base = process.env.QA_BASE_URL || 'http://127.0.0.1:4187';
@@ -240,6 +241,69 @@ async function clearOfCredits(selector) {
       .map(([el]) => el.className || el.tagName);
   }, selector);
   assert.deepEqual(hits, [], `${selector} must stay clear of the map credits`);
+}
+// Every visible play-mode label: 4.5:1 over its glass on a white backdrop
+// (a bright roof), and caps labels at 12 px or more. Disabled controls are exempt.
+async function legibility(label) {
+  const texts = await page.evaluate(() => {
+    const root = document.querySelector('[data-city-play]');
+    const gradient = (image) => {
+      const stops = image.match(/(rgba?\([^)]*\)|color\([^)]*\))/g);
+      return stops && new Set(stops).size === 1 ? stops[0] : null;
+    };
+    const out = [];
+    for (const el of root.querySelectorAll('*')) {
+      const own = [...el.childNodes]
+        .filter((n) => n.nodeType === 3)
+        .map((n) => n.textContent.trim())
+        .join(' ')
+        .trim();
+      if (!own || el.closest('button:disabled, [aria-hidden="true"]')) continue;
+      const style = getComputedStyle(el);
+      const r = el.getBoundingClientRect();
+      if (!r.width || !r.height || style.visibility !== 'visible') continue;
+      const layers = [];
+      for (
+        let node = el;
+        node && node !== root.parentElement;
+        node = node.parentElement
+      ) {
+        const cs = getComputedStyle(node);
+        const g = cs.backgroundImage.startsWith('linear-gradient')
+          ? gradient(cs.backgroundImage)
+          : null;
+        layers.unshift(...[cs.backgroundColor, g].filter(Boolean));
+      }
+      const letters = own.replace(/[^\p{L}]/gu, '');
+      out.push({
+        text: own.slice(0, 48),
+        color: style.color,
+        fontSize: parseFloat(style.fontSize),
+        caps:
+          style.textTransform === 'uppercase' ||
+          (letters.length > 1 && letters === letters.toUpperCase()),
+        layers,
+      });
+    }
+    return out;
+  });
+  const results = texts.map((t) => ({ ...t, ...textLegibility(t) }));
+  const failures = results
+    .filter((r) => !r.ok)
+    .map(({ text, ratio, fontSize, reason }) => ({
+      text,
+      ratio,
+      fontSize,
+      reason,
+    }));
+  (report.measurements.legibility ??= {})[label] = {
+    labels: results.length,
+    minRatio: Math.min(...results.map((r) => r.ratio)),
+    minFontPx: Math.min(...results.map((r) => r.fontSize)),
+    failures,
+  };
+  assert.ok(results.length > 0, `${label}: labels audited`);
+  assert.deepEqual(failures, [], `${label}: every label is legible`);
 }
 async function clickGlobe(x, y) {
   await page.mouse.move(x, y);
@@ -476,6 +540,7 @@ try {
           'no project: missing is never zero',
         );
         await locator('[data-city-play-hint]').waitFor({ state: 'visible' });
+        await legibility('bar-hint');
         await screenshot('02-play-mode');
       },
     );
@@ -509,6 +574,7 @@ try {
         await clearOfCredits(
           '[data-city-play-wheel] button, [data-city-play-tag]',
         );
+        await legibility('wheel-tag');
         await pixelEvidence('plotSelectedGlobe');
         await screenshot('03-plot-wheel');
       },
@@ -546,6 +612,7 @@ try {
         await clearOfCredits(
           '[data-city-play-carousel], [data-city-play-holo-tag], [data-city-play-build]',
         );
+        await legibility('carousel-holo-tag');
         // Grounded: the card stands on the plot with a contact band, and casts
         // a shadow away from the scene sun exactly when that sun is up.
         const ground = (await probe()).grounding['world-1'];
@@ -709,6 +776,7 @@ try {
         await clearOfCredits(
           '[data-city-play-stats], [data-city-play-holo-tag], .city-play-callout-label',
         );
+        await legibility('detail-stats-callouts');
         await tilesLoaded(30000);
         await screenshot('06-detail-callouts');
       },
@@ -736,6 +804,7 @@ try {
           timeout: 20000,
         });
         await tilesLoaded(60000).catch(() => {});
+        await legibility('district-pins');
         await screenshot('07-district-pin');
       },
     );
@@ -879,6 +948,7 @@ try {
           await selectPlotWithWheel(MOBILE);
           await insideViewport('[data-city-play-action]', MOBILE);
           await insideViewport('[data-city-play-bar]', MOBILE);
+          await legibility('mobile-wheel');
           await screenshot('11-mobile-wheel');
           await reimagine('park', 'world-3');
           await insideViewport(
@@ -886,6 +956,7 @@ try {
             MOBILE,
           );
           await clearOfCredits('[data-city-play-carousel]');
+          await legibility('mobile-carousel');
           const strip = await locator('.city-play-cards').evaluate((el) => ({
             w: el.clientWidth,
             sw: el.scrollWidth,

@@ -754,3 +754,28 @@ test('standalone middleware mounts the city concept endpoint before the API fall
       source.indexOf('apiNotFoundPlugin(),'),
   );
 });
+
+test('a detailed view that encodes over the limit steps down JPEG quality and size before failing', async () => {
+  const fixture = captureFixture();
+  const qualities = [];
+  const sizes = [];
+  const small = fixture.options.createCanvas;
+  fixture.options.createCanvas = () => {
+    const canvas = small();
+    const encode = canvas.toDataURL;
+    canvas.toDataURL = (type, quality) => {
+      qualities.push(quality);
+      sizes.push([canvas.width, canvas.height]);
+      // Photoreal 3D tiles at the first two settings exceed the 600k data-URL limit.
+      return qualities.length < 3
+        ? `data:image/jpeg;base64,${'A'.repeat(600_004)}`
+        : encode(type, quality);
+    };
+    return canvas;
+  };
+  const reference = await captureCityReference(fixture.options);
+  assert.ok(reference.image.startsWith('data:image/jpeg;base64,'));
+  assert.equal(qualities.length, 3);
+  assert.ok(qualities[1] < qualities[0], 'second attempt lowers quality');
+  assert.ok(sizes[2][0] < sizes[0][0], 'third attempt also shrinks the frame');
+});

@@ -779,3 +779,23 @@ test('a detailed view that encodes over the limit steps down JPEG quality and si
   assert.ok(qualities[1] < qualities[0], 'second attempt lowers quality');
   assert.ok(sizes[2][0] < sizes[0][0], 'third attempt also shrinks the frame');
 });
+
+test('a frame that misses the fresh-render bound while tiles stream is retried before capture fails', async () => {
+  const fixture = captureFixture();
+  let frames = 0;
+  fixture.options.renderFrame = async () => ++frames >= 3;
+  const reference = await captureCityReference(fixture.options);
+  assert.equal(frames, 3, 'two late frames, then a fresh one');
+  assert.ok(reference.image.startsWith('data:image/jpeg;base64,'));
+  const never = captureFixture();
+  let tries = 0;
+  never.options.renderFrame = async () => {
+    tries++;
+    return false;
+  };
+  await assert.rejects(
+    captureCityReference(never.options),
+    /^Error: City reference capture unavailable$/,
+  );
+  assert.ok(tries > 1 && tries <= 4, `bounded retries (${tries})`);
+});

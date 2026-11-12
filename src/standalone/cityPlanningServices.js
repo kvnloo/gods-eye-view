@@ -25,6 +25,7 @@ const SOURCE_CITATIONS = Object.freeze({
   ],
 });
 const degrees = (radians) => radians * (180 / Math.PI);
+const FRESH_FRAME_ATTEMPTS = 4;
 // [JPEG quality, frame scale] attempts, best first.
 const CAPTURE_STEPS = [
   [0.78, 1],
@@ -118,7 +119,13 @@ export async function captureCityReference({
 }) {
   try {
     const source = viewer?.scene?.canvas;
-    if (!source || !(await renderFrame(viewer))) throw captureFailure();
+    if (!source) throw captureFailure();
+    // A frame can miss the bounded fresh-render wait while photoreal tiles
+    // stream in after a flight; try a few frames before refusing.
+    let fresh = false;
+    for (let attempt = 0; attempt < FRESH_FRAME_ATTEMPTS && !fresh; attempt++)
+      fresh = await renderFrame(viewer);
+    if (!fresh) throw captureFailure();
     const { width, height } = source;
     if (![width, height].every(Number.isFinite) || width <= 0 || height <= 0)
       throw captureFailure();

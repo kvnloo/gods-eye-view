@@ -588,7 +588,10 @@ export function mountCityPlay({
     }
     baseHeight(plot, point.height);
     notice = null;
-    const far = state.tier === 'district';
+    // From far away (district, or well beyond plot framing) the click swoops in.
+    const far =
+      state.tier === 'district' ||
+      (!state.plot && range > FRAMES.oblique.range * 1.6);
     dispatch({ type: 'select', plot });
     // From the district view a plot click flies in to plot range, like a game map.
     if (far) void fly(plot, 'oblique');
@@ -658,7 +661,7 @@ export function mountCityPlay({
     });
   }
   // Give the map a bounded moment to load the framed tiles before capture.
-  function settled(timeoutMs = 6000) {
+  function settled(timeoutMs = 15000) {
     const started = now();
     return new Promise((resolve) => {
       const check = () => {

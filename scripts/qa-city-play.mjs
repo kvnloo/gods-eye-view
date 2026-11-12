@@ -224,6 +224,13 @@ async function selectPlotWithWheel(viewport) {
   // Click the free map; the wheel must follow the plot.
   const at = await mapPoint(viewport);
   await clickGlobe(at.x, at.y);
+  // A far click swoops the camera in; measure the wheel once the flight lands.
+  await until(
+    () => !window.__godsEyeView.viewer.camera._currentFlight,
+    'camera framed the plot',
+    30000,
+  );
+  await page.waitForTimeout(300);
   // From the district view the plot click flies in before the wheel opens.
   await locator(S.ring).waitFor({ state: 'visible', timeout: 30000 });
   await until(

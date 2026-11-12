@@ -222,7 +222,7 @@ test('play mode: reimagining a plot creates the project, a sited alternative and
   assert.deepEqual(play.alternatives[1].site.reference, reference);
   assert.equal(h.calls, 2);
   // Reroll makes version 2 with a new concept; history keeps version 1.
-  await h.controls.reroll('world-1');
+  assert.equal(await h.controls.reroll('world-1'), true, 'reports the landing');
   assert.equal(play.alternatives[0].revision, 2);
   assert.equal(play.alternatives[0].versionCount, 2);
   assert.ok(play.alternatives[0].concept);
@@ -265,8 +265,13 @@ test('play mode: busy, full and failed generations never write partial concepts 
     null,
     'saved proposal, no concept',
   );
+  assert.equal(
+    await h.controls.reroll('world-2'),
+    false,
+    'a failed reroll says so',
+  );
   fail = false;
-  await h.controls.reroll('world-2');
+  assert.equal(await h.controls.reroll('world-2'), true);
   assert.equal(
     play.alternatives[1].revision,
     1,

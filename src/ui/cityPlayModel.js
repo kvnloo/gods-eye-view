@@ -45,6 +45,18 @@ export function wheelSize(viewport) {
     : { radius: 150, button: 96 };
 }
 
+/** The screen square the placed wheel's buttons can cover, or null. */
+export function wheelBounds(center, size) {
+  if (!center) return null;
+  const reach = size.radius + size.button / 2;
+  return {
+    left: center.x - reach,
+    top: center.y - reach,
+    right: center.x + reach,
+    bottom: center.y + reach,
+  };
+}
+
 /** Clamp the wheel centre so every button stays inside the free viewport. */
 export function placeWheel(anchor, viewport, size, inset) {
   if (!anchor || !Number.isFinite(anchor.x) || !Number.isFinite(anchor.y))
@@ -446,6 +458,11 @@ export function playReducer(state, action) {
             focusId: action.id ?? null,
             wheel: false,
           }
+        : state;
+    case 'landed':
+      // A finished Reimagine or Reroll: the concept leads and the wheel closes.
+      return state.active
+        ? { ...state, focusId: action.id, wheel: false }
         : state;
     case 'clear':
       return { ...state, plot: null, focusId: null, wheel: false };

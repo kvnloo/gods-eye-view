@@ -777,11 +777,9 @@ export function mountCityPlay({
     }
     if (disposed || !state.active || state.plot !== plot) return sync();
     const id = await builder.reimagine({ plot, kind });
-    if (id && state.plot?.id === plot.id) {
-      // The concept takes the stage; clicking the plot brings the wheel back.
-      dispatch({ type: 'focus', id });
-      dispatch({ type: 'wheel', open: false });
-    } else sync();
+    // The concept takes the stage; clicking the plot brings the wheel back.
+    if (id && state.plot?.id === plot.id) dispatch({ type: 'landed', id });
+    else sync();
   }
 
   // A sampled (not picked) ground is re-measured once the framed tiles load,
@@ -910,8 +908,8 @@ export function mountCityPlay({
       dispatch({ type: 'build', plotId: state.plot.id, id });
     },
     async reroll(id) {
-      await builder.reroll(id);
-      if (state.active) dispatch({ type: 'focus', id });
+      const landed = await builder.reroll(id);
+      if (state.active) dispatch({ type: landed ? 'landed' : 'focus', id });
     },
     openRecords() {
       builder.open();

@@ -4,7 +4,7 @@ import { computed, onBeforeUnmount, onMounted, onUpdated, ref } from 'vue';
 import { formatNumber, t } from '../../../i18n/index.js';
 import UiIcon from '../../kit/UiIcon.vue';
 import { useCityPlayStore } from '../../stores/cityPlay.js';
-import { boundsOf, placeBeside, placeWheel, wheelLayout, wheelSize } from '../../cityPlayModel.js';
+import { boundsOf, placeBeside, placeWheel, wheelBounds, wheelLayout, wheelSize } from '../../cityPlayModel.js';
 
 // City builder play mode on the globe: the resource bar, the plot's radial
 // wheel and tag, in-world callouts and pins, and the concept carousel. The
@@ -101,20 +101,27 @@ const pins = computed(() =>
     .map((p) => ({ ...p, at: anchors.value?.pins?.[p.plotId] }))
     .filter((p) => p.at),
 );
-// The plot tag sits outside the wheel ring (upper right, or left near the edge),
-// tethered to the projected plot centre.
+// The plot tag sits beside the wheel's bounds (never across a button), clear of
+// the resource bar, tethered to the projected plot centre.
+const tagEl = ref(null);
+const tagSize = ref({ width: 330, height: 56 });
+onUpdated(() => {
+  const el = tagEl.value;
+  if (el?.offsetWidth && (el.offsetWidth !== tagSize.value.width || el.offsetHeight !== tagSize.value.height))
+    tagSize.value = { width: el.offsetWidth, height: el.offsetHeight };
+});
 const tag = computed(() => {
   const from = plotPoint.value;
   if (!from || !wheel.value) return null;
-  const width = mobile.value ? 200 : 330;
-  const reach = size.value.radius + size.value.button / 2;
-  let x = wheel.value.x + reach + 14;
-  if (x + width > viewport.value.width - 8) x = Math.max(8, wheel.value.x - reach - 14 - width);
-  if (mobile.value) x = Math.min(Math.max(8, wheel.value.x - width / 2), viewport.value.width - width - 8);
-  const y = mobile.value
-    ? Math.max(inset.value.top - 64, wheel.value.y - reach - 46)
-    : Math.max(inset.value.top, wheel.value.y - size.value.radius);
-  return { x, y, from };
+  const bar = document.querySelector('[data-city-play-bar]')?.getBoundingClientRect();
+  const placed = placeBeside({
+    target: wheelBounds(wheel.value, size.value),
+    size: tagSize.value,
+    viewport: viewport.value,
+    keepOut: bar?.width ? [bar] : [],
+    gap: 14,
+  });
+  return { x: placed.x, y: placed.y, from, to: placed.leader.from };
 });
 const holoTag = computed(() => {
   const at = anchors.value?.holo;
@@ -179,7 +186,7 @@ const bars = computed(() => {
     </p>
 
     <svg v-if="tag || holoTag || statsPlace || (wheel && plotPoint) || callouts.length" class="city-play-tethers" aria-hidden="true" :viewBox="`0 0 ${viewport.width} ${viewport.height}`">
-      <line v-if="tag" :x1="tag.from.x" :y1="tag.from.y" :x2="tag.x" :y2="tag.y + 18" />
+      <line v-if="tag" :x1="tag.from.x" :y1="tag.from.y" :x2="tag.to.x" :y2="tag.to.y" />
       <line v-if="holoTag" :x1="holoTag.from.x" :y1="holoTag.from.y" :x2="holoTag.side > 0 ? holoTag.x : holoTag.x + (mobile ? 170 : 240)" :y2="holoTag.y" />
       <circle v-if="holoTag" class="city-play-tether-end" :cx="holoTag.from.x" :cy="holoTag.from.y" r="4" />
       <line v-if="wheel && plotPoint && wheel.clamped" class="city-play-tether-dim" :x1="wheel.x" :y1="wheel.y" :x2="plotPoint.x" :y2="plotPoint.y" />
@@ -191,7 +198,7 @@ const bars = computed(() => {
       </template>
     </svg>
 
-    <div v-if="tag" class="city-play-tag" data-city-play-tag :style="{ left: `${tag.x}px`, top: `${tag.y}px` }">
+    <div v-if="tag" ref="tagEl" class="city-play-tag" data-city-play-tag :style="{ left: `${tag.x}px`, top: `${tag.y}px` }">
       <strong translate="no">{{ t('Plot {code}', { code: view.plot.code }) }}</strong>
       <span>{{ t('{area} m²', { area: formatNumber(view.plot.area) }) }}</span>
       <span v-if="!mobile" class="city-play-tag-note">{{ t('40 m grid cell, not a surveyed parcel') }}</span>

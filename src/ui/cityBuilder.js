@@ -543,11 +543,11 @@ export function createCityBuilder({
         }
       }
     },
-    /** Play mode: a new version of the same proposal with a new concept. */
+    /** Play mode: a new version of the same proposal with a new concept; true once it lands. */
     async reroll(id) {
-      if (disposed || pending || !document) return;
+      if (disposed || pending || !document) return false;
       const a = cityAlternatives(document).find((a) => a.id === id);
-      if (!a) return;
+      if (!a) return false;
       error = null;
       status = null;
       const request = new AbortController();
@@ -561,7 +561,7 @@ export function createCityBuilder({
             error = msg(
               'This possible world has twenty versions. Reimagine the plot to start another.',
             );
-            return;
+            return false;
           }
           commit(
             reviseCityAlternative(document, id, a.revision, {
@@ -572,12 +572,13 @@ export function createCityBuilder({
           );
           present();
         }
-        await generateFor(id, request);
+        return await generateFor(id, request);
       } catch {
         if (!request.signal.aborted && !error)
           error = msg(
             'Could not save this change. Check the fields and current revision.',
           );
+        return false;
       } finally {
         if (pending === request) {
           pending = null;

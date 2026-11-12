@@ -20,6 +20,7 @@ import {
   groundShadow,
   boundsOf,
   placeBeside,
+  wheelBounds,
 } from './cityPlayModel.js';
 
 const plotA = snapPlot({ lat: 37.8007, lon: -122.4103 });
@@ -536,4 +537,52 @@ test('placeBeside anchors an info card next to the plot, clear of credits and HU
   });
   assert.equal(crowded.clear, false);
   assert.equal(placeBeside({ target: null, size, viewport: desktop }), null);
+});
+
+test('a landed concept closes the wheel; the plot tag never overlaps the wheel', () => {
+  const entered = playReducer(createPlayState(), { type: 'enter' });
+  const open = playReducer(entered, { type: 'select', plot: plotA });
+  assert.equal(open.wheel, true);
+  // Reimagine and Reroll both end with the concept leading and the wheel closed.
+  const landed = playReducer(open, { type: 'landed', id: 'world-2' });
+  assert.equal(landed.wheel, false);
+  assert.equal(landed.focusId, 'world-2');
+  assert.equal(landed.plot, plotA);
+  assert.equal(
+    playReducer(createPlayState(), { type: 'landed', id: 'x' }).wheel,
+    false,
+  );
+  assert.equal(
+    playReducer(createPlayState(), { type: 'landed', id: 'x' }).focusId,
+    null,
+    'outside the mode nothing changes',
+  );
+
+  const size = wheelSize({ width: 1440, height: 900 });
+  const ring = wheelBounds({ x: 700, y: 450 }, size);
+  assert.deepEqual(ring, { left: 502, top: 252, right: 898, bottom: 648 });
+  assert.equal(wheelBounds(null, size), null);
+  // The tag goes beside the wheel's bounds, never across a button.
+  const desktop = { width: 1440, height: 900 };
+  const tag = placeBeside({
+    target: ring,
+    size: { width: 330, height: 56 },
+    viewport: desktop,
+    gap: 14,
+  });
+  assert.equal(tag.side, 'right');
+  assert.ok(tag.x >= ring.right, 'clear of the ring');
+  // Phone: no room beside a 312 px wheel, so the tag sits above it, below the bar.
+  const phone = { width: 390, height: 844 };
+  const small = wheelBounds({ x: 195, y: 420 }, wheelSize(phone));
+  const above = placeBeside({
+    target: small,
+    size: { width: 200, height: 40 },
+    viewport: phone,
+    keepOut: [{ left: 12, top: 76, right: 318, bottom: 130 }],
+    gap: 14,
+  });
+  assert.equal(above.side, 'above');
+  assert.ok(above.y + 40 <= small.top);
+  assert.equal(above.clear, true);
 });

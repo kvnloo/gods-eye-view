@@ -305,6 +305,33 @@ async function legibility(label) {
   assert.ok(results.length > 0, `${label}: labels audited`);
   assert.deepEqual(failures, [], `${label}: every label is legible`);
 }
+// No tag may sit across a wheel button.
+async function noOverlap(a, b) {
+  const hits = await page.evaluate(
+    ([sa, sb]) => {
+      const boxes = (sel) =>
+        [...document.querySelectorAll(sel)]
+          .map((el) => el.getBoundingClientRect())
+          .filter((r) => r.width && r.height);
+      const out = [];
+      for (const r of boxes(sa))
+        for (const q of boxes(sb))
+          if (
+            Math.min(r.right, q.right) > Math.max(r.left, q.left) &&
+            Math.min(r.bottom, q.bottom) > Math.max(r.top, q.top)
+          )
+            out.push([
+              Math.round(r.left),
+              Math.round(r.top),
+              Math.round(q.left),
+              Math.round(q.top),
+            ]);
+      return out;
+    },
+    [a, b],
+  );
+  assert.deepEqual(hits, [], `${a} must not overlap ${b}`);
+}
 async function clickGlobe(x, y) {
   await page.mouse.move(x, y);
   await page.mouse.click(x, y);
@@ -575,6 +602,10 @@ try {
           '[data-city-play-wheel] button, [data-city-play-tag]',
         );
         await legibility('wheel-tag');
+        await noOverlap(
+          '[data-city-play-tag]',
+          '[data-city-play-wheel] button',
+        );
         await pixelEvidence('plotSelectedGlobe');
         await screenshot('03-plot-wheel');
       },
@@ -672,32 +703,45 @@ try {
       },
     );
 
-    await check('REROLL saves version 2 with a new concept', async () => {
-      await locator('[data-city-play-reroll]').click();
-      await until(
-        (key) =>
-          JSON.parse(localStorage.getItem(key)).alternatives[0].versions
-            .length === 2,
-        'version 2 saved',
-        60000,
-        KEY,
-      );
-      await until(
-        () => !window.__gevCityPlay.snapshot().pending,
-        'reroll settled',
-        60000,
-      );
-      const doc = await persisted();
-      assert.ok(
-        doc.alternatives[0].versions[1].concept,
-        'version 2 has its concept',
-      );
-      assert.match(
-        await locator('[data-city-play-card="world-1"]').innerText(),
-        /2/,
-      );
-      await screenshot('05-reroll-v2');
-    });
+    await check(
+      'REROLL saves version 2 with a new concept and closes the wheel',
+      async () => {
+        // Start with the wheel open: a landed concept must close it.
+        await reopenWheel();
+        await locator('[data-city-play-reroll]').click();
+        await until(
+          (key) =>
+            JSON.parse(localStorage.getItem(key)).alternatives[0].versions
+              .length === 2,
+          'version 2 saved',
+          60000,
+          KEY,
+        );
+        await until(
+          () => !window.__gevCityPlay.snapshot().pending,
+          'reroll settled',
+          60000,
+        );
+        const doc = await persisted();
+        assert.ok(
+          doc.alternatives[0].versions[1].concept,
+          'version 2 has its concept',
+        );
+        assert.match(
+          await locator('[data-city-play-card="world-1"]').innerText(),
+          /2/,
+        );
+        await until(
+          () => !document.querySelector('[data-city-play-wheel]'),
+          'the wheel closes once the reroll lands',
+          10000,
+        );
+        await locator('[data-city-play-holo-tag]').waitFor({
+          state: 'visible',
+        });
+        await screenshot('05-reroll-v2');
+      },
+    );
 
     await check(
       'Zoom in: INSPECT reaches the detail tier with callouts and a stats card',
@@ -949,6 +993,10 @@ try {
           await insideViewport('[data-city-play-action]', MOBILE);
           await insideViewport('[data-city-play-bar]', MOBILE);
           await legibility('mobile-wheel');
+          await noOverlap(
+            '[data-city-play-tag]',
+            '[data-city-play-wheel] button',
+          );
           await screenshot('11-mobile-wheel');
           await reimagine('park', 'world-3');
           await insideViewport(

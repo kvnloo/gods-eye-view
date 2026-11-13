@@ -253,6 +253,15 @@ class RunnerTests(unittest.TestCase):
                          {k: v for k, v in before.items() if k != 'signals'})
         self.assertEqual(FIXTURE['parameters']['actuatedTimings']['status'], 'ASSUMED')
 
+    def test_turning_step_uses_the_counted_split_of_each_interval(self):
+        settings, _ = runner.settings_for(FIXTURE, 'S5')
+        _, shares = runner.demand_inputs(FIXTURE, derived(), settings, 'AM')
+        # Bastanchury, model heading E is Southbound (k=0): [left 1, thru 10n, right 2]; warm-up reuses interval 0
+        self.assertEqual(shares(2, 'E', 0), [1, 0, 2])
+        self.assertEqual(shares(2, 'E', 1), [1, 0, 2])
+        self.assertEqual(shares(2, 'E', 8), [1, 70, 2])
+        self.assertEqual(shares(2, 'S', 3), [2, 21, 2])     # model S is Westbound (k=1)
+
     def test_step_settings_accumulate_and_unknown_step_fails(self):
         settings, change = runner.settings_for(FIXTURE, 'S0')
         self.assertEqual(settings, FIXTURE['defaults'])

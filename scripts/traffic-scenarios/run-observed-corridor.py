@@ -155,7 +155,9 @@ def demand_inputs(fixture, derived, settings, window):
             entries[f'N{i}in'] = entries[f'S{i}in'] = steady(rates['cross'])
 
     def shares(i, heading, interval):
-        return (0, 1, 0)
+        if settings['turns'] == 'straight':
+            return (0, 1, 0)
+        return counts.movements(derived, places[i], heading, window)[max(interval - 1, 0)]
 
     return entries, shares
 

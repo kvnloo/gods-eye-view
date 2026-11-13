@@ -4,3 +4,5 @@
   press-and-hold repeat, and a look-around pad. It orbits the point under the
   centre of the view through the navigation policy, so it declines in the
   Cockpit and releases a followed aircraft first (Byrd-IT, #1312).
+- Stop a captured compass drag when camera navigation permission is revoked
+  mid-gesture, keeping Cockpit camera ownership intact (Byrd-IT, #1312).

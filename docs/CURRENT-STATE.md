@@ -2263,7 +2263,8 @@ a compass ring that shows the heading and turns the map when dragged (arrow
 keys turn it, Home returns to north), a north-up button, a tilt slider with
 up/down buttons and a top-down button, zoom in/out with press-and-hold repeat,
 and a four-way look-around pad. Steps ease over about 220 ms; a pointer press
-or wheel on the globe cancels a step that is still easing.
+or wheel on the globe cancels a step that is still easing. Compass dragging
+rechecks camera permission on each movement and stops if Cockpit takes ownership.
 
 The control orbits the camera around the point under the centre of the view
 through the same `readCameraTargetFrame` / `setCameraTargetFrame` helpers as

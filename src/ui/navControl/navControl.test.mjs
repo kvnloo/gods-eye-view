@@ -397,6 +397,48 @@ test('dragging the ring a quarter turn clockwise turns the heading by 90 degrees
   assert.equal(button('ring').getAttribute('aria-valuenow'), '270');
 });
 
+test('compass drag stops when Cockpit takes camera ownership mid-gesture', () => {
+  let allowed = true;
+  let calls = 0;
+  const { button, frame, handle } = setup({
+    view: { heading: 0, pitch: -45, range: 1_000 },
+    runNavigation: (_noun, navigate) => {
+      calls += 1;
+      return allowed ? navigate() : false;
+    },
+  });
+  const ring = button('ring');
+  ring.fire('pointerdown', {
+    button: 0,
+    clientX: 180,
+    clientY: 140,
+    pointerId: 8,
+  });
+  ring.fire('pointermove', { clientX: 170, clientY: 168 });
+  const acceptedHeading = frame().heading;
+  assert.ok(
+    Math.abs(Cesium.Math.toDegrees(acceptedHeading)) > 0.01,
+    'a permitted move rotates the camera',
+  );
+
+  // The ring still owns pointer capture, but Cockpit now owns the camera.
+  allowed = false;
+  ring.fire('pointermove', { clientX: 140, clientY: 180 });
+  assert.ok(
+    Math.abs(frame().heading - acceptedHeading) < 1e-8,
+    'the captured pointer must not override Cockpit',
+  );
+  assert.equal(handle.root.getAttribute('data-dragging'), null);
+
+  allowed = true;
+  ring.fire('pointermove', { clientX: 140, clientY: 180 });
+  assert.ok(
+    Math.abs(frame().heading - acceptedHeading) < 1e-8,
+    'a refused drag must not silently resume',
+  );
+  assert.equal(calls, 3, 'pointerdown and each active move recheck permission');
+});
+
 test('ring arrow keys turn the view and Home faces north', () => {
   const { button, frame, settle } = setup({ view: { heading: 40 } });
   const ring = button('ring');

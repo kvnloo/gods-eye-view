@@ -596,8 +596,17 @@ export function mountNavControl({
         event.clientY,
       ),
     });
-    if (drag.frame) setCameraTargetFrame(viewer, { ...drag.frame, heading });
-    else lookInPlace(heading, drag.pitch);
+    // Pointer capture can outlive the camera's owner (e.g. Cockpit opening).
+    // Recheck the policy for each move, just as the tilt slider does.
+    const accepted = runNavigation('camera', () =>
+      drag.frame
+        ? setCameraTargetFrame(viewer, { ...drag.frame, heading })
+        : lookInPlace(heading, drag.pitch),
+    );
+    if (!accepted) {
+      endDrag();
+      return;
+    }
     refreshHeading();
   });
   const endDrag = () => {

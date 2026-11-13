@@ -3330,9 +3330,9 @@ export async function applyVegvesenGroundHeights(
   return applied;
 }
 
-/** NZTA catalogs flag Offline / UnderMaintenance as 1 or true. */
+/** NZTA API flags indicate offline or under-maintenance cameras. */
 function nztaFlagOn(value) {
-  return value === true || value === 1 || value === '1';
+  return value === true || value === 1 || value === '1' || value === 'true';
 }
 
 /**
@@ -3344,69 +3344,52 @@ function nztaFlagOn(value) {
  * @returns {string}
  */
 export function aucklandCameraName(record, cameraId) {
-  const name = String(record?.Name ?? '').trim();
+  const name = String(record?.name ?? '').trim();
   if (name) return name;
-  const description = String(record?.Description ?? '').trim();
+  const description = String(record?.description ?? '').trim();
   if (description) return description;
   const short = String(cameraId || '').replace(/^auckland-/, '');
   return short ? `Auckland Camera ${short}` : 'Auckland Camera';
 }
 
 /**
- * Coordinates for one NZTA camera feature: GeoJSON `[lon, lat]` first, then
- * the properties Latitude/Longitude strings.
- *
- * @param {object} feature - GeoJSON feature.
- * @param {object} record - feature.properties.
+ * Coordinates from one Traffic and Travel API camera record.
+ * @param {object} record - One API camera.
  * @returns {?{lat:number, lon:number}}
  */
-function aucklandCoords(feature, record) {
-  const coords = feature?.geometry?.coordinates;
-  if (Array.isArray(coords) && coords.length >= 2) {
-    const lon = toFiniteNumber(coords[0]);
-    const lat = toFiniteNumber(coords[1]);
-    if (Number.isFinite(lat) && Number.isFinite(lon)) return { lat, lon };
-  }
-  const lat = toFiniteNumber(record?.Latitude);
-  const lon = toFiniteNumber(record?.Longitude);
+function aucklandCoords(record) {
+  const lat = toFiniteNumber(record?.latitude);
+  const lon = toFiniteNumber(record?.longitude);
   if (Number.isFinite(lat) && Number.isFinite(lon)) return { lat, lon };
   return null;
 }
 
 /**
- * One NZTA GeoJSON camera feature -> one catalog source, or null.
+ * Normalize one NZTA Traffic and Travel API camera.
+ * The frame URL is synthesized from a validated camera id on trafficnz.info;
+ * the untrusted imageUrl field cannot redirect the frame proxy.
  *
- * Frame URLs are synthesized from a validated `ExternalId` on the pinned
- * trafficnz.info origin. The payload `ImageUrl` and the internal `id` are
- * ignored so a catalog edit cannot steer the frame proxy off-host (and so
- * the internal id, which 404s on that host, is never registered). Offline
- * and under-maintenance cameras are dropped. `Direction` is a dedicated
- * travel-direction field (Southbound, Northbound, and the other two), so
- * headings use that parser without matching bare street-name cardinals.
- *
- * @param {object} feature - Raw NZTA GeoJSON feature.
+ * @param {object} record - One element of response.camera.
  * @returns {?object}
  */
-export function aucklandCameraToSource(feature) {
-  if (!feature || typeof feature !== 'object') return null;
-  const record =
-    feature.properties && typeof feature.properties === 'object'
-      ? feature.properties
-      : feature;
-  if (nztaFlagOn(record.Offline) || nztaFlagOn(record.UnderMaintenance)) {
+export function aucklandCameraToSource(record) {
+  if (!record || typeof record !== 'object' || Array.isArray(record)) {
     return null;
   }
-  if (Number(record.RegionID) !== AUCKLAND_REGION_ID) return null;
+  if (nztaFlagOn(record.offline) || nztaFlagOn(record.underMaintenance)) {
+    return null;
+  }
+  if (Number(record.region?.id) !== AUCKLAND_REGION_ID) return null;
 
-  const point = aucklandCoords(feature, record);
+  const point = aucklandCoords(record);
   if (!point || !isLikelyAucklandCoordinate(point.lat, point.lon)) return null;
 
-  const rawId = String(record.ExternalId ?? '').trim();
+  const rawId = String(record.id ?? '').trim();
   if (!AUCKLAND_CAMERA_ID_RE.test(rawId)) return null;
   const cameraId = `auckland-${rawId}`;
   const imageUrl = AUCKLAND_IMAGE_URL(rawId);
   const name = aucklandCameraName(record, cameraId);
-  const extractedHeading = directionToHeading(record.Direction);
+  const extractedHeading = directionToHeading(record.direction);
   const hasHeading = Number.isFinite(extractedHeading);
 
   return {
@@ -3428,18 +3411,17 @@ export function aucklandCameraToSource(feature) {
     url: imageUrl,
     snapshotUrl: imageUrl,
     sourceKind: 'auckland-nzta',
-    license: 'Public Waka Kotahi NZTA traffic camera',
+    license: 'NZTA Traffic and Travel API (operator terms apply)',
     code: cameraDisplayCode(name.toUpperCase()),
   };
 }
 
 /**
- * Fetch Auckland cameras from the keyless NZTA journeys GeoJSON catalog.
- * Frames are stills on `www.trafficnz.info`, registered from a validated
- * ExternalId rather than from the payload URL. Only RegionID 7 (Auckland)
- * cameras inside the metro bounding box are kept.
+ * Fetch Auckland cameras from the documented NZTA Traffic and Travel API.
+ * Only API region.id 2 cameras within the metro bounding box are kept.
+ * Redirects are refused and response bodies remain capped.
  *
- * @returns {Promise<Array<object>>} Normalized camera source objects.
+ * @returns {Promise<Array<object>>} Normalized camera sources.
  */
 export async function loadAucklandSourcesFromOpenData() {
   try {
@@ -3472,11 +3454,13 @@ export async function loadAucklandSourcesFromOpenData() {
       resp,
       AUCKLAND_MAX_CATALOG_BYTES,
     );
-    const rows = Array.isArray(payload?.features) ? payload.features : [];
+    const rows = Array.isArray(payload?.response?.camera)
+      ? payload.response.camera
+      : [];
     const cameras = [];
     const seen = new Set();
-    for (const feature of rows) {
-      const camera = aucklandCameraToSource(feature);
+    for (const record of rows) {
+      const camera = aucklandCameraToSource(record);
       if (!camera || seen.has(camera.id)) continue;
       seen.add(camera.id);
       cameras.push(camera);

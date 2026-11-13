@@ -155,8 +155,8 @@ const LIVE_PACKS = [
     load: loadVegvesenSourcesFromOpenData,
   },
   {
-    // Opt-in until the NZTA terms are confirmed to cover the camera catalog
-    // and stills (see DATA_SOURCES.md).
+    // NZTA API terms apply. Projection changes imagery presentation; operators
+    // need NZTA permission before enabling (see DATA_SOURCES.md).
     name: 'auckland',
     enabled: () => envOptIn('CCTV_AUCKLAND_ENABLED'),
     load: loadAucklandSourcesFromOpenData,

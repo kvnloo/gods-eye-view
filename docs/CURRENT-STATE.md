@@ -1641,24 +1641,29 @@ video; camera poses use the existing low-confidence heading prior.
 
 ## Auckland NZTA CCTV source pack
 
-The CCTV catalog can include Greater Auckland traffic cameras from Waka Kotahi
-NZ Transport Agency. The pack is off unless `CCTV_AUCKLAND_ENABLED=1`: the
-camera list is the Journeys site's own map-data-cache asset rather than the
-documented Traffic and Travel API, the site terms (clause 4.2) name CC BY 4.0 in
-the text but link CC BY-NC 4.0, and clause 5.2(b) restricts automated access, so
-the licence for the catalog and the camera stills is unconfirmed. With the flag
-unset, empty or any other value, the server makes no request to NZTA.
+This pack is off unless `CCTV_AUCKLAND_ENABLED=1`, and operators must have
+NZTA permission for projecting imagery onto 3D surfaces. It uses the documented
+[Traffic and Travel API](https://www.trafficnz.info/service/traffic/rest/4/cameras/all)
+rather than the Journeys website's map-data-cache asset; Journeys terms
+clause 5.2(b) **prohibits** unauthorised automated access, not merely restricts it.
+A keyless API does not imply permission to republish projected images.
 
-Once enabled, the server reads the keyless camera list at
-`https://www.journeys.nzta.govt.nz/assets/map-data-cache/cameras.json` and
-keeps RegionID 7 cameras that are online and inside the metro bounding box.
-Frame URLs are built from each camera's `ExternalId` under
-`https://www.trafficnz.info/camera/<id>.jpg`; they are never taken from the
-payload. Dedicated `Direction` values become high-confidence headings. The 120
-cameras nearest downtown, Albany, Manukau, the airport and Henderson load;
-`CCTV_AUCKLAND_MAX_SOURCES` sets the pack cap (8-200). The catalog-wide ceiling
-is shared round-robin, so enabling this pack does not silently drop another
-region.
+The API returns `response.camera[]`; `region.id === 2` selects Auckland.
+Cameras with `offline` or `underMaintenance` set, or outside the metro bounds,
+are dropped. Still-image URLs are synthesized from a validated API `id` at
+`https://www.trafficnz.info/camera/<id>.jpg`, never from `imageUrl`.
+The `direction` field produces high-confidence headings when specific.
+The nearest 120 cameras across five metro anchors load by default;
+`CCTV_AUCKLAND_MAX_SOURCES` sets a cap of 8–200, sharing the global budget.
+
+The [NZTA API terms](https://nzta.govt.nz/about-us/our-data-and-official-information/use-our-data/terms-of-use)
+allow publication under conditions: third-party operators register and accept
+the terms (2(c)), data stays timely and accurate (3(a)), imagery is displayed
+without changing its manner or format (3(b)(i)), and rights notices remain
+intact (4(a)(ii)). Projection changes the presentation, so an operator must
+confirm permission with NZTA before enabling that behavior. Attribution to
+Waka Kotahi NZ Transport Agency is required. The frame proxy buffers stills
+on demand with `no-store`; it does not archive them, but it does relay them.
 
 ## Taiwan CCTV source pack
 

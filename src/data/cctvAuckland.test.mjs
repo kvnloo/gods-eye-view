@@ -43,35 +43,29 @@ const streamingResponse = (init = {}) => {
 const CARRINGTON_ID = 654;
 const CONSTELLATION_ID = 821;
 
-/** One NZTA camera feature, shaped like the live journeys cameras.json payload. */
-const feature = (overrides = {}, props = {}) => ({
-  type: 'Feature',
-  geometry: {
-    type: 'Point',
-    coordinates: [174.71018, -36.87173],
-  },
-  properties: {
-    ClassName: 'TrafficCamera',
-    ExternalId: CARRINGTON_ID,
-    Name: 'SH16 Carrington Rd Overbridge',
-    Description: 'East along Northwestern Motorway',
-    Offline: 0,
-    UnderMaintenance: 0,
-    ImageUrl: `https://www.trafficnz.info/camera/${CARRINGTON_ID}.jpg`,
-    Latitude: '-36.87173',
-    Longitude: '174.71018',
-    Direction: 'Eastbound',
-    RegionID: 7,
-    id: 1456,
-    uniq: 'Camera-1456',
-    type: 'cameras',
-    ...props,
-  },
-  ...overrides,
-});
+/** One camera in NZTA's documented Traffic and Travel REST API format. */
+const apiCamera = (overrides = {}, props = {}) => {
+  const coords = overrides.geometry?.coordinates;
+  return {
+    id: props.ExternalId ?? CARRINGTON_ID,
+    name: props.Name ?? 'SH16 Carrington Rd Overbridge',
+    description: props.Description ?? 'East along Northwestern Motorway',
+    offline: props.Offline ?? false,
+    underMaintenance: props.UnderMaintenance ?? false,
+    imageUrl:
+      props.ImageUrl ??
+      `https://www.trafficnz.info/camera/${CARRINGTON_ID}.jpg`,
+    latitude: props.Latitude ?? coords?.[1] ?? '-36.87173',
+    longitude: props.Longitude ?? coords?.[0] ?? '174.71018',
+    direction: props.Direction ?? 'Eastbound',
+    region: { id: props.RegionID ?? 2 },
+  };
+};
 
-test('an Auckland feature maps to a source on the pinned HTTPS frame host', () => {
-  const source = aucklandCameraToSource(feature());
+const apiPayload = (cameras) => ({ response: { camera: cameras } });
+
+test('an Auckland API camera maps to a source on the pinned HTTPS frame host', () => {
+  const source = aucklandCameraToSource(apiCamera());
   assert.equal(source.id, `auckland-${CARRINGTON_ID}`);
   assert.equal(source.name, 'SH16 Carrington Rd Overbridge');
   assert.equal(source.city, 'Auckland');
@@ -81,7 +75,7 @@ test('an Auckland feature maps to a source on the pinned HTTPS frame host', () =
   assert.equal(source.lon, 174.71018);
   assert.equal(source.feedType, 'image');
   assert.equal(source.sourceKind, 'auckland-nzta');
-  assert.equal(source.license, 'Public Waka Kotahi NZTA traffic camera');
+  assert.equal(source.license, 'NZTA Traffic and Travel API (operator terms apply)');
   assert.equal(source.groundElevationM, AUCKLAND_GROUND_ELEVATION_M);
   assert.equal(source.url, AUCKLAND_IMAGE_URL(CARRINGTON_ID));
   assert.equal(source.url, source.snapshotUrl);
@@ -90,13 +84,12 @@ test('an Auckland feature maps to a source on the pinned HTTPS frame host', () =
   assert.equal(source.headingDeg, 90);
 });
 
-test('frame URLs are synthesized from ExternalId; ImageUrl and internal id are ignored', () => {
+test('frame URLs are synthesized from API id; imageUrl cannot steer the proxy', () => {
   const source = aucklandCameraToSource(
-    feature(
+    apiCamera(
       {},
       {
         ImageUrl: 'https://evil.example/cameras/x/image',
-        id: 1430,
         ExternalId: CARRINGTON_ID,
       },
     ),
@@ -106,25 +99,25 @@ test('frame URLs are synthesized from ExternalId; ImageUrl and internal id are i
   assert.equal(source.id, `auckland-${CARRINGTON_ID}`);
 });
 
-test('offline, other-region, off-city and unusable ids are dropped', () => {
-  assert.equal(aucklandCameraToSource(feature({}, { Offline: 1 })), null);
+test('API booleans, region, bounding box and invalid ids are rejected', () => {
+  assert.equal(aucklandCameraToSource(apiCamera({}, { Offline: 1 })), null);
   assert.equal(
-    aucklandCameraToSource(feature({}, { UnderMaintenance: 1 })),
+    aucklandCameraToSource(apiCamera({}, { UnderMaintenance: 1 })),
     null,
   );
-  assert.equal(aucklandCameraToSource(feature({}, { RegionID: 21 })), null);
+  assert.equal(aucklandCameraToSource(apiCamera({}, { RegionID: 21 })), null);
   assert.equal(
-    aucklandCameraToSource(feature({}, { ExternalId: '../etc/passwd' })),
+    aucklandCameraToSource(apiCamera({}, { ExternalId: '../etc/passwd' })),
     null,
   );
   assert.equal(
-    aucklandCameraToSource(feature({}, { ExternalId: '0706' })),
+    aucklandCameraToSource(apiCamera({}, { ExternalId: '0706' })),
     null,
   );
   // Wellington: a plausible lat/lon, and Region 16, but not Auckland.
   assert.equal(
     aucklandCameraToSource(
-      feature(
+      apiCamera(
         { geometry: { type: 'Point', coordinates: [174.7762, -41.2865] } },
         { RegionID: 16, Latitude: '-41.2865', Longitude: '174.7762' },
       ),
@@ -133,18 +126,28 @@ test('offline, other-region, off-city and unusable ids are dropped', () => {
   );
   assert.equal(
     aucklandCameraToSource(
-      feature({ geometry: null }, { Latitude: '0', Longitude: '0' }),
+      apiCamera({ geometry: null }, { Latitude: '0', Longitude: '0' }),
     ),
     null,
+  );
+  assert.equal(
+    aucklandCameraToSource(
+      apiCamera(
+        { geometry: { type: 'Point', coordinates: [175.4, -36.7] } },
+        { RegionID: 2 },
+      ),
+    ),
+    null,
+    'same-region cameras outside the metro bounds are excluded',
   );
   assert.equal(aucklandCameraToSource(null), null);
   // 2-digit and 3-digit ExternalIds stay.
   assert.equal(
-    aucklandCameraToSource(feature({}, { ExternalId: 10 })).id,
+    aucklandCameraToSource(apiCamera({}, { ExternalId: 10 })).id,
     'auckland-10',
   );
   assert.equal(
-    aucklandCameraToSource(feature({}, { ExternalId: CONSTELLATION_ID })).id,
+    aucklandCameraToSource(apiCamera({}, { ExternalId: CONSTELLATION_ID })).id,
     `auckland-${CONSTELLATION_ID}`,
   );
 });
@@ -155,30 +158,30 @@ test('travel-direction fields are high-confidence; blank uses the id-hash fallba
   assert.equal(directionToHeading('South'), NaN);
 
   const south = aucklandCameraToSource(
-    feature({}, { Direction: 'Southbound' }),
+    apiCamera({}, { Direction: 'Southbound' }),
   );
   assert.equal(south.headingConfidence, 'high');
   assert.equal(south.headingDeg, 180);
 
-  const blank = aucklandCameraToSource(feature({}, { Direction: '' }));
+  const blank = aucklandCameraToSource(apiCamera({}, { Direction: '' }));
   assert.equal(blank.headingConfidence, 'low');
   assert.ok(Number.isFinite(blank.headingDeg));
   assert.equal(
     blank.headingDeg,
-    aucklandCameraToSource(feature({}, { Direction: 'None' })).headingDeg,
+    aucklandCameraToSource(apiCamera({}, { Direction: 'None' })).headingDeg,
   );
 });
 
 test('a nameless row still gets a label', () => {
   assert.equal(
     aucklandCameraName(
-      { Name: '  SH1 Harbour Bridge  ', Description: 'ignored' },
+      { name: '  SH1 Harbour Bridge  ', description: 'ignored' },
       'auckland-40',
     ),
     'SH1 Harbour Bridge',
   );
   assert.equal(
-    aucklandCameraName({ Description: 'Looking south' }, 'auckland-40'),
+    aucklandCameraName({ description: 'Looking south' }, 'auckland-40'),
     'Looking south',
   );
   assert.equal(aucklandCameraName({}, 'auckland-40'), 'Auckland Camera 40');
@@ -187,11 +190,11 @@ test('a nameless row still gets a label', () => {
 
 test('the unselected label is the site name, trimmed to the code width', () => {
   assert.equal(
-    aucklandCameraToSource(feature({}, { Name: 'SH1 Onewa Rd' })).code,
+    aucklandCameraToSource(apiCamera({}, { Name: 'SH1 Onewa Rd' })).code,
     'SH1 ONEWA RD',
   );
   const long = aucklandCameraToSource(
-    feature(
+    apiCamera(
       {},
       {
         Name: 'SH1 a very long interchange name that must truncate for the unselected camera code',
@@ -202,17 +205,16 @@ test('the unselected label is the site name, trimmed to the code width', () => {
   assert.ok(long.code.endsWith('…'));
 });
 
-test('the loader reads the keyless catalog and collapses duplicate ExternalIds', async (t) => {
+test('the official API payload loads and collapses duplicate camera ids', async (t) => {
   t.mock.method(console, 'log', () => {});
   const requested = [];
   t.mock.method(globalThis, 'fetch', async (url, init) => {
     requested.push([String(url), init.headers.Accept, init.redirect]);
-    return Response.json({
-      type: 'FeatureCollection',
-      features: [
-        feature(),
-        feature({}, { Name: 'SH16 Carrington Rd Overbridge (duplicate)' }),
-        feature(
+    return Response.json(
+      apiPayload([
+        apiCamera(),
+        apiCamera({}, { Name: 'SH16 Carrington Rd Overbridge (duplicate)' }),
+        apiCamera(
           {
             geometry: { type: 'Point', coordinates: [174.726254, -36.750564] },
           },
@@ -226,9 +228,9 @@ test('the loader reads the keyless catalog and collapses duplicate ExternalIds',
             id: 1548,
           },
         ),
-        feature({}, { Offline: 1, ExternalId: 706 }),
-      ],
-    });
+        apiCamera({}, { Offline: 1, ExternalId: 706 }),
+      ]),
+    );
   });
   const cameras = await loadAucklandSourcesFromOpenData();
   assert.deepEqual(requested, [
@@ -242,6 +244,29 @@ test('the loader reads the keyless catalog and collapses duplicate ExternalIds',
     cameras.find((camera) => camera.id === `auckland-${CARRINGTON_ID}`).name,
     'SH16 Carrington Rd Overbridge',
   );
+});
+
+test('the forbidden Journeys GeoJSON asset is not accepted as an API payload', async (t) => {
+  t.mock.method(console, 'log', () => {});
+  t.mock.method(globalThis, 'fetch', async () =>
+    Response.json({
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [174.71018, -36.87173] },
+          properties: {
+            ExternalId: CARRINGTON_ID,
+            Name: 'SH16 Carrington Rd Overbridge',
+            RegionID: 7,
+            Offline: 0,
+            UnderMaintenance: 0,
+          },
+        },
+      ],
+    }),
+  );
+  assert.deepEqual(await loadAucklandSourcesFromOpenData(), []);
 });
 
 test('an upstream failure yields an empty pack and releases the response', async (t) => {
@@ -281,10 +306,7 @@ test('the catalog fetch refuses redirects and oversized bodies', async (t) => {
   t.mock.restoreAll();
   t.mock.method(console, 'warn', () => {});
   t.mock.method(globalThis, 'fetch', async () => {
-    const body = JSON.stringify({
-      type: 'FeatureCollection',
-      features: [feature()],
-    });
+    const body = JSON.stringify(apiPayload([apiCamera()]));
     return new Response(body, {
       headers: {
         'Content-Type': 'application/json',
@@ -321,7 +343,7 @@ test('a reduced pack cap keeps cameras nearest the metro anchors', async (t) => 
   process.env.CCTV_AUCKLAND_MAX_SOURCES = '8';
   const rows = [
     ...[-36.52, -36.522, -36.524, -36.526, -36.528, -36.53].map((lat, i) =>
-      feature(
+      apiCamera(
         { geometry: { type: 'Point', coordinates: [174.671, lat] } },
         {
           ExternalId: 800 + i,
@@ -333,7 +355,7 @@ test('a reduced pack cap keeps cameras nearest the metro anchors', async (t) => 
       ),
     ),
     ...[-36.8485, -36.849, -36.8495, -36.85, -36.8505, -36.851].map((lat, i) =>
-      feature(
+      apiCamera(
         { geometry: { type: 'Point', coordinates: [174.7633, lat] } },
         {
           ExternalId: 60 + i,
@@ -346,7 +368,7 @@ test('a reduced pack cap keeps cameras nearest the metro anchors', async (t) => 
     ),
   ];
   t.mock.method(globalThis, 'fetch', async () =>
-    Response.json({ type: 'FeatureCollection', features: rows }),
+    Response.json(apiPayload(rows)),
   );
   const cameras = await loadAucklandSourcesFromOpenData();
   assert.equal(cameras.length, 8);
@@ -379,11 +401,10 @@ const runCatalogWithMockedUpstreams = async (t) => {
     const href = String(url);
     requested.push(href);
     if (href === AUCKLAND_CAMERAS_URL) {
-      return Response.json({
-        type: 'FeatureCollection',
-        features: [
-          feature(),
-          feature(
+      return Response.json(
+        apiPayload([
+          apiCamera(),
+          apiCamera(
             {
               geometry: {
                 type: 'Point',
@@ -398,8 +419,8 @@ const runCatalogWithMockedUpstreams = async (t) => {
               Direction: 'Southbound',
             },
           ),
-        ],
-      });
+        ]),
+      );
     }
     return Response.json([]);
   });

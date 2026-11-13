@@ -407,8 +407,9 @@ export const DATA_CREDITS = [
   {
     key: 'auckland-cctv',
     html:
-      'CCTV cameras &amp; frames (Auckland): ' +
-      '<a href="https://www.nzta.govt.nz/traffic-and-travel-information/use-our-data/" target="_blank" rel="noopener">Waka Kotahi NZ Transport Agency</a>',
+      'CCTV cameras &amp; frames (Auckland, when enabled): ' +
+      '<a href="https://nzta.govt.nz/about-us/our-data-and-official-information/use-our-data/terms-of-use" target="_blank" rel="noopener">Waka Kotahi NZ Transport Agency — Traffic and Travel API</a>. ' +
+      'Projection requires operator permission; retain source rights notices.',
   },
   {
     key: 'nyc-cctv',

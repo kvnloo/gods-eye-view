@@ -256,6 +256,31 @@ test('non-public, broken, off-state and off-host records are dropped', () => {
   assert.deepEqual(coloradoFeatureToSources({ properties: null }), []);
 });
 
+test('Colorado frames must be still images inside the pinned snapshots directory', () => {
+  const withFrame = (url) =>
+    coloradoFeatureToSources(
+      feature({
+        properties: {
+          views: [{ type: 'STILL_IMAGE', url }],
+        },
+      }),
+    );
+
+  for (const url of [
+    'https://cocam.carsprogram.org/status/report.jpg',
+    'https://cocam.carsprogram.org/Snapshots/%2fprivate.flv.png',
+    'https://cocam.carsprogram.org/Snapshots/025N21210CAM1SEC.m3u8',
+  ]) {
+    assert.deepEqual(withFrame(url), [], `reject unpinned frame: ${url}`);
+  }
+  assert.equal(
+    withFrame(
+      'https://cocam.carsprogram.org/Snapshots/025N21210CAM1SEC.flv.png',
+    ).length,
+    1,
+  );
+});
+
 test('frame URLs upgrade to HTTPS and ids stay stable', () => {
   assert.equal(
     normalizeColoradoImageUrl({

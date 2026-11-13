@@ -4143,8 +4143,11 @@ export function normalizeColoradoImageUrl(view) {
   }
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null;
   parsed.protocol = 'https:';
-  const upgraded = parsed.toString();
-  return upgraded.startsWith(COLORADO_IMAGE_ORIGIN) ? upgraded : null;
+  if (!/\.(?:png|jpe?g|gif|webp)$/i.test(parsed.pathname)) return null;
+  return pinnedCameraUrl(
+    parsed.toString(),
+    `${COLORADO_IMAGE_ORIGIN}Snapshots/`,
+  );
 }
 
 /**

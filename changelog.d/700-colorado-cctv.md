@@ -6,3 +6,7 @@
   `CCTV_COLORADO_ENABLED=1`; once on, the nearest 300 to Denver and Colorado
   Springs load and `CCTV_COLORADO_MAX_SOURCES` changes that (SairamBhargav,
   #700).
+- Restrict the Colorado pack to still-image paths under COtrip's
+  `/Snapshots/` directory, rejecting playlists, other same-host paths and
+  encoded separators before frame registration (follow-up to SairamBhargav's
+  #700 contribution).

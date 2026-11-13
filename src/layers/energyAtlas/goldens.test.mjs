@@ -5,6 +5,7 @@ import {
   annualAveragePowerW,
   hoursInCalendarYear,
   normalizeEnergyObservation,
+  saganKardashevIndex,
   sameComparableMetric,
   worldKardashevEstimate,
 } from './model.js';
@@ -255,4 +256,45 @@ test('golden iea-world-2024-total-energy-supply: planetary power and index', () 
     }),
     null,
   );
+});
+
+test('golden jiang-2022-world-2018-kardashev: Sagan index matches the cited value', (t) => {
+  const byId = (id) => fixture.goldens.find((row) => row.id === id);
+  const cited = byId('jiang-2022-world-2018-kardashev');
+  assert.equal(cited.kind, 'kardashev_reference');
+
+  // Published: about 1.90e13 W gives K = 0.728 with K = (lg P - 6) / 10.
+  const index = saganKardashevIndex(cited.valueAsPublished);
+  const error = relativeError(index, cited.citedIndex);
+  t.diagnostic(
+    `metric golden=${cited.id} cited_K=${cited.citedIndex} model_K=${index} rel_err=${error}`,
+  );
+  // The paper prints three decimals: allow half a unit in the third.
+  assert.ok(Math.abs(index - cited.citedIndex) <= 0.0005);
+  assert.equal(Number(index.toFixed(3)), cited.citedIndex);
+  assert.ok(Math.abs(index - cited.derived.indexFromPower) < 1e-12);
+
+  // The paper's own energy total gives its power to the three figures printed.
+  const energy = cited.energyAsPublished;
+  const twh =
+    (energy.value * JOULES_PER_UNIT[energy.unit]()) /
+    (constant('J_PER_WH') * constant('SI_TERA'));
+  const powerW = annualAveragePowerW(twh, cited.dataYear);
+  assert.ok(
+    relativeError(powerW, cited.derived.averagePowerWFromEnergy) < 1e-12,
+  );
+  assert.ok(relativeError(powerW, cited.valueAsPublished) <= 0.005 / 1.9);
+  assert.equal(
+    Number(saganKardashevIndex(powerW).toFixed(3)),
+    cited.citedIndex,
+  );
+
+  // Sanity check for the newest cited world total (IEA, 2024): supply grew
+  // after 2018, and 0.005 in K is a 12 % change in power (10 ** 0.05).
+  const now = worldKardashevEstimate(
+    observation(byId('iea-world-2024-total-energy-supply')),
+  );
+  assert.ok(now.index > index);
+  assert.ok(Math.abs(now.index - cited.citedIndex) < 0.005);
+  assert.equal(Number(now.index.toFixed(2)), 0.73);
 });

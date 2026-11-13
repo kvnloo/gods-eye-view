@@ -230,6 +230,40 @@
         "saganIndex": 0.731263,
         "method": "Independent exact-rational calculation (Python fractions), 366-day year from the Gregorian calendar; saganIndex from Python math.log10, rounded to 6 decimals; not produced by the model."
       }
+    },
+    {
+      "id": "jiang-2022-world-2018-kardashev",
+      "kind": "kardashev_reference",
+      "publisher": "Jiang, Feng, Rosen, Fahy, Zhang, Obacz, Das and Zhu (arXiv:2204.07070v1)",
+      "dataset": "Avoiding the Great Filter: Predicting the Timeline for Humanity to Reach Kardashev Type I Civilization",
+      "table": "section 1.2, equation (1.1) and the paragraph after it, PDF page 2",
+      "url": "https://arxiv.org/abs/2204.07070",
+      "fileUrl": "https://arxiv.org/pdf/2204.07070",
+      "relatedDoi": "https://doi.org/10.3390/galaxies10030068",
+      "releasedAt": "2022-03-24",
+      "dataYear": 2018,
+      "unit": "W",
+      "valueAsPublished": 1.9e13,
+      "citedIndex": 0.728,
+      "formulaAsPublished": "K = (lg(P) - 6) / 10, with P the power in watts (equation 1.1, attributed to Carl Sagan)",
+      "energyAsPublished": {
+        "text": "1,4281,889 kTOE",
+        "value": 14281889,
+        "unit": "ktoe",
+        "note": "Digits as printed; the comma grouping in the paper is irregular. The paper attributes the figure to the IEA."
+      },
+      "quote": "in 2018 the total energy supply of the entire world was 1,4281,889 kTOE (an energy unit called kilo ton oil equivalent), or approximately 1.90 × 10^13 W. From this actual human civilization power production estimate and Eq. 1.1, we can calculate the present value of K for human civilization to be 0.728.",
+      "measures": "primary",
+      "measuresNote": "Reference figure for the Sagan index, not an energy observation: world total energy supply (PRIMARY) for 2018 as a power, about 1.90e13 W, and the index the authors compute from it, 0.728. Used to check the formula and the 0.72 to 0.73 range. ktoe converts with the same 11.63 GWh per ktoe that DESNZ prints.",
+      "licence": "arXiv listing: CC BY-NC-ND 4.0 (preprint); only the figures and one sentence are quoted",
+      "attribution": "Jiang, J. H., et al. (2022), Avoiding the Great Filter: Predicting the Timeline for Humanity to Reach Kardashev Type I Civilization, arXiv:2204.07070.",
+      "derived": {
+        "indexFromPower": 0.7278753600952829,
+        "annualTWhFromEnergy": 166098.36907,
+        "averagePowerWFromEnergy": 18961001035388.13,
+        "indexFromEnergy": 0.727786,
+        "method": "Independent calculation (Python fractions and math.log10), 365-day year for 2018; not produced by the model."
+      }
     }
   ]
 }

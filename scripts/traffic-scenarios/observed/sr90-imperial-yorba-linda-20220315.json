@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "id": "sr90-imperial-yorba-linda-20220315",
+  "determination": "hypothetical simulation compared with published counts; no field or real-world claim",
+  "corridor": "SR-90 / Imperial Highway, Rose Drive to Yorba Linda Boulevard, Orange County, California",
+  "source": {
+    "title": "Yorba Linda Housing Element & General Plan Update Traffic Analysis, Appendix 4.1 Traffic Counts - March 2022 and Appendix 4.2 worksheets (EIR Appendix G)",
+    "leadAgency": "City of Yorba Linda",
+    "preparedBy": "Urban Crossroads, 2022-05-26; counts by Counts Unlimited, Inc.",
+    "stateClearinghouseNumber": "2022040574",
+    "recordUrl": "https://ceqanet.lci.ca.gov/2022040574",
+    "url": "https://files.ceqanet.lci.ca.gov/278230-2/attachment/tsE_8V1pbvqDhUQWtHqAwffMQqtZCyeYr-qAXqZF-TeVYvivg1IZP9ZctyX5rmQ8SPqkBoHzEKuZp0Fz0",
+    "sha256": "sha256:0fba3b95516b9abf6103cdc8c7bf8fc98b30b19e291645ecdf0c8f566f9bfc65",
+    "countDate": "2022-03-15",
+    "weekday": "Tuesday",
+    "siteCode": "05122223",
+    "intervalMinutes": 15,
+    "windows": [
+      {"id": "AM", "start": "07:00", "firstHour": 7},
+      {"id": "PM", "start": "04:00", "firstHour": 16}
+    ],
+    "terms": "Public record on CEQAnet, no login. CEQAnet Conditions of Use (https://ceqanet.lci.ca.gov/Home/ConditionsOfUse) require permission from the owner for information not owned or created by the State. The count sheets are third-party work.",
+    "redistribution": "not cleared: citation and fetch script only. No value from this study is stored in this repository.",
+    "derivedSha256": "sha256:9469c5204e23a69fbe0c8c800a344dde0a84c031a939a2fd46db682ecd7aad1c"
+  },
+  "intersections": [
+    {"node": "J0", "name": "Rose Drive", "sheet": "01_PLA_Rose_Imp", "worksheet": 1, "towardsSr91": "Eastbound"},
+    {"node": "J1", "name": "Prospect Avenue", "sheet": "02_YLA_Pros_Imp", "worksheet": 2, "towardsSr91": "Eastbound"},
+    {"node": "J2", "name": "Bastanchury Road", "sheet": "03_YLA_Imp_Bast", "worksheet": 3, "towardsSr91": "Southbound"},
+    {"node": "J3", "name": "Lemon Drive", "sheet": "04_YLA_Imp_Lem", "worksheet": 4, "towardsSr91": "Southbound"},
+    {"node": "J4", "name": "Yorba Linda Boulevard", "sheet": "05_YLA_Imp_Yorba", "worksheet": 5, "towardsSr91": "Southbound"}
+  ],
+  "scoredEdges": ["m0e", "m1e", "m2e", "m3e", "m3w", "m2w", "m1w", "m0w"],
+  "scoring": {
+    "countHour": "Imperial Highway approach volume (left + through + right; the sheets' right-on-red column is a subset of right and is not added) in one clock hour, read where the edge ends: m{i}e at J{i+1} towards SR-91, m{i}w at J{i} towards Brea",
+    "hours": ["07", "08", "16", "17"],
+    "countHours": 32,
+    "gehLimit": 5,
+    "stopShare": 0.85,
+    "neverScored": "approach towards SR-91 at Rose Drive, approach towards Brea at Yorba Linda Boulevard, every cross-street approach; these may feed demand",
+    "seeds": [7, 19, 41],
+    "stopRule": "every seed at or above stopShare, or three steps with no gain in the mean share"
+  },
+  "parameters": {
+    "spacingMetres": {"value": [491, 629, 1681, 406], "source": "OpenStreetMap contributors (ODbL), 'East Imperial Highway' carriageway towards SR-91, between junction nodes 122792378, 122761097, 122736957, 1355989938 and 122774980; read 2026-11-13"},
+    "laneGroups": {"value": "parsed at run time", "source": "the cited study, Appendix 4.2 worksheets, 'Lanes' row per approach"},
+    "lanesAlongLink": {"value": "the stop-line lane count is kept over the whole link; a cross-street exit gets the through-capable lane count of the same leg's entering approach", "status": "ASSUMED"},
+    "crossStubMetres": {"value": 200, "status": "ASSUMED", "note": "the stack's value"},
+    "speedMetresPerSecond": {"value": 13.89, "status": "ASSUMED", "note": "the stack's value; OpenStreetMap tags most of the section 50 mph, not applied"},
+    "mainlineSpeedMetresPerSecond": {"value": [22.35, 22.35, 22.35, 17.88], "source": "OpenStreetMap contributors (ODbL), maxspeed on the 'East Imperial Highway' ways of each link, read 2026-11-13: 50 mph on the first two links, 50 mph on about three quarters of the third, 40 mph on the fourth"},
+    "vehicleType": {"value": "the stack's passenger car (accel 2.6, decel 4.5, sigma 0.5, length 5, minGap 2.5, maxSpeed 13.89)", "status": "ASSUMED"},
+    "signalPlan": {"value": "netconvert fixed-time plan, 60 s cycle, 3 s yellow, 1 s all-red, offset 0", "status": "ASSUMED", "note": "the stack's baseline plan"},
+    "signalControlType": {"value": "actuated", "source": "the cited study, Appendix 4.2, Synchro sheet '8: Kellog Dr. & SR 90 WB Ramps' (the Caltrans-operated signal on this route next to the section): 'Control Type: Actuated-Uncoordinated'. No timing sheet is published for the three modelled signals, so applying the type to them is an inference"},
+    "actuatedTimings": {"value": "the stack's gap-actuated plan: minimum green 8 s, maximum green 50 s", "status": "ASSUMED", "note": "not fitted to any count"},
+    "stackRatesPerHour": {"value": {"m0e": 600, "m3w": 300, "cross": 120}, "status": "ASSUMED", "note": "the stack's synthetic rates"},
+    "caltransPeakHourTwoWay": {"value": {"m0e": 4300, "m3w": 4400}, "source": "Caltrans Traffic Census, 2022 Traffic Volumes (count year 2021-10-01 to 2022-09-30), District 12, Route 090, ORA: postmile 7.271 ahead leg for the entry towards SR-91, postmile 11.147 back leg for the entry towards Brea. https://dot.ca.gov/-/media/dot-media/programs/traffic-operations/documents/census/2022/2022-traffic-volumes-ca-v2.xlsx ; same data on https://data.ca.gov/dataset/annual-average-daily-traffic under Creative Commons Attribution"},
+    "directionalSplit": {"value": 0.5, "status": "ASSUMED", "note": "Caltrans publishes no K/D site on this route"},
+    "peakHourUse": {"value": "the Caltrans estimated peak hour is applied to each of the four counted hours", "status": "ASSUMED"},
+    "warmUpSeconds": {"value": 900, "status": "ASSUMED", "note": "uses the first counted interval's volume"},
+    "unmodelledStreets": {"value": "Los Angeles Street, Valley View Avenue (signal), Casa Loma Avenue, Eureka Avenue, Garden Place and driveways meet the section and are not modelled", "source": "OpenStreetMap contributors (ODbL), read 2026-11-13"}
+  },
+  "defaults": {"network": "stack", "mainline": "stack", "turns": "straight", "cross": "stack", "signals": "fixed", "speed": "stack"},
+  "steps": [
+    {"id": "S0", "change": "none: the stack's network, demand rates and fixed-time plan as they are, with the demand process sustained over the count windows", "set": {}},
+    {"id": "S1", "change": "network: the synthetic 300 m single-lane geometry is replaced by the sourced spacing and stop-line lane groups of the five counted intersections", "set": {"network": "sourced"}, "source": "parameters.spacingMetres (OpenStreetMap) and parameters.laneGroups (the cited study, Appendix 4.2)"},
+    {"id": "S2", "change": "mainline entry demand: the stack's 600 and 300 veh/h give way to half of the Caltrans 2022 two-way peak-hour volume at each end", "set": {"mainline": "caltrans"}, "source": "parameters.caltransPeakHourTwoWay (independent of the scored counts)"},
+    {"id": "S3", "change": "mainline entry demand: the Caltrans estimate gives way to the 15-minute volumes that left the two boundary intersections into the section on the count day", "set": {"mainline": "counts"}, "source": "the cited study, sheets 01_PLA_Rose_Imp and 05_YLA_Imp_Yorba; only movements of never-scored approaches and of cross streets at the two boundary intersections"},
+    {"id": "S4", "change": "signal control type: the fixed-time plan gives way to the stack's own gap-actuated plan, with its timings unchanged", "set": {"signals": "actuated"}, "source": "parameters.signalControlType (control type only; parameters.actuatedTimings stay ASSUMED)"},
+    {"id": "S5", "change": "turning shares: straight-only gives way to the 15-minute left/through/right shares of each modelled approach on the count day", "set": {"turns": "sheets"}, "source": "the cited study, sheets 02_YLA_Pros_Imp, 03_YLA_Imp_Bast and 04_YLA_Imp_Lem. These shares include those of scored approaches (their split, not their volume)"},
+    {"id": "S6", "change": "cross-street entry demand: the stack's 120 veh/h per entry gives way to the 15-minute approach volumes of the six cross-street approaches on the count day", "set": {"cross": "counts"}, "source": "the cited study, sheets 02_YLA_Pros_Imp, 03_YLA_Imp_Bast and 04_YLA_Imp_Lem; cross-street approaches are never scored"},
+    {"id": "S7", "change": "mainline speed limit: the stack's 13.89 m/s gives way to the posted limit of each link, and the vehicle type's speed cap rises to it", "set": {"speed": "osm"}, "source": "parameters.mainlineSpeedMetresPerSecond (OpenStreetMap)", "kept": false, "reason": "no gain over S6"}
+  ]
+}

@@ -62,7 +62,8 @@ def turned(heading, move):
 def settings_for(fixture, step):
     settings, changes = dict(fixture['defaults']), None
     for entry in fixture['steps']:
-        settings.update(entry['set'])
+        if entry['id'] == step or entry.get('kept', True):   # a rejected step is not carried forward
+            settings.update(entry['set'])
         if entry['id'] == step:
             changes = entry['change']
             break
@@ -165,6 +166,35 @@ def demand_inputs(fixture, derived, settings, window):
     return entries, shares
 
 
+def flow_arithmetic(fixture, derived, settings):
+    """Hourly approach volumes the demand inputs imply with no simulator and no travel time.
+
+    If this already misses a count-hour, no signal, lane or speed setting can repair it.
+    """
+    predicted = {}
+    for window in fixture['source']['windows']:
+        entries, shares = demand_inputs(fixture, derived, settings, window['id'])
+        arriving = {arrival(edge): volumes for edge, (volumes, _) in entries.items()}
+
+        def leaving(i, heading, interval):
+            total = 0
+            for move, source in (('t', heading), ('l', turned(heading, 'r')), ('r', turned(heading, 'l'))):
+                split = shares(i, source, interval)
+                share = split['ltr'.index(move)] / sum(split) if sum(split) else move == 't'
+                total += arriving[i, source][interval] * share
+            return total
+
+        for i in (1, 2, 3):
+            arriving[i + 1, 'E'] = [leaving(i, 'E', interval) for interval in range(BINS)]
+        for i in (3, 2, 1):
+            arriving[i - 1, 'W'] = [leaving(i, 'W', interval) for interval in range(BINS)]
+        for edge in fixture['scoredEdges']:
+            for half in range(2):
+                predicted[f"{edge}@{window['firstHour'] + half:02d}"] = \
+                    sum(arriving[arrival(edge)][1 + 4 * half:5 + 4 * half])
+    return predicted
+
+
 def sample_route(rng, origin, shares, interval):
     """Walk from an entry edge, drawing one movement at each signal."""
     route = [origin]
@@ -261,7 +291,9 @@ def main(argv=None):
               'sumoVersion': stack.EXPECTED_VERSION, 'runnerRevision': stack.digest(__file__),
               'fixtureRevision': stack.digest(FIXTURE), 'networkRevision': stack.digest(network),
               'countSource': fixture['source']['sha256'], 'observedValuesStored': False,
-              'countHours': len(scored), 'seeds': []}
+              'countHours': len(scored), 'seeds': [],
+              'flowArithmeticPassed': counts.score(
+                  scored, flow_arithmetic(fixture, derived, settings))['passed']}
     detail = []
     for seed in fixture['scoring']['seeds']:
         simulated, vehicles, unserved = {}, 0, 0
@@ -310,7 +342,8 @@ def main(argv=None):
         stack.write_json(args.detail, detail)
     line = ' / '.join(f"{entry['passed']}/{report['countHours']}" for entry in report['seeds'])
     text = (f"{args.step}: count-hours with GEH < 5, seeds {fixture['scoring']['seeds']}: {line} "
-            f"(mean share {report['meanShare']:.1%}). Hypothetical simulation; "
+            f"(mean share {report['meanShare']:.1%}); plain flow arithmetic on the same inputs: "
+            f"{report['flowArithmeticPassed']}/{report['countHours']}. Hypothetical simulation; "
             'no real-world claim.\n')
     (out / 'summary.md').write_text(text, encoding='utf-8')
     print(text, end='')

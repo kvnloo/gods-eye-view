@@ -284,6 +284,28 @@ class RunnerTests(unittest.TestCase):
             runner.write_demand(out / 'd.xml', {'m0e': ([1] * 9, True)}, lambda *_: (0, 1, 0), 7, 22.35)
             self.assertEqual(ET.parse(out / 'd.xml').getroot().find('vType').get('maxSpeed'), '22.35')
 
+    def test_flow_arithmetic_needs_no_simulator(self):
+        stack_as_is, _ = runner.settings_for(FIXTURE, 'S1')
+        predicted = runner.flow_arithmetic(FIXTURE, derived(), stack_as_is)
+        self.assertEqual(len(predicted), 32)
+        self.assertEqual({predicted[f'm{i}e@{hour}'] for i in range(4) for hour in ('07', '17')}, {600})
+        self.assertEqual(predicted['m0w@08'], 300)
+        turning, _ = runner.settings_for(FIXTURE, 'S6')
+        predicted = runner.flow_arithmetic(FIXTURE, derived(), turning)
+        # Prospect, heading E, interval n: 10n + 6 arrive; the next link gets their through share plus the
+        # north leg's left (1 of 10n + 3) and the south leg's right (2 of 10n + 7)
+        expected = sum((10 * n + 6) * (10 * n + 3) / (10 * n + 9) + (10 * n + 3) / (10 * n + 3)
+                       + 2 * (10 * n + 7) / (10 * n + 7) for n in range(4))
+        self.assertAlmostEqual(predicted['m1e@07'], expected)
+        self.assertEqual(predicted['m0e@07'], sum(10 * n + 6 for n in range(4)))
+
+    def test_a_rejected_step_is_not_carried_forward(self):
+        fixture = json.loads(json.dumps(FIXTURE))
+        fixture['steps'].append({'id': 'S99', 'change': 'x', 'set': {'cross': 'stack'}, 'source': 'x'})
+        self.assertEqual(runner.settings_for(fixture, 'S7')[0]['speed'], 'osm')
+        self.assertEqual(runner.settings_for(fixture, 'S99')[0]['speed'], 'stack')
+        self.assertEqual(runner.settings_for(fixture, 'S99')[0]['signals'], 'actuated')
+
     def test_step_settings_accumulate_and_unknown_step_fails(self):
         settings, change = runner.settings_for(FIXTURE, 'S0')
         self.assertEqual(settings, FIXTURE['defaults'])

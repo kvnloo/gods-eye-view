@@ -68,6 +68,6 @@
     {"id": "S4", "change": "signal control type: the fixed-time plan gives way to the stack's own gap-actuated plan, with its timings unchanged", "set": {"signals": "actuated"}, "source": "parameters.signalControlType (control type only; parameters.actuatedTimings stay ASSUMED)"},
     {"id": "S5", "change": "turning shares: straight-only gives way to the 15-minute left/through/right shares of each modelled approach on the count day", "set": {"turns": "sheets"}, "source": "the cited study, sheets 02_YLA_Pros_Imp, 03_YLA_Imp_Bast and 04_YLA_Imp_Lem. These shares include those of scored approaches (their split, not their volume)"},
     {"id": "S6", "change": "cross-street entry demand: the stack's 120 veh/h per entry gives way to the 15-minute approach volumes of the six cross-street approaches on the count day", "set": {"cross": "counts"}, "source": "the cited study, sheets 02_YLA_Pros_Imp, 03_YLA_Imp_Bast and 04_YLA_Imp_Lem; cross-street approaches are never scored"},
-    {"id": "S7", "change": "mainline speed limit: the stack's 13.89 m/s gives way to the posted limit of each link, and the vehicle type's speed cap rises to it", "set": {"speed": "osm"}, "source": "parameters.mainlineSpeedMetresPerSecond (OpenStreetMap)"}
+    {"id": "S7", "change": "mainline speed limit: the stack's 13.89 m/s gives way to the posted limit of each link, and the vehicle type's speed cap rises to it", "set": {"speed": "osm"}, "source": "parameters.mainlineSpeedMetresPerSecond (OpenStreetMap)", "kept": false, "reason": "no gain over S6"}
   ]
 }

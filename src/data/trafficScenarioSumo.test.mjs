@@ -145,7 +145,8 @@ test('safety faults, absent safety and invalid counters reject simulated gains',
     const candidate = receipt('new', 'actuated', 1);
     mutate(candidate);
     const result = compareTrafficScenarioRuns(
-      receipt('base', 'fixed', 40), candidate,
+      receipt('base', 'fixed', 40),
+      candidate,
     );
     assert.equal(result.status, 'unknown');
     assert.equal(result.reason, 'incomplete-simulation-coverage');

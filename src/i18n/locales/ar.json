@@ -4129,7 +4129,7 @@
   "City builder play mode": "وضع اللعب في أداة بناء المدن",
   "Click a plot of land to reimagine it": "انقر على قطعة أرض لإعادة تصوّرها",
   "Esc exits": "Esc للخروج",
-  "Plot {code}": "القطعة {code}",
+  "Plot": "القطعة",
   "{area} m²": "{area} م²",
   "40 m grid cell, not a surveyed parcel": "خلية شبكة بمقاس 40 م، وليست قطعة مساحية",
   "City builder actions for this plot": "إجراءات أداة بناء المدن لهذه القطعة",

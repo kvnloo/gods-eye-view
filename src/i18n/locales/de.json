@@ -3765,7 +3765,7 @@
   "City builder play mode": "Stadtplanung: Spielmodus",
   "Click a plot of land to reimagine it": "Klicken Sie auf eine Fläche, um sie neu zu denken",
   "Esc exits": "Esc beendet",
-  "Plot {code}": "Fläche {code}",
+  "Plot": "Fläche",
   "{area} m²": "{area} m²",
   "40 m grid cell, not a surveyed parcel": "40-m-Rasterzelle, kein vermessenes Grundstück",
   "City builder actions for this plot": "Stadtplanungsaktionen für diese Fläche",

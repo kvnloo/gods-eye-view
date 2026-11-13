@@ -3674,7 +3674,7 @@
   "City builder play mode": "城市构建器游玩模式",
   "Click a plot of land to reimagine it": "点击一块地块以重新构想",
   "Esc exits": "按 Esc 退出",
-  "Plot {code}": "地块 {code}",
+  "Plot": "地块",
   "{area} m²": "{area} m²",
   "40 m grid cell, not a surveyed parcel": "40 m 网格单元，并非测绘地块",
   "City builder actions for this plot": "此地块的城市构建器操作",

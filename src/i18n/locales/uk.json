@@ -3947,7 +3947,7 @@
   "City builder play mode": "Режим гри «Редактор міста»",
   "Click a plot of land to reimagine it": "Натисніть на ділянку, щоб переосмислити її",
   "Esc exits": "Esc — вихід",
-  "Plot {code}": "Ділянка {code}",
+  "Plot": "Ділянка",
   "{area} m²": "{area} м²",
   "40 m grid cell, not a surveyed parcel": "Комірка сітки 40 м, а не межова ділянка",
   "City builder actions for this plot": "Дії Редактора міста для цієї ділянки",

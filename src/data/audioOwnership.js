@@ -63,6 +63,8 @@ let nextLeaseId = 1;
  *   called when this owner releases voluntarily, nor when it renews.
  *   `renew` is the caller's current lease, if it has one. A lease issued to
  *   a different owner is ignored: that claim is a takeover and revokes it.
+ *   Omitting `onRevoked` during renewal retains the incumbent's stop callback;
+ *   passing a new one replaces it.
  * @returns {AudioLease|null} The lease to release with, or null when `owner`
  *   is not a usable name.
  */
@@ -82,6 +84,11 @@ export function claimAudio(owner, options = {}) {
   const issued = Object.freeze({ owner: name, id: nextLeaseId++ });
   currentLease = issued;
   currentOnRevoked = typeof onRevoked === 'function' ? onRevoked : null;
+  // A callback-less renewal still needs the previous stop path when the next
+  // producer takes over; an explicit callback overrides it.
+  if (continuation && !Object.hasOwn(options, 'onRevoked')) {
+    currentOnRevoked = revoked;
+  }
   if (hadOwner && typeof revoked === 'function') {
     try {
       revoked();

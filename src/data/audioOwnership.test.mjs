@@ -229,6 +229,24 @@ test('the holder changing what it plays renews instead of revoking itself', () =
   assert.equal(selfStops, 1);
 });
 
+test('renewing without a replacement callback retains the stop handler', () => {
+  let stops = 0;
+  const first = claimAudio('radio', {
+    onRevoked: () => {
+      stops += 1;
+    },
+  });
+  const renewed = claimAudio('radio', { renew: first });
+  assert.equal(stops, 0, 'renewal must not revoke its own producer');
+  assert.equal(isAudioLeaseCurrent(renewed), true);
+  claimAudio('cctv');
+  assert.equal(
+    stops,
+    1,
+    'a later claimant must still stop the renewed producer',
+  );
+});
+
 test('a stale lease cannot be used to renew past a takeover', () => {
   // Radio loses the audio to ATC, then a late continuation of its old play
   // attempt claims with `renew: staleLease`. That is a takeover, not a

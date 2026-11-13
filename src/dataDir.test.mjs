@@ -21,6 +21,24 @@ test('dataDir is the fallback unless GEV_DATA_DIR is set', () => {
   assert.equal(dataDir(undefined, {}), process.cwd(), 'the default fallback is the working directory');
 });
 
+test('dotenv cannot redirect the credential store; explicit launch values still win', async () => {
+  const { mergeLoadedEnv } = await import('../server/standalone/vite.config.js');
+  const fromDotenv = {
+    GEV_DATA_DIR: '/unexpected-credential-store',
+    MAPILLARY_CLIENT_TOKEN: 'from-dotenv',
+  };
+  const noLaunchOverride = {};
+  mergeLoadedEnv(fromDotenv, noLaunchOverride);
+  assert.equal(noLaunchOverride.GEV_DATA_DIR, undefined);
+  assert.equal(dataDir('/app', noLaunchOverride), '/app', 'dotenv cannot relocate saved keys');
+  assert.equal(noLaunchOverride.MAPILLARY_CLIENT_TOKEN, 'from-dotenv', 'other dotenv keys still load');
+
+  const explicitlyConfigured = { GEV_DATA_DIR: '/data', MAPILLARY_CLIENT_TOKEN: 'from-launch' };
+  mergeLoadedEnv(fromDotenv, explicitlyConfigured);
+  assert.equal(dataDir('/app', explicitlyConfigured), '/data', 'explicit launch directory wins');
+  assert.equal(explicitlyConfigured.MAPILLARY_CLIENT_TOKEN, 'from-launch', 'launch keys keep priority');
+});
+
 function request(body) {
   const req = new EventEmitter();
   req.method = 'POST';

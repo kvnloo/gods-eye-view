@@ -7,3 +7,6 @@
   `.gev-cache` and `.gev-logs`, out of the repository root. The Docker image sets
   it to `/data` so its code stays read-only and saved keys survive a recreated
   container (damianperera, #1424).
+- Keep the Docker data-directory selector launch-only: `.env` cannot redirect
+  Provider Settings' credential writes while other dotenv keys still load
+  (damianperera, amirshahab89, kvnloo, #1424).

@@ -7440,7 +7440,10 @@ the bind-mounted checkout. `runtime` (the default, and what is published) runs a
 writes: the `.env` that Provider Settings saves (temp file and rename stay in
 that directory, and Vite loads it from there), `.gev-cache` and `.gev-logs`.
 Unset, those stay in the repository root, so native, Pinokio and compose runs
-are unchanged. The Docker launcher checks that directory for writability. Only
+are unchanged. The directory selector is taken from the process launch
+environment, not from a `.env` entry: Vite ignores `GEV_DATA_DIR` while
+copying dotenv keys into the process, but still loads other provider keys.
+The Docker launcher checks that directory for writability. Only
 `node_modules/.vite` and `node_modules/.vite-temp` are otherwise writable.
 
 ## Québec CCTV integration

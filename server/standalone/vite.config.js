@@ -12,16 +12,25 @@ import { dataDir } from '../providers/common/data-dir.js';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 
+/**
+ * Copy dotenv values into the process, except the directory selector.
+ * A value loaded FROM .env must not move the credential store that owns it.
+ * GEV_DATA_DIR is accepted only when present in the launch environment.
+ */
+export function mergeLoadedEnv(loaded, env = process.env) {
+  for (const [key, value] of Object.entries(loaded)) {
+    if (key === 'GEV_DATA_DIR') continue;
+    if (env[key] === undefined) env[key] = value;
+  }
+}
+
 /** Load this checkout's configuration and attach its local provider middleware. */
 export function standaloneConfig(
   { command, mode },
   { nominatimStorageDir } = {},
 ) {
   // GEV_DATA_DIR (Docker) keeps the saved .env outside the read-only code.
-  const loaded = loadEnv(mode, dataDir(root), '');
-  for (const [key, value] of Object.entries(loaded)) {
-    if (process.env[key] === undefined) process.env[key] = value;
-  }
+  mergeLoadedEnv(loadEnv(mode, dataDir(root), ''));
   const tools = standaloneVoiceTools();
   return createBrowserViteConfig({
     plugins: [

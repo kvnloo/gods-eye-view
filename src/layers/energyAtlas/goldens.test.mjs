@@ -29,6 +29,7 @@ const JOULES_PER_UNIT = {
   ktoe: () =>
     constant('GWH_PER_KTOE') * constant('SI_GIGA') * constant('J_PER_WH'),
   'quadrillion Btu': () => constant('J_PER_QUAD'),
+  TJ: () => constant('SI_TERA'),
 };
 
 const joules = (golden) => {
@@ -200,4 +201,26 @@ test('golden eia-usa-2024-primary-energy-consumption: primary energy stays apart
   const uk = byId('desnz-uk-2024-total-final-energy');
   assert.equal(sameComparableMetric(observation(uk), observation(usa)), false);
   assert.equal(sameComparableMetric(observation(usa), observation(usa)), true);
+});
+
+test('golden statcan-can-2024-energy-use-final-demand: no cross-source comparison', () => {
+  const byId = (id) => fixture.goldens.find((row) => row.id === id);
+  const canada = byId('statcan-can-2024-energy-use-final-demand');
+  assert.equal(canada.measures, 'final');
+  assert.equal(canada.metric, 'total_final_energy');
+  // 8386544 TJ is about 2330 TWh, or about 265 GW on average.
+  assert.equal(Math.round(annualTWh(canada)), 2330);
+  assert.equal(
+    Math.round(annualAveragePowerW(annualTWh(canada), 2024) / 1e9),
+    265,
+  );
+  // Both are 2024 national final energy, but two agencies define it
+  // differently, so the model must not rank one against the other.
+  const uk = byId('desnz-uk-2024-total-final-energy');
+  assert.equal(uk.metric, canada.metric);
+  assert.equal(uk.dataYear, canada.dataYear);
+  assert.equal(
+    sameComparableMetric(observation(uk), observation(canada)),
+    false,
+  );
 });

@@ -161,6 +161,40 @@
         "averagePowerW": 3155663774598.7656,
         "method": "Independent exact-rational calculation (Python fractions), 366-day year from the Gregorian calendar; not produced by the model."
       }
+    },
+    {
+      "id": "statcan-can-2024-energy-use-final-demand",
+      "kind": "annual_energy",
+      "publisher": "Statistics Canada",
+      "dataset": "Table 25-10-0029-01, Supply and demand of primary and secondary energy in terajoules, annual",
+      "table": "row GEO=Canada, REF_DATE=2024, Fuel type=\"Total primary and secondary energy\", Supply and demand characteristics=\"Energy use, final demand\" (vector v54272321, coordinate 1.1.18) of 25100029.csv",
+      "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2510002901",
+      "fileUrl": "https://www150.statcan.gc.ca/n1/tbl/csv/25100029-eng.zip",
+      "fileSha256": "757c76b7a11eeb63c4c83b1d9c6e64c07e52e631ada139bdaa4157c3d0c8ed31",
+      "releasedAt": "2026-11-10",
+      "dataYear": 2024,
+      "unit": "TJ",
+      "valueAsPublished": 8386544,
+      "measures": "final",
+      "measuresNote": "FINAL energy: \"Energy use, final demand\" for \"Total primary and secondary energy\", Canada. The same table lists \"Non-energy use\" (1204282 TJ) and \"Producer consumption\" (1226391 TJ) as separate rows; they are not in this value. Release time per the Statistics Canada web data service: 2026-11-10T08:30.",
+      "metric": "total_final_energy",
+      "status": "official_estimate",
+      "geographyCoverage": "complete",
+      "area": {
+        "id": "ISO3:CAN",
+        "type": "country",
+        "boundaryDataset": "Statistics Canada table 25-10-0029-01, GEO=Canada",
+        "boundaryRevision": "2026-11-10",
+        "publishedCode": "v54272321",
+        "publishedLabel": "Canada"
+      },
+      "licence": "Statistics Canada Open Licence",
+      "attribution": "Adapted from Statistics Canada, Table 25-10-0029-01, reference year 2024. This does not constitute an endorsement by Statistics Canada of this product.",
+      "derived": {
+        "annualTWh": 2329.5955555555556,
+        "averagePowerW": 265208965796.3975,
+        "method": "Independent exact-rational calculation (Python fractions), 366-day year from the Gregorian calendar; not produced by the model."
+      }
     }
   ]
 }

@@ -248,14 +248,13 @@ async function massingShown(plotId) {
   await until(
     (id) => {
       const s = window.__gevCityMassing?.snapshot();
-      return s?.shown && s.plotId === id && s.sampled;
+      return s?.shown && s.plotId === id && s.sampled && s.drawn;
     },
-    `massing stands on ${plotId}`,
+    `massing stands on ${plotId}, drawn`,
     30000,
     plotId,
   );
-  // Let the extruded geometry and its shadow map build.
-  await page.waitForTimeout(3000);
+  await page.waitForTimeout(1000);
 }
 // The map's surface (without massing or play entities) at the plot centre and
 // on the street 6 m outside the middle of each plot edge, with the shown 3D
@@ -327,10 +326,11 @@ async function cutEvidence(samples, s) {
   );
   return cut;
 }
-// Ground points given in metres east/north of the block's footprint centre, on
-// screen. The readout is hidden while they are found, so a point under it still
-// counts (clearOfMassing checks that); a point under other HUD, on the block or
-// within 6 px of the edge is not usable.
+// Ground points given in metres east/north (and up) of the block's footprint
+// centre, on screen. The readout is hidden while they are found, so a point
+// under it still counts (clearOfMassing checks that); a point under other HUD,
+// on the block or within 6 px of the edge is not usable. `measurable` points
+// may sit under HUD: canvas captures do not include the DOM.
 async function groundPoints(offsets) {
   return page.evaluate((list) => {
     const hud = [
@@ -347,12 +347,12 @@ async function groundPoints(offsets) {
       const lat0 = fp.reduce((a, [, y]) => a + y, 0) / fp.length;
       const kx = 111_320 * Math.cos((lat0 * Math.PI) / 180);
       const canvas = scene.canvas.getBoundingClientRect();
-      return list.map(({ east, north }) => {
+      return list.map(({ east, north, up = 0 }) => {
         const p = scene.cartesianToCanvasCoordinates(
           scene.globe.ellipsoid.cartographicToCartesian({
             longitude: ((lon0 + east / kx) * Math.PI) / 180,
             latitude: ((lat0 + north / 111_320) * Math.PI) / 180,
-            height: s.blockBase,
+            height: s.blockBase + up,
           }),
         );
         if (!p) return null;
@@ -360,11 +360,12 @@ async function groundPoints(offsets) {
         const y = Math.round(p.y + canvas.top);
         const inside =
           x >= 6 && y >= 6 && x <= innerWidth - 7 && y <= innerHeight - 7;
-        const usable =
+        const measurable =
           inside &&
-          document.elementFromPoint(x, y) === scene.canvas &&
           scene.pick({ x: p.x, y: p.y })?.id?.id !== 'city-massing-block';
-        return { x, y, east, north, usable };
+        const usable =
+          measurable && document.elementFromPoint(x, y) === scene.canvas;
+        return { x, y, east, north, usable, measurable };
       });
     } finally {
       hud.forEach((el) => (el.style.visibility = ''));
@@ -388,27 +389,36 @@ const halfWidth = (s) => {
   const kx = 111_320 * Math.cos((fp[0][1] * Math.PI) / 180);
   return Math.max(...fp.map(([x]) => Math.abs(x - lon0) * kx));
 };
-// The canvas of a newly rendered frame: ask the scene for a frame, wait for its
-// postRender and read the canvas inside it, so the pixels are that frame's (on
-// demand rendering draws nothing until asked; DOM overlays are not included).
-async function renderedFrame() {
-  const { url, frame, canvas } = await page.evaluate(
-    () =>
+// The canvas of a newly rendered frame with the scene's shadow map on or off.
+// One page task sets the shadow map, asks the scene for a frame and listens to
+// it: preRender records the shadow map it is drawn with, its postRender reads
+// the canvas (on-demand rendering draws nothing until asked; DOM overlays are
+// not in the canvas). No stray frame can come between, in which massing would
+// turn the shadow map back on.
+async function renderedFrame(shadows) {
+  const { url, frame, drawnWith, canvas } = await page.evaluate(
+    (on) =>
       new Promise((resolve, reject) => {
-        const { scene } = window.__godsEyeView.viewer;
+        const { viewer } = window.__godsEyeView;
+        const { scene } = viewer;
         const after = scene.frameState.frameNumber;
+        let drawnWith = null;
         const timer = setTimeout(() => {
           stop();
           reject(new Error('no frame was rendered within 30 s'));
         }, 30000);
-        const stop = scene.postRender.addEventListener(() => {
-          if (scene.frameState.frameNumber <= after) return;
+        const unpre = scene.preRender.addEventListener(() => {
+          drawnWith = scene.shadowMap.enabled;
+        });
+        const unpost = scene.postRender.addEventListener(() => {
+          if (scene.frameState.frameNumber <= after || drawnWith === null)
+            return;
           stop();
-          clearTimeout(timer);
           const rect = scene.canvas.getBoundingClientRect();
           resolve({
             url: scene.canvas.toDataURL('image/png'),
             frame: scene.frameState.frameNumber,
+            drawnWith,
             canvas: {
               left: rect.left,
               top: rect.top,
@@ -417,17 +427,25 @@ async function renderedFrame() {
             },
           });
         });
+        function stop() {
+          clearTimeout(timer);
+          unpre();
+          unpost();
+        }
+        viewer.shadows = on;
         scene.requestRender();
       }),
+    shadows,
   );
   return {
     png: Buffer.from(url.slice(url.indexOf(',') + 1), 'base64'),
     frame,
+    shadows: drawnWith,
     canvas,
   };
 }
-// Mean luminance of the 9 x 9 CSS px around each page point in a frame.
-async function pixels({ png, canvas }, points) {
+// Mean luminance of the (2r+1)^2 CSS px around each page point in a frame.
+async function pixels({ png, canvas }, points, radius = 4) {
   const { data, info } = await sharp(png)
     .removeAlpha()
     .raw()
@@ -435,7 +453,7 @@ async function pixels({ png, canvas }, points) {
   return points.map(({ x, y }) => {
     const cx = Math.round((x - canvas.left) * canvas.sx);
     const cy = Math.round((y - canvas.top) * canvas.sy);
-    const r = Math.round(4 * canvas.sx);
+    const r = Math.round(radius * canvas.sx);
     let sum = 0;
     let n = 0;
     for (let dy = -r; dy <= r; dy++)
@@ -452,11 +470,9 @@ async function pixels({ png, canvas }, points) {
 // Captures from one frame, or byte-identical captures, make the run INVALID.
 async function luminance(points, label = phase) {
   const usable = points.filter((p) => p?.usable);
-  const on = await renderedFrame();
-  await page.evaluate(() => (window.__godsEyeView.viewer.shadows = false));
-  const off = await renderedFrame();
-  await page.evaluate(() => (window.__godsEyeView.viewer.shadows = true));
-  await renderedFrame();
+  const on = await renderedFrame(true);
+  const off = await renderedFrame(false);
+  await renderedFrame(true);
   distinctFrames(on, off, label);
   const lit = await pixels(on, usable);
   const unlit = await pixels(off, usable);
@@ -509,6 +525,130 @@ async function shadowEvidence(label) {
     `${label}: the sun side is not darkened (${lit.ratio.toFixed(2)})`,
   );
   return evidence;
+}
+
+// Where the line away from the sun through the footprint centre leaves the
+// (axis-aligned, square) footprint.
+const edgeExit = (s) => {
+  const az = (s.sun.azimuthDeg * Math.PI) / 180;
+  return (
+    halfWidth(s) / Math.max(Math.abs(Math.sin(az)), Math.abs(Math.cos(az)))
+  );
+};
+// The cast shadow along that line: on/off luminance of 3 x 3 px every 0.5 m
+// from the footprint edge out to 1.6 shadow lengths, from one frame pair.
+async function shadowProfile(s, label) {
+  const length = shadowLength(s, s.massing.heightMeters);
+  const exit = edgeExit(s);
+  const distances = [];
+  for (let d = exit + 0.5; d <= exit + 1.6 * length; d += 0.5)
+    distances.push(d);
+  const points = (await groundPoints(alongSun(s, distances))).map((p, i) =>
+    p?.measurable ? { ...p, d: distances[i] } : null,
+  );
+  const on = await renderedFrame(true);
+  const off = await renderedFrame(false);
+  await renderedFrame(true);
+  distinctFrames(on, off, label);
+  const kept = points.filter(Boolean);
+  const lit = await pixels(on, kept, 1);
+  const unlit = await pixels(off, kept, 1);
+  return {
+    exitMeters: exit,
+    lengthMeters: length,
+    profile: kept.map((p, i) => ({
+      d: p.d,
+      ratio: lit[i] / Math.max(1, unlit[i]),
+      on: lit[i],
+      off: unlit[i],
+    })),
+    captures: { on, off },
+  };
+}
+// The block and its shadow, cropped from the shadow-on and shadow-off frames
+// side by side (canvas pixels: no HUD over them).
+async function shadowCrop(name, s, { on, off }) {
+  const length = shadowLength(s, s.massing.heightMeters);
+  const h = halfWidth(s);
+  const [tx, ty] = alongSun(s, [length]).map((o) => [o.east, o.north])[0];
+  const corners = [
+    [-h, -h],
+    [h, -h],
+    [h, h],
+    [-h, h],
+  ];
+  const points = (
+    await groundPoints([
+      ...corners.map(([e, n]) => ({ east: e, north: n })),
+      ...corners.map(([e, n]) => ({
+        east: e,
+        north: n,
+        up: s.massing.heightMeters,
+      })),
+      ...corners.map(([e, n]) => ({ east: e + tx, north: n + ty })),
+    ])
+  ).filter(Boolean);
+  const { canvas } = on;
+  const meta = await sharp(on.png).metadata();
+  const xs = points.map((p) => (p.x - canvas.left) * canvas.sx);
+  const ys = points.map((p) => (p.y - canvas.top) * canvas.sy);
+  const pad = 30 * canvas.sx;
+  const left = Math.max(0, Math.floor(Math.min(...xs) - pad));
+  const top = Math.max(0, Math.floor(Math.min(...ys) - pad));
+  const box = {
+    left,
+    top,
+    width: Math.min(meta.width, Math.ceil(Math.max(...xs) + pad)) - left,
+    height: Math.min(meta.height, Math.ceil(Math.max(...ys) + pad)) - top,
+  };
+  const label = (text) =>
+    Buffer.from(
+      `<svg width="${box.width}" height="28"><rect width="100%" height="28" fill="#05080b"/><text x="10" y="19" font-family="monospace" font-size="14" letter-spacing="2" fill="#2ec8e8">${text}</text></svg>`,
+    );
+  const tile = async (frame, text) =>
+    sharp({
+      create: {
+        width: box.width,
+        height: box.height + 28,
+        channels: 3,
+        background: '#05080b',
+      },
+    })
+      .composite([
+        { input: label(text), top: 0, left: 0 },
+        {
+          input: await sharp(frame.png).extract(box).png().toBuffer(),
+          top: 28,
+          left: 0,
+        },
+      ])
+      .png()
+      .toBuffer();
+  const gap = 8;
+  const pair = await sharp({
+    create: {
+      width: box.width * 2 + gap,
+      height: box.height + 28,
+      channels: 3,
+      background: '#05080b',
+    },
+  })
+    .composite([
+      { input: await tile(on, 'SHADOW MAP ON'), top: 0, left: 0 },
+      {
+        input: await tile(off, 'SHADOW MAP OFF'),
+        top: 0,
+        left: box.width + gap,
+      },
+    ])
+    .png()
+    .toBuffer();
+  // Twice the canvas size, so the band reads at a glance.
+  await sharp(pair)
+    .resize({ width: (box.width * 2 + gap) * 2 })
+    .toFile(path.join(output, `${name}.png`));
+  report.screenshots.push(`${name}.png`);
+  return box;
 }
 
 // The readout's values by row, as a user reads them.
@@ -791,7 +931,28 @@ try {
       assert.equal(s.shadowMap, true, 'the scene shadow map is on');
       assert.equal(s.blockShadows, true, 'the block casts shadows');
       assert.ok(s.sun.elevationDeg > 0, 'the sun is up');
+      report.measurements.shadowSettings = await page.evaluate(() => {
+        const { scene } = window.__godsEyeView.viewer;
+        const m = scene.shadowMap;
+        return {
+          enabled: m.enabled,
+          size: m.size,
+          maximumDistance: m.maximumDistance,
+          darkness: m.darkness,
+          softShadows: m.softShadows,
+          cascades: m._numberOfCascades,
+          globeShadows: scene.globe.shadows,
+          requestRenderMode: scene.requestRenderMode,
+        };
+      });
       shadow6 = await shadowEvidence('shadow');
+      const profile = await shadowProfile(s, 'shadow profile');
+      report.measurements.profile6 = { ...profile, captures: undefined };
+      report.measurements.crop6 = await shadowCrop(
+        '03b-shadow-crop',
+        s,
+        profile.captures,
+      );
       await screenshot('03-cast-shadow');
     },
   );
@@ -843,11 +1004,14 @@ try {
       await locator(S.plus).click();
       await locator(S.plus).click();
       await until(
-        () => window.__gevCityMassing.snapshot().storeys === 8,
-        'eight storeys',
-        10000,
+        () => {
+          const s = window.__gevCityMassing.snapshot();
+          return s.storeys === 8 && s.drawn;
+        },
+        'eight storeys, drawn',
+        30000,
       );
-      await page.waitForTimeout(3000);
+      await page.waitForTimeout(1000);
       const s = await massing();
       const values = await readout();
       report.measurements.readout8 = values;
@@ -940,9 +1104,12 @@ try {
       await locator(S.readout).waitFor({ state: 'visible' });
       await locator(S.plus).click();
       await until(
-        () => window.__gevCityMassing.snapshot().storeys === 7,
-        'seven storeys on the phone',
-        10000,
+        () => {
+          const s = window.__gevCityMassing.snapshot();
+          return s.storeys === 7 && s.drawn;
+        },
+        'seven storeys on the phone, drawn',
+        30000,
       );
       await page.waitForTimeout(1500);
       assert.deepEqual(await readout(), shows(await massing()));

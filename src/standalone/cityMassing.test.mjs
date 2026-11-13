@@ -4,6 +4,7 @@ import * as Cesium from 'cesium';
 import { createPinia } from 'pinia';
 import { nextTick } from 'vue';
 import { useCityPlayStore } from '../ui/stores/cityPlay.js';
+import { getRenderGovernorDiagnostics } from '../renderGovernor.js';
 import { snapPlot } from '../data/cityPlot.js';
 import { mountCityMassing } from './cityMassing.js';
 
@@ -25,10 +26,17 @@ function mount({ tiles = [], time = MORNING, ground = -8.25, on = true } = {}) {
   const sources = [];
   const frames = [];
   // The map as the owner samples it; tests move the ground and add tilesets.
-  const surface = { ground, tiles };
+  // `drawn` is whether the entities' geometry has built (it builds over frames).
+  const surface = { ground, tiles, drawn: true };
   const eye = Cesium.Cartesian3.fromDegrees(-122.4103, 37.795, 600);
   const viewer = {
     shadows: false,
+    dataSourceDisplay: {
+      getBoundingSphere: () =>
+        surface.drawn
+          ? Cesium.BoundingSphereState.DONE
+          : Cesium.BoundingSphereState.PENDING,
+    },
     clock: { currentTime: Cesium.JulianDate.fromIso8601(time) },
     camera: {
       positionWC: eye,
@@ -53,8 +61,10 @@ function mount({ tiles = [], time = MORNING, ground = -8.25, on = true } = {}) {
       globe: {
         show: tiles.length === 0,
         tilesLoaded: true,
+        shadows: Cesium.ShadowMode.DISABLED,
         getHeight: () => surface.ground,
       },
+      shadowMap: { softShadows: false },
       primitives: {
         get length() {
           return surface.tiles.length;
@@ -252,4 +262,47 @@ test('a map switch to photoreal while the block shows cuts the new tileset', asy
   owner.destroy();
   assert.equal(photoreal.clippingPolygons, undefined);
   assert.equal(photoreal.shadows, Cesium.ShadowMode.ENABLED);
+});
+
+test('the globe receives the block shadow with soft edges, and both are restored', async () => {
+  const { viewer, select, owner } = mount();
+  await select({ plot: { id: plot.id } });
+  assert.equal(viewer.scene.globe.shadows, Cesium.ShadowMode.RECEIVE_ONLY);
+  assert.equal(viewer.scene.shadowMap.softShadows, true);
+  await select(null);
+  assert.equal(viewer.scene.globe.shadows, Cesium.ShadowMode.DISABLED);
+  assert.equal(viewer.scene.shadowMap.softShadows, false);
+  owner.destroy();
+});
+
+test('frames keep coming until the block is drawn as it now stands', async () => {
+  const held = () =>
+    getRenderGovernorDiagnostics().holds.includes('city-massing');
+  const { store, win, select, surface, render, owner } = mount();
+  surface.drawn = false;
+  await select({ plot: { id: plot.id } });
+  for (let i = 0; i < 5; i++) render();
+  assert.equal(held(), true, 'the geometry is still building');
+  assert.equal(win.__gevCityMassing.snapshot().drawn, false);
+  surface.drawn = true;
+  render();
+  render();
+  assert.equal(held(), false, 'drawn: the app renders on demand again');
+  assert.equal(win.__gevCityMassing.snapshot().drawn, true);
+  // The stepper rebuilds the block: held again until the new block is drawn,
+  // and a stale "drawn" in the first frames after the change does not count.
+  store.massingControls.step(1);
+  assert.equal(win.__gevCityMassing.snapshot().drawn, false);
+  render();
+  assert.equal(held(), true);
+  surface.drawn = false;
+  render();
+  render();
+  render();
+  assert.equal(held(), true);
+  surface.drawn = true;
+  render();
+  assert.equal(held(), false);
+  owner.destroy();
+  assert.equal(held(), false);
 });

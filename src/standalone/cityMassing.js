@@ -23,8 +23,13 @@ const PLATE_DEPTH = 0.5;
 const PLATE_RISE = 0.1;
 // The street is sampled this far outside each plot edge.
 const PROBE_METERS = 6;
-// Entity geometry builds over several frames; the app renders on demand.
-const BUILD_MS = 2500;
+// Entity geometry builds over several frames and the app renders on demand:
+// frames keep coming until the block and plate are drawn as they now stand,
+// never longer than this.
+const BUILD_MAX_MS = 20000;
+// Frames after a change before "drawn" can be trusted: the change reaches the
+// entity's geometry batch on the next tick, until then the old one reads drawn.
+const BUILD_FRAMES = 2;
 // Once the framed tiles load, a ground this much off stands the block anew.
 const REGROUND_METERS = 0.5;
 // Screen points this far outside the canvas no longer anchor the readout.
@@ -53,7 +58,9 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
   let removeFrame = null;
   let lastAnchors = '';
   let disposed = false;
-  let release = null;
+  // `{frames, timer, remove}` while frames are held for new geometry.
+  let build = null;
+  const sphere = new Cesium.BoundingSphere();
 
   const playEntities = () =>
     viewer.dataSources.getByName('gev-city-play')[0]?.entities.values ?? [];
@@ -131,12 +138,45 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
     }
   }
 
-  // Keep frames coming while new geometry builds.
+  // Whether the plate and block are drawn (their geometry has built).
+  function drawn() {
+    const display = viewer.dataSourceDisplay;
+    if (typeof display?.getBoundingSphere !== 'function') return true;
+    try {
+      return [site?.plate, site?.block]
+        .filter(Boolean)
+        .every(
+          (entity) =>
+            display.getBoundingSphere(entity, false, sphere) ===
+            Cesium.BoundingSphereState.DONE,
+        );
+    } catch {
+      return false;
+    }
+  }
+
+  // Keep frames coming until the changed geometry is drawn: the cast shadow
+  // and the block show together, not on the next camera move.
   function rendered() {
-    holdContinuousRender(OWNER);
-    clearTimeout(release);
-    release = setTimeout(() => releaseContinuousRender(OWNER), BUILD_MS);
+    if (!build) {
+      holdContinuousRender(OWNER);
+      build = { frames: 0, timer: 0, remove: null };
+      build.remove = scene.postRender.addEventListener(() => {
+        if (++build.frames > BUILD_FRAMES && drawn()) built();
+      });
+    }
+    build.frames = 0;
+    clearTimeout(build.timer);
+    build.timer = setTimeout(built, BUILD_MAX_MS);
     scene.requestRender();
+  }
+
+  function built() {
+    if (!build) return;
+    build.remove();
+    clearTimeout(build.timer);
+    build = null;
+    releaseContinuousRender(OWNER);
   }
 
   function hide() {
@@ -148,6 +188,8 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
     ds.entities.removeAll();
     uncut(site.cuts);
     viewer.shadows = site.shadowsBefore;
+    if (scene.globe) scene.globe.shadows = site.globeShadows;
+    if (scene.shadowMap) scene.shadowMap.softShadows = site.softShadows;
     site = null;
     rendered();
   }
@@ -160,8 +202,13 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
     const massing = plotMassing({ corners: plot.corners, storeys });
     const sun = sunAt(plot);
     const shadowsBefore = viewer.shadows;
-    // A cast shadow needs the sun above the horizon.
+    const globeShadows = scene.globe?.shadows;
+    const softShadows = scene.shadowMap?.softShadows;
+    // A cast shadow needs the sun above the horizon. The globe receives it,
+    // with soft (filtered) edges so the band reads as a shadow on the ground.
     viewer.shadows = shadowsBefore || sun?.elevationDeg > 0;
+    if (scene.globe) scene.globe.shadows = Cesium.ShadowMode.RECEIVE_ONLY;
+    if (scene.shadowMap) scene.shadowMap.softShadows = true;
     site = {
       plot,
       base,
@@ -169,6 +216,8 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
       massing,
       sun,
       shadowsBefore,
+      globeShadows,
+      softShadows,
       // The surface this block was cut into and stood on, checked each frame.
       tilesets: shownTilesets(),
       globe: Boolean(scene.globe?.show),
@@ -363,6 +412,8 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
         shadowMap: viewer.shadows,
         blockShadows:
           site?.block?.polygon.shadows.getValue() === Cesium.ShadowMode.ENABLED,
+        // The plate and block as they now stand are on screen.
+        drawn: Boolean(site?.block) && !build && drawn(),
         sun: site?.sun ?? null,
         cuts: site?.cuts.length ?? 0,
       }),
@@ -376,8 +427,7 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
       disposed = true;
       stop();
       hide();
-      clearTimeout(release);
-      releaseContinuousRender(OWNER);
+      built();
       if (win?.__gevCityMassing === probe) delete win.__gevCityMassing;
       if (store.massingControls === controls) {
         store.connectMassing(null);

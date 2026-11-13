@@ -24,6 +24,24 @@ test('two shadow captures from one frame, or byte-identical, are INVALID rather 
   assert.doesNotThrow(() =>
     distinctFrames(on, { frame: 41, png: Buffer.from([1, 2, 4]) }, 'shadow'),
   );
+  // A stray frame let the shadow map come back on before the "off" capture.
+  const drawnOn = { ...on, shadows: true };
+  assert.throws(
+    () =>
+      distinctFrames(
+        drawnOn,
+        { frame: 43, png: Buffer.from([7]), shadows: true },
+        'shadow',
+      ),
+    invalid(/shadow: the frames were drawn with the shadow map on then on/),
+  );
+  assert.doesNotThrow(() =>
+    distinctFrames(
+      drawnOn,
+      { frame: 43, png: Buffer.from([7]), shadows: false },
+      'x',
+    ),
+  );
   assert.equal(new InvalidMeasurement('x').name, 'InvalidMeasurement');
 });
 

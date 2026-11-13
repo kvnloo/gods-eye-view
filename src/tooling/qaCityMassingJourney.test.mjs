@@ -86,8 +86,10 @@ test('the reference ground is sampled before MASSING cuts the plot out of 3D til
 
 test('each shadow capture is a newly rendered frame; identical captures fail the run as INVALID', () => {
   const frame = source.slice(source.indexOf('async function renderedFrame'));
-  assert.match(frame.slice(0, 1200), /scene\.requestRender\(\)/);
-  assert.match(frame.slice(0, 1200), /scene\.postRender\.addEventListener/);
+  assert.match(frame.slice(0, 2400), /scene\.requestRender\(\)/);
+  assert.match(frame.slice(0, 2400), /scene\.postRender\.addEventListener/);
+  // The frame records the shadow map it was drawn with.
+  assert.match(frame.slice(0, 2400), /drawnWith = scene\.shadowMap\.enabled/);
   const lum = source.slice(source.indexOf('async function luminance'));
   assert.match(lum.slice(0, 2000), /distinctFrames\(on, off, label\)/);
   assert.match(source, /error instanceof InvalidMeasurement/);
@@ -100,4 +102,19 @@ test('QA_PLOT selects the plot by id, by default one over a real building', () =
     /const PLOT = process\.env\.QA_PLOT \|\| 'plot-n105201-126637';/,
   );
   assert.match(source, /assert\.equal\(\(await play\(\)\)\.plot\.id, PLOT/);
+});
+
+test('the shadow is measured on the drawn block and shown as an on/off crop', () => {
+  assert.match(
+    source,
+    /s\.sampled && s\.drawn/,
+    'massing on waits until drawn',
+  );
+  assert.match(source, /s\.storeys === 8 && s\.drawn/, '+2 waits until drawn');
+  const shadow = source.slice(
+    source.indexOf("'The block casts a shadow"),
+    source.indexOf("'Readout beside the plot"),
+  );
+  assert.match(shadow, /await shadowEvidence\('shadow'\);/);
+  assert.match(shadow, /shadowCrop\(\s*'03b-shadow-crop'/);
 });

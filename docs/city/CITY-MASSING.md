@@ -24,7 +24,16 @@ docks. Turn it on and the plot gets:
   height = storeys x storey height;
 - a **cast shadow** from the scene sun (the scene clock's sun, the same one
   Cesium lights the globe with): the scene shadow map is on while the block
-  shows, only when the sun is above the horizon, and restored afterwards.
+  shows, only when the sun is above the horizon. The globe receives it, with
+  soft (filtered) edges so it reads as a band on the ground. Cesium's default
+  sun shadow map (4 cascades of 2048 x 2048 texels) resolves it: the journey
+  measures the 45 m band of a 19 m block at a 23° sun. All of it is restored
+  when the block hides.
+
+The app renders on demand and entity geometry builds over several frames, so
+after every change (MASSING on, the stepper, a new ground) massing keeps frames
+coming until the plate and block are drawn as they now stand (at most 20 s);
+the block and its shadow appear together, not on the next camera move.
 
 On 3D tiles (Google photorealistic) the plot is cut out of the mesh with a
 `ClippingPolygonCollection`, so the block never intersects the real building;
@@ -105,8 +114,11 @@ scene sun through the page's world clock and, at 1440x900:
    the shadow map on than off, the sun side is not. Each capture is the canvas
    read inside the `postRender` of a frame the journey asked for
    (`scene.requestRender()`). If the on and off captures come from one frame or
-   are byte-identical, the run is **INVALID** (exit 3), neither a pass nor a
-   shadow failure;
+   are byte-identical, or the shadow map was not on then off when the frames
+   were drawn, the run is **INVALID** (exit 3), neither a pass nor a shadow
+   failure. `03b-shadow-crop.png` shows the block and its shadow from the on
+   and the off frame side by side, and a profile records the on/off ratio
+   every 0.5 m along the line away from the sun;
 4. reads the readout (19.2 m EST, 6, 3.84, 6,144 m²), counts three controls,
    checks it covers no block corner, shadow point or HUD element, and audits
    legibility (4.5:1, 12 px caps);

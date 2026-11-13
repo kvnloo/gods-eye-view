@@ -15,10 +15,15 @@ export class InvalidMeasurement extends Error {
 }
 
 /**
- * Shadow on and off captures must come from two rendered frames whose pixels
- * differ. The same frame, or byte-identical pixels, prove nothing.
+ * Shadow on and off captures must come from two rendered frames, drawn with the
+ * shadow map on and then off, whose pixels differ. The same frame, the wrong
+ * shadow state or byte-identical pixels prove nothing.
  */
 export function distinctFrames(a, b, label) {
+  if (a.shadows === false || b.shadows === true)
+    throw new InvalidMeasurement(
+      `${label}: the frames were drawn with the shadow map ${a.shadows ? 'on' : 'off'} then ${b.shadows ? 'on' : 'off'}`,
+    );
   if (!(b.frame > a.frame))
     throw new InvalidMeasurement(
       `${label}: no new frame was rendered between the captures (frame ${a.frame} then ${b.frame})`,

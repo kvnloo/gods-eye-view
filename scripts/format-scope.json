@@ -848,6 +848,8 @@
   "src/layers/energyAtlas/model.test.mjs",
   "src/layers/energyAtlas/goldens.test.mjs",
   "src/layers/energyAtlas/__fixtures__/energy-goldens.json",
+  "src/layers/energyAtlas/official-rows.test.mjs",
+  "src/layers/energyAtlas/__fixtures__/official-rows.json",
   "src/layers/recentImagery/model.test.mjs",
   "src/layers/recentImagery/catalog.test.mjs",
   "src/maps/imageryHost.test.mjs",

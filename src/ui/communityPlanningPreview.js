@@ -268,9 +268,7 @@ export function mountCommunityPlanningPreview(
   let disposed = false;
   const present = () => {
     if (!disposed && store.controls === controls)
-      store.publish(
-        state && { ...presentCommunityPlanningPreview(fixture, state) },
-      );
+      store.publish(state && presentCommunityPlanningPreview(fixture, state));
   };
   const controls = {
     open() {

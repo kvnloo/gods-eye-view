@@ -65,8 +65,6 @@ function readView(viewer) {
     !Object.values(pose).every(Number.isFinite) ||
     Math.abs(pose.lat) > 90 ||
     Math.abs(pose.lon) > 180 ||
-    !bounds ||
-    !bounds.every(Number.isFinite) ||
     bounds[0] < -180 ||
     bounds[2] > 180 ||
     bounds[1] < -90 ||

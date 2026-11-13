@@ -2,10 +2,10 @@ import { defineStore } from 'pinia';
 import { markRaw, shallowRef } from 'vue';
 
 /**
- * The opt-in community planning preview as its view renders it. The preview
- * owner (src/ui/communityPlanningPreview.js) offers the Scene panel launcher
- * and presents its one open comparison here; the view sends clicks back to
- * the connected controls.
+ * The City builder dialog (or, behind `?planningPreview=fixture`, the synthetic
+ * park comparison) as its view renders it. One owner at a time offers the
+ * launcher and publishes here; the view sends clicks back to the connected
+ * controls.
  */
 export const useCommunityPlanningStore = defineStore(
   'gev-community-planning',
@@ -26,7 +26,7 @@ export const useCommunityPlanningStore = defineStore(
       preview.value = next && markRaw(next);
     }
 
-    /** `{open, close, setMode, inspect}`, or null while no owner is wired. */
+    /** The owner's controls (at least `{open, close, setMode, inspect}`), or null while no owner is wired. */
     const controls = shallowRef(null);
 
     /** @param {?object} next The controls, or null to disconnect. */

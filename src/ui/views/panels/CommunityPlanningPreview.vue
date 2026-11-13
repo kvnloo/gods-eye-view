@@ -6,9 +6,10 @@ import UiButton from '../../kit/UiButton.vue';
 import { useCommunityPlanningStore } from '../../stores/communityPlanning.js';
 import CityBuilderEditor from './CityBuilderEditor.vue';
 
-// The opt-in park proposal comparison, as src/ui/communityPlanningPreview.js
-// presents it: a Scene panel launcher and, while open, one modal. Choosing a
-// mode or card is presentation only and never changes proposal data.
+// The City builder dialog as src/ui/cityBuilder.js presents it (or the
+// synthetic park comparison from src/ui/communityPlanningPreview.js): a Scene
+// panel launcher and, while open, one modal. Choosing a mode or card is
+// presentation only and never changes proposal data.
 const { launcher, preview, controls } = storeToRefs(useCommunityPlanningStore());
 
 const root = useTemplateRef('root');
@@ -17,7 +18,7 @@ const launcherButton = useTemplateRef('launcherButton');
 const inspectNav = useTemplateRef('inspectNav');
 const coopButton = useTemplateRef('coopButton');
 
-// Remember which of the two visible launchers opened this dialog.
+// Remember which visible launcher opened this dialog.
 let returnFocus = null;
 watch(
   () => Boolean(preview.value),

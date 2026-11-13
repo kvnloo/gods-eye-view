@@ -9,6 +9,7 @@ import * as Cesium from 'cesium';
 import { createBrowserViteConfig } from '../../build/vite.js';
 import { terrainHeightsProxy } from '../../server/providers/terrain.js';
 import { createDefaultMapSources } from './defaultSources.js';
+import { MapSourceController } from './controller.js';
 import { terrainHeightsUrl, terrainUrlSetting } from './sourceSettings.js';
 
 const TEMPLATE = 'https://tiles.example.test/world/{z}/{x}/{y}.png';
@@ -179,4 +180,50 @@ test('the heights proxy keeps Re:Earth by default and asks no one once terrain i
   const keyless = await (await heightsRoute(t, setting(undefined)))('/?points=3,4');
   assert.equal(keyless.status, 200);
   assert.deepEqual(asked, ['https://terrain.reearth.land/heights.json']);
+});
+
+test('an offline operator basemap never activates the public OSM construction fallback', async () => {
+  const registry = createDefaultMapSources({
+    basemapUrl: TEMPLATE,
+    terrainUrl: null,
+  });
+  const privateBasemap = esriSlot(registry);
+  assert.ok(privateBasemap);
+  privateBasemap.imagery = async () => {
+    throw new Error('operator basemap offline');
+  };
+  let publicAttempts = 0;
+  const publicOsm = registry.sources.find(
+    ({ descriptor }) => descriptor.id === 'osm',
+  );
+  assert.ok(publicOsm);
+  publicOsm.imagery = async () => {
+    publicAttempts += 1;
+    throw new Error('public OSM fallback must not start');
+  };
+  const viewer = {
+    scene: {
+      globe: { show: true },
+      frameState: {
+        creditDisplay: {
+          addStaticCredit() {},
+          removeStaticCredit() {},
+        },
+      },
+      primitives: { add() {}, remove() {} },
+    },
+    imageryLayers: { add() {}, remove() {} },
+  };
+  const controller = new MapSourceController(viewer, {
+    registry,
+    createImageryLayer: (provider) => ({ provider }),
+  });
+  try {
+    const state = await controller.setStack('esri-imagery');
+    assert.equal(publicAttempts, 0, 'a private basemap outage must not try public OSM');
+    assert.equal(state.activeId, 'esri-imagery', 'no public stack replaces the choice');
+    assert.match(state.lastError, /operator basemap offline/);
+  } finally {
+    controller.destroy();
+  }
 });

@@ -1430,5 +1430,13 @@
   "src/data/collaborationAuthority.test.mjs",
   "src/data/communityPlanning.test.mjs",
   "src/data/cityPlanningDocument.test.mjs",
-  "src/data/cityPersistence.test.mjs"
+  "src/data/cityPersistence.test.mjs",
+  "src/standalone/communityPlanningFixture.test.mjs",
+  "src/ui/communityPlanningPreview.test.mjs",
+  "src/ui/views/communityPlanningPreviewView.test.mjs",
+  "src/data/planningConceptGenerator.test.mjs",
+  "src/standalone/cityPlanningServices.test.mjs",
+  "src/ui/cityBuilder.test.mjs",
+  "src/ui/views/cityBuilderView.test.mjs",
+  "scripts/qa-city-builder.mjs"
 ]

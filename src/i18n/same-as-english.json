@@ -1261,7 +1261,9 @@
     "Period",
     "ICAO: {id}",
     "NORAD: {id}",
-    "MMSI: {id}"
+    "MMSI: {id}",
+    "Park",
+    "Version"
   ],
   "uk": [
     "1900–1945",

@@ -16,9 +16,8 @@ function createLogger(directory, name) {
   const file = path.join(directory, `${name}.log`);
   let ready = false;
   const prepare = () => {
-    if (ready) return true;
     try {
-      fs.mkdirSync(directory, { recursive: true });
+      if (!ready) fs.mkdirSync(directory, { recursive: true });
       if (fs.existsSync(file) && fs.statSync(file).size > MAX_BYTES) {
         fs.renameSync(file, path.join(directory, `${name}.old.log`));
       }

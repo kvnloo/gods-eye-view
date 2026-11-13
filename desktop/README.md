@@ -27,6 +27,9 @@ launches are fast because the cache lives in your user profile.
 `File > Open Configuration Folder` and `File > Open Logs Folder` open these.
 Uninstalling keeps them; delete the folder to remove your keys.
 
+`desktop.log` rotates whenever it exceeds 2 MiB. The previous log is kept as
+`desktop.old.log`.
+
 ## Security model
 
 * The server binds to `127.0.0.1` only and is never reachable from the network.

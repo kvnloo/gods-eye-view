@@ -2,7 +2,20 @@ name: SUMO corridor evidence
 
 on:
   push:
-    branches: [infra/sumo-corridor-ab-20261012]
+    branches:
+      - infra/sumo-corridor-ab-20261012
+      - infra/sumo-safety-receipt-gate-20261012
+    paths:
+      - '.github/workflows/traffic-sumo-corridor.yml'
+      - 'scripts/traffic-scenarios/**'
+      - 'src/data/trafficScenario*.js'
+      - 'src/data/trafficScenario*.mjs'
+  # Same-repo draft PRs expose runnable checks to reviewers. Push runs alone
+  # are not visible through the available PR-only workflow lookup.
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - infra/sumo-corridor-ab-20261012
     paths:
       - '.github/workflows/traffic-sumo-corridor.yml'
       - 'scripts/traffic-scenarios/**'
@@ -18,7 +31,11 @@ concurrency:
 
 jobs:
   corridor:
-    if: github.repository == 'kvnloo/gods-eye-view'
+    # Never execute fork-contributed PR code on this experimental runner.
+    if: >-
+      github.repository == 'kvnloo/gods-eye-view' &&
+      (github.event_name == 'push' ||
+       github.event.pull_request.head.repo.full_name == 'kvnloo/gods-eye-view')
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     steps:

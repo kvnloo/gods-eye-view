@@ -1,0 +1,300 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import {
+  annualAveragePowerW,
+  hoursInCalendarYear,
+  normalizeEnergyObservation,
+  saganKardashevIndex,
+  sameComparableMetric,
+  worldKardashevEstimate,
+} from './model.js';
+
+// Cited real-world goldens. The fixture holds each value as published and the
+// source row of every conversion constant; all arithmetic stays in this file.
+const fixture = JSON.parse(
+  readFileSync(
+    new URL('./__fixtures__/energy-goldens.json', import.meta.url),
+    'utf8',
+  ),
+);
+
+const constant = (id) => {
+  const row = fixture.constants[id];
+  assert.ok(row, `no cited constant ${id}`);
+  return row.value;
+};
+
+// Joules in one published unit, built only from cited constants.
+const JOULES_PER_UNIT = {
+  ktoe: () =>
+    constant('GWH_PER_KTOE') * constant('SI_GIGA') * constant('J_PER_WH'),
+  'quadrillion Btu': () => constant('J_PER_QUAD'),
+  TJ: () => constant('SI_TERA'),
+};
+
+const joules = (golden) => {
+  const perUnit = JOULES_PER_UNIT[golden.unit];
+  assert.ok(perUnit, `no cited conversion for unit ${golden.unit}`);
+  return golden.valueAsPublished * perUnit();
+};
+
+// Independent of the model: the Gregorian calendar gives the year length.
+const secondsInUtcYear = (year) =>
+  (Date.UTC(year + 1, 0, 1) - Date.UTC(year, 0, 1)) / 1000;
+
+const annualTWh = (golden) =>
+  joules(golden) / (constant('J_PER_WH') * constant('SI_TERA'));
+
+const observation = (golden) => ({
+  schemaVersion: 1,
+  area: {
+    id: golden.area.id,
+    type: golden.area.type,
+    boundaryDataset: golden.area.boundaryDataset,
+    boundaryRevision: golden.area.boundaryRevision,
+  },
+  metric: golden.metric,
+  calendarYear: golden.dataYear,
+  annualTWh: annualTWh(golden),
+  status: golden.status,
+  geographyCoverage: golden.geographyCoverage,
+  source: {
+    publisher: golden.publisher,
+    url: golden.url,
+    datasetVersion: golden.releasedAt,
+    releasedAt: golden.releasedAt,
+    licence: golden.licence,
+    attribution: golden.attribution,
+  },
+});
+
+const relativeError = (model, cited) => Math.abs(model - cited) / cited;
+const energyGoldens = fixture.goldens.filter(
+  (golden) => golden.kind === 'annual_energy',
+);
+
+test('every golden carries a complete citation', () => {
+  assert.equal(fixture.schemaVersion, 1);
+  assert.equal(fixture.kind, 'test-fixture');
+  const ids = fixture.goldens.map((golden) => golden.id);
+  assert.equal(new Set(ids).size, ids.length);
+  for (const golden of fixture.goldens) {
+    for (const field of [
+      'publisher',
+      'dataset',
+      'table',
+      'unit',
+      'measuresNote',
+    ])
+      assert.ok(golden[field]?.trim(), `${golden.id} lacks ${field}`);
+    assert.equal(new URL(golden.url).protocol, 'https:', golden.id);
+    assert.match(golden.releasedAt, /^\d{4}-\d{2}-\d{2}$/, golden.id);
+    assert.ok(Number.isInteger(golden.dataYear), golden.id);
+    assert.ok(Number.isFinite(golden.valueAsPublished), golden.id);
+    assert.ok(golden.valueAsPublished > 0, golden.id);
+    assert.ok(['final', 'primary'].includes(golden.measures), golden.id);
+  }
+});
+
+test('every conversion constant has a source row', () => {
+  for (const [id, row] of Object.entries(fixture.constants)) {
+    assert.ok(Number.isFinite(row.value) && row.value > 0, id);
+    for (const field of ['unit', 'publisher', 'document', 'locator'])
+      assert.ok(row[field]?.trim(), `${id} lacks ${field}`);
+    assert.equal(new URL(row.url).protocol, 'https:', id);
+  }
+});
+
+test('cited unit conversions agree with each other and with the model', () => {
+  // 1 W = 1 J/s, so one watt hour is one hour of seconds.
+  assert.equal(constant('J_PER_WH'), constant('S_PER_HOUR'));
+  assert.equal(constant('S_PER_DAY'), 24 * constant('S_PER_HOUR'));
+  for (const year of [2018, 2024, 2025]) {
+    assert.equal(
+      hoursInCalendarYear(year) * constant('S_PER_HOUR'),
+      secondsInUtcYear(year),
+    );
+  }
+  assert.equal(secondsInUtcYear(2024), 366 * constant('S_PER_DAY'));
+  assert.equal(secondsInUtcYear(2025), 365 * constant('S_PER_DAY'));
+  // 8760 TWh spread over the 8760 hours of 2025 is exactly 1 TW.
+  assert.equal(
+    annualAveragePowerW(8760, 2025),
+    (constant('SI_TERA') * constant('J_PER_WH')) / constant('S_PER_HOUR'),
+  );
+  // Prefix wiring: 11.63 GWh x 3.6 TJ/GWh = 41.868 TJ per ktoe (arithmetic).
+  assert.ok(
+    relativeError(JOULES_PER_UNIT.ktoe(), 41.868 * constant('SI_TERA')) < 1e-15,
+  );
+  // NIST lists the kilowatt hour, the IT Btu and the quad separately.
+  assert.equal(
+    constant('J_PER_KWH'),
+    constant('SI_KILO') * constant('J_PER_WH'),
+  );
+  assert.ok(
+    relativeError(constant('J_PER_QUAD'), 1e15 * constant('J_PER_BTU_IT')) <
+      1e-15,
+  );
+  // EIA prints the same factor rounded to four figures: 1 kWh = 3,412 Btu.
+  assert.ok(
+    relativeError(
+      constant('J_PER_KWH') / constant('J_PER_BTU_IT'),
+      constant('BTU_PER_KWH_EIA'),
+    ) < 5e-5,
+  );
+});
+
+for (const golden of energyGoldens) {
+  test(`golden ${golden.id}: model average power matches the cited value`, (t) => {
+    const record = normalizeEnergyObservation(observation(golden));
+    assert.ok(record, 'the model rejects this cited observation');
+    assert.equal(record.calendarYear, golden.dataYear);
+    assert.equal(record.source.releasedAt, golden.releasedAt);
+
+    const citedW = joules(golden) / secondsInUtcYear(golden.dataYear);
+    const modelW = annualAveragePowerW(record.annualTWh, record.calendarYear);
+    const error = relativeError(modelW, citedW);
+    t.diagnostic(
+      `metric golden=${golden.id} cited_W=${citedW} model_W=${modelW} rel_err=${error}`,
+    );
+    assert.ok(error < 1e-12, `relative error ${error}`);
+
+    // Second opinion: values derived outside JavaScript, in exact rationals.
+    assert.ok(
+      relativeError(record.annualTWh, golden.derived.annualTWh) < 1e-12,
+    );
+    assert.ok(relativeError(modelW, golden.derived.averagePowerW) < 1e-12);
+
+    // A country or a final-energy total never gets a Kardashev index.
+    if (golden.area.type !== 'world' || golden.measures !== 'primary')
+      assert.equal(worldKardashevEstimate(observation(golden)), null);
+  });
+}
+
+test('golden desnz-uk-2024-total-final-energy: leap year and final-energy scope', () => {
+  const golden = fixture.goldens.find(
+    (row) => row.id === 'desnz-uk-2024-total-final-energy',
+  );
+  assert.equal(golden.measures, 'final');
+  assert.equal(golden.metric, 'total_final_energy');
+  assert.equal(hoursInCalendarYear(golden.dataYear), 8784);
+  // 119531.338 ktoe is about 1390 TWh a year, or about 158 GW on average.
+  assert.equal(Math.round(annualTWh(golden)), 1390);
+  assert.equal(
+    Math.round(annualAveragePowerW(annualTWh(golden), 2024) / 1e9),
+    158,
+  );
+});
+
+test('golden eia-usa-2024-primary-energy-consumption: primary energy stays apart', () => {
+  const byId = (id) => fixture.goldens.find((row) => row.id === id);
+  const usa = byId('eia-usa-2024-primary-energy-consumption');
+  assert.equal(usa.measures, 'primary');
+  assert.equal(usa.metric, 'primary_energy_supply');
+  // 94.582337 quadrillion Btu is about 27719 TWh, or about 3156 GW on average.
+  assert.equal(Math.round(annualTWh(usa)), 27719);
+  assert.equal(
+    Math.round(annualAveragePowerW(annualTWh(usa), 2024) / 1e9),
+    3156,
+  );
+  // Same year, same area type, but final and primary energy never compare.
+  const uk = byId('desnz-uk-2024-total-final-energy');
+  assert.equal(sameComparableMetric(observation(uk), observation(usa)), false);
+  assert.equal(sameComparableMetric(observation(usa), observation(usa)), true);
+});
+
+test('golden statcan-can-2024-energy-use-final-demand: no cross-source comparison', () => {
+  const byId = (id) => fixture.goldens.find((row) => row.id === id);
+  const canada = byId('statcan-can-2024-energy-use-final-demand');
+  assert.equal(canada.measures, 'final');
+  assert.equal(canada.metric, 'total_final_energy');
+  // 8386544 TJ is about 2330 TWh, or about 265 GW on average.
+  assert.equal(Math.round(annualTWh(canada)), 2330);
+  assert.equal(
+    Math.round(annualAveragePowerW(annualTWh(canada), 2024) / 1e9),
+    265,
+  );
+  // Both are 2024 national final energy, but two agencies define it
+  // differently, so the model must not rank one against the other.
+  const uk = byId('desnz-uk-2024-total-final-energy');
+  assert.equal(uk.metric, canada.metric);
+  assert.equal(uk.dataYear, canada.dataYear);
+  assert.equal(
+    sameComparableMetric(observation(uk), observation(canada)),
+    false,
+  );
+});
+
+test('golden iea-world-2024-total-energy-supply: planetary power and index', () => {
+  const world = fixture.goldens.find(
+    (row) => row.id === 'iea-world-2024-total-energy-supply',
+  );
+  assert.equal(world.measures, 'primary');
+  assert.equal(world.area.type, 'world');
+  const estimate = worldKardashevEstimate(observation(world));
+  assert.ok(estimate, 'the model gives no index for the cited world total');
+  assert.equal(estimate.kind, 'educational_annual_average');
+  assert.equal(estimate.year, 2024);
+  assert.equal(estimate.coverage, 'complete');
+  assert.equal(estimate.source.publisher, world.publisher);
+  // 649572194 TJ is about 180437 TWh, or about 20.5 TW on average.
+  assert.equal(Math.round(annualTWh(world)), 180437);
+  assert.equal(Math.round(estimate.averagePowerW / 1e11) / 10, 20.5);
+  assert.ok(
+    relativeError(estimate.averagePowerW, world.derived.averagePowerW) < 1e-12,
+  );
+  assert.ok(Math.abs(estimate.index - world.derived.saganIndex) < 1e-6);
+  // The index is logarithmic: Type I (1e16 W) is about 487 times this power.
+  assert.equal(Math.round(1e16 / estimate.averagePowerW), 487);
+  assert.equal(Math.round(10 ** ((1 - estimate.index) * 10)), 487);
+  // The same world total labelled as final energy gets no index.
+  assert.equal(
+    worldKardashevEstimate({
+      ...observation(world),
+      metric: 'total_final_energy',
+    }),
+    null,
+  );
+});
+
+test('golden jiang-2022-world-2018-kardashev: Sagan index matches the cited value', (t) => {
+  const byId = (id) => fixture.goldens.find((row) => row.id === id);
+  const cited = byId('jiang-2022-world-2018-kardashev');
+  assert.equal(cited.kind, 'kardashev_reference');
+
+  // Published: about 1.90e13 W gives K = 0.728 with K = (lg P - 6) / 10.
+  const index = saganKardashevIndex(cited.valueAsPublished);
+  const error = relativeError(index, cited.citedIndex);
+  t.diagnostic(
+    `metric golden=${cited.id} cited_K=${cited.citedIndex} model_K=${index} rel_err=${error}`,
+  );
+  // The paper prints three decimals: allow half a unit in the third.
+  assert.ok(Math.abs(index - cited.citedIndex) <= 0.0005);
+  assert.equal(Number(index.toFixed(3)), cited.citedIndex);
+  assert.ok(Math.abs(index - cited.derived.indexFromPower) < 1e-12);
+
+  // The paper's own energy total gives its power to the three figures printed.
+  const energy = cited.energyAsPublished;
+  const twh =
+    (energy.value * JOULES_PER_UNIT[energy.unit]()) /
+    (constant('J_PER_WH') * constant('SI_TERA'));
+  const powerW = annualAveragePowerW(twh, cited.dataYear);
+  assert.ok(
+    relativeError(powerW, cited.derived.averagePowerWFromEnergy) < 1e-12,
+  );
+  assert.ok(relativeError(powerW, cited.valueAsPublished) <= 0.005 / 1.9);
+  assert.equal(
+    Number(saganKardashevIndex(powerW).toFixed(3)),
+    cited.citedIndex,
+  );
+
+  // Sanity check for the newest cited world total (IEA, 2024): supply grew
+  // after 2018, and 0.005 in K is a 12 % change in power (10 ** 0.05).
+  const now = worldKardashevEstimate(
+    observation(byId('iea-world-2024-total-energy-supply')),
+  );
+  assert.ok(now.index > index);
+  assert.ok(Math.abs(now.index - cited.citedIndex) < 0.005);
+  assert.equal(Number(now.index.toFixed(2)), 0.73);
+});

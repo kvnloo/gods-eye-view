@@ -1,0 +1,269 @@
+{
+  "schemaVersion": 1,
+  "kind": "test-fixture",
+  "note": "Cited real-world goldens for goldens.test.mjs only. Not a shipped dataset: no runtime module imports this file. Each valueAsPublished is copied from the publisher's own file and is never edited to fit the model. Unit conversions happen in the test, from the cited constants below.",
+  "retrievedAt": "2026-11-13",
+  "constants": {
+    "GWH_PER_KTOE": {
+      "value": 11.63,
+      "unit": "GWh per ktoe",
+      "publisher": "UK Department for Energy Security and Net Zero (DESNZ)",
+      "document": "Subnational total final energy consumption statistics: 2005 to 2024 (Excel)",
+      "locator": "sheet 'Cover sheet', cell A24: \"1 ktoe = 11.63 GWh.\"",
+      "url": "https://assets.publishing.service.gov.uk/media/6a68c32f16bc92f51e1a4260/Subnational_total_final_consumption_2005_2024.xlsx"
+    },
+    "J_PER_WH": {
+      "value": 3600,
+      "unit": "J per W·h",
+      "publisher": "NIST",
+      "document": "NIST Guide to the SI (SP 811), Appendix B.8: Factors for Units Listed Alphabetically",
+      "locator": "row \"watt hour (W · h)\" to \"joule (J)\": 3.6 E+03",
+      "url": "https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b8"
+    },
+    "S_PER_HOUR": {
+      "value": 3600,
+      "unit": "s per h",
+      "publisher": "NIST",
+      "document": "NIST Guide to the SI (SP 811), Appendix B.8: Factors for Units Listed Alphabetically",
+      "locator": "row \"hour (h)\" to \"second (s)\": 3.6 E+03",
+      "url": "https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b8"
+    },
+    "S_PER_DAY": {
+      "value": 86400,
+      "unit": "s per d",
+      "publisher": "NIST",
+      "document": "NIST Guide to the SI (SP 811), Appendix B.8: Factors for Units Listed Alphabetically",
+      "locator": "row \"day (d)\" to \"second (s)\": 8.64 E+04",
+      "url": "https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b8"
+    },
+    "SI_GIGA": {
+      "value": 1e9,
+      "unit": "factor",
+      "publisher": "NIST",
+      "document": "Metric (SI) Prefixes",
+      "locator": "table row \"giga G 10^9\"",
+      "url": "https://www.nist.gov/pml/owm/metric-si-prefixes"
+    },
+    "SI_TERA": {
+      "value": 1e12,
+      "unit": "factor",
+      "publisher": "NIST",
+      "document": "Metric (SI) Prefixes",
+      "locator": "table row \"tera T 10^12\"",
+      "url": "https://www.nist.gov/pml/owm/metric-si-prefixes"
+    },
+    "SI_KILO": {
+      "value": 1e3,
+      "unit": "factor",
+      "publisher": "NIST",
+      "document": "Metric (SI) Prefixes",
+      "locator": "table row \"kilo k 10^3\"",
+      "url": "https://www.nist.gov/pml/owm/metric-si-prefixes"
+    },
+    "J_PER_KWH": {
+      "value": 3.6e6,
+      "unit": "J per kW·h",
+      "publisher": "NIST",
+      "document": "NIST Guide to the SI (SP 811), Appendix B.8: Factors for Units Listed Alphabetically",
+      "locator": "row \"kilowatt hour (kW · h)\" to \"joule (J)\": 3.6 E+06",
+      "url": "https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b8"
+    },
+    "J_PER_BTU_IT": {
+      "value": 1055.056,
+      "unit": "J per Btu (IT)",
+      "publisher": "NIST",
+      "document": "NIST Guide to the SI (SP 811), Appendix B.8: Factors for Units Listed Alphabetically",
+      "locator": "row \"British thermal unit IT (Btu IT)\" to \"joule (J)\": 1.055 056 E+03",
+      "url": "https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b8"
+    },
+    "J_PER_QUAD": {
+      "value": 1.055056e18,
+      "unit": "J per quad (10^15 Btu IT)",
+      "publisher": "NIST",
+      "document": "NIST Guide to the SI (SP 811), Appendix B.8: Factors for Units Listed Alphabetically",
+      "locator": "row \"quad (10^15 Btu IT)\" to \"joule (J)\": 1.055 056 E+18",
+      "url": "https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b8"
+    },
+    "BTU_PER_KWH_EIA": {
+      "value": 3412,
+      "unit": "Btu per kWh (rounded, cross-check only)",
+      "publisher": "U.S. Energy Information Administration (EIA)",
+      "document": "Energy conversion calculators",
+      "locator": "Electricity conversion calculator: \"1 kilowatthour = 3,412 Btu (standard conversion factor)\"",
+      "url": "https://www.eia.gov/energyexplained/units-and-calculators/energy-conversion-calculators.php"
+    }
+  },
+  "goldens": [
+    {
+      "id": "desnz-uk-2024-total-final-energy",
+      "kind": "annual_energy",
+      "publisher": "UK Department for Energy Security and Net Zero (DESNZ)",
+      "dataset": "Subnational total final energy consumption statistics: 2005 to 2024",
+      "table": "workbook sheet '2024', row 7 (Code K02000001, \"United Kingdom (inc unallocated)\", \"All local authorities\"), cell H7, column \"All fuels: Total\"",
+      "url": "https://www.gov.uk/government/statistics/total-final-energy-consumption-at-regional-and-local-authority-level-2005-to-2024",
+      "fileUrl": "https://assets.publishing.service.gov.uk/media/6a68c32f16bc92f51e1a4260/Subnational_total_final_consumption_2005_2024.xlsx",
+      "fileSha256": "f9f26000bf688e1144a4b3b75a5240fcd23b91c697606cc887cee346ebe15701",
+      "releasedAt": "2026-07-30",
+      "dataYear": 2024,
+      "unit": "ktoe",
+      "valueAsPublished": 119531.338278025,
+      "measures": "final",
+      "measuresNote": "Total FINAL energy consumption, all fuels and sectors, as estimated in the subnational series. Accredited Official Statistics. Workbook Note 1: transport covers road and rail only, and transport electricity is not included. The same sheet shows the DUKES UK total (row 8, 114622.15 ktoe) \"for comparison purposes only\" (Note 5); this golden is the subnational total, not the DUKES total.",
+      "metric": "total_final_energy",
+      "status": "official_estimate",
+      "geographyCoverage": "complete",
+      "area": {
+        "id": "ISO3:GBR",
+        "type": "country",
+        "boundaryDataset": "DESNZ subnational series, UK total row (GSS K02000001)",
+        "boundaryRevision": "2025-04",
+        "publishedCode": "K02000001",
+        "publishedLabel": "United Kingdom (inc unallocated)"
+      },
+      "licence": "Open Government Licence v3.0",
+      "attribution": "Contains public sector information licensed under the Open Government Licence v3.0. Source: DESNZ.",
+      "derived": {
+        "annualTWh": 1390.1494641734307,
+        "averagePowerW": 158259274154.53445,
+        "method": "Independent exact-rational calculation (Python fractions), 366-day year from the Gregorian calendar; not produced by the model."
+      }
+    },
+    {
+      "id": "eia-usa-2024-primary-energy-consumption",
+      "kind": "annual_energy",
+      "publisher": "U.S. Energy Information Administration (EIA)",
+      "dataset": "Monthly Energy Review, October 2026",
+      "table": "Table 1.1 Primary Energy Overview, series TETCBUS \"Total Primary Energy Consumption\", annual row YYYYMM=202413 of the table CSV",
+      "url": "https://www.eia.gov/totalenergy/data/monthly/",
+      "fileUrl": "https://www.eia.gov/totalenergy/data/browser/csv.php?tbl=T01.01",
+      "fileSha256": "f3b8529084a30ccf9b2e0a20c33c497bf491c97bfc45ac9216fe3ef488bb48bb",
+      "releasedAt": "2026-10-29",
+      "dataYear": 2024,
+      "unit": "quadrillion Btu",
+      "valueAsPublished": 94.582337,
+      "measures": "primary",
+      "measuresNote": "Total PRIMARY energy consumption of the United States (series description \"Total Primary Energy Consumption\", unit \"Quadrillion Btu\"). This is primary energy, so it is not comparable with the UK and Canada final-energy goldens. The Monthly Energy Review revises earlier years; this is the value in the October 2026 release.",
+      "metric": "primary_energy_supply",
+      "status": "official_estimate",
+      "geographyCoverage": "complete",
+      "area": {
+        "id": "ISO3:USA",
+        "type": "country",
+        "boundaryDataset": "EIA Monthly Energy Review, United States total",
+        "boundaryRevision": "2026-10-29",
+        "publishedCode": "TETCBUS",
+        "publishedLabel": "Total Primary Energy Consumption"
+      },
+      "licence": "Public domain (U.S. government publication)",
+      "attribution": "Source: U.S. Energy Information Administration, Monthly Energy Review (October 2026).",
+      "derived": {
+        "annualTWh": 27719.350596075554,
+        "averagePowerW": 3155663774598.7656,
+        "method": "Independent exact-rational calculation (Python fractions), 366-day year from the Gregorian calendar; not produced by the model."
+      }
+    },
+    {
+      "id": "statcan-can-2024-energy-use-final-demand",
+      "kind": "annual_energy",
+      "publisher": "Statistics Canada",
+      "dataset": "Table 25-10-0029-01, Supply and demand of primary and secondary energy in terajoules, annual",
+      "table": "row GEO=Canada, REF_DATE=2024, Fuel type=\"Total primary and secondary energy\", Supply and demand characteristics=\"Energy use, final demand\" (vector v54272321, coordinate 1.1.18) of 25100029.csv",
+      "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2510002901",
+      "fileUrl": "https://www150.statcan.gc.ca/n1/tbl/csv/25100029-eng.zip",
+      "fileSha256": "757c76b7a11eeb63c4c83b1d9c6e64c07e52e631ada139bdaa4157c3d0c8ed31",
+      "releasedAt": "2026-11-10",
+      "dataYear": 2024,
+      "unit": "TJ",
+      "valueAsPublished": 8386544,
+      "measures": "final",
+      "measuresNote": "FINAL energy: \"Energy use, final demand\" for \"Total primary and secondary energy\", Canada. The same table lists \"Non-energy use\" (1204282 TJ) and \"Producer consumption\" (1226391 TJ) as separate rows; they are not in this value. Release time per the Statistics Canada web data service: 2026-11-10T08:30.",
+      "metric": "total_final_energy",
+      "status": "official_estimate",
+      "geographyCoverage": "complete",
+      "area": {
+        "id": "ISO3:CAN",
+        "type": "country",
+        "boundaryDataset": "Statistics Canada table 25-10-0029-01, GEO=Canada",
+        "boundaryRevision": "2026-11-10",
+        "publishedCode": "v54272321",
+        "publishedLabel": "Canada"
+      },
+      "licence": "Statistics Canada Open Licence",
+      "attribution": "Adapted from Statistics Canada, Table 25-10-0029-01, reference year 2024. This does not constitute an endorsement by Statistics Canada of this product.",
+      "derived": {
+        "annualTWh": 2329.5955555555556,
+        "averagePowerW": 265208965796.3975,
+        "method": "Independent exact-rational calculation (Python fractions), 366-day year from the Gregorian calendar; not produced by the model."
+      }
+    },
+    {
+      "id": "iea-world-2024-total-energy-supply",
+      "kind": "annual_energy",
+      "publisher": "International Energy Agency (IEA)",
+      "dataset": "World Energy Balances (July 2026 edition, final world data), as served by the IEA energy statistics data API",
+      "table": "API series BALANCES, country WORLD, year 2024, flow TES \"Total energy supply\", product TOTAL \"Total\", units TJ",
+      "url": "https://www.iea.org/data-and-statistics/data-product/world-energy-balances-highlights",
+      "fileUrl": "https://api.iea.org/stats?year=2024&countries=WORLD&series=BALANCES",
+      "fileSha256": "a6a9af017163efda2bf6f430d6540cfc5659dc6c70c4c1d6d9a10fe05fea6d73",
+      "releasedAt": "2026-10-14",
+      "dataYear": 2024,
+      "unit": "TJ",
+      "valueAsPublished": 649572194,
+      "measures": "primary",
+      "measuresNote": "PRIMARY energy: world total energy supply (TES). IEA: \"Total energy supply (TES) includes all the energy produced in or imported to a country, minus that which is exported or stored.\" Source choice: this is the IEA figure, not the Energy Institute Statistical Review (energyinst.org refused automated fetches). The API response carries no edition or release date. releasedAt is the product page schedule entry \"14/10/2026 Latest July 2026 - Final World data\", read from the Internet Archive capture https://web.archive.org/web/20261031061916/https://www.iea.org/data-and-statistics/data-product/world-energy-balances-highlights because iea.org pages returned HTTP 403 to automated fetches. fileSha256 is the hash of the JSON response retrieved on 2026-11-13.",
+      "metric": "primary_energy_supply",
+      "status": "official_estimate",
+      "geographyCoverage": "complete",
+      "area": {
+        "id": "WORLD",
+        "type": "world",
+        "boundaryDataset": "IEA World aggregate (country code WORLD)",
+        "boundaryRevision": "2026-10-14",
+        "publishedCode": "WORLD",
+        "publishedLabel": "World"
+      },
+      "licence": "IEA Terms of Use for Non-CC Material",
+      "attribution": "Source: IEA, World Energy Balances, IEA, Paris. Licence: Terms of Use for Non-CC Material.",
+      "derived": {
+        "annualTWh": 180436.72055555554,
+        "averagePowerW": 20541521010422.992,
+        "saganIndex": 0.731263,
+        "method": "Independent exact-rational calculation (Python fractions), 366-day year from the Gregorian calendar; saganIndex from Python math.log10, rounded to 6 decimals; not produced by the model."
+      }
+    },
+    {
+      "id": "jiang-2022-world-2018-kardashev",
+      "kind": "kardashev_reference",
+      "publisher": "Jiang, Feng, Rosen, Fahy, Zhang, Obacz, Das and Zhu (arXiv:2204.07070v1)",
+      "dataset": "Avoiding the Great Filter: Predicting the Timeline for Humanity to Reach Kardashev Type I Civilization",
+      "table": "section 1.2, equation (1.1) and the paragraph after it, PDF page 2",
+      "url": "https://arxiv.org/abs/2204.07070",
+      "fileUrl": "https://arxiv.org/pdf/2204.07070",
+      "relatedDoi": "https://doi.org/10.3390/galaxies10030068",
+      "releasedAt": "2022-03-24",
+      "dataYear": 2018,
+      "unit": "W",
+      "valueAsPublished": 1.9e13,
+      "citedIndex": 0.728,
+      "formulaAsPublished": "K = (lg(P) - 6) / 10, with P the power in watts (equation 1.1, attributed to Carl Sagan)",
+      "energyAsPublished": {
+        "text": "1,4281,889 kTOE",
+        "value": 14281889,
+        "unit": "ktoe",
+        "note": "Digits as printed; the comma grouping in the paper is irregular. The paper attributes the figure to the IEA."
+      },
+      "quote": "in 2018 the total energy supply of the entire world was 1,4281,889 kTOE (an energy unit called kilo ton oil equivalent), or approximately 1.90 × 10^13 W. From this actual human civilization power production estimate and Eq. 1.1, we can calculate the present value of K for human civilization to be 0.728.",
+      "measures": "primary",
+      "measuresNote": "Reference figure for the Sagan index, not an energy observation: world total energy supply (PRIMARY) for 2018 as a power, about 1.90e13 W, and the index the authors compute from it, 0.728. Used to check the formula and the 0.72 to 0.73 range. ktoe converts with the same 11.63 GWh per ktoe that DESNZ prints.",
+      "licence": "arXiv listing: CC BY-NC-ND 4.0 (preprint); only the figures and one sentence are quoted",
+      "attribution": "Jiang, J. H., et al. (2022), Avoiding the Great Filter: Predicting the Timeline for Humanity to Reach Kardashev Type I Civilization, arXiv:2204.07070.",
+      "derived": {
+        "indexFromPower": 0.7278753600952829,
+        "annualTWhFromEnergy": 166098.36907,
+        "averagePowerWFromEnergy": 18961001035388.13,
+        "indexFromEnergy": 0.727786,
+        "method": "Independent calculation (Python fractions and math.log10), 365-day year for 2018; not produced by the model."
+      }
+    }
+  ]
+}

@@ -127,13 +127,30 @@ function replayable(messages) {
       message.role === 'user' &&
       message.content.some((block) => 'text' in block),
   );
-  return messages.map((message, index) => {
-    if (index >= turn || message.role !== 'assistant') return message;
+  const replay = [];
+  let turnStart = 0;
+  for (const [index, message] of messages.entries()) {
+    if (
+      message.role === 'user' &&
+      message.content.some((block) => 'text' in block)
+    )
+      turnStart = replay.length;
+    if (index >= turn || message.role !== 'assistant') {
+      replay.push(message);
+      continue;
+    }
     const content = message.content.filter(
       (block) => !('reasoningContent' in block),
     );
-    return content.length ? { ...message, content } : message;
-  });
+    if (content.length) replay.push({ ...message, content });
+    else {
+      // An old reasoning-only reply cannot be kept without its signature.
+      // Drop its whole turn, including any earlier tool exchanges, rather
+      // than leaving an empty assistant message between user turns.
+      replay.length = turnStart;
+    }
+  }
+  return replay;
 }
 
 // A reply block is rebuilt from the members this route accepts back.

@@ -1467,6 +1467,44 @@ test('Bedrock keeps reasoning blocks opaquely and refuses other reply blocks', a
   );
 });
 
+test('Bedrock omits an old reasoning-only turn rather than replaying its signed prefix', async (t) => {
+  let sent;
+  const f = await fixture(t, providers.bedrock, async (_url, options) => {
+    sent = JSON.parse(options.body);
+    return Response.json(providers.bedrock.reply());
+  });
+  const messages = [
+    { role: 'user', content: [{ text: 'Old request' }] },
+    {
+      role: 'assistant',
+      content: [
+        { toolUse: { toolUseId: 'c', name: 'fly_to', input: { lat: 1 } } },
+      ],
+    },
+    {
+      role: 'user',
+      content: [
+        { toolResult: { toolUseId: 'c', content: [{ json: { ok: true } }] } },
+      ],
+    },
+    {
+      role: 'assistant',
+      content: [
+        {
+          reasoningContent: {
+            reasoningText: { text: 'Opaque', signature: 'old-prefix-signature' },
+          },
+        },
+      ],
+    },
+    { role: 'user', content: [{ text: 'New request' }] },
+  ];
+  assert.equal((await f.send({ messages })).status, 200);
+  // Dropping only the signed block would leave an empty assistant message;
+  // the complete old tool-use turn must go as well.
+  assert.deepEqual(sent.messages, [messages.at(-1)]);
+});
+
 test('parseUsage derives Bedrock input from its total and keeps cache reads', () => {
   assert.deepEqual(
     parseUsage('bedrock', {

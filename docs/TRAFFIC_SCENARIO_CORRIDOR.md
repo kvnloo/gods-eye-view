@@ -26,6 +26,9 @@ into the main application.
   and bidirectional cross streets at each signal. One lane per direction.
 - Identical generated network bytes for both treatments. Additional signal
   programs change timings, not road geometry or SUMO-generated clearances.
+  The runner removes netconvert's generated-on header comment (wall-clock time
+  and local paths) before hashing, so the same inputs give the same
+  `networkRevision` on every invocation.
 - Baseline: generated fixed-time 60-second cycles. Candidate: SUMO's built-in
   gap-actuated controller, green minimum 8 seconds, maximum 50 seconds.
 - Explicit synthetic Poisson departures for ten minutes: eastbound 600 veh/h,

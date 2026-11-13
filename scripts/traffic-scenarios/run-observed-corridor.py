@@ -144,6 +144,9 @@ def demand_inputs(fixture, derived, settings, window):
     entries = {}
     if settings['mainline'] == 'stack':
         entries['m0e'], entries['m3w'] = steady(rates['m0e']), steady(rates['m3w'])
+    elif settings['mainline'] == 'caltrans':
+        peak, split = (parameters[name]['value'] for name in ('caltransPeakHourTwoWay', 'directionalSplit'))
+        entries['m0e'], entries['m3w'] = steady(peak['m0e'] * split), steady(peak['m3w'] * split)
     for i in (1, 2, 3):
         if settings['cross'] == 'stack':
             entries[f'N{i}in'] = entries[f'S{i}in'] = steady(rates['cross'])

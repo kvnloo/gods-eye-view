@@ -220,6 +220,15 @@ class RunnerTests(unittest.TestCase):
             simulated = runner.hourly_counts(path, {'id': 'AM', 'firstHour': 7}, ['m0e', 'm3e', 'm0w', 'm1e'])
         self.assertEqual(simulated, {'m0e@07': 40, 'm3e@07': 28, 'm0w@07': 0})
 
+    def test_caltrans_step_uses_half_the_two_way_peak_hour_at_each_end(self):
+        settings, _ = runner.settings_for(FIXTURE, 'S2')
+        self.assertEqual(settings, {**FIXTURE['defaults'], 'network': 'sourced', 'mainline': 'caltrans'})
+        entries, shares = runner.demand_inputs(FIXTURE, derived(), settings, 'AM')
+        self.assertEqual(entries['m0e'], ([4300 / 2 / 4] * 9, False))
+        self.assertEqual(entries['m3w'], ([4400 / 2 / 4] * 9, False))
+        self.assertEqual(entries['N2in'], ([30.0] * 9, False))
+        self.assertEqual(shares(2, 'E', 5), (0, 1, 0))
+
     def test_step_settings_accumulate_and_unknown_step_fails(self):
         settings, change = runner.settings_for(FIXTURE, 'S0')
         self.assertEqual(settings, FIXTURE['defaults'])

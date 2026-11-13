@@ -15,7 +15,7 @@
 
 import { loadBundledJson } from './bundledJson.js';
 import { createRetryableLoader } from './retryableLoad.js';
-import { greatCircleKm } from '../geoDistance.js';
+import { EARTH_RADIUS_KM, greatCircleKm } from '../geoDistance.js';
 import { msg } from '../i18n/marker.js';
 
 /**
@@ -144,13 +144,20 @@ export async function nearestAirportsWithFrequencies(lat, lon, options = {}) {
   const { limit = 5, maxKm = 250, controlledOnly = false } = options;
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) return [];
   const { airports } = await loadPack();
-  // One degree of latitude is ~111 km everywhere; one degree of longitude is
-  // that times cos(lat) and collapses at the poles, so the longitude window is
-  // only a reject filter — never the distance.
-  const latWindow = maxKm / 111;
-  const cosLat = Math.cos((lat * Math.PI) / 180);
+  // A spherical-cap reject filter using the same radius as greatCircleKm.
+  // A query-latitude cosine alone can discard in-range airports toward a pole;
+  // the cap's full longitude span is wider than that approximation.
+  const angularRadius = maxKm / EARTH_RADIUS_KM;
+  const latWindow = (angularRadius * 180) / Math.PI;
+  const latitudeRadians = (lat * Math.PI) / 180;
   const lonWindow =
-    Math.abs(cosLat) < 0.01 ? 180 : maxKm / (111 * Math.abs(cosLat));
+    angularRadius >= Math.PI / 2 - Math.abs(latitudeRadians)
+      ? 180
+      : (Math.asin(
+          Math.min(1, Math.sin(angularRadius) / Math.cos(latitudeRadians)),
+        ) *
+          180) /
+        Math.PI;
   const hits = [];
   for (const airport of airports) {
     if (Math.abs(airport.lat - lat) > latWindow) continue;

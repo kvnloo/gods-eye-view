@@ -14,6 +14,7 @@ import {
   loadAtcFrequencies,
   nearestAirportsWithFrequencies,
 } from './ourAirportsAtc.js';
+import { greatCircleKm } from '../geoDistance.js';
 
 const PACK = new URL(
   './local_data/ourairports_atc/frequencies.json',
@@ -239,6 +240,25 @@ test('nearest lookup is ordered, bounded by maxKm, and can demand a controller',
   });
   assert.ok(controlled.every(isControlled), 'controlledOnly must filter');
   assert.ok(controlled.length < near.length + 10);
+});
+
+test('polar longitude prefilter keeps airports within the great-circle radius', async () => {
+  const svalbard = await airportByIdent('ENSB');
+  assert.ok(svalbard, 'the bundled pack must include Svalbard Airport');
+  // At 78° N the old query-latitude box spans only ~21.67° for 500 km.
+  // ENSB is 21.8° away in longitude but only ~497 km away on the sphere.
+  const query = { lat: 78, lon: svalbard.lon + 21.8 };
+  assert.ok(
+    greatCircleKm(query, svalbard) < 500,
+    'Svalbard must be inside the requested 500 km circle',
+  );
+  const nearby = await nearestAirportsWithFrequencies(query.lat, query.lon, {
+    maxKm: 500,
+    limit: 100,
+  });
+  const match = nearby.find((airport) => airport.ident === 'ENSB');
+  assert.ok(match, 'an in-range airport cannot be rejected by the longitude box');
+  assert.ok(match.distanceKm <= 500);
 });
 
 test('the longitude window wraps the antimeridian instead of rejecting across it', async () => {

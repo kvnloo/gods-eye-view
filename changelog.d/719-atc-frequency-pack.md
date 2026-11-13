@@ -9,3 +9,5 @@
   and the data has to be able to say it. Rebuild with
   `node scripts/build-atc-frequencies.mjs`. Nothing reads the pack yet; the ATC
   decision layer (#723) is its first consumer (daikaginza, #719).
+  Polar-aware longitude prefiltering preserves in-range high-latitude airports
+  before the great-circle radius check.

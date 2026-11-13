@@ -118,3 +118,18 @@ test('the shadow is measured on the drawn block and shown as an on/off crop', ()
   assert.match(shadow, /await shadowEvidence\('shadow'\);/);
   assert.match(shadow, /shadowCrop\(\s*'03b-shadow-crop'/);
 });
+
+test("the rendered shadow tip and Cesium's scene sun are checked against the sun module", () => {
+  const shadow = source.slice(
+    source.indexOf("'The block casts a shadow"),
+    source.indexOf("'Readout beside the plot"),
+  );
+  assert.match(shadow, /sunSeparation\(cesiumSun, s\.sun\)/);
+  assert.match(shadow, /separation <= 1,/);
+  assert.match(shadow, /assertTip\('tip6', tip6\)/);
+  const step = source.slice(source.indexOf("'Stepper +2"));
+  assert.match(step, /assertTip\('tip8', tip8\)/);
+  assert.match(step, /Math\.abs\(ratio - 8 \/ 6\) <= 0\.05 \* \(8 \/ 6\)/);
+  // max(1 m, 5 %) of the formula, height measured to the ground at the tip.
+  assert.match(source, /Math\.max\(1, 0\.05 \* tip\.expectedReach\)/);
+});

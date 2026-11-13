@@ -1,14 +1,13 @@
 import * as Cesium from 'cesium';
 import { watch } from 'vue';
 import { plotFromId } from '../data/cityPlot.js';
-import { observerSolarPosition } from '../data/satellitePass.js';
+import { shadowReach, shadowTip, sunPosition } from '../data/citySun.js';
 import {
   MASSING_ASSUMPTIONS,
   MAX_STOREYS,
   edgeProbes,
   groundBase,
   plotMassing,
-  shadowTip,
   stepStoreys,
 } from '../data/cityMassing.js';
 import {
@@ -98,7 +97,7 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
 
   function sunAt(plot) {
     try {
-      return observerSolarPosition(
+      return sunPosition(
         plot.center.lat,
         plot.center.lon,
         Cesium.JulianDate.toDate(viewer.clock.currentTime).getTime(),

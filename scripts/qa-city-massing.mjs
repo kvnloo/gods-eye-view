@@ -330,47 +330,69 @@ async function cutEvidence(samples, s) {
 // centre, on screen. The readout is hidden while they are found, so a point
 // under it still counts (clearOfMassing checks that); a point under other HUD,
 // on the block or within 6 px of the edge is not usable. `measurable` points
-// may sit under HUD: canvas captures do not include the DOM.
-async function groundPoints(offsets) {
-  return page.evaluate((list) => {
-    const hud = [
-      ...document.querySelectorAll(
-        '[data-city-massing], [data-city-massing-leader]',
-      ),
-    ];
-    hud.forEach((el) => (el.style.visibility = 'hidden'));
-    try {
-      const { scene } = window.__godsEyeView.viewer;
-      const s = window.__gevCityMassing.snapshot();
-      const fp = s.massing.footprint;
-      const lon0 = fp.reduce((a, [x]) => a + x, 0) / fp.length;
-      const lat0 = fp.reduce((a, [, y]) => a + y, 0) / fp.length;
-      const kx = 111_320 * Math.cos((lat0 * Math.PI) / 180);
-      const canvas = scene.canvas.getBoundingClientRect();
-      return list.map(({ east, north, up = 0 }) => {
-        const p = scene.cartesianToCanvasCoordinates(
-          scene.globe.ellipsoid.cartographicToCartesian({
+// may sit under HUD: canvas captures do not include the DOM. With `terrain`
+// each point stands on the ground the map shows there (`ground`), not at the
+// block's base height.
+async function groundPoints(offsets, { terrain = false } = {}) {
+  return page.evaluate(
+    ([list, onTerrain]) => {
+      const hud = [
+        ...document.querySelectorAll(
+          '[data-city-massing], [data-city-massing-leader]',
+        ),
+      ];
+      hud.forEach((el) => (el.style.visibility = 'hidden'));
+      try {
+        const { scene } = window.__godsEyeView.viewer;
+        const s = window.__gevCityMassing.snapshot();
+        const fp = s.massing.footprint;
+        const lon0 = fp.reduce((a, [x]) => a + x, 0) / fp.length;
+        const lat0 = fp.reduce((a, [, y]) => a + y, 0) / fp.length;
+        const kx = 111_320 * Math.cos((lat0 * Math.PI) / 180);
+        const canvas = scene.canvas.getBoundingClientRect();
+        const { viewer } = window.__godsEyeView;
+        const exclude = ['gev-city-massing', 'gev-city-play'].flatMap(
+          (name) =>
+            viewer.dataSources.getByName(name)[0]?.entities.values ?? [],
+        );
+        return list.map(({ east, north, up = 0 }) => {
+          const at = {
             longitude: ((lon0 + east / kx) * Math.PI) / 180,
             latitude: ((lat0 + north / 111_320) * Math.PI) / 180,
             height: s.blockBase + up,
-          }),
-        );
-        if (!p) return null;
-        const x = Math.round(p.x + canvas.left);
-        const y = Math.round(p.y + canvas.top);
-        const inside =
-          x >= 6 && y >= 6 && x <= innerWidth - 7 && y <= innerHeight - 7;
-        const measurable =
-          inside &&
-          scene.pick({ x: p.x, y: p.y })?.id?.id !== 'city-massing-block';
-        const usable =
-          measurable && document.elementFromPoint(x, y) === scene.canvas;
-        return { x, y, east, north, usable, measurable };
-      });
-    } finally {
-      hud.forEach((el) => (el.style.visibility = ''));
-    }
-  }, offsets);
+          };
+          let ground = null;
+          if (onTerrain) {
+            const h = scene.sampleHeight(at, exclude);
+            ground = Number.isFinite(h)
+              ? h
+              : scene.globe.show
+                ? (scene.globe.getHeight(at) ?? null)
+                : null;
+            if (ground === null) return null;
+            at.height = ground;
+          }
+          const p = scene.cartesianToCanvasCoordinates(
+            scene.globe.ellipsoid.cartographicToCartesian(at),
+          );
+          if (!p) return null;
+          const x = Math.round(p.x + canvas.left);
+          const y = Math.round(p.y + canvas.top);
+          const inside =
+            x >= 6 && y >= 6 && x <= innerWidth - 7 && y <= innerHeight - 7;
+          const measurable =
+            inside &&
+            scene.pick({ x: p.x, y: p.y })?.id?.id !== 'city-massing-block';
+          const usable =
+            measurable && document.elementFromPoint(x, y) === scene.canvas;
+          return { x, y, east, north, ground, usable, measurable };
+        });
+      } finally {
+        hud.forEach((el) => (el.style.visibility = ''));
+      }
+    },
+    [offsets, terrain],
+  );
 }
 // Offsets along the line away from the sun (and toward it), `d` metres from
 // the footprint centre.
@@ -535,17 +557,18 @@ const edgeExit = (s) => {
     halfWidth(s) / Math.max(Math.abs(Math.sin(az)), Math.abs(Math.cos(az)))
   );
 };
-// The cast shadow along that line: on/off luminance of 3 x 3 px every 0.5 m
-// from the footprint edge out to 1.6 shadow lengths, from one frame pair.
+// The cast shadow along that line, on the ground the map shows: on/off
+// luminance of 3 x 3 px every 0.5 m from the footprint edge out to 1.6 shadow
+// lengths, from one frame pair.
 async function shadowProfile(s, label) {
   const length = shadowLength(s, s.massing.heightMeters);
   const exit = edgeExit(s);
   const distances = [];
   for (let d = exit + 0.5; d <= exit + 1.6 * length; d += 0.5)
     distances.push(d);
-  const points = (await groundPoints(alongSun(s, distances))).map((p, i) =>
-    p?.measurable ? { ...p, d: distances[i] } : null,
-  );
+  const points = (
+    await groundPoints(alongSun(s, distances), { terrain: true })
+  ).map((p, i) => (p?.measurable ? { ...p, d: distances[i] } : null));
   const on = await renderedFrame(true);
   const off = await renderedFrame(false);
   await renderedFrame(true);
@@ -558,6 +581,7 @@ async function shadowProfile(s, label) {
     lengthMeters: length,
     profile: kept.map((p, i) => ({
       d: p.d,
+      ground: p.ground,
       ratio: lit[i] / Math.max(1, unlit[i]),
       on: lit[i],
       off: unlit[i],
@@ -565,6 +589,102 @@ async function shadowProfile(s, label) {
     captures: { on, off },
   };
 }
+// The rendered shadow's tip against the formula. Measured: where the profile
+// turns lit for good past the middle of the band (halfway between the band's
+// on/off ratio and 1). Formula: the top of the drawn block falls height /
+// tan(altitude) away from the sun, height being the block top above the
+// ground at the tip (the ground may slope): the first point where the line
+// from the top edge, descending tan(altitude) per metre, meets the ground.
+function tipEvidence(s, { exitMeters, profile }) {
+  const top = s.blockExtrudedHeight;
+  const tan = Math.tan((s.sun.elevationDeg * Math.PI) / 180);
+  const flat = (top - s.blockBase) / tan;
+  const band = profile
+    .filter(
+      (p) => p.d > exitMeters + 0.2 * flat && p.d < exitMeters + 0.8 * flat,
+    )
+    .map((p) => p.ratio)
+    .sort((a, b) => a - b);
+  const shade = band[Math.floor(band.length / 2)];
+  const mid = (shade + 1) / 2;
+  const start = profile.findIndex((p) => p.d > exitMeters + 0.5 * flat);
+  let measured = null;
+  for (let i = Math.max(1, start); i + 2 < profile.length; i++) {
+    const lit = [0, 1, 2].every((k) => profile[i + k].ratio >= mid);
+    if (!lit || profile[i - 1].ratio >= mid) continue;
+    const [a, b] = [profile[i - 1], profile[i]];
+    measured = a.d + ((mid - a.ratio) / (b.ratio - a.ratio)) * (b.d - a.d);
+    break;
+  }
+  let expected = null;
+  for (let i = 1; i < profile.length; i++) {
+    const gap = (p) => top - (p.d - exitMeters) * tan - p.ground;
+    const [a, b] = [profile[i - 1], profile[i]];
+    if (gap(a) > 0 && gap(b) <= 0) {
+      expected = a.d + (gap(a) / (gap(a) - gap(b))) * (b.d - a.d);
+      break;
+    }
+  }
+  const reach = (d) => (d === null ? null : d - exitMeters);
+  return {
+    shadeRatio: shade,
+    midRatio: mid,
+    measuredReach: reach(measured),
+    expectedReach: reach(expected),
+    flatReach: flat,
+    tipGround: expected === null ? null : top - (expected - exitMeters) * tan,
+  };
+}
+function assertTip(label, tip) {
+  report.measurements[label] = tip;
+  assert.ok(tip.measuredReach !== null, `${label}: the shadow ends on screen`);
+  assert.ok(
+    tip.expectedReach !== null,
+    `${label}: the formula tip is on screen`,
+  );
+  const allowed = Math.max(1, 0.05 * tip.expectedReach);
+  assert.ok(
+    Math.abs(tip.measuredReach - tip.expectedReach) <= allowed,
+    `${label}: the rendered shadow reaches ${tip.measuredReach.toFixed(2)} m, the formula ${tip.expectedReach.toFixed(2)} m (±${allowed.toFixed(2)} m)`,
+  );
+}
+// Cesium's own scene sun (UniformState's sunDirectionWC, which lights the scene
+// and aims its shadow map) in the plot's east-north-up frame.
+async function sceneSun() {
+  return page.evaluate(() => {
+    const { scene } = window.__godsEyeView.viewer;
+    const { center } = window.__gevCityPlay.snapshot().plot;
+    const d = scene.context.uniformState.sunDirectionWC;
+    const [lat, lon] = [center.lat, center.lon].map((v) => (v * Math.PI) / 180);
+    const up = [
+      Math.cos(lat) * Math.cos(lon),
+      Math.cos(lat) * Math.sin(lon),
+      Math.sin(lat),
+    ];
+    const east = [-Math.sin(lon), Math.cos(lon), 0];
+    const north = [
+      -Math.sin(lat) * Math.cos(lon),
+      -Math.sin(lat) * Math.sin(lon),
+      Math.cos(lat),
+    ];
+    const dot = (a) => a[0] * d.x + a[1] * d.y + a[2] * d.z;
+    return {
+      elevationDeg: (Math.asin(dot(up)) * 180) / Math.PI,
+      azimuthDeg:
+        ((Math.atan2(dot(east), dot(north)) * 180) / Math.PI + 360) % 360,
+    };
+  });
+}
+function sunSeparation(a, b) {
+  const r = Math.PI / 180;
+  const c =
+    Math.sin(a.elevationDeg * r) * Math.sin(b.elevationDeg * r) +
+    Math.cos(a.elevationDeg * r) *
+      Math.cos(b.elevationDeg * r) *
+      Math.cos((a.azimuthDeg - b.azimuthDeg) * r);
+  return Math.acos(Math.min(1, Math.max(-1, c))) / r;
+}
+
 // The block and its shadow, cropped from the shadow-on and shadow-off frames
 // side by side (canvas pixels: no HUD over them).
 async function shadowCrop(name, s, { on, off }) {
@@ -851,6 +971,7 @@ try {
   let plotId = null;
   let doc = null;
   let shadow6 = null;
+  let tip6 = null;
   await check(
     'With ?massing=1 a selected plot offers one MASSING toggle; zoning saves as before',
     async () => {
@@ -946,8 +1067,22 @@ try {
         };
       });
       shadow6 = await shadowEvidence('shadow');
+      // The massing sun is Cesium's scene sun at the journey's clock.
+      const cesiumSun = await sceneSun();
+      const separation = sunSeparation(cesiumSun, s.sun);
+      report.measurements.sun = {
+        scene: cesiumSun,
+        massing: s.sun,
+        separation,
+      };
+      assert.ok(
+        separation <= 1,
+        `Cesium's scene sun is within 1° of the massing sun: ${separation.toFixed(3)}°`,
+      );
       const profile = await shadowProfile(s, 'shadow profile');
       report.measurements.profile6 = { ...profile, captures: undefined };
+      tip6 = tipEvidence(s, profile);
+      assertTip('tip6', tip6);
       report.measurements.crop6 = await shadowCrop(
         '03b-shadow-crop',
         s,
@@ -1035,6 +1170,17 @@ try {
         'floor area and FAR scale with storeys',
       );
       await shadowEvidence('shadow-8');
+      const tip8 = tipEvidence(s, await shadowProfile(s, 'shadow-8 profile'));
+      assertTip('tip8', tip8);
+      const ratio = tip8.measuredReach / tip6.measuredReach;
+      report.measurements.tipRatio = {
+        measured: ratio,
+        expected: tip8.expectedReach / tip6.expectedReach,
+      };
+      assert.ok(
+        Math.abs(ratio - 8 / 6) <= 0.05 * (8 / 6),
+        `+2 storeys lengthens the rendered shadow by ${ratio.toFixed(3)} (1.333 ±5%)`,
+      );
       const shade8 = await luminance(
         await groundPoints(alongSun(s, [between])),
       );

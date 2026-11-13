@@ -1443,6 +1443,8 @@
   "scripts/qa-city-massing.mjs",
   "scripts/qa-massing-measure.mjs",
   "src/tooling/qaMassingMeasure.test.mjs",
+  "src/data/citySun.js",
+  "src/data/citySun.test.mjs",
   "src/data/cityPlot.test.mjs",
   "src/ui/cityPlayModel.test.mjs",
   "src/ui/views/cityPlayOverlayView.test.mjs"

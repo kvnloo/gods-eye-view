@@ -16,8 +16,8 @@ function fail(message) {
   throw new TypeError(message);
 }
 
-// Corners as metres east/north of their mean, and the way back to degrees.
-function frameOf(corners) {
+/** Corners as metres east/north of their mean, and the way back to degrees. */
+export function localFrame(corners) {
   if (
     !Array.isArray(corners) ||
     corners.length < 3 ||
@@ -76,7 +76,7 @@ function inset(points, meters) {
 
 /** Area in square metres of a [lon, lat] polygon. */
 export function polygonAreaSquareMeters(corners) {
-  return Math.abs(signedArea(frameOf(corners).points));
+  return Math.abs(signedArea(localFrame(corners).points));
 }
 
 /**
@@ -96,7 +96,7 @@ export function plotMassing({
     fail('storey height must be a positive number of metres');
   if (!Number.isFinite(setbackMeters) || setbackMeters < 0)
     fail('setback must be zero or more metres');
-  const frame = frameOf(corners);
+  const frame = localFrame(corners);
   const plotAreaSquareMeters = Math.abs(signedArea(frame.points));
   const inner = setbackMeters
     ? inset(frame.points, setbackMeters)
@@ -130,7 +130,7 @@ export function massingFlag(search) {
 
 /** Points `meters` outside the middle of each polygon edge, in edge order. */
 export function edgeProbes(corners, meters) {
-  const frame = frameOf(corners);
+  const frame = localFrame(corners);
   const turn = Math.sign(signedArea(frame.points));
   return frame.points.map((p, i) => {
     const q = frame.points[(i + 1) % frame.points.length];
@@ -162,18 +162,4 @@ export function groundBase(centre, around) {
       ? centre
       : low;
   return base === null ? null : { base, floor: Math.min(base, low ?? base) };
-}
-
-/**
- * Where the top of a block's shadow lands: its footprint moved away from the
- * sun by height / tan(elevation). Null when the sun is down or nothing stands.
- */
-export function shadowTip(footprint, heightMeters, sun) {
-  if (!footprint || !(sun?.elevationDeg > 0)) return null;
-  const length = heightMeters / Math.tan((sun.elevationDeg * Math.PI) / 180);
-  const az = (sun.azimuthDeg * Math.PI) / 180;
-  const frame = frameOf(footprint);
-  return frame.points.map(([x, y]) =>
-    frame.toLonLat([x - Math.sin(az) * length, y - Math.cos(az) * length]),
-  );
 }

@@ -8,7 +8,6 @@ import {
   massingFlag,
   plotMassing,
   polygonAreaSquareMeters,
-  shadowTip,
   stepStoreys,
 } from './cityMassing.js';
 import { snapPlot } from './cityPlot.js';
@@ -192,41 +191,4 @@ test('the block stands on the ground at the plot centre, the plate reaches the l
   });
   assert.deepEqual(groundBase(3, []), { base: 3, floor: 3 });
   assert.equal(groundBase(undefined, [Number.NaN]), null);
-});
-
-test('the shadow tip is the footprint moved away from the sun by height / tan(elevation)', () => {
-  const m = plotMassing({ corners: plot.corners });
-  // Sun due east at 45°: the top of a 19.2 m block lands 19.2 m west.
-  const tip = shadowTip(m.footprint, m.heightMeters, {
-    azimuthDeg: 90,
-    elevationDeg: 45,
-  });
-  const metersLon = 111_320 * Math.cos((plot.center.lat * Math.PI) / 180);
-  tip.forEach(([lon, lat], i) => {
-    near(
-      (lon - m.footprint[i][0]) * metersLon,
-      -19.2,
-      `corner ${i} west`,
-      1e-3,
-    );
-    near((lat - m.footprint[i][1]) * 111_320, 0, `corner ${i} north`, 1e-3);
-  });
-  // Sun due south at 45°: the shadow falls 19.2 m north.
-  const north = shadowTip(m.footprint, m.heightMeters, {
-    azimuthDeg: 180,
-    elevationDeg: 45,
-  });
-  north.forEach(([lon, lat], i) => {
-    near((lon - m.footprint[i][0]) * metersLon, 0, `corner ${i} east`, 1e-3);
-    near((lat - m.footprint[i][1]) * 111_320, 19.2, `corner ${i} north`, 1e-3);
-  });
-  assert.equal(
-    shadowTip(m.footprint, m.heightMeters, {
-      azimuthDeg: 90,
-      elevationDeg: -3,
-    }),
-    null,
-    'no sun, no shadow',
-  );
-  assert.equal(shadowTip(null, 10, { azimuthDeg: 0, elevationDeg: 30 }), null);
 });

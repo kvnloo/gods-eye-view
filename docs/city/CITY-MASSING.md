@@ -86,6 +86,24 @@ polygon and three assumptions:
 A setback that leaves no footprint leaves no block: those values are null,
 never zero.
 
+## Sun and shadow
+
+`src/data/citySun.js` (pure) gives the sun over the plot and the shadow:
+
+- `sunPosition(lat, lon, utcMs)`: altitude (geometric elevation) and azimuth
+  clockwise from north, from the app's existing solar position
+  (`observerSolarPosition` in `src/data/satellitePass.js`);
+- `shadowReach(height, sun)` = height / tan(altitude) on level ground, null
+  when the sun is down;
+- `shadowTip(footprint, height, sun)`: the footprint moved that far away from
+  the sun (azimuth + 180°).
+
+`src/data/citySun.test.mjs` holds the sun to independent references at three
+UTC times over the journey's plot: NREL SPA (Reda and Andreas, NREL/TP-560-34302,
+via pvlib-python 0.13.1, which reproduces the report's published example) and
+the NOAA Solar Calculator, each within 1°; and to Cesium's own scene sun
+(UniformState's Simon 1994 sun) within 1°.
+
 ## Persistence
 
 None. Massing is computed on load from the plot and never written to the city
@@ -118,12 +136,18 @@ scene sun through the page's world clock and, at 1440x900:
    were drawn, the run is **INVALID** (exit 3), neither a pass nor a shadow
    failure. `03b-shadow-crop.png` shows the block and its shadow from the on
    and the off frame side by side, and a profile records the on/off ratio
-   every 0.5 m along the line away from the sun;
+   every 0.5 m along the line away from the sun, on the ground the map shows.
+   Cesium's scene sun (`uniformState.sunDirectionWC`) is within 1° of the
+   massing sun, and the rendered shadow ends within max(1 m, 5 %) of
+   height / tan(altitude), height being the block top above the ground at the
+   tip (the ground may slope);
 4. reads the readout (19.2 m EST, 6, 3.84, 6,144 m²), counts three controls,
    checks it covers no block corner, shadow point or HUD element, and audits
    legibility (4.5:1, 12 px caps);
-5. steps +2: 25.6 m, 8, 5.12, 8,192 m², the block entity re-extruded, and
-   ground between the 6- and 8-storey shadow tips goes from lit to shaded;
+5. steps +2: 25.6 m, 8, 5.12, 8,192 m², the block entity re-extruded,
+   ground between the 6- and 8-storey shadow tips goes from lit to shaded, the
+   rendered shadow again ends within max(1 m, 5 %) of the formula and is
+   1.333 ±5 % times as long as at 6 storeys;
    the saved document is byte-for-byte unchanged;
 6. closes the page and opens a fresh one: zoning is restored from the save,
    massing starts again from the defaults (recomputed, not restored);

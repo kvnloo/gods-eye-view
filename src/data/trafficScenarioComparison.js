@@ -33,7 +33,8 @@ const validId = (value) =>
   value.trim() === value;
 
 function validateRun(run) {
-  if (!run || typeof run !== 'object' || Array.isArray(run)) return 'invalid-run';
+  if (!run || typeof run !== 'object' || Array.isArray(run))
+    return 'invalid-run';
   if (run.determination !== 'simulated') return 'not-simulated';
   if (
     !validId(run.runId) ||
@@ -137,7 +138,12 @@ export function compareTrafficScenarioRuns(baseline, candidate) {
   const metrics = {};
   let compared = 0;
   for (const [key, unit] of Object.entries(TRAFFIC_SCENARIO_METRICS)) {
-    const metric = compareMetric(baseline.metrics, candidate.metrics, key, unit);
+    const metric = compareMetric(
+      baseline.metrics,
+      candidate.metrics,
+      key,
+      unit,
+    );
     metrics[key] = metric;
     if (metric.status === 'compared') compared++;
   }

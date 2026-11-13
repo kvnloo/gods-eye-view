@@ -5,9 +5,11 @@ import {
   TRAFFIC_SCENARIO_METRICS,
 } from './trafficScenarioComparison.js';
 
-function receipt(
-  { runId = 'base', planRevision = 'fixed-time', ...changes } = {},
-) {
+function receipt({
+  runId = 'base',
+  planRevision = 'fixed-time',
+  ...changes
+} = {}) {
   return {
     runId,
     planRevision,
@@ -113,10 +115,7 @@ test('identical run IDs cannot be a baseline versus candidate', () => {
 
 test('invalid and coerced metric values are never compared', () => {
   for (const value of [NaN, Infinity, -1, '4', true]) {
-    const result = compare(
-      {},
-      { metrics: { meanPersonDelaySeconds: value } },
-    );
+    const result = compare({}, { metrics: { meanPersonDelaySeconds: value } });
     assert.equal(result.status, 'unknown');
     assert.equal(result.reason, 'no-comparable-metrics');
     assert.equal(result.metrics.meanPersonDelaySeconds.status, 'invalid');
@@ -186,6 +185,9 @@ test('fixed versus actuated receipts preserve simulated accessibility trade-offs
   assert.equal('controllerCommand' in comparison, false);
   assert.deepEqual(
     comparison,
-    compareTrafficScenarioRuns(structuredClone(fixed), structuredClone(actuated)),
+    compareTrafficScenarioRuns(
+      structuredClone(fixed),
+      structuredClone(actuated),
+    ),
   );
 });

@@ -340,6 +340,59 @@ test('CLI works in paths with spaces and refuses overwrites or invalid projectio
   }
 });
 
+test('CLI accepts a southern-hemisphere origin as a separate argument', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'gev negative origin '));
+  try {
+    const input = join(directory, 'scene.json');
+    const output = join(directory, 'cameras.usda');
+    writeFileSync(
+      input,
+      JSON.stringify(
+        project([
+          {
+            id: 'south',
+            durationSec: 1,
+            holdSec: 0,
+            camera: pose({ lat: -33.86, lon: 151.21, alt: 0 }),
+          },
+        ]),
+      ),
+    );
+    const script = fileURLToPath(
+      new URL('../../tools/export-blender-camera.mjs', import.meta.url),
+    );
+    const result = spawnSync(
+      process.execPath,
+      [
+        script,
+        '--input',
+        input,
+        '--output',
+        output,
+        '--origin',
+        '-33.86,151.21,0',
+        '--fps',
+        '30',
+        '--width',
+        '1920',
+        '--height',
+        '1080',
+        '--horizontal-fov-deg',
+        '60',
+      ],
+      { encoding: 'utf8' },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /CAMERA_EXPORT_OK/);
+    const usda = readFileSync(output, 'utf8');
+    assert.match(usda, /^#usda 1\.0\n/);
+    assert.match(usda, /userProperties:gevOrigin/);
+    assert.match(usda, /-33\.86/);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 test('ordinary submillisecond shots retain the Director seek duration floor', () => {
   const p = project([
     { id: 'start', camera: pose(), durationSec: 0.033, holdSec: 0 },

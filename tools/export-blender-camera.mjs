@@ -8,8 +8,17 @@ import {
 } from '../src/director/document.js';
 import { exportCameraUsda } from '../src/tooling/blenderCamera.js';
 
+// Negative latitude is a string value, not another option to parse.
+const args = process.argv.slice(2);
+for (let i = 0; i < args.length - 1; i += 1) {
+  if (args[i] === '--origin' && /^-\d/.test(args[i + 1])) {
+    args.splice(i, 2, `--origin=${args[i + 1]}`);
+  }
+}
+
 try {
   const { values } = parseArgs({
+    args,
     options: {
       input: { type: 'string' },
       output: { type: 'string' },

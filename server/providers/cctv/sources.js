@@ -4250,6 +4250,9 @@ export async function loadTrafikverketSourcesFromOpenData(
     return [];
   }
 
+  const redactKey = (value) =>
+    String(value ?? '').replaceAll(apiKey, '[redacted]');
+
   // Only active cameras, and only the fields the pack uses. Rows without a
   // position or photo are dropped client-side.
   const query = `<REQUEST>
@@ -4316,8 +4319,8 @@ export async function loadTrafikverketSourcesFromOpenData(
       // The API can report a query or key error inside a 200 response.
       console.warn(
         '[CCTV] Trafikverket API error:',
-        String(resultItem.ERROR.SOURCE || '').slice(0, 40),
-        String(resultItem.ERROR.MESSAGE || '').slice(0, 200),
+        redactKey(resultItem.ERROR.SOURCE).slice(0, 40),
+        redactKey(resultItem.ERROR.MESSAGE).slice(0, 200),
       );
       return [];
     }
@@ -4354,7 +4357,7 @@ export async function loadTrafikverketSourcesFromOpenData(
     } else {
       console.warn(
         '[CCTV] Trafikverket camera download error:',
-        error?.message || error,
+        redactKey(error?.message || error),
       );
     }
     return [];

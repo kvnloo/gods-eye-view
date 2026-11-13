@@ -264,6 +264,39 @@ test('upstream failures and in-band API errors yield an empty pack', async () =>
   );
 });
 
+test('Trafikverket API errors redact the configured key from logs', async () => {
+  const { result, logs } = await run({
+    respond: () =>
+      jsonResponse({
+        RESPONSE: {
+          RESULT: [
+            {
+              ERROR: {
+                SOURCE: `Authentication ${KEY}`,
+                MESSAGE: `Rejected ${KEY}; retry with ${KEY}`,
+              },
+            },
+          ],
+        },
+      }),
+  });
+  assert.deepEqual(result, []);
+  assert.ok(logs.some((line) => line.includes('Trafikverket API error')));
+  assert.ok(logs.some((line) => line.includes('[redacted]')));
+  assert.ok(logs.every((line) => !line.includes(KEY)));
+});
+
+test('Trafikverket fetch errors never log the configured key', async () => {
+  const { result, logs } = await run({
+    respond: () => {
+      throw new Error(`request failed with ${KEY}`);
+    },
+  });
+  assert.deepEqual(result, []);
+  assert.ok(logs.some((line) => line.includes('[redacted]')));
+  assert.ok(logs.every((line) => !line.includes(KEY)));
+});
+
 test('an oversized catalog body is refused', async () => {
   const { result } = await run({
     respond: () =>

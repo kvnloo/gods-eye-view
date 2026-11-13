@@ -5,5 +5,6 @@
   log line. The keyed request refuses redirects, its body read is capped, and
   every frame URL is pinned to the official `/v2/Images/` directory, which
   serves stills without a key. Cameras whose last photo is over a week old are
-  dropped. `CCTV_TRAFIKVERKET_MAX_SOURCES` sets the cap (default 450, 8–1000)
+  dropped. API error diagnostics redact any echoed authentication key.
+  `CCTV_TRAFIKVERKET_MAX_SOURCES` sets the cap (default 450, 8–1000)
   and `CCTV_TRAFIKVERKET_ENABLED=0` turns the pack off (EmpyreanMist, #646).

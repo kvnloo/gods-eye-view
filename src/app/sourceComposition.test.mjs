@@ -250,3 +250,18 @@ test('absent military acquisition does not poll, suppress flights, or erase supp
   assert.equal(registry.isMilitaryLayerActive(), false);
   assert.equal(fetches, 0);
 });
+
+test('a rail source must carry the feed catalog that keeps unbuilt packs out', () => {
+  // Without getFeeds the layer could never learn which schedule packs are
+  // built, so the live feeds that read their routes from one would never run.
+  assert.throws(
+    () =>
+      resolveCatalogSources({ rail: { requestSnapshot: async () => null } }),
+    /Invalid catalog source: rail/,
+  );
+  const source = {
+    requestSnapshot: async () => null,
+    getFeeds: async () => [],
+  };
+  assert.equal(resolveCatalogSources({ rail: source }).sources.rail, source);
+});

@@ -52,6 +52,7 @@ const PUBLISHED_LAYER_STATE_TOKENS = Object.freeze({
   'wildlife-sightings': '9',
   news: '00',
   shipwrecks: '01',
+  rail: '02',
 });
 const reservationRows = JSON.parse(
   readFileSync(
@@ -154,6 +155,24 @@ function writeCodecFixture(cwd, rows, entries) {
   writeFileSync(path.join(cwd, LEDGER_PATH), JSON.stringify(rows));
   return path.join(cwd, SOURCE_PATH);
 }
+
+test('published Rail pair token stays immutable after the layer count grows', () => {
+  assert.equal(LAYER_STATE_TOKEN_RESERVATIONS.rail, '02');
+  assert.throws(
+    () =>
+      validateLayerStateAllocations(PUBLISHED_LAYER_STATE_TOKENS, {
+        ...LAYER_STATE_TOKEN_RESERVATIONS,
+        rail: '03',
+      }),
+    /Published layer-state token changed or removed: rail/,
+  );
+  const omitted = { ...LAYER_STATE_TOKEN_RESERVATIONS };
+  delete omitted.rail;
+  assert.throws(
+    () => validateLayerStateAllocations(PUBLISHED_LAYER_STATE_TOKENS, omitted),
+    /Published layer-state token changed or removed: rail/,
+  );
+});
 
 test('reservation ledger is complete, pinned, and rejects duplicate or malformed rows', () => {
   assert.deepEqual(

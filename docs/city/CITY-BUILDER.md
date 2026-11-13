@@ -16,6 +16,20 @@ The current limits are six alternatives, twenty versions per alternative, 600,00
 
 Every concept says **AI concept, not a plan or an approval**. Its record includes the exact prompt, provider, time, and source view. Neither images nor proposals alter observed facts, approve construction, claim land rights, model impacts, control live traffic signals, or issue dispatch instructions.
 
+## Generate a local AI concept
+
+On the owner's configured machine, start the development server from the worktree root:
+
+```sh
+GEV_CITY_CONCEPT_LOCAL=1 HOST=127.0.0.1 npm run dev
+```
+
+Select **ChatGPT subscription via local bridge** in City builder, then press **Imagine** on a saved alternative. That button sends the project's captured globe image, description, parameters, and reference context through the local endpoint to ChatGPT. Generation does not stay on-device. The UI discloses this transfer before you press Imagine. Each version retains one concept; save a new version before generating another. Moving the globe afterward does not change the frozen project reference.
+
+The endpoint runs `scripts/city-concept-server.py` under a clean environment. It reuses the installed `comfyui-codex-image` generator and the owner's existing ChatGPT subscription login. It accepts one loopback, same-origin request at a time. The bridge accepts no file paths or process arguments from the browser. Credentials never enter the client bundle or JSON export.
+
+The endpoint exists only in the opted-in Vite development server, not production builds or preview. No request occurs on opening, editing, import, reload, or provider selection. Failures require another explicit button press. Closing the dialog cancels a pending result.
+
 ## Run the regression gate
 
 Run the development server on an isolated loopback port, then:
@@ -26,6 +40,6 @@ QA_BASE_URL=http://127.0.0.1:4187 node scripts/qa-city-builder.mjs
 
 The gate uses Playwright and an owned headless Chromium profile. It checks real globe pixels, authoring, version restore, more than two alternatives, comparison, local persistence, JSON round-trip, malformed import, Scene entry, mobile layout, and no implicit generator calls. Set `CHROME_PATH` if Chromium is not at `/usr/bin/chromium`.
 
-Set `QA_SHOTS_DIR` to choose the evidence directory and `QA_VIDEO_DIR` to record the journey as video. The gate saves screenshots, source images, exported JSON, network diagnostics, and its assertion summary.
+Add `--real` only when you intend to make one real local image request. Set `QA_SHOTS_DIR` to choose the evidence directory and `QA_VIDEO_DIR` to record the journey as video. The gate saves screenshots, source images, exported JSON, network diagnostics, and its assertion summary.
 
 This feature reuses Kevin Rajan's planning and collaboration-authority work from fork PRs #291, #292, and #298. GEV's globe, Scene UI, and component kit retain their original contributors' authorship. It implements local proposal authoring and concept comparison, not the remaining multiplayer, surveyed geometry, accessibility-model, or civic-process requirements of #184.

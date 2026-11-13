@@ -739,3 +739,18 @@ test('normal tools mount synchronously after application tools and preserve the 
   );
   assert.match(source, /import\('\.\/communityPlanningFixture\.js'\)/);
 });
+
+test('standalone middleware mounts the city concept endpoint before the API fallback', async () => {
+  const source = await readFile(
+    new URL('../../server/standalone/vite.config.js', import.meta.url),
+    'utf8',
+  );
+  assert.match(
+    source,
+    /import \{ cityConceptPlugin \} from '\.\/city-concept\.js'/,
+  );
+  assert.ok(
+    source.indexOf('cityConceptPlugin(),') <
+      source.indexOf('apiNotFoundPlugin(),'),
+  );
+});

@@ -1438,5 +1438,6 @@
   "src/standalone/cityPlanningServices.test.mjs",
   "src/ui/cityBuilder.test.mjs",
   "src/ui/views/cityBuilderView.test.mjs",
-  "scripts/qa-city-builder.mjs"
+  "scripts/qa-city-builder.mjs",
+  "server/standalone/city-concept.test.mjs"
 ]

@@ -3803,5 +3803,8 @@
   "Homes": "Bostäder",
   "Assumed {share}% of the floor area is homes of {size} m² each": "Antaget: {share} % av bruttoarean är bostäder på {size} m² vardera",
   "Shadow reach": "Skuggans längd",
-  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Höjd ÷ tan(solhöjd {altitude}°), på plan mark"
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Höjd ÷ tan(solhöjd {altitude}°), på plan mark",
+  "Observed Earth": "Observerad jord",
+  "Possible Earth": "Möjlig jord",
+  "Map imagery: {source}": "Kartbilder: {source}"
 }

@@ -194,6 +194,12 @@ async function pixelEvidence(name) {
     `${name}: globe pixels must be real varied map imagery, not a flat colour`,
   );
 }
+// The Earth lane a surface shows (its badge), or null when it shows none.
+function lane(selector) {
+  return locator(`${selector} [data-city-play-lane]`)
+    .first()
+    .getAttribute('data-city-play-lane');
+}
 async function center(selector) {
   const box = await locator(selector).first().boundingBox();
   assert.ok(box, `${selector} has a box`);
@@ -659,6 +665,13 @@ try {
           ['reimagine', 'park', 'plaza', 'bike-lane', 'zone', 'inspect'],
         );
         await locator('[data-city-play-tag]').waitFor({ state: 'visible' });
+        // Earth lanes (#145): an untouched plot on a cited map reads Observed
+        // and names the map as its source.
+        assert.equal(await lane('[data-city-play-tag]'), 'observed');
+        assert.match(
+          await locator('[data-city-play-source]').innerText(),
+          /Esri World Imagery/i,
+        );
         await insideViewport('[data-city-play-action]', DESKTOP);
         await clearOfCredits(
           '[data-city-play-wheel] button, [data-city-play-tag]',
@@ -687,6 +700,12 @@ try {
         await locator('[data-city-play-holo-tag]').waitFor({
           state: 'visible',
         });
+        assert.equal(
+          await lane('[data-city-play-holo-tag]'),
+          'possible',
+          'a reimagined plot reads Possible',
+        );
+        assert.equal(await lane('[data-city-play-card="world-1"]'), 'possible');
         const doc = await persisted();
         assert.equal(doc.alternatives.length, 1);
         assert.equal(doc.alternatives[0].site.plot.id, plotId);
@@ -770,6 +789,12 @@ try {
       async () => {
         // Start with the wheel open: a landed concept must close it.
         await reopenWheel();
+        assert.equal(
+          await lane('[data-city-play-tag]'),
+          'possible',
+          'the tag of a reimagined plot no longer reads Observed',
+        );
+        assert.equal(await locator('[data-city-play-source]').count(), 0);
         await locator('[data-city-play-reroll]').click();
         await until(
           (key) =>

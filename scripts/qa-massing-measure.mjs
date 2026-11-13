@@ -1,8 +1,7 @@
 // Pure measurement rules for scripts/qa-city-massing.mjs, unit-tested in
 // src/tooling/qaMassingMeasure.test.mjs. No browser here.
-import { plotFromId } from '../src/data/cityPlot.js';
+import { METERS_PER_DEGREE, plotFromId } from '../src/data/cityPlot.js';
 
-const METERS_PER_DEGREE = 111_320;
 // A plot centre this far above the mean of the street around it is a structure.
 const STRUCTURE_METERS = 2.5;
 

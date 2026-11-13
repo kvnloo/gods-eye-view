@@ -6,7 +6,7 @@ import { useCityPlayStore } from '../../stores/cityPlay.js';
 import { boundsOf, placeBeside } from '../../cityPlayModel.js';
 
 // Massing v0 (behind ?massing=1), beside the selected plot: the assumed block's
-// height, storeys, FAR and floor area, with one storeys stepper. The globe
+// height, storeys, FAR, floor area, homes and shadow reach, with one storeys stepper. The globe
 // owner (src/standalone/cityMassing.js) publishes the numbers and the screen
 // points of the block and its shadow; every click goes back through its controls.
 const { view, anchors, massing, massingAnchors, massingControls } = storeToRefs(useCityPlayStore());
@@ -96,7 +96,7 @@ function layout() {
   const wheel = rects('[data-city-play-action], [data-city-play-wheel] .city-play-wheel-ring');
   const target = boundsOf([...(anchors.value?.footprint ?? []), ...(massingAnchors.value?.points ?? []), ...wheel.flatMap(corners)]);
   const size = box.value?.offsetWidth ? { width: box.value.offsetWidth, height: box.value.offsetHeight } : on.value ? { width: 240, height: 176 } : { width: 150, height: 52 };
-  const placed = placeBeside({ target, size, viewport: viewport.value, keepOut: KEEP_OUT.flatMap(rects), gap: viewport.value.width < 600 ? 8 : 16 });
+  const placed = placeBeside({ target, size, viewport: viewport.value, keepOut: KEEP_OUT.flatMap(rects), gap: phone.value ? 8 : 16 });
   // With no clear spot (the plot fills the view) the toggle still stays on screen.
   const clamp = (v, high) => Math.min(Math.max(v, 12), Math.max(12, high - 12));
   place.value = placed && { ...placed, x: clamp(placed.x, viewport.value.width - size.width), y: clamp(placed.y, viewport.value.height - size.height) };

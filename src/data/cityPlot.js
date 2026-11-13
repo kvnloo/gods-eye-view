@@ -2,7 +2,8 @@
 // Rows are fixed 40 m bands of latitude; each row's columns are 40 m wide at its
 // centre latitude. Any point in a cell snaps to the identical frozen plot.
 export const PLOT_METERS = 40;
-const METERS_PER_DEGREE = 111_320;
+/** Metres per degree of latitude: the plot grid's local metric. */
+export const METERS_PER_DEGREE = 111_320;
 const MAX_LATITUDE = 85;
 
 function fail(message) {

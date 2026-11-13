@@ -1,21 +1,13 @@
 // The sun over a play-mode plot and the shadow an assumed massing block casts.
 // Pure: degrees, metres, UTC epoch milliseconds. src/data/citySun.test.mjs
 // holds it to NREL SPA and NOAA references and to Cesium's own scene sun.
-import { observerSolarPosition } from './satellitePass.js';
 import { localFrame } from './cityMassing.js';
 
 /**
  * The sun at a place and UTC time: altitude above the horizon (`elevationDeg`,
  * geometric, no refraction) and azimuth clockwise from north, in degrees.
  */
-export function sunPosition(latDeg, lonDeg, utcMs) {
-  const { elevationDeg, azimuthDeg } = observerSolarPosition(
-    latDeg,
-    lonDeg,
-    utcMs,
-  );
-  return { elevationDeg, azimuthDeg };
-}
+export { observerSolarPosition as sunPosition } from './satellitePass.js';
 
 /**
  * How far the top of a block `heightMeters` tall casts its shadow on level

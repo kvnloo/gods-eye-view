@@ -42,13 +42,19 @@ play-mode HUD glass: **HEIGHT** x m with an **EST** chip (its tooltip names the
 assumed storey height and setback), **STOREYS** with a - / + stepper,
 **FAR** (computed) and **FLOOR AREA** in m². The stepper recomputes all four
 and re-extrudes the block. That is three new controls: the toggle and the two
-stepper buttons. The readout is placed with play mode's `placeBeside`, so it
-never covers the block, its cast shadow or the HUD; on a phone it wraps into
-two lines to fit the band left by the wheel.
+stepper buttons. The readout is placed with play mode's `placeBeside` beside the
+block, its cast shadow, the wheel and the HUD; when the plot fills the view and
+no spot is clear it is clamped on screen, so the toggle stays reachable. On a
+phone it wraps into two lines to fit the band left by the wheel.
 
 The globe owner publishes the readout's numbers and the screen points of the
 block and its shadow through the play store (`massing`, `massingAnchors`,
 `massingControls`); all three stay null without the flag.
+
+The block follows the map under it: once the framed tiles load (after a zoom
+or a flight) the ground is measured again and the block moves if it is 0.5 m
+or more off; a switch between the globe and photoreal tiles cuts and grounds
+it again.
 
 ## Numbers
 
@@ -86,18 +92,20 @@ page's world clock and, at 1440x900:
 
 1. selects a plot: one MASSING toggle, no block yet; zones the plot (the
    legend shows its 1,600 m²) so a saved document exists;
-2. MASSING on: the block base is within 0.5 m of the ground sampled at the
-   plot centre;
+2. MASSING on: the drawn block's base is within 0.5 m of the ground sampled at
+   the plot centre, and the drawn plate reaches below the ground;
 3. measures the cast shadow: ground inside the expected shadow is darker with
    the shadow map on than off, the sun side is not;
 4. reads the readout (19.2 m EST, 6, 3.84, 6,144 m²), counts three controls,
    checks it covers no block corner, shadow point or HUD element, and audits
    legibility (4.5:1, 12 px caps);
-5. steps +2: 25.6 m, 8, 5.12, 8,192 m², the block entity re-extruded and a
-   longer measured shadow; the saved document is byte-for-byte unchanged;
+5. steps +2: 25.6 m, 8, 5.12, 8,192 m², the block entity re-extruded, and
+   ground between the 6- and 8-storey shadow tips goes from lit to shaded;
+   the saved document is byte-for-byte unchanged;
 6. closes the page and opens a fresh one: zoning is restored from the save,
    massing starts again from the defaults (recomputed, not restored);
-7. at 390x844 steps once more: the readout fits, works and covers nothing;
+7. at 390x844 steps once more: the readout fits, works and covers neither
+   the HUD nor the block and its shadow;
 8. opens the app without the flag: no readout, entities, shadows or probe.
 
 `src/tooling/qaCityMassingJourney.test.mjs` fails if any of these steps drops

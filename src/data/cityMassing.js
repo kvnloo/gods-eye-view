@@ -55,7 +55,8 @@ function intersect([[px, py], [rx, ry]], [[qx, qy], [sx, sy]]) {
 }
 
 // A convex polygon with every edge moved `meters` inward, or null once it
-// collapses (the moved edges cross and the turn direction flips).
+// collapses: a moved edge that runs backwards has crossed its opposite edge
+// (two crossings turn a square 180 degrees and keep its winding).
 function inset(points, meters) {
   const turn = Math.sign(signedArea(points));
   const lines = points.map((p, i) => {
@@ -65,7 +66,12 @@ function inset(points, meters) {
     return [[p[0] - d[1] * k, p[1] + d[0] * k], d];
   });
   const out = lines.map((line, i) => intersect(lines.at(i - 1), line));
-  return out.every(Boolean) && Math.sign(signedArea(out)) === turn ? out : null;
+  if (!out.every(Boolean)) return null;
+  const forward = lines.every(([, d], i) => {
+    const [p, q] = [out[i], out[(i + 1) % out.length]];
+    return (q[0] - p[0]) * d[0] + (q[1] - p[1]) * d[1] > 0;
+  });
+  return forward ? out : null;
 }
 
 /** Area in square metres of a [lon, lat] polygon. */
@@ -137,8 +143,8 @@ export function edgeProbes(corners, meters) {
   });
 }
 
-// A centre sample this far above the street around the plot is a roof or a
-// tree, not ground.
+// A centre sample this far above the mean of the street around the plot is a
+// roof or a tree, not ground; on a slope the street averages out to the centre.
 const ROOF_METERS = 2.5;
 
 /**
@@ -150,8 +156,9 @@ const ROOF_METERS = 2.5;
 export function groundBase(centre, around) {
   const street = around.filter(Number.isFinite);
   const low = street.length ? Math.min(...street) : null;
+  const mean = street.reduce((sum, h) => sum + h, 0) / street.length;
   const base =
-    Number.isFinite(centre) && (low === null || centre - low <= ROOF_METERS)
+    Number.isFinite(centre) && (low === null || centre - mean <= ROOF_METERS)
       ? centre
       : low;
   return base === null ? null : { base, floor: Math.min(base, low ?? base) };

@@ -68,7 +68,10 @@ function layout() {
   const wheel = rects('[data-city-play-action], [data-city-play-wheel] .city-play-wheel-ring');
   const target = boundsOf([...(anchors.value?.footprint ?? []), ...(massingAnchors.value?.points ?? []), ...wheel.flatMap(corners)]);
   const size = box.value?.offsetWidth ? { width: box.value.offsetWidth, height: box.value.offsetHeight } : on.value ? { width: 240, height: 176 } : { width: 150, height: 52 };
-  place.value = placeBeside({ target, size, viewport: viewport.value, keepOut: KEEP_OUT.flatMap(rects), gap: viewport.value.width < 600 ? 8 : 16 });
+  const placed = placeBeside({ target, size, viewport: viewport.value, keepOut: KEEP_OUT.flatMap(rects), gap: viewport.value.width < 600 ? 8 : 16 });
+  // With no clear spot (the plot fills the view) the toggle still stays on screen.
+  const clamp = (v, high) => Math.min(Math.max(v, 12), Math.max(12, high - 12));
+  place.value = placed && { ...placed, x: clamp(placed.x, viewport.value.width - size.width), y: clamp(placed.y, viewport.value.height - size.height) };
 }
 let frame = 0;
 const schedule = () => {
@@ -78,7 +81,10 @@ const schedule = () => {
       layout();
     });
 };
-watch([view, anchors, massing, massingAnchors], () => nextTick(schedule));
+// With the flag off (no massing view) play mode's per-frame anchors cost nothing here.
+watch([view, anchors, massing, massingAnchors], () => {
+  if (massing.value || place.value) nextTick(schedule);
+});
 const measure = () => {
   viewport.value = { width: window.innerWidth, height: window.innerHeight };
   schedule();
@@ -106,7 +112,7 @@ onBeforeUnmount(() => {
     <button type="button" class="city-massing-toggle" data-city-massing-toggle :aria-pressed="String(on)" @click="massingControls?.toggle()">
       <span class="city-massing-led" aria-hidden="true"></span>{{ t('Massing') }}
     </button>
-    <dl v-if="on" class="city-massing-rows" data-city-massing-rows>
+    <dl v-if="on" class="city-massing-rows" data-city-massing-rows aria-live="polite">
       <div v-for="row in rows" :key="row.id" class="city-massing-row" :data-city-massing-row="row.id">
         <dt :title="row.title">{{ row.label }}</dt>
         <dd>

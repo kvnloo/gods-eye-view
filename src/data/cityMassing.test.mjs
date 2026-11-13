@@ -98,6 +98,13 @@ test('the area holds for any polygon, not just grid cells', () => {
 });
 
 test('a setback that leaves no footprint has no block: missing, never zero', () => {
+  // Past half the plot width both pairs of edges cross: still no block.
+  for (const setbackMeters of [21, 25, 39])
+    assert.equal(
+      plotMassing({ corners: plot.corners, setbackMeters }).footprint,
+      null,
+      `setback ${setbackMeters} m`,
+    );
   const m = plotMassing({ corners: plot.corners, setbackMeters: 20 });
   near(m.plotAreaSquareMeters, 1600, 'plot area still known');
   for (const key of [
@@ -167,6 +174,12 @@ test('the block stands on the ground at the plot centre, the plate reaches the l
     base: -8.26,
     floor: -9.24,
   });
+  // A steep street (10 %): the ground falls 2.6 m to one probe and rises on
+  // the other side; the centre is ground, not a roof.
+  assert.deepEqual(groundBase(0, [-2.6, 2.6, -2.4, 2.5]), {
+    base: 0,
+    floor: -2.6,
+  });
   // A 14.4 m church roof at the centre, street around it (the photoreal spike).
   assert.deepEqual(groundBase(14.4, [-8.9, -8.7, undefined, -8.95]), {
     base: -8.95,
@@ -197,6 +210,15 @@ test('the shadow tip is the footprint moved away from the sun by height / tan(el
       1e-3,
     );
     near((lat - m.footprint[i][1]) * 111_320, 0, `corner ${i} north`, 1e-3);
+  });
+  // Sun due south at 45°: the shadow falls 19.2 m north.
+  const north = shadowTip(m.footprint, m.heightMeters, {
+    azimuthDeg: 180,
+    elevationDeg: 45,
+  });
+  north.forEach(([lon, lat], i) => {
+    near((lon - m.footprint[i][0]) * metersLon, 0, `corner ${i} east`, 1e-3);
+    near((lat - m.footprint[i][1]) * 111_320, 19.2, `corner ${i} north`, 1e-3);
   });
   assert.equal(
     shadowTip(m.footprint, m.heightMeters, {

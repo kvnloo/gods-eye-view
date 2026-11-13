@@ -16,9 +16,12 @@ test('qa-city-massing runs with the flag on and proves a flag-off page has no ma
 });
 
 test('the stepper goes +2 and the numbers and block are checked at 8 storeys', () => {
-  const step = source.slice(source.indexOf("'Stepper +2"));
+  const step = source.slice(
+    source.indexOf("'Stepper +2"),
+    source.indexOf('await page.close();'),
+  );
   assert.equal(
-    (step.slice(0, 400).match(/locator\(S\.plus\)\.click\(\)/g) ?? []).length,
+    (step.match(/locator\(S\.plus\)\.click\(\)/g) ?? []).length,
     2,
     'two clicks on +',
   );
@@ -45,4 +48,22 @@ test('the journey covers a 390x844 phone', () => {
   assert.match(source, /const MOBILE = \{ width: 390, height: 844 \};/);
   assert.match(source, /setViewportSize\(MOBILE\)/);
   assert.match(source, /insideViewport\(S\.readout, MOBILE\)/);
+});
+
+test('the journey keeps its grounding, shadow and readout checks', () => {
+  // 1: one toggle before massing, a saved zoned plot to compare with.
+  assert.match(source, /count\(\), 1\)/);
+  assert.match(source, /await zonePlot\('housing'\);/);
+  // 2: the drawn block's base against the ground sampled at the plot centre.
+  assert.match(source, /Math\.abs\(s\.blockBase - ground\) <= 0\.5/);
+  // 3: the cast shadow measured in pixels, and lengthened by +2 storeys.
+  assert.match(source, /await shadowEvidence\('shadow'\);/);
+  assert.match(source, /shade8\.ratio < 0\.8/);
+  // 4: the readout covers nothing and every label is legible.
+  assert.match(source, /await clearOfMassing\(shadow6\.shadePoints\);/);
+  assert.match(
+    source,
+    /for \(const other of HUD\) await noOverlap\(S\.readout, other\);/,
+  );
+  assert.match(source, /await legibility\('readout'\);/);
 });

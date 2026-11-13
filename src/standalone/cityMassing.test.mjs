@@ -16,15 +16,31 @@ function tileset() {
   return Object.assign(Object.create(Cesium.Cesium3DTileset.prototype), {
     show: true,
     shadows: Cesium.ShadowMode.ENABLED,
+    _tilesLoaded: true,
     isDestroyed: () => false,
   });
 }
 
 function mount({ tiles = [], time = MORNING, ground = -8.25, on = true } = {}) {
   const sources = [];
+  const frames = [];
+  // The map as the owner samples it; tests move the ground and add tilesets.
+  const surface = { ground, tiles };
+  const eye = Cesium.Cartesian3.fromDegrees(-122.4103, 37.795, 600);
   const viewer = {
     shadows: false,
     clock: { currentTime: Cesium.JulianDate.fromIso8601(time) },
+    camera: {
+      positionWC: eye,
+      directionWC: Cesium.Cartesian3.normalize(
+        Cesium.Cartesian3.subtract(
+          Cesium.Cartesian3.fromDegrees(plot.center.lon, plot.center.lat, 0),
+          eye,
+          new Cesium.Cartesian3(),
+        ),
+        new Cesium.Cartesian3(),
+      ),
+    },
     dataSources: {
       add: (ds) => (sources.push(ds), Promise.resolve(ds)),
       remove: (ds) => sources.splice(sources.indexOf(ds), 1).length > 0,
@@ -33,13 +49,37 @@ function mount({ tiles = [], time = MORNING, ground = -8.25, on = true } = {}) {
     scene: {
       context: { webgl2: true },
       sampleHeightSupported: true,
-      sampleHeight: () => ground,
-      globe: { show: tiles.length === 0, getHeight: () => ground },
-      primitives: { length: tiles.length, get: (i) => tiles[i] },
-      postRender: { addEventListener: () => () => {} },
+      sampleHeight: () => surface.ground,
+      globe: {
+        show: tiles.length === 0,
+        tilesLoaded: true,
+        getHeight: () => surface.ground,
+      },
+      primitives: {
+        get length() {
+          return surface.tiles.length;
+        },
+        get: (i) => surface.tiles[i],
+      },
+      postRender: {
+        addEventListener: (fn) => {
+          frames.push(fn);
+          return () => frames.splice(frames.indexOf(fn), 1);
+        },
+      },
+      canvas: {
+        getBoundingClientRect: () => ({
+          left: 0,
+          top: 0,
+          width: 1440,
+          height: 900,
+        }),
+      },
+      cartesianToCanvasCoordinates: () => ({ x: 700, y: 450 }),
       requestRender() {},
     },
   };
+  const render = () => frames.forEach((fn) => fn());
   const store = useCityPlayStore(createPinia());
   const win = {};
   const owner = mountCityMassing({ viewer, store, win });
@@ -51,7 +91,7 @@ function mount({ tiles = [], time = MORNING, ground = -8.25, on = true } = {}) {
     await nextTick();
   };
   if (on) store.massingControls.toggle();
-  return { viewer, store, win, owner, ds, select };
+  return { viewer, store, win, owner, ds, select, surface, render };
 }
 
 test('a selected plot gets a plate and a block on the sampled ground', async () => {
@@ -174,4 +214,42 @@ test('the stepper recomputes every number and re-extrudes the block', async () =
   assert.ok(Math.abs(store.massing.floorAreaSquareMeters - 8192) < 1e-6);
   assert.ok(Math.abs(store.massing.far - 5.12) < 1e-9);
   owner.destroy();
+});
+
+test('the block stands anew on the refined ground once the framed tiles load', async () => {
+  const { viewer, win, ds, select, surface, render, owner } = mount({
+    ground: -3,
+  });
+  // Coming in from the district view: tiles still coarse.
+  viewer.scene.globe.tilesLoaded = false;
+  await select({ plot: { id: plot.id } });
+  assert.equal(win.__gevCityMassing.snapshot().base, -3);
+  surface.ground = -8.25;
+  render();
+  assert.equal(win.__gevCityMassing.snapshot().base, -3, 'still loading');
+  viewer.scene.globe.tilesLoaded = true;
+  render();
+  const s = win.__gevCityMassing.snapshot();
+  assert.equal(s.base, -8.25);
+  assert.equal(s.blockBase, -8.25, 'the block entity moved');
+  assert.ok(Math.abs(s.blockExtrudedHeight - (-8.25 + 19.2)) < 1e-9);
+  assert.ok(s.plateBottom <= -8.75 && s.plateTop > -8.25);
+  assert.ok(ds.entities.getById('city-massing-block'));
+  owner.destroy();
+});
+
+test('a map switch to photoreal while the block shows cuts the new tileset', async () => {
+  const { win, select, surface, render, owner } = mount();
+  await select({ plot: { id: plot.id } });
+  assert.equal(win.__gevCityMassing.snapshot().cuts, 0, 'globe only');
+  const photoreal = tileset();
+  surface.tiles.push(photoreal);
+  render();
+  await Promise.resolve();
+  assert.equal(win.__gevCityMassing.snapshot().cuts, 1);
+  assert.equal(photoreal.clippingPolygons.length, 1);
+  assert.equal(photoreal.shadows, Cesium.ShadowMode.RECEIVE_ONLY);
+  owner.destroy();
+  assert.equal(photoreal.clippingPolygons, undefined);
+  assert.equal(photoreal.shadows, Cesium.ShadowMode.ENABLED);
 });

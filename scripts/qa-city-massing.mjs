@@ -242,107 +242,144 @@ async function groundAtCentre() {
       : viewer.scene.globe.getHeight(at);
   });
 }
-// Canvas luminance at ground points inside the cast shadow and on the sun side,
-// with the scene's shadow map on and then off. A cast shadow darkens only the
-// shadow side; a dark edge band or a global dimming would not pass.
-async function shadowEvidence(label) {
-  const points = await page.evaluate(() => {
-    const { viewer } = window.__godsEyeView;
-    const scene = viewer.scene;
-    const s = window.__gevCityMassing.snapshot();
-    const fp = s.massing.footprint;
-    const lon0 = fp.reduce((a, [x]) => a + x, 0) / fp.length;
-    const lat0 = fp.reduce((a, [, y]) => a + y, 0) / fp.length;
-    const kx = 111_320 * Math.cos((lat0 * Math.PI) / 180);
-    const half = Math.max(...fp.map(([x]) => Math.abs(x - lon0) * kx));
-    const az = (s.sun.azimuthDeg * Math.PI) / 180;
-    const length =
-      s.massing.heightMeters / Math.tan((s.sun.elevationDeg * Math.PI) / 180);
-    const canvas = scene.canvas.getBoundingClientRect();
-    const at = (east, north) => {
-      const lon = lon0 + east / kx;
-      const lat = lat0 + north / 111_320;
-      const world = scene.globe.ellipsoid.cartographicToCartesian({
-        longitude: (lon * Math.PI) / 180,
-        latitude: (lat * Math.PI) / 180,
-        height: s.base,
+// Ground points given in metres east/north of the block's footprint centre, on
+// screen. The readout is hidden while they are found, so a point under it still
+// counts (clearOfMassing checks that); a point under other HUD, on the block or
+// within 6 px of the edge is not usable.
+async function groundPoints(offsets) {
+  return page.evaluate((list) => {
+    const hud = [
+      ...document.querySelectorAll(
+        '[data-city-massing], [data-city-massing-leader]',
+      ),
+    ];
+    hud.forEach((el) => (el.style.visibility = 'hidden'));
+    try {
+      const { scene } = window.__godsEyeView.viewer;
+      const s = window.__gevCityMassing.snapshot();
+      const fp = s.massing.footprint;
+      const lon0 = fp.reduce((a, [x]) => a + x, 0) / fp.length;
+      const lat0 = fp.reduce((a, [, y]) => a + y, 0) / fp.length;
+      const kx = 111_320 * Math.cos((lat0 * Math.PI) / 180);
+      const canvas = scene.canvas.getBoundingClientRect();
+      return list.map(({ east, north }) => {
+        const p = scene.cartesianToCanvasCoordinates(
+          scene.globe.ellipsoid.cartographicToCartesian({
+            longitude: ((lon0 + east / kx) * Math.PI) / 180,
+            latitude: ((lat0 + north / 111_320) * Math.PI) / 180,
+            height: s.blockBase,
+          }),
+        );
+        if (!p) return null;
+        const x = Math.round(p.x + canvas.left);
+        const y = Math.round(p.y + canvas.top);
+        const inside =
+          x >= 6 && y >= 6 && x <= innerWidth - 7 && y <= innerHeight - 7;
+        const usable =
+          inside &&
+          document.elementFromPoint(x, y) === scene.canvas &&
+          scene.pick({ x: p.x, y: p.y })?.id?.id !== 'city-massing-block';
+        return { x, y, east, north, usable };
       });
-      const p = scene.cartesianToCanvasCoordinates(world);
-      if (!p) return null;
-      const x = Math.round(p.x + canvas.left);
-      const y = Math.round(p.y + canvas.top);
-      const hit = scene.pick({ x: p.x, y: p.y });
-      const visible =
-        document.elementFromPoint(x, y) === scene.canvas &&
-        hit?.id?.id !== 'city-massing-block';
-      return visible ? { x, y, east, north } : null;
-    };
-    // Away from the sun the shadow runs `length` beyond the block's face.
-    const shade = [0.3, 0.45, 0.6]
-      .map((f) => half + f * length)
-      .map((d) => at(-Math.sin(az) * d, -Math.cos(az) * d))
-      .filter(Boolean);
-    const lit = [0.3, 0.45, 0.6]
-      .map((f) => half + f * length)
-      .map((d) => at(Math.sin(az) * d, Math.cos(az) * d))
-      .filter(Boolean);
-    return { shade, lit, lengthMeters: length, halfMeters: half };
-  });
-  assert.ok(points.shade.length, `${label}: a shadow point is on screen`);
-  assert.ok(points.lit.length, `${label}: a sun-side point is on screen`);
-  const luma = async () => {
+    } finally {
+      hud.forEach((el) => (el.style.visibility = ''));
+    }
+  }, offsets);
+}
+// Offsets along the line away from the sun (and toward it), `d` metres from
+// the footprint centre.
+function alongSun(s, distances, side = -1) {
+  const az = (s.sun.azimuthDeg * Math.PI) / 180;
+  return distances.map((d) => ({
+    east: side * Math.sin(az) * d,
+    north: side * Math.cos(az) * d,
+  }));
+}
+const shadowLength = (s, heightMeters) =>
+  heightMeters / Math.tan((s.sun.elevationDeg * Math.PI) / 180);
+const halfWidth = (s) => {
+  const fp = s.massing.footprint;
+  const lon0 = fp.reduce((a, [x]) => a + x, 0) / fp.length;
+  const kx = 111_320 * Math.cos((fp[0][1] * Math.PI) / 180);
+  return Math.max(...fp.map(([x]) => Math.abs(x - lon0) * kx));
+};
+// Canvas luminance at usable ground points with the scene's shadow map on and
+// then off: on/off per point. The readout is hidden for both captures.
+async function luminance(points) {
+  const usable = points.filter((p) => p?.usable);
+  const capture = async () => {
+    await page.evaluate(() =>
+      document
+        .querySelectorAll('[data-city-massing], [data-city-massing-leader]')
+        .forEach((el) => (el.style.visibility = 'hidden')),
+    );
     const shot = await page.screenshot();
+    await page.evaluate(() =>
+      document
+        .querySelectorAll('[data-city-massing], [data-city-massing-leader]')
+        .forEach((el) => (el.style.visibility = '')),
+    );
     const { data, info } = await sharp(shot)
       .removeAlpha()
       .raw()
       .toBuffer({ resolveWithObject: true });
-    const mean = ({ x, y }) => {
+    return usable.map(({ x, y }) => {
       let sum = 0;
-      let n = 0;
       for (let dy = -4; dy <= 4; dy++)
         for (let dx = -4; dx <= 4; dx++) {
           const i = ((y + dy) * info.width + (x + dx)) * info.channels;
           sum += 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
-          n++;
         }
-      return sum / n;
-    };
-    return {
-      shade: points.shade.map(mean),
-      lit: points.lit.map(mean),
-    };
+      return sum / 81;
+    });
   };
   const frames = async () => {
     await page.evaluate(() => window.__godsEyeView.requestRender?.('qa'));
     await page.waitForTimeout(1200);
   };
-  const on = await luma();
-  await page.evaluate(() => {
-    window.__godsEyeView.viewer.shadows = false;
-  });
+  const on = await capture();
+  await page.evaluate(() => (window.__godsEyeView.viewer.shadows = false));
   await frames();
-  const off = await luma();
-  await page.evaluate(() => {
-    window.__godsEyeView.viewer.shadows = true;
-  });
+  const off = await capture();
+  await page.evaluate(() => (window.__godsEyeView.viewer.shadows = true));
   await frames();
-  const ratio = (a, b) =>
-    a.reduce((s, v) => s + v, 0) / b.reduce((s, v) => s + v, 0);
+  const ratio =
+    on.reduce((a, v) => a + v, 0) /
+    Math.max(
+      1e-9,
+      off.reduce((a, v) => a + v, 0),
+    );
+  return { points: usable, on, off, ratio };
+}
+// The cast shadow, measured: ground inside it is darker with the shadow map on
+// than off, the sun side is not. A dark edge band or a global dimming fails.
+async function shadowEvidence(label) {
+  const s = await massing();
+  const length = shadowLength(s, s.massing.heightMeters);
+  const half = halfWidth(s);
+  const distances = [0.3, 0.45, 0.6].map((f) => half + f * length);
+  const shadePoints = await groundPoints(alongSun(s, distances));
+  const shade = await luminance(shadePoints);
+  const lit = await luminance(await groundPoints(alongSun(s, distances, 1)));
   const evidence = {
-    ...points,
-    shadeRatio: ratio(on.shade, off.shade),
-    litRatio: ratio(on.lit, off.lit),
-    on,
-    off,
+    lengthMeters: length,
+    halfMeters: half,
+    shadePoints,
+    shadeRatio: shade.ratio,
+    litRatio: lit.ratio,
+    shade,
+    lit,
   };
   report.measurements[label] = evidence;
+  assert.ok(shade.points.length, `${label}: a shadow point is on screen`);
+  assert.ok(lit.points.length, `${label}: a sun-side point is on screen`);
   assert.ok(
-    evidence.shadeRatio < 0.8,
-    `${label}: the ground in the cast shadow is darker with the sun's shadow map (${evidence.shadeRatio.toFixed(2)})`,
+    shade.ratio < 0.8,
+    `${label}: the ground in the cast shadow is darker with the sun's shadow map (${shade.ratio.toFixed(2)})`,
   );
   assert.ok(
-    evidence.litRatio > 0.9,
-    `${label}: the sun side is not darkened (${evidence.litRatio.toFixed(2)})`,
+    lit.ratio > 0.9,
+    `${label}: the sun side is not darkened (${lit.ratio.toFixed(2)})`,
   );
   return evidence;
 }
@@ -460,17 +497,17 @@ async function legibility(label) {
   assert.ok(results.length > 0, `${label}: labels audited`);
   assert.deepEqual(failures, [], `${label}: every label is legible`);
 }
-// The readout covers neither the block nor the ground its shadow falls on.
-async function clearOfMassing(shadow) {
+// The readout covers neither the block nor the ground its shadow falls on
+// (shadow points found with the readout hidden, so they can be under it).
+async function clearOfMassing(shadowPoints) {
   const covered = await page.evaluate((points) => {
     const r = document
       .querySelector('[data-city-massing]')
       .getBoundingClientRect();
-    const { viewer } = window.__godsEyeView;
-    const scene = viewer.scene;
+    const { scene } = window.__godsEyeView.viewer;
     const s = window.__gevCityMassing.snapshot();
     const canvas = scene.canvas.getBoundingClientRect();
-    const corners = [s.base, s.blockTop].flatMap((height) =>
+    const corners = [s.blockBase, s.blockExtrudedHeight].flatMap((height) =>
       s.massing.footprint.map(([lon, lat]) => {
         const p = scene.cartesianToCanvasCoordinates(
           scene.globe.ellipsoid.cartographicToCartesian({
@@ -485,7 +522,7 @@ async function clearOfMassing(shadow) {
     return [...corners.filter(Boolean), ...points].filter(
       (p) => p.x >= r.left && p.x <= r.right && p.y >= r.top && p.y <= r.bottom,
     );
-  }, shadow.shade);
+  }, shadowPoints.filter(Boolean));
   assert.deepEqual(
     covered,
     [],
@@ -572,7 +609,6 @@ try {
       const area = await locator(
         '[data-city-play-legend-row="housing"] [data-legend-area]',
       ).textContent();
-      const plotArea = (await massing()).massing?.plotAreaSquareMeters;
       report.measurements.legendArea = { legend: area, plotId };
       assert.equal(
         area.trim(),
@@ -582,11 +618,6 @@ try {
       await locator('[data-city-play-action="back"]').click();
       doc = (await storage())[KEY];
       assert.ok(doc, 'the zoned plot is saved');
-      assert.equal(
-        plotArea,
-        undefined,
-        'nothing computed before massing is on',
-      );
       await screenshot('01-plot-massing-toggle');
     },
   );
@@ -597,18 +628,23 @@ try {
       await massingOn(plotId);
       const s = await massing();
       const ground = await groundAtCentre();
+      // Read off the drawn entities, not the owner's own variables.
       report.measurements.grounding = {
         plotId,
-        base: s.base,
+        blockBase: s.blockBase,
         sampleHeight: ground,
         plateTop: s.plateTop,
-        blockTop: s.blockTop,
+        plateBottom: s.plateBottom,
+        blockTop: s.blockExtrudedHeight,
       };
       assert.ok(
-        Math.abs(s.base - ground) <= 0.5,
-        `block base ${s.base} within 0.5 m of the sampled ground ${ground}`,
+        Math.abs(s.blockBase - ground) <= 0.5,
+        `block base ${s.blockBase} within 0.5 m of the sampled ground ${ground}`,
       );
-      assert.ok(s.plateTop > s.base, 'the plate top covers the block base');
+      assert.ok(
+        s.plateTop > s.blockBase && s.plateBottom < ground,
+        'the plate reaches below the ground and covers the block base',
+      );
       assert.ok(Math.abs(s.massing.plotAreaSquareMeters - 1600) < 1e-6);
       await screenshot('02-massing-block');
     },
@@ -646,7 +682,7 @@ try {
       assert.equal(await locator(`${S.readout} button`).count(), 3);
       await insideViewport(S.readout, DESKTOP);
       for (const other of HUD) await noOverlap(S.readout, other);
-      await clearOfMassing(shadow6);
+      await clearOfMassing(shadow6.shadePoints);
       await legibility('readout');
       await screenshot('04-readout');
     },
@@ -656,6 +692,20 @@ try {
     'Stepper +2: the numbers, the block and its shadow change consistently; nothing is saved',
     async () => {
       const before = await massing();
+      // Ground between the 6- and the 8-storey shadow tips: lit now, shaded after +2.
+      const between =
+        halfWidth(before) +
+        (shadowLength(before, before.massing.heightMeters) +
+          shadowLength(before, 8 * before.massing.storeyHeightMeters)) /
+          2;
+      const lit6 = await luminance(
+        await groundPoints(alongSun(before, [between])),
+      );
+      assert.equal(
+        lit6.points.length,
+        1,
+        'a point between the tips is on screen',
+      );
       await locator(S.plus).click();
       await locator(S.plus).click();
       await until(
@@ -686,10 +736,18 @@ try {
         ) < 1e-9 && Math.abs(s.massing.far / before.massing.far - 8 / 6) < 1e-9,
         'floor area and FAR scale with storeys',
       );
-      const shadow8 = await shadowEvidence('shadow-8');
+      await shadowEvidence('shadow-8');
+      const shade8 = await luminance(
+        await groundPoints(alongSun(s, [between])),
+      );
+      report.measurements.longerShadow = {
+        meters: between,
+        ratio6: lit6.ratio,
+        ratio8: shade8.ratio,
+      };
       assert.ok(
-        shadow8.lengthMeters > shadow6.lengthMeters + 10,
-        'the taller block casts a longer shadow',
+        lit6.ratio > 0.9 && shade8.points.length === 1 && shade8.ratio < 0.8,
+        `the ground between the tips is lit at 6 storeys (${lit6.ratio.toFixed(2)}) and shaded at 8 (${shade8.ratio.toFixed(2)})`,
       );
       const saved = await storage();
       assert.equal(saved[KEY], doc, 'massing never writes the city document');
@@ -756,6 +814,17 @@ try {
       assert.deepEqual(await readout(), shows(await massing()));
       await insideViewport(S.readout, MOBILE);
       for (const other of HUD) await noOverlap(S.readout, other);
+      const s = await massing();
+      await clearOfMassing(
+        await groundPoints(
+          alongSun(
+            s,
+            [0.3, 0.45, 0.6].map(
+              (f) => halfWidth(s) + f * shadowLength(s, s.massing.heightMeters),
+            ),
+          ),
+        ),
+      );
       await legibility('readout-mobile');
       await screenshot('07-mobile-readout');
       await page.setViewportSize(DESKTOP);

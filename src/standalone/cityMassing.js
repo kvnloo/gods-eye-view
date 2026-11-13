@@ -25,8 +25,10 @@ const PLATE_RISE = 0.1;
 const PROBE_METERS = 6;
 // Entity geometry builds over several frames; the app renders on demand.
 const BUILD_MS = 2500;
-const RESAMPLE_MS = 500;
-const RESAMPLE_TRIES = 20;
+// Once the framed tiles load, a ground this much off stands the block anew.
+const REGROUND_METERS = 0.5;
+// Screen points this far outside the canvas no longer anchor the readout.
+const PAD = 40;
 const BLOCK = Cesium.Color.fromCssColorString('#e8edf1');
 const PLATE = Cesium.Color.fromCssColorString('#8d949b');
 const ACCENT = Cesium.Color.fromCssColorString('#2ec8e8');
@@ -52,7 +54,6 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
   let lastAnchors = '';
   let disposed = false;
   let release = null;
-  let retry = null;
 
   const playEntities = () =>
     viewer.dataSources.getByName('gev-city-play')[0]?.entities.values ?? [];
@@ -70,6 +71,23 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
       return undefined;
     }
   }
+
+  // The ground for a plot from the centre and the street around it.
+  function measure(plot) {
+    return groundBase(
+      sample([plot.center.lon, plot.center.lat]),
+      edgeProbes(plot.corners, PROBE_METERS).map(sample),
+    );
+  }
+
+  const shownTilesets = () =>
+    Array.from({ length: scene.primitives.length }, (_, i) =>
+      scene.primitives.get(i),
+    ).filter((p) => p instanceof Cesium.Cesium3DTileset && p.show);
+
+  const tilesReady = () =>
+    shownTilesets().every((tileset) => tileset.tilesLoaded) &&
+    (!scene.globe?.show || scene.globe.tilesLoaded);
 
   function sunAt(plot) {
     try {
@@ -89,10 +107,7 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
     if (!Cesium.ClippingPolygonCollection.isSupported(scene)) return [];
     const positions = Cesium.Cartesian3.fromDegreesArray(plot.corners.flat());
     const cuts = [];
-    for (let i = 0; i < scene.primitives.length; i++) {
-      const tileset = scene.primitives.get(i);
-      if (!(tileset instanceof Cesium.Cesium3DTileset) || !tileset.show)
-        continue;
+    for (const tileset of shownTilesets()) {
       const created = !tileset.clippingPolygons;
       if (created)
         tileset.clippingPolygons = new Cesium.ClippingPolygonCollection();
@@ -125,7 +140,6 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
   }
 
   function hide() {
-    clearTimeout(retry);
     if (!site) return;
     removeFrame?.();
     removeFrame = null;
@@ -141,10 +155,7 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
   function show(plot) {
     if (site?.plot.id === plot.id) return;
     hide();
-    const ground = groundBase(
-      sample([plot.center.lon, plot.center.lat]),
-      edgeProbes(plot.corners, PROBE_METERS).map(sample),
-    );
+    const ground = measure(plot);
     const base = ground?.base ?? 0;
     const massing = plotMassing({ corners: plot.corners, storeys });
     const sun = sunAt(plot);
@@ -158,6 +169,10 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
       massing,
       sun,
       shadowsBefore,
+      // The surface this block was cut into and stood on, checked each frame.
+      tilesets: shownTilesets(),
+      globe: Boolean(scene.globe?.show),
+      ready: false,
       cuts: cut(plot),
       plate: ds.entities.add({
         id: `${OWNER}-plate`,
@@ -188,7 +203,25 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
     };
     removeFrame = scene.postRender.addEventListener(frame);
     rendered();
-    if (!site.sampled) resample(plot, 1);
+  }
+
+  // Tiles refine after a zoom or a flight: re-measure the ground once they have
+  // loaded, as play mode re-grounds a restored concept (src/standalone/cityPlay.js).
+  function reground() {
+    const ground = measure(site.plot);
+    if (!ground) return;
+    if (site.sampled && Math.abs(ground.base - site.base) < REGROUND_METERS)
+      return;
+    site.base = ground.base;
+    site.sampled = true;
+    site.plate.polygon.height = ground.floor - PLATE_DEPTH;
+    site.plate.polygon.extrudedHeight = ground.base + PLATE_RISE;
+    if (site.block) {
+      site.block.polygon.height = ground.base;
+      site.block.polygon.extrudedHeight =
+        ground.base + site.massing.heightMeters;
+    }
+    rendered();
   }
 
   // The stepper re-extrudes the standing block from the new storey count.
@@ -210,13 +243,38 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
     const p = scene.cartesianToCanvasCoordinates(world);
     if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return null;
     const rect = scene.canvas.getBoundingClientRect();
+    if (
+      p.x < -PAD ||
+      p.y < -PAD ||
+      p.x > rect.width + PAD ||
+      p.y > rect.height + PAD
+    )
+      return null;
     return { x: Math.round(p.x + rect.left), y: Math.round(p.y + rect.top) };
   }
 
-  // Each frame: the scene sun, and the block and its shadow tip on screen, so
-  // the readout never covers them.
+  // Each frame: follow the surface (a map switch re-cuts and re-grounds, loaded
+  // tiles re-ground), the scene sun, and the block and its shadow tip on
+  // screen, so the readout never covers them.
   function frame() {
     if (!site?.block) return;
+    const tilesets = shownTilesets();
+    if (
+      tilesets.length !== site.tilesets.length ||
+      tilesets.some((t, i) => t !== site.tilesets[i]) ||
+      Boolean(scene.globe?.show) !== site.globe
+    ) {
+      const plot = site.plot;
+      queueMicrotask(() => {
+        if (disposed || site?.plot !== plot) return;
+        hide();
+        show(plot);
+      });
+      return;
+    }
+    const ready = tilesReady();
+    if (ready && !site.ready) reground();
+    site.ready = ready;
     site.sun = sunAt(site.plot);
     const shadows = site.shadowsBefore || site.sun?.elevationDeg > 0;
     if (viewer.shadows !== shadows) viewer.shadows = shadows;
@@ -232,21 +290,6 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
     if (key === lastAnchors) return;
     lastAnchors = key;
     store.placeMassing({ points });
-  }
-
-  // Tiles still loading: sample again shortly, then stand the block anew.
-  function resample(plot, tries) {
-    retry = setTimeout(() => {
-      if (disposed || site?.plot.id !== plot.id || site.sampled) return;
-      const found = groundBase(
-        sample([plot.center.lon, plot.center.lat]),
-        edgeProbes(plot.corners, PROBE_METERS).map(sample),
-      );
-      if (found !== null) {
-        hide();
-        show(plot);
-      } else if (tries < RESAMPLE_TRIES) resample(plot, tries + 1);
-    }, RESAMPLE_MS);
   }
 
   // Play mode's selected plot; Reimagine captures the plot as it is.
@@ -311,10 +354,12 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
         base: site?.base ?? null,
         sampled: site?.sampled ?? false,
         blockTop: site ? site.base + site.massing.heightMeters : null,
-        // The extruded entity itself, so a journey sees the block re-extrude.
+        // The entities themselves, so a journey checks what is drawn.
+        blockBase: site?.block?.polygon.height.getValue() ?? null,
         blockExtrudedHeight:
           site?.block?.polygon.extrudedHeight.getValue() ?? null,
-        plateTop: site ? site.base + PLATE_RISE : null,
+        plateTop: site?.plate.polygon.extrudedHeight.getValue() ?? null,
+        plateBottom: site?.plate.polygon.height.getValue() ?? null,
         shadowMap: viewer.shadows,
         blockShadows:
           site?.block?.polygon.shadows.getValue() === Cesium.ShadowMode.ENABLED,

@@ -42,11 +42,13 @@ const anchors = {
     { x: 640, y: 400 },
   ],
 };
+// The block's top corners, and a shadow tip falling east: placed from the
+// footprint alone, the readout would land on that tip.
 const massingAnchors = {
   points: [
     { x: 640, y: 330 },
     { x: 760, y: 330 },
-    { x: 470, y: 470 },
+    { x: 900, y: 450 },
   ],
 };
 
@@ -184,4 +186,37 @@ test('the readout hides in the district tier and outside play mode', async (t) =
   store.publish(playView({ active: false }));
   await settle();
   assert.equal($('[data-city-massing]'), null);
+});
+
+test('the readout stays on screen when the plot fills the view', async (t) => {
+  const { store, settle, $ } = await mount(t);
+  store.publish(playView());
+  store.place({
+    plot: { x: 700, y: 450 },
+    footprint: [
+      { x: -400, y: 1300 },
+      { x: 1900, y: 1300 },
+      { x: 1700, y: -300 },
+      { x: -200, y: -300 },
+    ],
+  });
+  store.publishMassing(massingView(true));
+  await settle();
+  const box = $('[data-city-massing]');
+  const left = parseFloat(box.style.left);
+  const top = parseFloat(box.style.top);
+  assert.ok(left >= 0 && left + 240 <= 1440, `left ${left}`);
+  assert.ok(top >= 0 && top + 176 <= 900, `top ${top}`);
+});
+
+test('the rows announce what the stepper changed', async (t) => {
+  const { store, settle, $ } = await mount(t);
+  store.publish(playView());
+  store.place(anchors);
+  store.publishMassing(massingView(true));
+  await settle();
+  assert.equal(
+    $('[data-city-massing-rows]').getAttribute('aria-live'),
+    'polite',
+  );
 });

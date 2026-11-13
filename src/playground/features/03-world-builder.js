@@ -8,6 +8,7 @@ export const PROPOSAL_TYPES = Object.freeze([
   ['bridge', 'Bridge'],
   ['road-closure', 'Road closure'],
 ]);
+const OVERLAY_SOURCE = 'playground-world-builder';
 const CATEGORIES = new Set(PROPOSAL_TYPES.map(([id]) => id));
 
 export function createProposal({ scenario, type, lat, lon }) {
@@ -46,7 +47,7 @@ export const feature = {
   id: 'world-builder',
   title: 'What-if',
   mount({ root, services }) {
-    const { Cesium, viewer } = services;
+    const { Cesium, viewer, overlayHost } = services;
     const doc = root.ownerDocument;
     const title = doc.createElement('h3');
     title.textContent = 'What-if World Builder';
@@ -94,10 +95,34 @@ export const feature = {
     status.textContent = 'Pan the globe to select a location.';
     const items = [];
     let disposed = false;
+    let nextMarkerId = 0;
     function update() {
       const selected = scenarioSelect.value;
       for (const item of items)
         item.entity.show = item.proposal.scenario === selected;
+      overlayHost.setEntries(
+        OVERLAY_SOURCE,
+        items
+          .filter(({ proposal }) => proposal.scenario === selected)
+          .map(({ id, position, proposal }) => ({
+            id,
+            position,
+            variant: 'label',
+            title:
+              proposal.scenario +
+              ' · ' +
+              PROPOSAL_TYPES.find(([type]) => type === proposal.type)[1],
+            accent: proposal.scenario === 'A' ? '#00ff00' : '#00ffff',
+            collisionGroup: 'ambient-label',
+            paintLane: 'ambient-label',
+            interactive: false,
+            horizonCull: true,
+            terrainOcclusion: false,
+            gapPx: 23,
+            verticalOnly: true,
+            placement: 'above',
+          })),
+      );
       count.textContent =
         'A: ' +
         items.filter((item) => item.proposal.scenario === 'A').length +
@@ -134,8 +159,12 @@ export const feature = {
         type: typeSelect.value,
         ...center,
       });
+      const position = Cesium.Cartesian3.fromDegrees(
+        proposal.lon,
+        proposal.lat,
+      );
       const entity = viewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(proposal.lon, proposal.lat),
+        position,
         point: {
           pixelSize: 11,
           color:
@@ -144,19 +173,8 @@ export const feature = {
           outlineWidth: 2,
           disableDepthTestDistance: 200000,
         },
-        label: {
-          text:
-            proposal.scenario +
-            ' · ' +
-            PROPOSAL_TYPES.find(([id]) => id === proposal.type)[1],
-          font: '12px sans-serif',
-          fillColor: Cesium.Color.WHITE,
-          showBackground: true,
-          pixelOffset: new Cesium.Cartesian2(0, -23),
-          disableDepthTestDistance: 200000,
-        },
       });
-      items.push({ proposal, entity });
+      items.push({ id: String(nextMarkerId++), position, proposal, entity });
       update();
       status.textContent =
         proposal.type +
@@ -218,6 +236,7 @@ export const feature = {
       exportButton.removeEventListener('click', onExport);
       for (const { entity } of items) viewer.entities.remove(entity);
       items.length = 0;
+      overlayHost.clearSource(OVERLAY_SOURCE);
       viewer.scene.requestRender();
     };
   },

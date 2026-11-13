@@ -23,7 +23,7 @@ Feature cleanup failures are logged and cannot strand tab switching, close, or h
 
 - **01 Expeditions** — existing Nepal evidence scene; fire and traffic layer scout views
 - **02 Time Machine** — authored SceneDirector clock only
-- **03 What-if** — reversible A/B proposals, labeled hypothetical; no modeled outcomes
+- **03 What-if** — reversible A/B proposals, labeled hypothetical; no modeled outcomes. Marker text uses the shared world-overlay host, filtered to the selected scenario and cleared on Undo/teardown.
 - **04 Local rooms** — opt-in same-origin tab broadcast, presence-only heartbeat while joined, not remote multiplayer, verified work or civic authority
 - **05 Toybox** — existing GLSL looks and explicit camera trips
 

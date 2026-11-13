@@ -156,3 +156,17 @@ export function groundBase(centre, around) {
       : low;
   return base === null ? null : { base, floor: Math.min(base, low ?? base) };
 }
+
+/**
+ * Where the top of a block's shadow lands: its footprint moved away from the
+ * sun by height / tan(elevation). Null when the sun is down or nothing stands.
+ */
+export function shadowTip(footprint, heightMeters, sun) {
+  if (!footprint || !(sun?.elevationDeg > 0)) return null;
+  const length = heightMeters / Math.tan((sun.elevationDeg * Math.PI) / 180);
+  const az = (sun.azimuthDeg * Math.PI) / 180;
+  const frame = frameOf(footprint);
+  return frame.points.map(([x, y]) =>
+    frame.toLonLat([x - Math.sin(az) * length, y - Math.cos(az) * length]),
+  );
+}

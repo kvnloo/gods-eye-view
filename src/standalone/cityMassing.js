@@ -4,9 +4,12 @@ import { plotFromId } from '../data/cityPlot.js';
 import { observerSolarPosition } from '../data/satellitePass.js';
 import {
   MASSING_ASSUMPTIONS,
+  MAX_STOREYS,
   edgeProbes,
   groundBase,
   plotMassing,
+  shadowTip,
+  stepStoreys,
 } from '../data/cityMassing.js';
 import {
   holdContinuousRender,
@@ -29,11 +32,13 @@ const PLATE = Cesium.Color.fromCssColorString('#8d949b');
 const ACCENT = Cesium.Color.fromCssColorString('#2ec8e8');
 
 /**
- * Massing v0 on the globe, mounted only behind ?massing=1: the selected
- * play-mode plot gets a ground plate and an assumed block standing on the
- * sampled ground, casting its shadow from the scene sun. On 3D tiles the plot
- * is cut out of the mesh so the block never intersects the real building.
- * Nothing is saved: the block is computed from the plot whenever it shows.
+ * Massing v0 on the globe, mounted only behind ?massing=1: once MASSING is
+ * on, the selected play-mode plot gets a ground plate and an assumed block
+ * standing on the sampled ground, casting its shadow from the scene sun. On 3D
+ * tiles the plot is cut out of the mesh so the block never intersects the real
+ * building. The readout (CityMassingReadout.vue) shows its numbers and steps
+ * its storeys through the play store. Nothing is saved: the block is computed
+ * from the plot whenever it shows, from the defaults after a reload.
  */
 export function mountCityMassing({ viewer, store, win = globalThis.window }) {
   const scene = viewer?.scene;
@@ -41,7 +46,10 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
   const ds = new Cesium.CustomDataSource('gev-city-massing');
   const added = viewer.dataSources.add(ds);
   let storeys = MASSING_ASSUMPTIONS.storeys;
+  let on = false;
   let site = null;
+  let removeFrame = null;
+  let lastAnchors = '';
   let disposed = false;
   let release = null;
   let retry = null;
@@ -119,6 +127,10 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
   function hide() {
     clearTimeout(retry);
     if (!site) return;
+    removeFrame?.();
+    removeFrame = null;
+    lastAnchors = '';
+    store.placeMassing(null);
     ds.entities.removeAll();
     uncut(site.cuts);
     viewer.shadows = site.shadowsBefore;
@@ -174,8 +186,52 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
           },
         }),
     };
+    removeFrame = scene.postRender.addEventListener(frame);
     rendered();
     if (!site.sampled) resample(plot, 1);
+  }
+
+  // The stepper re-extrudes the standing block from the new storey count.
+  function extrude() {
+    site.massing = plotMassing({ corners: site.plot.corners, storeys });
+    site.block.polygon.extrudedHeight = site.base + site.massing.heightMeters;
+    rendered();
+  }
+
+  function project(lon, lat, height) {
+    const world = Cesium.Cartesian3.fromDegrees(lon, lat, height);
+    const camera = viewer.camera;
+    const toPoint = Cesium.Cartesian3.subtract(
+      world,
+      camera.positionWC,
+      new Cesium.Cartesian3(),
+    );
+    if (Cesium.Cartesian3.dot(toPoint, camera.directionWC) <= 0) return null;
+    const p = scene.cartesianToCanvasCoordinates(world);
+    if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return null;
+    const rect = scene.canvas.getBoundingClientRect();
+    return { x: Math.round(p.x + rect.left), y: Math.round(p.y + rect.top) };
+  }
+
+  // Each frame: the scene sun, and the block and its shadow tip on screen, so
+  // the readout never covers them.
+  function frame() {
+    if (!site?.block) return;
+    site.sun = sunAt(site.plot);
+    const shadows = site.shadowsBefore || site.sun?.elevationDeg > 0;
+    if (viewer.shadows !== shadows) viewer.shadows = shadows;
+    const { base, massing } = site;
+    const top = base + massing.heightMeters;
+    const tip = shadowTip(massing.footprint, massing.heightMeters, site.sun);
+    const points = [
+      ...massing.footprint.map(([lon, lat]) => project(lon, lat, base)),
+      ...massing.footprint.map(([lon, lat]) => project(lon, lat, top)),
+      ...(tip ?? []).map(([lon, lat]) => project(lon, lat, base)),
+    ].filter(Boolean);
+    const key = JSON.stringify(points);
+    if (key === lastAnchors) return;
+    lastAnchors = key;
+    store.placeMassing({ points });
   }
 
   // Tiles still loading: sample again shortly, then stand the block anew.
@@ -193,22 +249,61 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
     }, RESAMPLE_MS);
   }
 
-  // Follow play mode's selected plot; Reimagine captures the plot as it is.
+  // Play mode's selected plot; Reimagine captures the plot as it is.
+  function selected() {
+    const view = store.view;
+    return view?.active && !view.pending && view.tier !== 'district'
+      ? plotFromId(view.plot?.id)
+      : null;
+  }
+
+  function publish(plot) {
+    if (!plot) return store.publishMassing(null);
+    const m =
+      site?.plot.id === plot.id
+        ? site.massing
+        : plotMassing({ corners: plot.corners, storeys });
+    store.publishMassing({
+      on,
+      plotId: plot.id,
+      storeys,
+      maxStoreys: MAX_STOREYS,
+      storeyHeightMeters: m.storeyHeightMeters,
+      setbackMeters: m.setbackMeters,
+      heightMeters: m.heightMeters,
+      far: m.far,
+      floorAreaSquareMeters: m.floorAreaSquareMeters,
+    });
+  }
+
   function sync() {
     if (disposed) return;
-    const view = store.view;
-    const plot =
-      view?.active && !view.pending && view.tier !== 'district'
-        ? plotFromId(view.plot?.id)
-        : null;
-    if (plot) show(plot);
+    const plot = selected();
+    if (plot && on) show(plot);
     else hide();
+    publish(plot);
   }
   const stop = watch(() => store.view, sync);
+
+  const controls = {
+    toggle() {
+      on = !on;
+      sync();
+    },
+    step(delta) {
+      const next = stepStoreys(storeys, delta);
+      if (next === storeys) return;
+      storeys = next;
+      if (site?.block) extrude();
+      publish(selected());
+    },
+  };
+  store.connectMassing(controls);
 
   const probe = Object.freeze({
     snapshot: () =>
       Object.freeze({
+        on,
         shown: Boolean(site?.block),
         plotId: site?.plot.id ?? null,
         storeys,
@@ -216,6 +311,9 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
         base: site?.base ?? null,
         sampled: site?.sampled ?? false,
         blockTop: site ? site.base + site.massing.heightMeters : null,
+        // The extruded entity itself, so a journey sees the block re-extrude.
+        blockExtrudedHeight:
+          site?.block?.polygon.extrudedHeight.getValue() ?? null,
         plateTop: site ? site.base + PLATE_RISE : null,
         shadowMap: viewer.shadows,
         blockShadows:
@@ -236,6 +334,11 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
       clearTimeout(release);
       releaseContinuousRender(OWNER);
       if (win?.__gevCityMassing === probe) delete win.__gevCityMassing;
+      if (store.massingControls === controls) {
+        store.connectMassing(null);
+        store.publishMassing(null);
+        store.placeMassing(null);
+      }
       Promise.resolve(added).then(() => viewer.dataSources?.remove(ds, true));
     },
   };

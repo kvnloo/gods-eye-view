@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import * as Cesium from 'cesium';
-import { nextTick, reactive } from 'vue';
+import { createPinia } from 'pinia';
+import { nextTick } from 'vue';
+import { useCityPlayStore } from '../ui/stores/cityPlay.js';
 import { snapPlot } from '../data/cityPlot.js';
 import { mountCityMassing } from './cityMassing.js';
 
@@ -18,7 +20,7 @@ function tileset() {
   });
 }
 
-function mount({ tiles = [], time = MORNING, ground = -8.25 } = {}) {
+function mount({ tiles = [], time = MORNING, ground = -8.25, on = true } = {}) {
   const sources = [];
   const viewer = {
     shadows: false,
@@ -34,22 +36,21 @@ function mount({ tiles = [], time = MORNING, ground = -8.25 } = {}) {
       sampleHeight: () => ground,
       globe: { show: tiles.length === 0, getHeight: () => ground },
       primitives: { length: tiles.length, get: (i) => tiles[i] },
+      postRender: { addEventListener: () => () => {} },
       requestRender() {},
     },
   };
-  const store = reactive({ view: null });
+  const store = useCityPlayStore(createPinia());
   const win = {};
   const owner = mountCityMassing({ viewer, store, win });
   const ds = sources[0];
   const select = async (view) => {
-    store.view = view && {
-      active: true,
-      tier: 'plot',
-      pending: false,
-      ...view,
-    };
+    store.publish(
+      view && { active: true, tier: 'plot', pending: false, ...view },
+    );
     await nextTick();
   };
+  if (on) store.massingControls.toggle();
   return { viewer, store, win, owner, ds, select };
 }
 
@@ -135,5 +136,42 @@ test('with the sun below the horizon no shadow map is turned on', async () => {
   await select({ plot: { id: plot.id } });
   assert.ok(win.__gevCityMassing.snapshot().sun.elevationDeg < 0);
   assert.equal(viewer.shadows, false);
+  owner.destroy();
+});
+
+test('massing waits for the MASSING toggle and publishes the readout numbers', async () => {
+  const { store, win, select, owner } = mount({ on: false });
+  await select({ plot: { id: plot.id } });
+  assert.equal(win.__gevCityMassing.snapshot().shown, false, 'off by default');
+  assert.deepEqual(
+    { on: store.massing.on, storeys: store.massing.storeys },
+    { on: false, storeys: 6 },
+  );
+  store.massingControls.toggle();
+  assert.equal(win.__gevCityMassing.snapshot().shown, true);
+  assert.equal(store.massing.on, true);
+  assert.ok(Math.abs(store.massing.far - 3.84) < 1e-9);
+  store.massingControls.toggle();
+  assert.equal(win.__gevCityMassing.snapshot().shown, false);
+  await select(null);
+  assert.equal(store.massing, null, 'no plot, no readout');
+  owner.destroy();
+  assert.equal(store.massingControls, null);
+});
+
+test('the stepper recomputes every number and re-extrudes the block', async () => {
+  const { store, win, ds, select, owner } = mount();
+  await select({ plot: { id: plot.id } });
+  store.massingControls.step(1);
+  store.massingControls.step(1);
+  const s = win.__gevCityMassing.snapshot();
+  assert.equal(s.storeys, 8);
+  assert.ok(Math.abs(s.blockTop - s.base - 25.6) < 1e-9);
+  const block = ds.entities.getById('city-massing-block').polygon;
+  assert.ok(Math.abs(block.extrudedHeight.getValue() - (-8.25 + 25.6)) < 1e-9);
+  assert.equal(store.massing.storeys, 8);
+  assert.ok(Math.abs(store.massing.heightMeters - 25.6) < 1e-9);
+  assert.ok(Math.abs(store.massing.floorAreaSquareMeters - 8192) < 1e-6);
+  assert.ok(Math.abs(store.massing.far - 5.12) < 1e-9);
   owner.destroy();
 });

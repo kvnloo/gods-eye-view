@@ -163,6 +163,7 @@
       "src/ui/stores/globeActions.js",
       "src/ui/views/panels/GlobeActions.vue",
       "src/ui/views/panels/CityPlayOverlay.vue",
+      "src/ui/views/panels/CityMassingReadout.vue",
       "src/ui/stores/cityPlay.js",
       "src/ui/cityPlayModel.js",
       "src/data/cityLandUse.js",

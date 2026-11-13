@@ -11,6 +11,7 @@ import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from 'playwright-core';
 import sharp from 'sharp';
+import { textLegibility } from '../src/ui/legibility.js';
 
 const args = process.argv.slice(2);
 let base = process.env.QA_BASE_URL || 'http://127.0.0.1:4187';
@@ -29,10 +30,24 @@ const SITE = { lat: 37.7953, lon: -122.4103, alt: 600, heading: 0, pitch: -45 };
 // through the free gap left of the play wheel.
 const SUN_TIME = '2026-06-21T15:00:00Z';
 const DESKTOP = { width: 1440, height: 900 };
+const KEY = 'godsEyeView.cityBuilder.v1';
+// What the readout must never cover: the wheel, the plot tag, the resource bar,
+// the map credits and the docks.
+const HUD = [
+  '[data-city-play-action]',
+  '[data-city-play-tag]',
+  '[data-city-play-bar]',
+  '#cesium-credits .cesium-widget-credits',
+  '#command-dock',
+  '#mobile-tab-bar',
+];
 const S = {
   pill: '#top-center-actions [data-city-builder-open]',
   play: '[data-city-play]',
   ring: '[data-city-play-wheel] .city-play-wheel-ring',
+  readout: '[data-city-massing]',
+  toggle: '[data-city-massing-toggle]',
+  plus: '[data-city-massing-step="1"]',
 };
 const report = {
   startedAt: new Date().toISOString(),
@@ -331,6 +346,165 @@ async function shadowEvidence(label) {
   return evidence;
 }
 
+// The readout's values by row, as a user reads them.
+async function readout() {
+  return page.evaluate(() =>
+    Object.fromEntries(
+      [...document.querySelectorAll('[data-city-massing-row]')].map((row) => [
+        row.dataset.cityMassingRow,
+        row.querySelector('[data-city-massing-value]').textContent.trim(),
+      ]),
+    ),
+  );
+}
+// What the readout must show for the block the globe owner stands (en-US).
+const shows = (s) => ({
+  height: `${Number(s.massing.heightMeters.toFixed(1))} m`,
+  storeys: String(s.storeys),
+  far: s.massing.far.toFixed(2),
+  floor: `${Math.round(s.massing.floorAreaSquareMeters).toLocaleString('en-US')} m²`,
+});
+const storage = () => page.evaluate(() => ({ ...localStorage }));
+async function massingOn(plotId) {
+  await locator(S.toggle).click();
+  await massingShown(plotId);
+  await locator('[data-city-massing-rows]').waitFor({ state: 'visible' });
+}
+async function insideViewport(selector, viewport) {
+  for (const box of await locator(selector).evaluateAll((els) =>
+    els.map((el) => el.getBoundingClientRect().toJSON()),
+  ))
+    assert.ok(
+      box.left >= -1 &&
+        box.top >= -1 &&
+        box.right <= viewport.width + 1 &&
+        box.bottom <= viewport.height + 1,
+      `${selector} must be fully on screen: ${JSON.stringify(box)}`,
+    );
+}
+async function noOverlap(a, b) {
+  const hits = await page.evaluate(
+    ([sa, sb]) => {
+      const boxes = (sel) =>
+        [...document.querySelectorAll(sel)]
+          .map((el) => el.getBoundingClientRect())
+          .filter((r) => r.width && r.height);
+      const out = [];
+      for (const r of boxes(sa))
+        for (const q of boxes(sb))
+          if (
+            Math.min(r.right, q.right) > Math.max(r.left, q.left) &&
+            Math.min(r.bottom, q.bottom) > Math.max(r.top, q.top)
+          )
+            out.push([Math.round(q.left), Math.round(q.top)]);
+      return out;
+    },
+    [a, b],
+  );
+  assert.deepEqual(hits, [], `${a} must not overlap ${b}`);
+}
+// Every visible readout label: 4.5:1 over its glass on a white backdrop (a
+// bright roof) and caps at 12 px or more, as qa-city-play audits play mode.
+async function legibility(label) {
+  const texts = await page.evaluate((selector) => {
+    const root = document.querySelector(selector);
+    const gradient = (image) => {
+      const stops = image.match(/(rgba?\([^)]*\)|color\([^)]*\))/g);
+      return stops && new Set(stops).size === 1 ? stops[0] : null;
+    };
+    const out = [];
+    for (const el of root.querySelectorAll('*')) {
+      const own = [...el.childNodes]
+        .filter((n) => n.nodeType === 3)
+        .map((n) => n.textContent.trim())
+        .join(' ')
+        .trim();
+      if (!own || el.closest('button:disabled, [aria-hidden="true"]')) continue;
+      const style = getComputedStyle(el);
+      const r = el.getBoundingClientRect();
+      if (!r.width || !r.height || style.visibility !== 'visible') continue;
+      const layers = [];
+      for (
+        let node = el;
+        node && node !== root.parentElement;
+        node = node.parentElement
+      ) {
+        const cs = getComputedStyle(node);
+        const g = cs.backgroundImage.startsWith('linear-gradient')
+          ? gradient(cs.backgroundImage)
+          : null;
+        layers.unshift(...[cs.backgroundColor, g].filter(Boolean));
+      }
+      const letters = own.replace(/[^\p{L}]/gu, '');
+      out.push({
+        text: own.slice(0, 48),
+        color: style.color,
+        fontSize: parseFloat(style.fontSize),
+        caps:
+          style.textTransform === 'uppercase' ||
+          (letters.length > 1 && letters === letters.toUpperCase()),
+        layers,
+      });
+    }
+    return out;
+  }, S.readout);
+  const results = texts.map((t) => ({ ...t, ...textLegibility(t) }));
+  const failures = results.filter((r) => !r.ok);
+  (report.measurements.legibility ??= {})[label] = {
+    labels: results.length,
+    minRatio: Math.min(...results.map((r) => r.ratio)),
+    minFontPx: Math.min(...results.map((r) => r.fontSize)),
+    failures,
+  };
+  assert.ok(results.length > 0, `${label}: labels audited`);
+  assert.deepEqual(failures, [], `${label}: every label is legible`);
+}
+// The readout covers neither the block nor the ground its shadow falls on.
+async function clearOfMassing(shadow) {
+  const covered = await page.evaluate((points) => {
+    const r = document
+      .querySelector('[data-city-massing]')
+      .getBoundingClientRect();
+    const { viewer } = window.__godsEyeView;
+    const scene = viewer.scene;
+    const s = window.__gevCityMassing.snapshot();
+    const canvas = scene.canvas.getBoundingClientRect();
+    const corners = [s.base, s.blockTop].flatMap((height) =>
+      s.massing.footprint.map(([lon, lat]) => {
+        const p = scene.cartesianToCanvasCoordinates(
+          scene.globe.ellipsoid.cartographicToCartesian({
+            longitude: (lon * Math.PI) / 180,
+            latitude: (lat * Math.PI) / 180,
+            height,
+          }),
+        );
+        return p && { x: p.x + canvas.left, y: p.y + canvas.top };
+      }),
+    );
+    return [...corners.filter(Boolean), ...points].filter(
+      (p) => p.x >= r.left && p.x <= r.right && p.y >= r.top && p.y <= r.bottom,
+    );
+  }, shadow.shade);
+  assert.deepEqual(
+    covered,
+    [],
+    'the readout covers no block corner or shadow point',
+  );
+}
+async function zonePlot(use) {
+  await locator('[data-city-play-action="zone"]').click();
+  await locator(`[data-city-play-action="${use}"]`).click();
+  await until(
+    (u) =>
+      document
+        .querySelector(`[data-city-play-action="${u}"]`)
+        ?.getAttribute('aria-pressed') === 'true',
+    `${use} saved for the plot`,
+    20000,
+    use,
+  );
+}
+
 await mkdir(output, { recursive: true });
 try {
   const env = { ...process.env };
@@ -370,8 +544,10 @@ try {
   page = await openPage(context, 'journey');
 
   let plotId = null;
+  let doc = null;
+  let shadow6 = null;
   await check(
-    'With ?massing=1 a selected plot gets a ground plate and a block on the sampled ground',
+    'With ?massing=1 a selected plot offers one MASSING toggle; zoning saves as before',
     async () => {
       await startup(true);
       await setSun(SUN_TIME);
@@ -379,7 +555,45 @@ try {
       await locator(S.play).waitFor({ state: 'visible' });
       await selectPlot(DESKTOP);
       plotId = (await play()).plot.id;
-      await massingShown(plotId);
+      await locator(S.readout).waitFor({ state: 'visible' });
+      assert.equal(await locator(`${S.readout} button`).count(), 1);
+      assert.equal(
+        await locator(S.toggle).getAttribute('aria-pressed'),
+        'false',
+      );
+      assert.equal(
+        (await massing()).shown,
+        false,
+        'massing waits for the toggle',
+      );
+      // A saved document to compare with: the plot's proposed land use.
+      await zonePlot('housing');
+      const area = await locator(
+        '[data-city-play-legend-row="housing"] [data-legend-area]',
+      ).textContent();
+      const plotArea = (await massing()).massing?.plotAreaSquareMeters;
+      report.measurements.legendArea = { legend: area, plotId };
+      assert.equal(
+        area.trim(),
+        '1,600 m²',
+        'the zoning legend shows the 1,600 m² cell',
+      );
+      await locator('[data-city-play-action="back"]').click();
+      doc = (await storage())[KEY];
+      assert.ok(doc, 'the zoned plot is saved');
+      assert.equal(
+        plotArea,
+        undefined,
+        'nothing computed before massing is on',
+      );
+      await screenshot('01-plot-massing-toggle');
+    },
+  );
+
+  await check(
+    'MASSING on: a ground plate and a block on the sampled ground',
+    async () => {
+      await massingOn(plotId);
       const s = await massing();
       const ground = await groundAtCentre();
       report.measurements.grounding = {
@@ -394,8 +608,8 @@ try {
         `block base ${s.base} within 0.5 m of the sampled ground ${ground}`,
       );
       assert.ok(s.plateTop > s.base, 'the plate top covers the block base');
-      assert.ok(s.blockTop - s.base > 3, 'the block stands up from its base');
-      await screenshot('01-massing-block');
+      assert.ok(Math.abs(s.massing.plotAreaSquareMeters - 1600) < 1e-6);
+      await screenshot('02-massing-block');
     },
   );
 
@@ -406,8 +620,34 @@ try {
       assert.equal(s.shadowMap, true, 'the scene shadow map is on');
       assert.equal(s.blockShadows, true, 'the block casts shadows');
       assert.ok(s.sun.elevationDeg > 0, 'the sun is up');
-      await shadowEvidence('shadow');
-      await screenshot('02-cast-shadow');
+      shadow6 = await shadowEvidence('shadow');
+      await screenshot('03-cast-shadow');
+    },
+  );
+
+  await check(
+    'Readout beside the plot: HEIGHT m EST, STOREYS, FAR, FLOOR AREA; at most 3 new controls',
+    async () => {
+      const s = await massing();
+      const values = await readout();
+      report.measurements.readout6 = values;
+      assert.deepEqual(values, shows(s));
+      assert.deepEqual(values, {
+        height: '19.2 m',
+        storeys: '6',
+        far: '3.84',
+        floor: '6,144 m²',
+      });
+      assert.ok(
+        await locator('[data-city-massing-est]').isVisible(),
+        'EST shown',
+      );
+      assert.equal(await locator(`${S.readout} button`).count(), 3);
+      await insideViewport(S.readout, DESKTOP);
+      for (const other of HUD) await noOverlap(S.readout, other);
+      await clearOfMassing(shadow6);
+      await legibility('readout');
+      await screenshot('04-readout');
     },
   );
 

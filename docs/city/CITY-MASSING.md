@@ -12,7 +12,9 @@ probe.
 
 ## What it shows
 
-Select a plot in play mode. The plot gets:
+Select a plot in play mode. A **MASSING** toggle appears beside the plot,
+clear of the wheel, the plot tag, the resource bar, the map credits and the
+docks. Turn it on and the plot gets:
 
 - a **ground plate** over the whole 40 m plot, from below the lowest sampled
   ground to 0.1 m above the ground at its centre, so it never floats over a
@@ -32,6 +34,21 @@ clipping and is removed when the block hides.
 
 The block hides in the district tier and while Reimagine captures and
 generates, so a concept is made from the plot as it is.
+
+## The readout
+
+`src/ui/views/panels/CityMassingReadout.vue` stands beside the plot in the
+play-mode HUD glass: **HEIGHT** x m with an **EST** chip (its tooltip names the
+assumed storey height and setback), **STOREYS** with a - / + stepper,
+**FAR** (computed) and **FLOOR AREA** in m². The stepper recomputes all four
+and re-extrudes the block. That is three new controls: the toggle and the two
+stepper buttons. The readout is placed with play mode's `placeBeside`, so it
+never covers the block, its cast shadow or the HUD; on a phone it wraps into
+two lines to fit the band left by the wheel.
+
+The globe owner publishes the readout's numbers and the screen points of the
+block and its shadow through the play store (`massing`, `massingAnchors`,
+`massingControls`); all three stay null without the flag.
 
 ## Numbers
 

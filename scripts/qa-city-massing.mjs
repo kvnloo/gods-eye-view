@@ -426,13 +426,13 @@ const halfWidth = (s) => {
   const kx = 111_320 * Math.cos((fp[0][1] * Math.PI) / 180);
   return Math.max(...fp.map(([x]) => Math.abs(x - lon0) * kx));
 };
-// The canvas of a newly rendered frame with the scene's shadow map on or off.
-// One page task sets the shadow map, asks the scene for a frame and listens to
-// it: preRender records the shadow map it is drawn with, its postRender reads
-// the canvas (on-demand rendering draws nothing until asked; DOM overlays are
-// not in the canvas). No stray frame can come between, in which massing would
-// turn the shadow map back on.
-async function renderedFrame(shadows) {
+// The canvas of a newly rendered frame, with the scene's shadow map as the app
+// keeps it (`shadows` null) or set on or off. One page task sets it, asks the
+// scene for a frame and listens to it: preRender records the shadow map the
+// frame is drawn with, its postRender reads the canvas (on-demand rendering
+// draws nothing until asked; DOM overlays are not in the canvas). No stray
+// frame can come between, in which massing would turn the shadow map back on.
+async function renderedFrame(shadows = null) {
   const { url, frame, drawnWith, canvas } = await page.evaluate(
     (on) =>
       new Promise((resolve, reject) => {
@@ -469,7 +469,7 @@ async function renderedFrame(shadows) {
           unpre();
           unpost();
         }
-        viewer.shadows = on;
+        if (on !== null) viewer.shadows = on;
         scene.requestRender();
       }),
     shadows,
@@ -511,12 +511,23 @@ async function pixels({ png, canvas }, points, radius = 4) {
     return sum / n;
   });
 }
-// Canvas luminance at usable ground points in a frame rendered with the scene's
-// shadow map on and in the next one rendered with it off: on/off per point.
+// The frame the app draws on its own, which must have its shadow map on (a
+// failure, not an INVALID measurement, if the app turned it off).
+async function appFrame(label) {
+  const on = await renderedFrame();
+  assert.equal(
+    on.shadows,
+    true,
+    `${label}: the app draws with its shadow map on`,
+  );
+  return on;
+}
+// Canvas luminance at usable ground points in the frame the app draws (shadow
+// map on) and in the next one rendered with it off: on/off per point.
 // Captures from one frame, or byte-identical captures, make the run INVALID.
 async function luminance(points, label = phase) {
   const usable = points.filter((p) => p?.usable);
-  const on = await renderedFrame(true);
+  const on = await appFrame(label);
   const off = await offFrame();
   distinctFrames(on, off, label);
   const lit = await pixels(on, usable);
@@ -592,7 +603,7 @@ async function shadowProfile(s, label) {
   const points = (
     await groundPoints(alongSun(s, distances), { terrain: true })
   ).map((p, i) => (p?.measurable ? { ...p, d: distances[i] } : null));
-  const on = await renderedFrame(true);
+  const on = await appFrame(label);
   const off = await offFrame();
   distinctFrames(on, off, label);
   const kept = points.filter(Boolean);

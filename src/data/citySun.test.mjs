@@ -40,7 +40,10 @@ const PLOT = plotFromId('plot-n105201-126637');
 // elevation, as this module and Cesium compute it; `apparent` adds refraction.
 // NOAA Solar Calculator (gml.noaa.gov/grad/solcalc, main.js calcAzEl, apparent
 // elevation) agrees with SPA within 0.007 deg at all three times.
-// Inputs: lanes/play/logs/r4/ref.py and noaa.mjs.
+// Reproduce: pvlib.solarposition.spa_python(pd.DatetimeIndex([utc]),
+// 37.801473230326984, -122.41021134056297, altitude=0, pressure=101325,
+// temperature=12, delta_t=69.2); NOAA: getJD + calcTimeJulianCent + calcAzEl(T,
+// UTC minutes, lat, lon, 0) from the calculator's main.js.
 const REFERENCE = [
   {
     utc: '2026-06-21T15:00:00Z', // the journey's sun

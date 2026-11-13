@@ -88,7 +88,11 @@ test('each shadow capture is a newly rendered frame; identical captures fail the
   const frame = source.slice(source.indexOf('async function renderedFrame'));
   assert.match(frame.slice(0, 2400), /scene\.requestRender\(\)/);
   assert.match(frame.slice(0, 2400), /scene\.postRender\.addEventListener/);
-  // The frame records the shadow map it was drawn with.
+  // The "on" frame is the app's own (its shadow map untouched, asserted on);
+  // each frame records the shadow map it was drawn with.
+  assert.match(source, /if \(on !== null\) viewer\.shadows = on;/);
+  assert.match(source, /const on = await appFrame\(label\);/);
+  assert.doesNotMatch(source, /renderedFrame\(true\);\s*const off/);
   assert.match(frame.slice(0, 2400), /drawnWith = scene\.shadowMap\.enabled/);
   const lum = source.slice(source.indexOf('async function luminance'));
   assert.match(lum.slice(0, 2000), /distinctFrames\(on, off, label\)/);

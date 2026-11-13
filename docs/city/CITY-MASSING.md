@@ -97,9 +97,10 @@ polygon and three assumptions:
   61 at 8.
 
 `src/data/__fixtures__/massing-golden.json` holds these constants and the
-expected cases (6 and 8 storeys, a 3 m setback, and SHADOW REACH at three sun
-altitudes). `cityMassing.test.mjs` and `citySun.test.mjs` hold the code to it,
-and the dream loop's planspec validator reads the same file.
+expected cases (6 and 8 storeys, a 3 m setback, and three SHADOW REACH cases
+at two sun altitudes). `cityMassing.test.mjs` and `citySun.test.mjs` hold the
+code to it, and the GEV-CITY dream loop's planspec validator (outside this
+repository) reads the same file.
 
 A setback that leaves no footprint leaves no block: those values are null,
 never zero.

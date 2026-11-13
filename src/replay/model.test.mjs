@@ -156,6 +156,9 @@ test('retention is spelled the way the settings file spells it', async () => {
   assert.equal(formatSpanCompact(7 * 86400), '1w');
   assert.equal(formatSpanCompact(10 * 86400), '10d');
   assert.equal(formatSpanCompact(12 * 3600), '12h');
+  // A valid fractional-hour setting must not reload as 0d (forever).
+  assert.equal(formatSpanCompact(30 * 60), '0.5h');
+  assert.equal(formatSpanCompact(90 * 60), '1.5h');
 });
 
 test('gaps are matched to the feed trouble that explains them', async () => {

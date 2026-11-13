@@ -214,7 +214,9 @@ export function formatSpanCompact(seconds) {
     ['h', 3600],
   ])
     if (s % size === 0) return `${s / size}${unit}`;
-  return `${Math.round(s / 86400)}d`;
+  // Fractional hours are accepted by parseDuration; rounding to days can
+  // turn a finite retention (e.g. 0.5h) into "0d" (forever) on save.
+  return `${Number((s / 3600).toFixed(6))}h`;
 }
 
 /**

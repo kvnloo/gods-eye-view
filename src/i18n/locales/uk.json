@@ -3985,5 +3985,17 @@
   "Homes": "Квартири",
   "Assumed {share}% of the floor area is homes of {size} m² each": "Припущення: {share}% площі поверхів — квартири по {size} м²",
   "Shadow reach": "Довжина тіні",
-  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Висота ÷ tan(висота сонця {altitude}°), на рівній землі"
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Висота ÷ tan(висота сонця {altitude}°), на рівній землі",
+  "Tie on average walk between {count} choices; the one with the shorter worst-served walk is shown.": "Рівність за середнім шляхом пішки між {count} варіантами; показано той, де шлях для найгірше обслуженої зони коротший.",
+  "Tie on worst-served walk between {count} choices; the one with the lower average walk is shown.": "Рівність за шляхом для найгірше обслуженої зони між {count} варіантами; показано той, де середній шлях пішки коротший.",
+  "Tie on both measures between {count} choices; the first by site name is shown.": "Рівність за обома показниками між {count} варіантами; показано перший за назвою ділянки.",
+  "Suggested option": "Запропонований варіант",
+  "Unknown: no site is suggested ({reason}).": "Невідомо: ділянку не запропоновано ({reason}).",
+  "HYPOTHETICAL OPTION · NOT ZONING, AN APPROVAL OR AN OBSERVED FACT": "ГІПОТЕТИЧНИЙ ВАРІАНТ · НЕ ЗОНУВАННЯ, НЕ ПОГОДЖЕННЯ І НЕ СПОСТЕРЕЖЕНИЙ ФАКТ",
+  "Every one of the {sets} possible choices of {count} from {eligible} candidate sites was compared exactly, with existing parks kept. Site eligibility is assumed for this sample, not checked.": "Точно порівняно всі можливі набори ({sets}) по {count} із {eligible} ділянок-кандидатів; наявні парки збережено. Придатність ділянок для цього прикладу прийнято як припущення й не перевірено.",
+  "Suggest a site for": "Запропонувати ділянку для мети",
+  "Lowest average walk": "Найменший середній шлях пішки",
+  "Shortest worst-served walk": "Найкоротший шлях для найгірше обслуженої зони",
+  "New sites": "Нових ділянок",
+  "Suggest site": "Запропонувати ділянку"
 }

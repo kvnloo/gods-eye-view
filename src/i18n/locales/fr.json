@@ -3894,5 +3894,17 @@
   "Homes": "Logements",
   "Assumed {share}% of the floor area is homes of {size} m² each": "Hypothèse : {share} % de la surface de plancher en logements de {size} m² chacun",
   "Shadow reach": "Portée de l'ombre",
-  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Hauteur ÷ tan(hauteur du soleil {altitude}°), sur terrain plat"
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Hauteur ÷ tan(hauteur du soleil {altitude}°), sur terrain plat",
+  "Tie on average walk between {count} choices; the one with the shorter worst-served walk is shown.": "Égalité sur la marche moyenne entre {count} choix ; celui dont la marche de la zone la moins desservie est la plus courte est affiché.",
+  "Tie on worst-served walk between {count} choices; the one with the lower average walk is shown.": "Égalité sur la marche de la zone la moins desservie entre {count} choix ; celui dont la marche moyenne est la plus courte est affiché.",
+  "Tie on both measures between {count} choices; the first by site name is shown.": "Égalité sur les deux mesures entre {count} choix ; le premier par nom d'emplacement est affiché.",
+  "Suggested option": "Option suggérée",
+  "Unknown: no site is suggested ({reason}).": "Inconnu : aucun emplacement n'est suggéré ({reason}).",
+  "HYPOTHETICAL OPTION · NOT ZONING, AN APPROVAL OR AN OBSERVED FACT": "OPTION HYPOTHÉTIQUE · NI ZONAGE, NI APPROBATION, NI FAIT OBSERVÉ",
+  "Every one of the {sets} possible choices of {count} from {eligible} candidate sites was compared exactly, with existing parks kept. Site eligibility is assumed for this sample, not checked.": "Chacun des {sets} choix possibles de {count} parmi {eligible} emplacements candidats a été comparé de façon exacte, en conservant les parcs existants. L'éligibilité des emplacements est supposée pour cet exemple, pas vérifiée.",
+  "Suggest a site for": "Suggérer un emplacement pour",
+  "Lowest average walk": "Marche moyenne la plus courte",
+  "Shortest worst-served walk": "Marche la plus courte pour la zone la moins desservie",
+  "New sites": "Nouveaux emplacements",
+  "Suggest site": "Suggérer un emplacement"
 }

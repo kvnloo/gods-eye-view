@@ -3894,5 +3894,17 @@
   "Homes": "Abitazioni",
   "Assumed {share}% of the floor area is homes of {size} m² each": "Ipotesi: il {share}% della superficie lorda sono abitazioni da {size} m² ciascuna",
   "Shadow reach": "Lunghezza dell'ombra",
-  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Altezza ÷ tan(altezza del sole {altitude}°), su terreno piano"
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Altezza ÷ tan(altezza del sole {altitude}°), su terreno piano",
+  "Tie on average walk between {count} choices; the one with the shorter worst-served walk is shown.": "Parità sulla camminata media tra {count} scelte; è mostrata quella con la camminata più breve per la zona peggio servita.",
+  "Tie on worst-served walk between {count} choices; the one with the lower average walk is shown.": "Parità sulla camminata della zona peggio servita tra {count} scelte; è mostrata quella con la camminata media più breve.",
+  "Tie on both measures between {count} choices; the first by site name is shown.": "Parità su entrambe le misure tra {count} scelte; è mostrata la prima per nome del sito.",
+  "Suggested option": "Opzione suggerita",
+  "Unknown: no site is suggested ({reason}).": "Sconosciuto: nessun sito viene suggerito ({reason}).",
+  "HYPOTHETICAL OPTION · NOT ZONING, AN APPROVAL OR AN OBSERVED FACT": "OPZIONE IPOTETICA · NON È ZONIZZAZIONE, UN'APPROVAZIONE O UN FATTO OSSERVATO",
+  "Every one of the {sets} possible choices of {count} from {eligible} candidate sites was compared exactly, with existing parks kept. Site eligibility is assumed for this sample, not checked.": "Tutte le {sets} scelte possibili di {count} tra {eligible} siti candidati sono state confrontate in modo esatto, mantenendo i parchi esistenti. L'idoneità dei siti è ipotizzata per questo esempio, non verificata.",
+  "Suggest a site for": "Suggerisci un sito per",
+  "Lowest average walk": "Camminata media più breve",
+  "Shortest worst-served walk": "Camminata più breve per la zona peggio servita",
+  "New sites": "Nuovi siti",
+  "Suggest site": "Suggerisci sito"
 }

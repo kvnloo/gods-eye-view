@@ -3712,5 +3712,17 @@
   "Homes": "住戸数",
   "Assumed {share}% of the floor area is homes of {size} m² each": "仮定：延床面積の{share}%が1戸{size} m²の住戸",
   "Shadow reach": "影の長さ",
-  "Height ÷ tan(sun altitude {altitude}°), on level ground": "高さ ÷ tan(太陽高度 {altitude}°)、平坦な地面の場合"
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "高さ ÷ tan(太陽高度 {altitude}°)、平坦な地面の場合",
+  "Tie on average walk between {count} choices; the one with the shorter worst-served walk is shown.": "{count} 件の選択肢で平均徒歩距離が同じです。最も条件の悪いゾーンの徒歩距離が短いものを表示しています。",
+  "Tie on worst-served walk between {count} choices; the one with the lower average walk is shown.": "{count} 件の選択肢で最も条件の悪いゾーンの徒歩距離が同じです。平均徒歩距離が短いものを表示しています。",
+  "Tie on both measures between {count} choices; the first by site name is shown.": "{count} 件の選択肢で両方の指標が同じです。候補地名の順で最初のものを表示しています。",
+  "Suggested option": "提案された選択肢",
+  "Unknown: no site is suggested ({reason}).": "不明：候補地は提案されません（{reason}）。",
+  "HYPOTHETICAL OPTION · NOT ZONING, AN APPROVAL OR AN OBSERVED FACT": "仮説的な選択肢 · 用途地域の指定、承認、観測された事実ではありません",
+  "Every one of the {sets} possible choices of {count} from {eligible} candidate sites was compared exactly, with existing parks kept. Site eligibility is assumed for this sample, not checked.": "{eligible} か所の候補地から {count} か所を選ぶ {sets} 通りすべてを、既存の公園を残したまま厳密に比較しました。候補地の適格性はこのサンプルでの仮定であり、確認されていません。",
+  "Suggest a site for": "候補地を提案する基準",
+  "Lowest average walk": "平均徒歩距離が最短",
+  "Shortest worst-served walk": "最も条件の悪いゾーンの徒歩距離が最短",
+  "New sites": "新しい候補地の数",
+  "Suggest site": "候補地を提案"
 }

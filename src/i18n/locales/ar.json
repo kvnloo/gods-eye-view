@@ -4167,5 +4167,17 @@
   "Homes": "المساكن",
   "Assumed {share}% of the floor area is homes of {size} m² each": "مفترض: {share}% من مساحة الطوابق مساكن، مساحة كل منها {size} م²",
   "Shadow reach": "امتداد الظل",
-  "Height ÷ tan(sun altitude {altitude}°), on level ground": "الارتفاع ÷ tan(ارتفاع الشمس {altitude}°)، على أرض مستوية"
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "الارتفاع ÷ tan(ارتفاع الشمس {altitude}°)، على أرض مستوية",
+  "Tie on average walk between {count} choices; the one with the shorter worst-served walk is shown.": "تعادل في متوسط المشي بين {count} خيارات؛ يُعرض الخيار ذو المشي الأقصر للمنطقة الأسوأ خدمة.",
+  "Tie on worst-served walk between {count} choices; the one with the lower average walk is shown.": "تعادل في مشي المنطقة الأسوأ خدمة بين {count} خيارات؛ يُعرض الخيار ذو متوسط المشي الأقل.",
+  "Tie on both measures between {count} choices; the first by site name is shown.": "تعادل في المقياسين بين {count} خيارات؛ يُعرض الأول حسب اسم الموقع.",
+  "Suggested option": "الخيار المقترح",
+  "Unknown: no site is suggested ({reason}).": "غير معروف: لا يُقترح أي موقع ({reason}).",
+  "HYPOTHETICAL OPTION · NOT ZONING, AN APPROVAL OR AN OBSERVED FACT": "خيار افتراضي · ليس تنظيمًا عمرانيًا ولا موافقة ولا حقيقة مرصودة",
+  "Every one of the {sets} possible choices of {count} from {eligible} candidate sites was compared exactly, with existing parks kept. Site eligibility is assumed for this sample, not checked.": "قورنت بدقة تامة جميع الاختيارات الممكنة وعددها {sets} لاختيار {count} من {eligible} مواقع مرشحة، مع الإبقاء على الحدائق القائمة. صلاحية المواقع مفترضة لهذه العينة ولم يُتحقق منها.",
+  "Suggest a site for": "اقترح موقعًا من أجل",
+  "Lowest average walk": "أقل متوسط مشي",
+  "Shortest worst-served walk": "أقصر مشي للمنطقة الأسوأ خدمة",
+  "New sites": "مواقع جديدة",
+  "Suggest site": "اقترح موقعًا"
 }

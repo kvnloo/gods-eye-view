@@ -1,7 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { annualAveragePowerW, normalizeEnergyObservation } from './model.js';
+import {
+  annualAveragePowerW,
+  normalizeEnergyObservation,
+  normalizeEnergySnapshot,
+  sameComparableMetric,
+} from './model.js';
 
 // Official rows exactly as the publishers print them: geography code, value
 // and unit. This file measures how many of them the model ingests with no
@@ -253,4 +258,63 @@ test('published value and unit: the model converts, keeps both and fails closed'
   });
   assert.equal(twh.annualTWh, 1);
   assert.equal(Object.hasOwn(twh, 'published'), false);
+});
+
+test('GSS-coded UK countries: only the five published codes are countries', () => {
+  const uk = asPublished(rowById('desnz-2024-K02000001'));
+  const withId = (id) => ({ ...uk, area: { ...uk.area, id } });
+  for (const code of [
+    'K02000001',
+    'E92000001',
+    'W92000004',
+    'S92000003',
+    'N92000002',
+  ]) {
+    const record = normalizeEnergyObservation(withId(`GSS:${code}`));
+    assert.equal(record?.area.id, `GSS:${code}`);
+    assert.equal(record.area.type, 'country');
+  }
+  // Groupings (Great Britain, England and Wales), regions, local authorities
+  // and unknown or reshaped codes are not countries.
+  for (const id of [
+    'GSS:K03000001',
+    'GSS:K04000001',
+    'GSS:E12000007',
+    'GSS:E09000001',
+    'GSS:E92000002',
+    'GSS:K02000001 ',
+    'gss:K02000001',
+    'K02000001',
+    'GSS:DUKES',
+    'ISO3:K02000001',
+  ])
+    assert.equal(normalizeEnergyObservation(withId(id)), null, id);
+  // An ISO3 country id still works.
+  assert.ok(normalizeEnergyObservation(withId('ISO3:GBR')));
+
+  // 119531.338 ktoe is about 1390 TWh: the same quantity as the #318 golden.
+  assert.equal(Math.round(normalizeEnergyObservation(uk).annualTWh), 1390);
+
+  // One snapshot holds the UK and its four countries, no duplicate claim.
+  const rows = fixture.rows.filter((row) => row.geographyCodeScheme === 'GSS');
+  assert.equal(normalizeEnergySnapshot(rows.map(asPublished))?.length, 5);
+  assert.equal(normalizeEnergySnapshot([uk, uk]), null);
+
+  // Like compares with like: Scotland and Northern Ireland are both complete
+  // rows of one table; England and Wales are declared partial, so they do not.
+  const published = (id) => asPublished(rowById(id));
+  assert.equal(
+    sameComparableMetric(
+      published('desnz-2024-S92000003'),
+      published('desnz-2024-N92000002'),
+    ),
+    true,
+  );
+  assert.equal(
+    sameComparableMetric(
+      published('desnz-2024-E92000001'),
+      published('desnz-2024-W92000004'),
+    ),
+    false,
+  );
 });

@@ -23,12 +23,18 @@ const AREA_TYPES = new Set([
   'local_authority',
 ]);
 const COVERAGE = new Set(['complete', 'partial', 'unknown']);
+// Country ids: ISO 3166-1 alpha-3, or the code the publisher prints.
+// GSS: the United Kingdom and its four countries, as DESNZ codes them.
+const COUNTRY_ID =
+  /^(?:ISO3:[A-Z]{3}|GSS:(?:K02000001|E92000001|W92000004|S92000003|N92000002))$/;
 
 // Annual TWh in one unit, keyed by the unit exactly as the publisher prints it.
 // 1 TWh = 3.6e15 J (NIST SP 811 B.8: watt hour = 3.6 E+03 J).
 const TWH_PER_PUBLISHED_UNIT = new Map([
   // EIA. NIST SP 811 B.8: quad (10^15 Btu IT) = 1.055 056 E+18 J.
   ['Quadrillion Btu', 1.055056e18 / 3.6e15],
+  // DESNZ subnational workbook, cover sheet: "1 ktoe = 11.63 GWh."
+  ['ktoe', 11.63 / 1000],
 ]);
 
 const text = (value) => (typeof value === 'string' ? value.trim() : '');
@@ -84,7 +90,7 @@ function validArea(area) {
   )
     return false;
   if (area.type === 'world') return area.id === 'WORLD';
-  if (area.type === 'country') return /^ISO3:[A-Z]{3}$/.test(area.id);
+  if (area.type === 'country') return COUNTRY_ID.test(area.id);
   // Pilot constraint: only versioned UK administrative GSS codes are accepted.
   return /^GSS:[A-Z]\d{8}$/.test(area.id);
 }

@@ -37,8 +37,8 @@ const isPair = (pair) =>
 
 /**
  * Apply moves in order. Each move maps a metric to [before, after]; a metric's
- * base is the goal's assumed base, else the first before seen, and its value
- * is the latest after.
+ * base is the first before a move states, else the goal's assumed base, and
+ * its value is the latest after.
  * @param {Array<Record<string, [number|null, number]>>} moves
  * @param {typeof CITY_GOALS} [goals]
  * @returns {Record<string, {base: number|null, value: number, status: string}>}
@@ -55,15 +55,14 @@ export function replayMoves(moves, goals = CITY_GOALS) {
         state[metric].value = after;
         continue;
       }
-      const assumed = goals.weights[metric]?.base;
+      const assumed = goals.weights[metric]?.base ?? null;
+      // A stated before wins: a district's 300 homes is not a plot's 12.
       state[metric] =
-        assumed !== null && assumed !== undefined
-          ? { base: assumed, value: after, status: 'ASSUMED-BASE' }
-          : {
-              base: before,
-              value: after,
-              status: before === null ? 'SPEC' : 'SPEC-BASE',
-            };
+        before !== null
+          ? { base: before, value: after, status: 'SPEC-BASE' }
+          : assumed !== null
+            ? { base: assumed, value: after, status: 'ASSUMED-BASE' }
+            : { base: null, value: after, status: 'SPEC' };
     }
   }
   return state;

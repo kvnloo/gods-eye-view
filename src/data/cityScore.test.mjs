@@ -54,6 +54,19 @@ test('the transit move raises the shadow plan, and losing homes lowers it', () =
   assert.ok(fewer < shadow, `${fewer} >= ${shadow}`);
 });
 
+test('a stated baseline wins; the assumed one only fills a gap', () => {
+  assert.deepEqual(replayMoves([{ homes: [300, 600] }]).homes, {
+    base: 300,
+    value: 600,
+    status: 'SPEC-BASE',
+  });
+  assert.deepEqual(replayMoves([{ homes: [null, 20] }]).homes, {
+    base: 12,
+    value: 20,
+    status: 'ASSUMED-BASE',
+  });
+});
+
 test('an unknown required metric shows no score', () => {
   const goals = { ...CITY_GOALS, required: ['homes', 'canopy_pct'] };
   const score = planScore(replayMoves([{ homes: [12, 18] }]), goals);
@@ -87,7 +100,7 @@ test('resource chips are read-only figures with units, never actions', () => {
     base: 15,
     value: 10,
     unit: 'min',
-    status: 'ASSUMED-BASE',
+    status: 'SPEC-BASE',
   });
   assert.ok(chips.length <= 4);
   assert.ok(!chips.some((chip) => chip.metric === 'park_shade'));

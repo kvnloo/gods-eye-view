@@ -169,3 +169,19 @@ test('the legend names bands as marine terms, not the air-quality words of the s
     setLocale('en');
   }
 });
+
+test('an externally aborted update ignores a late snapshot even when the source ignores cancellation', async () => {
+  let release;
+  const { collection, layer } = setup(
+    () => new Promise((resolve) => (release = () => resolve(snapshot()))),
+  );
+  layer.enable();
+  const controller = new AbortController();
+  const pending = layer.update(undefined, { signal: controller.signal });
+  controller.abort(new Error('owner cancelled'));
+  release();
+  assert.equal(await pending, false);
+  assert.equal(collection.layers.length, 0);
+  assert.equal(layer.getStats().count, 0);
+  assert.equal(layer.getStats().loading, false);
+});

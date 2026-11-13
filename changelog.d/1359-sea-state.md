@@ -7,3 +7,5 @@
   `X-Data-Stale` before answering `502 sea_state_unavailable`. On Google 3D
   Tiles the field draws on a raised shell like the observed weather layers
   (daikaginza, #1359).
+- Ignore late Sea state snapshot results after an external update cancellation,
+  rather than rendering a cancelled field (daikaginza, #1359).

@@ -184,7 +184,8 @@ export function createSeaStateLayer({
         const snapshot = await source.getSnapshot({
           signal: controller.signal,
         });
-        if (!enabled || request !== controller) return false;
+        if (!enabled || request !== controller || controller.signal.aborted)
+          return false;
         field = snapshot;
         error = null;
         install();

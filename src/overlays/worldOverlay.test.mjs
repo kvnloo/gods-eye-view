@@ -2606,6 +2606,62 @@ test('a card presenter draws selected cards as elements while the canvas keeps t
   }
 });
 
+test('tracked view cards keep their leader, hit rectangle and canvas fallback', () => {
+  const env = installMockEnvironment({ width: 400, height: 300, dpr: 1 });
+  const views = [];
+  const frames = [];
+  const unsubscribe = subscribeWorldOverlayCards({
+    content: (view) => views.push(view),
+    frame: (list, count) =>
+      frames.push(list.slice(0, count).map(({ key, x, y, scale, alpha }) => ({
+        key, x, y, scale, alpha,
+      }))),
+  });
+  try {
+    initWorldOverlay(env.viewer);
+    setOverlayEntries('tracked-view', [{
+      id: 'flight',
+      position: positionAtScreen(200, 150),
+      variant: 'tracked',
+      tracked: true,
+      protected: true,
+      paintLane: 'tracked',
+      title: 'Tracked flight',
+      details: ['FL350'],
+      collisionGroup: 'tracked',
+      horizonCull: false,
+      edgeFade: 'none',
+    }]);
+    env.postRender.raise();
+    env.advanceTime(200);
+    env.ctx.calls.length = 0;
+    env.postRender.raise();
+
+    const cards = views.at(-1).cards;
+    assert.deepEqual(cards.map(({ kind, title, details }) => [kind, title, details]),
+      [['tracked', 'Tracked flight', ['FL350']]]);
+    const rect = getOverlayPaintRect('tracked-view', 'flight');
+    assert.ok(rect, 'the tracked card retains its solved hit rectangle');
+    assert.deepEqual([cards[0].w, cards[0].h], [rect.w, rect.h]);
+    const frame = frames.at(-1).find(({ key }) => key === cards[0].key);
+    assert.deepEqual([frame.x, frame.y, frame.scale], [rect.x, rect.y, 1]);
+    assert.ok(frame.alpha > 0 && frame.alpha <= 1, 'the view retains the paint alpha');
+    assert.ok(env.ctx.calls.some(([op]) => op === 'stroke'), 'the leader stays on canvas');
+    assert.equal(env.ctx.calls.filter(([op]) => op === 'fillText').length, 0,
+      'the tracked card text is not painted twice');
+
+    unsubscribe();
+    env.ctx.calls.length = 0;
+    env.postRender.raise();
+    assert.ok(env.ctx.calls.some(([op, value]) =>
+      op === 'fillText' && value === 'Tracked flight'),
+      'without a presenter the tracked card returns to the canvas');
+  } finally {
+    unsubscribe();
+    env.cleanup();
+  }
+});
+
 test('promoting an ambient entry to selected paints it once with no fading duplicate', () => {
   const env = installMockEnvironment();
   try {

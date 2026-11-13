@@ -92,7 +92,7 @@
         "public_space": {
           "base": 0,
           "value": 28.8,
-          "status": "ASSUMED-BASE"
+          "status": "SPEC-BASE"
         },
         "parking_removed": {
           "base": 0,
@@ -103,6 +103,31 @@
       "score": null,
       "missing": ["homes"],
       "chips": ["public_space", "parking", "parking_removed"]
+    },
+    {
+      "name": "r037-district-growth",
+      "rounds": ["r037"],
+      "moves": [
+        {
+          "homes": [300, 600],
+          "park_shade": [null, 1]
+        }
+      ],
+      "state": {
+        "homes": {
+          "base": 300,
+          "value": 600,
+          "status": "SPEC-BASE"
+        },
+        "park_shade": {
+          "base": 0,
+          "value": 1,
+          "status": "ASSUMED-BASE"
+        }
+      },
+      "score": 0.0,
+      "missing": [],
+      "chips": ["homes"]
     },
     {
       "name": "r038-shadow",
@@ -120,9 +145,9 @@
           "status": "ASSUMED-BASE"
         },
         "homes": {
-          "base": 12,
+          "base": 12.0,
           "value": 18.0,
-          "status": "ASSUMED-BASE"
+          "status": "SPEC-BASE"
         }
       },
       "score": 0.25,
@@ -152,9 +177,9 @@
           "status": "ASSUMED-BASE"
         },
         "homes": {
-          "base": 12,
+          "base": 12.0,
           "value": 18.0,
-          "status": "ASSUMED-BASE"
+          "status": "SPEC-BASE"
         },
         "through_lanes": {
           "base": 4,
@@ -164,12 +189,12 @@
         "walk_m": {
           "base": 6,
           "value": 8,
-          "status": "ASSUMED-BASE"
+          "status": "SPEC-BASE"
         },
         "bike_m": {
           "base": 0,
           "value": 3,
-          "status": "ASSUMED-BASE"
+          "status": "SPEC-BASE"
         },
         "parking_removed": {
           "base": 0,
@@ -207,19 +232,19 @@
           "status": "ASSUMED-BASE"
         },
         "homes": {
-          "base": 12,
+          "base": 12.0,
           "value": 18.0,
-          "status": "ASSUMED-BASE"
+          "status": "SPEC-BASE"
         },
         "headway_min": {
           "base": 15,
           "value": 10,
-          "status": "ASSUMED-BASE"
+          "status": "SPEC-BASE"
         },
         "transit_cap": {
-          "base": 240,
+          "base": 240.0,
           "value": 360.0,
-          "status": "ASSUMED-BASE"
+          "status": "SPEC-BASE"
         },
         "parking_removed": {
           "base": 0,

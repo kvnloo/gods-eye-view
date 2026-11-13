@@ -2,6 +2,7 @@ import { createAssetDirectorySource } from '../director/packs/source.js';
 import { createApplicationTools } from '../app/tools.js';
 import { startStandaloneChrome } from './startupChrome.js';
 import { loadToolCatalog } from './toolCatalog.js';
+import { overlayHost } from '../app/layers/overlayHost.js';
 import { mountPlanetPlayground } from '../playground/index.js';
 
 export function createStandaloneTools(options) {
@@ -31,6 +32,7 @@ export function createStandaloneTools(options) {
       styleManager: options.controls.styleManager,
       dataManager: options.data.dataManager,
       sceneDirector: tools.sceneDirector,
+      overlayHost,
     }),
   );
   return tools;

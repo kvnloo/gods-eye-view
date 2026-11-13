@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parsers } from 'prettier/plugins/babel.mjs';
 
 const SRC_ROOT = fileURLToPath(new URL('.', import.meta.url));
 const REPO_ROOT = path.resolve(SRC_ROOT, '..');
@@ -38,6 +39,31 @@ function sourceFiles(directory = SRC_ROOT) {
   return [...files.sort(), INDEX_HTML];
 }
 
+function assignedGlyphs(statement) {
+  // Only whole assigned values can be font ligatures. A status message such as
+  // 'Playback ended: ' + (reason || 'cancelled') does not render that fallback
+  // as an icon on its own. Conditional tests likewise are not rendered values.
+  let expression;
+  try {
+    expression = parsers.babel.parse(`const value = (${statement});`).program
+      .body[0].declarations[0].init;
+  } catch {
+    // Preserve the conservative scan for snippets cut by the bounded matcher.
+    return [...statement.matchAll(STRING_LITERAL)].map((match) => match[1]);
+  }
+  function values(node) {
+    if (node.type === 'StringLiteral') return [node.value];
+    if (node.type === 'TemplateLiteral' && node.expressions.length === 0)
+      return [node.quasis[0].value.cooked];
+    if (node.type === 'ConditionalExpression')
+      return [...values(node.consequent), ...values(node.alternate)];
+    if (node.type === 'LogicalExpression')
+      return [...values(node.left), ...values(node.right)];
+    return [];
+  }
+  return values(expression).filter((value) => /^[a-z0-9_]{2,}$/.test(value));
+}
+
 /**
  * Glyph names the sources ask the icon font for.
  *
@@ -47,10 +73,8 @@ function sourceFiles(directory = SRC_ROOT) {
  * forms, so the element renders the literal word `right_panel_open` instead of
  * falling back to a visible box.
  *
- * A literal to the LEFT of a `?` is the condition being tested, not the text
- * being shown, so it is dropped: `status === 'loading' ? …` must not enrol
- * `loading`. Optional chaining is neutralised first — `payload?.newsStatus`
- * is not a ternary, and splitting on its `?` would keep the condition.
+ * Assignments are parsed as expressions: only whole string outcomes are glyph
+ * candidates, not conditional tests or fragments embedded in status messages.
  * @returns {Map<string, string>} glyph -> the first file that names it.
  */
 function referencedGlyphs() {
@@ -63,11 +87,7 @@ function referencedGlyphs() {
     };
     for (const match of source.matchAll(SPAN_TEXT)) add(match[1]);
     for (const match of source.matchAll(TEXT_ASSIGNMENT)) {
-      const statement = match[1].replaceAll('?.', '.');
-      const assigned = statement.includes('?')
-        ? statement.slice(statement.indexOf('?') + 1)
-        : statement;
-      for (const literal of assigned.matchAll(STRING_LITERAL)) add(literal[1]);
+      for (const glyph of assignedGlyphs(match[1])) add(glyph);
     }
   }
   return found;
@@ -108,4 +128,31 @@ test('the unused Material Icons Round family is not loaded', () => {
     /Material\+Icons\+Round/,
     'index.html loads an icon font nothing renders',
   );
+});
+
+test('glyph assignments exclude status-message fragments and conditional tests', () => {
+  assert.deepEqual(
+    assignedGlyphs(
+      "outcome.started ? 'Expedition complete.' : 'Scene did not start: ' + (outcome.reason || 'unavailable')",
+    ),
+    [],
+  );
+  assert.deepEqual(
+    assignedGlyphs(
+      "result.started ? 'Playback complete.' : 'Playback ended: ' + (result.reason || 'cancelled')",
+    ),
+    [],
+  );
+  assert.deepEqual(
+    assignedGlyphs("status === 'loading' ? 'pause' : 'play_arrow'"),
+    ['pause', 'play_arrow'],
+  );
+  assert.deepEqual(
+    assignedGlyphs(
+      "payload?.ready ? 'check' : (pending ? 'schedule' : 'error')",
+    ),
+    ['check', 'schedule', 'error'],
+  );
+  assert.deepEqual(assignedGlyphs("icon || 'radar'"), ['radar']);
+  assert.deepEqual(assignedGlyphs('`right_panel_open`'), ['right_panel_open']);
 });

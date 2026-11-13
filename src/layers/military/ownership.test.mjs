@@ -289,3 +289,46 @@ test('voice context reads a track that rounds to north as 0°, not 360°', () =>
     '0°',
   );
 });
+
+test('military tracked card uses the ICAO country only when operator is missing', () => {
+  const svc = services();
+  svc.aircraftPresentation.tr3bTypeLabel = (_id, type) => type;
+  const flightState = {
+    records: { data: new Map(), missingPolls: new Map() },
+    feed: { _backoff: false, _lastSource: 'Fixture military aircraft' },
+  };
+  const tracking = createTracking({
+    flightState,
+    services: svc,
+    parts: {
+      motion: { _signalLost: () => null },
+      queries: {
+        _describeFlight: () => ({ callsign: 'BRK50' }),
+        _toCleanText: (value) =>
+          typeof value === 'string' ? value.trim() : '',
+        _formatAltitude: () => '30000 ft',
+      },
+    },
+    layer: {},
+  });
+  const info = { callsign: 'BRK50', type: 'C17', altitudeFt: 30000 };
+  flightState.records.data.set('4734e9', info);
+  assert.match(
+    tracking._buildTrackedLabel(info, '4734e9'),
+    /Hungary \(ICAO block\) · 30000 ft/,
+  );
+  assert.equal(
+    tracking._contextSubjectMetadata('4734e9').properties.registrationCountry,
+    'Hungary',
+  );
+  const operator = tracking._buildTrackedLabel(
+    { ...info, operator: 'NATO Strategic Airlift' },
+    '4734e9',
+  );
+  assert.match(operator, /NATO Strategic Airlift · 30000 ft/);
+  assert.doesNotMatch(operator, /Hungary \(ICAO block\)/);
+  assert.match(
+    tracking._buildTrackedLabel(info, '~4734e9'),
+    /Operator unknown · 30000 ft/,
+  );
+});

@@ -563,6 +563,24 @@ body.gev-city-play #scope-mask {
   color: var(--text-primary);
   font-size: 12px;
 }
+/* What the world changes: one before → after row per plan-score goal. */
+.city-play-card-moves {
+  display: grid;
+  gap: 4px;
+}
+.city-play-card-move {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 6px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 4px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.city-play-card-move strong {
+  color: var(--accent);
+}
 
 .city-play-actions {
   display: flex;

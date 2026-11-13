@@ -56,11 +56,12 @@ export function replayMoves(moves, goals = CITY_GOALS) {
       }
       const assumed = goals.weights[metric]?.base ?? null;
       // A stated before wins: a district's 300 homes is not a plot's 12.
+      // The statuses are machine codes the golden fixture matches, never UI text.
       state[metric] =
         before !== null
-          ? { base: before, value: after, status: 'SPEC-BASE' }
+          ? { base: before, value: after, status: 'SPEC-BASE' } // i18n-ignore
           : assumed !== null
-            ? { base: assumed, value: after, status: 'ASSUMED-BASE' }
+            ? { base: assumed, value: after, status: 'ASSUMED-BASE' } // i18n-ignore
             : { base: null, value: after, status: 'SPEC' };
     }
   }

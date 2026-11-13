@@ -3879,5 +3879,20 @@
   "Land area": "Superficie",
   "Share": "Quota",
   "Hypothetical land use for 40 m grid cells, not the city’s zoning.": "Uso del suolo ipotetico per celle di 40 m, non la zonizzazione della città.",
-  "Walk access shows the existing estimate; land use does not recompute it.": "Accesso a piedi mostra la stima esistente; l’uso del suolo non la ricalcola."
+  "Walk access shows the existing estimate; land use does not recompute it.": "Accesso a piedi mostra la stima esistente; l’uso del suolo non la ricalcola.",
+  "Massing": "Volumetria",
+  "Height": "Altezza",
+  "Storeys": "Piani",
+  "floor area ratio|FAR": "UF",
+  "Floor area ratio: floor area ÷ plot area": "Indice di utilizzazione fondiaria: superficie lorda ÷ superficie del lotto",
+  "Floor area": "Superficie lorda",
+  "estimated value|EST": "STIM.",
+  "Assumed {height} m per storey and a {setback} m setback": "Ipotesi: {height} m per piano e arretramento di {setback} m",
+  "Remove a storey": "Togli un piano",
+  "Add a storey": "Aggiungi un piano",
+  "Massing estimate for this plot": "Stima volumetrica per questo lotto",
+  "Homes": "Abitazioni",
+  "Assumed {share}% of the floor area is homes of {size} m² each": "Ipotesi: il {share}% della superficie lorda sono abitazioni da {size} m² ciascuna",
+  "Shadow reach": "Lunghezza dell'ombra",
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Altezza ÷ tan(altezza del sole {altitude}°), su terreno piano"
 }

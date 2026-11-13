@@ -4152,5 +4152,20 @@
   "Land area": "مساحة الأرض",
   "Share": "الحصة",
   "Hypothetical land use for 40 m grid cells, not the city’s zoning.": "استخدام افتراضي للأرض لخلايا شبكة 40 م، وليس تقسيم المدينة إلى مناطق.",
-  "Walk access shows the existing estimate; land use does not recompute it.": "تعرض سهولة المشي التقدير الحالي؛ ولا يعيد استخدام الأرض حسابه."
+  "Walk access shows the existing estimate; land use does not recompute it.": "تعرض سهولة المشي التقدير الحالي؛ ولا يعيد استخدام الأرض حسابه.",
+  "Massing": "كتلة البناء",
+  "Height": "الارتفاع",
+  "Storeys": "الطوابق",
+  "floor area ratio|FAR": "معامل البناء",
+  "Floor area ratio: floor area ÷ plot area": "معامل البناء: مساحة الطوابق ÷ مساحة القطعة",
+  "Floor area": "مساحة الطوابق",
+  "estimated value|EST": "تقديري",
+  "Assumed {height} m per storey and a {setback} m setback": "مفترض: {height} م لكل طابق وارتداد {setback} م",
+  "Remove a storey": "إزالة طابق",
+  "Add a storey": "إضافة طابق",
+  "Massing estimate for this plot": "تقدير كتلة البناء لهذه القطعة",
+  "Homes": "المساكن",
+  "Assumed {share}% of the floor area is homes of {size} m² each": "مفترض: {share}% من مساحة الطوابق مساكن، مساحة كل منها {size} م²",
+  "Shadow reach": "امتداد الظل",
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "الارتفاع ÷ tan(ارتفاع الشمس {altitude}°)، على أرض مستوية"
 }

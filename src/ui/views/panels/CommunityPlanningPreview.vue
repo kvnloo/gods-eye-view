@@ -5,6 +5,7 @@ import { t } from '../../../i18n/index.js';
 import UiButton from '../../kit/UiButton.vue';
 import { useCommunityPlanningStore } from '../../stores/communityPlanning.js';
 import CityBuilderEditor from './CityBuilderEditor.vue';
+import CityWalkAccess from './CityWalkAccess.vue';
 
 // The City builder dialog as src/ui/cityBuilder.js presents it (or the
 // synthetic park comparison from src/ui/communityPlanningPreview.js): a Scene
@@ -90,6 +91,7 @@ const cardStyle = { flex: '1 1 245px', minWidth: '0', padding: '12px', backgroun
         <UiButton v-for="item in preview.inspect" :key="item.id" :style="buttonStyle" :pressed="item.pressed" :data-planning-focus-id="item.id" @click="controls?.inspect(item.id)">{{ item.label }}</UiButton>
       </nav>
       <CityBuilderEditor v-if="preview.city" :city="preview.city" :controls="controls" />
+      <CityWalkAccess v-if="preview.city?.access" :access="preview.city.access" />
       <div data-planning-alternatives style="display: flex; flex-wrap: wrap; gap: 12px; align-items: stretch">
         <article v-if="preview.city?.reference" data-planning-baseline :style="cardStyle">
           <h3>{{ t('Reference-only baseline') }}</h3>

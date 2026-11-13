@@ -48,6 +48,7 @@ alternatives[].versions[].operation.value: object
 alternatives[].versions[].operation: object
 alternatives[].versions[].parameters.kind: string
 alternatives[].versions[].parameters.shadePercent: number
+alternatives[].versions[].parameters.site: null|string
 alternatives[].versions[].parameters.trees: number
 alternatives[].versions[].parameters.widthMeters: number
 alternatives[].versions[].parameters: object

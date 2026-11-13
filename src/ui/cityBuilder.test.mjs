@@ -191,3 +191,70 @@ test('sharing dialog excludes open and local provider requires development capab
   other.controls.setProvider('local');
   assert.equal(other.view.city.provider, 'fixture');
 });
+function place(h, title, { kind = 'park', site = null } = {}) {
+  h.controls.newAlternative();
+  h.controls.editField('title', title);
+  h.controls.editField('description', 'A hypothetical public space.');
+  h.controls.editField('kind', kind);
+  if (site !== null) h.controls.editField('site', site);
+  h.controls.saveAlternative();
+}
+test('walk access shows the baseline beside every alternative without changing proposals', async () => {
+  const h = harness();
+  h.controls.open();
+  await h.controls.start({ title: 'Public block' });
+  let access = h.view.city.access;
+  assert.match(access.label, /HYPOTHETICAL ESTIMATE/);
+  assert.match(access.network, /synthetic/);
+  assert.match(access.method, /uniform/);
+  assert.deepEqual(
+    access.sites.map((s) => s.id),
+    ['site-a', 'site-b', 'site-c', 'site-d'],
+  );
+  assert.deepEqual(
+    access.rows.map((r) => [r.id, r.state, r.mean, r.worst]),
+    [['baseline', 'evaluated', '432 m', '710 m']],
+  );
+  place(h, 'Unplaced park');
+  place(h, 'East park', { site: 'site-b' });
+  place(h, 'Lane', { kind: 'bike-lane', site: 'site-c' });
+  place(h, 'West plaza', { kind: 'plaza', site: 'site-c' });
+  access = h.view.city.access;
+  assert.deepEqual(
+    access.rows.map((r) => r.state),
+    ['evaluated', 'unknown', 'evaluated', 'not-applicable', 'evaluated'],
+  );
+  const east = access.rows.find((r) => r.id === 'world-2');
+  assert.equal(east.label, 'East park');
+  assert.equal(east.site, 'Site B');
+  assert.deepEqual([east.mean, east.worst], ['231 m', '480 m']);
+  assert.match(east.delta, /−201 m.*−230 m/);
+  assert.match(east.meanRange, /^\d+–\d+ m$/);
+  assert.equal(east.known, '9 of 9 zones');
+  assert.equal(east.parks.filter((p) => p.proposed).length, 1);
+  assert.equal(east.zones.length, 9);
+  assert.match(access.rows[1].note, /choose a site/);
+  assert.match(access.rows[3].note, /park and plaza/);
+  // Moving the park is a new version; history keeps the old site.
+  const before = h.view.city.reference;
+  h.controls.editAlternative('world-2');
+  h.controls.editField('site', 'site-c');
+  h.controls.saveAlternative();
+  const moved = h.view.city.access.rows.find((r) => r.id === 'world-2');
+  assert.equal(moved.site, 'Site C');
+  assert.notEqual(moved.mean, east.mean);
+  const history = h.view.city.alternatives[1].history;
+  assert.deepEqual(
+    history.map((v) => v.parameters.site),
+    ['site-b', 'site-c'],
+  );
+  // Clearing the site goes back to an explicit unknown.
+  h.controls.editAlternative('world-2');
+  h.controls.editField('site', '');
+  h.controls.saveAlternative();
+  assert.equal(h.view.city.access.rows[2].state, 'unknown');
+  assert.deepEqual(h.view.city.reference, before);
+  assert.equal(h.calls, 0, 'estimating access never calls a concept provider');
+  // Estimates are derived for display; the saved document holds no metric.
+  assert.doesNotMatch(h.saved, /meanMeters|worst|access/);
+});

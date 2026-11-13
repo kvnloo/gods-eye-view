@@ -55,6 +55,7 @@
   },
   "defaults": {"network": "stack", "mainline": "stack", "turns": "straight", "cross": "stack"},
   "steps": [
-    {"id": "S0", "change": "none: the stack's network, demand rates and fixed-time plan as they are, with the demand process sustained over the count windows", "set": {}}
+    {"id": "S0", "change": "none: the stack's network, demand rates and fixed-time plan as they are, with the demand process sustained over the count windows", "set": {}},
+    {"id": "S1", "change": "network: the synthetic 300 m single-lane geometry is replaced by the sourced spacing and stop-line lane groups of the five counted intersections", "set": {"network": "sourced"}, "source": "parameters.spacingMetres (OpenStreetMap) and parameters.laneGroups (the cited study, Appendix 4.2)"}
   ]
 }

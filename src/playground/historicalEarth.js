@@ -414,7 +414,14 @@ export function mountHistoricalEarthLens({ root, services }) {
   });
 
   centerButton.addEventListener('click', () => {
-    const picked = centerCoordinates(services);
+    let picked;
+    try {
+      picked = centerCoordinates(services);
+    } catch (error) {
+      status.textContent =
+        'Could not read the globe center: ' + String(error?.message || error);
+      return;
+    }
     if (!picked) {
       status.textContent =
         'No globe intersection at the crosshair. Zoom out and retry.';

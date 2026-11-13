@@ -542,3 +542,37 @@ test('association requires a usable credential-free HTTPS source reference', () 
     HISTORICAL_PLACES[0].sourceUrl,
   );
 });
+
+test('failed globe-center picking preserves the previous location and usable UI', () => {
+  const { document, nodes, Node } = fakeLensDocument();
+  const root = new Node('root', document);
+  const cleanup = mountHistoricalEarthLens({
+    root,
+    services: {
+      Cesium: {
+        Cartesian2: class {},
+        Ellipsoid: { WGS84: {} },
+      },
+      viewer: {
+        scene: { canvas: { clientWidth: 800, clientHeight: 600 } },
+        camera: {
+          pickEllipsoid() {
+            throw new Error('viewer disconnected');
+          },
+        },
+      },
+    },
+  });
+  const center = nodes.find((node) => node.textContent === 'Use globe center');
+  const map = nodes.find(
+    (node) => node.tag === 'a' && /OpenHistoricalMap/.test(node.textContent),
+  );
+  const before = map.href;
+  assert.doesNotThrow(() => center.dispatch('click'));
+  assert.equal(map.href, before);
+  assert.match(
+    nodes.find((node) => node.role === 'status').textContent,
+    /viewer disconnected/,
+  );
+  cleanup();
+});

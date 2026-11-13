@@ -71,11 +71,12 @@ def settings_for(fixture, step):
     return settings, changes
 
 
-def build_sourced_network(out, fixture, derived):
+def build_sourced_network(out, fixture, derived, posted=False):
     """Sourced spacing and stop-line lane groups; ids match the stack's corridor."""
     places, parameters = fixture['intersections'], fixture['parameters']
     stub = parameters['crossStubMetres']['value']
-    speed = str(parameters['speedMetresPerSecond']['value'])
+    speed = parameters['speedMetresPerSecond']['value']
+    limits = parameters['mainlineSpeedMetresPerSecond']['value'] if posted else [speed] * 4
 
     def moves(i, heading):
         direction = counts.real_direction(places[i], heading)
@@ -103,7 +104,8 @@ def build_sourced_network(out, fixture, derived):
             if edge[0] == 'm' else \
             ((f'{edge[0]}{i}', f'J{i}') if edge.endswith('in') else (f'J{i}', f'{edge[0]}{i}'))
         ET.SubElement(edges, 'edge', {'id': edge, 'from': ends[0], 'to': ends[1],
-                      'numLanes': str(len(lanes[edge])), 'speed': speed,
+                      'numLanes': str(len(lanes[edge])),
+                      'speed': str(limits[i] if edge[0] == 'm' else speed),
                       'priority': '3' if edge[0] == 'm' else '1'})
     for i in (1, 2, 3):
         for heading in HEADINGS:
@@ -175,7 +177,7 @@ def sample_route(rng, origin, shares, interval):
     return route
 
 
-def write_demand(path, entries, shares, seed):
+def write_demand(path, entries, shares, seed, cap=13.89):
     """Seeded departures: Poisson for a rate, exactly N for a counted interval."""
     rng = random.Random(seed)
     departures = []
@@ -196,7 +198,7 @@ def write_demand(path, entries, shares, seed):
     departures.sort()
     root = ET.Element('routes')
     ET.SubElement(root, 'vType', id='car', vClass='passenger', accel='2.6', decel='4.5',
-                  sigma='0.5', length='5', minGap='2.5', maxSpeed='13.89', speedFactor='1.0')
+                  sigma='0.5', length='5', minGap='2.5', maxSpeed=str(cap), speedFactor='1.0')
     for n, (time, origin, interval) in enumerate(departures):
         vehicle = ET.SubElement(root, 'vehicle', id=f'q4b-{seed}-{n}', type='car',
                                 depart=f'{time:.2f}', departLane='best', departSpeed='max')
@@ -243,7 +245,7 @@ def main(argv=None):
     sumo, netconvert = stack.check_binary('sumo', out), stack.check_binary('netconvert', out)
     stack_routes = stack.build_inputs(out)
     if settings['network'] == 'sourced':
-        build_sourced_network(out, fixture, derived)
+        build_sourced_network(out, fixture, derived, settings['speed'] == 'osm')
     network = out / 'corridor.net.xml'
     stack.run_command([netconvert, '--node-files', out / 'nodes.xml', '--edge-files',
                        out / 'edges.xml', '--connection-files', out / 'connections.xml',
@@ -271,8 +273,10 @@ def main(argv=None):
                 stack.DEMAND_SECONDS = END_SECONDS      # the stack's own generator, sustained
                 vehicles += stack.write_demand(demand, stack_routes, seed)
             else:
+                cap = max(fixture['parameters']['mainlineSpeedMetresPerSecond']['value']) \
+                    if settings['speed'] == 'osm' else 13.89
                 vehicles += write_demand(demand, *demand_inputs(fixture, derived, settings,
-                                                                window['id']), seed)
+                                                                window['id']), seed, cap)
             edgedata = Path(f'{prefix}.edgedata.xml')
             root = ET.Element('additional')
             ET.SubElement(root, 'edgeData', id='counts', file=str(edgedata),

@@ -272,6 +272,18 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(entries['N3in'], ([5] + [10 * n + 5 for n in range(8)], True))
         self.assertEqual(len(entries), 8)
 
+    def test_speed_step_sets_posted_limits_on_the_mainline_only(self):
+        self.assertEqual(runner.settings_for(FIXTURE, 'S7')[0]['speed'], 'osm')
+        with tempfile.TemporaryDirectory() as directory:
+            out = Path(directory)
+            runner.build_sourced_network(out, FIXTURE, derived(), posted=True)
+            speed = {e.get('id'): e.get('speed') for e in ET.parse(out / 'edges.xml').getroot()}
+            self.assertEqual([speed[f'm{i}e'] for i in range(4)], ['22.35', '22.35', '22.35', '17.88'])
+            self.assertEqual(speed['m3w'], '17.88')
+            self.assertEqual(speed['N2in'], '13.89')
+            runner.write_demand(out / 'd.xml', {'m0e': ([1] * 9, True)}, lambda *_: (0, 1, 0), 7, 22.35)
+            self.assertEqual(ET.parse(out / 'd.xml').getroot().find('vType').get('maxSpeed'), '22.35')
+
     def test_step_settings_accumulate_and_unknown_step_fails(self):
         settings, change = runner.settings_for(FIXTURE, 'S0')
         self.assertEqual(settings, FIXTURE['defaults'])

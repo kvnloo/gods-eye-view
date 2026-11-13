@@ -28,6 +28,25 @@ const rows = computed(() => {
       value: number(m.far, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
     },
     { id: 'floor', label: t('Floor area'), value: t('{area} m²', { area: number(m.floorAreaSquareMeters, { maximumFractionDigits: 0 }) }) },
+    {
+      id: 'homes',
+      label: t('Homes'),
+      value: number(m.homes),
+      est: true,
+      assumed: t('Assumed {share}% of the floor area is homes of {size} m² each', {
+        share: number(m.residentialShare * 100, { maximumFractionDigits: 0 }),
+        size: number(m.homeSquareMeters),
+      }),
+    },
+    {
+      id: 'shadow',
+      label: t('Shadow reach'),
+      value: t('{value} m', { value: number(m.shadowReachMeters, { maximumFractionDigits: 0 }) }),
+      est: true,
+      assumed: t('Height ÷ tan(sun altitude {altitude}°), on level ground', {
+        altitude: number(m.sunElevationDeg, { maximumFractionDigits: 1 }),
+      }),
+    },
   ];
 });
 const assumed = computed(() =>
@@ -60,9 +79,18 @@ const corners = (r) => [
 const viewport = ref({ width: 1440, height: 900 });
 const box = ref(null);
 const place = ref(null);
+// A phone's free band under the wheel holds two lines: there HOMES and SHADOW
+// REACH stand in a strip above the plot tag instead.
+const EXTRA = ['homes', 'shadow'];
+const phone = computed(() => viewport.value.width < 600);
+const mainRows = computed(() => (phone.value ? rows.value.filter((r) => !EXTRA.includes(r.id)) : rows.value));
+const extraRows = computed(() => (phone.value ? rows.value.filter((r) => EXTRA.includes(r.id)) : []));
+const extraBox = ref(null);
+const extraPlace = ref(null);
 function layout() {
   if (!shown.value) {
     place.value = null;
+    extraPlace.value = null;
     return;
   }
   const wheel = rects('[data-city-play-action], [data-city-play-wheel] .city-play-wheel-ring');
@@ -72,6 +100,21 @@ function layout() {
   // With no clear spot (the plot fills the view) the toggle still stays on screen.
   const clamp = (v, high) => Math.min(Math.max(v, 12), Math.max(12, high - 12));
   place.value = placed && { ...placed, x: clamp(placed.x, viewport.value.width - size.width), y: clamp(placed.y, viewport.value.height - size.height) };
+  if (!extraRows.value.length || !place.value) {
+    extraPlace.value = null;
+    return;
+  }
+  // Beside the wheel and the plot tag together, clear of the readout and the HUD.
+  const extraSize = extraBox.value?.offsetWidth ? { width: extraBox.value.offsetWidth, height: extraBox.value.offsetHeight } : { width: 300, height: 34 };
+  const readout = { left: place.value.x, top: place.value.y, right: place.value.x + size.width, bottom: place.value.y + size.height };
+  const extra = placeBeside({
+    target: boundsOf([{ x: target.left, y: target.top }, { x: target.right, y: target.bottom }, ...rects('[data-city-play-tag]').flatMap(corners)]),
+    size: extraSize,
+    viewport: viewport.value,
+    keepOut: [...KEEP_OUT.flatMap(rects), readout],
+    gap: 8,
+  });
+  extraPlace.value = extra && { x: clamp(extra.x, viewport.value.width - extraSize.width), y: clamp(extra.y, viewport.value.height - extraSize.height) };
 }
 let frame = 0;
 const schedule = () => {
@@ -113,13 +156,31 @@ onBeforeUnmount(() => {
       <span class="city-massing-led" aria-hidden="true"></span>{{ t('Massing') }}
     </button>
     <dl v-if="on" class="city-massing-rows" data-city-massing-rows aria-live="polite">
-      <div v-for="row in rows" :key="row.id" class="city-massing-row" :data-city-massing-row="row.id">
+      <div v-for="row in mainRows" :key="row.id" class="city-massing-row" :data-city-massing-row="row.id">
         <dt :title="row.title">{{ row.label }}</dt>
         <dd>
           <button v-if="row.stepper" type="button" class="city-massing-step" data-city-massing-step="-1" :aria-label="t('Remove a storey')" :disabled="massing.storeys <= 1" @click="massingControls?.step(-1)">−</button>
           <span class="city-massing-value" data-city-massing-value>{{ row.value }}</span>
-          <span v-if="row.est" class="city-massing-est" data-city-massing-est :title="assumed">{{ t('EST', { context: 'estimated value' }) }}</span>
+          <span v-if="row.est" class="city-massing-est" data-city-massing-est :title="row.assumed ?? assumed">{{ t('EST', { context: 'estimated value' }) }}</span>
           <button v-if="row.stepper" type="button" class="city-massing-step" data-city-massing-step="1" :aria-label="t('Add a storey')" :disabled="massing.storeys >= massing.maxStoreys" @click="massingControls?.step(1)">+</button>
+        </dd>
+      </div>
+    </dl>
+  </section>
+  <section
+    v-if="shown && extraRows.length"
+    ref="extraBox"
+    class="city-massing city-massing-extra"
+    data-city-massing-extra
+    :aria-label="t('Massing estimate for this plot')"
+    :style="extraPlace ? { left: `${extraPlace.x}px`, top: `${extraPlace.y}px` } : { visibility: 'hidden' }"
+  >
+    <dl class="city-massing-rows" aria-live="polite">
+      <div v-for="row in extraRows" :key="row.id" class="city-massing-row" :data-city-massing-row="row.id">
+        <dt>{{ row.label }}</dt>
+        <dd>
+          <span class="city-massing-value" data-city-massing-value>{{ row.value }}</span>
+          <span class="city-massing-est" data-city-massing-est :title="row.assumed">{{ t('EST', { context: 'estimated value' }) }}</span>
         </dd>
       </div>
     </dl>

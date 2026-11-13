@@ -142,4 +142,10 @@
     width: 24px;
     height: 24px;
   }
+  /* HOMES and SHADOW REACH: one line above the plot tag. */
+  .city-massing-extra {
+    display: flex;
+    gap: 2px 8px;
+    align-items: center;
+  }
 }

@@ -306,3 +306,28 @@ test('frames keep coming until the block is drawn as it now stands', async () =>
   owner.destroy();
   assert.equal(held(), false);
 });
+
+test('the readout gets HOMES and SHADOW REACH from the block and the scene sun', async () => {
+  const { store, win, select, owner } = mount();
+  await select({ plot: { id: plot.id } });
+  const sun = win.__gevCityMassing.snapshot().sun;
+  const reach = (h) => h / Math.tan((sun.elevationDeg * Math.PI) / 180);
+  assert.equal(store.massing.homes, 46);
+  assert.equal(store.massing.residentialShare, 0.64);
+  assert.equal(store.massing.homeSquareMeters, 85);
+  assert.ok(Math.abs(store.massing.shadowReachMeters - reach(19.2)) < 1e-9);
+  assert.equal(store.massing.sunElevationDeg, sun.elevationDeg);
+  store.massingControls.step(1);
+  store.massingControls.step(1);
+  assert.equal(store.massing.homes, 61);
+  assert.ok(Math.abs(store.massing.shadowReachMeters - reach(25.6)) < 1e-9);
+  owner.destroy();
+});
+
+test('with the sun down SHADOW REACH is missing, never zero', async () => {
+  const { store, select, owner } = mount({ time: NIGHT });
+  await select({ plot: { id: plot.id } });
+  assert.equal(store.massing.shadowReachMeters, null);
+  assert.equal(store.massing.homes, 46);
+  owner.destroy();
+});

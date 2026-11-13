@@ -49,12 +49,18 @@ generates, so a concept is made from the plot as it is.
 `src/ui/views/panels/CityMassingReadout.vue` stands beside the plot in the
 play-mode HUD glass: **HEIGHT** x m with an **EST** chip (its tooltip names the
 assumed storey height and setback), **STOREYS** with a - / + stepper,
-**FAR** (computed) and **FLOOR AREA** in m². The stepper recomputes all four
-and re-extrudes the block. That is three new controls: the toggle and the two
-stepper buttons. The readout is placed with play mode's `placeBeside` beside the
+**FAR** (computed), **FLOOR AREA** in m², **HOMES** with an **EST** chip
+(its tooltip names the assumed residential share and home size) and **SHADOW
+REACH** in whole metres with an **EST** chip (height ÷ tan(sun altitude) on
+level ground, the sun altitude in its tooltip). The stepper recomputes every
+row and re-extrudes the block; SHADOW REACH also follows the scene clock's sun.
+That is three controls: the toggle and the two stepper buttons; HOMES and
+SHADOW REACH add none. The readout is placed with play mode's `placeBeside` beside the
 block, its cast shadow, the wheel and the HUD; when the plot fills the view and
 no spot is clear it is clamped on screen, so the toggle stays reachable. On a
-phone it wraps into two lines to fit the band left by the wheel.
+phone it wraps into two lines to fit the band left by the wheel, and HOMES and
+SHADOW REACH stand in a one-line strip of the same glass above the plot tag
+(the band under the wheel holds only two lines).
 
 The globe owner publishes the readout's numbers and the screen points of the
 block and its shadow through the play store (`massing`, `massingAnchors`,
@@ -75,13 +81,25 @@ polygon and three assumptions:
 | storeys       | 6       | whole storeys, 1 to 60               |
 | storey height | 3.2 m   | floor to floor                       |
 | setback       | 4 m     | every plot edge moves inward by this |
+| res share     | 0.64    | residential share of the floor area  |
+| home size     | 85 m²   | floor area of one home               |
 
 - plot area: the polygon's area in the plot grid's own metric, so a grid plot
   is exactly its 40 m x 40 m cell (1,600 m², the area the zoning legend shows);
 - footprint area: the inset polygon's area (32 m x 32 m = 1,024 m²);
 - floor area = footprint area x storeys;
 - FAR = floor area / plot area;
-- height = storeys x storey height.
+- height = storeys x storey height;
+- site coverage = footprint area / plot area (0.64 by default, 0.7225 with a
+  3 m setback: a separate number from the residential share, though both are
+  0.64 by default);
+- homes = floor(floor area x residential share / home size): 46 at 6 storeys,
+  61 at 8.
+
+`src/data/__fixtures__/massing-golden.json` holds these constants and the
+expected cases (6 and 8 storeys, a 3 m setback, and SHADOW REACH at three sun
+altitudes). `cityMassing.test.mjs` and `citySun.test.mjs` hold the code to it,
+and the dream loop's planspec validator reads the same file.
 
 A setback that leaves no footprint leaves no block: those values are null,
 never zero.

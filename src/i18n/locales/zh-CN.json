@@ -3613,6 +3613,10 @@
   "Remove a storey": "减少一层",
   "Add a storey": "增加一层",
   "Massing estimate for this plot": "此地块的体量估算",
+  "Homes": "住宅套数",
+  "Assumed {share}% of the floor area is homes of {size} m² each": "假设：建筑面积的 {share}% 为住宅，每套 {size} m²",
+  "Shadow reach": "阴影长度",
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "高度 ÷ tan(太阳高度角 {altitude}°)，按平地计",
   "Share": "占比",
   "Hypothetical land use for 40 m grid cells, not the city’s zoning.": "40 米网格单元的假设土地用途，并非城市分区规划。",
   "Walk access shows the existing estimate; land use does not recompute it.": "步行可达性显示现有估算；土地用途不会重新计算它。"

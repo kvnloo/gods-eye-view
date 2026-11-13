@@ -3783,6 +3783,10 @@
   "Remove a storey": "Remover um pavimento",
   "Add a storey": "Adicionar um pavimento",
   "Massing estimate for this plot": "Estimativa volumétrica para este lote",
+  "Homes": "Moradias",
+  "Assumed {share}% of the floor area is homes of {size} m² each": "Suposto: {share}% da área construída são moradias de {size} m² cada",
+  "Shadow reach": "Alcance da sombra",
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Altura ÷ tan(altura do sol {altitude}°), em terreno plano",
   "Share": "Parcela",
   "Hypothetical land use for 40 m grid cells, not the city’s zoning.": "Uso do solo hipotético para células de 40 m, não o zoneamento da cidade.",
   "Walk access shows the existing estimate; land use does not recompute it.": "Acesso a pé mostra a estimativa existente; o uso do solo não a recalcula."

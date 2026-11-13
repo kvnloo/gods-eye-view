@@ -3698,6 +3698,10 @@
   "Remove a storey": "Ein Geschoss entfernen",
   "Add a storey": "Ein Geschoss hinzufügen",
   "Massing estimate for this plot": "Baumassen-Schätzung für diese Fläche",
+  "Homes": "Wohnungen",
+  "Assumed {share}% of the floor area is homes of {size} m² each": "Angenommen: {share} % der Geschossfläche sind Wohnungen mit je {size} m²",
+  "Shadow reach": "Schattenlänge",
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Höhe ÷ tan(Sonnenhöhe {altitude}°), auf ebenem Boden",
   "Share": "Anteil",
   "Hypothetical land use for 40 m grid cells, not the city’s zoning.": "Hypothetische Flächennutzung für 40-m-Rasterzellen, nicht die Bauleitplanung der Stadt.",
   "Walk access shows the existing estimate; land use does not recompute it.": "Fußwegzugang zeigt die vorhandene Schätzung; die Flächennutzung berechnet sie nicht neu."

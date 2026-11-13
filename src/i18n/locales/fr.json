@@ -3783,6 +3783,10 @@
   "Remove a storey": "Retirer un niveau",
   "Add a storey": "Ajouter un niveau",
   "Massing estimate for this plot": "Estimation volumétrique pour cette parcelle",
+  "Homes": "Logements",
+  "Assumed {share}% of the floor area is homes of {size} m² each": "Hypothèse : {share} % de la surface de plancher en logements de {size} m² chacun",
+  "Shadow reach": "Portée de l'ombre",
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Hauteur ÷ tan(hauteur du soleil {altitude}°), sur terrain plat",
   "Share": "Part",
   "Hypothetical land use for 40 m grid cells, not the city’s zoning.": "Usage du sol hypothétique pour des cellules de 40 m, pas le zonage de la ville.",
   "Walk access shows the existing estimate; land use does not recompute it.": "Accès piéton montre l’estimation existante ; l’usage du sol ne la recalcule pas."

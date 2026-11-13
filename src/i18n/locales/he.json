@@ -3783,6 +3783,10 @@
   "Remove a storey": "הסרת קומה",
   "Add a storey": "הוספת קומה",
   "Massing estimate for this plot": "הערכת נפח בנייה למגרש זה",
+  "Homes": "דירות",
+  "Assumed {share}% of the floor area is homes of {size} m² each": "הנחה: {share}% משטח הרצפות הם דירות של {size} מ\"ר כל אחת",
+  "Shadow reach": "אורך הצל",
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "גובה ÷ tan(גובה השמש {altitude}°), על קרקע מישורית",
   "Share": "נתח",
   "Hypothetical land use for 40 m grid cells, not the city’s zoning.": "ייעוד קרקע היפותטי לתאי רשת של 40 מ׳, לא תוכנית הבנייה של העיר.",
   "Walk access shows the existing estimate; land use does not recompute it.": "נגישות להליכה מציגה את ההערכה הקיימת; ייעוד הקרקע אינו מחשב אותה מחדש."

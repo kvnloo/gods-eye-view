@@ -56,6 +56,8 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
   let site = null;
   let removeFrame = null;
   let lastAnchors = '';
+  // The shadow reach the readout shows, in whole metres.
+  let lastReach = null;
   let disposed = false;
   // `{frames, timer, remove}` while frames are held for new geometry.
   let build = null;
@@ -324,6 +326,10 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
     if (ready && !site.ready) reground();
     site.ready = ready;
     site.sun = sunAt(site.plot);
+    // The sun moves with the scene clock: the readout follows its reach.
+    const reach = shadowReach(site.massing.heightMeters, site.sun);
+    if ((reach === null ? null : Math.round(reach)) !== lastReach)
+      publish(site.plot);
     const shadows = site.shadowsBefore || site.sun?.elevationDeg > 0;
     if (viewer.shadows !== shadows) viewer.shadows = shadows;
     const { base, massing } = site;
@@ -350,10 +356,13 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
 
   function publish(plot) {
     if (!plot) return store.publishMassing(null);
-    const m =
-      site?.plot.id === plot.id
-        ? site.massing
-        : plotMassing({ corners: plot.corners, storeys });
+    const standing = site?.plot.id === plot.id;
+    const m = standing
+      ? site.massing
+      : plotMassing({ corners: plot.corners, storeys });
+    const sun = standing ? site.sun : sunAt(plot);
+    const reach = shadowReach(m.heightMeters, sun);
+    lastReach = reach === null ? null : Math.round(reach);
     store.publishMassing({
       on,
       plotId: plot.id,
@@ -364,6 +373,11 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
       heightMeters: m.heightMeters,
       far: m.far,
       floorAreaSquareMeters: m.floorAreaSquareMeters,
+      homes: m.homes,
+      residentialShare: m.residentialShare,
+      homeSquareMeters: m.homeSquareMeters,
+      shadowReachMeters: reach,
+      sunElevationDeg: sun?.elevationDeg ?? null,
     });
   }
 

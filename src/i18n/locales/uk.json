@@ -3868,6 +3868,10 @@
   "Remove a storey": "Прибрати поверх",
   "Add a storey": "Додати поверх",
   "Massing estimate for this plot": "Оцінка обʼєму забудови для цієї ділянки",
+  "Homes": "Квартири",
+  "Assumed {share}% of the floor area is homes of {size} m² each": "Припущення: {share}% площі поверхів — квартири по {size} м²",
+  "Shadow reach": "Довжина тіні",
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Висота ÷ tan(висота сонця {altitude}°), на рівній землі",
   "Share": "Частка",
   "Hypothetical land use for 40 m grid cells, not the city’s zoning.": "Гіпотетичне землекористування для клітинок 40 м, а не міське зонування.",
   "Walk access shows the existing estimate; land use does not recompute it.": "Пішохідна доступність показує наявну оцінку; землекористування її не перераховує."

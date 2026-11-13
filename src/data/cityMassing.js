@@ -4,11 +4,17 @@
 // the polygon's mean latitude), so a grid plot is exactly its 40 m x 40 m cell.
 const METERS_PER_DEGREE = 111_320;
 
-/** What the block assumes until the user changes it; the stepper sets storeys. */
+/**
+ * What the block assumes until the user changes it; the stepper sets storeys.
+ * HOMES assumes 64 % of the floor area is homes of 85 m² each. The same
+ * constants and cases are in __fixtures__/massing-golden.json.
+ */
 export const MASSING_ASSUMPTIONS = Object.freeze({
   storeys: 6,
   storeyHeightMeters: 3.2,
   setbackMeters: 4,
+  residentialShare: 0.64,
+  homeSquareMeters: 85,
 });
 export const MAX_STOREYS = 60;
 
@@ -80,9 +86,11 @@ export function polygonAreaSquareMeters(corners) {
 }
 
 /**
- * The assumed block on a plot: its footprint is the plot inset by the setback,
- * every storey covers the footprint, and FAR = floor area / plot area. A
- * setback that leaves no footprint leaves no block: those values are null.
+ * The assumed block on a plot: its footprint is the plot inset by the setback
+ * (site coverage = footprint / plot), every storey covers the footprint, FAR =
+ * floor area / plot area and HOMES = floor(floor area x residential share /
+ * home size). A setback that leaves no footprint leaves no block: those values
+ * are null.
  */
 export function plotMassing({
   corners,
@@ -102,6 +110,8 @@ export function plotMassing({
     ? inset(frame.points, setbackMeters)
     : frame.points;
   const footprintAreaSquareMeters = inner && Math.abs(signedArea(inner));
+  const floorAreaSquareMeters = inner && footprintAreaSquareMeters * storeys;
+  const { residentialShare, homeSquareMeters } = MASSING_ASSUMPTIONS;
   return Object.freeze({
     estimated: true,
     storeys,
@@ -112,9 +122,15 @@ export function plotMassing({
       inner &&
       Object.freeze(inner.map((p) => Object.freeze(frame.toLonLat(p)))),
     footprintAreaSquareMeters,
-    floorAreaSquareMeters: inner && footprintAreaSquareMeters * storeys,
-    far: inner && (footprintAreaSquareMeters * storeys) / plotAreaSquareMeters,
+    siteCoverage: inner && footprintAreaSquareMeters / plotAreaSquareMeters,
+    floorAreaSquareMeters,
+    far: inner && floorAreaSquareMeters / plotAreaSquareMeters,
     heightMeters: inner && storeys * storeyHeightMeters,
+    residentialShare,
+    homeSquareMeters,
+    homes:
+      inner &&
+      Math.floor((floorAreaSquareMeters * residentialShare) / homeSquareMeters),
   });
 }
 

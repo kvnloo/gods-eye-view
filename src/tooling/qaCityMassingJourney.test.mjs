@@ -133,3 +133,14 @@ test("the rendered shadow tip and Cesium's scene sun are checked against the sun
   // max(1 m, 5 %) of the formula, height measured to the ground at the tip.
   assert.match(source, /Math\.max\(1, 0\.05 \* tip\.expectedReach\)/);
 });
+
+test('HOMES and SHADOW REACH are read on desktop and in the phone strip', () => {
+  assert.match(source, /homes: '46',/);
+  assert.match(source, /shadow: '45 m',/);
+  assert.match(source, /homes: '61',/);
+  assert.match(source, /shadow: '59 m',/);
+  const phone = source.slice(source.indexOf("'Mobile 390x844"));
+  assert.match(phone, /insideViewport\(S\.extra, MOBILE\)/);
+  assert.match(phone, /noOverlap\(S\.extra, other\)/);
+  assert.match(phone, /legibility\('extra-mobile', S\.extra\)/);
+});

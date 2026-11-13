@@ -30,6 +30,11 @@ function massingView(on, storeys = 6) {
     heightMeters: m.heightMeters,
     far: m.far,
     floorAreaSquareMeters: m.floorAreaSquareMeters,
+    homes: m.homes,
+    residentialShare: m.residentialShare,
+    homeSquareMeters: m.homeSquareMeters,
+    shadowReachMeters: m.heightMeters / Math.tan((23.33 * Math.PI) / 180),
+    sunElevationDeg: 23.33,
   };
 }
 // The plot footprint and the block with its shadow, projected on screen.
@@ -219,4 +224,66 @@ test('the rows announce what the stepper changed', async (t) => {
     $('[data-city-massing-rows]').getAttribute('aria-live'),
     'polite',
   );
+});
+
+test('HOMES n EST and SHADOW REACH n m EST join the readout: no new control', async (t) => {
+  const { store, settle, $, $$ } = await mount(t);
+  store.publish(playView());
+  store.place(anchors);
+  store.publishMassing(massingView(true));
+  await settle();
+  const value = (id) =>
+    $(
+      `[data-city-massing-row="${id}"] [data-city-massing-value]`,
+    ).textContent.trim();
+  const est = (id) =>
+    $(`[data-city-massing-row="${id}"] [data-city-massing-est]`);
+  assert.equal($$('[data-city-massing] button').length, 3, 'still 3 controls');
+  assert.equal($('[data-city-massing-extra]'), null, 'one readout on desktop');
+  assert.equal(value('homes'), '46');
+  assert.equal(value('shadow'), '45 m');
+  assert.ok(est('homes') && est('shadow'), 'both marked EST');
+  assert.match(est('homes').title, /64% of the floor area is homes of 85 m²/);
+  assert.match(est('shadow').title, /23\.3°/);
+  store.publishMassing(massingView(true, 8));
+  await settle();
+  assert.equal(value('homes'), '61');
+  assert.equal(value('shadow'), '59 m');
+  store.publishMassing({ ...massingView(true), shadowReachMeters: null });
+  await settle();
+  assert.equal(value('shadow'), '— m', 'no sun: missing, never zero');
+});
+
+test('on a phone HOMES and SHADOW REACH stand in their own strip beside the plot tag', async (t) => {
+  const { store, settle, $ } = await mount(t);
+  Object.defineProperty(window, 'innerWidth', {
+    value: 390,
+    configurable: true,
+  });
+  Object.defineProperty(window, 'innerHeight', {
+    value: 844,
+    configurable: true,
+  });
+  window.dispatchEvent(new Event('resize'));
+  store.publish(playView());
+  store.place(anchors);
+  store.publishMassing(massingView(true));
+  await settle();
+  await settle();
+  const ids = (root) =>
+    [...root.querySelectorAll('[data-city-massing-row]')].map(
+      (row) => row.dataset.cityMassingRow,
+    );
+  const strip = $('[data-city-massing-extra]');
+  assert.ok(strip, 'the strip is there');
+  assert.deepEqual(ids(strip), ['homes', 'shadow']);
+  assert.deepEqual(ids($('[data-city-massing]')), [
+    'height',
+    'storeys',
+    'far',
+    'floor',
+  ]);
+  assert.equal(strip.querySelectorAll('button').length, 0, 'no new control');
+  assert.equal(strip.querySelectorAll('[data-city-massing-est]').length, 2);
+  assert.notEqual(strip.style.visibility, 'hidden', 'placed');
 });

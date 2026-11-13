@@ -59,6 +59,8 @@ const S = {
   readout: '[data-city-massing]',
   toggle: '[data-city-massing-toggle]',
   plus: '[data-city-massing-step="1"]',
+  // On a phone HOMES and SHADOW REACH stand in their own strip.
+  extra: '[data-city-massing-extra]',
 };
 const report = {
   startedAt: new Date().toISOString(),
@@ -338,7 +340,7 @@ async function groundPoints(offsets, { terrain = false } = {}) {
     ([list, onTerrain]) => {
       const hud = [
         ...document.querySelectorAll(
-          '[data-city-massing], [data-city-massing-leader]',
+          '[data-city-massing], [data-city-massing-extra], [data-city-massing-leader]',
         ),
       ];
       hud.forEach((el) => (el.style.visibility = 'hidden'));
@@ -782,12 +784,15 @@ async function readout() {
     ),
   );
 }
-// What the readout must show for the block the globe owner stands (en-US).
+// What the readout must show for the block the globe owner stands (en-US):
+// HOMES = floor(floor area x 0.64 / 85), SHADOW REACH = height / tan(altitude).
 const shows = (s) => ({
   height: `${Number(s.massing.heightMeters.toFixed(1))} m`,
   storeys: String(s.storeys),
   far: s.massing.far.toFixed(2),
   floor: `${Math.round(s.massing.floorAreaSquareMeters).toLocaleString('en-US')} m²`,
+  homes: String(Math.floor((s.massing.floorAreaSquareMeters * 0.64) / 85)),
+  shadow: `${Math.round(shadowLength(s, s.massing.heightMeters))} m`,
 });
 const storage = () => page.evaluate(() => ({ ...localStorage }));
 async function massingOn(plotId) {
@@ -830,7 +835,7 @@ async function noOverlap(a, b) {
 }
 // Every visible readout label: 4.5:1 over its glass on a white backdrop (a
 // bright roof) and caps at 12 px or more, as qa-city-play audits play mode.
-async function legibility(label) {
+async function legibility(label, selector = S.readout) {
   const texts = await page.evaluate((selector) => {
     const root = document.querySelector(selector);
     const gradient = (image) => {
@@ -872,7 +877,7 @@ async function legibility(label) {
       });
     }
     return out;
-  }, S.readout);
+  }, selector);
   const results = texts.map((t) => ({ ...t, ...textLegibility(t) }));
   const failures = results.filter((r) => !r.ok);
   (report.measurements.legibility ??= {})[label] = {
@@ -886,34 +891,36 @@ async function legibility(label) {
 }
 // The readout covers neither the block nor the ground its shadow falls on
 // (shadow points found with the readout hidden, so they can be under it).
-async function clearOfMassing(shadowPoints) {
-  const covered = await page.evaluate((points) => {
-    const r = document
-      .querySelector('[data-city-massing]')
-      .getBoundingClientRect();
-    const { scene } = window.__godsEyeView.viewer;
-    const s = window.__gevCityMassing.snapshot();
-    const canvas = scene.canvas.getBoundingClientRect();
-    const corners = [s.blockBase, s.blockExtrudedHeight].flatMap((height) =>
-      s.massing.footprint.map(([lon, lat]) => {
-        const p = scene.cartesianToCanvasCoordinates(
-          scene.globe.ellipsoid.cartographicToCartesian({
-            longitude: (lon * Math.PI) / 180,
-            latitude: (lat * Math.PI) / 180,
-            height,
-          }),
-        );
-        return p && { x: p.x + canvas.left, y: p.y + canvas.top };
-      }),
-    );
-    return [...corners.filter(Boolean), ...points].filter(
-      (p) => p.x >= r.left && p.x <= r.right && p.y >= r.top && p.y <= r.bottom,
-    );
-  }, shadowPoints.filter(Boolean));
+async function clearOfMassing(shadowPoints, selector = S.readout) {
+  const covered = await page.evaluate(
+    ([points, sel]) => {
+      const r = document.querySelector(sel).getBoundingClientRect();
+      const { scene } = window.__godsEyeView.viewer;
+      const s = window.__gevCityMassing.snapshot();
+      const canvas = scene.canvas.getBoundingClientRect();
+      const corners = [s.blockBase, s.blockExtrudedHeight].flatMap((height) =>
+        s.massing.footprint.map(([lon, lat]) => {
+          const p = scene.cartesianToCanvasCoordinates(
+            scene.globe.ellipsoid.cartographicToCartesian({
+              longitude: (lon * Math.PI) / 180,
+              latitude: (lat * Math.PI) / 180,
+              height,
+            }),
+          );
+          return p && { x: p.x + canvas.left, y: p.y + canvas.top };
+        }),
+      );
+      return [...corners.filter(Boolean), ...points].filter(
+        (p) =>
+          p.x >= r.left && p.x <= r.right && p.y >= r.top && p.y <= r.bottom,
+      );
+    },
+    [shadowPoints.filter(Boolean), selector],
+  );
   assert.deepEqual(
     covered,
     [],
-    'the readout covers no block corner or shadow point',
+    `${selector} covers no block corner or shadow point`,
   );
 }
 async function zonePlot(use) {
@@ -1093,7 +1100,7 @@ try {
   );
 
   await check(
-    'Readout beside the plot: HEIGHT m EST, STOREYS, FAR, FLOOR AREA; at most 3 new controls',
+    'Readout beside the plot: HEIGHT m EST, STOREYS, FAR, FLOOR AREA, HOMES EST, SHADOW REACH m EST; at most 3 new controls',
     async () => {
       const s = await massing();
       const values = await readout();
@@ -1104,13 +1111,17 @@ try {
         storeys: '6',
         far: '3.84',
         floor: '6,144 m²',
+        homes: '46',
+        shadow: '45 m',
       });
-      assert.ok(
-        await locator('[data-city-massing-est]').isVisible(),
-        'EST shown',
+      assert.equal(
+        await locator('[data-city-massing-est]:visible').count(),
+        3,
+        'EST on HEIGHT, HOMES and SHADOW REACH',
       );
       assert.equal(await locator(`${S.readout} button`).count(), 3);
       await insideViewport(S.readout, DESKTOP);
+      assert.equal(await locator(S.extra).count(), 0, 'one readout on desktop');
       for (const other of HUD) await noOverlap(S.readout, other);
       await clearOfMassing(shadow6.shadePoints);
       await legibility('readout');
@@ -1156,6 +1167,8 @@ try {
         storeys: '8',
         far: '5.12',
         floor: '8,192 m²',
+        homes: '61',
+        shadow: '59 m',
       });
       assert.ok(
         Math.abs(s.blockExtrudedHeight - s.base - 25.6) < 1e-6,
@@ -1236,6 +1249,8 @@ try {
         storeys: '6',
         far: '3.84',
         floor: '6,144 m²',
+        homes: '46',
+        shadow: '45 m',
       });
       assert.equal((await storage())[KEY], doc, 'the save is untouched');
       await screenshot('06-reload-recomputed');
@@ -1261,18 +1276,23 @@ try {
       assert.deepEqual(await readout(), shows(await massing()));
       await insideViewport(S.readout, MOBILE);
       for (const other of HUD) await noOverlap(S.readout, other);
+      // HOMES and SHADOW REACH: their own strip, on screen, over nothing.
+      await locator(S.extra).waitFor({ state: 'visible' });
+      await insideViewport(S.extra, MOBILE);
+      for (const other of [...HUD, S.readout]) await noOverlap(S.extra, other);
       const s = await massing();
-      await clearOfMassing(
-        await groundPoints(
-          alongSun(
-            s,
-            [0.3, 0.45, 0.6].map(
-              (f) => halfWidth(s) + f * shadowLength(s, s.massing.heightMeters),
-            ),
+      const shadowPoints = await groundPoints(
+        alongSun(
+          s,
+          [0.3, 0.45, 0.6].map(
+            (f) => halfWidth(s) + f * shadowLength(s, s.massing.heightMeters),
           ),
         ),
       );
+      await clearOfMassing(shadowPoints);
+      await clearOfMassing(shadowPoints, S.extra);
       await legibility('readout-mobile');
+      await legibility('extra-mobile', S.extra);
       await screenshot('07-mobile-readout');
       await page.setViewportSize(DESKTOP);
     },

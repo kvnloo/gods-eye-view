@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import * as Cesium from 'cesium';
 import { shadowReach, shadowTip, sunPosition } from './citySun.js';
@@ -248,4 +249,22 @@ test('the shadow tip is the footprint moved away from the sun by height / tan(el
     'no sun, no shadow',
   );
   assert.equal(shadowTip(null, 10, { azimuthDeg: 0, elevationDeg: 30 }), null);
+});
+
+test('the golden shadow cases: SHADOW REACH from height and sun altitude, in whole metres', () => {
+  const golden = JSON.parse(
+    readFileSync(
+      new URL('./__fixtures__/massing-golden.json', import.meta.url),
+    ),
+  );
+  for (const c of golden.shadow_cases) {
+    const reach = shadowReach(c.height_m, {
+      elevationDeg: c.sun_altitude_deg,
+      azimuthDeg: c.sun_azimuth_deg,
+    });
+    near(reach, c.shadow_reach_m, c.name, 1e-3);
+    assert.equal(`${Math.round(reach)} m`, c.shown, c.name);
+    const at = sunPosition(PLOT.center.lat, PLOT.center.lon, Date.parse(c.utc));
+    near(at.elevationDeg, c.sun_altitude_deg, `${c.name}: sun`, 1);
+  }
 });

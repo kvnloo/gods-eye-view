@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
   MASSING_ASSUMPTIONS,
@@ -42,6 +43,8 @@ test('the assumed block: footprint inset by the setback, floor area, FAR, height
     storeys: 6,
     storeyHeightMeters: 3.2,
     setbackMeters: 4,
+    residentialShare: 0.64,
+    homeSquareMeters: 85,
   });
   const m = plotMassing({ corners: plot.corners });
   assert.equal(m.estimated, true);
@@ -191,4 +194,57 @@ test('the block stands on the ground at the plot centre, the plate reaches the l
   });
   assert.deepEqual(groundBase(3, []), { base: 3, floor: 3 });
   assert.equal(groundBase(undefined, [Number.NaN]), null);
+});
+
+// The golden cases the dream loop's planspec validator reads as well.
+const golden = JSON.parse(
+  readFileSync(new URL('./__fixtures__/massing-golden.json', import.meta.url)),
+);
+
+test('the golden constants are the massing assumptions', () => {
+  assert.deepEqual(
+    {
+      storey_height_m: MASSING_ASSUMPTIONS.storeyHeightMeters,
+      setback_m: MASSING_ASSUMPTIONS.setbackMeters,
+      res_share: MASSING_ASSUMPTIONS.residentialShare,
+      unit_m2: MASSING_ASSUMPTIONS.homeSquareMeters,
+    },
+    golden.constants,
+  );
+});
+
+test('every golden case: footprint, site coverage, floor area, FAR, height and HOMES', () => {
+  const plot = snapPlot({ lat: 37.8006, lon: -122.4103 });
+  for (const c of golden.massing_cases) {
+    const m = plotMassing({
+      corners: plot.corners,
+      storeys: c.storeys,
+      setbackMeters: c.setback_m,
+    });
+    const at = (label) => `${c.name}: ${label}`;
+    near(m.plotAreaSquareMeters, c.plot_m2, at('plot'), 1e-6);
+    near(m.footprintAreaSquareMeters, c.footprint_m2, at('footprint'), 1e-6);
+    near(m.siteCoverage, c.site_coverage, at('site coverage'), 1e-9);
+    assert.equal(m.residentialShare, c.res_share, at('res_share'));
+    near(m.floorAreaSquareMeters, c.floor_area_m2, at('floor area'), 1e-6);
+    near(m.far, c.far, at('FAR'), 1e-9);
+    near(m.heightMeters, c.height_m, at('height'), 1e-9);
+    assert.equal(m.homes, c.homes, at('homes'));
+  }
+});
+
+test('res_share and site coverage are separate: with a 3 m setback, swapping them changes HOMES', () => {
+  const c = golden.massing_cases.find((x) => x.setback_m === 3);
+  assert.equal(c.site_coverage, 0.7225);
+  assert.equal(c.res_share, 0.64);
+  const unit = golden.constants.unit_m2;
+  assert.equal(Math.floor((c.floor_area_m2 * c.res_share) / unit), c.homes);
+  assert.equal(Math.floor((c.floor_area_m2 * c.site_coverage) / unit), 58);
+});
+
+test('no footprint, no homes: missing, never zero', () => {
+  const plot = snapPlot({ lat: 37.8006, lon: -122.4103 });
+  const m = plotMassing({ corners: plot.corners, setbackMeters: 25 });
+  assert.equal(m.homes, null);
+  assert.equal(m.siteCoverage, null);
 });

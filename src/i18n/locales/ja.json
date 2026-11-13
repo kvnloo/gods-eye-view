@@ -3613,6 +3613,10 @@
   "Remove a storey": "1階減らす",
   "Add a storey": "1階増やす",
   "Massing estimate for this plot": "この区画のボリューム推定",
+  "Homes": "住戸数",
+  "Assumed {share}% of the floor area is homes of {size} m² each": "仮定：延床面積の{share}%が1戸{size} m²の住戸",
+  "Shadow reach": "影の長さ",
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "高さ ÷ tan(太陽高度 {altitude}°)、平坦な地面の場合",
   "Share": "割合",
   "Hypothetical land use for 40 m grid cells, not the city’s zoning.": "40 m グリッドセルの仮想の土地利用であり、市の用途地域ではありません。",
   "Walk access shows the existing estimate; land use does not recompute it.": "徒歩アクセスは既存の推定値を表示します。土地利用で再計算はしません。"

@@ -24,6 +24,13 @@ const AREA_TYPES = new Set([
 ]);
 const COVERAGE = new Set(['complete', 'partial', 'unknown']);
 
+// Annual TWh in one unit, keyed by the unit exactly as the publisher prints it.
+// 1 TWh = 3.6e15 J (NIST SP 811 B.8: watt hour = 3.6 E+03 J).
+const TWH_PER_PUBLISHED_UNIT = new Map([
+  // EIA. NIST SP 811 B.8: quad (10^15 Btu IT) = 1.055 056 E+18 J.
+  ['Quadrillion Btu', 1.055056e18 / 3.6e15],
+]);
+
 const text = (value) => (typeof value === 'string' ? value.trim() : '');
 
 /** Calendar years only; no local time zones or instantaneous measurements. */
@@ -107,10 +114,22 @@ function validSource(source) {
   }
 }
 
+/** Annual TWh of a value in the publisher's own unit; null when unusable. */
+function publishedTWh(published) {
+  if (!published || typeof published !== 'object' || Array.isArray(published))
+    return null;
+  const perUnit = TWH_PER_PUBLISHED_UNIT.get(published.unit);
+  const { value } = published;
+  return perUnit && typeof value === 'number' && value >= 0
+    ? value * perUnit
+    : null;
+}
+
 /**
  * Validate a versioned, attributed annual energy observation.
  * A missing/suppressed value stays null, never zero. Malformed input rejects
  * the whole record rather than manufacturing an area, metric, or source.
+ * A value given as published is kept beside the TWh derived from it.
  */
 export function normalizeEnergyObservation(row) {
   if (!row || typeof row !== 'object' || Array.isArray(row)) return null;
@@ -124,12 +143,26 @@ export function normalizeEnergyObservation(row) {
     !validSource(row.source)
   )
     return null;
+  // A row may state its value as published ({ value, unit }) instead of in
+  // TWh. The published value is then the fact: a TWh figure beside it must be
+  // exactly its conversion, and a missing observation carries neither.
+  const hasPublished = row.published != null;
+  let annualTWh = row.annualTWh;
+  if (hasPublished) {
+    annualTWh = publishedTWh(row.published);
+    if (
+      annualTWh === null ||
+      row.status === 'missing' ||
+      (row.annualTWh != null && row.annualTWh !== annualTWh)
+    )
+      return null;
+  }
   if (row.status === 'missing') {
-    if (row.annualTWh != null) return null;
+    if (annualTWh != null) return null;
   } else if (
-    typeof row.annualTWh !== 'number' ||
-    !Number.isFinite(row.annualTWh) ||
-    row.annualTWh < 0
+    typeof annualTWh !== 'number' ||
+    !Number.isFinite(annualTWh) ||
+    annualTWh < 0
   )
     return null;
 
@@ -152,7 +185,13 @@ export function normalizeEnergyObservation(row) {
     area,
     metric: row.metric,
     calendarYear: row.calendarYear,
-    annualTWh: row.status === 'missing' ? null : row.annualTWh,
+    annualTWh: row.status === 'missing' ? null : annualTWh,
+    ...(hasPublished && {
+      published: Object.freeze({
+        value: row.published.value,
+        unit: row.published.unit,
+      }),
+    }),
     status: row.status,
     source,
     geographyCoverage: row.geographyCoverage,

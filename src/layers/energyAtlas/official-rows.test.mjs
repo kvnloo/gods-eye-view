@@ -65,6 +65,7 @@ const asPublished = (row) => ({
 });
 
 const relativeError = (model, cited) => Math.abs(model - cited) / cited;
+const rowById = (id) => fixture.rows.find((row) => row.id === id);
 
 // Null when the model ingests the row unchanged, else the reason it does not.
 function ingestFailure(row) {
@@ -184,4 +185,72 @@ test('metric: official rows ingested unchanged / total rows', (t) => {
   );
   assert.equal(fixture.rows.length, 7);
   assert.equal(ingested.length, fixture.rows.length);
+});
+
+test('published value and unit: the model converts, keeps both and fails closed', () => {
+  const usa = asPublished(rowById('eia-2024-TETCBUS'));
+  const record = normalizeEnergyObservation(usa);
+  assert.ok(record, 'the model rejects the row as published');
+  assert.deepEqual(record.published, usa.published);
+  assert.notEqual(record.published, usa.published);
+  assert.ok(Object.isFrozen(record.published));
+  // Normalizing a normalized record changes nothing.
+  assert.deepEqual(normalizeEnergyObservation(record), record);
+  // A TWh figure beside the published value must be its conversion.
+  assert.equal(
+    normalizeEnergyObservation({ ...usa, annualTWh: record.annualTWh + 1 }),
+    null,
+  );
+  // The unit matches exactly as printed; an unknown unit is never guessed.
+  for (const unit of [
+    'quadrillion Btu',
+    ' Quadrillion Btu',
+    'Quad',
+    'Btu',
+    '',
+    'constructor',
+    '__proto__',
+    null,
+    undefined,
+    15,
+    new String('Quadrillion Btu'),
+  ])
+    assert.equal(
+      normalizeEnergyObservation({
+        ...usa,
+        published: { ...usa.published, unit },
+      }),
+      null,
+      `unit ${String(unit)}`,
+    );
+  // Blank, text, negative and non-finite values never become a number.
+  for (const value of [null, undefined, NaN, Infinity, -1, '94.582337'])
+    assert.equal(
+      normalizeEnergyObservation({
+        ...usa,
+        published: { ...usa.published, value },
+      }),
+      null,
+      `value ${String(value)}`,
+    );
+  for (const published of [[], 'Quadrillion Btu', 94.582337, true, 0, ''])
+    assert.equal(normalizeEnergyObservation({ ...usa, published }), null);
+  // A missing observation carries no published number.
+  assert.equal(normalizeEnergyObservation({ ...usa, status: 'missing' }), null);
+  // An explicit published zero stays zero.
+  assert.equal(
+    normalizeEnergyObservation({
+      ...usa,
+      published: { value: 0, unit: 'Quadrillion Btu' },
+    }).annualTWh,
+    0,
+  );
+  // A record given in TWh keeps its shape: no published field appears.
+  const twh = normalizeEnergyObservation({
+    ...usa,
+    published: undefined,
+    annualTWh: 1,
+  });
+  assert.equal(twh.annualTWh, 1);
+  assert.equal(Object.hasOwn(twh, 'published'), false);
 });

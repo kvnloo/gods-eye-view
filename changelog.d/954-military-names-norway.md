@@ -8,5 +8,6 @@
   ones. Every row cites its Wikidata item; OSM names always win, and a site
   gives way to an area OSM maps and names beside it. Operators with Overpass
   configured get the same names. `scripts/build-military-names-norway.py`
-  rebuilds or `--verify`s the supplement from a dated Geofabrik extract
-  (trygvehhh, #954).
+  rebuilds or `--verify`s the supplement from a dated Geofabrik extract.
+  Named tile polygons keep their Wikidata source credit alongside OpenStreetMap
+  geometry attribution (trygvehhh, #954).

@@ -160,6 +160,18 @@ export function nameMilitaryFragment(fragment, names) {
     namedArea: true,
     areaM2: named.areaM2,
     nameRecord: named,
+    // A tile contributes OSM geometry, but the supplement provides the name.
+    sources: [
+      ...(fragment.sources || []),
+      ...(named.sources || []).filter(
+        (source) =>
+          source.name === 'Wikidata' &&
+          !fragment.sources?.some(
+            (existing) =>
+              existing.name === source.name && existing.id === source.id,
+          ),
+      ),
+    ],
   };
 }
 

@@ -7077,6 +7077,8 @@ the active terrain, removed on deselect/disable and rebound on map-source change
 clears the source and removes marker listeners. Named point ids carry into polygon
 views; wide named points remain until their close polygons publish. Unnamed
 polygons remain “Military area”. The Norway supplement names five mapped areas that OSM leaves unnamed and adds Wikidata positions for five active sites without a mapped area; OSM names take precedence.
+Names applied to tile polygons retain their Wikidata source credit alongside the
+OpenStreetMap geometry credit.
 The base name pack and optional supplement load and index independently. A failed
 or malformed supplement keeps the global base names available, then retries
 after its own increasing cooldown; it does not reload or reindex the base.

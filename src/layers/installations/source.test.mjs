@@ -245,6 +245,61 @@ test('a named site with no mapped area stays in close tile views', async () => {
   assert.deepEqual(andenes.records, []);
 });
 
+test('mapped Norwegian tile names retain their Wikidata source credit', async () => {
+  const source = createInstallationSource({
+    fetchImpl: async () =>
+      Response.json({ code: 'OVERPASS_NOT_CONFIGURED', retryable: false }),
+    mapTiles: {
+      clear() {},
+      async fetchBounds() {
+        return {
+          tiles: [
+            {
+              military: [
+                {
+                  id: 'ofm:installation:1629029612',
+                  featureKey: '1629029612',
+                  kind: 'installation',
+                  class: 'military_land',
+                  name: 'Military area',
+                  longitude: 16.0975,
+                  latitude: 69.289,
+                  tileZoom: 12,
+                  footprint: [
+                    [16.085, 69.285],
+                    [16.11, 69.285],
+                    [16.11, 69.293],
+                    [16.085, 69.293],
+                    [16.085, 69.285],
+                  ],
+                  sources: [{ name: 'OpenStreetMap', id: 'tile:12/0/0' }],
+                },
+              ],
+            },
+          ],
+          partial: false,
+        };
+      },
+    },
+  });
+  const initial = await source.getMappedSites({
+    south: 69.27,
+    west: 16.05,
+    north: 69.32,
+    east: 16.2,
+  });
+  const { records } = (await initial.enrichment) || initial;
+  assert.equal(records.length, 1);
+  assert.equal(records[0].name, 'Andøya flystasjon');
+  assert.deepEqual(
+    records[0].sources.map(({ name, id }) => [name, id]),
+    [
+      ['OpenStreetMap', 'tile:12/0/0'],
+      ['Wikidata', 'Q3271057'],
+    ],
+  );
+});
+
 test('live Overpass answers take supplement names only where OSM has none', async () => {
   const way = (id, tags) => ({
     type: 'way',

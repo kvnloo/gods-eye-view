@@ -131,3 +131,25 @@ export function transition(from, { to, basis } = {}) {
     receipts: [...base.receipts, { from: base.lane, to, basis }],
   });
 }
+
+/** JSON text of a record; `parseRecord` reads it back unchanged. */
+export function serializeRecord(value) {
+  return JSON.stringify(record(value));
+}
+
+/**
+ * Read a serialized record. Every rule is checked again, so an edited lane, a
+ * type from another lane or a receipt chain that does not lead to the stated
+ * lane is refused: import cannot move a hypothetical record into Observed.
+ */
+export function parseRecord(text) {
+  let value;
+  try {
+    value = JSON.parse(text);
+  } catch {
+    value = null;
+  }
+  if (!value || typeof value !== 'object')
+    refuse('parse', 'not a serialized record');
+  return record(value);
+}

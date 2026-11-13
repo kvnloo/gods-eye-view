@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createRecord, laneOfType, transition } from './earthLanes.js';
+import {
+  EARTH_LANES,
+  createRecord,
+  laneOfType,
+  parseRecord,
+  serializeRecord,
+  transition,
+} from './earthLanes.js';
 
 // HUM-08 (#145): four lanes, four allowed transitions, five forbidden ones.
 const at = '2026-11-13T09:00:00.000Z';
@@ -191,4 +198,53 @@ test('forbidden: model prediction -> observed evidence', () => {
   );
   assert.equal(laneOfType('prediction'), 'possible');
   assert.equal(laneOfType('estimate'), 'possible');
+});
+
+// --- serialization -----------------------------------------------------------
+test('a serialized record round-trips with its lane and type intact', () => {
+  assert.deepEqual(EARTH_LANES, [
+    'observed',
+    'possible',
+    'coordinated',
+    'measured',
+  ]);
+  for (const record of [
+    observed(),
+    possible('prediction'),
+    coordinated(),
+    transition(measured(), { to: 'observed', basis: BASIS.validation }),
+  ]) {
+    const text = serializeRecord(record);
+    assert.equal(typeof text, 'string');
+    const back = parseRecord(text);
+    assert.deepEqual(back, record);
+    assert.equal(back.lane, record.lane);
+    assert.equal(back.type, record.type);
+    assert.equal(serializeRecord(back), text);
+  }
+  // Import cannot place a hypothetical record in Observed: an edited lane, a
+  // type from another lane or a forged receipt chain is refused, not repaired.
+  const edit = (record, change) =>
+    JSON.stringify({ ...JSON.parse(serializeRecord(record)), ...change });
+  refuses(
+    () => parseRecord(edit(possible('prediction'), { lane: 'observed' })),
+    'type',
+  );
+  refuses(
+    () =>
+      parseRecord(
+        edit(possible('prediction'), {
+          lane: 'observed',
+          type: 'evidence',
+          source: 'model',
+          receipts: [
+            { from: 'possible', to: 'observed', basis: BASIS.validation },
+          ],
+        }),
+      ),
+    'receipts',
+  );
+  refuses(() => parseRecord(edit(coordinated(), { receipts: [] })), 'receipts');
+  refuses(() => parseRecord(edit(observed(), { lane: 'dreamed' })), 'lane');
+  refuses(() => parseRecord('not json'), 'parse');
 });

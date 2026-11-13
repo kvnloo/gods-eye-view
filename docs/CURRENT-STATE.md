@@ -1683,10 +1683,10 @@ the 80 nearest Praza do Rei (`CCTV_VIGO_MAX_SOURCES`, 8-200). The catalog's
 `http://` frame URLs are upgraded to HTTPS and pinned to
 `https://camaras.vigo.org/` with the shared `pinnedCameraUrl` check; that
 origin is also in the frame proxy's same-host redirect pins. The image host
-sends no `Content-Type`, so for that host only the frame proxy accepts a body
-whose leading bytes are a complete JPEG, PNG, GIF or WebP signature and relays
-it with the sniffed raster type; every other host must still declare a raster
-type, and a declared SVG is refused everywhere. Like NSW, the proxy sends a
+sends no `Content-Type`, so only requests to the exact HTTPS origin (not HTTP
+or alternate ports) use the frame proxy's magic-byte fallback. Complete JPEG,
+PNG, GIF and WebP signatures are accepted and relayed with the sniffed raster
+type; every other origin must declare a raster type, and SVG is refused. Like NSW, the proxy sends a
 browser User-Agent to that one host. The dataset has no facing, so headings
 use the id-hash fallback at low confidence.
 

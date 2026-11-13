@@ -3,8 +3,9 @@
   on `datos.vigo.org` (about 60 cameras); frames are stills on
   `camaras.vigo.org`, upgraded from the catalog's `http://` links to HTTPS and
   pinned to that origin. That host sends no `Content-Type`, so for it alone the
-  frame proxy recognises JPEG, PNG, GIF and WebP by their leading bytes; every
-  other host must still declare a raster image type. The dataset's ODC-BY
+  frame proxy recognises JPEG, PNG, GIF and WebP by their leading bytes only
+  for the pinned HTTPS origin (not HTTP or alternate ports); other origins
+  must declare a raster image type. The dataset's ODC-BY
   licence covers the camera list but the city has not confirmed the frames may
   be shown by a third-party app, so the pack is off unless
   `CCTV_VIGO_ENABLED=1`. The required credit "Fuente de los datos: Ayuntamiento

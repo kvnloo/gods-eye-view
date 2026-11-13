@@ -632,15 +632,15 @@ export function cctvUpstreamUserAgent(url) {
 /**
  * Image hosts known to serve real frames with a missing or wrong
  * `Content-Type` (Concello de Vigo's `camaras.vigo.org` sends none at all).
- * Only these hosts get the magic-byte fallback below; every other upstream
+ * Only this exact HTTPS origin gets the magic-byte fallback below; other upstreams
  * must still declare a raster type, so a non-image 2xx body elsewhere is
  * dropped without being read.
  */
-const CCTV_SNIFF_IMAGE_HOSTS = new Set([new URL(VIGO_IMAGE_ORIGIN).hostname]);
+const CCTV_SNIFF_IMAGE_ORIGINS = new Set([new URL(VIGO_IMAGE_ORIGIN).origin]);
 
-function hostnameOf(url) {
+function originOf(url) {
   try {
-    return new URL(url).hostname;
+    return new URL(url).origin;
   } catch {
     return '';
   }
@@ -654,7 +654,7 @@ const PNG_SIGNATURE = Buffer.from([
  * Identify a raster image format from its leading magic bytes, ignoring
  * whatever (if anything) the upstream claimed as `Content-Type`.
  *
- * Used only for the hosts in CCTV_SNIFF_IMAGE_HOSTS, and only when the
+ * Used only for origins in CCTV_SNIFF_IMAGE_ORIGINS, and only when the
  * declared type is missing or not a raster image. Every branch requires a
  * complete image signature, and only raster types are returned, so it can
  * never turn markup (HTML, SVG) into a relayed frame.
@@ -731,7 +731,7 @@ export async function fetchCctvImageFromUpstream(
       upstream.headers.get('content-type'),
     );
     const sniffFallback =
-      !declaredType && CCTV_SNIFF_IMAGE_HOSTS.has(hostnameOf(url));
+      !declaredType && CCTV_SNIFF_IMAGE_ORIGINS.has(originOf(url));
     if (!upstream.ok || (!declaredType && !sniffFallback)) {
       try {
         await upstream.body?.cancel();

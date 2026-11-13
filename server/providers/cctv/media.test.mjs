@@ -240,6 +240,25 @@ test('hosts other than Vigo get no sniff fallback and the body is not read', asy
   assert.equal(cancelled.count, before + 2, 'each refused body is cancelled');
 });
 
+test('Vigo magic-byte fallback requires the official HTTPS origin, not just its hostname', async () => {
+  for (const url of [
+    'http://camaras.vigo.org/camv2.php?id=1',
+    'https://camaras.vigo.org:8443/camv2.php?id=1',
+  ]) {
+    const upstream = fakeUpstream({
+      contentType: null,
+      bodyChunks: [JPEG_MAGIC],
+    });
+    assert.equal(
+      await fetchCctvImageFromUpstream(url, {
+        fetchImpl: fetchImplFor(upstream),
+      }),
+      null,
+      `a missing MIME header at an unapproved origin must not enable sniffing: ${url}`,
+    );
+  }
+});
+
 test('a declared SVG is never relayed, on Vigo or elsewhere', async () => {
   for (const url of [VIGO_FRAME, OTHER_FRAME]) {
     const upstream = fakeUpstream({

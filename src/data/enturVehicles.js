@@ -101,6 +101,14 @@ export function decodeEnturVehicles(bytes) {
       `Entur vehicles response has no vehicle list${reason ? `: ${String(reason).slice(0, 120)}` : ''}`,
     );
   }
+  // GraphQL execution errors can accompany a partial vehicles list. This is
+  // a full-snapshot feed, so never replace a complete fleet with that list.
+  if (Array.isArray(body?.errors) && body.errors.length > 0) {
+    const reason = body.errors[0]?.message;
+    throw new Error(
+      `Entur vehicles response has GraphQL errors${reason ? `: ${String(reason).slice(0, 120)}` : ''}`,
+    );
+  }
   const truncated = list.length > GTFS_MAX_ENTITIES;
   const byId = new Map();
   for (const vehicle of truncated ? list.slice(0, GTFS_MAX_ENTITIES) : list) {

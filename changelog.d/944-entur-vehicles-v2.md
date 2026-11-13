@@ -6,5 +6,6 @@
   from Lindesnes to Vardø and Grense Jakobselv, while Sweden, Finland,
   Murmansk, the Faroes and Shetland stay out of range. Above 400 km a feed is
   also polled when one of its circles reaches into a map-like view, so a
-  whole-country view centred over Sweden still shows Norway. Ruter does not publish
-  to either open Entur feed (trygvehhh, #944).
+  whole-country view centred over Sweden still shows Norway. Partial GraphQL
+  error responses are rejected rather than replacing the complete fleet.
+  Ruter does not publish to either open Entur feed (trygvehhh, #944).

@@ -113,6 +113,19 @@ test('a GraphQL error answer fails the refresh instead of emptying the map', () 
   assert.throws(() => decodeEnturVehicles(new TextEncoder().encode('<html>')));
 });
 
+test('partial Entur GraphQL data with errors cannot replace the complete fleet', () => {
+  // GraphQL permits both data and errors when field resolution is partial.
+  // Accepting this vehicles array as FULL_DATASET could evict healthy records.
+  const partial = encode({
+    data: { vehicles: [vehicle()] },
+    errors: [{ message: 'vehicle field unavailable', path: ['vehicles', 1] }],
+  });
+  assert.throws(
+    () => buildTransitSnapshot(getTransitFeed('entur-norway'), partial),
+    /GraphQL errors: vehicle field unavailable/,
+  );
+});
+
 test('the Entur feed is fetched from the v2 Vehicles API as a JSON POST', () => {
   const entur = getTransitFeed('entur-norway');
   assert.equal(entur.url, 'https://api.entur.io/realtime/v2/vehicles/graphql');

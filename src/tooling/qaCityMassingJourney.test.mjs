@@ -144,3 +144,19 @@ test('HOMES and SHADOW REACH are read on desktop and in the phone strip', () => 
   assert.match(phone, /noOverlap\(S\.extra, other\)/);
   assert.match(phone, /legibility\('extra-mobile', S\.extra\)/);
 });
+
+test('every run cuts its own 30 s demo from the journey page, splash and shadow-off frames left out', () => {
+  for (const name of [
+    'select',
+    'selected',
+    'zone',
+    'massing',
+    'massingDrawn',
+    'step',
+    'stepDrawn',
+  ])
+    assert.match(source, new RegExp(`mark\\('${name}'\\)`), name);
+  assert.match(source, /report\.marks\.flicker\.push/);
+  assert.match(source, /demoCut\(report\.marks\)/);
+  assert.match(source, /'demo\.mp4'/);
+});

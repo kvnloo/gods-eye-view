@@ -80,3 +80,43 @@ test('the reference ground is the plot centre, or the lowest street sample when 
   assert.deepEqual(groundReference(-1, []), { ground: -1, from: 'centre' });
   assert.equal(groundReference(undefined, [undefined]), null);
 });
+
+test('the 30 s demo: plot, MASSING with its shadow, +2 storeys; no splash, no shadow-off frame', async () => {
+  const { demoCut } = await import('../../scripts/qa-massing-measure.mjs');
+  // Seconds since the journey page opened (the video's own clock).
+  const marks = {
+    ready: 11.2,
+    select: 12.0,
+    selected: 15.5,
+    zone: 15.8,
+    massing: 24.0,
+    massingDrawn: 26.0,
+    step: 48.0,
+    stepDrawn: 51.0,
+    flicker: [
+      [27.6, 28.4],
+      [29.0, 29.9],
+      [44.0, 47.7],
+      [51.8, 52.6],
+    ],
+  };
+  const cut = demoCut(marks);
+  const total = cut.reduce((s, c) => s + (c.to - c.from) + c.hold, 0);
+  assert.ok(Math.abs(total - 30) < 1e-9, `30 s, not ${total}`);
+  assert.deepEqual(
+    cut.map((c) => c.name),
+    ['select', 'massing', 'step'],
+  );
+  assert.ok(cut[0].from >= marks.ready, 'after the loading splash');
+  assert.ok(cut[0].to >= marks.selected, 'the plot is framed');
+  assert.ok(cut[0].to < marks.zone, 'and held before the zone menu opens');
+  assert.ok(cut[1].from <= marks.massing && cut[1].to > marks.massingDrawn);
+  assert.ok(cut[2].from <= marks.step && cut[2].to > marks.stepDrawn);
+  for (const c of cut) {
+    assert.ok(c.to > c.from);
+    for (const [a, b] of marks.flicker)
+      assert.ok(c.to <= a || c.from >= b, `${c.name} shows a shadow-off frame`);
+  }
+  assert.ok(cut[1].hold >= 2 && cut[2].hold >= 2, 'the views are held');
+  assert.throws(() => demoCut({ ...marks, stepDrawn: undefined }), /stepDrawn/);
+});

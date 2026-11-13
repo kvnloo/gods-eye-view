@@ -173,5 +173,12 @@ scene sun through the page's world clock and, at 1440x900:
    the HUD nor the block and its shadow;
 8. opens the app without the flag: no readout, entities, shadows or probe.
 
+With `QA_VIDEO_DIR` set, each page's video is written as an MP4, and the
+journey cuts a 30 s `demo.mp4` from the journey page alone (no loading splash):
+the plot selected, MASSING on with its shadow band, then +2 storeys with every
+row changing and the shadow lengthening. Its cut comes from marks on the
+journey page's video clock and leaves out every frame a capture drew with the
+shadow map off (`demoCut` in `scripts/qa-massing-measure.mjs`).
+
 `src/tooling/qaCityMassingJourney.test.mjs` fails if any of these steps drops
 out of the journey.

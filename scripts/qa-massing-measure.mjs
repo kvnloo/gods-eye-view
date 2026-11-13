@@ -62,3 +62,53 @@ export function groundReference(centre, street) {
     return { ground: centre, from: 'centre' };
   return around.length ? { ground: Math.min(...around), from: 'street' } : null;
 }
+
+const DEMO_MARKS = [
+  'ready',
+  'select',
+  'selected',
+  'zone',
+  'massing',
+  'massingDrawn',
+  'step',
+  'stepDrawn',
+];
+
+/**
+ * The 30 s demo cut from the journey page's own video (seconds on its clock):
+ * the plot selected, MASSING on with its shadow, then +2 storeys with the
+ * longer shadow. It starts after the app is ready (no loading splash), leaves
+ * out every window where a capture turned the shadow map off, and holds each
+ * view (1 : 2 : 2) to fill `total` seconds.
+ */
+export function demoCut(marks, total = 30) {
+  for (const key of DEMO_MARKS)
+    if (!Number.isFinite(marks[key]))
+      throw new TypeError(`demo mark missing: ${key}`);
+  const pad = 0.25;
+  const off = [...(marks.flicker ?? [])].sort((a, b) => a[0] - b[0]);
+  // Keep the part before the first shadow-off window; a segment that starts
+  // inside one starts after it.
+  const clear = (name, from, to) => {
+    for (const [a, b] of off) {
+      if (b + pad <= from || a - pad >= to) continue;
+      if (a - pad <= from) from = b + pad;
+      else to = a - pad;
+    }
+    return { name, from, to, hold: 0 };
+  };
+  const cut = [
+    // Up to the plot framed, before the zone menu opens.
+    clear(
+      'select',
+      Math.max(marks.ready, marks.select - 0.5),
+      Math.min(marks.selected + 0.5, marks.zone - 0.1),
+    ),
+    clear('massing', marks.massing - 0.5, marks.massingDrawn + 2.5),
+    clear('step', marks.step - 0.5, marks.stepDrawn + 2.5),
+  ];
+  const rest = total - cut.reduce((s, c) => s + c.to - c.from, 0);
+  if (rest < 5) throw new RangeError(`the demo segments leave ${rest} s`);
+  [0.2, 0.4, 0.4].forEach((share, i) => (cut[i].hold = rest * share));
+  return cut;
+}

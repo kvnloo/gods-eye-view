@@ -15,6 +15,7 @@ import sharp from 'sharp';
 import { textLegibility } from '../src/ui/legibility.js';
 import {
   InvalidMeasurement,
+  demoCut,
   distinctFrames,
   groundReference,
   siteForPlot,
@@ -74,19 +75,31 @@ const report = {
   console: [],
   pageErrors: [],
   measurements: {},
+  // Seconds on the journey page's video clock, for the 30 s demo cut, and the
+  // windows in which a capture had the shadow map off.
+  marks: { flicker: [] },
 };
 let browser;
 let page;
 let phase = 'launch';
 const videos = {};
+const opened = {};
+let role = null;
+// Now, on the journey page's video clock.
+const clock = () => (Date.now() - opened.journey) / 1000;
+const mark = (name) => {
+  if (role === 'journey') report.marks[name] = clock();
+};
 const locator = (selector) => page.locator(selector);
 const massing = () => page.evaluate(() => window.__gevCityMassing?.snapshot());
 const play = () => page.evaluate(() => window.__gevCityPlay?.snapshot());
 const json = (name, data) =>
   writeFile(path.join(output, name), `${JSON.stringify(data, null, 2)}\n`);
 
-async function openPage(context, role) {
+async function openPage(context, name) {
   const next = await context.newPage();
+  opened[name] = Date.now();
+  role = name;
   next.setDefaultTimeout(20000);
   next.on('console', (m) =>
     report.console.push({ phase, type: m.type(), text: m.text() }),
@@ -94,7 +107,7 @@ async function openPage(context, role) {
   next.on('pageerror', (e) =>
     report.pageErrors.push({ phase, message: e.message, stack: e.stack }),
   );
-  if (next.video()) videos[role] = next.video().path();
+  if (next.video()) videos[name] = next.video().path();
   return next;
 }
 async function check(name, run) {
@@ -468,6 +481,15 @@ async function renderedFrame(shadows) {
     canvas,
   };
 }
+// The shadow-off frame for a capture, then shadow-on again; the video shows
+// the shadow off in between, so the demo cut leaves that window out.
+async function offFrame() {
+  const from = clock();
+  const off = await renderedFrame(false);
+  await renderedFrame(true);
+  if (role === 'journey') report.marks.flicker.push([from, clock()]);
+  return off;
+}
 // Mean luminance of the (2r+1)^2 CSS px around each page point in a frame.
 async function pixels({ png, canvas }, points, radius = 4) {
   const { data, info } = await sharp(png)
@@ -495,8 +517,7 @@ async function pixels({ png, canvas }, points, radius = 4) {
 async function luminance(points, label = phase) {
   const usable = points.filter((p) => p?.usable);
   const on = await renderedFrame(true);
-  const off = await renderedFrame(false);
-  await renderedFrame(true);
+  const off = await offFrame();
   distinctFrames(on, off, label);
   const lit = await pixels(on, usable);
   const unlit = await pixels(off, usable);
@@ -572,8 +593,7 @@ async function shadowProfile(s, label) {
     await groundPoints(alongSun(s, distances), { terrain: true })
   ).map((p, i) => (p?.measurable ? { ...p, d: distances[i] } : null));
   const on = await renderedFrame(true);
-  const off = await renderedFrame(false);
-  await renderedFrame(true);
+  const off = await offFrame();
   distinctFrames(on, off, label);
   const kept = points.filter(Boolean);
   const lit = await pixels(on, kept, 1);
@@ -983,10 +1003,13 @@ try {
     'With ?massing=1 a selected plot offers one MASSING toggle; zoning saves as before',
     async () => {
       await startup(true);
+      mark('ready');
       await setSun(SUN_TIME);
       await locator(S.pill).click();
       await locator(S.play).waitFor({ state: 'visible' });
+      mark('select');
       await selectPlot();
+      mark('selected');
       plotId = (await play()).plot.id;
       await locator(S.readout).waitFor({ state: 'visible' });
       assert.equal(await locator(`${S.readout} button`).count(), 1);
@@ -1000,6 +1023,7 @@ try {
         'massing waits for the toggle',
       );
       // A saved document to compare with: the plot's proposed land use.
+      mark('zone');
       await zonePlot('housing');
       const area = await locator(
         '[data-city-play-legend-row="housing"] [data-legend-area]',
@@ -1023,7 +1047,9 @@ try {
       // Before the toggle: on 3D tiles MASSING cuts the plot out of the mesh.
       const samples = await groundSamples();
       const reference = groundReference(samples.centre, samples.street);
+      mark('massing');
       await massingOn(plotId);
+      mark('massingDrawn');
       const s = await massing();
       assert.ok(reference, 'the ground was sampled before MASSING');
       const ground = reference.ground;
@@ -1147,6 +1173,7 @@ try {
         1,
         'a point between the tips is on screen',
       );
+      mark('step');
       await locator(S.plus).click();
       await locator(S.plus).click();
       await until(
@@ -1157,6 +1184,7 @@ try {
         'eight storeys, drawn',
         30000,
       );
+      mark('stepDrawn');
       await page.waitForTimeout(1000);
       const s = await massing();
       const values = await readout();
@@ -1390,6 +1418,45 @@ try {
         mp4,
       ]);
       report.video.push({ role, webm, mp4: r.status === 0 ? mp4 : null });
+    }
+    // The 30 s demo, cut from the journey page alone: no loading splash, no
+    // shadow-off frame. Evidence only: a missing cut does not fail the run.
+    const journey = report.video.find((v) => v.role === 'journey')?.webm;
+    try {
+      const cut = demoCut(report.marks);
+      const graph = [
+        ...cut.map(
+          (c, i) =>
+            `[0:v]trim=start=${c.from.toFixed(3)}:end=${c.to.toFixed(3)},setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=${c.hold.toFixed(3)}[s${i}]`,
+        ),
+        `${cut.map((_, i) => `[s${i}]`).join('')}concat=n=${cut.length}:v=1:a=0,fps=25,format=yuv420p[v]`,
+      ].join(';');
+      const mp4 = path.join(videoDir, 'demo.mp4');
+      const r = spawnSync('ffmpeg', [
+        '-y',
+        '-loglevel',
+        'error',
+        '-i',
+        journey,
+        '-filter_complex',
+        graph,
+        '-map',
+        '[v]',
+        '-c:v',
+        'libx264',
+        '-movflags',
+        '+faststart',
+        '-t',
+        '30',
+        mp4,
+      ]);
+      report.demo = {
+        cut,
+        mp4: r.status === 0 ? mp4 : null,
+        error: r.status === 0 ? undefined : String(r.stderr),
+      };
+    } catch (error) {
+      report.demo = { error: String(error) };
     }
   }
   report.finishedAt = new Date().toISOString();

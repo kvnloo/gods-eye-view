@@ -1,18 +1,11 @@
 /**
- * The one shared City builder persistence fixture: a captured reference, two
- * possible worlds, a second version and a labelled concept go through the
- * document kernel's create -> serialize -> parse path. Slices that add saved
- * keys assert against it, and `cityDocumentSavedKeys.txt` pins every saved key
- * as a sorted `path: type`.
+ * The one shared City builder persistence fixture: two possible worlds, a
+ * second version and a labelled concept go through the real builder's
+ * create -> save -> reload path. Slices that add saved keys assert against it,
+ * and `cityDocumentSavedKeys.txt` pins every saved key as a sorted `path: type`.
  */
-import {
-  addCityAlternative,
-  attachCityConcept,
-  createCityDocument,
-  parseCityDocument,
-  reviseCityAlternative,
-  serializeCityDocument,
-} from '../data/cityPlanningDocument.js';
+import { createCityBuilder } from '../ui/cityBuilder.js';
+import { createPlanningConceptGenerator } from '../data/planningConceptGenerator.js';
 
 const image =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jF1sAAAAASUVORK5CYII=';
@@ -40,44 +33,66 @@ export const PERSISTENCE_REFERENCE = Object.freeze({
   image,
 });
 
-const parameters = {
-  kind: 'park',
-  trees: 20,
-  widthMeters: 2,
-  shadePercent: 40,
-};
+function memoryStorage() {
+  let value = null;
+  return {
+    getItem: () => value,
+    setItem: (_key, next) => {
+      value = next;
+    },
+    get value() {
+      return value;
+    },
+  };
+}
 
-/** Create, save and reload a project through the document kernel. */
-export function runCityPersistenceRoundTrip() {
-  let document = createCityDocument({
-    id: 'city-persistence',
-    title: 'Persistence fixture',
-    reference: PERSISTENCE_REFERENCE,
+function builderOn(storage, sink) {
+  return createCityBuilder({
+    publish: (view) => (sink.view = view),
+    offerLauncher: () => {},
+    captureReference: async () => PERSISTENCE_REFERENCE,
+    storage,
+    generator: (options) =>
+      createPlanningConceptGenerator({
+        ...options,
+        now: () => PERSISTENCE_REFERENCE.capturedAt,
+      }),
+    download: () => {},
+    uid: () => 'city-persistence',
   });
-  for (const [id, title] of [
-    ['world-1', 'Unplaced pocket park'],
-    ['world-2', 'Plaza on the corner'],
-  ])
-    document = addCityAlternative(document, {
-      id,
-      title,
-      description: `${title} for the persistence fixture.`,
-      parameters,
-    });
-  document = reviseCityAlternative(document, 'world-2', 1, {
-    title: 'Plaza on the corner',
-    description: 'Version 2 of the plaza for the persistence fixture.',
-    parameters: { ...parameters, kind: 'plaza' },
-  });
-  document = attachCityConcept(document, 'world-2', 2, {
-    prompt: 'A plaza on the corner.',
-    provider: 'fixture',
-    generatedAt: PERSISTENCE_REFERENCE.capturedAt,
-    sourceView: PERSISTENCE_REFERENCE,
-    image,
-  });
-  const saved = serializeCityDocument(document);
-  return { saved, afterSaved: serializeCityDocument(parseCityDocument(saved)) };
+}
+
+function author(builder, title) {
+  builder.newAlternative();
+  builder.editField('title', title);
+  builder.editField('description', `${title} for the persistence fixture.`);
+  builder.saveAlternative();
+}
+
+/** Create, save and reload through the real builder. */
+export async function runCityPersistenceRoundTrip() {
+  const storage = memoryStorage();
+  const first = {};
+  const builder = builderOn(storage, first);
+  builder.open();
+  await builder.start({ title: 'Persistence fixture' });
+  author(builder, 'Unplaced pocket park');
+  author(builder, 'Plaza on the corner');
+  // Version 2 of the second world, with its own concept.
+  builder.editAlternative('world-2');
+  builder.editField('kind', 'plaza');
+  builder.saveAlternative();
+  await builder.imagine('world-2');
+  const saved = storage.value;
+  const before = first.view.city;
+  builder.destroy();
+
+  const second = {};
+  const reloaded = builderOn(storage, second);
+  reloaded.open();
+  const after = second.view.city;
+  reloaded.destroy();
+  return { saved, before, after, afterSaved: storage.value };
 }
 
 /** Every saved key as a sorted, unique `path: type` line; array items as `[]`. */

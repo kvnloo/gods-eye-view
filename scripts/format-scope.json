@@ -1448,6 +1448,7 @@
   "src/data/citySun.test.mjs",
   "src/data/__fixtures__/massing-golden.json",
   "src/data/cityPlot.test.mjs",
+  "src/data/cityPlotPick.test.mjs",
   "src/ui/cityPlayModel.test.mjs",
   "src/ui/views/cityPlayOverlayView.test.mjs",
   "src/data/cityScore.test.mjs",

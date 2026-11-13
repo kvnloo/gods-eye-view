@@ -203,6 +203,19 @@ test('no Sun direction means no re-trace rather than a wrong frame', async () =>
   await layer.init(null, { cesium });
   await layer.update(null, {});
   assert.equal(await layer.retrace(), false);
+  const untraced = layer.getStats();
+  assert.equal(
+    untraced.externalModel,
+    null,
+    'internal-only filaments must not be labelled T96 before tracing',
+  );
+  assert.doesNotMatch(untraced.source, /T89|T96/);
+
+  // A later valid frame may upgrade the lines, and only then their label.
+  await layer.update(null, { sunDirection: SUN });
+  const traced = layer.getStats();
+  assert.equal(traced.externalModel, 't96');
+  assert.match(traced.source, /T96/);
 });
 
 /** Record what each re-trace returned, so a test can tell work from a no-op. */

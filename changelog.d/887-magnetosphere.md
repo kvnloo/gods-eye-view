@@ -5,8 +5,9 @@
   is Tsyganenko T96 when the feed carries dynamic pressure, Dst and the IMF By
   and Bz, T89c when only Kp is available, and the internal field alone
   otherwise, rather than a guessed storm state; the lines are re-traced as the
-  Sun moves, so the tail keeps pointing away from it. The layer reports which
-  model drew the lines and when one is run outside its fitted range. Only the
+  Sun moves, so the tail keeps pointing away from it. The layer only names an
+  external model after its lines have actually been traced, including when the
+  Sun direction is initially unavailable, and flags fitted-range excursions. Only the
   solar wind, Kp and Dst are fetched, through a shared `/api/magnetosphere`
   proxy with timeouts and backoff, and the boundary is flagged when it is driven
   inside geosynchronous orbit (KnottyDyes, #887).

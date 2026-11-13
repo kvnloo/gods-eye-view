@@ -250,7 +250,6 @@ export function createMagnetosphereLayer({
      */
     async retrace(signal) {
       const next = selectExternalModel(state);
-      model = next;
       const key = next ? next.key : 'internal';
       if (!coefficients) return false;
       // One trace at a time. A second refresh arriving mid-trace would other-
@@ -283,6 +282,7 @@ export function createMagnetosphereLayer({
       retracing = null;
       if (signal?.aborted) return false;
       filaments = traced;
+      model = next;
       tracedKey = key;
       tracedSun = tracedAgainst;
       return true;

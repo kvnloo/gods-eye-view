@@ -1594,7 +1594,9 @@ remain provider-controlled. `sourcePageUrl` supplies the official-page link;
 when omitted for YouTube, the panel links to the canonical watch page. The iframe
 preserves an origin referrer and a minimum 200-by-200-pixel viewport. It loads
 only while selected and visible and is released on hide, collapse, switch,
-disable or destruction. The existing `EXTERNAL` status does not claim that a
+disable or destruction. A reused player keeps its iframe and playback while
+its accessible title follows camera-name or locale changes. The existing
+`EXTERNAL` status does not claim that a
 stream is currently live. Frame/media proxying, projection, calibration and
 ambient thumbnails stay disabled for these players.
 

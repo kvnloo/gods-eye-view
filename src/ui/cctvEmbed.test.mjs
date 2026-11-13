@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createCctvEmbed } from './cctvEmbed.js';
+import { getLocale, setLocale, t as translate } from '../i18n/index.js';
 
 const camera = {
   id: 'youtube-buenos-aires',
@@ -148,4 +149,32 @@ test('YouTube uses its public player, keeps the referrer and offers a source lin
   );
   player.destroy();
   assert.equal(children.size, 0);
+});
+
+test('reused iframe refreshes its accessible title for camera and locale changes', (t) => {
+  const initialLocale = getLocale();
+  const { children, player } = fixture();
+  t.after(() => {
+    player.destroy();
+    setLocale(initialLocale);
+  });
+  setLocale('en');
+  player.update(camera, true);
+  const [iframe, link] = [...children];
+  assert.equal(iframe.title, 'Buenos Aires — public player');
+
+  // Distinct catalog cameras can refer to the same provider stream.
+  player.update({ ...camera, name: 'Shared camera' }, true);
+  assert.deepEqual([...children], [iframe, link]);
+  assert.equal(iframe.title, 'Shared camera — public player');
+
+  // The controls call update on a locale change without replacing the stream.
+  setLocale('es');
+  player.update({ ...camera, name: 'Cámara compartida' }, true);
+  assert.deepEqual([...children], [iframe, link]);
+  assert.equal(
+    iframe.title,
+    translate('{camera} — public player', { camera: 'Cámara compartida' }),
+  );
+  assert.equal(link.textContent, translate('Open official camera page ↗'));
 });

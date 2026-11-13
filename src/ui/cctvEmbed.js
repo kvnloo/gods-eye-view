@@ -45,9 +45,6 @@ export function createCctvEmbed(container, { documentImpl = document } = {}) {
         clear();
         player = documentImpl.createElement('iframe');
         player.className = `cctv-embed${isTwitch ? ' cctv-embed-twitch' : ''}`;
-        player.title = t('{camera} — public player', {
-          camera: camera.name || 'CCTV',
-        });
         player.setAttribute(
           'allow',
           'autoplay; encrypted-media; fullscreen; picture-in-picture',
@@ -62,6 +59,10 @@ export function createCctvEmbed(container, { documentImpl = document } = {}) {
         container.appendChild(player);
         currentUrl = url;
       }
+      // A reused player keeps playing, but its accessible name must stay current.
+      player.title = t('{camera} — public player', {
+        camera: camera.name || 'CCTV',
+      });
       const videoId = youtubeVideoId(new URL(url));
       const sourceUrl =
         normalizeCctvSourcePageUrl(camera.sourcePageUrl) ||

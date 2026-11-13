@@ -185,7 +185,16 @@ function referenceValue(value) {
 }
 
 function parameterValue(value) {
-  keys(value, ['kind', 'trees', 'widthMeters', 'shadePercent']);
+  // `site` (a candidate site id, or null for unplaced) postdates v1 documents.
+  const placed = Object.hasOwn(Object(value), 'site');
+  keys(value, [
+    'kind',
+    'trees',
+    'widthMeters',
+    'shadePercent',
+    ...(placed ? ['site'] : []),
+  ]);
+  if (placed && value.site !== null) identifier(value.site);
   if (!['park', 'bike-lane', 'plaza'].includes(value.kind))
     fail('unsupported alternative kind');
   if (!Number.isInteger(value.trees) || value.trees < 0 || value.trees > 200)
@@ -208,6 +217,7 @@ function parameterValue(value) {
     trees: value.trees,
     widthMeters: value.widthMeters,
     shadePercent: value.shadePercent,
+    ...(placed ? { site: value.site } : {}),
   };
 }
 

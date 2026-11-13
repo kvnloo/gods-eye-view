@@ -10,6 +10,7 @@ import {
   cityAlternatives,
 } from '../data/cityPlanningDocument.js';
 import { presentCommunityPlanningPreview } from './communityPlanningPreview.js';
+import { presentCityWalkAccess } from './cityWalkAccess.js';
 
 const KEY = 'godsEyeView.cityBuilder.v1';
 const freshEditor = () => ({
@@ -18,7 +19,13 @@ const freshEditor = () => ({
   projectTitle: '',
   title: '',
   description: '',
-  parameters: { kind: 'park', trees: 20, widthMeters: 2, shadePercent: 40 },
+  parameters: {
+    kind: 'park',
+    trees: 20,
+    widthMeters: 2,
+    shadePercent: 40,
+    site: null,
+  },
 });
 
 /** Own a local possible-world document. Only the explicit Imagine action calls a provider. */
@@ -158,6 +165,7 @@ export function createCityBuilder({
       provider,
       canLocal,
       persisted,
+      access: document ? presentCityWalkAccess(alternatives) : null,
     };
     publish(view);
   }
@@ -249,13 +257,21 @@ export function createCityBuilder({
       if (disposed || !opened || pending) return;
       if (['title', 'description', 'projectTitle'].includes(name))
         editor = { ...editor, [name]: String(value) };
-      else if (['kind', 'trees', 'widthMeters', 'shadePercent'].includes(name))
+      else if (
+        ['kind', 'trees', 'widthMeters', 'shadePercent', 'site'].includes(name)
+      )
         editor = {
           ...editor,
           parameters: {
             ...editor.parameters,
             [name]:
-              name === 'kind' ? value : value === '' ? NaN : Number(value),
+              name === 'kind'
+                ? value
+                : name === 'site'
+                  ? value || null
+                  : value === ''
+                    ? NaN
+                    : Number(value),
           },
         };
       present();

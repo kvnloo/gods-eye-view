@@ -142,6 +142,25 @@ test('applyDocumentLanguage sets lang and dir', () => {
   assert.deepEqual(doc.documentElement, { lang: 'en', dir: 'ltr' });
 });
 
+test('Hebrew review labels retain coverage, provenance and navigation meaning', () => {
+  setLocale('he');
+  // An evidence point outside the before/after image comparison has no coverage.
+  assert.match(t('OUTSIDE IMAGERY SWIPE'), /^מחוץ.*השוואת הצילומים$/);
+  // The candidate was found in Google Places; it is not awaiting inclusion.
+  assert.match(
+    t('PLACES CANDIDATE', { context: 'installation class' }),
+    /^מועמד מ-(?:Google )?Places$/,
+  );
+  // Downrange is measured from the launch site, not from the launch vehicle.
+  assert.equal(
+    t('{value} KM DOWNRANGE', { value: 42 }).replace(/[\u2068\u2069]/g, ''),
+    '42 ק"מ מאתר השיגור',
+  );
+  assert.match(t('EST. DOWNRANGE'), /מרחק מאתר השיגור/);
+  // Track-up is a view orientation, not an acquired tracking state.
+  assert.equal(t('TRACK UP'), 'כיוון התנועה מעלה');
+});
+
 test('t() returns English text in English and translates in Russian', () => {
   assert.equal(t('POWERED UP'), 'POWERED UP');
   setLocale('ru');

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { setLocale } from '../i18n/index.js';
+import { LOCALES } from '../i18n/locale.js';
 import {
   realtimeDirectives,
   realtimeInstructions,
@@ -174,4 +175,39 @@ test('the language line is voice-only and rides on top of the Overpass directive
     realtimeInstructions(undefined, { language: 'es' }).split('\n').at(-1),
     line,
   );
+});
+
+test('spoken progress is localized in every shipped locale', (t) => {
+  t.after(() => setLocale('en'));
+  // The locale list is dynamic: newly shipped languages need spoken strings.
+  const variants = [
+    ['resolve', 'Test Site'],
+    ['resolve', ''],
+    ['search', 'Test Site'],
+    ['draw', 'Test Site'],
+    ['catalog', ''],
+    ['drape', ''],
+    ['osm', 'Test Site'],
+    ['osm', ''],
+    ['fly', 'Test Site'],
+    ['layer', 'Test Site'],
+    ['refresh', ''],
+    ['nearest', ''],
+    ['still', 'Test Site'],
+    ['still', ''],
+  ];
+  setLocale('en');
+  const english = variants.map(([step, label]) => progressLine(step, label));
+  assert.ok(english.every(Boolean));
+  for (const locale of LOCALES) {
+    if (locale === 'en') continue;
+    setLocale(locale);
+    assert.equal(resolveVoiceLanguage(locale), locale);
+    for (const [index, [step, label]] of variants.entries()) {
+      const spoken = progressLine(step, label);
+      const key = locale + '/' + step + (label ? '/named' : '/unnamed');
+      assert.ok(spoken, key + ': silent');
+      assert.notEqual(spoken, english[index], key + ': English fallback');
+    }
+  }
 });

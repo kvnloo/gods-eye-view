@@ -214,9 +214,13 @@ export function carouselCards(
 /**
  * Top resource bar as raw figures. Without a project every value is unknown
  * (null), never zero. Counts are exact; the proposals' sum and mean are
- * estimates.
+ * estimates. `walk` maps alternative ids to the existing walk-access estimate
+ * in metres, as for the pins: the bar states the focused world's.
  */
-export function resourceStats(alternatives) {
+export function resourceStats(
+  alternatives,
+  { walk = {}, focusId = null } = {},
+) {
   if (!alternatives) {
     return ['plots', 'worlds', 'concepts', 'trees', 'shade', 'walk'].map(
       (id) => ({ id, value: null }),
@@ -236,8 +240,7 @@ export function resourceStats(alternatives) {
     { id: 'concepts', value: alternatives.filter((a) => a.concept).length },
     { id: 'trees', value: count ? trees : null, estimate: true },
     { id: 'shade', value: count ? shade : null, unit: '%', estimate: true },
-    // Walk access belongs to a separate validated module; absent here.
-    { id: 'walk', value: null, estimate: true },
+    { id: 'walk', value: walk[focusId] ?? null, unit: 'm', estimate: true },
   ];
 }
 

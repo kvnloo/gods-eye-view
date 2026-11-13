@@ -231,10 +231,22 @@ test('resourceStats derives raw figures from the project: missing is unknown, ne
     { id: 'concepts', value: 1 },
     { id: 'trees', value: 45, estimate: true },
     { id: 'shade', value: 30, unit: '%', estimate: true },
-    { id: 'walk', value: null, estimate: true },
+    { id: 'walk', value: null, unit: 'm', estimate: true },
   ]);
   const uneven = resourceStats([list[0], list[0], list[2]]);
   assert.equal(uneven[4].value, 90 / 3, 'the mean is not rounded here');
+  // Walk access is the focused world's existing estimate, passed through
+  // unchanged; another world's or a suggested option's is never borrowed.
+  const walk = { 'world-1': 298.33, suggestion: 250 };
+  const walkOf = (focusId) => resourceStats(list, { walk, focusId }).at(-1);
+  assert.deepEqual(walkOf('world-1'), {
+    id: 'walk',
+    value: 298.33,
+    unit: 'm',
+    estimate: true,
+  });
+  assert.equal(walkOf('world-2').value, null);
+  assert.equal(walkOf(undefined).value, null);
 });
 
 test('detailCallouts place proposal parameters inside the footprint; nothing without a concept', () => {

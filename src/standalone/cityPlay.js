@@ -564,7 +564,10 @@ export function mountCityPlay({
       provider: data.provider,
       error: notice ? t(notice) : data.error,
       status: data.status,
-      stats: resourceStats(data.alternatives),
+      stats: resourceStats(data.alternatives, {
+        walk: walkByAlternative(),
+        focusId: focused?.id,
+      }),
       plot: plot && {
         id: plot.id,
         code: plotCode(plot),

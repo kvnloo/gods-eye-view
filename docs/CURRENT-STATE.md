@@ -1763,6 +1763,8 @@ fails startup with a serialization registry mismatch.
 Registration validates the id grammar, rejects collisions with built-in ids and
 duplicates, requires a `createLayer` factory, and sorts by id so discovery order
 cannot reach the encoded link. Panel visibility defaults to on for user layers.
+A factory that throws, returns nothing, or returns a mismatched id is logged
+and excluded with its registry metadata; other layers still start normally.
 See `docs/USER-LAYERS.md`.
 
 

@@ -188,7 +188,8 @@ what your layer is actually allowed to reach.
 `src/data/lifecycle.js` isolates each layer, so a live source that fails does
 not take the application with it:
 
-- A `createLayer()` that throws at startup is caught, logged as
+- A `createLayer()` that throws, returns nothing, or returns a layer whose
+  `id` differs from its descriptor is caught, logged as
   `[UserLayers] <id> createLayer() failed; layer left out:`, and that layer is
   unregistered. The application and the other user layers start normally.
 - A throwing or rejecting `update()` is caught, logged as
@@ -358,11 +359,11 @@ ships with no layers, which is exactly the state CI sees.
 
 | Symptom | Cause |
 | --- | --- |
-| Layer never appears in the panel | `showInTogglePanel` explicitly `false`, or `createLayer()` returned nothing. |
+| Layer never appears in the panel | `showInTogglePanel` explicitly `false`, or its factory failed (check the console). |
 | `Invalid user-layer id` at startup | `id` has capitals, underscores, spaces or dots. |
 | `collides with a built-in layer` | Your `id` matches a shipped layer; pick another. |
 | `must supply a createLayer function` | Descriptor exports a layer object directly instead of a factory. |
-| `createLayer() failed; layer left out` in the console | The factory threw; the error follows the message. |
+| `createLayer() failed; layer left out` in the console | The factory threw, returned nothing, or returned a mismatched `id`; the error follows the message. |
 | Layer appears but never draws | Cesium resources created in `createLayer()` instead of `init(viewer)`. |
 | Share link drops the layer | Opened on an install that does not have that layer — expected. |
 | `check:boundaries` reports a module your layer imports | The layer imports an application module its loading packages do not own; see above. |

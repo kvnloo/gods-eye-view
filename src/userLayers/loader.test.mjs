@@ -1,5 +1,6 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
+import { createLayerCatalog } from '../app/catalog.js';
 import {
   collectUserLayerEntries,
   instantiateUserLayer,
@@ -9,6 +10,7 @@ import {
   registerUserLayers,
   resetUserLayersForTest,
   userLayerIds,
+  userLayerMetadata,
 } from '../data/layerState.js';
 
 beforeEach(() => resetUserLayersForTest());
@@ -145,6 +147,30 @@ test('a createLayer() that throws leaves out that layer, not the others', (t) =>
     logged.mock.calls[0].arguments[0],
     /broken createLayer\(\) failed/,
   );
+});
+
+test('invalid user-layer factory results cannot abort catalog startup', (t) => {
+  const logged = t.mock.method(console, 'error', () => {});
+  const entries = registerUserLayers([
+    { id: 'healthy', createLayer: () => ({ id: 'healthy' }) },
+    { id: 'missing', createLayer: () => undefined },
+    { id: 'null-result', createLayer: () => null },
+    { id: 'foreign', createLayer: () => ({ id: 'unrelated' }) },
+  ]);
+
+  const layers = instantiateUserLayers(entries);
+  assert.deepEqual(layers.map((layer) => layer?.id), ['healthy']);
+  assert.deepEqual(userLayerIds(), ['healthy']);
+  const catalog = createLayerCatalog(layers, userLayerMetadata());
+  assert.deepEqual(catalog.layers.map((layer) => layer.id), ['healthy']);
+  assert.equal(logged.mock.callCount(), 3);
+  for (const id of ['foreign', 'missing', 'null-result']) {
+    assert.ok(
+      logged.mock.calls.some((call) =>
+        String(call.arguments[0]).includes(`${id} createLayer() failed`),
+      ),
+    );
+  }
 });
 
 test('when every createLayer() succeeds the registry is left as it was', () => {

@@ -49,16 +49,20 @@ export function collectUserLayerEntries(modules) {
  */
 export function instantiateUserLayer(entry) {
   const layer = entry.createLayer();
-  if (layer && layer.showInTogglePanel === undefined)
+  if (!layer || typeof layer !== 'object' || layer.id !== entry.id)
+    throw new TypeError(
+      `User layer ${entry.id} createLayer() must return a layer with a matching id`,
+    );
+  if (layer.showInTogglePanel === undefined)
     layer.showInTogglePanel = true;
   return layer;
 }
 
 /**
- * Build every registered layer, leaving out any whose `createLayer()` throws.
+ * Build every registered layer, leaving out failed or invalid factory results.
  *
  * A malformed descriptor is the author's mistake and refuses to load, but a
- * factory that throws is the layer's own code failing, like a throwing
+ * factory that throws or returns an invalid layer has failed, like a throwing
  * `enable()`: it takes down that layer, not the application. A layer left out
  * is unregistered again, so the state codec and the manager never see an id
  * the catalog does not hold, and a share link naming it is treated like one

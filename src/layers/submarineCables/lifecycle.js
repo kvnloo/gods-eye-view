@@ -39,10 +39,13 @@ export function createLifecycle({ state, parts, source, mapStackEventTarget }) {
             // requested for a fallback sweep: it only fires while the camera is
             // already moving, so frames are flowing by construction.
             if (!state._enabled || !state._loaded) return;
-            // Landing markers left over from the last sweep, a few per frame.
-            parts.rendering.revealLandingMarkers();
-            if (!state._referenceSweepGate.shouldRun(viewer.camera)) return;
-            parts.rendering.updateReferenceVisibility();
+            // A dirty sweep reveals one batch itself; an extra reveal would
+            // double the per-frame budget during camera motion.
+            if (state._referenceSweepGate.shouldRun(viewer.camera)) {
+              parts.rendering.updateReferenceVisibility();
+            } else {
+              parts.rendering.revealLandingMarkers();
+            }
           },
         );
       }

@@ -2041,8 +2041,14 @@ test('landing markers are revealed a few per frame, never all in one', async () 
     env.raiseSweep();
     assert.equal(shown(), CABLE_LANDING_REVEALS_PER_FRAME);
     assert.ok(renderRequests > 0, 'another frame is asked for');
+    // A camera move during a pending reveal must not spend two frame budgets.
+    for (const fn of env.listeners.moveEnd) fn();
     env.raiseSweep();
-    assert.equal(shown(), CABLE_LANDING_REVEALS_PER_FRAME * 2);
+    assert.equal(
+      shown(),
+      CABLE_LANDING_REVEALS_PER_FRAME * 2,
+      'a dirty sweep must not drain two batches in one frame',
+    );
     env.raiseSweep();
     assert.equal(shown(), count, 'every visible marker ends up shown');
 

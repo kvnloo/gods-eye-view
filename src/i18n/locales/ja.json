@@ -3712,5 +3712,8 @@
   "Homes": "住戸数",
   "Assumed {share}% of the floor area is homes of {size} m² each": "仮定：延床面積の{share}%が1戸{size} m²の住戸",
   "Shadow reach": "影の長さ",
-  "Height ÷ tan(sun altitude {altitude}°), on level ground": "高さ ÷ tan(太陽高度 {altitude}°)、平坦な地面の場合"
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "高さ ÷ tan(太陽高度 {altitude}°)、平坦な地面の場合",
+  "Observed Earth": "観測された地球",
+  "Possible Earth": "可能な地球",
+  "Map imagery: {source}": "地図画像: {source}"
 }

@@ -3985,5 +3985,8 @@
   "Homes": "Квартири",
   "Assumed {share}% of the floor area is homes of {size} m² each": "Припущення: {share}% площі поверхів — квартири по {size} м²",
   "Shadow reach": "Довжина тіні",
-  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Висота ÷ tan(висота сонця {altitude}°), на рівній землі"
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Висота ÷ tan(висота сонця {altitude}°), на рівній землі",
+  "Observed Earth": "Спостережувана Земля",
+  "Possible Earth": "Можлива Земля",
+  "Map imagery: {source}": "Знімки карти: {source}"
 }

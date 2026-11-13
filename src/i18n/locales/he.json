@@ -3894,5 +3894,8 @@
   "Homes": "דירות",
   "Assumed {share}% of the floor area is homes of {size} m² each": "הנחה: {share}% משטח הרצפות הם דירות של {size} מ\"ר כל אחת",
   "Shadow reach": "אורך הצל",
-  "Height ÷ tan(sun altitude {altitude}°), on level ground": "גובה ÷ tan(גובה השמש {altitude}°), על קרקע מישורית"
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "גובה ÷ tan(גובה השמש {altitude}°), על קרקע מישורית",
+  "Observed Earth": "כדור הארץ הנצפה",
+  "Possible Earth": "כדור הארץ האפשרי",
+  "Map imagery: {source}": "תצלומי המפה: {source}"
 }

@@ -3712,5 +3712,8 @@
   "Homes": "住宅戶數",
   "Assumed {share}% of the floor area is homes of {size} m² each": "假設：樓地板面積的 {share}% 為住宅，每戶 {size} m²",
   "Shadow reach": "陰影長度",
-  "Height ÷ tan(sun altitude {altitude}°), on level ground": "高度 ÷ tan(太陽仰角 {altitude}°)，以平地計"
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "高度 ÷ tan(太陽仰角 {altitude}°)，以平地計",
+  "Observed Earth": "觀測地球",
+  "Possible Earth": "可能地球",
+  "Map imagery: {source}": "地圖影像：{source}"
 }

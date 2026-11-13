@@ -210,6 +210,65 @@ test("the carousel lists this plot's worlds with chips, Build, Reroll and record
   assert.equal($('[data-city-play-records="bar"]').disabled, true);
 });
 
+test('lane badges: a cited map is Observed, every authored world is Possible, an uncited map claims neither', async (t) => {
+  const { store, settle, $ } = await mount(t);
+  const source = 'Esri World Imagery';
+  const selected = (lane) => ({
+    id: plot.id,
+    code: plotCode(plot),
+    area: 1600,
+    size: 40,
+    lane,
+    source: lane ? source : null,
+  });
+  const laneOf = (selector) =>
+    $(`${selector} [data-city-play-lane]`)?.dataset.cityPlayLane ?? null;
+  const show = async (view) => {
+    store.publish(view);
+    store.place({
+      plot: { x: 700, y: 400 },
+      holo: { x: 700, y: 300 },
+      callouts: {},
+      pins: {},
+    });
+    await settle();
+  };
+  // An untouched plot on a cited map.
+  await show(
+    playView({ plot: selected('observed'), cards: [], focused: null }),
+  );
+  assert.equal(laneOf('[data-city-play-tag]'), 'observed');
+  assert.equal(
+    $('[data-city-play-tag] [data-city-play-lane]').textContent.trim(),
+    'Observed Earth',
+  );
+  assert.match(
+    $('[data-city-play-source]').textContent,
+    /Map imagery: Esri World Imagery/,
+  );
+  // The same plot reimagined: its concept leads, wheel closed.
+  await show(playView({ wheelOpen: false, plot: selected('possible') }));
+  assert.equal(laneOf('[data-city-play-holo-tag]'), 'possible');
+  assert.equal(
+    $('[data-city-play-holo-tag] [data-city-play-lane]').textContent.trim(),
+    'Possible Earth',
+  );
+  assert.equal(laneOf('[data-city-play-card="world-1"]'), 'possible');
+  // Wheel reopened on the reimagined plot: its tag no longer reads Observed.
+  await show(playView({ plot: selected('possible') }));
+  assert.equal(laneOf('[data-city-play-tag]'), 'possible');
+  assert.equal(
+    $('[data-city-play-source]'),
+    null,
+    'a possible world does not cite the map as its source',
+  );
+  // No established map source: no lane is claimed.
+  await show(playView({ plot: selected(null), cards: [], focused: null }));
+  assert.ok($('[data-city-play-tag]'));
+  assert.equal(laneOf('[data-city-play-tag]'), null);
+  assert.equal($('[data-city-play-source]'), null);
+});
+
 test('zoom tiers swap the wheel for detail callouts or district pins', async (t) => {
   const { store, settle, $, $$ } = await mount(t);
   store.publish(

@@ -3894,5 +3894,8 @@
   "Homes": "Logements",
   "Assumed {share}% of the floor area is homes of {size} m² each": "Hypothèse : {share} % de la surface de plancher en logements de {size} m² chacun",
   "Shadow reach": "Portée de l'ombre",
-  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Hauteur ÷ tan(hauteur du soleil {altitude}°), sur terrain plat"
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Hauteur ÷ tan(hauteur du soleil {altitude}°), sur terrain plat",
+  "Observed Earth": "Terre observée",
+  "Possible Earth": "Terre possible",
+  "Map imagery: {source}": "Imagerie de la carte : {source}"
 }

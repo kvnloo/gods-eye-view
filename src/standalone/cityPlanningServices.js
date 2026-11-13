@@ -88,7 +88,8 @@ function readView(viewer) {
   return { camera: pose, bounds };
 }
 
-function readSources(mapStackController, capturedAt) {
+// The selected map's [id, url, name], or null when no cited map is established.
+function activeCitation(mapStackController) {
   const state = mapStackController?.getState?.();
   const descriptor = state?.activeStack;
   const citation =
@@ -97,13 +98,19 @@ function readSources(mapStackController, capturedAt) {
       : null;
   // A switch in progress does not establish which source supplied the pixels.
   if (!citation || state.status !== 'ready' || state.activeId !== descriptor.id)
-    return [];
+    return null;
+  return [descriptor.id, ...citation];
+}
+
+function readSources(mapStackController, capturedAt) {
+  const citation = activeCitation(mapStackController);
+  if (!citation) return [];
   return [
     {
-      id: descriptor.id,
+      id: citation[0],
       revision: `Captured at ${capturedAt}`,
-      url: citation[0],
-      attribution: `${citation[1]} (unverified; selected map source only)`,
+      url: citation[1],
+      attribution: `${citation[2]} (unverified; selected map source only)`,
       license: 'Unverified; provider terms apply',
     },
   ];
@@ -306,6 +313,7 @@ export function mountCityBuilder(options = {}) {
       viewer: scene.viewer,
       builder: owner,
       store: playStore,
+      mapSource: () => activeCitation(scene.mapStackController)?.[2] ?? null,
     });
   play?.receive(playView);
   // Massing v0 follows the selected plot, only behind ?massing=1 (default off).

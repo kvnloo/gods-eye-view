@@ -4167,5 +4167,8 @@
   "Homes": "المساكن",
   "Assumed {share}% of the floor area is homes of {size} m² each": "مفترض: {share}% من مساحة الطوابق مساكن، مساحة كل منها {size} م²",
   "Shadow reach": "امتداد الظل",
-  "Height ÷ tan(sun altitude {altitude}°), on level ground": "الارتفاع ÷ tan(ارتفاع الشمس {altitude}°)، على أرض مستوية"
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "الارتفاع ÷ tan(ارتفاع الشمس {altitude}°)، على أرض مستوية",
+  "Observed Earth": "الأرض المرصودة",
+  "Possible Earth": "الأرض الممكنة",
+  "Map imagery: {source}": "صور الخريطة: {source}"
 }

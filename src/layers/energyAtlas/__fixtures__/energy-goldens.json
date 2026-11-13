@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "kind": "test-fixture",
+  "note": "Cited real-world goldens for goldens.test.mjs only. Not a shipped dataset: no runtime module imports this file. Each valueAsPublished is copied from the publisher's own file and is never edited to fit the model. Unit conversions happen in the test, from the cited constants below.",
+  "retrievedAt": "2026-11-13",
+  "constants": {
+    "GWH_PER_KTOE": {
+      "value": 11.63,
+      "unit": "GWh per ktoe",
+      "publisher": "UK Department for Energy Security and Net Zero (DESNZ)",
+      "document": "Subnational total final energy consumption statistics: 2005 to 2024 (Excel)",
+      "locator": "sheet 'Cover sheet', cell A24: \"1 ktoe = 11.63 GWh.\"",
+      "url": "https://assets.publishing.service.gov.uk/media/6a68c32f16bc92f51e1a4260/Subnational_total_final_consumption_2005_2024.xlsx"
+    },
+    "J_PER_WH": {
+      "value": 3600,
+      "unit": "J per W·h",
+      "publisher": "NIST",
+      "document": "NIST Guide to the SI (SP 811), Appendix B.8: Factors for Units Listed Alphabetically",
+      "locator": "row \"watt hour (W · h)\" to \"joule (J)\": 3.6 E+03",
+      "url": "https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b8"
+    },
+    "S_PER_HOUR": {
+      "value": 3600,
+      "unit": "s per h",
+      "publisher": "NIST",
+      "document": "NIST Guide to the SI (SP 811), Appendix B.8: Factors for Units Listed Alphabetically",
+      "locator": "row \"hour (h)\" to \"second (s)\": 3.6 E+03",
+      "url": "https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b8"
+    },
+    "S_PER_DAY": {
+      "value": 86400,
+      "unit": "s per d",
+      "publisher": "NIST",
+      "document": "NIST Guide to the SI (SP 811), Appendix B.8: Factors for Units Listed Alphabetically",
+      "locator": "row \"day (d)\" to \"second (s)\": 8.64 E+04",
+      "url": "https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b8"
+    },
+    "SI_GIGA": {
+      "value": 1e9,
+      "unit": "factor",
+      "publisher": "NIST",
+      "document": "Metric (SI) Prefixes",
+      "locator": "table row \"giga G 10^9\"",
+      "url": "https://www.nist.gov/pml/owm/metric-si-prefixes"
+    },
+    "SI_TERA": {
+      "value": 1e12,
+      "unit": "factor",
+      "publisher": "NIST",
+      "document": "Metric (SI) Prefixes",
+      "locator": "table row \"tera T 10^12\"",
+      "url": "https://www.nist.gov/pml/owm/metric-si-prefixes"
+    }
+  },
+  "goldens": [
+    {
+      "id": "desnz-uk-2024-total-final-energy",
+      "kind": "annual_energy",
+      "publisher": "UK Department for Energy Security and Net Zero (DESNZ)",
+      "dataset": "Subnational total final energy consumption statistics: 2005 to 2024",
+      "table": "workbook sheet '2024', row 7 (Code K02000001, \"United Kingdom (inc unallocated)\", \"All local authorities\"), cell H7, column \"All fuels: Total\"",
+      "url": "https://www.gov.uk/government/statistics/total-final-energy-consumption-at-regional-and-local-authority-level-2005-to-2024",
+      "fileUrl": "https://assets.publishing.service.gov.uk/media/6a68c32f16bc92f51e1a4260/Subnational_total_final_consumption_2005_2024.xlsx",
+      "fileSha256": "f9f26000bf688e1144a4b3b75a5240fcd23b91c697606cc887cee346ebe15701",
+      "releasedAt": "2026-07-30",
+      "dataYear": 2024,
+      "unit": "ktoe",
+      "valueAsPublished": 119531.338278025,
+      "measures": "final",
+      "measuresNote": "Total FINAL energy consumption, all fuels and sectors, as estimated in the subnational series. Accredited Official Statistics. Workbook Note 1: transport covers road and rail only, and transport electricity is not included. The same sheet shows the DUKES UK total (row 8, 114622.15 ktoe) \"for comparison purposes only\" (Note 5); this golden is the subnational total, not the DUKES total.",
+      "metric": "total_final_energy",
+      "status": "official_estimate",
+      "geographyCoverage": "complete",
+      "area": {
+        "id": "ISO3:GBR",
+        "type": "country",
+        "boundaryDataset": "DESNZ subnational series, UK total row (GSS K02000001)",
+        "boundaryRevision": "2025-04",
+        "publishedCode": "K02000001",
+        "publishedLabel": "United Kingdom (inc unallocated)"
+      },
+      "licence": "Open Government Licence v3.0",
+      "attribution": "Contains public sector information licensed under the Open Government Licence v3.0. Source: DESNZ.",
+      "derived": {
+        "annualTWh": 1390.1494641734307,
+        "averagePowerW": 158259274154.53445,
+        "method": "Independent exact-rational calculation (Python fractions), 366-day year from the Gregorian calendar; not produced by the model."
+      }
+    }
+  ]
+}

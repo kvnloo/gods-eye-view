@@ -22,6 +22,15 @@ test('phone presentation follows shell state and accounts for both landscape not
   assert.doesNotMatch(css, /@media \(max-width:/);
 });
 
+test('short portrait viewports keep portrait chrome rather than landscape-only controls', () => {
+  const shortHeightRules = css.match(/@media \(max-height: 520px\)[^{]*\{/g) ?? [];
+  assert.equal(shortHeightRules.length, 2);
+  assert.ok(
+    shortHeightRules.every((rule) => rule.includes('(orientation: landscape)')),
+    '390x500 portrait must keep its full voice bar and 58px tab bar',
+  );
+});
+
 test('phone picker and settings gear override desktop floating offsets at the mic anchor', () => {
   assert.match(
     css,

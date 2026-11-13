@@ -1172,11 +1172,12 @@ function dockWing(t) {
   };
 }
 
-for (const [width, height, phone] of [
-  [844, 390, true],
-  [1024, 768, false],
+for (const [width, height, phone, corner] of [
+  [844, 390, true, true],
+  [390, 500, true, false],
+  [1024, 768, false, false],
 ]) {
-  test(`Voice Settings follows the mic on landscape phones, not desktop (${width}x${height})`, async (t) => {
+  test(`Voice Settings uses the right layout in landscape, short portrait, and desktop (${width}x${height})`, async (t) => {
     const f = mounted(t, { view: true });
     const view = globalThis.document.defaultView;
     for (const [key, value] of [
@@ -1205,7 +1206,8 @@ for (const [width, height, phone] of [
       width,
       height,
     });
-    root.getBoundingClientRect = () => rect(780, 278, 54, 54);
+    const micLeft = phone ? width - 64 : 780;
+    root.getBoundingClientRect = () => rect(micLeft, 278, 54, 54);
     panel.getBoundingClientRect = () => rect(0, 0, 352, 166);
     // The full-width dock does not define a landscape panel's centre.
     globalThis.document.body.firstElementChild.id = 'command-dock';
@@ -1217,11 +1219,18 @@ for (const [width, height, phone] of [
     f.commands.voicePanel.select('settings');
     await f.settle();
     assert.equal(panel.dataset.placement, 'compact');
-    assert.equal(panel.style.width, '', 'landscape keeps the compact CSS size');
-    // Phone is clamped inside the right notch; desktop retains dock centring.
-    const expectedLeft = phone
-      ? width - 352 - 8 - 44 - 780
-      : width / 2 - 352 / 2 - 780;
+    assert.equal(
+      panel.style.width,
+      phone && !corner ? '286px' : '',
+      'short portrait keeps full-width sheet placement; landscape stays compact',
+    );
+    // Short portrait keeps the wide sheet; landscape respects the right notch.
+    const expectedLeft =
+      phone && !corner
+        ? 8 + 44 - micLeft
+        : phone
+          ? width - 352 - 8 - 44 - micLeft
+          : width / 2 - 352 / 2 - micLeft;
     assert.equal(parseFloat(panel.style.left), expectedLeft);
     assert.equal(f.commands.getVoicePanelState().settingsOpen, true);
   });

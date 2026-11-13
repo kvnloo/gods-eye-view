@@ -5415,8 +5415,9 @@ silently demoting every later lookup for the session.
   Sacramento; cap 300) and TfL London JamCams (cap 250) join Austin (cap 250) as keyless default
   sources. Caltrans live video is opt-in (`CCTV_CALTRANS_VIDEO=1`, #1119): cameras whose feed lists a
   playlist on `wzmedia.dot.ca.gov/D<n>/<name>.stream/playlist.m3u8` (about 200 of 773 in District 4)
-  play through the bounded HLS relay with the still as the snapshot fallback; any other stream
-  URL, and any other flag value, keeps the camera on stills. Ontario 511 (2026-09-12) adds highway cameras including Kitchener-area routes
+  play through the bounded HLS relay with a pinned still as fallback when provided.
+  A video-only camera is listed only with the opt-in; without it, a pinned still is
+  still required. Other stream URLs cannot enable live video. Ontario 511 (2026-09-12) adds highway cameras including Kitchener-area routes
   (cap 1,000, all enabled rows from the current ~944-camera catalog). The 511on.ca API now
   requires a developer key, so the pack needs `ONTARIO_511_API_KEY` and is skipped without one
   (#1228). All sources are RAW PRIOR

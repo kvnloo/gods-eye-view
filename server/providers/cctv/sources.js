@@ -321,7 +321,8 @@ export function caltransStreamUrl(raw) {
  *
  * With CCTV_CALTRANS_VIDEO=1 (opt-in; any other value keeps stills), a camera
  * whose feed lists a pinned live stream (see caltransStreamUrl) is registered as
- * `feedType: 'hls'`, with the pinned still as its snapshot fallback.
+ * `feedType: 'hls'`; the pinned still is its fallback when available. A
+ * video-only row is admitted only with that opt-in.
  *
  * @returns {Promise<Array<object>>} Normalized camera source objects.
  */
@@ -367,12 +368,16 @@ export async function loadCaltransSourcesFromOpenData() {
       const lon = toFiniteNumber(loc.longitude);
       if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
 
-      // Official-host pin (see JSDoc). Also drops records with no still image.
+      // A pinned HLS stream is sufficient in opt-in mode even when this
+      // camera has no still; without the opt-in the pinned still is required.
       const imageUrl = pinnedCameraUrl(
         cctv.imageData?.static?.currentImageURL,
         'https://cwwp2.dot.ca.gov/',
       );
-      if (!imageUrl) continue;
+      const videoUrl = videoEnabled
+        ? caltransStreamUrl(cctv.imageData?.streamingVideoURL)
+        : '';
+      if (!imageUrl && !videoUrl) continue;
 
       const locationName = String(loc.locationName || '').trim();
       // Leading token of locationName is the stable camera code ("TV102 -- I-580 : …").
@@ -389,10 +394,7 @@ export async function loadCaltransSourcesFromOpenData() {
         locationName.replace(/^([A-Za-z0-9_-]+)\s*--\s*/, '') ||
         `Caltrans D${district} ${code}`;
 
-      // Opt-in live video; the pinned still stays the snapshot fallback.
-      const videoUrl = videoEnabled
-        ? caltransStreamUrl(cctv.imageData?.streamingVideoURL)
-        : '';
+      // The pinned still remains the snapshot fallback when supplied.
       cameras.push({
         id: cameraId,
         name: loc.nearbyPlace ? `${label} (${loc.nearbyPlace})` : label,
@@ -425,7 +427,7 @@ export async function loadCaltransSourcesFromOpenData() {
         })(),
         feedType: videoUrl ? 'hls' : 'image',
         url: videoUrl || imageUrl,
-        snapshotUrl: imageUrl,
+        snapshotUrl: imageUrl || '',
         sourceKind: 'caltrans-open-data',
         license: 'Public Caltrans highway camera frame',
       });

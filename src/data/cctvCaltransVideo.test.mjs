@@ -124,6 +124,33 @@ test('a static key that merely mentions video is not treated as a stream', async
   assert.equal(camera.url, STILL);
 });
 
+test('a video-only Caltrans camera needs opt-in, without weakening still URL pins', async (t) => {
+  for (const flag of ['0', '1']) {
+    await t.test(`CCTV_CALTRANS_VIDEO=${flag}`, async (t) => {
+      withEnv(t, {
+        CCTV_CALTRANS_DISTRICTS: '4',
+        CCTV_CALTRANS_VIDEO: flag,
+      });
+      // The source publishes valid HLS but its still is absent or untrusted.
+      serveCamera(t, {
+        streamingVideoURL: STREAM,
+        static: {
+          currentImageURL: 'https://example.com/untrusted-camera.jpg',
+        },
+      });
+      const cameras = await loadCaltransSourcesFromOpenData();
+      if (flag === '0') {
+        assert.deepEqual(cameras, []);
+      } else {
+        assert.equal(cameras.length, 1);
+        assert.equal(cameras[0].feedType, 'hls');
+        assert.equal(cameras[0].url, STREAM);
+        assert.equal(cameras[0].snapshotUrl, '');
+      }
+    });
+  }
+});
+
 test('the snapshot fallback is always the pinned still, never an unpinned field', async (t) => {
   const camera = await loadOne(t, '1', {
     streamingVideoURL: STREAM,

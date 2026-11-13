@@ -34,6 +34,25 @@ test('the parsed flight keeps its kind, designator and display label', () => {
   });
 });
 
+test('an exact ICAO callsign keeps its zeros instead of selecting another flight', () => {
+  const padded = parseFlightNumberQuery('zxy 0123');
+  assert.deepEqual(padded, {
+    kind: 'icao',
+    designator: 'ZXY',
+    number: '0123',
+    suffix: '',
+    label: 'ZXY0123',
+  });
+  assert.deepEqual(flightCallsignCandidates(padded, [ZX]), ['ZXY0123']);
+  assert.equal(callsignMatchesFlight('ZXY123', ['ZXY0123']), false);
+  assert.equal(parseFlightNumberQuery('ZXY000'), null);
+  // IATA flight numbers retain their existing normalized-number behavior.
+  assert.deepEqual(
+    flightCallsignCandidates(parseFlightNumberQuery('ZX 0123'), [ZX]),
+    ['ZXY123'],
+  );
+});
+
 test('text that is not a flight number does not parse', () => {
   for (const text of [
     '',

@@ -1204,7 +1204,9 @@ Flight number search (`src/data/flightNumber.js`,
 designator plus a number (`BA 123`, `A3-602`) or a three-letter ICAO
 designator plus a number (`BAW123`) becomes exact callsigns: ICAO as typed,
 IATA through `/api/adsbdb/airline/<code>`, one callsign per airline holding the
-code. Only aircraft already loaded in the enabled Flights or Military layers
+code. ICAO callsigns preserve their typed leading zeros (`BAW0123` is
+not `BAW123`); IATA flight numbers still normalize leading zeros. Only
+aircraft already loaded in the enabled Flights or Military layers
 are searched, and only an exact callsign matches. One match is followed with
 origin `user`; several matches list their callsigns and follow none; no match
 falls through to place search, and only if no place answers does the field say

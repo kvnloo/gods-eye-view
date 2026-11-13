@@ -29,8 +29,8 @@ const ICAO_PATTERN = /^([A-Z]{3})[\s-]*(\d{1,4})([A-Z]?)$/;
  * Parse a typed or spoken flight number.
  * @param {*} text Query text.
  * @returns {{kind: 'iata'|'icao', designator: string, number: string, suffix: string, label: string}|null}
- *   The parsed flight, with `number` stripped of leading zeros and `label`
- *   in a display form ("BA 123", "BAW123"); null when the text is not a
+ *   IATA numbers shed leading zeros; ICAO callsigns preserve their exact
+ *   digits. `label` is a display form ("BA 123", "BAW0123"); null when not a
  *   flight number.
  */
 export function parseFlightNumberQuery(text) {
@@ -43,8 +43,10 @@ export function parseFlightNumberQuery(text) {
     const [, designator, digits, suffix] = match;
     if (!/[A-Z]/.test(designator)) return null;
     if (digits.length > MAX_FLIGHT_DIGITS) return null;
-    const number = digits.replace(/^0+(?=\d)/, '');
-    if (number === '0') return null;
+    // ICAO callsigns identify what the transponder broadcasts: BAW0123 and
+    // BAW123 can be different contacts, so never rewrite the ICAO spelling.
+    const number = kind === 'icao' ? digits : digits.replace(/^0+(?=\d)/, '');
+    if (/^0+$/.test(digits)) return null;
     return {
       kind,
       designator,
@@ -66,7 +68,8 @@ export function parseFlightNumberQuery(text) {
 /**
  * Exact callsigns a parsed flight may broadcast.
  *
- * An ICAO flight is its own callsign. An IATA flight becomes one callsign per
+ * An ICAO flight is its own callsign, including any leading zeros. An IATA
+ * flight becomes one callsign per
  * airline holding that IATA code: codes are reassigned, so a lookup can answer
  * with more than one airline, and only an aircraft actually broadcasting one of
  * the callsigns decides which was meant.

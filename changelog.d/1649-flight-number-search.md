@@ -4,3 +4,5 @@
   matches list their callsigns instead of choosing; a flight with no aircraft
   on the map still searches places, then says why nothing was found
   (Panos1221, #1649).
+- Preserve zero-padded ICAO callsigns as typed: `BAW0123` must not match
+  a different aircraft broadcasting `BAW123` (Panos1221, #1649).

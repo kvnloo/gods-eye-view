@@ -45,6 +45,16 @@ test('typed IATA, ICAO and spaced forms find the same loaded aircraft', async ()
   }
 });
 
+test('an exact zero-padded ICAO search does not track an unpadded flight', async () => {
+  const padded = { icao24: 'aaa111', callsign: 'ZXY0123' };
+  const unpadded = { icao24: 'bbb222', callsign: 'ZXY123' };
+  const { search, asked } = searchWith({ flights: [padded, unpadded] });
+  const result = await search.find('zxy0123');
+  assert.equal(result.status, 'found');
+  assert.equal(result.match, padded);
+  assert.deepEqual(asked, []);
+});
+
 test('a prefix match is not the typed flight', async () => {
   const { search } = searchWith({
     flights: [{ icao24: 'abc123', callsign: 'ZXY1234' }],

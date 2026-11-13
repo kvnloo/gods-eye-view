@@ -264,6 +264,25 @@ test('a still camera is still served through /frame with its bounded fetch', asy
   assert.deepEqual(app.requests, [{ url: STILL.url, redirect: 'manual' }]);
 });
 
+test('Varitech /frame reuses the proxy snapshot cache across requests', async (t) => {
+  const app = mount(t, () =>
+    upstreamResponse({
+      headers: { 'content-type': 'image/jpeg' },
+      body: 'varitech-jpeg',
+    }),
+  );
+  const first = await app.call(`/frame/${VARITECH.id}`);
+  const second = await app.call(`/frame/${VARITECH.id}`);
+  for (const res of [first, second]) {
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.headers['Content-Type'], 'image/jpeg');
+    assert.equal(res.headers['Cache-Control'], 'no-store');
+    assert.equal(res.headers['X-CCTV-Source'], 'upstream-image');
+    assert.equal(res.body, 'varitech-jpeg');
+  }
+  assert.deepEqual(app.requests, [{ url: VARITECH.url, redirect: 'manual' }]);
+});
+
 test('/frame does not follow a still camera off its origin', async (t) => {
   // The protection /media used to bypass, shown on the route that keeps it.
   const app = mount(t, ({ url }) =>

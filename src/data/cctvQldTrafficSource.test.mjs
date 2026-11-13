@@ -296,3 +296,24 @@ test('QLDtraffic catalog cancels redirect and error bodies it does not read', as
   assert.deepEqual(cameras, []);
   assert.deepEqual(cancelled.sort(), ['/v1/floodcams', '/v1/webcams']);
 });
+
+test('QLDtraffic configured cap bounds the combined webcam and floodcam catalog', async (t) => {
+  const previous = process.env.CCTV_QLDTRAFFIC_MAX_SOURCES;
+  process.env.CCTV_QLDTRAFFIC_MAX_SOURCES = '8';
+  const features = Array.from({ length: 12 }, (_, i) =>
+    feature({}, { id: i + 1 }),
+  );
+  try {
+    const { cameras } = await loadWith(t, () =>
+      Response.json({ type: 'FeatureCollection', features }),
+    );
+    assert.equal(cameras.length, 8);
+    assert.equal(new Set(cameras.map((camera) => camera.id)).size, 8);
+    assert.ok(
+      cameras.every((camera) => /^qldtraffic-(webcam|floodcam)-/.test(camera.id)),
+    );
+  } finally {
+    if (previous === undefined) delete process.env.CCTV_QLDTRAFFIC_MAX_SOURCES;
+    else process.env.CCTV_QLDTRAFFIC_MAX_SOURCES = previous;
+  }
+});

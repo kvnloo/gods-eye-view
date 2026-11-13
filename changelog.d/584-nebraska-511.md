@@ -14,3 +14,6 @@
   images are served from the app origin, since the upstream CORS preflight is
   answered by its SPA host as HTML, and with no pack enabled the layer says so
   instead of showing an empty board (NebraskaCoder, #584).
+- Report a first-load outage of all enabled message-sign packs as unavailable
+  (502), not a valid empty board; preserve per-pack last-good snapshots after
+  successful reads (NebraskaCoder, #584 review follow-up).

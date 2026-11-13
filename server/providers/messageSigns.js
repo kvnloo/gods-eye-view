@@ -145,12 +145,17 @@ export function createSignsCache({
     if (!inFlight) {
       inFlight = loadAllSigns({ packs })
         .then((outcomes) => {
-          byPack = new Map(
-            outcomes.map(({ name, ok, signs }) => [
-              name,
-              ok ? signs : byPack.get(name) || [],
-            ]),
-          );
+          const nextByPack = new Map();
+          for (const { name, ok, signs } of outcomes) {
+            if (ok) nextByPack.set(name, signs);
+            else if (byPack.has(name)) nextByPack.set(name, byPack.get(name));
+          }
+          // No successful snapshot is different from a valid empty one.
+          // Preserve previously successful packs when a later refresh fails.
+          if (outcomes.length && nextByPack.size === 0) {
+            throw new Error('No message-sign packs have a valid snapshot');
+          }
+          byPack = nextByPack;
           const signs = [...byPack.values()].flat();
           cache = {
             at: Date.now(),

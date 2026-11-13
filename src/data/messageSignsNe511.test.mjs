@@ -347,6 +347,40 @@ test('an empty upstream snapshot clears the board; a failed one does not', async
   );
 });
 
+test('a total first-load outage is unavailable, not an empty board', async (t) => {
+  t.mock.method(console, 'warn', () => {});
+  t.mock.method(console, 'error', () => {});
+  let upstreamAvailable = false;
+  const packs = [
+    {
+      name: 'outage',
+      enabled: () => true,
+      load: async () => {
+        if (!upstreamAvailable) throw new Error('upstream down');
+        return [sign1('a')];
+      },
+    },
+  ];
+  const cache = createSignsCache({ cacheMs: 0, packs });
+  await assert.rejects(
+    cache.getSigns(),
+    /No message-sign packs have a valid snapshot/,
+    'a failed initial read is not a successful empty snapshot',
+  );
+  const response = await requestSigns(
+    messageSignsProxy({ cacheMs: 0, packs }),
+    '/',
+  );
+  assert.equal(response.status, 502, 'the route reports an upstream outage');
+  assert.deepEqual(JSON.parse(response.body), {
+    error: 'Message sign proxy error',
+  });
+
+  // A failed initial read cannot poison the cache: recovery is still loaded.
+  upstreamAvailable = true;
+  assert.deepEqual((await cache.getSigns()).map(({ id }) => id), ['a']);
+});
+
 test('a failed refresh serves the last good list rather than clearing it', async (t) => {
   t.mock.method(console, 'warn', () => {});
   let round = 0;

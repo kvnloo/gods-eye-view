@@ -119,7 +119,66 @@ test('Acaray and Yacyreta retain unique OSM records in the current GeoJSONL bund
       /^https:\/\/www.openstreetmap.org\//,
     );
     assert.ok(Array.isArray(matches[0].geometry.coordinates));
+    if (id === 262532166) {
+      assert.equal(matches[0].geometry.type, 'Polygon');
+      const ring = matches[0].geometry.coordinates[0];
+      assert.equal(ring.length, 9);
+      assert.deepEqual(ring[0], ring.at(-1));
+    }
   }
+});
+
+test('Paraguay dams reach native contexts and analyst queries after enable', async (t) => {
+  const text = readFileSync(
+    new URL('./local_data/dams/dams.geojsonl', import.meta.url),
+    'utf8',
+  );
+  const features = text
+    .split('\n')
+    .filter((line) => line.trim())
+    .map(JSON.parse)
+    .filter((feature) => [262532166, -5671745].includes(feature.id));
+  assert.equal(features.length, 2);
+
+  t.mock.method(globalThis, 'fetch', async () => ({
+    ok: true,
+    text: async () => features.map(JSON.stringify).join('\n'),
+  }));
+  const host = services();
+  const layer = createLocalGeoJsonLayer(
+    {
+      id: 'local-dams',
+      name: 'Dams',
+      osmDerived: true,
+      color: '#0088ff',
+      url: '/dams.geojsonl',
+      screenSpaceEventHandlerFactory: () => ({
+        setInputAction() {},
+        destroy() {},
+      }),
+    },
+    host,
+  );
+  const viewer = {
+    dataSources: new Cesium.DataSourceCollection(),
+    scene: {
+      canvas: {},
+      preRender: new Cesium.Event(),
+      requestRender() {},
+      screenSpaceCameraController: { enableInputs: true },
+    },
+    camera: { moveEnd: new Cesium.Event(), flyTo() {} },
+  };
+  t.after(() => layer.destroy(viewer));
+
+  await layer.enable(viewer);
+  assert.equal(layer.getStats().error, null);
+  assert.equal(host.records.size, 2, 'both dams must register selectable contexts');
+  assert.deepEqual(
+    layer.getAnalystRecords().map(({ name }) => name).sort(),
+    ['Acaray', 'Represa Yacyretá-Apipé'].sort(),
+    'both dams must have native anchor positions for analyst queries',
+  );
 });
 
 test('two viewers use their supplied contexts and dispose independently', async (t) => {

@@ -151,8 +151,9 @@ def demand_inputs(fixture, derived, settings, window):
         entries['m0e'] = counted(departures_from(derived, places[0], 'E', window))
         entries['m3w'] = counted(departures_from(derived, places[4], 'W', window))
     for i in (1, 2, 3):
-        if settings['cross'] == 'stack':
-            entries[f'N{i}in'] = entries[f'S{i}in'] = steady(rates['cross'])
+        for side, heading in (('N', 'S'), ('S', 'N')):   # the north leg enters heading south
+            entries[f'{side}{i}in'] = steady(rates['cross']) if settings['cross'] == 'stack' else \
+                counted([sum(row) for row in counts.movements(derived, places[i], heading, window)])
 
     def shares(i, heading, interval):
         if settings['turns'] == 'straight':

@@ -262,6 +262,16 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(shares(2, 'E', 8), [1, 70, 2])
         self.assertEqual(shares(2, 'S', 3), [2, 21, 2])     # model S is Westbound (k=1)
 
+    def test_cross_street_step_feeds_the_counted_approach_volumes(self):
+        settings, _ = runner.settings_for(FIXTURE, 'S6')
+        entries, _ = runner.demand_inputs(FIXTURE, derived(), settings, 'AM')
+        # Prospect (compass = model): north leg is Southbound (k=0): 1 + 10n + 2; south leg is Northbound (k=2)
+        self.assertEqual(entries['N1in'], ([3] + [10 * n + 3 for n in range(8)], True))
+        self.assertEqual(entries['S1in'], ([7] + [10 * n + 7 for n in range(8)], True))
+        # Lemon (model S is Westbound, k=1): 2 + (10n + 1) + 2
+        self.assertEqual(entries['N3in'], ([5] + [10 * n + 5 for n in range(8)], True))
+        self.assertEqual(len(entries), 8)
+
     def test_step_settings_accumulate_and_unknown_step_fails(self):
         settings, change = runner.settings_for(FIXTURE, 'S0')
         self.assertEqual(settings, FIXTURE['defaults'])

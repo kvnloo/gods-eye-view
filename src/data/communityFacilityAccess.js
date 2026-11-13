@@ -235,9 +235,13 @@ export function evaluateHypotheticalFacilityAccess(input = {}) {
       alternatives: [],
     });
   }
+  // A demand zone may stand on a candidate site (0 m). Two zones or two sites
+  // at one point are not distinct places and stay rejected.
+  const zoneIds = new Set(parsedZones.map((zone) => zone.id));
   for (let i = 0; i < n; i++)
     for (let j = 0; j < n; j++) {
       const v = distances[i][j];
+      const sameKind = zoneIds.has(nodeIds[i]) === zoneIds.has(nodeIds[j]);
       if (v === null || v === undefined || v === Infinity) {
         return receipt(context, {
           status: 'unknown',
@@ -258,7 +262,7 @@ export function evaluateHypotheticalFacilityAccess(input = {}) {
       }
       if (
         (i === j && v !== 0) ||
-        (i !== j && v === 0) ||
+        (i !== j && v === 0 && sameKind) ||
         v !== distances[j]?.[i]
       ) {
         return receipt(context, {

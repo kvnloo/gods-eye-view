@@ -285,3 +285,29 @@ test('independent exact oracle agrees with evaluation on synthetic line metrics'
       );
     }
 });
+
+test('a zone may stand on a candidate site at 0 m; two zones or two sites may not coincide', () => {
+  const onSite = { ...POSITIONS, 'zone-s': 8 };
+  const out = run({ metric: metric(onSite) });
+  assert.equal(out.status, 'evaluated');
+  assert.deepEqual(
+    out.alternatives.map((x) => [x.siteIds[0], x.totalWeightedDistanceMeters]),
+    [
+      ['site-oak', 12],
+      ['site-play', 24],
+    ],
+  );
+  assert.equal(
+    out.alternatives[1].zoneAccess.find((z) => z.zoneId === 'zone-s')
+      .walkingDistanceMeters,
+    0,
+  );
+  for (const same of [
+    { ...POSITIONS, 'zone-s': 0 },
+    { ...POSITIONS, 'site-play': 2 },
+  ])
+    assert.equal(
+      run({ metric: metric(same) }).reason,
+      'not-a-proper-symmetric-metric',
+    );
+});

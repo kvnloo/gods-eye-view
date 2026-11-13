@@ -242,6 +242,12 @@ export function createGravityLayer({
     playTimer = setTimeoutImpl(async () => {
       playTimer = null;
       if (!playing || !enabled) return;
+      // The first replay field may still be loading; do not mistake the
+      // previously shown latest month for the end of playback.
+      if (loading) {
+        scheduleStep();
+        return;
+      }
       const list = solutions();
       const position = list.findIndex(({ id }) => id === shownId);
       if (position < 0 || position >= list.length - 1) {

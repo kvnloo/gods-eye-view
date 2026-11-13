@@ -53,14 +53,14 @@ function fieldFor(id) {
   return field;
 }
 
-function harness() {
+function harness({ readField = async (id) => fieldFor(id) } = {}) {
   const fetched = [];
   const cells = [];
   const feed = {
     getIndex: async () => INDEX,
     getField: async (id) => {
       fetched.push(id);
-      return fieldFor(id);
+      return readField(id);
     },
     getCell: async (lat, lon) => {
       cells.push([lat, lon]);
@@ -260,6 +260,42 @@ test('playback starts over from the first solution and stops at the latest', asy
   await timers.shift()();
   assert.equal(layer.getCardState().playing, false, 'stops at the latest');
   assert.deepEqual(fetched, ['2026-08-01', '2026-06-01', '2026-07-01']);
+});
+
+test('playback waits for a slow first month instead of stopping on the previous latest', async () => {
+  let releaseFirst;
+  const firstPending = new Promise((resolve) => {
+    releaseFirst = resolve;
+  });
+  const { layer, fetched, timers } = harness({
+    readField: async (id) => {
+      if (id === '2026-06-01') await firstPending;
+      return fieldFor(id);
+    },
+  });
+  layer.enable();
+  await layer.update();
+  layer.setParams({ playing: true });
+  await settle();
+
+  assert.equal(layer.getCardState().shownIndex, 2, 'first field is still loading');
+  assert.equal(timers.length, 1);
+  await timers.shift()();
+  assert.equal(
+    layer.getCardState().playing,
+    true,
+    'the pending first field must not be mistaken for the final month',
+  );
+  assert.equal(layer.getCardState().shownIndex, 2);
+
+  releaseFirst();
+  await settle();
+  assert.equal(layer.getCardState().shownIndex, 0, 'first field arrived');
+  await timers.shift()();
+  assert.equal(layer.getCardState().shownIndex, 1, 'replay advances after load');
+  assert.equal(layer.getCardState().playing, true);
+  assert.deepEqual(fetched, ['2026-08-01', '2026-06-01', '2026-07-01']);
+  layer.disable();
 });
 
 test('choosing a month by hand ends a replay', async () => {

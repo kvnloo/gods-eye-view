@@ -1,9 +1,8 @@
 // Plan score for City builder play mode: how far the accepted moves on a plot
 // or street move a few community goals from an assumed baseline. The weights
 // and baselines are ASSUMED (entered once, not measured) and the score is a
-// projection of the plan, never a measurement or a forecast. It is the only
-// source of the goal numbers the resource bar shows. The same table and cases
-// are in __fixtures__/score-golden.json.
+// projection of the plan, never a measurement or a forecast. No UI reads it
+// yet. The same table and cases are in __fixtures__/score-golden.json.
 
 const goal = (w, base, scale, unit) => Object.freeze({ w, base, scale, unit });
 
@@ -90,7 +89,7 @@ export function planScore(state, goals = CITY_GOALS) {
 }
 
 /**
- * The resource bar's figures: changed metrics, heaviest weight first, then by
+ * Figures for a resource bar: changed metrics, heaviest weight first, then by
  * name. Read-only; park shade is a constraint, not a resource.
  * @returns {Array<{metric: string, base: number|null, value: number, unit: string, status: string}>}
  */

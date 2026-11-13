@@ -1,8 +1,9 @@
 // Plan score for City builder play mode: how far the accepted moves on a plot
 // or street move a few community goals from an assumed baseline. The weights
 // and baselines are ASSUMED (entered once, not measured) and the score is a
-// projection of the plan, never a measurement or a forecast. No UI reads it
-// yet. The same table and cases are in __fixtures__/score-golden.json.
+// projection of the plan, never a measurement or a forecast. The play bar
+// shows its resource chips. The same table and cases are in
+// __fixtures__/score-golden.json.
 
 const goal = (w, base, scale, unit) => Object.freeze({ w, base, scale, unit });
 
@@ -107,4 +108,20 @@ export function resourceChips(state, goals = CITY_GOALS, limit = 4) {
       unit: goals.weights[metric]?.unit ?? '',
       status: state[metric].status,
     }));
+}
+
+/**
+ * The goals a play-mode possible world moves, as one move for replayMoves.
+ * ASSUMED like the goal table: the proposal's shade share is read as the
+ * plot's canopy cover and a bike lane's width as protected bike width. Every
+ * before is null, so the goal table's baseline applies. Public space is not
+ * moved: the document does not hold what a plot is today.
+ * @param {{kind: string, widthMeters: number, shadePercent: number}} parameters
+ * @returns {Record<string, [null, number]>}
+ */
+export function conceptMoves({ kind, widthMeters, shadePercent }) {
+  return {
+    canopy_pct: [null, shadePercent],
+    ...(kind === 'bike-lane' ? { bike_m: [null, widthMeters] } : {}),
+  };
 }

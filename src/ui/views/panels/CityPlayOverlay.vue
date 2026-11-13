@@ -88,6 +88,8 @@ const chipLabels = computed(() => ({
   width: t('Width'),
   walk: t('Walk access'),
 }));
+// Plan-score goals the focused possible world moves, from the assumed baseline.
+const moveLabels = computed(() => ({ canopy_pct: t('Canopy'), bike_m: t('Bike lane') }));
 // Every number on this HUD is drawn by hudFigure; an unknown one is a plain dash.
 const figure = (f) => hudFigure(f) ?? '—';
 const estimate = true;
@@ -205,6 +207,10 @@ const bars = computed(() => {
       <span v-for="stat in view.stats" :key="stat.id" class="city-play-stat" :data-city-play-stat="stat.id">
         <span class="city-play-stat-label">{{ statLabels[stat.id] }}</span>
         <span class="city-play-stat-value" translate="no">{{ figure(stat) }}</span>
+      </span>
+      <span v-for="move in focusedCard?.moves ?? []" :key="move.id" class="city-play-stat city-play-move" :data-city-play-move="move.id">
+        <span class="city-play-stat-label">{{ moveLabels[move.id] }}</span>
+        <span class="city-play-stat-value" translate="no">{{ figure(move) }}</span>
       </span>
       <button type="button" class="city-play-bar-records" data-city-play-records="bar" :disabled="view.pending" :aria-label="t('Project records')" :title="t('Project records')" @click="controls?.openRecords()">
         <UiIcon name="folder_open" :size="16" />

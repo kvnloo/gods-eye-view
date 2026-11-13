@@ -119,6 +119,11 @@ body.gev-city-play #scope-mask {
 .city-play-stat-label {
   color: var(--text-secondary);
 }
+/* Plan-score moves follow the project totals, each behind a divider. */
+.city-play-move {
+  padding-inline-start: 18px;
+  border-inline-start: 1px solid var(--glass-border-hover);
+}
 .city-play-stat-value {
   color: var(--accent);
   text-shadow: 0 0 10px var(--accent-glow);

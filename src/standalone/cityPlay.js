@@ -2,6 +2,7 @@ import * as Cesium from 'cesium';
 import { msg, t } from '../i18n/index.js';
 import { claimPointer, releasePointer } from '../data/inputOwnership.js';
 import { neighborPlots, plotPoint, snapPlot } from '../data/cityPlot.js';
+import { resolveClickedPlot } from '../data/cityPlotPick.js';
 import { observerSolarPosition } from '../data/satellitePass.js';
 import { CITY_LAND_USES, MAX_ZONED_PLOTS } from '../data/cityLandUse.js';
 import { presentCityWalkAccess } from '../ui/cityWalkAccess.js';
@@ -707,57 +708,25 @@ export function mountCityPlay({
   }
 
   // --- input ---------------------------------------------------------------
-  function pickPoint(position) {
-    let world = null;
-    try {
-      if (scene.pickPositionSupported) world = scene.pickPosition(position);
-    } catch {
-      world = null;
-    }
-    let carto = world && Cesium.Cartographic.fromCartesian(world);
-    if (
-      !carto ||
-      !Number.isFinite(carto.height) ||
-      Math.abs(carto.height) > 9000
-    ) {
-      world = viewer.camera.pickEllipsoid(position, Cesium.Ellipsoid.WGS84);
-      carto = world && Cesium.Cartographic.fromCartesian(world);
-    }
-    if (!carto) return null;
-    return {
-      lat: Cesium.Math.toDegrees(carto.latitude),
-      lon: Cesium.Math.toDegrees(carto.longitude),
-      height: carto.height,
-    };
-  }
-  function ownPlot(position) {
-    let hit = null;
-    try {
-      hit = scene.pick(position);
-    } catch {
-      return null;
-    }
-    const entity = hit?.id;
-    if (!entity || !ds.entities.contains(entity)) return null;
-    // Only a standing concept names its plot; tints and footprints fall through
-    // to the ground pick, which snaps to the plot under the cursor.
-    return entity._cityPlot ?? null;
-  }
   function onClick({ position }) {
     if (framing) return;
-    // Clicking a concept card or the selected footprint selects that plot again.
-    const mine = ownPlot(position);
-    if (mine) {
-      dispatch({ type: 'select', plot: mine });
-      return;
-    }
-    const point = pickPoint(position);
-    const plot = point && snapPlot(point);
-    if (!plot) {
+    const hit = resolveClickedPlot({
+      scene,
+      camera: viewer.camera,
+      position,
+      owns: (entity) => ds.entities.contains(entity),
+    });
+    if (!hit) {
       dispatch({ type: 'clear' });
       return;
     }
-    baseHeight(plot, point.height);
+    const { plot } = hit;
+    // Clicking a concept card selects that plot again.
+    if (hit.height === undefined) {
+      dispatch({ type: 'select', plot });
+      return;
+    }
+    baseHeight(plot, hit.height);
     notice = null;
     // From far away (district, or well beyond plot framing) the click swoops in.
     const far =

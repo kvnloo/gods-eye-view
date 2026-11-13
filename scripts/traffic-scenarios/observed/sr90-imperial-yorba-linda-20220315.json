@@ -49,6 +49,8 @@
     "speedMetresPerSecond": {"value": 13.89, "status": "ASSUMED", "note": "the stack's value; OpenStreetMap tags most of the section 50 mph, not applied"},
     "vehicleType": {"value": "the stack's passenger car (accel 2.6, decel 4.5, sigma 0.5, length 5, minGap 2.5, maxSpeed 13.89)", "status": "ASSUMED"},
     "signalPlan": {"value": "netconvert fixed-time plan, 60 s cycle, 3 s yellow, 1 s all-red, offset 0", "status": "ASSUMED", "note": "the stack's baseline plan"},
+    "signalControlType": {"value": "actuated", "source": "the cited study, Appendix 4.2, Synchro sheet '8: Kellog Dr. & SR 90 WB Ramps' (the Caltrans-operated signal on this route next to the section): 'Control Type: Actuated-Uncoordinated'. No timing sheet is published for the three modelled signals, so applying the type to them is an inference"},
+    "actuatedTimings": {"value": "the stack's gap-actuated plan: minimum green 8 s, maximum green 50 s", "status": "ASSUMED", "note": "not fitted to any count"},
     "stackRatesPerHour": {"value": {"m0e": 600, "m3w": 300, "cross": 120}, "status": "ASSUMED", "note": "the stack's synthetic rates"},
     "caltransPeakHourTwoWay": {"value": {"m0e": 4300, "m3w": 4400}, "source": "Caltrans Traffic Census, 2022 Traffic Volumes (count year 2021-10-01 to 2022-09-30), District 12, Route 090, ORA: postmile 7.271 ahead leg for the entry towards SR-91, postmile 11.147 back leg for the entry towards Brea. https://dot.ca.gov/-/media/dot-media/programs/traffic-operations/documents/census/2022/2022-traffic-volumes-ca-v2.xlsx ; same data on https://data.ca.gov/dataset/annual-average-daily-traffic under Creative Commons Attribution"},
     "directionalSplit": {"value": 0.5, "status": "ASSUMED", "note": "Caltrans publishes no K/D site on this route"},
@@ -56,11 +58,12 @@
     "warmUpSeconds": {"value": 900, "status": "ASSUMED", "note": "uses the first counted interval's volume"},
     "unmodelledStreets": {"value": "Los Angeles Street, Valley View Avenue (signal), Casa Loma Avenue, Eureka Avenue, Garden Place and driveways meet the section and are not modelled", "source": "OpenStreetMap contributors (ODbL), read 2026-11-13"}
   },
-  "defaults": {"network": "stack", "mainline": "stack", "turns": "straight", "cross": "stack"},
+  "defaults": {"network": "stack", "mainline": "stack", "turns": "straight", "cross": "stack", "signals": "fixed"},
   "steps": [
     {"id": "S0", "change": "none: the stack's network, demand rates and fixed-time plan as they are, with the demand process sustained over the count windows", "set": {}},
     {"id": "S1", "change": "network: the synthetic 300 m single-lane geometry is replaced by the sourced spacing and stop-line lane groups of the five counted intersections", "set": {"network": "sourced"}, "source": "parameters.spacingMetres (OpenStreetMap) and parameters.laneGroups (the cited study, Appendix 4.2)"},
     {"id": "S2", "change": "mainline entry demand: the stack's 600 and 300 veh/h give way to half of the Caltrans 2022 two-way peak-hour volume at each end", "set": {"mainline": "caltrans"}, "source": "parameters.caltransPeakHourTwoWay (independent of the scored counts)"},
-    {"id": "S3", "change": "mainline entry demand: the Caltrans estimate gives way to the 15-minute volumes that left the two boundary intersections into the section on the count day", "set": {"mainline": "counts"}, "source": "the cited study, sheets 01_PLA_Rose_Imp and 05_YLA_Imp_Yorba; only movements of never-scored approaches and of cross streets at the two boundary intersections"}
+    {"id": "S3", "change": "mainline entry demand: the Caltrans estimate gives way to the 15-minute volumes that left the two boundary intersections into the section on the count day", "set": {"mainline": "counts"}, "source": "the cited study, sheets 01_PLA_Rose_Imp and 05_YLA_Imp_Yorba; only movements of never-scored approaches and of cross streets at the two boundary intersections"},
+    {"id": "S4", "change": "signal control type: the fixed-time plan gives way to the stack's own gap-actuated plan, with its timings unchanged", "set": {"signals": "actuated"}, "source": "parameters.signalControlType (control type only; parameters.actuatedTimings stay ASSUMED)"}
   ]
 }

@@ -246,6 +246,13 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(entries['m3w'], ([8] + [10 * n + 8 for n in range(8)], True))
         self.assertEqual(entries['S1in'], ([30.0] * 9, False))
 
+    def test_signal_step_changes_the_control_type_only(self):
+        before, after = (runner.settings_for(FIXTURE, step)[0] for step in ('S3', 'S4'))
+        self.assertEqual((before['signals'], after['signals']), ('fixed', 'actuated'))
+        self.assertEqual({k: v for k, v in after.items() if k != 'signals'},
+                         {k: v for k, v in before.items() if k != 'signals'})
+        self.assertEqual(FIXTURE['parameters']['actuatedTimings']['status'], 'ASSUMED')
+
     def test_step_settings_accumulate_and_unknown_step_fails(self):
         settings, change = runner.settings_for(FIXTURE, 'S0')
         self.assertEqual(settings, FIXTURE['defaults'])

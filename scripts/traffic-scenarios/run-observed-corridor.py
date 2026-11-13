@@ -248,8 +248,8 @@ def main(argv=None):
                        '--tls.yellow.time', '3', '--tls.allred.time', '1',
                        '--output-file', network], out / 'netconvert.log')
     stack.pin_network(network)
-    plan = out / 'fixed.add.xml'
-    stack.write_plan(network, plan, 'fixed')
+    plan = out / f"{settings['signals']}.add.xml"
+    stack.write_plan(network, plan, settings['signals'])
     request = out / 'counts.add.xml'
     report = {'schemaVersion': 1, 'determination': 'hypothetical-simulation',
               'fixture': fixture['id'], 'step': args.step, 'change': change, 'settings': settings,

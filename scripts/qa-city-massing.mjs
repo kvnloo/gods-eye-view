@@ -4,7 +4,8 @@
 // conventions as qa-city-play.mjs, which stays the flag-off journey).
 // node scripts/qa-city-massing.mjs [--url http://127.0.0.1:4187]
 // QA_SHOTS_DIR defaults to qa-shots/city-massing. QA_VIDEO_DIR records .webm
-// and, when ffmpeg is on PATH, an .mp4 named for its page.
+// and, when ffmpeg is on PATH, an .mp4 named for its page. QA_PLOT=<plot id>
+// picks the plot. Exit 1 is a failure; exit 3 an INVALID measurement.
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdir, readdir, writeFile } from 'node:fs/promises';
@@ -12,6 +13,12 @@ import path from 'node:path';
 import { chromium } from 'playwright-core';
 import sharp from 'sharp';
 import { textLegibility } from '../src/ui/legibility.js';
+import {
+  InvalidMeasurement,
+  distinctFrames,
+  groundReference,
+  siteForPlot,
+} from './qa-massing-measure.mjs';
 
 const args = process.argv.slice(2);
 let base = process.env.QA_BASE_URL || 'http://127.0.0.1:4187';
@@ -24,8 +31,11 @@ const output = path.resolve(
 );
 const videoDir =
   process.env.QA_VIDEO_DIR && path.resolve(process.env.QA_VIDEO_DIR);
-// Camera south of Washington Square, San Francisco, looking north at 45°.
-const SITE = { lat: 37.7953, lon: -122.4103, alt: 600, heading: 0, pitch: -45 };
+// The default plot holds Saints Peter and Paul Church, Washington Square, San
+// Francisco: a building on the Esri imagery and on Google's 3D tiles, so a
+// photoreal run cuts a real building. The camera looks north at it from 600 m.
+const PLOT = process.env.QA_PLOT || 'plot-n105201-126637';
+const SITE = siteForPlot(PLOT);
 // A morning sun in the east (az 78°, el 23°): the block's shadow falls west,
 // through the free gap left of the play wheel.
 const SUN_TIME = '2026-06-21T15:00:00Z';
@@ -53,6 +63,7 @@ const S = {
 const report = {
   startedAt: new Date().toISOString(),
   base,
+  plot: PLOT,
   site: SITE,
   sunTime: SUN_TIME,
   output,
@@ -93,7 +104,7 @@ async function check(name, run) {
   } catch (error) {
     report.assertions.push({
       name,
-      status: 'fail',
+      status: error instanceof InvalidMeasurement ? 'invalid' : 'fail',
       error: error.stack || String(error),
     });
     throw error;
@@ -187,22 +198,45 @@ async function setSun(iso) {
     Date.parse(iso),
   );
 }
-async function mapPoint(viewport) {
-  // The middle of the free map area: walk up from 52 % height past any overlay.
-  return page.evaluate(({ width, height }) => {
-    const canvas = document.querySelector('#cesiumContainer canvas');
-    const x = Math.round(width / 2);
-    for (let y = Math.round(height * 0.52); y > 140; y -= 12) {
-      if (document.elementFromPoint(x, y) === canvas) return { x, y };
-    }
-    return { x, y: Math.round(height * 0.4) };
-  }, viewport);
+// The plot centre on screen, on the surface the map shows there (a roof on 3D
+// tiles), so a click there snaps to that plot.
+async function plotPoint(id) {
+  return page.evaluate(async (plotId) => {
+    const { plotFromId } = await import('/src/data/cityPlot.js');
+    const { viewer } = window.__godsEyeView;
+    const { scene } = viewer;
+    const { center } = plotFromId(plotId);
+    const at = {
+      longitude: (center.lon * Math.PI) / 180,
+      latitude: (center.lat * Math.PI) / 180,
+      height: 0,
+    };
+    const exclude = ['gev-city-massing', 'gev-city-play'].flatMap(
+      (name) => viewer.dataSources.getByName(name)[0]?.entities.values ?? [],
+    );
+    const sampled = scene.sampleHeightSupported
+      ? scene.sampleHeight(at, exclude)
+      : undefined;
+    at.height = Number.isFinite(sampled)
+      ? sampled
+      : (scene.globe.getHeight(at) ?? 0);
+    const p = scene.cartesianToCanvasCoordinates(
+      scene.globe.ellipsoid.cartographicToCartesian(at),
+    );
+    if (!p) return null;
+    const rect = scene.canvas.getBoundingClientRect();
+    const x = Math.round(p.x + rect.left);
+    const y = Math.round(p.y + rect.top);
+    return { x, y, free: document.elementFromPoint(x, y) === scene.canvas };
+  }, id);
 }
-async function selectPlot(viewport) {
-  const at = await mapPoint(viewport);
+async function selectPlot() {
+  const at = await plotPoint(PLOT);
+  assert.ok(at?.free, `${PLOT} is on the free map: ${JSON.stringify(at)}`);
   await page.mouse.move(at.x, at.y);
   await page.mouse.click(at.x, at.y);
   await until(() => window.__gevCityPlay?.snapshot().plot, 'a plot', 20000);
+  assert.equal((await play()).plot.id, PLOT, 'the QA_PLOT plot is selected');
   await until(
     () => !window.__godsEyeView.viewer.camera._currentFlight,
     'camera framed the plot',
@@ -223,24 +257,75 @@ async function massingShown(plotId) {
   // Let the extruded geometry and its shadow map build.
   await page.waitForTimeout(3000);
 }
-// Ground at the plot centre as the map shows it, without massing or play entities.
-async function groundAtCentre() {
+// The map's surface (without massing or play entities) at the plot centre and
+// on the street 6 m outside the middle of each plot edge, with the shown 3D
+// tilesets. Sampled before MASSING cuts the plot out of the photoreal mesh.
+async function groundSamples() {
   return page.evaluate(() => {
+    const { viewer } = window.__godsEyeView;
+    const { scene } = viewer;
+    const { center } = window.__gevCityPlay.snapshot().plot;
+    const exclude = ['gev-city-massing', 'gev-city-play'].flatMap(
+      (name) => viewer.dataSources.getByName(name)[0]?.entities.values ?? [],
+    );
+    const kx = 111_320 * Math.cos((center.lat * Math.PI) / 180);
+    const surface = (east, north) => {
+      const at = {
+        longitude: ((center.lon + east / kx) * Math.PI) / 180,
+        latitude: ((center.lat + north / 111_320) * Math.PI) / 180,
+        height: 0,
+      };
+      const sampled = scene.sampleHeight(at, exclude);
+      return Number.isFinite(sampled)
+        ? sampled
+        : scene.globe.show
+          ? scene.globe.getHeight(at)
+          : undefined;
+    };
+    const primitives = scene.primitives;
+    return {
+      centre: surface(0, 0) ?? null,
+      street: [
+        [0, 26],
+        [26, 0],
+        [0, -26],
+        [-26, 0],
+      ].map(([e, n]) => surface(e, n) ?? null),
+      tilesets: Array.from({ length: primitives.length }, (_, i) =>
+        primitives.get(i),
+      ).filter((p) => p.show && 'tilesLoaded' in p && 'clippingPolygons' in p)
+        .length,
+    };
+  });
+}
+// On 3D tiles MASSING cuts the plot out of the mesh: inside the plot nothing of
+// the mesh stands above the block's base. The keyless Esri globe has no tileset.
+async function cutEvidence(samples, s) {
+  const inside = await page.evaluate(() => {
     const { viewer } = window.__godsEyeView;
     const { center } = window.__gevCityPlay.snapshot().plot;
     const exclude = ['gev-city-massing', 'gev-city-play'].flatMap(
       (name) => viewer.dataSources.getByName(name)[0]?.entities.values ?? [],
     );
-    const at = {
-      longitude: (center.lon * Math.PI) / 180,
-      latitude: (center.lat * Math.PI) / 180,
-      height: 0,
-    };
-    const sampled = viewer.scene.sampleHeight(at, exclude);
-    return Number.isFinite(sampled)
-      ? sampled
-      : viewer.scene.globe.getHeight(at);
+    const h = viewer.scene.sampleHeight(
+      {
+        longitude: (center.lon * Math.PI) / 180,
+        latitude: (center.lat * Math.PI) / 180,
+        height: 0,
+      },
+      exclude,
+    );
+    return Number.isFinite(h) ? h : null;
   });
+  const cut = { tilesets: samples.tilesets, cuts: s.cuts, inside };
+  report.measurements.cut = cut;
+  if (!samples.tilesets) return cut;
+  assert.ok(s.cuts >= samples.tilesets, 'every shown 3D tileset is cut');
+  assert.ok(
+    inside === null || inside <= s.blockBase + 1,
+    `nothing of the mesh stands above the base inside the plot: ${inside} m`,
+  );
+  return cut;
 }
 // Ground points given in metres east/north of the block's footprint centre, on
 // screen. The readout is hidden while they are found, so a point under it still
@@ -303,53 +388,92 @@ const halfWidth = (s) => {
   const kx = 111_320 * Math.cos((fp[0][1] * Math.PI) / 180);
   return Math.max(...fp.map(([x]) => Math.abs(x - lon0) * kx));
 };
-// Canvas luminance at usable ground points with the scene's shadow map on and
-// then off: on/off per point. The readout is hidden for both captures.
-async function luminance(points) {
+// The canvas of a newly rendered frame: ask the scene for a frame, wait for its
+// postRender and read the canvas inside it, so the pixels are that frame's (on
+// demand rendering draws nothing until asked; DOM overlays are not included).
+async function renderedFrame() {
+  const { url, frame, canvas } = await page.evaluate(
+    () =>
+      new Promise((resolve, reject) => {
+        const { scene } = window.__godsEyeView.viewer;
+        const after = scene.frameState.frameNumber;
+        const timer = setTimeout(() => {
+          stop();
+          reject(new Error('no frame was rendered within 30 s'));
+        }, 30000);
+        const stop = scene.postRender.addEventListener(() => {
+          if (scene.frameState.frameNumber <= after) return;
+          stop();
+          clearTimeout(timer);
+          const rect = scene.canvas.getBoundingClientRect();
+          resolve({
+            url: scene.canvas.toDataURL('image/png'),
+            frame: scene.frameState.frameNumber,
+            canvas: {
+              left: rect.left,
+              top: rect.top,
+              sx: scene.canvas.width / rect.width,
+              sy: scene.canvas.height / rect.height,
+            },
+          });
+        });
+        scene.requestRender();
+      }),
+  );
+  return {
+    png: Buffer.from(url.slice(url.indexOf(',') + 1), 'base64'),
+    frame,
+    canvas,
+  };
+}
+// Mean luminance of the 9 x 9 CSS px around each page point in a frame.
+async function pixels({ png, canvas }, points) {
+  const { data, info } = await sharp(png)
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  return points.map(({ x, y }) => {
+    const cx = Math.round((x - canvas.left) * canvas.sx);
+    const cy = Math.round((y - canvas.top) * canvas.sy);
+    const r = Math.round(4 * canvas.sx);
+    let sum = 0;
+    let n = 0;
+    for (let dy = -r; dy <= r; dy++)
+      for (let dx = -r; dx <= r; dx++) {
+        const i = ((cy + dy) * info.width + (cx + dx)) * info.channels;
+        sum += 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+        n++;
+      }
+    return sum / n;
+  });
+}
+// Canvas luminance at usable ground points in a frame rendered with the scene's
+// shadow map on and in the next one rendered with it off: on/off per point.
+// Captures from one frame, or byte-identical captures, make the run INVALID.
+async function luminance(points, label = phase) {
   const usable = points.filter((p) => p?.usable);
-  const capture = async () => {
-    await page.evaluate(() =>
-      document
-        .querySelectorAll('[data-city-massing], [data-city-massing-leader]')
-        .forEach((el) => (el.style.visibility = 'hidden')),
-    );
-    const shot = await page.screenshot();
-    await page.evaluate(() =>
-      document
-        .querySelectorAll('[data-city-massing], [data-city-massing-leader]')
-        .forEach((el) => (el.style.visibility = '')),
-    );
-    const { data, info } = await sharp(shot)
-      .removeAlpha()
-      .raw()
-      .toBuffer({ resolveWithObject: true });
-    return usable.map(({ x, y }) => {
-      let sum = 0;
-      for (let dy = -4; dy <= 4; dy++)
-        for (let dx = -4; dx <= 4; dx++) {
-          const i = ((y + dy) * info.width + (x + dx)) * info.channels;
-          sum += 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
-        }
-      return sum / 81;
-    });
-  };
-  const frames = async () => {
-    await page.evaluate(() => window.__godsEyeView.requestRender?.('qa'));
-    await page.waitForTimeout(1200);
-  };
-  const on = await capture();
+  const on = await renderedFrame();
   await page.evaluate(() => (window.__godsEyeView.viewer.shadows = false));
-  await frames();
-  const off = await capture();
+  const off = await renderedFrame();
   await page.evaluate(() => (window.__godsEyeView.viewer.shadows = true));
-  await frames();
+  await renderedFrame();
+  distinctFrames(on, off, label);
+  const lit = await pixels(on, usable);
+  const unlit = await pixels(off, usable);
   const ratio =
-    on.reduce((a, v) => a + v, 0) /
+    lit.reduce((a, v) => a + v, 0) /
     Math.max(
       1e-9,
-      off.reduce((a, v) => a + v, 0),
+      unlit.reduce((a, v) => a + v, 0),
     );
-  return { points: usable, on, off, ratio };
+  return {
+    points: usable,
+    on: lit,
+    off: unlit,
+    ratio,
+    frames: [on.frame, off.frame],
+    captures: { on, off },
+  };
 }
 // The cast shadow, measured: ground inside it is darker with the shadow map on
 // than off, the sun side is not. A dark edge band or a global dimming fails.
@@ -359,16 +483,19 @@ async function shadowEvidence(label) {
   const half = halfWidth(s);
   const distances = [0.3, 0.45, 0.6].map((f) => half + f * length);
   const shadePoints = await groundPoints(alongSun(s, distances));
-  const shade = await luminance(shadePoints);
-  const lit = await luminance(await groundPoints(alongSun(s, distances, 1)));
+  const shade = await luminance(shadePoints, `${label} shade`);
+  const lit = await luminance(
+    await groundPoints(alongSun(s, distances, 1)),
+    `${label} sun side`,
+  );
   const evidence = {
     lengthMeters: length,
     halfMeters: half,
     shadePoints,
     shadeRatio: shade.ratio,
     litRatio: lit.ratio,
-    shade,
-    lit,
+    shade: { ...shade, captures: undefined },
+    lit: { ...lit, captures: undefined },
   };
   report.measurements[label] = evidence;
   assert.ok(shade.points.length, `${label}: a shadow point is on screen`);
@@ -591,7 +718,7 @@ try {
       await setSun(SUN_TIME);
       await locator(S.pill).click();
       await locator(S.play).waitFor({ state: 'visible' });
-      await selectPlot(DESKTOP);
+      await selectPlot();
       plotId = (await play()).plot.id;
       await locator(S.readout).waitFor({ state: 'visible' });
       assert.equal(await locator(`${S.readout} button`).count(), 1);
@@ -625,27 +752,34 @@ try {
   await check(
     'MASSING on: a ground plate and a block on the sampled ground',
     async () => {
+      // Before the toggle: on 3D tiles MASSING cuts the plot out of the mesh.
+      const samples = await groundSamples();
+      const reference = groundReference(samples.centre, samples.street);
       await massingOn(plotId);
       const s = await massing();
-      const ground = await groundAtCentre();
+      assert.ok(reference, 'the ground was sampled before MASSING');
+      const ground = reference.ground;
       // Read off the drawn entities, not the owner's own variables.
       report.measurements.grounding = {
         plotId,
         blockBase: s.blockBase,
         sampleHeight: ground,
+        sampledFrom: reference.from,
+        samples,
         plateTop: s.plateTop,
         plateBottom: s.plateBottom,
         blockTop: s.blockExtrudedHeight,
       };
       assert.ok(
         Math.abs(s.blockBase - ground) <= 0.5,
-        `block base ${s.blockBase} within 0.5 m of the sampled ground ${ground}`,
+        `block base ${s.blockBase} within 0.5 m of the ${reference.from} ground ${ground}`,
       );
       assert.ok(
         s.plateTop > s.blockBase && s.plateBottom < ground,
         'the plate reaches below the ground and covers the block base',
       );
       assert.ok(Math.abs(s.massing.plotAreaSquareMeters - 1600) < 1e-6);
+      await cutEvidence(samples, s);
       await screenshot('02-massing-block');
     },
   );
@@ -775,7 +909,7 @@ try {
         [{ plotId, use: 'housing' }],
         'zoning is restored from the save',
       );
-      await selectPlot(DESKTOP);
+      await selectPlot();
       assert.equal((await play()).plot.id, plotId, 'the same plot');
       assert.equal(
         await locator(S.toggle).getAttribute('aria-pressed'),
@@ -839,7 +973,7 @@ try {
       await startup(false);
       await locator(S.pill).click();
       await locator(S.play).waitFor({ state: 'visible' });
-      await selectPlot(DESKTOP);
+      await selectPlot();
       await page.waitForTimeout(1500);
       const off = await page.evaluate(() => ({
         probe: '__gevCityMassing' in window,
@@ -874,10 +1008,14 @@ try {
   });
   report.status = 'pass';
 } catch (error) {
-  report.status = 'fail';
+  // An INVALID measurement is neither a pass nor a shadow failure.
+  const invalid = error instanceof InvalidMeasurement;
+  report.status = invalid ? 'invalid' : 'fail';
   report.failure = { phase, message: error.message, stack: error.stack };
-  process.exitCode = 1;
-  console.error(`FAIL ${phase}: ${error.stack || error}`);
+  process.exitCode = invalid ? 3 : 1;
+  console.error(
+    `${invalid ? 'INVALID' : 'FAIL'} ${phase}: ${error.stack || error}`,
+  );
   if (page && !page.isClosed()) {
     try {
       await screenshot('failure');

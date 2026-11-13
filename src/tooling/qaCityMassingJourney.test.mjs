@@ -67,3 +67,37 @@ test('the journey keeps its grounding, shadow and readout checks', () => {
   );
   assert.match(source, /await legibility\('readout'\);/);
 });
+
+test('the reference ground is sampled before MASSING cuts the plot out of 3D tiles', () => {
+  const grounding = source.slice(
+    source.indexOf("'MASSING on: a ground plate"),
+    source.indexOf("'The block casts a shadow"),
+  );
+  const sampled = grounding.indexOf('await groundSamples()');
+  assert.ok(sampled > 0, 'the ground is sampled in the grounding check');
+  assert.ok(
+    sampled < grounding.indexOf('await massingOn(plotId)'),
+    'before the toggle, so the photoreal cut cannot hide the ground',
+  );
+  assert.match(grounding, /Math\.abs\(s\.blockBase - ground\) <= 0\.5/);
+  // On 3D tiles nothing of the mesh may stand above the base inside the plot.
+  assert.match(grounding, /await cutEvidence\(samples, s\)/);
+});
+
+test('each shadow capture is a newly rendered frame; identical captures fail the run as INVALID', () => {
+  const frame = source.slice(source.indexOf('async function renderedFrame'));
+  assert.match(frame.slice(0, 1200), /scene\.requestRender\(\)/);
+  assert.match(frame.slice(0, 1200), /scene\.postRender\.addEventListener/);
+  const lum = source.slice(source.indexOf('async function luminance'));
+  assert.match(lum.slice(0, 2000), /distinctFrames\(on, off, label\)/);
+  assert.match(source, /error instanceof InvalidMeasurement/);
+  assert.match(source, /report\.status = invalid \? 'invalid' : 'fail'/);
+});
+
+test('QA_PLOT selects the plot by id, by default one over a real building', () => {
+  assert.match(
+    source,
+    /const PLOT = process\.env\.QA_PLOT \|\| 'plot-n105201-126637';/,
+  );
+  assert.match(source, /assert\.equal\(\(await play\(\)\)\.plot\.id, PLOT/);
+});

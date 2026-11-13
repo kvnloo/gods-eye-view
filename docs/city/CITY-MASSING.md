@@ -87,15 +87,26 @@ change. After a reload the block is recomputed from the defaults.
 
 `scripts/qa-city-massing.mjs` drives the flag-on journey against a running dev
 server (the gate runs every `scripts/qa-city*.mjs`; `scripts/qa-city-play.mjs`
-stays the flag-off journey, unchanged). It pins the scene sun through the
-page's world clock and, at 1440x900:
+stays the flag-off journey, unchanged). `QA_PLOT=<plot id>` picks the plot; the
+default, `plot-n105201-126637`, holds Saints Peter and Paul Church on
+Washington Square, San Francisco, a building on the Esri imagery and on
+Google's 3D tiles. The camera looks north at the plot from 600 m. It pins the
+scene sun through the page's world clock and, at 1440x900:
 
-1. selects a plot: one MASSING toggle, no block yet; zones the plot (the
-   legend shows its 1,600 m²) so a saved document exists;
-2. MASSING on: the drawn block's base is within 0.5 m of the ground sampled at
-   the plot centre, and the drawn plate reaches below the ground;
+1. selects the plot by clicking its centre: one MASSING toggle, no block yet;
+   zones the plot (the legend shows its 1,600 m²) so a saved document exists;
+2. samples the ground at the plot centre and on the street outside each edge
+   **before** MASSING turns on (on 3D tiles the cut leaves nothing to sample);
+   with MASSING on, the drawn block's base is within 0.5 m of that ground (the
+   lowest street sample when a structure stands on the plot), and the drawn
+   plate reaches below it. On 3D tiles every shown tileset is cut and nothing
+   of the mesh stands above the base inside the plot;
 3. measures the cast shadow: ground inside the expected shadow is darker with
-   the shadow map on than off, the sun side is not;
+   the shadow map on than off, the sun side is not. Each capture is the canvas
+   read inside the `postRender` of a frame the journey asked for
+   (`scene.requestRender()`). If the on and off captures come from one frame or
+   are byte-identical, the run is **INVALID** (exit 3), neither a pass nor a
+   shadow failure;
 4. reads the readout (19.2 m EST, 6, 3.84, 6,144 m²), counts three controls,
    checks it covers no block corner, shadow point or HUD element, and audits
    legibility (4.5:1, 12 px caps);

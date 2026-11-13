@@ -65,8 +65,7 @@ function coverageIssue(run) {
   const quality = run.quality;
   if (quality === undefined) {
     const hasSumoMetrics = Object.keys(run.metrics || {}).some(
-      (key) =>
-        key.startsWith('meanVehicle') || key.startsWith('totalVehicle'),
+      (key) => key.startsWith('meanVehicle') || key.startsWith('totalVehicle'),
     );
     return hasSumoMetrics ? 'missing-sumo-coverage' : null;
   }

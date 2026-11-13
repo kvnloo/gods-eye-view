@@ -97,7 +97,7 @@ function withPublishedBase(
   }
 }
 
-// The base before Wildlife Sightings took 9 and Airports took 00.
+// The base before Wildlife Sightings and Airports received reservations.
 const preWildlifeRows = reservationRows.filter(
   ([id]) => id !== 'wildlife-sightings' && id !== 'local-airports',
 );
@@ -156,7 +156,7 @@ test('reservation ledger is complete, pinned, and rejects duplicate or malformed
       'ski-pistes': '7',
       'drone-airspace': '8',
       'wildlife-sightings': '9',
-      'local-airports': '00',
+      'local-airports': '03',
     },
   );
   assert.throws(
@@ -198,6 +198,28 @@ test('reservation ledger is complete, pinned, and rejects duplicate or malformed
     () => parseLayerStateTokenReservations([...reservationRows, ['future']]),
     /Invalid layer-state token ledger row/,
   );
+});
+
+// Current main has already published these three two-character tokens.
+// A new layer must not reuse an existing token or change an older share link.
+test('Norway Airports follows published News, Shipwrecks and Rail tokens', () => {
+  const { 'local-airports': airportToken, ...previous } =
+    LAYER_STATE_TOKEN_RESERVATIONS;
+  const publishedMain = {
+    ...previous,
+    news: '00',
+    shipwrecks: '01',
+    rail: '02',
+  };
+  assert.equal(nextLayerStateToken(publishedMain), '03');
+  assert.equal(
+    validateLayerStateAllocations(publishedMain, {
+      ...publishedMain,
+      'local-airports': airportToken,
+    }),
+    true,
+  );
+  assert.equal(airportToken, '03');
 });
 
 test('published retired digits and competing PRs advance the merge-time allocation', () => {

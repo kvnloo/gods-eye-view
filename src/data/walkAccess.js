@@ -28,7 +28,7 @@ function point(value, label) {
 
 const gap = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
-function freeze(value) {
+export function freeze(value) {
   if (value && typeof value === 'object' && !Object.isFrozen(value)) {
     Object.values(value).forEach(freeze);
     Object.freeze(value);
@@ -108,7 +108,8 @@ export function shortestPathsMeters(graph, source) {
   return dist;
 }
 
-function snap(graph, target) {
+/** The nearest network node within the snap tolerance, or null. */
+export function snap(graph, target) {
   let best = null;
   for (const node of graph.nodes) {
     const d = gap(node, target);

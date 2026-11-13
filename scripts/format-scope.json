@@ -1444,6 +1444,7 @@
   "scripts/qa-city-builder.mjs",
   "server/standalone/city-concept.test.mjs",
   "src/data/walkAccess.test.mjs",
+  "src/data/walkAccessSites.test.mjs",
   "scripts/qa-city-play.mjs",
   "scripts/qa-city-massing.mjs",
   "scripts/qa-massing-measure.mjs",

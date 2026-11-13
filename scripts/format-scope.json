@@ -1438,5 +1438,8 @@
   "src/ui/views/cityBuilderView.test.mjs",
   "scripts/city-builder-locales.mjs",
   "server/standalone/city-concept.test.mjs",
-  "scripts/qa-city-builder.mjs"
+  "scripts/qa-city-builder.mjs",
+  "src/data/cityScore.js",
+  "src/data/cityScore.test.mjs",
+  "src/data/__fixtures__/score-golden.json"
 ]

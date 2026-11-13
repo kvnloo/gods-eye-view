@@ -3856,7 +3856,7 @@
   "City builder play mode": "מצב משחק של בונה הערים",
   "Click a plot of land to reimagine it": "לחצו על חלקה כדי לדמיין אותה מחדש",
   "Esc exits": "Esc ליציאה",
-  "Plot {code}": "חלקה {code}",
+  "Plot": "חלקה",
   "{area} m²": "{area} מ\"ר",
   "40 m grid cell, not a surveyed parcel": "תא רשת בגודל 40 מ', לא חלקה מנוכה",
   "City builder actions for this plot": "פעולות בונה הערים לחלקה זו",

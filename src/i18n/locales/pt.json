@@ -3856,7 +3856,7 @@
   "City builder play mode": "Modo de jogo do Editor urbano",
   "Click a plot of land to reimagine it": "Clique num lote para o reimaginar",
   "Esc exits": "Esc para sair",
-  "Plot {code}": "Lote {code}",
+  "Plot": "Lote",
   "{area} m²": "{area} m²",
   "40 m grid cell, not a surveyed parcel": "Célula de grelha de 40 m, não uma parcela cadastral",
   "City builder actions for this plot": "Ações do Editor urbano para este lote",

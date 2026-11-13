@@ -3765,7 +3765,7 @@
   "City builder play mode": "Stadsbyggare i spelläge",
   "Click a plot of land to reimagine it": "Klicka på en tomt för att gestalta om den",
   "Esc exits": "Esc avslutar",
-  "Plot {code}": "Tomt {code}",
+  "Plot": "Tomt",
   "{area} m²": "{area} m²",
   "40 m grid cell, not a surveyed parcel": "40 m-ruta, inte en lantmäteriavgränsad fastighet",
   "City builder actions for this plot": "Stadsbyggaråtgärder för den här tomten",

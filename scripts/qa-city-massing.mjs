@@ -30,6 +30,7 @@ const SITE = { lat: 37.7953, lon: -122.4103, alt: 600, heading: 0, pitch: -45 };
 // through the free gap left of the play wheel.
 const SUN_TIME = '2026-06-21T15:00:00Z';
 const DESKTOP = { width: 1440, height: 900 };
+const MOBILE = { width: 390, height: 844 };
 const KEY = 'godsEyeView.cityBuilder.v1';
 // What the readout must never cover: the wheel, the plot tag, the resource bar,
 // the map credits and the docks.
@@ -648,6 +649,145 @@ try {
       await clearOfMassing(shadow6);
       await legibility('readout');
       await screenshot('04-readout');
+    },
+  );
+
+  await check(
+    'Stepper +2: the numbers, the block and its shadow change consistently; nothing is saved',
+    async () => {
+      const before = await massing();
+      await locator(S.plus).click();
+      await locator(S.plus).click();
+      await until(
+        () => window.__gevCityMassing.snapshot().storeys === 8,
+        'eight storeys',
+        10000,
+      );
+      await page.waitForTimeout(3000);
+      const s = await massing();
+      const values = await readout();
+      report.measurements.readout8 = values;
+      assert.deepEqual(values, shows(s));
+      assert.deepEqual(values, {
+        height: '25.6 m',
+        storeys: '8',
+        far: '5.12',
+        floor: '8,192 m²',
+      });
+      assert.ok(
+        Math.abs(s.blockExtrudedHeight - s.base - 25.6) < 1e-6,
+        `the block itself re-extruded: ${s.blockExtrudedHeight - s.base} m`,
+      );
+      assert.ok(
+        Math.abs(
+          s.massing.floorAreaSquareMeters /
+            before.massing.floorAreaSquareMeters -
+            8 / 6,
+        ) < 1e-9 && Math.abs(s.massing.far / before.massing.far - 8 / 6) < 1e-9,
+        'floor area and FAR scale with storeys',
+      );
+      const shadow8 = await shadowEvidence('shadow-8');
+      assert.ok(
+        shadow8.lengthMeters > shadow6.lengthMeters + 10,
+        'the taller block casts a longer shadow',
+      );
+      const saved = await storage();
+      assert.equal(saved[KEY], doc, 'massing never writes the city document');
+      assert.deepEqual(
+        Object.keys(saved).filter((k) => /massing/i.test(k)),
+        [],
+        'no massing key in storage',
+      );
+      await screenshot('05-stepper-plus-2');
+    },
+  );
+  // The journey page closes; a fresh page in the same browser proves reload.
+  await page.close();
+
+  page = await openPage(context, 'restore');
+  await check(
+    'A fresh page recomputes massing from the plot, not from the save',
+    async () => {
+      await startup(true);
+      await setSun(SUN_TIME);
+      await locator(S.pill).click();
+      await locator(S.play).waitFor({ state: 'visible' });
+      assert.deepEqual(
+        (await play()).zoning,
+        [{ plotId, use: 'housing' }],
+        'zoning is restored from the save',
+      );
+      await selectPlot(DESKTOP);
+      assert.equal((await play()).plot.id, plotId, 'the same plot');
+      assert.equal(
+        await locator(S.toggle).getAttribute('aria-pressed'),
+        'false',
+      );
+      assert.equal(
+        (await massing()).storeys,
+        6,
+        'storeys start from the default',
+      );
+      await massingOn(plotId);
+      assert.deepEqual(await readout(), {
+        height: '19.2 m',
+        storeys: '6',
+        far: '3.84',
+        floor: '6,144 m²',
+      });
+      assert.equal((await storage())[KEY], doc, 'the save is untouched');
+      await screenshot('06-reload-recomputed');
+    },
+  );
+
+  await check(
+    'Mobile 390x844: the readout and its stepper fit and work',
+    async () => {
+      await page.setViewportSize(MOBILE);
+      await page.waitForTimeout(1500);
+      await locator(S.readout).waitFor({ state: 'visible' });
+      await locator(S.plus).click();
+      await until(
+        () => window.__gevCityMassing.snapshot().storeys === 7,
+        'seven storeys on the phone',
+        10000,
+      );
+      await page.waitForTimeout(1500);
+      assert.deepEqual(await readout(), shows(await massing()));
+      await insideViewport(S.readout, MOBILE);
+      for (const other of HUD) await noOverlap(S.readout, other);
+      await legibility('readout-mobile');
+      await screenshot('07-mobile-readout');
+      await page.setViewportSize(DESKTOP);
+    },
+  );
+  await page.close();
+
+  page = await openPage(context, 'flag-off');
+  await check(
+    'Without the flag play mode has no massing: no readout, entities, shadows or probe',
+    async () => {
+      await startup(false);
+      await locator(S.pill).click();
+      await locator(S.play).waitFor({ state: 'visible' });
+      await selectPlot(DESKTOP);
+      await page.waitForTimeout(1500);
+      const off = await page.evaluate(() => ({
+        probe: '__gevCityMassing' in window,
+        source:
+          window.__godsEyeView.viewer.dataSources.getByName('gev-city-massing')
+            .length,
+        shadows: window.__godsEyeView.viewer.shadows,
+        readout: Boolean(document.querySelector('[data-city-massing]')),
+      }));
+      report.measurements.flagOff = off;
+      assert.deepEqual(off, {
+        probe: false,
+        source: 0,
+        shadows: false,
+        readout: false,
+      });
+      await screenshot('08-flag-off');
     },
   );
 

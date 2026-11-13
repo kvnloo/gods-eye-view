@@ -80,9 +80,25 @@ change. After a reload the block is recomputed from the defaults.
 ## Regression journey
 
 `scripts/qa-city-massing.mjs` drives the flag-on journey against a running dev
-server (the gate runs every `scripts/qa-city*.mjs`). It pins the scene sun
-through the page's world clock, asserts the block base is within 0.5 m of the
-ground sampled at the plot centre, and measures the cast shadow: ground inside
-the expected shadow must be darker with the shadow map on than off, while the
-sun side stays as bright. `scripts/qa-city-play.mjs` stays the flag-off
-journey.
+server (the gate runs every `scripts/qa-city*.mjs`; `scripts/qa-city-play.mjs`
+stays the flag-off journey, unchanged). It pins the scene sun through the
+page's world clock and, at 1440x900:
+
+1. selects a plot: one MASSING toggle, no block yet; zones the plot (the
+   legend shows its 1,600 m²) so a saved document exists;
+2. MASSING on: the block base is within 0.5 m of the ground sampled at the
+   plot centre;
+3. measures the cast shadow: ground inside the expected shadow is darker with
+   the shadow map on than off, the sun side is not;
+4. reads the readout (19.2 m EST, 6, 3.84, 6,144 m²), counts three controls,
+   checks it covers no block corner, shadow point or HUD element, and audits
+   legibility (4.5:1, 12 px caps);
+5. steps +2: 25.6 m, 8, 5.12, 8,192 m², the block entity re-extruded and a
+   longer measured shadow; the saved document is byte-for-byte unchanged;
+6. closes the page and opens a fresh one: zoning is restored from the save,
+   massing starts again from the defaults (recomputed, not restored);
+7. at 390x844 steps once more: the readout fits, works and covers nothing;
+8. opens the app without the flag: no readout, entities, shadows or probe.
+
+`src/tooling/qaCityMassingJourney.test.mjs` fails if any of these steps drops
+out of the journey.

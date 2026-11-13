@@ -176,6 +176,10 @@ export function createAnthropicChatHandler({
       const calls = blocks
         .filter((block) => block.type === 'tool_use')
         .map((block) => ({ name: block.name, args: block.input }));
+      // A truncated reply can carry complete-looking tool_use blocks.
+      // Only Anthropic's tool_use stop authorizes their execution.
+      if (Boolean(calls.length) !== (data.stop_reason === 'tool_use'))
+        return null;
       return {
         content: { role: 'assistant', content: blocks },
         finishReason: data.stop_reason,

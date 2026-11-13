@@ -799,6 +799,32 @@ test('Anthropic overload 529 answers 503 and passes on Retry-After', async (t) =
   });
 });
 
+test('Anthropic tool calls require a tool_use stop reason', async (t) => {
+  for (const reason of [
+    'max_tokens',
+    'model_context_window_exceeded',
+    'refusal',
+    'end_turn',
+  ]) {
+    const f = await fixture(t, providers.anthropic, async () =>
+      Response.json({ ...providers.anthropic.reply(), stop_reason: reason }),
+    );
+    const response = await f.send();
+    assert.equal(response.status, 502, reason);
+    const body = await response.json();
+    assert.equal(body.content, undefined);
+    assert.equal(body.usage.totalTokens, 10);
+  }
+  const f = await fixture(t, providers.anthropic, async () =>
+    Response.json({
+      ...providers.anthropic.reply(),
+      content: [{ type: 'text', text: 'Done' }],
+      stop_reason: 'tool_use',
+    }),
+  );
+  assert.equal((await f.send()).status, 502);
+});
+
 test('Anthropic history must alternate and answer each tool_use batch in order', async (t) => {
   const f = await fixture(t, providers.anthropic);
   const user = (text) => ({ role: 'user', content: text });

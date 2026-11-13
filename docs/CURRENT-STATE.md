@@ -894,7 +894,8 @@ key; Gemini sends a text-only `generateContent` request with
 Claude is chat only: it sends a Messages API request with
 `ANTHROPIC_CHAT_MODEL` (default `claude-haiku-5-5`) and thinking disabled, so
 the model must accept `thinking: {type: "disabled"}`; a `stop_reason` of
-`end_turn` ends a turn.
+`end_turn` ends a turn. Only `tool_use` authorizes acting on tool calls;
+truncated and interrupted replies cannot dispatch map actions.
 Only one mode runs at a time: the microphone closes chat, and opening chat
 stops voice. Enter sends, Shift+Enter adds a line, and Up or Down at the start
 of the field recall recent messages and restore the draft. Attachments are up

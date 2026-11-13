@@ -1659,7 +1659,8 @@ Mayen are outside its coverage and keep the client's 0 m, within ~25 m of
 their true height. `CCTV_MET_HEIGHTS=0` skips the lookup. The pack is off unless
 `CCTV_MET_ENABLED=1`: MET's licensing page covers its official data but does not
 mention the webcam images, so it stays opt-in until MET confirms they may be
-reused. Cameras the list marks `Status: test` are skipped. `CCTV_MET_MAX_SOURCES`
+reused. Only cameras marked `Status: operativ` are included; test, retired
+and unknown statuses are skipped. `CCTV_MET_MAX_SOURCES`
 caps it (default 100, bounded to 1–500). Data from MET Norway under NLOD 2.0
 and CC BY 4.0.
 

@@ -144,7 +144,7 @@ test('cameras without an image, off-path frames and bad rows are dropped', () =>
   assert.equal(metCameraToSource(null), null);
 });
 
-test('the loader dedupes, and failures degrade to an empty pack', async (t) => {
+test('the loader admits only operating cameras, dedupes, and handles failures', async (t) => {
   clearKartverketHeightCache();
   t.mock.method(console, 'log', () => {});
   t.mock.method(console, 'warn', () => {});
@@ -169,6 +169,13 @@ test('the loader dedupes, and failures degrade to an empty pack', async (t) => {
           location: 'Pr&oslash;ve',
           position: '60.0  10.0',
           status: 'test',
+        }),
+        // A retired camera may still advertise its last valid JPEG.
+        row({
+          site: 'webcam_retired',
+          location: 'Nedlagt kamera',
+          position: '60.0  10.0',
+          status: 'stengt',
         }),
       ),
       { headers: { 'Content-Type': 'text/html' } },

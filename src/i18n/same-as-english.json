@@ -249,7 +249,8 @@
     "Regional",
     "OPT-IN",
     "{value} m",
-    "{low}–{high} m"
+    "{low}–{high} m",
+    "{area} m²"
   ],
   "es": [
     "1 min/s",
@@ -413,7 +414,8 @@
     "Regional",
     "{datasets} · {tiles} · {packs}",
     "{value} m",
-    "{low}–{high} m"
+    "{low}–{high} m",
+    "{area} m²"
   ],
   "fr": [
     "1 min/s",
@@ -636,7 +638,9 @@
     "Oblique",
     "Type",
     "{value} m",
-    "{low}–{high} m"
+    "{low}–{high} m",
+    "Concepts",
+    "{area} m²"
   ],
   "it": [
     "1 min/s",
@@ -844,7 +848,8 @@
     "{count} datasets",
     "ZOOM",
     "{value} m",
-    "{low}–{high} m"
+    "{low}–{high} m",
+    "{area} m²"
   ],
   "ja": [
     "1090 MHz",
@@ -912,7 +917,8 @@
     "MMSI: {id}",
     "NORAD: {id}",
     "{value} m",
-    "{low}–{high} m"
+    "{low}–{high} m",
+    "{area} m²"
   ],
   "pt": [
     "1 min/s",
@@ -1076,7 +1082,8 @@
     "NORAD: {id}",
     "Regional",
     "{value} m",
-    "{low}–{high} m"
+    "{low}–{high} m",
+    "{area} m²"
   ],
   "ru": [
     "1900–1945",
@@ -1277,7 +1284,8 @@
     "Park",
     "Version",
     "{value} m",
-    "{low}–{high} m"
+    "{low}–{high} m",
+    "{area} m²"
   ],
   "uk": [
     "1900–1945",
@@ -1379,7 +1387,8 @@
     "CC BY 4.0",
     "acartia.io ↗",
     "iNaturalist ↗",
-    "iNaturalist"
+    "iNaturalist",
+    "{area} m²"
   ],
   "zh-Hant": [
     "1090 MHz",
@@ -1450,7 +1459,8 @@
     "CC BY 4.0",
     "acartia.io ↗",
     "iNaturalist ↗",
-    "iNaturalist"
+    "iNaturalist",
+    "{area} m²"
   ],
   "he": [
     "{speed} kn",

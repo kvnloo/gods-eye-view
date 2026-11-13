@@ -1134,3 +1134,42 @@ test('parseUsage reads Vertex usageMetadata exactly as Gemini', () => {
   }
   assert.equal(parseUsage('vertex', { usage: { prompt_tokens: 1 } }), null);
 });
+
+test('Vertex reads its own Express Mode key, never the Gemini AI Studio key', async (t) => {
+  const names = ['VERTEX_API_KEY', 'GEMINI_API_KEY'];
+  const saved = Object.fromEntries(names.map((name) => [name, process.env[name]]));
+  t.after(() => {
+    for (const [name, value] of Object.entries(saved)) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+  });
+
+  delete process.env.VERTEX_API_KEY;
+  process.env.GEMINI_API_KEY = 'studio-only-fixture';
+  const gemini = await fixture(t, providers.gemini, undefined, {
+    resolveApiKey: undefined,
+  });
+  assert.equal((await gemini.send()).status, 200);
+  assert.equal(gemini.calls[0].options.headers['x-goog-api-key'], 'studio-only-fixture');
+
+  const vertex = await fixture(t, providers.vertex, undefined, {
+    resolveApiKey: undefined,
+  });
+  const withoutVertexKey = await vertex.send();
+  assert.equal(withoutVertexKey.status, 503);
+  assert.equal((await withoutVertexKey.json()).code, 'API_KEY_MISSING');
+  assert.equal(vertex.calls.length, 0, 'never sends the Gemini key to Vertex');
+
+  process.env.VERTEX_API_KEY = 'express-only-fixture';
+  assert.equal((await vertex.send()).status, 200);
+  assert.equal(vertex.calls.length, 1);
+  const [{ url, body, options }] = vertex.calls;
+  assert.equal(
+    url,
+    'https://aiplatform.googleapis.com/v1beta1/publishers/google/models/gemini-3-flash-preview:generateContent',
+  );
+  assert.equal(options.headers['x-goog-api-key'], 'express-only-fixture');
+  assert.ok(!JSON.stringify(body).includes('studio-only-fixture'));
+  assert.ok(!JSON.stringify(body).includes('express-only-fixture'));
+});

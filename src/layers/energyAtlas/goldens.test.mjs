@@ -224,3 +224,35 @@ test('golden statcan-can-2024-energy-use-final-demand: no cross-source compariso
     false,
   );
 });
+
+test('golden iea-world-2024-total-energy-supply: planetary power and index', () => {
+  const world = fixture.goldens.find(
+    (row) => row.id === 'iea-world-2024-total-energy-supply',
+  );
+  assert.equal(world.measures, 'primary');
+  assert.equal(world.area.type, 'world');
+  const estimate = worldKardashevEstimate(observation(world));
+  assert.ok(estimate, 'the model gives no index for the cited world total');
+  assert.equal(estimate.kind, 'educational_annual_average');
+  assert.equal(estimate.year, 2024);
+  assert.equal(estimate.coverage, 'complete');
+  assert.equal(estimate.source.publisher, world.publisher);
+  // 649572194 TJ is about 180437 TWh, or about 20.5 TW on average.
+  assert.equal(Math.round(annualTWh(world)), 180437);
+  assert.equal(Math.round(estimate.averagePowerW / 1e11) / 10, 20.5);
+  assert.ok(
+    relativeError(estimate.averagePowerW, world.derived.averagePowerW) < 1e-12,
+  );
+  assert.ok(Math.abs(estimate.index - world.derived.saganIndex) < 1e-6);
+  // The index is logarithmic: Type I (1e16 W) is about 487 times this power.
+  assert.equal(Math.round(1e16 / estimate.averagePowerW), 487);
+  assert.equal(Math.round(10 ** ((1 - estimate.index) * 10)), 487);
+  // The same world total labelled as final energy gets no index.
+  assert.equal(
+    worldKardashevEstimate({
+      ...observation(world),
+      metric: 'total_final_energy',
+    }),
+    null,
+  );
+});

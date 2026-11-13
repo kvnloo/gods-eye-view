@@ -195,6 +195,41 @@
         "averagePowerW": 265208965796.3975,
         "method": "Independent exact-rational calculation (Python fractions), 366-day year from the Gregorian calendar; not produced by the model."
       }
+    },
+    {
+      "id": "iea-world-2024-total-energy-supply",
+      "kind": "annual_energy",
+      "publisher": "International Energy Agency (IEA)",
+      "dataset": "World Energy Balances (July 2026 edition, final world data), as served by the IEA energy statistics data API",
+      "table": "API series BALANCES, country WORLD, year 2024, flow TES \"Total energy supply\", product TOTAL \"Total\", units TJ",
+      "url": "https://www.iea.org/data-and-statistics/data-product/world-energy-balances-highlights",
+      "fileUrl": "https://api.iea.org/stats?year=2024&countries=WORLD&series=BALANCES",
+      "fileSha256": "a6a9af017163efda2bf6f430d6540cfc5659dc6c70c4c1d6d9a10fe05fea6d73",
+      "releasedAt": "2026-10-14",
+      "dataYear": 2024,
+      "unit": "TJ",
+      "valueAsPublished": 649572194,
+      "measures": "primary",
+      "measuresNote": "PRIMARY energy: world total energy supply (TES). IEA: \"Total energy supply (TES) includes all the energy produced in or imported to a country, minus that which is exported or stored.\" Source choice: this is the IEA figure, not the Energy Institute Statistical Review (energyinst.org refused automated fetches). The API response carries no edition or release date. releasedAt is the product page schedule entry \"14/10/2026 Latest July 2026 - Final World data\", read from the Internet Archive capture https://web.archive.org/web/20261031061916/https://www.iea.org/data-and-statistics/data-product/world-energy-balances-highlights because iea.org pages returned HTTP 403 to automated fetches. fileSha256 is the hash of the JSON response retrieved on 2026-11-13.",
+      "metric": "primary_energy_supply",
+      "status": "official_estimate",
+      "geographyCoverage": "complete",
+      "area": {
+        "id": "WORLD",
+        "type": "world",
+        "boundaryDataset": "IEA World aggregate (country code WORLD)",
+        "boundaryRevision": "2026-10-14",
+        "publishedCode": "WORLD",
+        "publishedLabel": "World"
+      },
+      "licence": "IEA Terms of Use for Non-CC Material",
+      "attribution": "Source: IEA, World Energy Balances, IEA, Paris. Licence: Terms of Use for Non-CC Material.",
+      "derived": {
+        "annualTWh": 180436.72055555554,
+        "averagePowerW": 20541521010422.992,
+        "saganIndex": 0.731263,
+        "method": "Independent exact-rational calculation (Python fractions), 366-day year from the Gregorian calendar; saganIndex from Python math.log10, rounded to 6 decimals; not produced by the model."
+      }
     }
   ]
 }

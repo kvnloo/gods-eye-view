@@ -625,8 +625,8 @@ try {
         ).allInnerTexts();
         assert.deepEqual(
           values,
-          ['—', '—', '—', '—', '—', '—'],
-          'no project: missing is never zero',
+          [],
+          'no project: missing is never zero and never a dash',
         );
         await locator('[data-city-play-hint]').waitFor({ state: 'visible' });
         await legibility('bar-hint');
@@ -1164,7 +1164,10 @@ try {
             before.alternatives.filter((a) => a.versions.at(-1).concept).length,
           ),
         );
-        assert.equal(stats.walk, '—');
+        assert.ok(
+          !('walk' in stats),
+          'play worlds have no walk-access site: the field is left off',
+        );
         // Proposal sums and means are estimates and say so; counts are exact.
         assert.match(stats.trees, /^\d+ EST$/);
         assert.match(stats.shade, /^~?\d+% EST$/);

@@ -247,7 +247,12 @@
     "NORAD: {id}",
     "COMMUNITY",
     "Regional",
-    "OPT-IN"
+    "OPT-IN",
+    "Turbine",
+    "{value} ft",
+    "{value} kt",
+    "Position",
+    "Route"
   ],
   "es": [
     "1 min/s",
@@ -409,7 +414,10 @@
     "MMSI: {id}",
     "NORAD: {id}",
     "Regional",
-    "{datasets} · {tiles} · {packs}"
+    "{datasets} · {tiles} · {packs}",
+    "{value} ft",
+    "{value} kt",
+    "Civil"
   ],
   "fr": [
     "1 min/s",
@@ -630,7 +638,15 @@
     "{count} packs",
     "Orthophoto",
     "Oblique",
-    "Type"
+    "Type",
+    "Turbine",
+    "Piston",
+    "Altitude",
+    "{value} ft",
+    "{value} kt",
+    "Position",
+    "Civil",
+    "Photo"
   ],
   "it": [
     "1 min/s",
@@ -836,7 +852,9 @@
     "NORAD: {id}",
     "DATASET",
     "{count} datasets",
-    "ZOOM"
+    "ZOOM",
+    "{value} ft",
+    "{value} kt"
   ],
   "ja": [
     "1090 MHz",
@@ -902,7 +920,9 @@
     "▲ {frp} MW",
     "ICAO: {id}",
     "MMSI: {id}",
-    "NORAD: {id}"
+    "NORAD: {id}",
+    "{value} ft",
+    "{value} kt"
   ],
   "pt": [
     "1 min/s",
@@ -1064,7 +1084,11 @@
     "ICAO: {id}",
     "MMSI: {id}",
     "NORAD: {id}",
-    "Regional"
+    "Regional",
+    "Altitude",
+    "{value} ft",
+    "{value} kt",
+    "Civil"
   ],
   "ru": [
     "1900–1945",
@@ -1261,7 +1285,11 @@
     "Period",
     "ICAO: {id}",
     "NORAD: {id}",
-    "MMSI: {id}"
+    "MMSI: {id}",
+    "Jet",
+    "{value} ft",
+    "Position",
+    "Civil"
   ],
   "uk": [
     "1900–1945",

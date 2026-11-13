@@ -66,6 +66,58 @@ class CorridorTests(unittest.TestCase):
                 self.assertEqual(left[1].attrib, right[1].attrib)
                 self.assertEqual(left[2].attrib, right[2].attrib)
 
+    def test_real_netconvert_header_does_not_change_the_network_revision(self):
+        # Trimmed from two real SUMO 1.24.0 runs of the same inputs. Only the
+        # generated-on time and the local output directory differed.
+        header = """<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on {time} by Eclipse SUMO netconvert Version 1.24.0
+<netconvertConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
+
+    <input>
+        <node-files value="{directory}/nodes.xml"/>
+    </input>
+
+    <output>
+        <output-file value="{directory}/corridor.net.xml"/>
+    </output>
+
+</netconvertConfiguration>
+-->
+
+"""
+        body = """<net version="1.20" junctionCornerDetail="5" limitTurnSpeed="5.50" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
+
+    <location netOffset="0.00,200.00" convBoundary="0.00,0.00,1200.00,400.00" origBoundary="0.00,-200.00,1200.00,200.00" projParameter="!"/>
+
+    <edge id=":J1_0" function="internal">
+        <lane id=":J1_0_0" index="0" speed="13.89" length="14.40" shape="298.40,207.20 298.40,192.80"/>
+    </edge>
+
+</net>
+"""
+        runs = [('2026-11-13 06:42:36', '/home/user/traffic/runs/step1-a94a08cb/sumo-corridor'),
+                ('2026-11-13 06:45:30', '/home/user/traffic/runs/step1b-a94a08cb/sumo-corridor')]
+        with tempfile.TemporaryDirectory() as directory:
+            paths = []
+            for index, (time, source) in enumerate(runs):
+                path = Path(directory) / f'{index}.net.xml'
+                path.write_text(header.format(time=time, directory=source) + body, encoding='utf-8')
+                paths.append(path)
+            self.assertNotEqual(module.digest(paths[0]), module.digest(paths[1]))
+            for path in paths:
+                module.pin_network(path)
+                self.assertNotIn(b'generated on', path.read_bytes())
+                self.assertEqual(ET.parse(path).getroot().tag, 'net')
+            self.assertEqual(module.digest(paths[0]), module.digest(paths[1]))
+            # The pin still covers the road bytes: a changed lane is a new revision.
+            paths[1].write_bytes(paths[1].read_bytes().replace(b'speed="13.89"', b'speed="8.33"'))
+            self.assertNotEqual(module.digest(paths[0]), module.digest(paths[1]))
+            # A second run-specific header must not pass as a pinned network.
+            paths[0].write_text(header.format(time=runs[0][0], directory=runs[0][1]) * 2 + body, encoding='utf-8')
+            with self.assertRaisesRegex(ValueError, 'run-specific header'):
+                module.pin_network(paths[0])
+
     def test_lost_vehicles_collisions_and_missing_safety_withhold_scores(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'stats.xml'

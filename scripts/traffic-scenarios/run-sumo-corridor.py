@@ -147,6 +147,19 @@ def write_plan(network, output, mode):
     write_xml(output, root)
 
 
+def pin_network(path):
+    """Remove netconvert's generated-on comment so equal inputs give equal bytes.
+
+    That comment holds wall-clock time and local paths. With it, real SUMO
+    1.24.0 gave the same inputs a new networkRevision on every invocation.
+    """
+    data = Path(path).read_bytes()
+    pinned = re.sub(rb'<!-- generated on .*?-->\s*', b'', data, count=1, flags=re.S)
+    if b'<!-- generated on' in pinned:
+        raise ValueError('network still carries a run-specific header')
+    Path(path).write_bytes(pinned)
+
+
 def require_coverage(receipt, statistics, expected_count):
     """Abort on lost demand or simulation safety faults, without a 'win' score."""
     quality = receipt.get('quality', {})
@@ -190,6 +203,7 @@ def main(argv=None):
                      '--no-turnarounds', 'true', '--tls.cycle.time', '60',
                      '--tls.yellow.time', '3', '--tls.allred.time', '1',
                      '--output-file', network], out / 'netconvert.log')
+        pin_network(network)
         plans = {mode: out / f'{mode}.add.xml' for mode in ('fixed', 'actuated')}
         for mode, path in plans.items():
             write_plan(network, path, mode)

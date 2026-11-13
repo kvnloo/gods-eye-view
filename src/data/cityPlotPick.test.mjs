@@ -199,3 +199,19 @@ const CASES = [
 ];
 
 for (const [name, run] of CASES) test(`M1-${name}`, run);
+
+// Not part of the table: the surfaces the globe ray does not cover.
+test('photoreal tiles (globe hidden) keep the depth pick', () => {
+  const input = fake({ click: NEAR, depth: NEAR.ground });
+  input.scene.globe.show = false;
+  const hit = resolveClickedPlot(input);
+  assert.equal(hit.plot.id, A.id);
+  assert.ok(Math.abs(hit.height - GROUND) < 0.01, `height ${hit.height}`);
+});
+
+test('a globe ray that meets no terrain falls back to the depth pick', () => {
+  const hit = resolveClickedPlot(
+    fake({ click: NEAR, depth: NEAR.ground, ground: null }),
+  );
+  assert.equal(hit.plot.id, A.id);
+});

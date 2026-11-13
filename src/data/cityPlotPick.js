@@ -3,8 +3,16 @@ import { snapPlot } from './cityPlot.js';
 
 function groundPoint(scene, camera, position) {
   let world = null;
+  // On the globe the click's own ray meets the terrain. A depth pick read after
+  // scene.pick() can land on play mode's translucent prism instead (#319).
+  if (scene.globe?.show) {
+    const ray = camera.getPickRay(position);
+    world = (ray && scene.globe.pick(ray, scene)) ?? null;
+  }
+  // Photoreal tiles hide the globe; their surface is in the depth buffer.
   try {
-    if (scene.pickPositionSupported) world = scene.pickPosition(position);
+    if (!world && scene.pickPositionSupported)
+      world = scene.pickPosition(position);
   } catch {
     world = null;
   }

@@ -28,7 +28,11 @@
 // The element is injected rather than constructed so the whole state machine
 // is testable without a DOM. In the app the default factory is used.
 
-import { claimAudio, releaseAudio } from './audioOwnership.js';
+import {
+  claimAudio,
+  isAudioLeaseCurrent,
+  releaseAudio,
+} from './audioOwnership.js';
 import { msg } from '../i18n/marker.js';
 
 export const ATC_AUDIO_OWNER = 'atc';
@@ -149,7 +153,17 @@ export function createAtcAudio(options = {}) {
         // Renew rather than re-claim: this controller may already hold the
         // audio (a station change), and a plain claim would fire its own
         // onRevoked and stop the playback it just started.
-        lease = claimAudio(ATC_AUDIO_OWNER, { onRevoked, renew: lease });
+        const nextLease = claimAudio(ATC_AUDIO_OWNER, {
+          onRevoked,
+          renew: lease,
+        });
+        // The outgoing producer can reclaim during its revocation callback.
+        // In that case our own onRevoked already silenced this stream and the
+        // lease returned by claimAudio is stale; do not report it as playing.
+        if (mine !== generation || !isAudioLeaseCurrent(nextLease)) {
+          return false;
+        }
+        lease = nextLease;
         set(ATC_AUDIO_STATE.PLAYING);
         return true;
       } catch (cause) {

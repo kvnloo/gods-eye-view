@@ -8,4 +8,6 @@
   in their browser and nowhere else; `atcAudio.js` plays it through the shared
   audio claim, so starting ATC stops whatever else was sounding and vice versa.
   No stream URLs ship with the app. No part of the app calls the layer yet
-  (daikaginza, #723).
+  (daikaginza, #723). A synchronous reclaim by the outgoing producer now
+  leaves ATC idle instead of reporting a silenced stream as playing (follow-up
+  by kvnloo; original report bilawalsidhu, #715).

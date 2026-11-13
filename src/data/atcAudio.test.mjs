@@ -103,6 +103,31 @@ test('something else starting stops ATC, without ATC having to watch for it', as
   assert.equal(audioOwner(), 'radio', 'and ATC must not have taken it back');
 });
 
+test('a synchronous incumbent reclaim cannot leave ATC falsely playing', async () => {
+  // The radio immediately restarts during its revocation. claimAudio returns
+  // the lease it issued to ATC, but that lease is already stale by return.
+  const element = fakeAudio();
+  let radioRevocations = 0;
+  claimAudio('radio', {
+    onRevoked: () => {
+      radioRevocations += 1;
+      claimAudio('radio-restarted');
+    },
+  });
+  const atc = createAtcAudio({ createAudio: () => element });
+
+  assert.equal(await atc.play(URL_A), false);
+  assert.equal(radioRevocations, 1);
+  assert.equal(audioOwner(), 'radio-restarted');
+  assert.deepEqual(atc.getState(), {
+    state: ATC_AUDIO_STATE.IDLE,
+    url: null,
+    error: null,
+  });
+  assert.ok(element.calls.includes('pause'), 'the revoked stream is silent');
+  assert.equal(element.src, '');
+});
+
 test('a revoked ATC does not free the claim its successor now holds', async () => {
   // The trap: ATC is revoked, then its teardown runs and calls releaseAudio
   // with the lease it still remembers. That lease is stale, and freeing on it

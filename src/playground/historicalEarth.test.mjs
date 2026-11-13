@@ -576,3 +576,39 @@ test('failed globe-center picking preserves the previous location and usable UI'
   );
   cleanup();
 });
+
+test('lens cleanup removes its panel even when camera cancellation throws', () => {
+  const { document, nodes, Node } = fakeLensDocument();
+  const root = new Node('root', document);
+  let cancellations = 0;
+  const cleanup = mountHistoricalEarthLens({
+    root,
+    services: {
+      Cesium: {
+        Cartesian3: { fromDegrees: (...args) => args },
+        Math: { toRadians: (value) => value },
+      },
+      viewer: {
+        camera: {
+          flyTo() {},
+          cancelFlight() {
+            cancellations++;
+            throw new Error('viewer disposed');
+          },
+        },
+      },
+    },
+  });
+  nodes
+    .find((node) => node.textContent === 'Visit documented site')
+    .dispatch('click');
+  nodes
+    .find((node) => node.textContent === 'Preview dated map')
+    .dispatch('click');
+  const frame = nodes.find((node) => node.tag === 'iframe');
+  assert.throws(cleanup, /viewer disposed/);
+  assert.equal(frame.src, undefined);
+  assert.equal(root.children[0].removed, true);
+  assert.doesNotThrow(cleanup);
+  assert.equal(cancellations, 1);
+});

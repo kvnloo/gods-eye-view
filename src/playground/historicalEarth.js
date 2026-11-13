@@ -481,11 +481,15 @@ export function mountHistoricalEarthLens({ root, services }) {
   update();
   return () => {
     closePreview();
-    if (ownsFlight) {
-      flightGeneration++;
-      ownsFlight = false;
-      services.viewer.camera.cancelFlight();
+    try {
+      if (ownsFlight) {
+        flightGeneration++;
+        ownsFlight = false;
+        services.viewer.camera.cancelFlight();
+      }
+    } finally {
+      // A destroyed viewer or cancellation callback must not strand the panel.
+      section.remove();
     }
-    section.remove();
   };
 }

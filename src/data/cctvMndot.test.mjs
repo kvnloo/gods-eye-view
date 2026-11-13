@@ -10,6 +10,7 @@ import {
 import { allocateSourceCap } from '../../server/providers/cctv/cap.js';
 import { fallbackHeadingFromId } from '../../server/providers/cctv/normalize.js';
 import { createCctvCatalog } from '../../server/providers/cctv/catalog.js';
+import { cctvProxy } from '../../server/providers/cctv.js';
 
 // Settings that would steer the loader or the catalog away from the mocks.
 const ISOLATED_ENV = [
@@ -363,5 +364,84 @@ test('under a lowered catalog cap MnDOT shares round-robin, metro first', async 
   assert.deepEqual(
     sources.filter((c) => c.cityId === 'minnesota').map((c) => c.id),
     ['mndot-c001', 'mndot-c002', 'mndot-c005', 'mndot-c003'],
+  );
+});
+
+test('an opted-in MnDOT camera uses only its registered still through the frame proxy', async (t) => {
+  process.env.CCTV_MNDOT_ENABLED = '1';
+  t.mock.method(console, 'log', () => {});
+  t.mock.method(console, 'warn', () => {});
+
+  const stillUrl = stillOf('C001');
+  const frameBytes = Buffer.from([0xff, 0xd8, 0xff, 0xd9]);
+  const requests = [];
+  t.mock.method(globalThis, 'fetch', async (input, options = {}) => {
+    const url = String(input);
+    requests.push({ url, redirect: options.redirect });
+    if (url === MNDOT_CAMERA_LIST_URL) return Response.json([camera()]);
+    if (url === stillUrl)
+      return new Response(frameBytes, {
+        headers: { 'Content-Type': 'image/jpeg' },
+      });
+    return Response.json([]);
+  });
+
+  let handler;
+  cctvProxy({ sourceRoot: '/nonexistent' }).configureServer({
+    middlewares: {
+      use: (_route, middleware) => {
+        handler = middleware;
+      },
+    },
+  });
+  assert.equal(typeof handler, 'function');
+
+  const call = async (url) => {
+    const result = { status: 0, headers: {}, body: Buffer.alloc(0) };
+    const res = {
+      writeHead(status, headers) {
+        result.status = status;
+        result.headers = headers;
+      },
+      end(body) {
+        result.body = Buffer.from(body ?? '');
+      },
+    };
+    await handler({ url, method: 'GET', headers: {}, on() {} }, res);
+    return result;
+  };
+
+  const listing = await call('/sources');
+  assert.equal(listing.status, 200);
+  const source = JSON.parse(listing.body.toString()).sources.find(
+    (item) => item.id === 'mndot-c001',
+  );
+  assert.equal(source?.feedType, 'image');
+  assert.equal(source?.sourceKind, 'mndot-iris');
+
+  const media = await call('/media/mndot-c001');
+  assert.equal(media.status, 404, 'a still must not use the live-media route');
+  assert.equal(
+    requests.filter(({ url }) => url === stillUrl).length,
+    0,
+    'the rejected media request must not fetch a frame',
+  );
+
+  const frame = await call(
+    '/frame/mndot-c001?upstream=https%3A%2F%2Funtrusted.example%2F',
+  );
+  assert.equal(frame.status, 200);
+  assert.equal(frame.headers['Content-Type'], 'image/jpeg');
+  assert.equal(frame.headers['Cache-Control'], 'no-store');
+  assert.equal(frame.headers['X-CCTV-Source'], 'upstream-image');
+  assert.deepEqual(frame.body, frameBytes);
+  assert.deepEqual(
+    requests.filter(({ url }) => url === stillUrl),
+    [{ url: stillUrl, redirect: 'manual' }],
+    'the frame route fetches only the registered MnDOT still',
+  );
+  assert.ok(
+    !requests.some(({ url }) => url.includes('untrusted.example')),
+    'a caller-supplied upstream URL must not be fetched',
   );
 });

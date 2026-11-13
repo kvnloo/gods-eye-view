@@ -23,12 +23,12 @@ const cell = { padding: '4px 8px', borderBottom: '1px solid #26404b', textAlign:
     <p style="color: #aad3db">{{ access.method }}</p>
     <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0">
       <label for="city-access-objective">{{ t('Suggest a site for') }}</label>
-      <UiSelect id="city-access-objective" v-model="objective" class="scene-shot-rename city-builder-input" data-city-access-objective>
+      <UiSelect id="city-access-objective" v-model="objective" class="scene-shot-rename city-builder-input" style="width: auto" data-city-access-objective>
         <option value="average">{{ t('Lowest average walk') }}</option>
         <option value="worst-served">{{ t('Shortest worst-served walk') }}</option>
       </UiSelect>
       <label for="city-access-site-count">{{ t('New sites') }}</label>
-      <UiSelect id="city-access-site-count" v-model="siteCount" class="scene-shot-rename city-builder-input" data-city-access-site-count>
+      <UiSelect id="city-access-site-count" v-model="siteCount" class="scene-shot-rename city-builder-input" style="width: auto" data-city-access-site-count>
         <option v-for="count in [1, 2]" :key="count" :value="count">{{ count }}</option>
       </UiSelect>
       <UiButton class="gev-action-button" data-city-access-suggest @click="controls?.suggestSite({ objective, siteCount: Number(siteCount) })">{{ t('Suggest site') }}</UiButton>

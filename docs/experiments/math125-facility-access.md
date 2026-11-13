@@ -6,13 +6,13 @@
 
 For two alternative neighborhood park or cooling-center sites, what is the **synthetic weighted average walking distance** from aggregated demand zones, and how far must the worst-served nonzero-weight zone walk?
 
-Existing planning owner: [GEV #184](https://github.com/kvnloo/gods-eye-view/issues/184), [branchable community park proposals #185](https://github.com/kvnloo/gods-eye-view/pull/185). Research task: [Math372 #206](https://github.com/kvnloo/gods-eye-view/issues/206). This module does **not** wire into a map, project proposals, live OSM graph, voice, an external service or shared rooms yet.
+Existing planning owner: [GEV #184](https://github.com/kvnloo/gods-eye-view/issues/184), [branchable community park proposals #185](https://github.com/kvnloo/gods-eye-view/pull/185). Research task: [Math372 #206](https://github.com/kvnloo/gods-eye-view/issues/206). Its one caller is the City builder walk-access comparison: `src/data/walkAccessSites.js` passes the offline synthetic network of `src/data/walkAccessFixture.js` to this module for the **Suggest site** row, a hypothetical option that is never saved. It does **not** read a live OSM graph, project proposals, voice, an external service or shared rooms.
 
 ## What the code does
 
 - Pure, deterministically sorted exact enumerator for at most 12 synthetic aggregated zones, 10 explicitly labeled candidate sites, and `k=1` or `k=2` assumed-feasible sites. All site pairs are enumerated (at most 45), no heuristic.
 - Requires `determination: hypothetical`, `datasetKind: synthetic`, stable study/source/baseline/demand/network/metric revision references, integer zone weights, a **full symmetric proper metric** of bounded integer-meter distances, and explicit site eligibility.
-- Validates zero diagonal, positive off-diagonal, symmetry, triangle inequality and explicit finite distances. Null/unreachable, asymmetric or missing distances never become zero.
+- Validates zero diagonal, positive off-diagonal (except that a demand zone may stand on a candidate site at 0 m; two zones or two sites at one point stay rejected), symmetry, triangle inequality and explicit finite distances. Null/unreachable, asymmetric or missing distances never become zero.
 - Reports each feasible alternative's weighted mean walking distance, worst-served positive-weight zone, total weighted distance, nearest site per zone, and explicitly excluded/unknown site eligibility.
 - Keeps every result `hypothetical` and `approval: not-requested`. No 'safe' or 'winner' assertion, land rights, observed trip counts, inferred participant locations, real mobility estimates or physical-world effect.
 - Returns `unknown`, `infeasible`, `unsupported` or `not-applicable` where applicable. No partial-success estimates on invalid inputs.
@@ -26,7 +26,7 @@ The constrained planning problem (capacity, affordability, zoning, directed walk
 
 ## Validation and next gate
 
-Current local environment has Node 22.16, outside GEV's required Node >=24. Focused tests passed locally **13/13** with an independently implemented exact line-metric reference. Supported Node 24/26, complete project test/build/format suite, browser QA, real walking network validation, accessibility specialists and practitioner value studies remain **unverified**.
+Current local environment has Node 22.16, outside GEV's required Node >=24. Focused tests passed locally **13/13** with an independently implemented exact line-metric reference. A 14th case covers the zone-on-site distance, and `src/data/walkAccessSites.test.mjs` checks the caller against a separate brute force on the walk network (10 cases). Supported Node 24/26, complete project test/build/format suite, browser QA, real walking network validation, accessibility specialists and practitioner value studies remain **unverified**.
 
 Before integration: independently validate a rights-permitted symmetric pedestrian-network metric and aggregated demand, compare against a map/spreadsheet baseline, measure p95 time-to-correct-comparison, add an explicit binding to a specific GEV proposal baseline revision, and preserve all source licenses. No origin-facing write until the OSS factory's independent requirement and Linear HITL gates.
 

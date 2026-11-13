@@ -6,6 +6,7 @@ import {
   neighborPlots,
   plotValue,
   plotPoint,
+  plotFromId,
 } from './cityPlot.js';
 
 const SF = { lat: 37.8007, lon: -122.4103 };
@@ -107,4 +108,13 @@ test('plotPoint maps fractional positions inside the footprint for callouts', ()
   assert.ok(near(p.lon, west) && near(p.lat, north));
   const q = plotPoint(plot, 1, 0);
   assert.ok(near(q.lon, east) && near(q.lat, south));
+});
+
+test('plotFromId gives back the exact plot a published id names', () => {
+  for (const point of [SF, { lat: -33.8568, lon: 151.2153 }]) {
+    const plot = snapPlot(point);
+    assert.deepEqual(plotFromId(plot.id), plot);
+  }
+  for (const bad of [null, '', 'plot-x1-2', 'plot-n1', 'plot-n1-2-3', 'n1-2'])
+    assert.equal(plotFromId(bad), null, String(bad));
 });

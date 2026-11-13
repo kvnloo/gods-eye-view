@@ -3879,5 +3879,20 @@
   "Land area": "שטח קרקע",
   "Share": "נתח",
   "Hypothetical land use for 40 m grid cells, not the city’s zoning.": "ייעוד קרקע היפותטי לתאי רשת של 40 מ׳, לא תוכנית הבנייה של העיר.",
-  "Walk access shows the existing estimate; land use does not recompute it.": "נגישות להליכה מציגה את ההערכה הקיימת; ייעוד הקרקע אינו מחשב אותה מחדש."
+  "Walk access shows the existing estimate; land use does not recompute it.": "נגישות להליכה מציגה את ההערכה הקיימת; ייעוד הקרקע אינו מחשב אותה מחדש.",
+  "Massing": "נפח בנייה",
+  "Height": "גובה",
+  "Storeys": "קומות",
+  "floor area ratio|FAR": "מקדם בנייה",
+  "Floor area ratio: floor area ÷ plot area": "מקדם בנייה: שטח רצפות ÷ שטח המגרש",
+  "Floor area": "שטח רצפות",
+  "estimated value|EST": "הערכה",
+  "Assumed {height} m per storey and a {setback} m setback": "הנחה: {height} מ׳ לקומה וקו בניין של {setback} מ׳",
+  "Remove a storey": "הסרת קומה",
+  "Add a storey": "הוספת קומה",
+  "Massing estimate for this plot": "הערכת נפח בנייה למגרש זה",
+  "Homes": "דירות",
+  "Assumed {share}% of the floor area is homes of {size} m² each": "הנחה: {share}% משטח הרצפות הם דירות של {size} מ\"ר כל אחת",
+  "Shadow reach": "אורך הצל",
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "גובה ÷ tan(גובה השמש {altitude}°), על קרקע מישורית"
 }

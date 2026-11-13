@@ -3788,5 +3788,20 @@
   "Land area": "Markyta",
   "Share": "Andel",
   "Hypothetical land use for 40 m grid cells, not the city’s zoning.": "Hypotetisk markanvändning för 40 m-rutor, inte stadens detaljplan.",
-  "Walk access shows the existing estimate; land use does not recompute it.": "Gångtillgång visar den befintliga uppskattningen; markanvändningen räknar inte om den."
+  "Walk access shows the existing estimate; land use does not recompute it.": "Gångtillgång visar den befintliga uppskattningen; markanvändningen räknar inte om den.",
+  "Massing": "Volym",
+  "Height": "Höjd",
+  "Storeys": "Våningar",
+  "floor area ratio|FAR": "E-TAL",
+  "Floor area ratio: floor area ÷ plot area": "Exploateringstal: bruttoarea ÷ tomtarea",
+  "Floor area": "Bruttoarea",
+  "estimated value|EST": "UPPSK.",
+  "Assumed {height} m per storey and a {setback} m setback": "Antaget: {height} m per våning och {setback} m indrag",
+  "Remove a storey": "Ta bort en våning",
+  "Add a storey": "Lägg till en våning",
+  "Massing estimate for this plot": "Volymuppskattning för den här tomten",
+  "Homes": "Bostäder",
+  "Assumed {share}% of the floor area is homes of {size} m² each": "Antaget: {share} % av bruttoarean är bostäder på {size} m² vardera",
+  "Shadow reach": "Skuggans längd",
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Höjd ÷ tan(solhöjd {altitude}°), på plan mark"
 }

@@ -3697,5 +3697,20 @@
   "Land area": "用地面積",
   "Share": "占比",
   "Hypothetical land use for 40 m grid cells, not the city’s zoning.": "40 公尺網格單元的假設土地用途，並非城市分區規劃。",
-  "Walk access shows the existing estimate; land use does not recompute it.": "步行可達性顯示現有估算；土地用途不會重新計算它。"
+  "Walk access shows the existing estimate; land use does not recompute it.": "步行可達性顯示現有估算；土地用途不會重新計算它。",
+  "Massing": "量體",
+  "Height": "高度",
+  "Storeys": "樓層數",
+  "floor area ratio|FAR": "容積率",
+  "Floor area ratio: floor area ÷ plot area": "容積率：樓地板面積 ÷ 地塊面積",
+  "Floor area": "樓地板面積",
+  "estimated value|EST": "估算",
+  "Assumed {height} m per storey and a {setback} m setback": "假設：每層 {height} 公尺，退縮 {setback} 公尺",
+  "Remove a storey": "減少一層",
+  "Add a storey": "增加一層",
+  "Massing estimate for this plot": "此地塊的量體估算",
+  "Homes": "住宅戶數",
+  "Assumed {share}% of the floor area is homes of {size} m² each": "假設：樓地板面積的 {share}% 為住宅，每戶 {size} m²",
+  "Shadow reach": "陰影長度",
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "高度 ÷ tan(太陽仰角 {altitude}°)，以平地計"
 }

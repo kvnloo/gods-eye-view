@@ -3,6 +3,8 @@ import { createCityBuilder } from '../ui/cityBuilder.js';
 import { useCommunityPlanningStore } from '../ui/stores/communityPlanning.js';
 import { useCityPlayStore } from '../ui/stores/cityPlay.js';
 import { mountCityPlay } from './cityPlay.js';
+import { massingFlag } from '../data/cityMassing.js';
+import { mountCityMassing } from './cityMassing.js';
 import { useSceneSharingStore } from '../ui/stores/sceneSharing.js';
 import { applicationPinia } from '../ui/vueRuntime.js';
 import { renderFreshCesiumFrame } from '../voice/realtimeViewport.js';
@@ -306,6 +308,11 @@ export function mountCityBuilder(options = {}) {
       store: playStore,
     });
   play?.receive(playView);
+  // Massing v0 follows the selected plot, only behind ?massing=1 (default off).
+  const massing =
+    play && massingFlag(globalThis.location?.search)
+      ? mountCityMassing({ viewer: scene.viewer, store: playStore })
+      : null;
   store.connect(controls);
   store.publish(preview);
   store.offerLauncher(launcher);
@@ -313,6 +320,7 @@ export function mountCityBuilder(options = {}) {
     if (disposed) return;
     disposed = true;
     try {
+      massing?.destroy();
       play?.destroy();
       owner.destroy();
     } finally {

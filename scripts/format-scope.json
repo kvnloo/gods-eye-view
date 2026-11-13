@@ -1442,6 +1442,11 @@
   "server/standalone/city-concept.test.mjs",
   "src/data/walkAccess.test.mjs",
   "scripts/qa-city-play.mjs",
+  "scripts/qa-city-massing.mjs",
+  "scripts/qa-massing-measure.mjs",
+  "src/tooling/qaMassingMeasure.test.mjs",
+  "src/data/citySun.test.mjs",
+  "src/data/__fixtures__/massing-golden.json",
   "src/data/cityPlot.test.mjs",
   "src/ui/cityPlayModel.test.mjs",
   "src/ui/views/cityPlayOverlayView.test.mjs"

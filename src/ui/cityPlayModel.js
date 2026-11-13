@@ -1,6 +1,7 @@
 // Pure view-model for City builder play mode. No Cesium, DOM or i18n here:
 // the globe adapter supplies ranges and screen points, the view supplies text.
 import { CITY_LAND_USES } from '../data/cityLandUse.js';
+import { conceptMoves, replayMoves, resourceChips } from '../data/cityScore.js';
 
 export const ZOOM_TIERS = Object.freeze({ near: 260, far: 1500 });
 const HYSTERESIS = 0.15;
@@ -162,6 +163,21 @@ function chips(parameters) {
   ];
 }
 
+/**
+ * The plan-score goals a possible world moves, as before → after figures. The
+ * before is always the goal table's baseline: worlds of one plot are
+ * alternatives, so none starts from another's or an earlier version's value.
+ */
+export function scoreMoves(parameters) {
+  return resourceChips(replayMoves([conceptMoves(parameters)])).map((chip) => ({
+    id: chip.metric,
+    before: chip.base,
+    value: chip.value,
+    unit: chip.unit,
+    estimate: true,
+  }));
+}
+
 export function plotAlternatives(alternatives, plotId) {
   return plotId ? alternatives.filter((a) => a.site?.plot.id === plotId) : [];
 }
@@ -187,6 +203,7 @@ export function carouselCards(
       image: a.concept?.image ?? null,
       provider: a.concept?.provider ?? null,
       chips: list,
+      moves: scoreMoves(a.parameters),
       built: a.id === builtId,
       focused: a.id === focusId,
       pending: a.id === pendingId,

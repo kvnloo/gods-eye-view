@@ -802,6 +802,14 @@ try {
           chips.every((text) => / EST$/.test(text)),
           `every card figure is labelled EST: ${chips.join(' | ')}`,
         );
+        // The bar says what the focused world changes: a before → after from
+        // the plan score's assumed baseline (a pocket park's canopy).
+        assert.deepEqual(
+          await locator(
+            '[data-city-play-bar] [data-city-play-move] .city-play-stat-value',
+          ).allInnerTexts(),
+          ['18 → 60% EST'],
+        );
         await until(
           () => !document.querySelector('[data-city-play-wheel]'),
           'the wheel closes once the reroll lands',

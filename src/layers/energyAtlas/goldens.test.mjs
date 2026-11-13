@@ -5,6 +5,7 @@ import {
   annualAveragePowerW,
   hoursInCalendarYear,
   normalizeEnergyObservation,
+  sameComparableMetric,
   worldKardashevEstimate,
 } from './model.js';
 
@@ -27,6 +28,7 @@ const constant = (id) => {
 const JOULES_PER_UNIT = {
   ktoe: () =>
     constant('GWH_PER_KTOE') * constant('SI_GIGA') * constant('J_PER_WH'),
+  'quadrillion Btu': () => constant('J_PER_QUAD'),
 };
 
 const joules = (golden) => {
@@ -123,6 +125,22 @@ test('cited unit conversions agree with each other and with the model', () => {
   assert.ok(
     relativeError(JOULES_PER_UNIT.ktoe(), 41.868 * constant('SI_TERA')) < 1e-15,
   );
+  // NIST lists the kilowatt hour, the IT Btu and the quad separately.
+  assert.equal(
+    constant('J_PER_KWH'),
+    constant('SI_KILO') * constant('J_PER_WH'),
+  );
+  assert.ok(
+    relativeError(constant('J_PER_QUAD'), 1e15 * constant('J_PER_BTU_IT')) <
+      1e-15,
+  );
+  // EIA prints the same factor rounded to four figures: 1 kWh = 3,412 Btu.
+  assert.ok(
+    relativeError(
+      constant('J_PER_KWH') / constant('J_PER_BTU_IT'),
+      constant('BTU_PER_KWH_EIA'),
+    ) < 5e-5,
+  );
 });
 
 for (const golden of energyGoldens) {
@@ -165,4 +183,21 @@ test('golden desnz-uk-2024-total-final-energy: leap year and final-energy scope'
     Math.round(annualAveragePowerW(annualTWh(golden), 2024) / 1e9),
     158,
   );
+});
+
+test('golden eia-usa-2024-primary-energy-consumption: primary energy stays apart', () => {
+  const byId = (id) => fixture.goldens.find((row) => row.id === id);
+  const usa = byId('eia-usa-2024-primary-energy-consumption');
+  assert.equal(usa.measures, 'primary');
+  assert.equal(usa.metric, 'primary_energy_supply');
+  // 94.582337 quadrillion Btu is about 27719 TWh, or about 3156 GW on average.
+  assert.equal(Math.round(annualTWh(usa)), 27719);
+  assert.equal(
+    Math.round(annualAveragePowerW(annualTWh(usa), 2024) / 1e9),
+    3156,
+  );
+  // Same year, same area type, but final and primary energy never compare.
+  const uk = byId('desnz-uk-2024-total-final-energy');
+  assert.equal(sameComparableMetric(observation(uk), observation(usa)), false);
+  assert.equal(sameComparableMetric(observation(usa), observation(usa)), true);
 });

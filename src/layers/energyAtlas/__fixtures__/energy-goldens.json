@@ -51,6 +51,46 @@
       "document": "Metric (SI) Prefixes",
       "locator": "table row \"tera T 10^12\"",
       "url": "https://www.nist.gov/pml/owm/metric-si-prefixes"
+    },
+    "SI_KILO": {
+      "value": 1e3,
+      "unit": "factor",
+      "publisher": "NIST",
+      "document": "Metric (SI) Prefixes",
+      "locator": "table row \"kilo k 10^3\"",
+      "url": "https://www.nist.gov/pml/owm/metric-si-prefixes"
+    },
+    "J_PER_KWH": {
+      "value": 3.6e6,
+      "unit": "J per kW·h",
+      "publisher": "NIST",
+      "document": "NIST Guide to the SI (SP 811), Appendix B.8: Factors for Units Listed Alphabetically",
+      "locator": "row \"kilowatt hour (kW · h)\" to \"joule (J)\": 3.6 E+06",
+      "url": "https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b8"
+    },
+    "J_PER_BTU_IT": {
+      "value": 1055.056,
+      "unit": "J per Btu (IT)",
+      "publisher": "NIST",
+      "document": "NIST Guide to the SI (SP 811), Appendix B.8: Factors for Units Listed Alphabetically",
+      "locator": "row \"British thermal unit IT (Btu IT)\" to \"joule (J)\": 1.055 056 E+03",
+      "url": "https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b8"
+    },
+    "J_PER_QUAD": {
+      "value": 1.055056e18,
+      "unit": "J per quad (10^15 Btu IT)",
+      "publisher": "NIST",
+      "document": "NIST Guide to the SI (SP 811), Appendix B.8: Factors for Units Listed Alphabetically",
+      "locator": "row \"quad (10^15 Btu IT)\" to \"joule (J)\": 1.055 056 E+18",
+      "url": "https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b8"
+    },
+    "BTU_PER_KWH_EIA": {
+      "value": 3412,
+      "unit": "Btu per kWh (rounded, cross-check only)",
+      "publisher": "U.S. Energy Information Administration (EIA)",
+      "document": "Energy conversion calculators",
+      "locator": "Electricity conversion calculator: \"1 kilowatthour = 3,412 Btu (standard conversion factor)\"",
+      "url": "https://www.eia.gov/energyexplained/units-and-calculators/energy-conversion-calculators.php"
     }
   },
   "goldens": [
@@ -85,6 +125,40 @@
       "derived": {
         "annualTWh": 1390.1494641734307,
         "averagePowerW": 158259274154.53445,
+        "method": "Independent exact-rational calculation (Python fractions), 366-day year from the Gregorian calendar; not produced by the model."
+      }
+    },
+    {
+      "id": "eia-usa-2024-primary-energy-consumption",
+      "kind": "annual_energy",
+      "publisher": "U.S. Energy Information Administration (EIA)",
+      "dataset": "Monthly Energy Review, October 2026",
+      "table": "Table 1.1 Primary Energy Overview, series TETCBUS \"Total Primary Energy Consumption\", annual row YYYYMM=202413 of the table CSV",
+      "url": "https://www.eia.gov/totalenergy/data/monthly/",
+      "fileUrl": "https://www.eia.gov/totalenergy/data/browser/csv.php?tbl=T01.01",
+      "fileSha256": "f3b8529084a30ccf9b2e0a20c33c497bf491c97bfc45ac9216fe3ef488bb48bb",
+      "releasedAt": "2026-10-29",
+      "dataYear": 2024,
+      "unit": "quadrillion Btu",
+      "valueAsPublished": 94.582337,
+      "measures": "primary",
+      "measuresNote": "Total PRIMARY energy consumption of the United States (series description \"Total Primary Energy Consumption\", unit \"Quadrillion Btu\"). This is primary energy, so it is not comparable with the UK and Canada final-energy goldens. The Monthly Energy Review revises earlier years; this is the value in the October 2026 release.",
+      "metric": "primary_energy_supply",
+      "status": "official_estimate",
+      "geographyCoverage": "complete",
+      "area": {
+        "id": "ISO3:USA",
+        "type": "country",
+        "boundaryDataset": "EIA Monthly Energy Review, United States total",
+        "boundaryRevision": "2026-10-29",
+        "publishedCode": "TETCBUS",
+        "publishedLabel": "Total Primary Energy Consumption"
+      },
+      "licence": "Public domain (U.S. government publication)",
+      "attribution": "Source: U.S. Energy Information Administration, Monthly Energy Review (October 2026).",
+      "derived": {
+        "annualTWh": 27719.350596075554,
+        "averagePowerW": 3155663774598.7656,
         "method": "Independent exact-rational calculation (Python fractions), 366-day year from the Gregorian calendar; not produced by the model."
       }
     }

@@ -1452,6 +1452,7 @@
   "src/ui/cityHudFigure.test.mjs",
   "src/ui/views/cityPlayOverlayView.test.mjs",
   "src/ui/views/cityPlayScoreChips.test.mjs",
+  "src/ui/views/cityPlayStrip.test.mjs",
   "src/data/cityScore.test.mjs",
   "src/data/__fixtures__/score-golden.json"
 ]

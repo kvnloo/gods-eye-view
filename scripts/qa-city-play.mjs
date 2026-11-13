@@ -625,8 +625,8 @@ try {
         ).allInnerTexts();
         assert.deepEqual(
           values,
-          ['—', '—', '—', '—', '—', '—'],
-          'no project: missing is never zero',
+          [],
+          'no project: missing is never zero and never a dash',
         );
         await locator('[data-city-play-hint]').waitFor({ state: 'visible' });
         await legibility('bar-hint');
@@ -889,6 +889,15 @@ try {
           'open-space',
         ]);
         assert.equal(s.zoneTints, 2, 'both zoned plots are tinted on the map');
+        // Two plots in the plan now, one reimagined: the canopy chip is the
+        // plan's figure weighted by land area ((60 + 18) / 2), not this plot's
+        // 60 % against the plan's 18 %.
+        assert.deepEqual(
+          await locator(
+            '[data-city-play-bar] [data-city-play-move] .city-play-stat-value',
+          ).allInnerTexts(),
+          ['18 → 39% EST'],
+        );
         const doc = await persisted();
         assert.deepEqual(
           doc.zoning.map((z) => [z.plot.id, z.use]).sort(),
@@ -1164,7 +1173,10 @@ try {
             before.alternatives.filter((a) => a.versions.at(-1).concept).length,
           ),
         );
-        assert.equal(stats.walk, '—');
+        assert.ok(
+          !('walk' in stats),
+          'play worlds have no walk-access site: the field is left off',
+        );
         // Proposal sums and means are estimates and say so; counts are exact.
         assert.match(stats.trees, /^\d+ EST$/);
         assert.match(stats.shade, /^~?\d+% EST$/);
@@ -1263,6 +1275,52 @@ try {
           `the wheel is anchored (${offset.toFixed(0)} px) or tethered to the reselected plot`,
         );
         await screenshot('09b-reselect-wheel');
+      },
+    );
+
+    await check(
+      'The bar states the walk-access estimate once the focused world has a walk-access site',
+      async () => {
+        const bar = () =>
+          locator('[data-city-play-stat]').evaluateAll((els) =>
+            Object.fromEntries(
+              els.map((e) => [
+                e.dataset.cityPlayStat,
+                e.querySelector('.city-play-stat-value').textContent,
+              ]),
+            ),
+          );
+        assert.ok(!('walk' in (await bar())), 'no site yet: no figure');
+        const id = await locator(
+          '[data-city-play-card][aria-pressed="true"]',
+        ).getAttribute('data-city-play-card');
+        // A walk-access site is chosen in the project records, never in play.
+        await locator('[data-city-play-records="bar"]').click();
+        await locator(S.dialog).waitFor({ state: 'visible' });
+        await locator(
+          `[data-city-builder-alternative="${id}"] [data-city-builder-edit]`,
+        ).click();
+        await locator('#city-builder-site').selectOption('site-a');
+        await locator('[data-city-builder-save]').click();
+        await until(
+          ({ id, key }) =>
+            JSON.parse(localStorage.getItem(key))
+              .alternatives.find((a) => a.id === id)
+              .versions.at(-1).parameters.site === 'site-a',
+          'the site is saved',
+          10000,
+          { id, key: KEY },
+        );
+        await locator('[data-planning-cancel]').click();
+        await locator(S.dialog).waitFor({ state: 'detached' });
+        await locator('[data-city-play-stat="walk"]').waitFor({
+          state: 'visible',
+        });
+        // Site A of the offline sample network: a mean of 298.33 m.
+        assert.equal((await bar()).walk, '~300 m EST');
+        await insideViewport(S.bar, DESKTOP);
+        await legibility('bar-walk');
+        await screenshot('13-bar-walk-access');
       },
     );
 

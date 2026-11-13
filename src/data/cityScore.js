@@ -116,12 +116,22 @@ export function resourceChips(state, goals = CITY_GOALS, limit = 4) {
  * plot's canopy cover and a bike lane's width as protected bike width. Every
  * before is null, so the goal table's baseline applies. Public space is not
  * moved: the document does not hold what a plot is today.
+ *
+ * Canopy is a plan figure, so both sides of its move are the plan's: with
+ * this world on its plot and the rest of the plan's land at the baseline, the
+ * mean weighted by land area.
  * @param {{kind: string, widthMeters: number, shadePercent: number}} parameters
+ * @param {{plot?: number, plan?: number}} [land] Areas of the plot and of the
+ *   whole plan in one unit; by default the plot is the whole plan.
  * @returns {Record<string, [null, number]>}
  */
-export function conceptMoves({ kind, widthMeters, shadePercent }) {
+export function conceptMoves(
+  { kind, widthMeters, shadePercent },
+  { plot = 1, plan = 1 } = {},
+) {
+  const { base } = CITY_GOALS.weights.canopy_pct;
   return {
-    canopy_pct: [null, shadePercent],
+    canopy_pct: [null, (plot * shadePercent + (plan - plot) * base) / plan],
     ...(kind === 'bike-lane' ? { bike_m: [null, widthMeters] } : {}),
   };
 }

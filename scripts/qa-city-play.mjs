@@ -889,6 +889,15 @@ try {
           'open-space',
         ]);
         assert.equal(s.zoneTints, 2, 'both zoned plots are tinted on the map');
+        // Two plots in the plan now, one reimagined: the canopy chip is the
+        // plan's figure weighted by land area ((60 + 18) / 2), not this plot's
+        // 60 % against the plan's 18 %.
+        assert.deepEqual(
+          await locator(
+            '[data-city-play-bar] [data-city-play-move] .city-play-stat-value',
+          ).allInnerTexts(),
+          ['18 → 39% EST'],
+        );
         const doc = await persisted();
         assert.deepEqual(
           doc.zoning.map((z) => [z.plot.id, z.use]).sort(),

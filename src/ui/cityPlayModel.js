@@ -167,27 +167,49 @@ function chips(parameters) {
  * The plan-score goals a possible world moves, as before → after figures. The
  * before is always the goal table's baseline: worlds of one plot are
  * alternatives, so none starts from another's or an earlier version's value.
+ * `land` holds the areas of the plot and of the whole plan (see conceptMoves).
  */
-export function scoreMoves(parameters) {
-  return resourceChips(replayMoves([conceptMoves(parameters)])).map((chip) => ({
-    id: chip.metric,
-    before: chip.base,
-    value: chip.value,
-    unit: chip.unit,
-    estimate: true,
-  }));
+export function scoreMoves(parameters, land) {
+  return resourceChips(replayMoves([conceptMoves(parameters, land)])).map(
+    (chip) => ({
+      id: chip.metric,
+      before: chip.base,
+      value: chip.value,
+      unit: chip.unit,
+      estimate: true,
+    }),
+  );
+}
+
+// The land of a plot and of the whole plan: every plot that holds a world or
+// a proposed land use, each counted once.
+function planLand(alternatives, zoning, plotId) {
+  const areas = new Map();
+  for (const entry of [...alternatives.map((a) => a.site), ...zoning])
+    if (entry) areas.set(entry.plot.id, entry.plot.areaSquareMeters);
+  return {
+    plot: areas.get(plotId),
+    plan: [...areas.values()].reduce((sum, area) => sum + area, 0),
+  };
 }
 
 export function plotAlternatives(alternatives, plotId) {
   return plotId ? alternatives.filter((a) => a.site?.plot.id === plotId) : [];
 }
 
-/** One card per alternative of the selected plot. */
+/** One card per alternative of the selected plot; `zoning` adds its plots to the plan. */
 export function carouselCards(
   alternatives,
   plotId,
-  { builtId = null, focusId = null, pendingId = null, access = null } = {},
+  {
+    builtId = null,
+    focusId = null,
+    pendingId = null,
+    access = null,
+    zoning = [],
+  } = {},
 ) {
+  const land = planLand(alternatives, zoning, plotId);
   return plotAlternatives(alternatives, plotId).map((a) => {
     const list = chips(a.parameters);
     const delta = access?.[a.id]?.delta;
@@ -203,7 +225,7 @@ export function carouselCards(
       image: a.concept?.image ?? null,
       provider: a.concept?.provider ?? null,
       chips: list,
-      moves: scoreMoves(a.parameters),
+      moves: scoreMoves(a.parameters, land),
       built: a.id === builtId,
       focused: a.id === focusId,
       pending: a.id === pendingId,

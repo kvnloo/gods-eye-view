@@ -194,6 +194,50 @@ test('carouselCards lists one card per alternative of the selected plot with par
   assert.deepEqual(carouselCards(list, null), []);
 });
 
+test('a card states plan figures: canopy moves by the plot’s share of the plan’s land', () => {
+  const park = alternative('world-1', plotA, 'park');
+  const canopy = (list, options) =>
+    carouselCards(list, plotA.id, options)[0].moves.find(
+      (move) => move.id === 'canopy_pct',
+    );
+  // One plot is the whole plan: its 40 % against the plan's assumed 18 %.
+  assert.deepEqual(canopy([park]), {
+    id: 'canopy_pct',
+    before: 18,
+    value: 40,
+    unit: '%',
+    estimate: true,
+  });
+  // A second plot, with a world or only a land use, stays at the baseline and
+  // halves this plot's share: (40 + 18) / 2. The before never moves.
+  const zoning = [{ plot: plotB, use: 'housing' }];
+  assert.equal(canopy([park], { zoning }).value, 29);
+  assert.equal(canopy([park], { zoning }).before, 18);
+  assert.equal(
+    canopy([park, alternative('world-2', plotB, 'plaza')]).value,
+    29,
+  );
+  // A land use on the plot itself, or a second world there, adds no land.
+  assert.equal(
+    canopy([park], { zoning: [{ plot: plotA, use: 'civic' }] }).value,
+    40,
+  );
+  assert.equal(
+    canopy([park, alternative('world-2', plotA, 'plaza')]).value,
+    40,
+  );
+  // A world with no plot is not land of the plan.
+  assert.equal(canopy([park, alternative('world-3', null, 'plaza')]).value, 40);
+  // A bike lane's width is not a share of land and is not weighted.
+  const lane = alternative('world-1', plotA, 'bike-lane');
+  assert.equal(
+    carouselCards([lane], plotA.id, { zoning })[0].moves.find(
+      (move) => move.id === 'bike_m',
+    ).value,
+    3,
+  );
+});
+
 test('resourceStats derives raw figures from the project: missing is unknown, never zero, and proposal figures are estimates', () => {
   const none = resourceStats(null);
   assert.deepEqual(

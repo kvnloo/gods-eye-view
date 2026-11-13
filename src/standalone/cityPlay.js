@@ -591,6 +591,7 @@ export function mountCityPlay({
         builtId: plot ? state.built[plot.id] : null,
         focusId: focused?.id,
         pendingId: data.pendingId,
+        zoning: zoning(),
       }),
       focused: focused && {
         id: focused.id,

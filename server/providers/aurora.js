@@ -142,7 +142,8 @@ export function auroraProxy({
         cacheAge >= ttlMs &&
         cacheAge <= staleMaxMs &&
         now() - lastFailureAt < ttlMs;
-      const unavailableCooling = !cache && now() - lastFailureAt < ttlMs;
+      const unavailableCooling =
+        (!cache || cacheAge > staleMaxMs) && now() - lastFailureAt < ttlMs;
       const value =
         fresh || retryCooling
           ? cache.value

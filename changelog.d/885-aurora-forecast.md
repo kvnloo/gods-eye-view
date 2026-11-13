@@ -7,3 +7,6 @@
   older field is rotated about the geomagnetic dipole axis to a shared magnetic
   local time before blending, so the oval slides into place instead of
   dissolving in one spot and appearing in another (KnottyDyes, #885).
+- Preserve NOAA retry backoff after the last-good forecast exceeds its
+  30-minute stale limit, returning an explicit unavailable response instead
+  of repeatedly fetching during an outage (KnottyDyes, #885).

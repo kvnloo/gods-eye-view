@@ -116,3 +116,43 @@ export function plotMassing({
 export function stepStoreys(storeys, delta) {
   return Math.min(MAX_STOREYS, Math.max(1, storeys + delta));
 }
+
+/** Massing shows only behind the `?massing=1` URL flag; default off. */
+export function massingFlag(search) {
+  return new URLSearchParams(search ?? '').get('massing') === '1';
+}
+
+/** Points `meters` outside the middle of each polygon edge, in edge order. */
+export function edgeProbes(corners, meters) {
+  const frame = frameOf(corners);
+  const turn = Math.sign(signedArea(frame.points));
+  return frame.points.map((p, i) => {
+    const q = frame.points[(i + 1) % frame.points.length];
+    const d = [q[0] - p[0], q[1] - p[1]];
+    const k = (turn * meters) / Math.hypot(...d);
+    return frame.toLonLat([
+      (p[0] + q[0]) / 2 + d[1] * k,
+      (p[1] + q[1]) / 2 - d[0] * k,
+    ]);
+  });
+}
+
+// A centre sample this far above the street around the plot is a roof or a
+// tree, not ground.
+const ROOF_METERS = 2.5;
+
+/**
+ * Where a block stands: the ground sampled at the plot centre, unless that hit
+ * a roof (or a void once the photoreal mesh is cut), then the lowest street
+ * sampled just outside the edges. `floor` is the lowest ground anywhere, so the
+ * plate under the block reaches it on a slope. Null when nothing was sampled.
+ */
+export function groundBase(centre, around) {
+  const street = around.filter(Number.isFinite);
+  const low = street.length ? Math.min(...street) : null;
+  const base =
+    Number.isFinite(centre) && (low === null || centre - low <= ROOF_METERS)
+      ? centre
+      : low;
+  return base === null ? null : { base, floor: Math.min(base, low ?? base) };
+}

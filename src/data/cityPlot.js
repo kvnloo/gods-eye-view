@@ -98,3 +98,16 @@ export function plotPoint(plot, fx, fy) {
   const [[west, south], , [east, north]] = plot.corners;
   return { lat: south + (north - south) * fy, lon: west + (east - west) * fx };
 }
+
+/** The plot an id from snapPlot names (`plot-n105199-126638`), or null. */
+export function plotFromId(id) {
+  const match = /^plot-([ns])(\d+)-(\d+)$/.exec(
+    typeof id === 'string' ? id : '',
+  );
+  if (!match) return null;
+  const plot = cell(
+    (match[1] === 's' ? -1 : 1) * Number(match[2]),
+    Number(match[3]),
+  );
+  return plot?.id === id ? plot : null;
+}

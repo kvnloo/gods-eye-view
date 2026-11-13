@@ -3,6 +3,9 @@ import test from 'node:test';
 import {
   MASSING_ASSUMPTIONS,
   MAX_STOREYS,
+  edgeProbes,
+  groundBase,
+  massingFlag,
   plotMassing,
   polygonAreaSquareMeters,
   stepStoreys,
@@ -131,4 +134,48 @@ test('the storeys stepper stays within 1 and the maximum', () => {
   assert.equal(stepStoreys(1, -1), 1);
   assert.equal(stepStoreys(MAX_STOREYS, 1), MAX_STOREYS);
   assert.equal(stepStoreys(6, -2), 4);
+});
+
+test('massing is on only behind the ?massing=1 URL flag', () => {
+  assert.equal(massingFlag('?massing=1'), true);
+  assert.equal(massingFlag('?welcome=0&massing=1'), true);
+  for (const off of ['', '?massing=0', '?massing=true', '?massing', null])
+    assert.equal(massingFlag(off), false, String(off));
+});
+
+test('edge probes stand just outside the middle of every plot edge', () => {
+  const probes = edgeProbes(plot.corners, 6);
+  assert.equal(probes.length, 4);
+  const metersLon = 111_320 * Math.cos((plot.center.lat * Math.PI) / 180);
+  const offsets = probes.map(([lon, lat]) => [
+    Math.round((lon - plot.center.lon) * metersLon) || 0,
+    Math.round((lat - plot.center.lat) * 111_320) || 0,
+  ]);
+  // South, east, north and west of a 40 m plot: 20 m to the edge + 6 m.
+  assert.deepEqual(offsets, [
+    [0, -26],
+    [26, 0],
+    [0, 26],
+    [-26, 0],
+  ]);
+});
+
+test('the block stands on the ground at the plot centre, the plate reaches the lowest street', () => {
+  // A slope (Washington Square, keyless terrain): centre wins, plate goes down to the low edge.
+  assert.deepEqual(groundBase(-8.26, [-9.24, -7.5, -7.9, -8.6]), {
+    base: -8.26,
+    floor: -9.24,
+  });
+  // A 14.4 m church roof at the centre, street around it (the photoreal spike).
+  assert.deepEqual(groundBase(14.4, [-8.9, -8.7, undefined, -8.95]), {
+    base: -8.95,
+    floor: -8.95,
+  });
+  // The centre already cut out of the photoreal mesh: the street.
+  assert.deepEqual(groundBase(undefined, [-8.9, -8.95]), {
+    base: -8.95,
+    floor: -8.95,
+  });
+  assert.deepEqual(groundBase(3, []), { base: 3, floor: 3 });
+  assert.equal(groundBase(undefined, [Number.NaN]), null);
 });

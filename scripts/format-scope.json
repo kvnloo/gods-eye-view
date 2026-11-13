@@ -1440,6 +1440,7 @@
   "server/standalone/city-concept.test.mjs",
   "scripts/qa-city-builder.mjs",
   "scripts/qa-city-play.mjs",
+  "scripts/qa-city-massing.mjs",
   "src/data/cityPlot.test.mjs",
   "src/ui/cityPlayModel.test.mjs",
   "src/ui/views/cityPlayOverlayView.test.mjs"

@@ -25,8 +25,10 @@ const AREA_TYPES = new Set([
 const COVERAGE = new Set(['complete', 'partial', 'unknown']);
 // Country ids: ISO 3166-1 alpha-3, or the code the publisher prints.
 // GSS: the United Kingdom and its four countries, as DESNZ codes them.
+// DGUID (Statistics Canada 92F0138M): vintage, type A, schema 0000 (country),
+// GEOUID 11124 (Canada).
 const COUNTRY_ID =
-  /^(?:ISO3:[A-Z]{3}|GSS:(?:K02000001|E92000001|W92000004|S92000003|N92000002))$/;
+  /^(?:ISO3:[A-Z]{3}|GSS:(?:K02000001|E92000001|W92000004|S92000003|N92000002)|DGUID:\d{4}A000011124)$/;
 
 // Annual TWh in one unit, keyed by the unit exactly as the publisher prints it.
 // 1 TWh = 3.6e15 J (NIST SP 811 B.8: watt hour = 3.6 E+03 J).
@@ -35,6 +37,8 @@ const TWH_PER_PUBLISHED_UNIT = new Map([
   ['Quadrillion Btu', 1.055056e18 / 3.6e15],
   // DESNZ subnational workbook, cover sheet: "1 ktoe = 11.63 GWh."
   ['ktoe', 11.63 / 1000],
+  // Statistics Canada. SI prefix tera: 1 TJ = 1e12 J.
+  ['Terajoules', 1e12 / 3.6e15],
 ]);
 
 const text = (value) => (typeof value === 'string' ? value.trim() : '');

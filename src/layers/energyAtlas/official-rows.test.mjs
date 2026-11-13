@@ -318,3 +318,43 @@ test('GSS-coded UK countries: only the five published codes are countries', () =
     false,
   );
 });
+
+test('Statistics Canada DGUID: only the country code for Canada is a country', () => {
+  const canada = asPublished(rowById('statcan-2024-2021A000011124'));
+  const withArea = (area) => ({ ...canada, area: { ...canada.area, ...area } });
+  const record = normalizeEnergyObservation(canada);
+  assert.equal(record?.area.id, 'DGUID:2021A000011124');
+  assert.deepEqual(record.published, { value: 8386544, unit: 'Terajoules' });
+  // 8386544 TJ is about 2330 TWh: the same quantity as the #318 golden.
+  assert.equal(Math.round(record.annualTWh), 2330);
+  // The vintage may differ; type A, schema 0000 and GEOUID 11124 may not.
+  assert.ok(
+    normalizeEnergyObservation(withArea({ id: 'DGUID:2016A000011124' })),
+  );
+  for (const id of [
+    'DGUID:2021A000224',
+    'DGUID:2021A000211124',
+    'DGUID:2021S000011124',
+    'DGUID:2021A00001112',
+    'DGUID:21A000011124',
+    'DGUID:2021A000011124 ',
+    'dguid:2021A000011124',
+    '2021A000011124',
+    'GSS:2021A000011124',
+  ])
+    assert.equal(normalizeEnergyObservation(withArea({ id })), null, id);
+  // A province-level DGUID is no sub-national id either: that pilot stays UK.
+  for (const type of ['region', 'state', 'county', 'local_authority'])
+    for (const id of ['DGUID:2021A000224', 'DGUID:2021A000011124'])
+      assert.equal(
+        normalizeEnergyObservation(withArea({ id, type })),
+        null,
+        `${type} ${id}`,
+      );
+  // Canada and the UK publish final energy to different definitions: the
+  // model still refuses to rank one national row against the other.
+  assert.equal(
+    sameComparableMetric(canada, asPublished(rowById('desnz-2024-K02000001'))),
+    false,
+  );
+});

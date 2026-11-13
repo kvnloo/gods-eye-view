@@ -87,6 +87,12 @@ class ObservedCountTests(unittest.TestCase):
             counts.parse_sheet(sheet('X AM', 7, 'AM', spoil=3), 'X AM', '07:00')
         with self.assertRaisesRegex(ValueError, 'consecutive'):
             counts.parse_sheet(sheet('X AM', 7, 'AM'), 'X AM', '07:15')
+        # every printed total still adds up; only "more on red than turned right" is wrong
+        on_red = sheet('X AM', 7, 'AM').replace(' 1 0 2 1 3 ', ' 1 0 2 3 3 ', 1).replace(' 4 24 28', ' 6 24 30', 1)
+        self.assertNotIn(' 4 24 28', on_red)
+        self.assertIn(' 1 0 2 3 3 ', on_red)
+        with self.assertRaisesRegex(ValueError, 'totals'):
+            counts.parse_sheet(on_red, 'X AM', '07:00')
         with self.assertRaisesRegex(ValueError, 'not found'):
             counts.parse_sheet(sheet('X AM', 7, 'AM'), 'Y AM', '07:00')
 
@@ -120,8 +126,8 @@ class ObservedCountTests(unittest.TestCase):
                          ['Eastbound', 'Southbound', 'Westbound', 'Northbound'])
         self.assertEqual([counts.real_direction(yorba, h) for h in 'ESWN'],
                          ['Southbound', 'Westbound', 'Northbound', 'Eastbound'])
-        # right-on-red vehicles are part of the approach volume
-        self.assertEqual(counts.movements(derived(), rose, 'S', 'AM')[0], [1, 0, 3])
+        # right-on-red vehicles are already inside "right"; adding them would count them twice
+        self.assertEqual(counts.movements(derived(), rose, 'S', 'AM')[0], [1, 0, 2])
 
     def test_scored_set_is_fixed_and_absent_is_not_zero(self):
         scored = counts.scored_count_hours(FIXTURE, derived())
@@ -130,7 +136,7 @@ class ObservedCountTests(unittest.TestCase):
         self.assertEqual({item['id'][-2:] for item in scored}, set(FIXTURE['scoring']['hours']))
         first = scored[0]
         self.assertEqual(first['id'], 'm0e@07')       # towards SR-91 at Prospect, model heading E
-        self.assertEqual(first['observed'], sum(4 + 10 * n + 3 + 2 + 1 for n in range(4)))
+        self.assertEqual(first['observed'], sum(4 + 10 * n + 3 + 2 for n in range(4)))
         exact = {item['id']: item['observed'] for item in scored}
         self.assertEqual(counts.score(scored, exact)['share'], 1)
         missing = dict(exact)
@@ -233,11 +239,11 @@ class RunnerTests(unittest.TestCase):
         settings, _ = runner.settings_for(FIXTURE, 'S3')
         self.assertEqual(settings['mainline'], 'counts')
         entries, _ = runner.demand_inputs(FIXTURE, derived(), settings, 'PM')
-        # invented sheet: approach k (S, W, N, E order), interval n -> [left k+1, thru 10n+k, right 2 + rtor 1]
-        # Rose (compass = model): heading E takes Eastbound thru (10n+3) + Southbound left (1) + Northbound right (3)
-        self.assertEqual(entries['m0e'], ([7] + [10 * n + 7 for n in range(8)], True))
-        # Yorba Linda (model W is Northbound): Northbound thru (10n+2) + Eastbound left (4) + Westbound right (3)
-        self.assertEqual(entries['m3w'], ([9] + [10 * n + 9 for n in range(8)], True))
+        # invented sheet: approach k (S, W, N, E order), interval n -> [left k+1, thru 10n+k, right 2]
+        # Rose (compass = model): heading E takes Eastbound thru (10n+3) + Southbound left (1) + Northbound right (2)
+        self.assertEqual(entries['m0e'], ([6] + [10 * n + 6 for n in range(8)], True))
+        # Yorba Linda (model W is Northbound): Northbound thru (10n+2) + Eastbound left (4) + Westbound right (2)
+        self.assertEqual(entries['m3w'], ([8] + [10 * n + 8 for n in range(8)], True))
         self.assertEqual(entries['S1in'], ([30.0] * 9, False))
 
     def test_step_settings_accumulate_and_unknown_step_fails(self):

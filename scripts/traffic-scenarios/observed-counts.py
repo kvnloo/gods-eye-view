@@ -60,6 +60,7 @@ def parse_sheet(text, name, start):
 
     Returns {direction: [[left, thru, right, rtor], ...]} and proves the
     printed approach and intersection totals from the parsed movements.
+    Right-on-red vehicles are a subset of "right": the column never exceeds it.
     """
     match = re.search(r'File Name\s*:\s*' + re.escape(name) + r'[ \t]*\n(.*?)Grand Total',
                       text, flags=re.S)
@@ -80,7 +81,7 @@ def parse_sheet(text, name, start):
         values = [int(cell) for cell in cells.split()]
         approaches = [values[i:i + 5] for i in range(0, 20, 5)]
         excluded, included, total = values[20:]
-        if (any(sum(a[:3]) != a[4] for a in approaches)
+        if (any(sum(a[:3]) != a[4] or a[3] > a[2] for a in approaches)
                 or sum(a[3] for a in approaches) != excluded
                 or sum(a[4] for a in approaches) != included
                 or included + excluded != total):
@@ -137,9 +138,9 @@ def real_direction(place, heading):
 
 
 def movements(derived, place, heading, window):
-    """Eight [left, thru, right incl. right-on-red] rows for one model approach."""
+    """Eight [left, thru, right] rows for one model approach (right already holds right-on-red)."""
     rows = derived['counts'][place['sheet']][window][real_direction(place, heading)]
-    return [[left, thru, right + rtor] for left, thru, right, rtor in rows]
+    return [row[:3] for row in rows]
 
 
 def scored_count_hours(fixture, derived):

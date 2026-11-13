@@ -32,7 +32,7 @@
   ],
   "scoredEdges": ["m0e", "m1e", "m2e", "m3e", "m3w", "m2w", "m1w", "m0w"],
   "scoring": {
-    "countHour": "Imperial Highway approach volume (left + through + right + right-on-red) in one clock hour, read where the edge ends: m{i}e at J{i+1} towards SR-91, m{i}w at J{i} towards Brea",
+    "countHour": "Imperial Highway approach volume (left + through + right; the sheets' right-on-red column is a subset of right and is not added) in one clock hour, read where the edge ends: m{i}e at J{i+1} towards SR-91, m{i}w at J{i} towards Brea",
     "hours": ["07", "08", "16", "17"],
     "countHours": 32,
     "gehLimit": 5,

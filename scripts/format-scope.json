@@ -1426,5 +1426,9 @@
   "src/ui/ownerFlagSheet.js",
   "src/data/placePacksLoading.test.mjs",
   "src/ui/placePacksLoading.js",
-  "src/ui/placePacksLoading.test.mjs"
+  "src/ui/placePacksLoading.test.mjs",
+  "src/data/collaborationAuthority.test.mjs",
+  "src/data/communityPlanning.test.mjs",
+  "src/data/cityPlanningDocument.test.mjs",
+  "src/data/cityPersistence.test.mjs"
 ]

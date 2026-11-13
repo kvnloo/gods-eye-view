@@ -168,9 +168,9 @@ test('carouselCards lists one card per alternative of the selected plot with par
     ['world-1', 'world-3'],
   );
   assert.deepEqual(cards[0].chips, [
-    { id: 'trees', value: 20, unit: '' },
-    { id: 'shade', value: 40, unit: '%' },
-    { id: 'width', value: 3, unit: 'm' },
+    { id: 'trees', value: 20, unit: '', estimate: true },
+    { id: 'shade', value: 40, unit: '%', estimate: true },
+    { id: 'width', value: 3, unit: 'm', estimate: true },
   ]);
   assert.equal(cards[0].image, image);
   assert.equal(cards[0].built, true);
@@ -188,28 +188,29 @@ test('carouselCards lists one card per alternative of the selected plot with par
     id: 'walk',
     value: 6,
     unit: '',
+    estimate: true,
   });
   assert.equal(withAccess[1].chips.length, 3);
   assert.deepEqual(carouselCards(list, null), []);
 });
 
-test('resourceStats derives counts from the project and never shows missing as zero', () => {
+test('resourceStats derives raw figures from the project: missing is unknown, never zero, and proposal figures are estimates', () => {
   const none = resourceStats(null);
   assert.deepEqual(
     none.map((s) => [s.id, s.value]),
     [
-      ['plots', '—'],
-      ['worlds', '—'],
-      ['concepts', '—'],
-      ['trees', '—'],
-      ['shade', '—'],
-      ['walk', '—'],
+      ['plots', null],
+      ['worlds', null],
+      ['concepts', null],
+      ['trees', null],
+      ['shade', null],
+      ['walk', null],
     ],
   );
   const empty = resourceStats([]);
   assert.deepEqual(
     empty.map((s) => s.value),
-    ['0', '0', '0', '—', '—', '—'],
+    [0, 0, 0, null, null, null],
   );
   const list = [
     alternative('world-1', plotA, 'park', { concept: { image } }),
@@ -223,10 +224,17 @@ test('resourceStats derives counts from the project and never shows missing as z
       },
     }),
   ];
-  assert.deepEqual(
-    resourceStats(list).map((s) => s.value),
-    ['1', '3', '1', '+45', '30%', '—'],
-  );
+  // Raw values: the HUD formatter rounds and labels them, the model never does.
+  assert.deepEqual(resourceStats(list), [
+    { id: 'plots', value: 1 },
+    { id: 'worlds', value: 3 },
+    { id: 'concepts', value: 1 },
+    { id: 'trees', value: 45, estimate: true },
+    { id: 'shade', value: 30, unit: '%', estimate: true },
+    { id: 'walk', value: null, estimate: true },
+  ]);
+  const uneven = resourceStats([list[0], list[0], list[2]]);
+  assert.equal(uneven[4].value, 90 / 3, 'the mean is not rounded here');
 });
 
 test('detailCallouts place proposal parameters inside the footprint; nothing without a concept', () => {
@@ -241,6 +249,10 @@ test('detailCallouts place proposal parameters inside the footprint; nothing wit
   }
   assert.equal(callouts[0].kind, 'plaza');
   assert.equal(callouts[1].value, 20);
+  assert.ok(
+    callouts.slice(1).every((c) => c.estimate === true),
+    'proposal parameters are estimates',
+  );
   assert.deepEqual(detailCallouts(null), []);
   assert.deepEqual(detailCallouts(alternative('world-2', plotA, 'park')), []);
 });

@@ -419,6 +419,31 @@ async function selectPlotWithWheel(viewport) {
     20000,
   );
 }
+/**
+ * Where a plot stands on screen now: its centre, `lift` metres above the
+ * ground (a standing concept is a 32 m card across that centre, so a lift
+ * inside it lands on the card, which the app selects by plot identity).
+ */
+async function plotOnScreen(plot, lift = 0) {
+  const at = await page.evaluate(
+    ({ center, lift }) => {
+      const { viewer } = window.__godsEyeView;
+      const Cartographic = viewer.camera.positionCartographic.constructor;
+      const Cartesian3 = viewer.camera.position.constructor;
+      const ground =
+        viewer.scene.globe.getHeight(
+          Cartographic.fromDegrees(center.lon, center.lat),
+        ) ?? 0;
+      const point = viewer.scene.cartesianToCanvasCoordinates(
+        Cartesian3.fromDegrees(center.lon, center.lat, ground + lift),
+      );
+      return point ? { x: point.x, y: point.y } : null;
+    },
+    { center: plot.center, lift },
+  );
+  assert.ok(at, `${plot.id} projects on screen`);
+  return at;
+}
 async function reopenWheel() {
   // A landed concept closes the wheel; clicking the plot brings it back.
   if (await locator(S.ring).isVisible()) return;
@@ -820,7 +845,10 @@ try {
         assert.deepEqual(before['open-space'], ['1', '1,600 m²', '50%']);
         await screenshot('05b-zoning-legend');
         // Change the first plot from housing to civic: the derived numbers move.
-        await page.mouse.click(firstAt.x, (firstAt.y + foot.bottom) / 2);
+        // Reselect it where it stands now, on its own concept, not at the
+        // coordinate saved before the second plot was selected.
+        const again = await plotOnScreen(first.plot, 12);
+        await page.mouse.click(again.x, again.y);
         await until(
           (id) => window.__gevCityPlay.snapshot().plot?.id === id,
           'the first plot is selected again',

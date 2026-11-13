@@ -24,6 +24,7 @@ import { buildTransitSelectionCopy } from '../layers/transit/policy.js';
 import { getTransitFeed } from '../data/transitFeeds.js';
 import { formatMeasure as drawMeasure } from '../annotations/drawMode.js';
 import { attachVoiceResult } from '../voice/speech.js';
+import { spokenArea } from '../voice/areaActions.js';
 import { presentResult } from '../voice/resultDisplay.js';
 
 const NBSP = String.fromCharCode(160);
@@ -251,6 +252,36 @@ test('Voice: what is said and shown follows the unit system; the result data sta
     metric: `within 250${NBSP}km of the view centre`,
     imperial: `within 155.3${NBSP}mi of the view centre`,
   });
+
+  const areaSpeech = bothSystems(() => spokenArea(830));
+  assert.deepEqual(areaSpeech, {
+    metric: 'about 830 km²',
+    imperial: 'about 320 mi²',
+  });
+
+  const querySpeech = bothSystems(() =>
+    attachVoiceResult('analyst_query', {
+      ok: true,
+      count: 2,
+      complete: true,
+      coverage: { layersQueried: [{ layerKey: 'flights' }] },
+      scopeLabel: 'within 250 km of the view centre',
+      feedState: 'nominal',
+      unanswered: [],
+    }),
+  );
+  assert.match(
+    querySpeech.metric.say,
+    /2 aircraft within 250 km of the view centre\.$/,
+  );
+  assert.match(
+    querySpeech.imperial.say,
+    /2 aircraft within 155 miles of the view centre\.$/,
+  );
+  assert.equal(
+    querySpeech.imperial.scopeLabel,
+    'within 250 km of the view centre',
+  );
 });
 
 test('a view that formats a measurement re-renders when the unit system changes', async (t) => {

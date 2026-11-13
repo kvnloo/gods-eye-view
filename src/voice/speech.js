@@ -808,15 +808,24 @@ function annotateMap(result) {
   };
 }
 
+/** Convert only the engine's distance-based scope for speech, not tool data. */
+function spokenAnalystScope(scopeLabel) {
+  return String(scopeLabel ?? '').replace(
+    /^within (\d+(?:\.\d+)?) km of /,
+    (_, km) => `within ${kilometers(Number(km))} of `,
+  );
+}
+
 function analystQuery(result) {
   if (!result?.ok || result.cancelled) return null;
-  const headline = analystHeadline(result);
+  const spokenScope = spokenAnalystScope(result.scopeLabel);
+  const headline = analystHeadline({ ...result, scopeLabel: spokenScope });
   const state =
     result.feedState ||
     result.feedProvenance?.overall ||
     result.coverage?.feedProvenance?.overall;
   const tag = feedTag(state);
-  const scope = spokenLabel(result.scopeLabel || '', 96);
+  const scope = spokenLabel(spokenScope, 96);
   const answer =
     tag === 'feed unavailable'
       ? sentence(

@@ -32,6 +32,7 @@ import {
   registerDynamicCredit,
 } from '../data/dataCredits.js';
 import { isUnavailableCapability } from '../sources/capability.js';
+import { convertQuantity } from '../ui/unitLabels.js';
 import { unavailablePlaceSearch } from '../search/placeSearch.js';
 
 /** A spoken resolve waits this long before answering "still looking". */
@@ -130,13 +131,15 @@ function outlineOrigin(outlineSource) {
   }
 }
 
-/** Round an area for speech: "about 20,300 km²". */
+/** Round an SI area for speech in the page's displayed units. */
 export function spokenArea(km2) {
   if (!Number.isFinite(km2) || km2 <= 0) return null;
-  if (km2 < 1) return `about ${Math.round(km2 * 100) / 100} km²`;
-  const digits = Math.max(0, Math.floor(Math.log10(km2)) - 1);
-  const rounded = Math.round(km2 / 10 ** digits) * 10 ** digits;
-  return `about ${rounded.toLocaleString('en-US')} km²`;
+  const shown = convertQuantity(km2, 'km²');
+  const area = shown.value;
+  if (area < 1) return `about ${Math.round(area * 100) / 100} ${shown.unit}`;
+  const digits = Math.max(0, Math.floor(Math.log10(area)) - 1);
+  const rounded = Math.round(area / 10 ** digits) * 10 ** digits;
+  return `about ${rounded.toLocaleString('en-US')} ${shown.unit}`;
 }
 
 const cancelledResult = () => ({

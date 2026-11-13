@@ -3650,5 +3650,14 @@
   "Zones known": "既知のゾーン",
   "Change from baseline": "ベースラインからの変化",
   "Circles are demand zones labelled with metres to the nearest park. Green squares are existing parks; a gold square is the proposed site.": "円は需要ゾーンで、最寄りの公園までのメートル数を示します。緑の四角は既存の公園、金色の四角は提案された候補地です。",
-  "Sample network for {option}": "{option} のサンプルネットワーク"
+  "Sample network for {option}": "{option} のサンプルネットワーク",
+  "Pocket park": "ポケットパーク",
+  "Reimagine the 40 m grid cell outlined in cyan as a public pocket park with native trees, shaded seating and permeable paths.": "シアンで囲まれた40 mグリッドセルを、在来樹木、日陰の座席、透水性の小道を備えた公共のポケットパークとして描き直します。",
+  "Public plaza": "公共広場",
+  "Reimagine the 40 m grid cell outlined in cyan as an accessible public plaza with level routes, movable seating and shade.": "シアンで囲まれた40 mグリッドセルを、段差のない動線、移動式の座席、日陰を備えたバリアフリーの公共広場として描き直します。",
+  "Protected bike lane": "保護された自転車レーン",
+  "Reimagine the street through the 40 m grid cell outlined in cyan with a protected bike lane, accessible crossings and street trees.": "シアンで囲まれた40 mグリッドセルを通る道路を、保護された自転車レーン、バリアフリーの横断部、街路樹を備えた姿に描き直します。",
+  "This project holds six possible worlds. Export it from Project records to start another.": "このプロジェクトには6つの可能世界があります。別の世界を始めるには、プロジェクト記録から書き出してください。",
+  "Reimagined plots": "再構想した区画",
+  "This possible world has twenty versions. Reimagine the plot to start another.": "この可能世界には20のバージョンがあります。別のバージョンを始めるには、区画を再構想してください。"
 }

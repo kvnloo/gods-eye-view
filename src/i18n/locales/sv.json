@@ -3741,5 +3741,14 @@
   "Zones known": "Kända zoner",
   "Change from baseline": "Förändring mot baslinjen",
   "Circles are demand zones labelled with metres to the nearest park. Green squares are existing parks; a gold square is the proposed site.": "Cirklar är efterfrågezoner märkta med meter till närmaste park. Gröna kvadrater är befintliga parker; en guldfärgad kvadrat är den föreslagna platsen.",
-  "Sample network for {option}": "Exempelnät för {option}"
+  "Sample network for {option}": "Exempelnät för {option}",
+  "Pocket park": "Fickpark",
+  "Reimagine the 40 m grid cell outlined in cyan as a public pocket park with native trees, shaded seating and permeable paths.": "Gestalta om den cyanmarkerade 40 m-rutan som en offentlig fickpark med inhemska träd, skuggade sittplatser och genomsläppliga stigar.",
+  "Public plaza": "Offentligt torg",
+  "Reimagine the 40 m grid cell outlined in cyan as an accessible public plaza with level routes, movable seating and shade.": "Gestalta om den cyanmarkerade 40 m-rutan som ett tillgängligt offentligt torg med plana stråk, flyttbara sittplatser och skugga.",
+  "Protected bike lane": "Skyddat cykelfält",
+  "Reimagine the street through the 40 m grid cell outlined in cyan with a protected bike lane, accessible crossings and street trees.": "Gestalta om gatan genom den cyanmarkerade 40 m-rutan med ett skyddat cykelfält, tillgängliga övergångar och gatuträd.",
+  "This project holds six possible worlds. Export it from Project records to start another.": "Det här projektet innehåller sex möjliga världar. Exportera det från Projektposter för att starta en till.",
+  "Reimagined plots": "Omgestaltade tomter",
+  "This possible world has twenty versions. Reimagine the plot to start another.": "Den här möjliga världen har tjugo versioner. Gestalta om tomten för att starta en till."
 }

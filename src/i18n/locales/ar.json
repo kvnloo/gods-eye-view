@@ -4105,5 +4105,14 @@
   "Zones known": "المناطق المعروفة",
   "Change from baseline": "التغير عن الأساس",
   "Circles are demand zones labelled with metres to the nearest park. Green squares are existing parks; a gold square is the proposed site.": "الدوائر مناطق طلب تحمل عدد الأمتار إلى أقرب حديقة. المربعات الخضراء حدائق قائمة؛ والمربع الذهبي هو الموقع المقترح.",
-  "Sample network for {option}": "شبكة نموذجية لـ {option}"
+  "Sample network for {option}": "شبكة نموذجية لـ {option}",
+  "Pocket park": "حديقة صغيرة",
+  "Reimagine the 40 m grid cell outlined in cyan as a public pocket park with native trees, shaded seating and permeable paths.": "أعد تصوّر خلية الشبكة بمقاس 40 م المحددة بالسماوي كحديقة عامة صغيرة بأشجار محلية ومقاعد مظلّلة ومسارات نفّاذة.",
+  "Public plaza": "ساحة عامة",
+  "Reimagine the 40 m grid cell outlined in cyan as an accessible public plaza with level routes, movable seating and shade.": "أعد تصوّر خلية الشبكة بمقاس 40 م المحددة بالسماوي كساحة عامة ميسّرة بمسارات مستوية ومقاعد متحركة وظل.",
+  "Protected bike lane": "مسار دراجات محمي",
+  "Reimagine the street through the 40 m grid cell outlined in cyan with a protected bike lane, accessible crossings and street trees.": "أعد تصوّر الشارع المار بخلية الشبكة بمقاس 40 م المحددة بالسماوي بمسار دراجات محمي وعبور ميسّر وأشجار شوارع.",
+  "This project holds six possible worlds. Export it from Project records to start another.": "يحتوي هذا المشروع على ستة عوالم محتملة. صدّره من سجلات المشروع لبدء عالم آخر.",
+  "Reimagined plots": "القطع المعاد تصوّرها",
+  "This possible world has twenty versions. Reimagine the plot to start another.": "لهذا العالم المحتمل عشرون إصدارًا. أعد تصوّر القطعة لبدء إصدار آخر."
 }

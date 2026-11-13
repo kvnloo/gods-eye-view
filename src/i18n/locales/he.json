@@ -3832,5 +3832,14 @@
   "Zones known": "אזורים ידועים",
   "Change from baseline": "שינוי לעומת הבסיס",
   "Circles are demand zones labelled with metres to the nearest park. Green squares are existing parks; a gold square is the proposed site.": "העיגולים הם אזורי ביקוש עם מספר המטרים לפארק הקרוב. ריבועים ירוקים הם פארקים קיימים; ריבוע זהוב הוא האתר המוצע.",
-  "Sample network for {option}": "רשת לדוגמה עבור {option}"
+  "Sample network for {option}": "רשת לדוגמה עבור {option}",
+  "Pocket park": "פארק כיס",
+  "Reimagine the 40 m grid cell outlined in cyan as a public pocket park with native trees, shaded seating and permeable paths.": "דמיינו מחדש את תא הרשת בגודל 40 מ' המסומן בציאן כפארק כיס ציבורי עם עצים מקומיים, ישיבה מוצלת ושבילים חדירים.",
+  "Public plaza": "כיכר ציבורית",
+  "Reimagine the 40 m grid cell outlined in cyan as an accessible public plaza with level routes, movable seating and shade.": "דמיינו מחדש את תא הרשת בגודל 40 מ' המסומן בציאן ככיכר ציבורית נגישה עם מסלולים מישוריים, ישיבה ניידת וצל.",
+  "Protected bike lane": "שביל אופניים מוגן",
+  "Reimagine the street through the 40 m grid cell outlined in cyan with a protected bike lane, accessible crossings and street trees.": "דמיינו מחדש את הרחוב החוצה את תא הרשת בגודל 40 מ' המסומן בציאן עם שביל אופניים מוגן, מעברים נגישים ועצי רחוב.",
+  "This project holds six possible worlds. Export it from Project records to start another.": "בפרויקט הזה יש שישה עולמות אפשריים. ייצאו אותו מרשומות הפרויקט כדי להתחיל עולם נוסף.",
+  "Reimagined plots": "חלקות שדומיינו מחדש",
+  "This possible world has twenty versions. Reimagine the plot to start another.": "לעולם האפשרי הזה יש עשרים גרסאות. דמיינו מחדש את החלקה כדי להתחיל גרסה נוספת."
 }

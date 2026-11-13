@@ -3832,5 +3832,14 @@
   "Zones known": "Zonas conocidas",
   "Change from baseline": "Cambio respecto a la base",
   "Circles are demand zones labelled with metres to the nearest park. Green squares are existing parks; a gold square is the proposed site.": "Los círculos son zonas de demanda con los metros hasta el parque más cercano. Los cuadrados verdes son parques existentes; un cuadrado dorado es el sitio propuesto.",
-  "Sample network for {option}": "Red de ejemplo para {option}"
+  "Sample network for {option}": "Red de ejemplo para {option}",
+  "Pocket park": "Parque de bolsillo",
+  "Reimagine the 40 m grid cell outlined in cyan as a public pocket park with native trees, shaded seating and permeable paths.": "Reimagina la celda de cuadrícula de 40 m delimitada en cian como un parque de bolsillo público con árboles autóctonos, asientos con sombra y senderos permeables.",
+  "Public plaza": "Plaza pública",
+  "Reimagine the 40 m grid cell outlined in cyan as an accessible public plaza with level routes, movable seating and shade.": "Reimagina la celda de cuadrícula de 40 m delimitada en cian como una plaza pública accesible con recorridos a nivel, asientos móviles y sombra.",
+  "Protected bike lane": "Carril bici protegido",
+  "Reimagine the street through the 40 m grid cell outlined in cyan with a protected bike lane, accessible crossings and street trees.": "Reimagina la calle que atraviesa la celda de cuadrícula de 40 m delimitada en cian con un carril bici protegido, cruces accesibles y árboles de calle.",
+  "This project holds six possible worlds. Export it from Project records to start another.": "Este proyecto contiene seis mundos posibles. Expórtalo desde Registros del proyecto para empezar otro.",
+  "Reimagined plots": "Parcelas reimaginadas",
+  "This possible world has twenty versions. Reimagine the plot to start another.": "Este mundo posible tiene veinte versiones. Reimagina la parcela para empezar otra."
 }

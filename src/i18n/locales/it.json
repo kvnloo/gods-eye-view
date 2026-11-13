@@ -3832,5 +3832,14 @@
   "Zones known": "Zone note",
   "Change from baseline": "Variazione rispetto alla base",
   "Circles are demand zones labelled with metres to the nearest park. Green squares are existing parks; a gold square is the proposed site.": "I cerchi sono zone di domanda con i metri fino al parco più vicino. I quadrati verdi sono parchi esistenti; un quadrato dorato è il sito proposto.",
-  "Sample network for {option}": "Rete di esempio per {option}"
+  "Sample network for {option}": "Rete di esempio per {option}",
+  "Pocket park": "Parco tascabile",
+  "Reimagine the 40 m grid cell outlined in cyan as a public pocket park with native trees, shaded seating and permeable paths.": "Reimmagina la cella della griglia da 40 m evidenziata in ciano come parco tascabile pubblico con alberi autoctoni, sedute ombreggiate e percorsi permeabili.",
+  "Public plaza": "Piazza pubblica",
+  "Reimagine the 40 m grid cell outlined in cyan as an accessible public plaza with level routes, movable seating and shade.": "Reimmagina la cella della griglia da 40 m evidenziata in ciano come piazza pubblica accessibile con percorsi a raso, sedute mobili e ombra.",
+  "Protected bike lane": "Pista ciclabile protetta",
+  "Reimagine the street through the 40 m grid cell outlined in cyan with a protected bike lane, accessible crossings and street trees.": "Reimmagina la strada che attraversa la cella della griglia da 40 m evidenziata in ciano con una pista ciclabile protetta, attraversamenti accessibili e alberi stradali.",
+  "This project holds six possible worlds. Export it from Project records to start another.": "Questo progetto contiene sei mondi possibili. Esportalo da Registri del progetto per iniziarne un altro.",
+  "Reimagined plots": "Lotti reimmaginati",
+  "This possible world has twenty versions. Reimagine the plot to start another.": "Questo mondo possibile ha venti versioni. Reimmagina il lotto per iniziarne un'altra."
 }

@@ -3650,5 +3650,14 @@
   "Zones known": "已知区",
   "Change from baseline": "相对基线的变化",
   "Circles are demand zones labelled with metres to the nearest park. Green squares are existing parks; a gold square is the proposed site.": "圆圈是需求区，标注到最近公园的米数。绿色方块是现有公园；金色方块是拟议地块。",
-  "Sample network for {option}": "{option} 的示例网络"
+  "Sample network for {option}": "{option} 的示例网络",
+  "Pocket park": "口袋公园",
+  "Reimagine the 40 m grid cell outlined in cyan as a public pocket park with native trees, shaded seating and permeable paths.": "将青色框出的 40 m 网格单元重新构想为公共口袋公园，配有本地树木、遮阴座椅和透水步道。",
+  "Public plaza": "公共广场",
+  "Reimagine the 40 m grid cell outlined in cyan as an accessible public plaza with level routes, movable seating and shade.": "将青色框出的 40 m 网格单元重新构想为无障碍公共广场，配有平整路线、可移动座椅和遮阴。",
+  "Protected bike lane": "隔离式自行车道",
+  "Reimagine the street through the 40 m grid cell outlined in cyan with a protected bike lane, accessible crossings and street trees.": "将穿过青色框出的 40 m 网格单元的街道重新构想为设有隔离式自行车道、无障碍过街设施和行道树的街道。",
+  "This project holds six possible worlds. Export it from Project records to start another.": "此项目包含六个可能世界。请从项目记录中导出，以开始另一个。",
+  "Reimagined plots": "已重新构想的地块",
+  "This possible world has twenty versions. Reimagine the plot to start another.": "此可能世界已有二十个版本。请重新构想地块以开始另一个。"
 }

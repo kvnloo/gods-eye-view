@@ -1440,5 +1440,7 @@
   "src/ui/views/cityBuilderView.test.mjs",
   "scripts/qa-city-builder.mjs",
   "server/standalone/city-concept.test.mjs",
-  "src/data/walkAccess.test.mjs"
+  "src/data/walkAccess.test.mjs",
+  "src/data/cityPlot.test.mjs",
+  "src/ui/cityPlayModel.test.mjs"
 ]

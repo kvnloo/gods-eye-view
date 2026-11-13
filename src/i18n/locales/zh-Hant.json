@@ -3650,5 +3650,14 @@
   "Zones known": "已知區",
   "Change from baseline": "相對基線的變化",
   "Circles are demand zones labelled with metres to the nearest park. Green squares are existing parks; a gold square is the proposed site.": "圓圈是需求區，標示到最近公園的公尺數。綠色方塊是現有公園；金色方塊是擬議地塊。",
-  "Sample network for {option}": "{option} 的範例網路"
+  "Sample network for {option}": "{option} 的範例網路",
+  "Pocket park": "口袋公園",
+  "Reimagine the 40 m grid cell outlined in cyan as a public pocket park with native trees, shaded seating and permeable paths.": "將青色框出的 40 m 網格單元重新構想為公共口袋公園，配有原生樹木、遮蔭座椅和透水步道。",
+  "Public plaza": "公共廣場",
+  "Reimagine the 40 m grid cell outlined in cyan as an accessible public plaza with level routes, movable seating and shade.": "將青色框出的 40 m 網格單元重新構想為無障礙公共廣場，配有平整路線、可移動座椅和遮蔭。",
+  "Protected bike lane": "隔離式自行車道",
+  "Reimagine the street through the 40 m grid cell outlined in cyan with a protected bike lane, accessible crossings and street trees.": "將穿過青色框出的 40 m 網格單元的街道重新構想為設有隔離式自行車道、無障礙穿越設施和行道樹的街道。",
+  "This project holds six possible worlds. Export it from Project records to start another.": "此專案包含六個可能世界。請從專案紀錄匯出，以開始另一個。",
+  "Reimagined plots": "已重新構想的地塊",
+  "This possible world has twenty versions. Reimagine the plot to start another.": "此可能世界已有二十個版本。請重新構想地塊以開始另一個。"
 }

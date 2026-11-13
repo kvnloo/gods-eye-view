@@ -6,6 +6,10 @@ import {
   applyCollaborationOperations,
   createCollaborationState,
 } from './collaborationAuthority.js';
+import { plotValue } from './cityPlot.js';
+import { CITY_LAND_USES, MAX_ZONED_PLOTS } from './cityLandUse.js';
+
+export { CITY_LAND_USES };
 
 const MAX_DOCUMENT_BYTES = 4 * 1024 * 1024;
 const MAX_IMAGE_LENGTH = 600_000;
@@ -230,6 +234,38 @@ function editValue(input) {
   };
 }
 
+// A play-mode site: the snapped plot and the view captured for it. A null
+// reference means the project baseline was captured for this plot.
+function siteValue(value, baseline) {
+  keys(value, ['plot', 'reference']);
+  const plot = plotValue(value.plot);
+  const reference =
+    value.reference === null ? null : referenceValue(value.reference);
+  const [west, south, east, north] = (reference ?? baseline).bounds;
+  const { lat, lon } = plot.center;
+  if (lon < west || lon > east || lat < south || lat > north)
+    fail('plot must lie inside its captured view');
+  return { plot, reference };
+}
+
+// Optional `zoning`: one proposed land use per snapped plot, never empty.
+function zoningValue(value) {
+  list(value, 1, MAX_ZONED_PLOTS);
+  const ids = new Set();
+  return value.map((entry) => {
+    keys(entry, ['plot', 'use']);
+    const plot = plotValue(entry.plot);
+    if (!CITY_LAND_USES.includes(entry.use)) fail('unsupported land use');
+    if (ids.has(plot.id)) fail('one land use per plot');
+    ids.add(plot.id);
+    return { plot, use: entry.use };
+  });
+}
+
+function sourceOf(alternative, baseline) {
+  return alternative.site?.reference ?? baseline;
+}
+
 function operationFor(project, alternativeId, index, revision, edit) {
   return createPlanningAlternativeOperation(project, {
     // Slots are stable because alternatives cannot be deleted or reordered.
@@ -275,12 +311,14 @@ function conceptValue(value, reference, importing = false) {
 
 function documentValue(value) {
   boundedJson(value);
+  const zoned = Object.hasOwn(Object(value), 'zoning');
   keys(value, [
     'schemaVersion',
     'kind',
     'project',
     'reference',
     'alternatives',
+    ...(zoned ? ['zoning'] : []),
   ]);
   if (value.schemaVersion !== 1 || value.kind !== 'city-builder')
     fail('unsupported city document schema');
@@ -295,10 +333,16 @@ function documentValue(value) {
   list(value.alternatives, 0, 6);
   const ids = new Set();
   const alternatives = value.alternatives.map((alternative, index) => {
-    keys(alternative, ['id', 'versions']);
+    const isSited = Object.hasOwn(alternative ?? {}, 'site');
+    keys(
+      alternative,
+      isSited ? ['id', 'site', 'versions'] : ['id', 'versions'],
+    );
     const id = identifier(alternative.id);
     if (ids.has(id)) fail('duplicate alternative id');
     ids.add(id);
+    const site = isSited ? siteValue(alternative.site, reference) : null;
+    const source = site?.reference ?? reference;
     list(alternative.versions, 1, 20);
     const versions = alternative.versions.map((version, versionIndex) => {
       keys(version, [
@@ -317,14 +361,14 @@ function documentValue(value) {
       });
       const expected = versionFor(project, id, index, versionIndex + 1, edit);
       if (version.concept !== null)
-        expected.concept = conceptValue(version.concept, reference, true);
+        expected.concept = conceptValue(version.concept, source, true);
       if (!same(version, expected))
         fail(
           'version or proposal differs from its constructor-produced history',
         );
       return expected;
     });
-    return { id, versions };
+    return site ? { id, site, versions } : { id, versions };
   });
   const result = {
     schemaVersion: 1,
@@ -332,6 +376,7 @@ function documentValue(value) {
     project,
     reference,
     alternatives,
+    ...(zoned ? { zoning: zoningValue(value.zoning) } : {}),
   };
   if (!same(value, result)) fail('noncanonical city document');
   return freeze(result);
@@ -356,8 +401,15 @@ export function createCityDocument(input) {
 export function addCityAlternative(document, input) {
   const doc = documentValue(document);
   boundedJson(input);
-  keys(input, ['id', 'title', 'description', 'parameters']);
+  const isSited = Object.hasOwn(input ?? {}, 'site');
+  keys(
+    input,
+    isSited
+      ? ['id', 'title', 'description', 'parameters', 'site']
+      : ['id', 'title', 'description', 'parameters'],
+  );
   const id = identifier(input.id);
+  const site = isSited ? siteValue(input.site, doc.reference) : null;
   if (
     doc.alternatives.length >= 6 ||
     doc.alternatives.some((alternative) => alternative.id === id)
@@ -371,7 +423,10 @@ export function addCityAlternative(document, input) {
   const version = versionFor(doc.project, id, doc.alternatives.length, 1, edit);
   return documentValue({
     ...doc,
-    alternatives: [...doc.alternatives, { id, versions: [version] }],
+    alternatives: [
+      ...doc.alternatives,
+      site ? { id, site, versions: [version] } : { id, versions: [version] },
+    ],
   });
 }
 
@@ -414,7 +469,7 @@ export function attachCityConcept(document, id, revision, concept) {
   if (alternative.versions.at(-1).concept !== null)
     fail('save a new version before attaching another concept');
   boundedJson(concept);
-  const attached = conceptValue(concept, doc.reference);
+  const attached = conceptValue(concept, sourceOf(alternative, doc.reference));
   return documentValue({
     ...doc,
     alternatives: doc.alternatives.map((entry, i) =>
@@ -459,6 +514,25 @@ export function replayCityDocument(document) {
   );
 }
 
+/** Set (or with `use: null` clear) one plot's proposed land use. */
+export function setCityZoning(document, plot, use) {
+  const doc = documentValue(document);
+  const cell = plotValue(plot);
+  if (use !== null && !CITY_LAND_USES.includes(use))
+    fail('unsupported land use');
+  const rest = (doc.zoning ?? []).filter((z) => z.plot.id !== cell.id);
+  const zoning = use === null ? rest : [...rest, { plot: cell, use }];
+  const base = Object.fromEntries(
+    Object.entries(doc).filter(([key]) => key !== 'zoning'),
+  );
+  return documentValue(zoning.length ? { ...base, zoning } : base);
+}
+
+/** The project's proposed land uses, one per plot (empty when none). */
+export function cityZoning(document) {
+  return documentValue(document).zoning ?? [];
+}
+
 /** Each alternative's latest version with its id and version count. */
 export function cityAlternatives(document) {
   const doc = documentValue(document);
@@ -467,6 +541,7 @@ export function cityAlternatives(document) {
       ...alternative.versions.at(-1),
       id: alternative.id,
       versionCount: alternative.versions.length,
+      site: alternative.site ?? null,
     })),
   );
 }

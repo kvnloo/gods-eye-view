@@ -3923,5 +3923,14 @@
   "Zones known": "Відомі зони",
   "Change from baseline": "Зміна відносно бази",
   "Circles are demand zones labelled with metres to the nearest park. Green squares are existing parks; a gold square is the proposed site.": "Кола — зони попиту з відстанню в метрах до найближчого парку. Зелені квадрати — наявні парки; золотий квадрат — запропонована ділянка.",
-  "Sample network for {option}": "Приклад мережі для {option}"
+  "Sample network for {option}": "Приклад мережі для {option}",
+  "Pocket park": "Сквер",
+  "Reimagine the 40 m grid cell outlined in cyan as a public pocket park with native trees, shaded seating and permeable paths.": "Переосмисліть комірку сітки 40 м, обведену блакитним, як громадський сквер із місцевими деревами, лавами в тіні та водопроникними доріжками.",
+  "Public plaza": "Громадська площа",
+  "Reimagine the 40 m grid cell outlined in cyan as an accessible public plaza with level routes, movable seating and shade.": "Переосмисліть комірку сітки 40 м, обведену блакитним, як доступну громадську площу з рівними маршрутами, пересувними лавами та тінню.",
+  "Protected bike lane": "Захищена велодоріжка",
+  "Reimagine the street through the 40 m grid cell outlined in cyan with a protected bike lane, accessible crossings and street trees.": "Переосмисліть вулицю, що проходить через комірку сітки 40 м, обведену блакитним, із захищеною велодоріжкою, доступними переходами та вуличними деревами.",
+  "This project holds six possible worlds. Export it from Project records to start another.": "У цьому проєкті шість можливих світів. Експортуйте його з розділу «Записи проєкту», щоб почати новий.",
+  "Reimagined plots": "Переосмислені ділянки",
+  "This possible world has twenty versions. Reimagine the plot to start another.": "У цього можливого світу двадцять версій. Переосмисліть ділянку, щоб почати нову."
 }

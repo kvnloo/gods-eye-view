@@ -196,7 +196,15 @@ export function cockpitSubjectProviders(
   const kept = [];
   const kinds = new Set();
   (Array.isArray(list) ? list : []).forEach((provider, order) => {
-    const reason = refusal(provider, kinds);
+    let reason;
+    try {
+      reason = refusal(provider, kinds);
+    } catch {
+      warn(
+        `[Cockpit] subject provider #${order} left out: property getter failed`,
+      );
+      return;
+    }
     if (reason) {
       const name =
         typeof provider?.kind === 'string'
@@ -208,10 +216,16 @@ export function cockpitSubjectProviders(
     kinds.add(provider.kind);
     // Worded members are read again on each use (see above); the last good
     // read stands in for a bad one.
-    const worded = (value) => wordedNow(value, provider);
-    let face = faceOf(worded(provider.entryFace));
-    let labels = labelsOf(worded(provider.labels));
-    const firstLook = worded(provider.look);
+    const worded = (field) => {
+      try {
+        return wordedNow(provider[field], provider);
+      } catch {
+        return undefined;
+      }
+    };
+    let face = faceOf(worded('entryFace'));
+    let labels = labelsOf(worded('labels'));
+    const firstLook = worded('look');
     const lookOf = (raw) =>
       Object.freeze({
         restPitchDeg: finite(firstLook.restPitchDeg)
@@ -227,16 +241,16 @@ export function cockpitSubjectProviders(
         priority: finite(provider.priority) ? provider.priority : 0,
         order,
         get entryFace() {
-          face = faceOf(worded(provider.entryFace)) ?? face;
+          face = faceOf(worded('entryFace')) ?? face;
           return face;
         },
         get labels() {
-          labels = labelsOf(worded(provider.labels)) ?? labels;
+          labels = labelsOf(worded('labels')) ?? labels;
           return labels;
         },
         get look() {
           if (!look) return null;
-          const raw = worded(provider.look);
+          const raw = worded('look');
           if (isObject(raw) && cockpitSubjectText(raw.aheadLabel, 64))
             look = lookOf(raw);
           return look;

@@ -102,6 +102,36 @@ test('malformed, reserved and repeated providers are left out with one warning e
   assert.deepEqual(keep('not a list').kept, []);
 });
 
+test('a throwing registration getter leaves later providers usable', () => {
+  const broken = provider();
+  Object.defineProperty(broken, 'entryFace', {
+    get() {
+      throw new Error('translations unavailable');
+    },
+  });
+  const { kept, warnings } = keep([broken, provider()]);
+  assert.deepEqual(kept.map(({ kind }) => kind), ['example-kind']);
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /property getter failed/);
+});
+
+test('a worded getter that starts throwing keeps the last valid labels', () => {
+  let unavailable = false;
+  const definition = provider();
+  Object.defineProperty(definition, 'labels', {
+    get() {
+      if (unavailable) throw new Error('translations unavailable');
+      return { view: 'Ride view', exit: 'Exit ride', exitText: 'EXIT' };
+    },
+  });
+  const { kept, warnings } = keep([definition]);
+  const [ride] = kept;
+  assert.equal(ride.labels.view, 'Ride view');
+  unavailable = true;
+  assert.equal(ride.labels.view, 'Ride view');
+  assert.deepEqual(warnings, []);
+});
+
 test('optional settings are kept when in range and defaulted otherwise', () => {
   const [ranged] = keep([
     provider({

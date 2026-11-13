@@ -10,3 +10,6 @@
   provider. GEV itself registers none, and entry to the built-in aircraft,
   satellite and vessel views is unchanged; a provider's subject takes entry
   when it was selected after them (Denis Groshev, @ZloyS, #1686).
+- Ignore a subject provider whose property getter throws instead of blocking
+  later providers; a worded getter that subsequently throws retains its last
+  valid words (follow-up to ZloyS's #1686).

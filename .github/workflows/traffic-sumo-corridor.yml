@@ -6,6 +6,7 @@ on:
       - infra/sumo-corridor-ab-20261012
       - infra/sumo-safety-receipt-gate-20261012
       - infra/sumo-tls-program-proof-20261013
+      - infra/sumo-observed-counts-geh-20261113
     paths:
       - '.github/workflows/traffic-sumo-corridor.yml'
       - 'scripts/traffic-scenarios/**'
@@ -18,6 +19,7 @@ on:
     branches:
       - infra/sumo-corridor-ab-20261012
       - infra/sumo-safety-receipt-gate-20261012
+      - infra/sumo-tls-program-proof-20261013
     paths:
       - '.github/workflows/traffic-sumo-corridor.yml'
       - 'scripts/traffic-scenarios/**'
@@ -56,6 +58,8 @@ jobs:
           node --test src/data/trafficScenarioComparison.test.mjs src/data/trafficScenarioSumo.test.mjs
           python3 scripts/traffic-scenarios/test-sumo-statistics-receipt.py -v
           python3 scripts/traffic-scenarios/test-sumo-corridor.py -v
+          # Invented numbers only: no simulator, no network, no value from the cited count study.
+          python3 scripts/traffic-scenarios/test-observed-counts.py -v
 
       - name: Install the pinned real simulator
         run: |

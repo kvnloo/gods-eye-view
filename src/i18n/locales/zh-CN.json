@@ -3712,5 +3712,17 @@
   "Homes": "住宅套数",
   "Assumed {share}% of the floor area is homes of {size} m² each": "假设：建筑面积的 {share}% 为住宅，每套 {size} m²",
   "Shadow reach": "阴影长度",
-  "Height ÷ tan(sun altitude {altitude}°), on level ground": "高度 ÷ tan(太阳高度角 {altitude}°)，按平地计"
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "高度 ÷ tan(太阳高度角 {altitude}°)，按平地计",
+  "Tie on average walk between {count} choices; the one with the shorter worst-served walk is shown.": "{count} 个选择的平均步行距离相同；显示其中服务最差区步行距离较短的一个。",
+  "Tie on worst-served walk between {count} choices; the one with the lower average walk is shown.": "{count} 个选择的服务最差区步行距离相同；显示其中平均步行距离较短的一个。",
+  "Tie on both measures between {count} choices; the first by site name is shown.": "{count} 个选择的两项指标都相同；显示按地块名称排序的第一个。",
+  "Suggested option": "建议方案",
+  "Unknown: no site is suggested ({reason}).": "未知：没有建议的地块（{reason}）。",
+  "HYPOTHETICAL OPTION · NOT ZONING, AN APPROVAL OR AN OBSERVED FACT": "假设性方案 · 并非区划、批准或观测事实",
+  "Every one of the {sets} possible choices of {count} from {eligible} candidate sites was compared exactly, with existing parks kept. Site eligibility is assumed for this sample, not checked.": "已精确比较从 {eligible} 个候选地块中选 {count} 个的全部 {sets} 种选择，并保留现有公园。地块的适用性是本示例的假设，未经核实。",
+  "Suggest a site for": "建议地块的目标",
+  "Lowest average walk": "平均步行距离最短",
+  "Shortest worst-served walk": "服务最差区的步行距离最短",
+  "New sites": "新增地块数",
+  "Suggest site": "建议地块"
 }

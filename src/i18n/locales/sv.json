@@ -3803,5 +3803,17 @@
   "Homes": "Bostäder",
   "Assumed {share}% of the floor area is homes of {size} m² each": "Antaget: {share} % av bruttoarean är bostäder på {size} m² vardera",
   "Shadow reach": "Skuggans längd",
-  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Höjd ÷ tan(solhöjd {altitude}°), på plan mark"
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Höjd ÷ tan(solhöjd {altitude}°), på plan mark",
+  "Tie on average walk between {count} choices; the one with the shorter worst-served walk is shown.": "Lika medelgångväg mellan {count} val; det med kortast sämst betjänade gångväg visas.",
+  "Tie on worst-served walk between {count} choices; the one with the lower average walk is shown.": "Lika sämst betjänade gångväg mellan {count} val; det med kortast medelgångväg visas.",
+  "Tie on both measures between {count} choices; the first by site name is shown.": "Lika på båda måtten mellan {count} val; det första efter platsnamn visas.",
+  "Suggested option": "Föreslaget alternativ",
+  "Unknown: no site is suggested ({reason}).": "Okänt: ingen plats föreslås ({reason}).",
+  "HYPOTHETICAL OPTION · NOT ZONING, AN APPROVAL OR AN OBSERVED FACT": "HYPOTETISKT ALTERNATIV · INTE DETALJPLAN, GODKÄNNANDE ELLER OBSERVERAT FAKTUM",
+  "Every one of the {sets} possible choices of {count} from {eligible} candidate sites was compared exactly, with existing parks kept. Site eligibility is assumed for this sample, not checked.": "Alla {sets} möjliga val av {count} bland {eligible} kandidatplatser jämfördes exakt, med befintliga parker kvar. Platsernas lämplighet antas för det här exemplet och är inte kontrollerad.",
+  "Suggest a site for": "Föreslå en plats för",
+  "Lowest average walk": "Kortast medelgångväg",
+  "Shortest worst-served walk": "Kortast sämst betjänade gångväg",
+  "New sites": "Nya platser",
+  "Suggest site": "Föreslå plats"
 }

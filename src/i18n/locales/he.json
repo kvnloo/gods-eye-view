@@ -3894,5 +3894,17 @@
   "Homes": "דירות",
   "Assumed {share}% of the floor area is homes of {size} m² each": "הנחה: {share}% משטח הרצפות הם דירות של {size} מ\"ר כל אחת",
   "Shadow reach": "אורך הצל",
-  "Height ÷ tan(sun altitude {altitude}°), on level ground": "גובה ÷ tan(גובה השמש {altitude}°), על קרקע מישורית"
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "גובה ÷ tan(גובה השמש {altitude}°), על קרקע מישורית",
+  "Tie on average walk between {count} choices; the one with the shorter worst-served walk is shown.": "תיקו בהליכה הממוצעת בין {count} אפשרויות; מוצגת זו שבה ההליכה באזור המשורת הכי פחות קצרה יותר.",
+  "Tie on worst-served walk between {count} choices; the one with the lower average walk is shown.": "תיקו בהליכה באזור המשורת הכי פחות בין {count} אפשרויות; מוצגת זו שבה ההליכה הממוצעת קצרה יותר.",
+  "Tie on both measures between {count} choices; the first by site name is shown.": "תיקו בשני המדדים בין {count} אפשרויות; מוצגת הראשונה לפי שם האתר.",
+  "Suggested option": "אפשרות מוצעת",
+  "Unknown: no site is suggested ({reason}).": "לא ידוע: לא מוצע אתר ({reason}).",
+  "HYPOTHETICAL OPTION · NOT ZONING, AN APPROVAL OR AN OBSERVED FACT": "אפשרות היפותטית · לא ייעוד קרקע, לא אישור ולא עובדה נצפית",
+  "Every one of the {sets} possible choices of {count} from {eligible} candidate sites was compared exactly, with existing parks kept. Site eligibility is assumed for this sample, not checked.": "כל {sets} הבחירות האפשריות של {count} מתוך {eligible} אתרים מועמדים הושוו באופן מדויק, והפארקים הקיימים נשמרו. התאמת האתרים היא הנחה לדוגמה זו ולא נבדקה.",
+  "Suggest a site for": "הצעת אתר עבור",
+  "Lowest average walk": "ההליכה הממוצעת הקצרה ביותר",
+  "Shortest worst-served walk": "ההליכה הקצרה ביותר באזור המשורת הכי פחות",
+  "New sites": "אתרים חדשים",
+  "Suggest site": "הצעת אתר"
 }

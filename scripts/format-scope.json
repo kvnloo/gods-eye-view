@@ -1445,6 +1445,8 @@
   "server/standalone/city-concept.test.mjs",
   "src/data/walkAccess.test.mjs",
   "src/data/walkAccessSites.test.mjs",
+  "src/ui/cityWalkAccess.test.mjs",
+  "scripts/qa-city-sites.mjs",
   "scripts/qa-city-play.mjs",
   "scripts/qa-city-massing.mjs",
   "scripts/qa-massing-measure.mjs",

@@ -3894,5 +3894,17 @@
   "Homes": "Moradias",
   "Assumed {share}% of the floor area is homes of {size} m² each": "Suposto: {share}% da área construída são moradias de {size} m² cada",
   "Shadow reach": "Alcance da sombra",
-  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Altura ÷ tan(altura do sol {altitude}°), em terreno plano"
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Altura ÷ tan(altura do sol {altitude}°), em terreno plano",
+  "Tie on average walk between {count} choices; the one with the shorter worst-served walk is shown.": "Empate na caminhada média entre {count} opções; é mostrada a de menor caminhada para a zona pior atendida.",
+  "Tie on worst-served walk between {count} choices; the one with the lower average walk is shown.": "Empate na caminhada da zona pior atendida entre {count} opções; é mostrada a de menor caminhada média.",
+  "Tie on both measures between {count} choices; the first by site name is shown.": "Empate nas duas medidas entre {count} opções; é mostrada a primeira por nome do local.",
+  "Suggested option": "Opção sugerida",
+  "Unknown: no site is suggested ({reason}).": "Desconhecido: nenhum local é sugerido ({reason}).",
+  "HYPOTHETICAL OPTION · NOT ZONING, AN APPROVAL OR AN OBSERVED FACT": "OPÇÃO HIPOTÉTICA · NÃO É ZONEAMENTO, UMA APROVAÇÃO NEM UM FATO OBSERVADO",
+  "Every one of the {sets} possible choices of {count} from {eligible} candidate sites was compared exactly, with existing parks kept. Site eligibility is assumed for this sample, not checked.": "Todas as {sets} escolhas possíveis de {count} entre {eligible} locais candidatos foram comparadas de forma exata, mantendo os parques existentes. A elegibilidade dos locais é presumida para esta amostra, não verificada.",
+  "Suggest a site for": "Sugerir um local para",
+  "Lowest average walk": "Menor caminhada média",
+  "Shortest worst-served walk": "Menor caminhada da zona pior atendida",
+  "New sites": "Novos locais",
+  "Suggest site": "Sugerir local"
 }

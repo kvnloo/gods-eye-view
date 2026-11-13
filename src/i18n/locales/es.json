@@ -3894,5 +3894,17 @@
   "Homes": "Viviendas",
   "Assumed {share}% of the floor area is homes of {size} m² each": "Supuesto: el {share} % de la superficie construida son viviendas de {size} m² cada una",
   "Shadow reach": "Alcance de la sombra",
-  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Altura ÷ tan(altura solar {altitude}°), sobre terreno llano"
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Altura ÷ tan(altura solar {altitude}°), sobre terreno llano",
+  "Tie on average walk between {count} choices; the one with the shorter worst-served walk is shown.": "Empate en la caminata media entre {count} opciones; se muestra la de menor caminata para la zona peor servida.",
+  "Tie on worst-served walk between {count} choices; the one with the lower average walk is shown.": "Empate en la caminata de la zona peor servida entre {count} opciones; se muestra la de menor caminata media.",
+  "Tie on both measures between {count} choices; the first by site name is shown.": "Empate en ambas medidas entre {count} opciones; se muestra la primera por nombre de sitio.",
+  "Suggested option": "Opción sugerida",
+  "Unknown: no site is suggested ({reason}).": "Desconocido: no se sugiere ningún sitio ({reason}).",
+  "HYPOTHETICAL OPTION · NOT ZONING, AN APPROVAL OR AN OBSERVED FACT": "OPCIÓN HIPOTÉTICA · NO ES ZONIFICACIÓN, UNA APROBACIÓN NI UN HECHO OBSERVADO",
+  "Every one of the {sets} possible choices of {count} from {eligible} candidate sites was compared exactly, with existing parks kept. Site eligibility is assumed for this sample, not checked.": "Se compararon de forma exacta las {sets} elecciones posibles de {count} entre {eligible} sitios candidatos, manteniendo los parques existentes. La elegibilidad de los sitios se supone para esta muestra; no se ha comprobado.",
+  "Suggest a site for": "Sugerir un sitio para",
+  "Lowest average walk": "Menor caminata media",
+  "Shortest worst-served walk": "Menor caminata de la zona peor servida",
+  "New sites": "Sitios nuevos",
+  "Suggest site": "Sugerir sitio"
 }

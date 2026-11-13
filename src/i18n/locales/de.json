@@ -3803,5 +3803,17 @@
   "Homes": "Wohnungen",
   "Assumed {share}% of the floor area is homes of {size} m² each": "Angenommen: {share} % der Geschossfläche sind Wohnungen mit je {size} m²",
   "Shadow reach": "Schattenlänge",
-  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Höhe ÷ tan(Sonnenhöhe {altitude}°), auf ebenem Boden"
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Höhe ÷ tan(Sonnenhöhe {altitude}°), auf ebenem Boden",
+  "Tie on average walk between {count} choices; the one with the shorter worst-served walk is shown.": "Gleichstand beim mittleren Fußweg zwischen {count} Möglichkeiten; gezeigt wird die mit dem kürzeren Fußweg der am schlechtesten versorgten Zone.",
+  "Tie on worst-served walk between {count} choices; the one with the lower average walk is shown.": "Gleichstand beim Fußweg der am schlechtesten versorgten Zone zwischen {count} Möglichkeiten; gezeigt wird die mit dem kürzeren mittleren Fußweg.",
+  "Tie on both measures between {count} choices; the first by site name is shown.": "Gleichstand bei beiden Maßen zwischen {count} Möglichkeiten; gezeigt wird die erste nach Standortname.",
+  "Suggested option": "Vorgeschlagene Option",
+  "Unknown: no site is suggested ({reason}).": "Unbekannt: Es wird kein Standort vorgeschlagen ({reason}).",
+  "HYPOTHETICAL OPTION · NOT ZONING, AN APPROVAL OR AN OBSERVED FACT": "HYPOTHETISCHE OPTION · KEINE BAULEITPLANUNG, KEINE GENEHMIGUNG, KEINE BEOBACHTETE TATSACHE",
+  "Every one of the {sets} possible choices of {count} from {eligible} candidate sites was compared exactly, with existing parks kept. Site eligibility is assumed for this sample, not checked.": "Alle {sets} möglichen Auswahlen von {count} aus {eligible} Kandidatenstandorten wurden exakt verglichen; bestehende Parks bleiben erhalten. Die Eignung der Standorte ist für dieses Beispiel angenommen, nicht geprüft.",
+  "Suggest a site for": "Standort vorschlagen für",
+  "Lowest average walk": "Kürzester mittlerer Fußweg",
+  "Shortest worst-served walk": "Kürzester Fußweg der am schlechtesten versorgten Zone",
+  "New sites": "Neue Standorte",
+  "Suggest site": "Standort vorschlagen"
 }

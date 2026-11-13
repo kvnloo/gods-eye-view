@@ -3985,5 +3985,17 @@
   "Homes": "Квартиры",
   "Assumed {share}% of the floor area is homes of {size} m² each": "Допущение: {share}% площади этажей — квартиры по {size} м²",
   "Shadow reach": "Длина тени",
-  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Высота ÷ tan(высота солнца {altitude}°), на ровной земле"
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Высота ÷ tan(высота солнца {altitude}°), на ровной земле",
+  "Tie on average walk between {count} choices; the one with the shorter worst-served walk is shown.": "Равенство по среднему пути пешком между {count} вариантами; показан тот, где путь для наименее обслуженной зоны короче.",
+  "Tie on worst-served walk between {count} choices; the one with the lower average walk is shown.": "Равенство по пути для наименее обслуженной зоны между {count} вариантами; показан тот, где средний путь пешком короче.",
+  "Tie on both measures between {count} choices; the first by site name is shown.": "Равенство по обоим показателям между {count} вариантами; показан первый по названию участка.",
+  "Suggested option": "Предлагаемый вариант",
+  "Unknown: no site is suggested ({reason}).": "Неизвестно: участок не предлагается ({reason}).",
+  "HYPOTHETICAL OPTION · NOT ZONING, AN APPROVAL OR AN OBSERVED FACT": "ГИПОТЕТИЧЕСКИЙ ВАРИАНТ · НЕ ЗОНИРОВАНИЕ, НЕ СОГЛАСОВАНИЕ И НЕ НАБЛЮДАЕМЫЙ ФАКТ",
+  "Every one of the {sets} possible choices of {count} from {eligible} candidate sites was compared exactly, with existing parks kept. Site eligibility is assumed for this sample, not checked.": "Точно сравнены все возможные наборы ({sets}) по {count} из {eligible} участков-кандидатов; существующие парки сохранены. Пригодность участков для этого примера принята как допущение и не проверялась.",
+  "Suggest a site for": "Предложить участок для цели",
+  "Lowest average walk": "Наименьший средний путь пешком",
+  "Shortest worst-served walk": "Кратчайший путь для наименее обслуженной зоны",
+  "New sites": "Новых участков",
+  "Suggest site": "Предложить участок"
 }

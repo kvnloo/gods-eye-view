@@ -353,6 +353,53 @@ test('walk access shows the baseline beside every alternative without changing p
   // Estimates are derived for display; the saved document holds no metric.
   assert.doesNotMatch(h.saved, /meanMeters|worst|access/);
 });
+test('a site suggestion joins the comparison as a hypothetical option and saves nothing', async () => {
+  const h = harness();
+  h.controls.open();
+  // Without a project there is no comparison to add to.
+  h.controls.suggestSite({ objective: 'average', siteCount: 1 });
+  assert.equal(h.view.city.access, null);
+  await h.controls.start({ title: 'Public block' });
+  place(h, 'Central park', { site: 'site-a' });
+  const saved = h.saved;
+  const plan = h.view.city.access.rows.filter((r) => r.id !== 'suggestion');
+  const option = (objective, siteCount) => {
+    h.controls.suggestSite({ objective, siteCount });
+    const rows = h.view.city.access.rows;
+    // The plan's own rows never change; the option is one more row after them.
+    assert.deepEqual(rows.slice(0, -1), plan);
+    return rows.at(-1);
+  };
+  let row = option('average', 1);
+  assert.deepEqual(
+    [row.id, row.state, row.site, row.mean, row.worst, row.suggested],
+    ['suggestion', 'evaluated', 'Site B', '231 m', '480 m', 'average:1'],
+  );
+  assert.match(row.hypothetical, /HYPOTHETICAL OPTION · NOT ZONING/);
+  assert.match(row.method, /4 possible choices of 1 from 4 candidate sites/);
+  assert.match(row.method, /eligibility is assumed/);
+  assert.equal(row.tie, null);
+  assert.match(row.delta, /−201 m.*−230 m/);
+  // The plan (site A) already holds the best single site for the worst-served zone.
+  row = option('worst-served', 1);
+  assert.deepEqual(
+    [row.site, row.mean, row.worst],
+    [plan[1].site, plan[1].mean, plan[1].worst],
+  );
+  row = option('worst-served', 2);
+  assert.deepEqual(
+    [row.site, row.mean, row.worst, row.suggested],
+    ['Site B + Site C', '169 m', '320 m', 'worst-served:2'],
+  );
+  assert.match(row.tie, /Tie on worst-served walk between 2 choices/);
+  assert.equal(row.parks.filter((p) => p.proposed).length, 2);
+  // A request outside the exact reference's range changes nothing.
+  h.controls.suggestSite({ objective: 'cheapest', siteCount: 1 });
+  h.controls.suggestSite({ objective: 'average', siteCount: 3 });
+  assert.equal(h.view.city.access.rows.at(-1).suggested, 'worst-served:2');
+  assert.equal(h.saved, saved, 'a suggestion is never saved');
+  assert.equal(h.calls, 0, 'a suggestion never calls a concept provider');
+});
 test('play mode: a proposed land use per plot saves through the same document', async () => {
   const { snapPlot } = await import('../data/cityPlot.js');
   let play = null;

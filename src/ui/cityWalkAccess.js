@@ -1,9 +1,10 @@
-import { t } from '../i18n/index.js';
+import { t, msg } from '../i18n/index.js';
 import {
   createPedestrianGraph,
   evaluateWalkAccess,
 } from '../data/walkAccess.js';
 import { WALK_ACCESS_FIXTURE as NETWORK } from '../data/walkAccessFixture.js';
+import { suggestWalkAccessSites } from '../data/walkAccessSites.js';
 
 // The offline fixture is the only network today; evaluations are pure, so cache.
 const graph = createPedestrianGraph(NETWORK);
@@ -24,15 +25,31 @@ const MAP = Object.freeze({
   })),
 });
 
-function evaluate(site) {
-  const key = site?.id ?? null;
+// The sample declares its candidate sites public; a real site starts unknown.
+const ELIGIBILITY = Object.fromEntries(
+  NETWORK.sites.map((site) => [site.id, 'assumed-feasible']),
+);
+const TIE = {
+  'worst-served': msg(
+    'Tie on average walk between {count} choices; the one with the shorter worst-served walk is shown.',
+  ),
+  average: msg(
+    'Tie on worst-served walk between {count} choices; the one with the lower average walk is shown.',
+  ),
+  'site-id': msg(
+    'Tie on both measures between {count} choices; the first by site name is shown.',
+  ),
+};
+
+function evaluate(sites = []) {
+  const key = sites.map((site) => site.id).join();
   if (!evaluations.has(key))
     evaluations.set(
       key,
       evaluateWalkAccess({
         graph,
         zones: NETWORK.zones,
-        parks: site ? [...NETWORK.parks, site] : NETWORK.parks,
+        parks: [...NETWORK.parks, ...sites],
       }),
     );
   return evaluations.get(key);
@@ -47,7 +64,7 @@ function signed(value) {
 }
 const siteLabel = (site) => t('Site {name}', { name: site.label });
 
-function row(id, label, result, site, baseline) {
+function row(id, label, result, sites, baseline) {
   if (result.status !== 'evaluated')
     return {
       id,
@@ -60,7 +77,9 @@ function row(id, label, result, site, baseline) {
     id,
     label,
     state: 'evaluated',
-    site: site ? siteLabel(site) : t('Existing park only'),
+    site: sites.length
+      ? sites.map(siteLabel).join(' + ')
+      : t('Existing park only'),
     mean: metres(result.meanMeters),
     meanRange: span(result.meanRange),
     worst: metres(result.worstMeters),
@@ -92,16 +111,58 @@ function row(id, label, result, site, baseline) {
     })),
     parks: [
       ...NETWORK.parks.map((park) => ({ id: park.id, ...svg(park) })),
-      ...(site ? [{ id: site.id, ...svg(site), proposed: true }] : []),
+      ...sites.map((site) => ({ id: site.id, ...svg(site), proposed: true })),
     ],
   };
 }
 
-/** Baseline and per-alternative walk access as display strings; no state. */
-export function presentCityWalkAccess(alternatives) {
-  const baseline = evaluate(null);
+/**
+ * One exact suggestion (suggestWalkAccessSites) as a comparison row. A study
+ * without a valid answer shows its reason and never a site.
+ */
+export function presentSiteSuggestion(record) {
+  const id = 'suggestion';
+  const label = t('Suggested option');
+  if (record.status !== 'suggested')
+    return {
+      id,
+      label,
+      state: 'unknown',
+      note: t('Unknown: no site is suggested ({reason}).', {
+        reason: record.reason,
+      }),
+    };
+  const sites = record.suggestion.siteIds.map((siteId) =>
+    NETWORK.sites.find((site) => site.id === siteId),
+  );
+  return {
+    ...row(id, label, evaluate(sites), sites, evaluate()),
+    suggested: `${record.objective}:${record.siteCount}`,
+    hypothetical: t(
+      'HYPOTHETICAL OPTION · NOT ZONING, AN APPROVAL OR AN OBSERVED FACT',
+    ),
+    method: t(
+      'Every one of the {sets} possible choices of {count} from {eligible} candidate sites was compared exactly, with existing parks kept. Site eligibility is assumed for this sample, not checked.',
+      {
+        sets: record.ranking.length,
+        count: record.siteCount,
+        eligible: NETWORK.sites.length - record.excludedSites.length,
+      },
+    ),
+    tie:
+      record.tie &&
+      t(TIE[record.tie.brokenBy], { count: record.tie.siteSets.length }),
+  };
+}
+
+/**
+ * Baseline and per-alternative walk access as display strings; no state.
+ * `suggest` ({ objective, siteCount }) adds one suggested option as a last row.
+ */
+export function presentCityWalkAccess(alternatives, suggest = null) {
+  const baseline = evaluate();
   const rows = [
-    row('baseline', t('Reference-only baseline'), baseline, null, null),
+    row('baseline', t('Reference-only baseline'), baseline, [], null),
   ];
   for (const { id, title, parameters } of alternatives) {
     const siteId = parameters.site ?? null;
@@ -125,8 +186,18 @@ export function presentCityWalkAccess(alternatives) {
             ? t('Unknown: choose a site to estimate walk access.')
             : t('Unknown: this site is not on the current network.'),
       });
-    else rows.push(row(id, title, evaluate(site), site, baseline));
+    else rows.push(row(id, title, evaluate([site]), [site], baseline));
   }
+  if (suggest)
+    rows.push(
+      presentSiteSuggestion(
+        suggestWalkAccessSites({
+          network: NETWORK,
+          eligibility: ELIGIBILITY,
+          ...suggest,
+        }),
+      ),
+    );
   return {
     title: t('Walking access to the nearest park'),
     label: t('HYPOTHETICAL ESTIMATE · NOT A BENEFIT CLAIM'),

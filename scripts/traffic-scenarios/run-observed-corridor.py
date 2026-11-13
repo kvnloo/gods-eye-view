@@ -147,6 +147,9 @@ def demand_inputs(fixture, derived, settings, window):
     elif settings['mainline'] == 'caltrans':
         peak, split = (parameters[name]['value'] for name in ('caltransPeakHourTwoWay', 'directionalSplit'))
         entries['m0e'], entries['m3w'] = steady(peak['m0e'] * split), steady(peak['m3w'] * split)
+    else:   # the volumes that left the boundary intersections into the section
+        entries['m0e'] = counted(departures_from(derived, places[0], 'E', window))
+        entries['m3w'] = counted(departures_from(derived, places[4], 'W', window))
     for i in (1, 2, 3):
         if settings['cross'] == 'stack':
             entries[f'N{i}in'] = entries[f'S{i}in'] = steady(rates['cross'])
@@ -256,7 +259,7 @@ def main(argv=None):
               'countHours': len(scored), 'seeds': []}
     detail = []
     for seed in fixture['scoring']['seeds']:
-        simulated, vehicles = {}, 0
+        simulated, vehicles, unserved = {}, 0, 0
         for window in fixture['source']['windows']:
             prefix = out / f"{window['id']}-{seed}"
             demand = Path(f'{prefix}.rou.xml')
@@ -279,6 +282,7 @@ def main(argv=None):
                                '--time-to-teleport', '-1', '--no-step-log', 'true',
                                '--duration-log.statistics', 'true',
                                '--statistic-output', statistics], f'{prefix}.log')
+            unserved += int(ET.parse(statistics).getroot().find('vehicles').get('waiting'))
             safety = ET.parse(statistics).getroot().find('safety')
             if safety is None or safety.get('collisions') != '0' or safety.get('emergencyStops') != '0':
                 raise ValueError('simulation safety fault or missing safety evidence; score withheld')
@@ -287,6 +291,7 @@ def main(argv=None):
         bands = {name: sum(band(row) == name for row in result['rows'])
                  for name in ('under5', 'from5to10', 'atLeast10', 'absent')}
         report['seeds'].append({'seed': seed, 'vehiclesAuthored': vehicles,
+                                'vehiclesNotInsertedAtEnd': unserved,   # demand the model could not serve
                                 'passed': result['passed'], 'share': round(result['share'], 4),
                                 'gehBands': bands})
         detail.append({'seed': seed, 'rows': result['rows']})

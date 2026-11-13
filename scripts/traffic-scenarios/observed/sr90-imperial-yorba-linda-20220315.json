@@ -60,6 +60,7 @@
   "steps": [
     {"id": "S0", "change": "none: the stack's network, demand rates and fixed-time plan as they are, with the demand process sustained over the count windows", "set": {}},
     {"id": "S1", "change": "network: the synthetic 300 m single-lane geometry is replaced by the sourced spacing and stop-line lane groups of the five counted intersections", "set": {"network": "sourced"}, "source": "parameters.spacingMetres (OpenStreetMap) and parameters.laneGroups (the cited study, Appendix 4.2)"},
-    {"id": "S2", "change": "mainline entry demand: the stack's 600 and 300 veh/h give way to half of the Caltrans 2022 two-way peak-hour volume at each end", "set": {"mainline": "caltrans"}, "source": "parameters.caltransPeakHourTwoWay (independent of the scored counts)"}
+    {"id": "S2", "change": "mainline entry demand: the stack's 600 and 300 veh/h give way to half of the Caltrans 2022 two-way peak-hour volume at each end", "set": {"mainline": "caltrans"}, "source": "parameters.caltransPeakHourTwoWay (independent of the scored counts)"},
+    {"id": "S3", "change": "mainline entry demand: the Caltrans estimate gives way to the 15-minute volumes that left the two boundary intersections into the section on the count day", "set": {"mainline": "counts"}, "source": "the cited study, sheets 01_PLA_Rose_Imp and 05_YLA_Imp_Yorba; only movements of never-scored approaches and of cross streets at the two boundary intersections"}
   ]
 }

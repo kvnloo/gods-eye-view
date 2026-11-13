@@ -229,6 +229,17 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(entries['N2in'], ([30.0] * 9, False))
         self.assertEqual(shares(2, 'E', 5), (0, 1, 0))
 
+    def test_boundary_step_feeds_the_volumes_that_left_the_boundary_intersections(self):
+        settings, _ = runner.settings_for(FIXTURE, 'S3')
+        self.assertEqual(settings['mainline'], 'counts')
+        entries, _ = runner.demand_inputs(FIXTURE, derived(), settings, 'PM')
+        # invented sheet: approach k (S, W, N, E order), interval n -> [left k+1, thru 10n+k, right 2 + rtor 1]
+        # Rose (compass = model): heading E takes Eastbound thru (10n+3) + Southbound left (1) + Northbound right (3)
+        self.assertEqual(entries['m0e'], ([7] + [10 * n + 7 for n in range(8)], True))
+        # Yorba Linda (model W is Northbound): Northbound thru (10n+2) + Eastbound left (4) + Westbound right (3)
+        self.assertEqual(entries['m3w'], ([9] + [10 * n + 9 for n in range(8)], True))
+        self.assertEqual(entries['S1in'], ([30.0] * 9, False))
+
     def test_step_settings_accumulate_and_unknown_step_fails(self):
         settings, change = runner.settings_for(FIXTURE, 'S0')
         self.assertEqual(settings, FIXTURE['defaults'])

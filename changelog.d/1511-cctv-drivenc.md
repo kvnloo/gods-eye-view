@@ -7,3 +7,7 @@
   camera code's N/S/E/W letter seeds a low-confidence heading. An optional
   `DRIVENC_API_KEY` reads the keyed TravelIQ catalog in one request instead.
   `CCTV_DRIVENC_MAX_SOURCES` sets the cap (martinthiele, #1511).
+
+- Keep DriveNC API keys out of keyed-fetch exception logs even when a network
+  error includes the request URL, while retaining keyless fallback
+  (martinthiele, #1511).

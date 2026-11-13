@@ -2903,10 +2903,10 @@ async function loadDriveNcSourcesFromApi(key, maxCount) {
       `[CCTV] Loaded DriveNC camera sources: ${cameras.length} from the keyed API (using nearest ${prioritized.length})`,
     );
     return prioritized;
-  } catch (error) {
+  } catch {
+    // Fetch errors can include the keyed request URL; never log exception text.
     console.warn(
-      '[CCTV] DriveNC camera API download error (using the keyless catalog):',
-      error?.message || error,
+      '[CCTV] DriveNC camera API download error (using the keyless catalog)',
     );
     return null;
   }

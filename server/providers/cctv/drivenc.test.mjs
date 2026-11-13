@@ -530,6 +530,26 @@ test('a keyed API outage is reported without blaming the key, and the keyless ca
   assert.doesNotMatch(lines.join('\n'), /secret-key-value/);
 });
 
+test('a keyed network error cannot leak an API key embedded in its URL', async (t) => {
+  const lines = captureConsole(t);
+  const requested = routeFetch(t, {
+    api: (url) => {
+      throw new TypeError(`fetch failed for ${url}`);
+    },
+  });
+  const cameras = await loadDriveNcSourcesFromOpenData(
+    {},
+    { DRIVENC_API_KEY: 'secret-key-value', CCTV_DRIVENC_MAX_SOURCES: '8' },
+  );
+  assert.equal(cameras.length, 8, 'keyless catalog remains available');
+  assert.equal(requested[1], DRIVENC_MAP_ICONS_URL);
+  assert.match(
+    lines.join('\n'),
+    /API download error \(using the keyless catalog\)/,
+  );
+  assert.doesNotMatch(lines.join('\n'), /secret-key-value/);
+});
+
 test('the CCTV catalog merges DriveNC cameras only with CCTV_DRIVENC_ENABLED=1', async (t) => {
   captureConsole(t);
   const sourceRoot = fs.mkdtempSync(

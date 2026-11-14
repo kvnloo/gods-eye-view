@@ -17,6 +17,7 @@ import { normalizeSourceItem } from '../../server/providers/cctv/normalize.js';
 import { loadVancouverSourcesFromCatalog } from '../../server/providers/cctv/sources.js';
 import { shouldWriteCatalog } from '../../scripts/build-vancouver-cctv.mjs';
 import { allocateSourceCap } from '../../server/providers/cctv/cap.js';
+import { createCctvCatalog } from '../../server/providers/cctv/catalog.js';
 import {
   DEFAULT_VANCOUVER_MAX_SOURCES,
   CCTV_MAX_SOURCES_CEILING,
@@ -408,5 +409,72 @@ test('the Vancouver LIVE_PACKS entry is opt-in, on only via CCTV_VANCOUVER_ENABL
   } finally {
     if (saved === undefined) delete process.env.CCTV_VANCOUVER_ENABLED;
     else process.env.CCTV_VANCOUVER_ENABLED = saved;
+  }
+});
+
+test('the real CCTV catalog gates Vancouver independently of peer sources', async (t) => {
+  // The envOptIn predicate alone does not prove the LIVE_PACKS registration
+  // actually uses it. Exercise createCctvCatalog with a local peer and offline
+  // upstreams so the opt-in and failure-isolation contract is observable.
+  const saved = { ...process.env };
+  t.mock.method(console, 'log', () => {});
+  t.mock.method(console, 'warn', () => {});
+  t.mock.method(globalThis, 'fetch', async () => {
+    throw new Error('offline fixture');
+  });
+  try {
+    process.env.CCTV_FORCE_AUSTIN = '1';
+    process.env.CCTV_SOURCES_FILE = '/nonexistent/gev-cctv.json';
+    process.env.CCTV_SOURCES_JSON = JSON.stringify([
+      {
+        id: 'peer-fixture',
+        name: 'Other camera pack',
+        lat: 49.27,
+        lon: -123.12,
+        url: 'https://example.test/peer.jpg',
+      },
+    ]);
+    process.env.CCTV_VANCOUVER_SOURCES_FILE = PACK;
+    process.env.CCTV_VANCOUVER_MAX_SOURCES = '8';
+    process.env.CCTV_MAX_SOURCES = '1000';
+
+    for (const [flag, expectedVancouver] of [
+      [null, 0],
+      ['0', 0],
+      ['1', 8],
+    ]) {
+      if (flag === null) delete process.env.CCTV_VANCOUVER_ENABLED;
+      else process.env.CCTV_VANCOUVER_ENABLED = flag;
+      const sources = await createCctvCatalog({ sourceRoot: REPO_ROOT })();
+      assert.equal(
+        sources.filter((source) => source.pack === 'vancouver').length,
+        expectedVancouver,
+        `Vancouver served with enable flag ${String(flag)}`,
+      );
+      assert.equal(
+        sources.find((source) => source.id === 'peer-fixture')?.pack,
+        'env',
+        'another source remains available regardless of the Vancouver flag',
+      );
+    }
+
+    process.env.CCTV_VANCOUVER_SOURCES_FILE =
+      '/nonexistent/gev-vancouver-missing.json';
+    const sources = await createCctvCatalog({ sourceRoot: REPO_ROOT })();
+    assert.equal(
+      sources.filter((source) => source.pack === 'vancouver').length,
+      0,
+      'a broken Vancouver file fails closed in the real catalog',
+    );
+    assert.equal(
+      sources.find((source) => source.id === 'peer-fixture')?.pack,
+      'env',
+      'a broken Vancouver file cannot blank peer cameras',
+    );
+  } finally {
+    for (const key of Object.keys(process.env)) {
+      if (!(key in saved)) delete process.env[key];
+    }
+    Object.assign(process.env, saved);
   }
 });

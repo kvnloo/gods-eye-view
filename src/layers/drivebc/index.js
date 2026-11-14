@@ -9,6 +9,8 @@ import { createDriveBcEventPopup } from './popup.js';
 import { DRIVEBC_SEVERITY_STYLES, driveBcSeverityStyle } from './severity.js';
 
 const MAX_RENDER_LINE_POINTS = 200;
+const MAX_RENDER_ENTITIES_PER_EVENT = 16;
+const MAX_RENDER_ENTITIES_PER_SNAPSHOT = 500;
 const LAYER_ID = 'drivebc-road-conditions';
 const ownsDriveBcPick = (id) =>
   typeof id === 'string' && id.startsWith('drivebc:');
@@ -70,8 +72,9 @@ export function decimateDriveBcLine(
   return result;
 }
 
-function eventEntities(event) {
-  if (!event || typeof event.id !== 'string' || !event.geometry) return [];
+function eventEntities(event, maxEntities) {
+  if (!event || typeof event.id !== 'string' || !event.geometry)
+    return { entities: [], truncated: false };
   const color = severityColor(event.severity);
   const properties = {
     drivebcId: event.id,
@@ -88,22 +91,27 @@ function eventEntities(event) {
   };
   if (event.geometry.type === 'Point') {
     const [lon, lat] = event.geometry.coordinates || [];
-    if (!Number.isFinite(lon) || !Number.isFinite(lat)) return [];
-    return [
-      new Cesium.Entity({
-        ...common,
-        id: `drivebc:${event.id}:point`,
-        position: Cesium.Cartesian3.fromDegrees(lon, lat),
-        point: {
-          pixelSize: 11,
-          color,
-          outlineColor: Cesium.Color.WHITE,
-          outlineWidth: 2,
-          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-          disableDepthTestDistance: Number.POSITIVE_INFINITY,
-        },
-      }),
-    ];
+    if (!Number.isFinite(lon) || !Number.isFinite(lat))
+      return { entities: [], truncated: false };
+    if (maxEntities < 1) return { entities: [], truncated: true };
+    return {
+      entities: [
+        new Cesium.Entity({
+          ...common,
+          id: `drivebc:${event.id}:point`,
+          position: Cesium.Cartesian3.fromDegrees(lon, lat),
+          point: {
+            pixelSize: 11,
+            color,
+            outlineColor: Cesium.Color.WHITE,
+            outlineWidth: 2,
+            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          },
+        }),
+      ],
+      truncated: false,
+    };
   }
   const lines =
     event.geometry.type === 'LineString'
@@ -115,6 +123,7 @@ function eventEntities(event) {
   for (const [index, rawLine] of lines.entries()) {
     const line = decimateDriveBcLine(rawLine);
     if (line.length < 2) continue;
+    if (entities.length >= maxEntities) return { entities, truncated: true };
     const positions = Cesium.Cartesian3.fromDegreesArray(line.flat());
     entities.push(
       new Cesium.Entity({
@@ -129,7 +138,7 @@ function eventEntities(event) {
       }),
     );
   }
-  return entities;
+  return { entities, truncated: false };
 }
 
 /** Own the DriveBC road-event overlay and its bounded refresh lifecycle. */
@@ -251,7 +260,21 @@ export function createDriveBcLayer({
           return false;
         if (!Array.isArray(snapshot?.events))
           throw new Error('Malformed DriveBC snapshot');
-        const entities = snapshot.events.flatMap(eventEntities);
+        const entities = [];
+        let renderTruncated = false;
+        for (const [index, event] of snapshot.events.entries()) {
+          // Leave room for one renderable entity from each later event.
+          const remainingEvents = snapshot.events.length - index - 1;
+          const available =
+            MAX_RENDER_ENTITIES_PER_SNAPSHOT - entities.length - remainingEvents;
+          const budget = Math.min(
+            MAX_RENDER_ENTITIES_PER_EVENT,
+            Math.max(0, available),
+          );
+          const rendered = eventEntities(event, budget);
+          entities.push(...rendered.entities);
+          if (rendered.truncated) renderTruncated = true;
+        }
         if (current.signal.aborted || request !== current || !enabled)
           return false;
         dataSource.entities.removeAll();
@@ -262,7 +285,7 @@ export function createDriveBcLayer({
           ? snapshot.fetchedAt
           : Date.now();
         stale = snapshot.stale === true;
-        partial = snapshot.partial === true;
+        partial = snapshot.partial === true || renderTruncated;
         lastError = stale
           ? msg('Showing a recent cached DriveBC snapshot')
           : null;

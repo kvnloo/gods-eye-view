@@ -38,6 +38,20 @@ const makeSnapshot = () => ({
   ],
 });
 
+function multiPartEvent(id, parts) {
+  return {
+    ...makeSnapshot().events[1],
+    id,
+    geometry: {
+      type: 'MultiLineString',
+      coordinates: Array.from({ length: parts }, (_, index) => [
+        [-123 + index * 0.00001, 49.1],
+        [-123 + index * 0.00001, 49.1001],
+      ]),
+    },
+  };
+}
+
 function viewerFixture() {
   const dataSources = [];
   return {
@@ -143,6 +157,62 @@ test('DriveBC layer renders road-event points and bounded line geometry only whi
   assert.equal(f.dataSources[0].show, false);
   layer.destroy(f.viewer);
   assert.equal(f.dataSources.length, 0);
+});
+
+test('DriveBC caps per-event line parts', async () => {
+  const layer = createDriveBcLayer({
+    source: {
+      getSnapshot: async () => ({
+        events: [multiPartEvent('drivebc.ca/many-parts', 120)],
+        partial: false,
+        stale: false,
+      }),
+    },
+  });
+  const f = viewerFixture();
+  layer.init(f.viewer);
+  layer.enable();
+  assert.equal(await layer.update(), true);
+  const entities = f.dataSources[0].entities.values;
+  assert.equal(
+    entities.length,
+    16,
+    'more than 16 two-point lines must be omitted',
+  );
+  assert.equal(new Set(entities.map(({ id }) => id)).size, 16);
+  assert.equal(layer.getStats().count, 1);
+  assert.equal(layer.getStats().partial, true);
+  layer.destroy(f.viewer);
+});
+
+test('DriveBC caps snapshot entities without losing later events', async () => {
+  const events = Array.from({ length: 500 }, (_, index) =>
+    multiPartEvent(`drivebc.ca/event-${index}`, 4),
+  );
+  const layer = createDriveBcLayer({
+    source: {
+      getSnapshot: async () => ({ events, partial: false, stale: false }),
+    },
+  });
+  const f = viewerFixture();
+  layer.init(f.viewer);
+  layer.enable();
+  assert.equal(await layer.update(), true);
+  const entities = f.dataSources[0].entities.values;
+  assert.equal(
+    entities.length,
+    500,
+    'bounded snapshot renders at most 500 entities',
+  );
+  assert.ok(
+    entities.some(({ id }) => id === 'drivebc:drivebc.ca/event-0:line:0'),
+  );
+  assert.ok(
+    entities.some(({ id }) => id === 'drivebc:drivebc.ca/event-499:line:0'),
+  );
+  assert.equal(layer.getStats().count, 500);
+  assert.equal(layer.getStats().partial, true);
+  layer.destroy(f.viewer);
 });
 
 test('DriveBC layer exposes stale and partial source state in its row stats', async () => {

@@ -1,0 +1,1 @@
+- Bound DriveBC road-segment rendering to 16 Cesium entities per event and 500 per snapshot, preserving later events and marking truncated geometry partial (NotProniss, kvnloo, #1079).

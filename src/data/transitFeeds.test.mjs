@@ -111,25 +111,11 @@ test('feeds in range are nearest-first and honor slack as hysteresis', () => {
 });
 
 test('transitFeedsInRange rejects out-of-range coordinates without querying', () => {
-  assert.deepEqual(
-    transitFeedsInRange(91, 0),
-    [],
-  );
+  assert.deepEqual(transitFeedsInRange(91, 0), []);
+  assert.deepEqual(transitFeedsInRange(0, 181), []);
+  assert.deepEqual(transitFeedsInRange(-91, 0), []);
+  assert.deepEqual(transitFeedsInRange(0, -181), []);
 
-  assert.deepEqual(
-    transitFeedsInRange(0, 181),
-    [],
-  );
-
-  assert.deepEqual(
-    transitFeedsInRange(-91, 0),
-    [],
-  );
-
-  assert.deepEqual(
-    transitFeedsInRange(0, -181),
-    [],
-  );
 });
 
 test('route hints refine a feed default and never escape the known modes', () => {
@@ -504,13 +490,12 @@ test('Burlington is live and carries its terms link, which its licence requires'
   assert.match(bur.licenseUrl, /Open%20Data%20Terms%20of%20Use\.pdf$/);
   assert.match(bur.url, /^https:\/\//, 'port 80 has no listener at all');
 });
-  // Canonical geographic coordinates are not implicitly longitude-wrapped.
+test('transitFeedsInRange does not implicitly wrap longitude', () => {
   assert.deepEqual(transitFeedsInRange(42.3601, 248.89), []);
+});
+
 test('transitFeedsInRange preserves non-finite slack behavior', () => {
-  assert.deepEqual(
-    transitFeedsInRange(42.37, -71.11, NaN),
-    [],
-  );
+  assert.deepEqual(transitFeedsInRange(42.37, -71.11, NaN), []);
 
   const allFeeds = transitFeedsInRange(42.37, -71.11, Infinity);
 

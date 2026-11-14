@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { greatCircleMeters } from './geoDistance.js';
+import { EARTH_RADIUS_KM, greatCircleMeters } from './geoDistance.js';
 import { nearest, queryRadius } from './spatialQuery.js';
 
 const ORIGIN = { lat: 0, lon: 0 };
@@ -24,22 +24,25 @@ test('greatCircleMeters handles antipodal points', () => {
   );
 
   assert.ok(
-    Math.abs(distanceM - Math.PI * 6_371_000) < 1,
+    Math.abs(distanceM - Math.PI * EARTH_RADIUS_KM * 1000) < 1,
     `antipodal distance ≈ πR, got ${distanceM}`,
   );
 });
 
-test('greatCircleMeters accepts lon and lng coordinate spellings', () => {
-  const lonDistance = greatCircleMeters(
-    { lat: 0, lon: 0 },
-    { lat: 1, lon: 0 },
-  );
-  const lngDistance = greatCircleMeters(
-    { lat: 0, lon: 0 },
-    { lat: 1, lng: 0 },
+test('queryRadius accepts lon and lng spellings for the query and entities', () => {
+  const entities = [
+    { id: 'lon', position: { lat: 1, lon: 0 } },
+    { id: 'lng', position: { lat: 1, lng: 0 } },
+  ];
+  const result = queryRadius(
+    entities,
+    { lat: 0, lng: 0 },
+    120_000,
+    (entity) => entity.position,
   );
 
-  assert.equal(lngDistance, lonDistance);
+  assert.deepEqual(result.map(({ entity }) => entity.id), ['lon', 'lng']);
+  assert.equal(result[0].distanceM, result[1].distanceM);
 });
 
 test('queryRadius honors a zero-radius exact match', () => {

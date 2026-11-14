@@ -1,5 +1,4 @@
 import { greatCircleKm } from '../geoDistance.js';
-import { greatCircleKm } from '../geoDistance.js';
 import { queryRadius } from '../spatialQuery.js';
 
 /**
@@ -785,11 +784,9 @@ export function getRegisteredTransitFeed(id) {
  * @returns {number}
  */
 export function haversineKm(aLat, aLon, bLat, bLon) {
-  return greatCircleKm(
-    { lat: aLat, lon: aLon },
-    { lat: bLat, lon: bLon },
-  );
+  return greatCircleKm({ lat: aLat, lon: aLon }, { lat: bLat, lon: bLon });
 }
+
 /**
  * Feeds whose coverage circle contains the point, nearest first.
  * @param {number} lat

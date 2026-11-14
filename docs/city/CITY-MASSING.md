@@ -30,7 +30,10 @@ docks. Turn it on and the plot gets:
   than the shadows already in aerial imagery), so it reads as a shadow on the
   ground. Cesium's default sun shadow map (4 cascades of 2048 x 2048 texels)
   resolves it: the journey measures the 45 m band of a 19 m block at a 23°
-  sun. All of it is restored when the block hides.
+  sun. Those texels are spread over everything out to the map's maximum
+  distance (5 km), which from 800 m left the shadow striped on 3D tiles, so
+  while a block shows the map ends 1.6 times the eye's distance to it (never
+  nearer than 300 m). All of it is restored when the block hides.
 
 While a block stands, play mode's selection prism (the translucent box drawn
 while a plot is being chosen) steps aside, as it does for a concept; the plot

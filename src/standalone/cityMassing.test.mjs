@@ -675,3 +675,20 @@ test('on 3D tiles a blank wall closes the cut where a neighbour stands at the pl
   assert.equal(ds.entities.getById('city-massing-sides'), undefined);
   owner.destroy();
 });
+
+test('while a block shows the shadow map ends a little beyond it, and is restored', async () => {
+  const { viewer, select, render, owner } = mount();
+  viewer.scene.shadowMap.maximumDistance = 5000;
+  await select({ plot: { id: plot.id } });
+  render();
+  // The eye is about 880 m from the plot: 1.6 times that, not 5 km of texels.
+  const eye = Cesium.Cartesian3.distance(
+    viewer.camera.positionWC,
+    Cesium.Cartesian3.fromDegrees(plot.center.lon, plot.center.lat, -8.25),
+  );
+  within(viewer.scene.shadowMap.maximumDistance, 1.6 * eye, 1e-6, 'fitted');
+  assert.ok(viewer.scene.shadowMap.maximumDistance < 2000);
+  await select(null);
+  assert.equal(viewer.scene.shadowMap.maximumDistance, 5000, 'restored');
+  owner.destroy();
+});

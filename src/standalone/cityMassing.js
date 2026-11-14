@@ -46,6 +46,12 @@ const REGROUND_METERS = 0.5;
 // How dark the block's shadow lies on the map while it shows (Cesium's own
 // 0.3 is harsher than the shadows already in aerial imagery).
 const SHADOW_DARKNESS = 0.4;
+// The sun's shadow map spreads its texels over everything out to its
+// maximum distance (Cesium: 5 km): seen from 800 m the block's shadow got
+// texels metres wide and lay striped on the mesh. While a block shows, the
+// map ends this many times the eye's distance to it, never nearer than this.
+const SHADOW_BEYOND = 1.6;
+const SHADOW_MIN_METERS = 300;
 // Screen points this far outside the canvas no longer anchor the readout.
 const PAD = 40;
 const PLATE = Cesium.Color.fromCssColorString('#8c8a84');
@@ -322,6 +328,7 @@ export function mountCityMassing({
     if (scene.shadowMap) {
       scene.shadowMap.softShadows = site.softShadows;
       scene.shadowMap.darkness = site.darkness;
+      scene.shadowMap.maximumDistance = site.maximumDistance;
     }
     site = null;
     rendered();
@@ -338,6 +345,7 @@ export function mountCityMassing({
     const globeShadows = scene.globe?.shadows;
     const softShadows = scene.shadowMap?.softShadows;
     const darkness = scene.shadowMap?.darkness;
+    const maximumDistance = scene.shadowMap?.maximumDistance;
     // A cast shadow needs the sun above the horizon. The globe receives it,
     // with soft (filtered) edges and no darker than a shadow in the imagery,
     // so the band reads as a shadow on the ground.
@@ -357,6 +365,7 @@ export function mountCityMassing({
       globeShadows,
       softShadows,
       darkness,
+      maximumDistance,
       // The surface this block was cut into and stood on, checked each frame.
       tilesets: shownTilesets(),
       globe: Boolean(scene.globe?.show),
@@ -573,6 +582,22 @@ export function mountCityMassing({
     mark();
     const shadows = site.shadowsBefore || site.sun?.elevationDeg > 0;
     if (viewer.shadows !== shadows) viewer.shadows = shadows;
+    if (scene.shadowMap)
+      scene.shadowMap.maximumDistance = Math.min(
+        site.maximumDistance ?? Infinity,
+        Math.max(
+          SHADOW_MIN_METERS,
+          SHADOW_BEYOND *
+            Cesium.Cartesian3.distance(
+              viewer.camera.positionWC,
+              Cesium.Cartesian3.fromDegrees(
+                site.plot.center.lon,
+                site.plot.center.lat,
+                site.base,
+              ),
+            ),
+        ),
+      );
     const { base, massing } = site;
     const top = base + massing.heightMeters;
     const tip = shadowTip(massing.footprint, massing.heightMeters, site.sun);

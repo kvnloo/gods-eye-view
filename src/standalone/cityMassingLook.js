@@ -29,7 +29,7 @@ float gevRect(vec2 q, vec2 lo, vec2 hi, float aa) {
 float gevHash(vec2 cell) {
   return fract(sin(dot(cell, vec2(127.1, 311.7))) * 43758.5453);
 }
-// Soft blotches a metre or so across: weather on a surface.
+// Soft blotches, one to a cell: weather on a surface.
 float gevWeather(vec2 x) {
   vec2 cell = floor(x);
   vec2 f = fract(x);
@@ -85,7 +85,7 @@ czm_material czm_getMaterial(czm_materialInput materialInput) {
     vec2 joint = (0.5 - abs(fract(p.xy / 2.0) - 0.5)) * 2.0;
     color = ${rgb(colors.paving)} * (0.93 + 0.07 *
       smoothstep(0.0, 0.05 + fwidth(p.x) + fwidth(p.y), min(joint.x, joint.y)));
-    color *= 0.94 + 0.12 * gevWeather(p.xy / 1.7);
+    color *= 0.96 + 0.08 * gevWeather(p.xy / 5.0);
     color *= 1.0 - 0.45 * exp(min(within, 0.0) / 0.8);
   } else if (n.z > 0.5) {
     // The roof: a weathered membrane laid in sheets behind the parapet,
@@ -93,7 +93,7 @@ czm_material czm_getMaterial(czm_materialInput materialInput) {
     float pixel = fwidth(within);
     float lap = (0.5 - abs(fract(p.x / 2.0) - 0.5)) * 2.0;
     color = ${rgb(colors.roof)} * (0.97 + 0.03 * smoothstep(0.0, 0.06 + pixel, lap));
-    color *= 0.9 + 0.16 * gevWeather(p.xy / 3.5) + 0.04 * gevWeather(p.xy / 0.9);
+    color *= 0.95 + 0.1 * gevWeather(p.xy / 6.0);
     vec4 over = max(vec4(dot(gevWall0.xy, sun.xy), dot(gevWall1.xy, sun.xy),
       dot(gevWall2.xy, sun.xy), dot(gevWall3.xy, sun.xy)), 0.0) * parapet / max(sun.z, 0.05);
     vec4 lit = inside - 0.4 - over;

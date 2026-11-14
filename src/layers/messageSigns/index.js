@@ -303,8 +303,12 @@ export function createMessageSignsLayer({
   function refreshFaces() {
     if (!_enabled || typeof source.getFaceImage !== 'function') return;
     const located = _signs.filter((sign) => floorOf(sign) !== null);
-    const wanted = new Set(selectFaceIds(located, cameraView()));
-    if (_selectedId && _byId.has(_selectedId)) wanted.add(_selectedId);
+    const view = cameraView();
+    const wanted = new Set(selectFaceIds(located, view));
+    // Selection may exceed the nearest-40 budget, not the geographic/height gate.
+    const selected = located.find(({ id }) => id === _selectedId);
+    if (selected && selectFaceIds([selected], view).length)
+      wanted.add(_selectedId);
     for (const id of [..._faces.keys()])
       if (!wanted.has(id) || !_byId.has(id)) releaseFace(id);
     for (const id of wanted) {

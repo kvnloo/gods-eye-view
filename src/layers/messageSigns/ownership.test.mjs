@@ -435,6 +435,49 @@ test('every lit sign gets a marker; only the nearest get faces', async () => {
   h.layer.destroy();
 });
 
+test('selected sign keeps its card but no face outside the face bounds', async () => {
+  const h = harness({
+    snapshot: {
+      signs: [sign('V1', 'msg_00000001')],
+      ageMs: 0,
+      stale: false,
+    },
+    frames: { msg_00000001: 2 },
+  });
+  await h.layer.update(h.viewer);
+  await settle();
+  assert.equal(h.faces().length, 1);
+  h.faces()[0].activate();
+  assert.equal(h.cards().length, 1);
+  assert.ok(h.pendingTimers.size > 0);
+
+  // Above 5 km, the selected face must release its decoder and flip timer.
+  h.viewer.camera.positionCartographic = Cesium.Cartographic.fromDegrees(
+    -93.2,
+    44.95,
+    5_001,
+  );
+  for (const fn of h.moveEnd) fn();
+  await settle();
+  assert.equal(h.faces().length, 0);
+  assert.equal(h.cards().length, 1);
+  assert.equal(h.pendingTimers.size, 0);
+
+  // Below 5 km but beyond the 40 km radius, selection cannot refetch it.
+  const calls = h.requests.faces.length;
+  h.viewer.camera.positionCartographic = Cesium.Cartographic.fromDegrees(
+    -91.9,
+    44.95,
+    1500,
+  );
+  for (const fn of h.moveEnd) fn();
+  await settle();
+  assert.equal(h.faces().length, 0);
+  assert.equal(h.requests.faces.length, calls);
+  assert.equal(h.cards().length, 1);
+  h.layer.destroy();
+});
+
 test('signs on cold ground floors appear once a floor resolve warms them', async () => {
   const snapshot = {
     signs: [sign('V1', 'msg_00000001')],

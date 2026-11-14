@@ -146,7 +146,10 @@ export function createTidesLayer({
   }
 
   async function load() {
-    if (!enabled || !station) return false;
+    if (!enabled) return false;
+    // No station in range is a valid idle state. The camera listener stays
+    // installed so moving into coverage can start predictions later.
+    if (!station) return true;
     const span = predictions?.stationId === station.id ? tideSpan(predictions.turns) : null;
     if (
       span &&

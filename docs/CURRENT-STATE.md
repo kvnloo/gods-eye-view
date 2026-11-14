@@ -1,5 +1,13 @@
 # God's Eye View Current State
 
+## Coastal Tides — proposed layer
+
+When enabled outside the bundled NOAA stations' coverage, Coastal Tides stays
+on in an idle state and prompts the user to navigate to a supported station.
+Moving into coverage can then initiate predictions without toggling the layer
+off and on. Disabling Tides hides its card and releases its camera/render
+subscriptions. Predictions remain astronomical only and are not for navigation.
+
 ## God's Eye View in conversations — October 2, 2026
 
 Tool answers that can be shown in God's Eye View include a view: camera, layers,

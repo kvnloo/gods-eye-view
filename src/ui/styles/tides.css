@@ -19,6 +19,9 @@
   font-family: var(--font-sans);
   font-size: 12px;
 }
+.tides-card[hidden] {
+  display: none;
+}
 .tides-card__head {
   display: flex;
   justify-content: space-between;

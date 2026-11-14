@@ -369,6 +369,7 @@
   "src/layers/tides/panel.js",
   "src/layers/tides/source.js",
   "src/layers/tides/model.test.mjs",
+  "src/layers/tides/index.test.mjs",
   "src/layers/tides/source.test.mjs",
   "src/data/firmsHeatmap.js",
   "src/data/fireAnchors.js",

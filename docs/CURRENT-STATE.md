@@ -449,8 +449,10 @@ than of weather. Pressure is sea-level QFF only, never station level or the
 standard-atmosphere reduction. An absent reading stays absent: 0 cm, 0 mm and
 0 °C are all real readings, and a station without a sensor is not a station
 reading zero. Feed staleness (the provider served a cached payload) and the
-count of individually late stations are reported separately. Snow depth is a
-measurement; avalanche danger bulletins are a separate product this layer does
+count of individually late stations are reported separately. Readings dated
+more than five minutes into the future are not presented as current; silent
+stations remain silent even if their most recent report has an old timestamp.
+Snow depth is a measurement; avalanche danger bulletins are a separate product this layer does
 not reproduce. The layer holds no share-link token yet, so it is registered and
 drawable but does not travel in a share link.
 

@@ -201,6 +201,42 @@ test('staleness follows the reporting network, not one global window', () => {
   assert.equal(isStale(age(60_000, SMN_NETWORK_ID), NOW), false);
 });
 
+test('future-dated readings cannot be shown as current', () => {
+  const future = alpineStationRecord(
+    raw({ measuredAt: new Date(NOW + 12 * 60_000).toISOString() }),
+  );
+  assert.equal(isReporting(future), true);
+  assert.equal(isStale(future, NOW), true);
+  const summary = summarizeStations([future], {
+    parameterId: 'snow',
+    now: NOW,
+  });
+  assert.equal(summary.staleStations, 1);
+  assert.equal(summary.measuring, 0);
+  assert.equal(summary.min, null);
+
+  // Small differences between the network clock and the viewer are tolerated.
+  const slightSkew = alpineStationRecord(
+    raw({ measuredAt: new Date(NOW + 2 * 60_000).toISOString() }),
+  );
+  assert.equal(isStale(slightSkew, NOW), false);
+});
+
+test('silent stations stay silent rather than stale even with an old timestamp', () => {
+  const silent = alpineStationRecord(
+    raw({
+      measuredAt: new Date(NOW - 7 * 24 * 60 * 60_000).toISOString(),
+      snowDepthCm: null,
+      airTempC: null,
+      windSpeedMs: null,
+      windGustMs: null,
+      windDirDeg: null,
+    }),
+  );
+  assert.equal(isReporting(silent), false);
+  assert.equal(isStale(silent, NOW), false);
+});
+
 test('merging is de-duplicated, stable and tolerant of junk', () => {
   // The rail list and the entity set are both rebuilt from this array, so an
   // unstable order would reshuffle the panel on every poll.

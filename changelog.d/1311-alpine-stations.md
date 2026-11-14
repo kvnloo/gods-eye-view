@@ -6,5 +6,6 @@
   same-origin `/api/alpine-stations`. One network being unavailable never
   blanks the others. Per-network capability is explicit, so a network that
   cannot supply a measurement honestly does not claim it: SwissMetNet
-  contributes no snow depth and GeoSphere no sea-level pressure. Replaces #58
-  (darrendignam, #1311).
+  contributes no snow depth and GeoSphere no sea-level pressure. Replaces #58.
+  Future-dated readings beyond five minutes of clock skew are not shown as
+  current, and silent stations never count as stale (darrendignam, #1311).

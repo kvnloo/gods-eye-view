@@ -147,17 +147,19 @@ export function isReporting(station) {
 }
 
 /**
- * Whether a reading is too old to present as current.
+ * Whether a reading is too old or implausibly future-dated to be current.
  *
  * A silent station is NOT stale: it has no reading to be out of date, and the
  * two read differently on the card.
  */
 export function isStale(station, now = Date.now()) {
+  // A silent station has no readings to age, even if the provider supplies
+  // an old timestamp for its most recent empty report.
+  if (!isReporting(station)) return false;
   const measured = Date.parse(station?.measuredAt ?? '');
-  // A reading whose time will not parse cannot be shown as current: there is
-  // no way to tell whether it is ten minutes or ten days old. A SILENT station
-  // is still not stale, because it has no reading to be out of date.
-  if (!Number.isFinite(measured)) return isReporting(station);
+  // An undated reading cannot be called current. A network clock may be a
+  // little ahead, but a reading dated far into the future is not live either.
+  if (!Number.isFinite(measured) || measured - now > 5 * 60_000) return true;
   return now - measured > staleAfterMs(alpineNetwork(station?.networkId));
 }
 

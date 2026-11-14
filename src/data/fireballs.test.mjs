@@ -38,6 +38,34 @@ test('parseFireballCoordinates handles cardinal hemisphere directions and bounds
   assert.equal(parseFireballCoordinates(null, 'N', undefined, 'W'), null);
 });
 
+test('CNEOS coordinates require nonblank magnitudes and explicit hemisphere markers', () => {
+  const badCoordinates = [
+    ['   ', 'N', '20', 'E'],
+    ['10', 'S', '\t', 'W'],
+    ['10', null, '20', 'E'],
+    ['10', 'N', '20', undefined],
+    ['10', '   ', '20', 'E'],
+    ['10', 'N', '20', '  '],
+  ];
+  const fields = ['date', 'lat', 'lat-dir', 'lon', 'lon-dir'];
+
+  for (const coordinates of badCoordinates) {
+    assert.equal(
+      parseFireballCoordinates(...coordinates),
+      null,
+      `Invalid coordinates ${JSON.stringify(coordinates)}`,
+    );
+    assert.equal(
+      parseCneosFireballRecord(fields, [
+        '2023-02-13 02:59:21',
+        ...coordinates,
+      ]),
+      null,
+      `Invalid record ${JSON.stringify(coordinates)}`,
+    );
+  }
+});
+
 test('parseFireballTimestamp parses CNEOS UTC timestamps into ISO and epoch ms', () => {
   const result = parseFireballTimestamp('2023-02-13 02:59:21');
   assert.ok(result);

@@ -1452,6 +1452,11 @@ The Node-only `gods-eye-view/server/providers/space` export supplies factories;
 `sources/space` supplies fixed upstream URL builders with no I/O or environment
 access. Callers retain validation, transport and response policy.
 
+The CNEOS Fireballs provider exposes `/api/fireballs` with a six-hour cache,
+coalesced refreshes and stale fallback. Its normalizer rejects blank coordinate
+magnitudes and absent hemisphere markers rather than assigning false 0° or
+north/east positions. It is a data-provider utility, not yet a displayed layer.
+
 The shared TLE text parser skips incomplete named sets and resumes at the next
 complete set. A missing orbital line does not discard the later satellites in
 the catalog; satellite layers and next-pass tools use the same parser.

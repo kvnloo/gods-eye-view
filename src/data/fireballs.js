@@ -15,7 +15,12 @@
  * @returns {?[number, number]} [lat, lon] as signed finite floats, or null if invalid.
  */
 export function parseFireballCoordinates(latStr, latDir, lonStr, lonDir) {
-  if (latStr == null || latStr === '' || lonStr == null || lonStr === '')
+  if (
+    latStr == null ||
+    lonStr == null ||
+    String(latStr).trim() === '' ||
+    String(lonStr).trim() === ''
+  )
     return null;
   const rawLat = Number(latStr);
   const rawLon = Number(lonStr);
@@ -30,11 +35,11 @@ export function parseFireballCoordinates(latStr, latDir, lonStr, lonDir) {
 
   let lat = Math.abs(rawLat);
   if (latHemisphere === 'S') lat = -lat;
-  else if (latHemisphere !== 'N' && latHemisphere !== '') return null;
+  else if (latHemisphere !== 'N') return null;
 
   let lon = Math.abs(rawLon);
   if (lonHemisphere === 'W') lon = -lon;
-  else if (lonHemisphere !== 'E' && lonHemisphere !== '') return null;
+  else if (lonHemisphere !== 'E') return null;
 
   if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
   return [lat, lon];

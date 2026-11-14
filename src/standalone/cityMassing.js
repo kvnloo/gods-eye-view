@@ -697,6 +697,12 @@ export function mountCityMassing({
           }),
         };
       });
+      // Each plate's edge is the district's outline: the plates cover the
+      // one play mode drapes on the ground.
+      for (const { plate } of stands) {
+        plate.polygon.outline = true;
+        plate.polygon.outlineColor = ACCENT;
+      }
       removeGrowthFrame = scene.postRender.addEventListener(growthFrame);
     }
     blocks.forEach((block, i) => {

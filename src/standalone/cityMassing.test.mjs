@@ -549,6 +549,14 @@ test('GROWTH stands a block on every plot of the district, and the rail stages t
     DISTRICT.every((cell) => !riseOf(ds, cell.id).show),
     'NOW adds nothing',
   );
+  assert.ok(
+    DISTRICT.every((cell) =>
+      ds.entities
+        .getById(`city-massing-plate-${cell.id}`)
+        .polygon.outline.getValue(),
+    ),
+    'each plate is edged: the district is outlined',
+  );
   assert.equal(viewer.shadows, true, 'the sun is up: the shadow map is on');
   const plan = growthPlan({ plots: DISTRICT, anchorId: plot.id });
   assert.deepEqual(store.growth.plan.cohort, plan.cohort);

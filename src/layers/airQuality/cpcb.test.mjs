@@ -128,6 +128,50 @@ test('switching provider clears old markers and a late Canadian response cannot 
   layer.destroy();
 });
 
+test('late India response cannot replace Canada after switching back', async () => {
+  let releaseIndia;
+  const indiaReadings = normalize([row()]);
+  const canadaReadings = [
+    {
+      ...indiaReadings[0],
+      id: 'eccc:test-station',
+      provider: 'eccc',
+      scale: 'AQHI',
+      value: 3,
+      label: '3',
+    },
+  ];
+  const source = {
+    providers: ['eccc', 'cpcb'],
+    getSnapshot: ({ provider }) =>
+      provider === 'cpcb'
+        ? new Promise((resolve) => {
+            releaseIndia = resolve;
+          })
+        : Promise.resolve(canadaReadings),
+  };
+  const layer = createAirQualityLayer({
+    source,
+    overlayHost: { setEntries() {}, clearSource() {}, setVisible() {} },
+  });
+  layer.init({ dataSources: { add() {}, remove() {} } });
+  layer.setParams({ provider: 'cpcb' });
+  layer.enable();
+
+  const pendingIndia = layer.update();
+  assert.equal(typeof releaseIndia, 'function');
+  layer.setParams({ provider: 'eccc' });
+  assert.equal(await layer.update(), true);
+
+  releaseIndia(indiaReadings);
+  assert.equal(await pendingIndia, false);
+  assert.equal(layer.getParams().provider, 'eccc');
+  assert.equal(layer.getStats().count, 1);
+  assert.equal(layer.getAnalystRecords()[0].provider, 'eccc');
+  assert.ok(layer.getRowControls().legend.length > 0);
+  layer.destroy();
+});
+
 test('missing India credentials keep provider controls accessible and error visible', async () => {
   const source = {
     providers: ['eccc', 'cpcb'],

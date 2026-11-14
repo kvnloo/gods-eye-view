@@ -1,15 +1,19 @@
 # Power Plants
 
-Open-source curated power generation facilities bundled for the local infrastructure
-layer.
+The 147-record `power_plants.geojsonl` snapshot is generated from the
+manually entered `PLANTS` array in `scripts/generate-power-plants.mjs`.
+It is **not** a documented extract of the World Resources Institute Global
+Power Plant Database or OpenStreetMap. The original layer was contributed by
+viji5626.
 
-- Source: OpenStreetMap contributors & Global Power Plant Database (World Resources Institute)
-- License: Open Database License (ODbL) 1.0 / Creative Commons Attribution 4.0 International
-- Feature count: 147
-- Runtime file: `power_plants.geojsonl`
+- **Source:** Contributor-compiled reference list (not an OSM/WRI import).
+- **Identifiers:** `id` is a local sequence number, not an OpenStreetMap ID.
+- **Fields:** Facility name, location, fuel, reported MW capacity, operator and
+  country. OSM-style `tags` are a local schema convention, not OSM source data.
+- **Provenance and reuse:** No upstream record-level citations or third-party
+  dataset license grants have been substantiated for this compilation. Do not
+  treat it as an ODbL 1.0 or WRI CC BY 4.0 extract.
 
-The public-release snapshot includes major global power generation stations across
-Nuclear, Hydroelectric, Solar, Wind, Geothermal, Battery Energy Storage, and Thermal
-systems. Contact-oriented tags are omitted; features provide identity, geometry,
-plant name, fuel source, generation capacity (MW), and operating entity. Distributed
-under ODbL 1.0 with OpenStreetMap attribution.
+Coordinates, owners, plant status and reported MW values have not been
+independently audited. Some facilities may be under construction or offline.
+The values are not live output or proof of operating status.

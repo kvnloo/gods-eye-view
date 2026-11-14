@@ -49,8 +49,8 @@ export function createInfrastructureLayers(services) {
       name: 'Power Plants',
       color: '#ffaa00', // Amber
       icon: '⚡',
-      source: 'WRI / OSM',
-      osmDerived: true,
+      source: 'Contributor-curated',
+      osmDerived: false,
       labels: true,
       labelMax: 800,
       labelGridPx: 135,

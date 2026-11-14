@@ -146,6 +146,11 @@ test('datacenters and dams are listed nearest first with their own fields', asyn
     lon: -118.981,
     distance_km: 0.8,
   });
+  assert.match(plants.data.attribution, /Contributor-compiled/);
+  assert.doesNotMatch(
+    plants.data.attribution,
+    /OpenStreetMap|World Resources Institute/,
+  );
 });
 
 test('the bundled datasets load through the local fetch', async () => {

@@ -66,7 +66,11 @@ test('infrastructure factory preserves identity and creates independent state wi
     [
       { id: 'local-datacenters', name: 'Datacenters', source: 'Local' },
       { id: 'local-dams', name: 'Dams', source: 'USACE' },
-      { id: 'local-power-plants', name: 'Power Plants', source: 'WRI / OSM' },
+      {
+        id: 'local-power-plants',
+        name: 'Power Plants',
+        source: 'Contributor-curated',
+      },
     ],
   );
   first.forEach((layer, index) => {
@@ -94,6 +98,28 @@ test('dataset URLs still name the complete bundled sources', () => {
       .split('\n')
       .filter((line) => line.trim());
     assert.equal(lines.length, count);
+  }
+});
+
+test('power plant snapshots use local IDs without fabricated OSM identifiers', () => {
+  const lines = readFileSync(
+    new URL('./local_data/power_plants/power_plants.geojsonl', import.meta.url),
+    'utf8',
+  )
+    .trim()
+    .split('\n');
+  assert.equal(lines.length, 147);
+  const seen = new Set();
+  for (const line of lines) {
+    const feature = JSON.parse(line);
+    assert.equal(
+      Object.hasOwn(feature.properties, 'osm_id'),
+      false,
+      `${feature.properties.name} must not claim an OSM ID`,
+    );
+    assert.equal(typeof feature.id, 'number');
+    assert.equal(seen.has(feature.id), false);
+    seen.add(feature.id);
   }
 });
 

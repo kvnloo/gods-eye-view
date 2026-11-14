@@ -20,7 +20,7 @@ const ATTRIBUTION = {
   datacenters: '© OpenStreetMap contributors (ODbL 1.0)',
   dams: '© OpenStreetMap contributors (ODbL 1.0), via Open Infrastructure Map',
   power_plants:
-    '© OpenStreetMap contributors (ODbL 1.0) & World Resources Institute',
+    'Contributor-compiled power plant reference list; not a WRI or OSM extract',
 };
 
 const round = (value, digits) =>
@@ -30,9 +30,9 @@ export const findInfrastructure = defineTool({
   name: 'find_infrastructure',
   title: 'Datacenters, dams, and power plants',
   description:
-    'Datacenters (with operator and capacity), dams (with river and output), ' +
-    'or power plants (with fuel source and output) mapped in OpenStreetMap ' +
-    'and global registries within an area, nearest the center first.',
+    'Datacenters (with operator and capacity) or dams (with river and output) ' +
+    'mapped in OpenStreetMap, or power plants (with fuel and reported capacity) ' +
+    'from a contributor-compiled list within an area, nearest the center first.',
   inputSchema: {
     type: 'object',
     properties: {

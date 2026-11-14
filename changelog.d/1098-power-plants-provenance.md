@@ -1,0 +1,1 @@
+- Describe the Power Plants dataset as a contributor-compiled reference list, remove fabricated OpenStreetMap IDs, and correct its runtime attribution (viji5626, #1098).

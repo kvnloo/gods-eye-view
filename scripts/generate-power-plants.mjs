@@ -1,7 +1,8 @@
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 
-// Curated global power generation facilities across Solar, Wind, Nuclear, Hydro, Geothermal, Storage, and Thermal.
+// Contributor-compiled reference list; not extracted from WRI or OpenStreetMap.
+// Nameplate capacity is not live generation or proof of operational status.
 const PLANTS = [
   // SOLAR MEGA-PARKS
   { name: 'Bhadla Solar Park', lat: 27.5397, lon: 71.9161, fuel: 'solar', mw: 2245, operator: 'Saurya Urja / Adani', country: 'India' },
@@ -194,7 +195,6 @@ const lines = PLANTS.map((p) => {
         operator: p.operator,
         'addr:country': p.country,
       },
-      osm_id: idCounter,
       source_layer: 'power_plants',
     },
   };

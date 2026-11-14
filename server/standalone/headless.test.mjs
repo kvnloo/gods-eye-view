@@ -311,6 +311,29 @@ test('/healthz answers exactly GET/HEAD /healthz, and nothing else', async () =>
   await app.close();
 });
 
+test('GEV_HEADLESS_PORT=0 binds an ephemeral port and reports the assigned port', async () => {
+  const messages = [];
+  const originalLog = console.log;
+  let app;
+  console.log = (message) => messages.push(message);
+  try {
+    app = await startHeadlessApi({
+      env: { GEV_HEADLESS_PORT: '0' },
+      plugins: [],
+    });
+    const { port } = app.httpServer.address();
+    assert.ok(Number.isInteger(port) && port > 0);
+    assert.notEqual(port, 4174, 'zero should request a system-assigned port');
+    assert.ok(
+      messages.includes(`[headless-api] listening on http://127.0.0.1:${port}`),
+      `startup should report the bound port, got: ${messages.join(', ')}`,
+    );
+  } finally {
+    console.log = originalLog;
+    if (app) await app.close();
+  }
+});
+
 test('a listen failure rejects with the original error and tears the providers down', async () => {
   // Occupy a port, then ask the headless server to bind the same one.
   const blocker = http.createServer();

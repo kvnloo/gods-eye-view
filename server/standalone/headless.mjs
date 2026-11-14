@@ -16,6 +16,12 @@ const DEFAULT_HOST = '127.0.0.1';
 /** How long close() lets in-flight responses drain before force-closing them. */
 const DEFAULT_SHUTDOWN_GRACE_MS = 5000;
 
+/** Keep port 0 distinct from an unset/invalid port: Node assigns it dynamically. */
+function headlessPort(value) {
+  const parsed = Number.parseInt(value ?? '', 10);
+  return Number.isNaN(parsed) ? DEFAULT_PORT : parsed;
+}
+
 /**
  * Run the same `/api/*` provider proxies `vite dev` / `vite preview` serve,
  * as a standalone Node process with no Vite involved.
@@ -341,7 +347,7 @@ export function assertSafeBindHost(host, env = process.env) {
  */
 export async function startHeadlessApi({
   env = process.env,
-  port = Number.parseInt(env.GEV_HEADLESS_PORT || '', 10) || DEFAULT_PORT,
+  port = headlessPort(env.GEV_HEADLESS_PORT),
   host = env.GEV_HEADLESS_HOST || DEFAULT_HOST,
   plugins,
 } = {}) {
@@ -386,7 +392,9 @@ export async function startHeadlessApi({
     await app.close().catch(() => {});
     throw err;
   }
-  console.log(`[headless-api] listening on http://${host}:${port}`);
+  console.log(
+    `[headless-api] listening on http://${host}:${app.httpServer.address().port}`,
+  );
   return app;
 }
 

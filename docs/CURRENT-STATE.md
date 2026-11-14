@@ -1214,6 +1214,8 @@ loopback by default, refuses a non-loopback bind unless
 `GEV_HEADLESS_UNSAFE_PUBLIC=1` is set, rejects unexpected `Host` headers
 (by the same rule and `GEV_ALLOWED_HOSTS` allowlist as the Vite servers,
 from `build/allowedHosts.js`), and bounds shutdown.
+`GEV_HEADLESS_PORT=0` requests an ephemeral listening port; startup logs the
+actual port assigned by the operating system.
 `server/apiRoutes.js` is the complete `/api` mount table, as data, for all
 three surfaces; `docs/API_REFERENCE.md` documents a selected subset of those
 routes in detail.

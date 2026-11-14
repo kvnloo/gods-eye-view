@@ -20,7 +20,10 @@ const MANIFEST = fixture('rayhunter-qmdl-manifest.json');
 const ANALYSIS = fixture('rayhunter-analysis-report.ndjson');
 
 /** Minimal connect-style req/res pair that records what the handler sent. */
-function fakeExchange(url, { method = 'GET', remoteAddress = '10.1.2.3' } = {}) {
+function fakeExchange(
+  url,
+  { method = 'GET', remoteAddress = '10.1.2.3', headers = {} } = {},
+) {
   const res = {
     headersSent: false,
     statusCode: 0,
@@ -35,7 +38,7 @@ function fakeExchange(url, { method = 'GET', remoteAddress = '10.1.2.3' } = {}) 
       if (chunk !== undefined) this.body += chunk;
     },
   };
-  return { req: { method, url, socket: { remoteAddress } }, res };
+  return { req: { method, url, headers, socket: { remoteAddress } }, res };
 }
 
 /** Collect the two route handlers the plugin installs, keyed by mount path. */
@@ -173,4 +176,45 @@ test('fetchRayhunterUpstream: enforces the body cap while streaming', async () =
     (error) => error.code === 'RESPONSE_TOO_LARGE',
   );
   assert.ok(RAYHUNTER_MAX_BODY_BYTES > 0);
+});
+
+test('rayhunterProxy: cross-site browser requests never reach a LAN device', async () => {
+  let upstreamCalls = 0;
+  const routes = routesOf(
+    rayhunterProxy({
+      fetchImpl: async () => {
+        upstreamCalls += 1;
+        return new Response(MANIFEST, { status: 200 });
+      },
+    }),
+  );
+  const requests = [
+    ['/api/rayhunter/manifest', '/?base=192.168.1.1%3A8080'],
+    ['/api/rayhunter/analysis', '/live?base=192.168.1.1%3A8080'],
+  ];
+  const foreignHeaders = [
+    { host: 'localhost:4173', 'sec-fetch-site': 'cross-site' },
+    { host: 'localhost:4173', 'sec-fetch-site': 'same-site' },
+    { host: 'localhost:4173', origin: 'https://foreign.example' },
+    { host: 'localhost:4173', origin: 'null' },
+  ];
+  for (const headers of foreignHeaders) {
+    for (const [mount, path] of requests) {
+      const { req, res } = fakeExchange(path, { headers });
+      await routes.get(mount)(req, res);
+      assert.equal(res.statusCode, 403, `${mount} with ${JSON.stringify(headers)}`);
+    }
+  }
+  assert.equal(upstreamCalls, 0, 'a foreign browser page must not drive LAN reads');
+
+  const { req, res } = fakeExchange('/?base=192.168.1.1%3A8080', {
+    headers: {
+      host: 'localhost:4173',
+      origin: 'http://localhost:4173',
+      'sec-fetch-site': 'same-origin',
+    },
+  });
+  await routes.get('/api/rayhunter/manifest')(req, res);
+  assert.equal(res.statusCode, 200, 'same-origin browser reads still work');
+  assert.equal(upstreamCalls, 1);
 });

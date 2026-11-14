@@ -77,6 +77,41 @@ export async function fetchRayhunterUpstream(
   }
 }
 
+/**
+ * Refuse cross-site browser requests before they can drive a GET to a
+ * browser-supplied LAN address. Scripted local probes (without browser
+ * request headers) remain usable.
+ */
+function crossSiteRayhunterRequest(req) {
+  const site = String(req.headers?.['sec-fetch-site'] || '')
+    .trim()
+    .toLowerCase();
+  if (site && site !== 'same-origin' && site !== 'none') return true;
+
+  const origin = req.headers?.origin;
+  if (!origin) return false;
+  const host = String(req.headers?.host || '').trim();
+  if (!host || [...host].some((ch) => ch.trim() === '' || '/?#@'.includes(ch)))
+    return true;
+  try {
+    const ownOrigin = new URL(
+      `${req.socket?.encrypted ? 'https:' : 'http:'}//${host}`,
+    ).origin;
+    const supplied = new URL(String(origin));
+    return (
+      supplied.origin !== ownOrigin ||
+      supplied.username !== '' ||
+      supplied.password !== '' ||
+      supplied.pathname !== '/' ||
+      supplied.search !== '' ||
+      supplied.hash !== ''
+    );
+  } catch {
+    // An opaque or malformed Origin is not a local browser page.
+    return true;
+  }
+}
+
 function sendJson(res, status, payload) {
   if (res.headersSent) return;
   res.writeHead(status, {
@@ -105,6 +140,10 @@ export function rayhunterProxy({ fetchImpl = fetch } = {}) {
 
   /** Shared front half of both routes: method, rate limit, address. */
   function accept(req, res) {
+    if (crossSiteRayhunterRequest(req)) {
+      sendJson(res, 403, { error: 'Cross-site Rayhunter requests refused' });
+      return null;
+    }
     if (req.method !== 'GET') {
       sendJson(res, 405, { error: 'Method Not Allowed' });
       return null;

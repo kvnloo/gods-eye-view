@@ -12,6 +12,7 @@ import {
   windowStart,
 } from './query.js';
 import { WQ_DEFAULT_WINDOW_YEARS } from './constants.js';
+import { normalizeMeasurement } from './csv.js';
 
 const params = (entries) => new URLSearchParams(entries);
 const box = { south: 34, west: -79.2, north: 35.4, east: -77.8 };
@@ -109,5 +110,34 @@ test('failure reasons are classified rather than passed through', () => {
   assert.equal(
     waterQualityFailureReason({ waterQualityReason: 'anything else' }),
     'unavailable',
+  );
+});
+
+test('missing reporting limits remain unknown on non-detect samples', () => {
+  const row = {
+    CharacteristicName: 'Nitrate',
+    ResultDetectionConditionText: 'Not Detected',
+  };
+  assert.equal(normalizeMeasurement(row).detectionLimit, null);
+  assert.equal(
+    normalizeMeasurement({
+      ...row,
+      'DetectionQuantitationLimitMeasure/MeasureValue': '',
+    }).detectionLimit,
+    null,
+  );
+  assert.equal(
+    normalizeMeasurement({
+      ...row,
+      'DetectionQuantitationLimitMeasure/MeasureValue': '0.05',
+    }).detectionLimit,
+    0.05,
+  );
+  assert.equal(
+    normalizeMeasurement({
+      ...row,
+      'DetectionQuantitationLimitMeasure/MeasureValue': '0',
+    }).detectionLimit,
+    0,
   );
 });

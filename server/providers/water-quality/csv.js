@@ -64,7 +64,8 @@ export function normalizeMeasurement(row) {
   const raw = String(row.ResultMeasureValue ?? '').trim();
   const value = raw === '' ? null : Number(raw);
   const condition = String(row.ResultDetectionConditionText || '').trim();
-  const limit = Number(row['DetectionQuantitationLimitMeasure/MeasureValue']);
+  const rawLimit = String(row['DetectionQuantitationLimitMeasure/MeasureValue'] ?? '').trim();
+  const limit = rawLimit === '' ? null : Number(rawLimit);
   if (value === null && !condition) return null;
   return {
     characteristic,

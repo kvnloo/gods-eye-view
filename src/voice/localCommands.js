@@ -13,7 +13,10 @@ function validate(value, schema, path) {
     : value === null
       ? 'null'
       : typeof value;
-  if (schema.type && type !== schema.type)
+  if (schema.type === 'integer') {
+    if (type !== 'number' || !Number.isInteger(value))
+      throw new Error(`${path} must be integer`);
+  } else if (schema.type && type !== schema.type)
     throw new Error(`${path} must be ${schema.type}`);
   if (schema.enum && !schema.enum.includes(value))
     throw new Error(`${path} has an unsupported value`);

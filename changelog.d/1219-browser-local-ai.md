@@ -3,3 +3,5 @@
   models into a resumable browser cache; common map commands and aircraft
   tracking run through the shared actions, with bounded inference memory and
   cancellation (feg55, #1219).
+- Accept schema-declared integer arguments in local map controls while rejecting
+  fractional or out-of-range values (feg55, #1219).

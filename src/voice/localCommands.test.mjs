@@ -316,6 +316,36 @@ test('invalid generated arguments cannot silently invert controls or alter the m
     );
 });
 
+test('integer map-tool arguments allow whole values but reject fractions and range violations', async () => {
+  const valid = [
+    ['set_cyber_sonar', { enabled: true, rings: 4, rangePct: 100 }],
+    ['get_entity_context', { scope: 'selected', referent: 1 }],
+    ['track_entity', { referent: -1 }],
+  ];
+  const calls = [];
+  const runAction = async (name, args) => {
+    calls.push([name, args]);
+    return { ok: true };
+  };
+  for (const [name, args] of valid) {
+    const result = await runLocalAction(name, args, runAction);
+    assert.deepEqual(result, { ok: true });
+  }
+  assert.deepEqual(calls, valid);
+
+  for (const [name, args] of [
+    ['set_cyber_sonar', { rings: 3.5 }],
+    ['set_cyber_sonar', { rings: 13 }],
+    ['track_entity', { referent: 1.5 }],
+  ])
+    await assert.rejects(
+      runLocalAction(name, args, () =>
+        assert.fail('Invalid integer reached the map'),
+      ),
+      /must be integer|outside the allowed range/,
+    );
+});
+
 test('a model tool is confirmed directly without a second expensive generation', async () => {
   let requests = 0;
   const answer = await runLocalTurn({

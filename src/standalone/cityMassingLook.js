@@ -29,6 +29,15 @@ float gevRect(vec2 q, vec2 lo, vec2 hi, float aa) {
 float gevHash(vec2 cell) {
   return fract(sin(dot(cell, vec2(127.1, 311.7))) * 43758.5453);
 }
+// Soft blotches a metre or so across: weather on a surface.
+float gevWeather(vec2 x) {
+  vec2 cell = floor(x);
+  vec2 f = fract(x);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(gevHash(cell), gevHash(cell + vec2(1.0, 0.0)), f.x),
+    mix(gevHash(cell + vec2(0.0, 1.0)), gevHash(cell + vec2(1.0, 1.0)), f.x), f.y);
+}
 // A box painted on the roof deck as the eye sees it: the shade it throws, the
 // side toward the eye and its top. lean and fall are how far a metre of
 // height shifts along the deck for the eye and for the sun. No geometry: it
@@ -76,14 +85,15 @@ czm_material czm_getMaterial(czm_materialInput materialInput) {
     vec2 joint = (0.5 - abs(fract(p.xy / 2.0) - 0.5)) * 2.0;
     color = ${rgb(colors.paving)} * (0.93 + 0.07 *
       smoothstep(0.0, 0.05 + fwidth(p.x) + fwidth(p.y), min(joint.x, joint.y)));
+    color *= 0.94 + 0.12 * gevWeather(p.xy / 1.7);
     color *= 1.0 - 0.45 * exp(min(within, 0.0) / 0.8);
   } else if (n.z > 0.5) {
-    // The roof: a membrane in panels behind the parapet, which shades the
-    // deck along the sides the sun comes over; coping around.
+    // The roof: a weathered membrane laid in sheets behind the parapet,
+    // which shades the deck along the sides the sun comes over; coping around.
     float pixel = fwidth(within);
-    vec2 seam = (0.5 - abs(fract(p.xy / 4.0) - 0.5)) * 4.0;
-    color = ${rgb(colors.roof)} *
-      (0.93 + 0.07 * smoothstep(0.0, 0.08 + pixel, min(seam.x, seam.y)));
+    float lap = (0.5 - abs(fract(p.x / 2.0) - 0.5)) * 2.0;
+    color = ${rgb(colors.roof)} * (0.97 + 0.03 * smoothstep(0.0, 0.06 + pixel, lap));
+    color *= 0.9 + 0.16 * gevWeather(p.xy / 3.5) + 0.04 * gevWeather(p.xy / 0.9);
     vec4 over = max(vec4(dot(gevWall0.xy, sun.xy), dot(gevWall1.xy, sun.xy),
       dot(gevWall2.xy, sun.xy), dot(gevWall3.xy, sun.xy)), 0.0) * parapet / max(sun.z, 0.05);
     vec4 lit = inside - 0.4 - over;
@@ -157,6 +167,8 @@ czm_material czm_getMaterial(czm_materialInput materialInput) {
     color = ${rgb(colors.body)} * (1.04 - 0.05 * gevBox(f, lo, hi, aaBay));
     color *= 1.0 + 0.05 * (gevHash(floor(vec2(bay * 4.0, level * 8.0))) - 0.5) *
       (1.0 - smoothstep(0.08, 0.3, max(aaBay * 4.0, aaLevel * 8.0)));
+    // Weather runs down a wall.
+    color *= 0.93 + 0.12 * gevWeather(vec2(along * 0.8 + 17.0 * id, z * 0.2));
     if (shop) {
       // A plinth, and the sign band with the line of shade under it.
       color = mix(color * 0.95, ${rgb(colors.frame)}, 0.55 * gevBox(g, -1.0, 0.07, aaLevel));

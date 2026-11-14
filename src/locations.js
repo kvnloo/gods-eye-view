@@ -549,7 +549,7 @@ export const CITY_POIS = {
   bengaluru: {
     name: 'Bengaluru',
     groundElevation: 920,
-    viewBounds: { southwest: { lat: 12.80, lng: 77.38 }, northeast: { lat: 13.15, lng: 77.80 } },
+    viewBounds: { southwest: { lat: 12.80, lng: 77.38 }, northeast: { lat: 13.22, lng: 77.80 } },
     pois: [
       { name: 'Vidhana Soudha', lat: 12.9796, lon: 77.5906, alt: 650, pitch: -25, heading: 90, buildingHeight: 30 },
       { name: 'Bengaluru Palace', lat: 12.9987, lon: 77.5920, alt: 650, pitch: -25, heading: 180, buildingHeight: 25 },
@@ -561,7 +561,7 @@ export const CITY_POIS = {
   hyderabad: {
     name: 'Hyderabad',
     groundElevation: 500,
-    viewBounds: { southwest: { lat: 17.25, lng: 78.20 }, northeast: { lat: 17.60, lng: 78.70 } },
+    viewBounds: { southwest: { lat: 17.22, lng: 78.20 }, northeast: { lat: 17.60, lng: 78.70 } },
     pois: [
       { name: 'Charminar', lat: 17.3616, lon: 78.4747, alt: 550, pitch: -25, heading: 45, buildingHeight: 25 },
       { name: 'Golconda Fort', lat: 17.3833, lon: 78.4011, alt: 1000, pitch: -30, heading: 270, buildingHeight: 30 },
@@ -573,7 +573,7 @@ export const CITY_POIS = {
   chennai: {
     name: 'Chennai',
     groundElevation: 7,
-    viewBounds: { southwest: { lat: 12.80, lng: 80.05 }, northeast: { lat: 13.25, lng: 80.35 } },
+    viewBounds: { southwest: { lat: 12.60, lng: 80.05 }, northeast: { lat: 13.25, lng: 80.35 } },
     pois: [
       { name: 'Marina Beach', lat: 13.0499, lon: 80.2824, alt: 1500, pitch: -35, heading: 180, buildingHeight: 5 },
       { name: 'Kapaleeshwarar Temple', lat: 13.0339, lon: 80.2697, alt: 600, pitch: -25, heading: 90, buildingHeight: 25 },

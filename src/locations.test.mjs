@@ -208,6 +208,24 @@ test('Indian city presets expose valid landmarks and coordinates', async () => {
   }
 });
 
+test('Indian city overview bounds enclose every curated landmark', async () => {
+  const { CITY_POIS } = await import('./locations.js');
+  for (const cityId of ['mumbai', 'delhi', 'bengaluru', 'hyderabad', 'chennai', 'kolkata', 'pune', 'ahmedabad']) {
+    const { viewBounds, pois } = CITY_POIS[cityId];
+    const { southwest, northeast } = viewBounds;
+    for (const poi of pois) {
+      assert.ok(
+        poi.lat >= southwest.lat && poi.lat <= northeast.lat,
+        `${cityId}: ${poi.name} falls outside latitude bounds`,
+      );
+      assert.ok(
+        poi.lon >= southwest.lng && poi.lon <= northeast.lng,
+        `${cityId}: ${poi.name} falls outside longitude bounds`,
+      );
+    }
+  }
+});
+
 // ── Off-centre viewport sanity gate (2026-08-20 QA hunt) ────────────────────
 // Free-text "Tokyo" flew the camera ~977 km out over the open Pacific. Tokyo
 // geocodes as the PREFECTURE (administrative_area_level_1), and Tokyo Metropolis

@@ -1093,6 +1093,11 @@ surface under the target and the camera once tiles stream in and lifts the eye
 to 120 m clearance, holding heading and pitch. Navigation ownership changes (Director, tracking, keyboard/UI controls and direct camera flights), layer/app teardown, and pointer/wheel gestures cancel the check and remove its listeners. `scripts/qa-context-arrivals.mjs` types Camp Mabry
 and a Denver coordinate and requires at least 60 m clearance.
 
+The eight Indian city presets (Mumbai, Delhi, Bengaluru, Hyderabad, Chennai,
+Kolkata, Pune and Ahmedabad) provide five landmarks each. The curated
+`viewBounds` rectangle contains every listed POI, including outlying airports
+and the Shore Temple, so a city overview encompasses its selectable landmarks.
+
 ## Layer panel ownership
 
 Layer rows, feed feedback, counts, focus-preserving chips and toggle listeners

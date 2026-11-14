@@ -22,7 +22,7 @@ function fail(message) {
   throw new TypeError(message);
 }
 
-/** Corners as metres east/north of their mean, and the way back to degrees. */
+/** Corners as metres east/north of their mean, and the way there and back. */
 export function localFrame(corners) {
   if (
     !Array.isArray(corners) ||
@@ -40,6 +40,10 @@ export function localFrame(corners) {
       (lon - lon0) * kx,
       (lat - lat0) * METERS_PER_DEGREE,
     ]),
+    toMeters: ([lon, lat]) => [
+      (lon - lon0) * kx,
+      (lat - lat0) * METERS_PER_DEGREE,
+    ],
     toLonLat: ([x, y]) => [lon0 + x / kx, lat0 + y / METERS_PER_DEGREE],
   };
 }

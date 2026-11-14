@@ -11,9 +11,18 @@ import {
   stepStoreys,
 } from '../data/cityMassing.js';
 import {
+  ASSUMED_EDGE_METERS,
+  edgeDistance,
+  inWinter,
+  shadowBand,
+  shadowFit,
+  winterNoon,
+} from '../data/cityShadowFit.js';
+import {
   holdContinuousRender,
   releaseContinuousRender,
 } from '../renderGovernor.js';
+import { worldClock } from '../time/worldClock.js';
 
 const OWNER = 'city-massing';
 // The plate fills the plot from below the ground to just above it: the globe
@@ -36,6 +45,14 @@ const PAD = 40;
 const BLOCK = Cesium.Color.fromCssColorString('#e8edf1');
 const PLATE = Cesium.Color.fromCssColorString('#8d949b');
 const ACCENT = Cesium.Color.fromCssColorString('#2ec8e8');
+// The shadow study on the ground: the shadow as it now falls is filled, the
+// one it is held against (was, or what a fit would leave) is a dashed outline,
+// and the protected edge is an amber line reaching past the shadow's sides.
+const SHADE = Cesium.Color.fromCssColorString('#04080e').withAlpha(0.5);
+const WAS = Cesium.Color.WHITE;
+const EDGE = Cesium.Color.fromCssColorString('#ffb454');
+const EDGE_PAD_METERS = 6;
+const MAX_EDGE_METERS = 200;
 
 /**
  * Massing v0 on the globe, mounted only behind ?massing=1: once MASSING is
@@ -43,10 +60,18 @@ const ACCENT = Cesium.Color.fromCssColorString('#2ec8e8');
  * standing on the sampled ground, casting its shadow from the scene sun. On 3D
  * tiles the plot is cut out of the mesh so the block never intersects the real
  * building. The readout (CityMassingReadout.vue) shows its numbers and steps
- * its storeys through the play store. Nothing is saved: the block is computed
- * from the plot whenever it shows, from the defaults after a reload.
+ * its storeys through the play store. PROTECT SIDEWALK adds the shadow study
+ * (src/data/cityShadowFit.js): the block's shadow against an edge across the
+ * street, drawn on the ground, and FIT TO SUN, which cuts the storeys until the
+ * shadow clears it. Nothing is saved: the block is computed from the plot
+ * whenever it shows, from the defaults after a reload.
  */
-export function mountCityMassing({ viewer, store, win = globalThis.window }) {
+export function mountCityMassing({
+  viewer,
+  store,
+  win = globalThis.window,
+  seek = (ms) => worldClock.seek(ms),
+}) {
   const scene = viewer?.scene;
   if (!scene || !store) return { destroy() {} };
   const ds = new Cesium.CustomDataSource('gev-city-massing');
@@ -61,6 +86,16 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
   let disposed = false;
   // `{frames, timer, remove}` while frames are held for new geometry.
   let build = null;
+  // The shadow study: on or off, the storeys it started from, the protected
+  // edge (assumed until the player sets it) and its entities as last drawn.
+  let study = false;
+  let wasStoreys = storeys;
+  let edgeMeters = ASSUMED_EDGE_METERS;
+  let edgeSet = false;
+  let picking = false;
+  let marks = [];
+  let marksKey = '0';
+  let studyPlot = null;
   const sphere = new Cesium.BoundingSphere();
 
   const playEntities = () =>
@@ -97,13 +132,12 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
     shownTilesets().every((tileset) => tileset.tilesLoaded) &&
     (!scene.globe?.show || scene.globe.tilesLoaded);
 
+  const sceneTime = () =>
+    Cesium.JulianDate.toDate(viewer.clock.currentTime).getTime();
+
   function sunAt(plot) {
     try {
-      return sunPosition(
-        plot.center.lat,
-        plot.center.lon,
-        Cesium.JulianDate.toDate(viewer.clock.currentTime).getTime(),
-      );
+      return sunPosition(plot.center.lat, plot.center.lon, sceneTime());
     } catch {
       return null;
     }
@@ -144,7 +178,7 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
     const display = viewer.dataSourceDisplay;
     if (typeof display?.getBoundingSphere !== 'function') return true;
     try {
-      return [site?.plate, site?.block]
+      return [site?.plate, site?.block, ...marks]
         .filter(Boolean)
         .every(
           (entity) =>
@@ -172,6 +206,31 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
     scene.requestRender();
   }
 
+  // Metres along the shadow, read off the drawn entities: each line's length
+  // and the edge's distance, all from the face the shadow leaves.
+  function drawnMeters() {
+    const span = (a, b) => Cesium.Cartesian3.distance(a, b);
+    const middle = (a, b) =>
+      Cesium.Cartesian3.midpoint(a, b, new Cesium.Cartesian3());
+    const face = ds.entities
+      .getById(`${OWNER}-shadow-now`)
+      .polygon.hierarchy.getValue().positions;
+    return Object.fromEntries(
+      marks.map((entity) => {
+        const at = entity.polyline?.positions.getValue();
+        const corners = entity.polygon?.hierarchy.getValue().positions;
+        return [
+          entity.id.slice(`${OWNER}-shadow-`.length),
+          corners
+            ? span(corners[1], corners[2])
+            : at.length === 2
+              ? span(middle(face[0], face[1]), middle(at[0], at[1]))
+              : span(at[0], at[1]),
+        ];
+      }),
+    );
+  }
+
   function built() {
     if (!build) return;
     build.remove();
@@ -187,6 +246,8 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
     lastAnchors = '';
     store.placeMassing(null);
     ds.entities.removeAll();
+    marks = [];
+    marksKey = '0';
     uncut(site.cuts);
     viewer.shadows = site.shadowsBefore;
     if (scene.globe) scene.globe.shadows = site.globeShadows;
@@ -252,9 +313,90 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
         }),
     };
     removeFrame = scene.postRender.addEventListener(frame);
+    mark();
     rendered();
   }
 
+  // The study of the standing block against the edge, or null while it is off.
+  function plan() {
+    return study && site
+      ? shadowFit({
+          storeys,
+          wasStoreys,
+          storeyHeightMeters: site.massing.storeyHeightMeters,
+          sun: site.sun,
+          edgeMeters,
+        })
+      : null;
+  }
+
+  // Draw the study on the ground when it changed: the protected edge, the
+  // shadow as it now falls (filled) and the one it is held against (dashed).
+  function mark() {
+    const lines = site?.block ? (plan()?.lines ?? []) : [];
+    const band = (meters) =>
+      shadowBand(site.massing.footprint, site.sun, meters);
+    // To 0.1 m: a live clock moves the sun a little every frame.
+    const key = JSON.stringify(
+      lines.length && [
+        lines.map((line) => [line.kind, line.reachMeters.toFixed(1)]),
+        band(edgeMeters)
+          .flat()
+          .map((degrees) => degrees.toFixed(6)),
+      ],
+    );
+    if (key === marksKey) return;
+    marksKey = key;
+    marks.forEach((entity) => ds.entities.remove(entity));
+    const add = (id, graphics) =>
+      ds.entities.add({ id: `${OWNER}-shadow-${id}`, ...graphics });
+    const ground = (corners) =>
+      Cesium.Cartesian3.fromDegreesArray(corners.flat());
+    const polyline = (positions, material, width = 4) => ({
+      polyline: { positions, width, clampToGround: true, material },
+    });
+    marks = lines.map((line) => {
+      const [nearLeft, nearRight, farRight, farLeft] = ground(
+        band(line.reachMeters),
+      );
+      return line.kind === 'now'
+        ? add('now', {
+            polygon: {
+              hierarchy: [nearLeft, nearRight, farRight, farLeft],
+              material: SHADE,
+            },
+          })
+        : add(
+            line.kind,
+            polyline(
+              [nearLeft, farLeft, farRight, nearRight],
+              new Cesium.PolylineDashMaterialProperty({
+                color: line.kind === 'was' ? WAS : ACCENT,
+                dashLength: 14,
+              }),
+            ),
+          );
+    });
+    if (lines.length)
+      marks.push(
+        add(
+          'edge',
+          polyline(
+            ground(
+              shadowBand(
+                site.massing.footprint,
+                site.sun,
+                edgeMeters,
+                EDGE_PAD_METERS,
+              ).slice(2),
+            ),
+            EDGE,
+            6,
+          ),
+        ),
+      );
+    rendered();
+  }
   // Tiles refine after a zoom or a flight: re-measure the ground once they have
   // loaded, as play mode re-grounds a restored concept (src/standalone/cityPlay.js).
   function reground() {
@@ -278,6 +420,7 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
   function extrude() {
     site.massing = plotMassing({ corners: site.plot.corners, storeys });
     site.block.polygon.extrudedHeight = site.base + site.massing.heightMeters;
+    mark();
     rendered();
   }
 
@@ -330,20 +473,33 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
     const reach = shadowReach(site.massing.heightMeters, site.sun);
     if ((reach === null ? null : Math.round(reach)) !== lastReach)
       publish(site.plot);
+    mark();
     const shadows = site.shadowsBefore || site.sun?.elevationDeg > 0;
     if (viewer.shadows !== shadows) viewer.shadows = shadows;
     const { base, massing } = site;
     const top = base + massing.heightMeters;
     const tip = shadowTip(massing.footprint, massing.heightMeters, site.sun);
+    // The study's bands on screen: the readout keeps clear of them too, and
+    // each tip label points at the far side of its line.
+    const bands = (marks.length ? plan().lines : []).map((line) => [
+      line.kind,
+      shadowBand(massing.footprint, site.sun, line.reachMeters).map(
+        ([lon, lat]) => project(lon, lat, base),
+      ),
+    ]);
     const points = [
       ...massing.footprint.map(([lon, lat]) => project(lon, lat, base)),
       ...massing.footprint.map(([lon, lat]) => project(lon, lat, top)),
       ...(tip ?? []).map(([lon, lat]) => project(lon, lat, base)),
+      ...bands.flatMap(([, band]) => band),
     ].filter(Boolean);
-    const key = JSON.stringify(points);
+    const tips = Object.fromEntries(
+      bands.map(([kind, band]) => [kind, band.slice(2)]),
+    );
+    const key = JSON.stringify([points, tips]);
     if (key === lastAnchors) return;
     lastAnchors = key;
-    store.placeMassing({ points });
+    store.placeMassing({ points, tips });
   }
 
   // Play mode's selected plot; Reimagine captures the plot as it is.
@@ -378,15 +534,57 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
       homeSquareMeters: m.homeSquareMeters,
       shadowReachMeters: reach,
       sunElevationDeg: sun?.elevationDeg ?? null,
+      // The shadow study: its toggle, the protected edge and, while it is on
+      // and the block stands, the plan that the ground and the tips show.
+      shadow: {
+        on: study,
+        picking,
+        edgeMeters,
+        edgeSet,
+        winter: inWinter(plot.center.lat, sceneTime()),
+        plan: standing ? plan() : null,
+        // What the storeys the study started from held, once they changed.
+        was: study && wasStoreys !== storeys ? wasMassing(plot) : null,
+      },
     });
   }
 
   function sync() {
     if (disposed) return;
     const plot = selected();
+    // A study belongs to its plot: another plot starts from the assumption.
+    if ((plot?.id ?? null) !== studyPlot) {
+      studyPlot = plot?.id ?? null;
+      wasStoreys = storeys;
+      edgeMeters = ASSUMED_EDGE_METERS;
+      edgeSet = false;
+      picking = false;
+    }
     if (plot && on) show(plot);
     else hide();
     publish(plot);
+  }
+
+  function wasMassing(plot) {
+    const { homes, far } = plotMassing({
+      corners: plot.corners,
+      storeys: wasStoreys,
+    });
+    return { homes, far };
+  }
+
+  // A study control changed something: redraw the ground and the readout.
+  function restudy() {
+    if (site) mark();
+    lastAnchors = '';
+    publish(selected());
+    scene.requestRender();
+  }
+
+  function setEdge(meters) {
+    edgeMeters = Math.min(MAX_EDGE_METERS, Math.max(1, Math.round(meters)));
+    edgeSet = true;
+    restudy();
   }
   const stop = watch(() => store.view, sync);
 
@@ -401,6 +599,50 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
       storeys = next;
       if (site?.block) extrude();
       publish(selected());
+    },
+    // The shadow study starts from the storeys that stand when it turns on.
+    study() {
+      study = !study;
+      wasStoreys = storeys;
+      picking = false;
+      restudy();
+    },
+    stepEdge(delta) {
+      setEdge(edgeMeters + delta);
+    },
+    // SET ON MAP arms one ground click, which play mode hands over to click().
+    pickEdge() {
+      picking = !picking;
+      restudy();
+    },
+    click(point) {
+      if (!picking || !point || !site?.block || !(site.sun?.elevationDeg > 0))
+        return false;
+      const meters = edgeDistance(site.massing.footprint, site.sun, [
+        point.lon,
+        point.lat,
+      ]);
+      // A click on the block or behind the face the shadow leaves sets
+      // nothing: the tool stays armed for the next one.
+      if (meters < 1) return true;
+      picking = false;
+      setEdge(meters);
+      return true;
+    },
+    // The scene clock goes to solar noon on the winter solstice at the plot.
+    winterNoon() {
+      const plot = selected();
+      if (!plot) return;
+      seek(winterNoon(plot.center.lat, plot.center.lon, sceneTime()));
+      rendered();
+    },
+    // Cut the storeys to the most that still clear the edge.
+    fit() {
+      const next = plan();
+      if (!next?.canFit || !site?.block) return;
+      storeys = next.fit.storeys;
+      extrude();
+      restudy();
     },
   };
   store.connectMassing(controls);
@@ -429,6 +671,15 @@ export function mountCityMassing({ viewer, store, win = globalThis.window }) {
         drawn: Boolean(site?.block) && !build && drawn(),
         sun: site?.sun ?? null,
         cuts: site?.cuts.length ?? 0,
+        // The shadow study: its plan, and the lines as the entities hold them.
+        study: study && {
+          wasStoreys,
+          edgeMeters,
+          edgeSet,
+          picking,
+          plan: plan(),
+          drawn: marks.length > 0 && drawnMeters(),
+        },
       }),
   });
   if (win) win.__gevCityMassing = probe;

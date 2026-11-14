@@ -201,10 +201,14 @@ export function mountCityPlay({
         }),
       );
     }
+    // SPIKE (exp/city-real-asset-spike): a seated massing building stands on
+    // its own plate; the tint and the outline step aside until it goes.
+    const quiet = Boolean(store.massing?.on && store.massing.quiet);
     select.push(
       ds.entities.add({
         id: `${OWNER}-footprint`,
         polygon: {
+          show: !quiet,
           hierarchy: ring(plot).slice(0, 4),
           material: ACCENT.withAlpha(choosing ? 0.28 : 0.14),
           classificationType: CLASSIFY,
@@ -212,6 +216,7 @@ export function mountCityPlay({
       }),
       ds.entities.add({
         polyline: {
+          show: !quiet,
           positions: ring(plot),
           width: 9,
           material: new Cesium.PolylineGlowMaterialProperty({
@@ -1071,7 +1076,7 @@ export function mountCityPlay({
   present();
   // The selection prism steps aside while a massing block stands.
   const stopMassing = watch(
-    () => Boolean(store.massing?.on),
+    () => `${Boolean(store.massing?.on)} ${Boolean(store.massing?.quiet)}`,
     () => render(),
   );
 

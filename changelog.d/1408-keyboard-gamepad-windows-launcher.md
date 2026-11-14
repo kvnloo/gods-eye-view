@@ -1,1 +1,1 @@
-- Add keyboard and Xbox gamepad globe navigation, plus a Windows launcher for local startup (@thecathousemp3, #1408).
+- Add keyboard and Xbox gamepad globe navigation, with held-key cleanup on window blur, plus a Windows launcher for local startup (thecathousemp3, #1408).

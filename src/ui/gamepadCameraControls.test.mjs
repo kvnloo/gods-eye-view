@@ -166,3 +166,21 @@ test('keyboard input is enabled only on the focused globe and cleans up', () => 
   assert.equal(f.documentRef.listenerCount(), 0);
   assert.equal(f.intervals.size, 0);
 });
+test('held WASD input stops when the browser window loses focus', () => {
+  const f = gamepadFixture();
+  f.canvas.dispatch('keydown', {
+    key: 'w',
+    target: f.canvas,
+    preventDefault() {},
+  });
+  assert.equal(f.intervals.size, 1);
+  const tick = [...f.intervals.values()][0];
+  tick();
+  assert.ok(f.cameraCalls.some(([name]) => name === 'moveDown'));
+
+  // A window blur need not dispatch a blur event to the active canvas.
+  f.windowRef.dispatch('blur');
+  assert.equal(f.intervals.size, 0);
+  f.dispose();
+  assert.equal(f.windowRef.listenerCount(), 0);
+});

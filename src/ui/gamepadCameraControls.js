@@ -219,6 +219,7 @@ export function installGamepadCameraControls(
   canvas.addEventListener('keyup', onKeyUp);
   canvas.addEventListener('blur', onBlur);
   canvas.addEventListener('pointerdown', onPointerDown);
+  windowRef?.addEventListener('blur', onBlur);
   windowRef?.addEventListener('gamepadconnected', onGamepadConnected);
   windowRef?.addEventListener('gamepaddisconnected', onGamepadDisconnected);
   documentRef?.addEventListener('visibilitychange', onVisibilityChange);
@@ -233,6 +234,7 @@ export function installGamepadCameraControls(
     canvas.removeEventListener('keyup', onKeyUp);
     canvas.removeEventListener('blur', onBlur);
     canvas.removeEventListener('pointerdown', onPointerDown);
+    windowRef?.removeEventListener('blur', onBlur);
     windowRef?.removeEventListener('gamepadconnected', onGamepadConnected);
     windowRef?.removeEventListener(
       'gamepaddisconnected',

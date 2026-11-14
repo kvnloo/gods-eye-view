@@ -147,13 +147,16 @@ const PAGE_SIZE = 1000;
  * Fetch all tectonic plate boundary features from USGS with pagination.
  *
  * @param {typeof fetch} fetchImpl
+ * @param {{ signal?: AbortSignal }} [options]
  * @returns {Promise<object>}
  */
-export async function fetchAllTectonicPlateGeoJson(fetchImpl = fetch) {
+export async function fetchAllTectonicPlateGeoJson(fetchImpl = fetch, { signal } = {}) {
   const features = [];
   let offset = 0;
 
   while (true) {
+    signal?.throwIfAborted();
+
     const params = new URLSearchParams({
       where: '1=1',
       outFields: '*',
@@ -165,13 +168,15 @@ export async function fetchAllTectonicPlateGeoJson(fetchImpl = fetch) {
       f: 'geojson',
     });
 
-    const response = await fetchImpl(`${USGS_PLATES_QUERY_URL}?${params}`);
+    const response = await fetchImpl(`${USGS_PLATES_QUERY_URL}?${params}`, { signal });
+    signal?.throwIfAborted();
 
     if (!response.ok) {
       throw new Error(`USGS HTTP ${response.status}`);
     }
 
     const page = await response.json();
+    signal?.throwIfAborted();
 
     if (!Array.isArray(page?.features)) {
       throw new Error('Malformed USGS tectonic-plates response');

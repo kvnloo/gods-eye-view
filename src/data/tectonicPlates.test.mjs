@@ -6,6 +6,7 @@ import {
   normalizeBoundaryType,
   normalizeTectonicPlateSnapshot,
 } from './tectonicPlates.js';
+import { createUsgsTectonicPlateSource } from '../layers/tectonicPlates/source.js';
 
 
 test('normalizes known tectonic boundary labels', () => {
@@ -164,4 +165,73 @@ test('fetches tectonic boundaries across multiple pages', async () => {
 
   assert.equal(calls.length, 2);
   assert.equal(result.features.length, 1175);
+});
+
+test('aborting a tectonic-plate request cancels its active USGS fetch', async () => {
+  const controller = new AbortController();
+  let startedFetch;
+  const started = new Promise((resolve) => {
+    startedFetch = resolve;
+  });
+  let finishWithoutAbort;
+  let networkAborted = false;
+
+  const source = createUsgsTectonicPlateSource({
+    fetchImpl: (_url, { signal } = {}) =>
+      new Promise((resolve, reject) => {
+        finishWithoutAbort = () =>
+          resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({ type: 'FeatureCollection', features: [] }),
+          });
+        signal?.addEventListener(
+          'abort',
+          () => {
+            networkAborted = true;
+            reject(signal.reason);
+          },
+          { once: true },
+        );
+        startedFetch();
+      }),
+  });
+
+  const pending = source.getSnapshot({ signal: controller.signal });
+  await started;
+  controller.abort();
+  finishWithoutAbort();
+
+  await assert.rejects(pending, { name: 'AbortError' });
+  assert.equal(networkAborted, true, 'the active HTTP fetch must be aborted');
+});
+
+test('aborting tectonic-plate pagination prevents a second USGS request', async () => {
+  const controller = new AbortController();
+  let calls = 0;
+  let receivedSignal;
+  const source = createUsgsTectonicPlateSource({
+    fetchImpl: async (_url, { signal } = {}) => {
+      calls += 1;
+      if (calls > 1) {
+        throw new Error('unexpected USGS page after cancellation');
+      }
+      receivedSignal = signal;
+      controller.abort();
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          type: 'FeatureCollection',
+          features: Array.from({ length: 1000 }, () => ({})),
+        }),
+      };
+    },
+  });
+
+  await assert.rejects(source.getSnapshot({ signal: controller.signal }), {
+    name: 'AbortError',
+  });
+  assert.equal(calls, 1, 'pagination must stop as soon as aborted');
+  assert.equal(receivedSignal, controller.signal);
 });

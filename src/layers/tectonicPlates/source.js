@@ -13,7 +13,7 @@ export function createUsgsTectonicPlateSource({
     async getSnapshot({ signal } = {}) {
       signal?.throwIfAborted();
 
-      const payload = await fetchAllTectonicPlateGeoJson(fetchImpl);
+      const payload = await fetchAllTectonicPlateGeoJson(fetchImpl, { signal });
 
       signal?.throwIfAborted();
 

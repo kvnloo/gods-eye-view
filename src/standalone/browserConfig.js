@@ -37,8 +37,8 @@ export async function readBrowserConfig(
       const value = runtime[field];
       return [
         option,
-        typeof value === 'string' && value.length > 0
-          ? value
+        typeof value === 'string' && value.trim().length > 0
+          ? value.trim()
           : typeof buildValues[option] === 'string'
             ? buildValues[option]
             : '',

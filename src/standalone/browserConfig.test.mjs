@@ -64,6 +64,24 @@ test('empty or invalid runtime fields retain the corresponding build value', asy
   );
 });
 
+test('blank runtime browser keys retain build values; usable keys are trimmed', async () => {
+  assert.deepEqual(
+    await readBrowserConfig(built, {
+      fetchImpl: async () =>
+        Response.json({
+          googleMapsApiKey: ' \t ',
+          cesiumIonToken: ' runtime-cesium-example ',
+          mapillaryClientToken: '\n',
+        }),
+    }),
+    {
+      googleApiKey: built.googleApiKey,
+      cesiumToken: 'runtime-cesium-example',
+      mapillaryToken: built.mapillaryToken,
+    },
+  );
+});
+
 test('static hosting, malformed responses and network refusal preserve startup fallback', async () => {
   for (const reply of [
     () => new Response('not found', { status: 404 }),

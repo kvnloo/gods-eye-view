@@ -6419,9 +6419,9 @@ Existing Host/API response-header gates are unchanged.
 
 Before creating the scene, standalone startup reads this same-origin endpoint
 without following redirects, allowing at most one second and 16 KiB for acquisition
-and body consumption. Nonempty string values override their embedded build values;
-missing, empty, malformed, oversized, unavailable or timed-out configuration falls
-back per field to the build values. Startup cancellation prevents scene construction.
+and body consumption. Nonblank strings, trimmed of surrounding whitespace,
+override their embedded build values; missing, blank, malformed, oversized,
+unavailable or timed-out configuration falls back per field to the build values. Startup cancellation prevents scene construction.
 The resolved Mapillary value reaches the standalone catalogue source and viewer.
 No provider request is made by configuration loading itself.
 

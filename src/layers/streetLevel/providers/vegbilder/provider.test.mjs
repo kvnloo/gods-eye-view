@@ -194,6 +194,34 @@ test('a photo whose file is missing is skipped for the next feature type’s nea
   });
 });
 
+test('a missing nearest photo tries the next closest in the same feature type', async () => {
+  const missing = vegbilderFeature({
+    year: 2025,
+    lat: OSLO.lat,
+    lon: OSLO.lon,
+  });
+  const present = vegbilderFeature({
+    year: 2025,
+    meter: 573,
+    lat: OSLO.lat + 8 / 110_540,
+    lon: OSLO.lon,
+  });
+  const older = vegbilderFeature({
+    year: 2024,
+    lat: OSLO.lat,
+    lon: OSLO.lon,
+  });
+  const { instance, probed } = setup(
+    {
+      'vegbilder_1_0:Vegbilder_2025': [missing, present],
+      'vegbilder_1_0:Vegbilder_2024': [older],
+    },
+    { missing: [missing.id] },
+  );
+  assert.equal(await instance.nearestImage(OSLO), present.id);
+  assert.deepEqual(probed, [missing.id, present.id]);
+});
+
 test('outside Norway nothing is asked; no photo in range is null', async () => {
   const { instance, source } = setup({
     'vegbilder_1_0:Vegbilder_2025': [

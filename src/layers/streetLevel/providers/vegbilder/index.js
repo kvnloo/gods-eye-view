@@ -476,23 +476,22 @@ export function createVegbilderProvider({
             );
             signal?.throwIfAborted();
             for (const features of answers) {
-              let best = null;
+              const candidates = [];
               for (const feature of features) {
                 const image = remember(feature);
                 if (!image || !passesVegbilderFilter(image, filter)) continue;
                 const metres = metresBetween(point, image);
-                if (
-                  metres <= NEAREST_RADIUS_M &&
-                  (!best || metres < best.metres)
-                )
-                  best = { image, metres };
+                if (metres <= NEAREST_RADIUS_M)
+                  candidates.push({ image, metres });
               }
-              if (!best) continue;
-              const ok = await showable(best.image);
-              signal?.throwIfAborted();
-              if (ok) return best.image.id;
-              if (++tried >= NEAREST_PROBES)
-                throw new Error(MISSING_FILE_MESSAGE);
+              candidates.sort((a, b) => a.metres - b.metres);
+              for (const { image } of candidates) {
+                const ok = await showable(image);
+                signal?.throwIfAborted();
+                if (ok) return image.id;
+                if (++tried >= NEAREST_PROBES)
+                  throw new Error(MISSING_FILE_MESSAGE);
+              }
             }
           }
           if (tried) throw new Error(MISSING_FILE_MESSAGE);

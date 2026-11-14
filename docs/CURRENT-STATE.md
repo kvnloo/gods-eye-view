@@ -3995,9 +3995,9 @@ mainland Norway ask nothing. A line click opens the nearest photo within
 50 m, searching newest year first, flat before 360° within a year
 (`searchLayers`), four feature types at a time. Some listed photos have no
 file (many of Oslo's 360° ones answer 404, and the store takes no HEAD or
-range request), so the nearest candidate is loaded as an <img> first and a
-missing one skipped for the next feature type's (`loadsInBrowser`, at most
-four tries). The drive around an open photo comes from a CQL query on its
+range request), so candidates are probed as images (`loadsInBrowser`), nearest
+first within each feature type. A missing file falls through to the next
+candidate in that type before the next type, with at most four failed probes. The drive around an open photo comes from a CQL query on its
 road reference, lane and day within 300 m (`driveFilter`), cached per 200 m
 of road; its pass gives the cones and ‹ ›. Photo addresses are signed for ten
 hours, so a photo is asked for by `resourceId` again after an hour. Images

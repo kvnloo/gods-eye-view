@@ -227,3 +227,19 @@ test('builder rejects duplicate IDs, missing provinces, incomplete responses and
     /Invalid IGN coordinate/,
   );
 });
+
+test('IGN source row keeps the bundled dataset Markdown table intact', () => {
+  const lines = readFileSync(
+    new URL('../../DATA_SOURCES.md', import.meta.url),
+    'utf8',
+  ).split(/\r?\n/);
+  const ignRow = lines.findIndex((line) =>
+    line.startsWith('| **Argentina departments, partidos and comunas**'),
+  );
+  assert.notEqual(ignRow, -1, 'IGN source row must be documented');
+  assert.match(
+    lines[ignRow + 1] || '',
+    /^\| \*\*/,
+    'the following dataset row must not be separated by a blank line',
+  );
+});

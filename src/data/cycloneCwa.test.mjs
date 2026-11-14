@@ -316,6 +316,43 @@ test('CWA parser rejects stale, future, timezone-free, mixed-cycle, and invalid-
   assert.throws(() => parseCwaCyclones(old, NOW), /invalid_cwa_cyclone_data/);
 });
 
+test('CWA rejects blank coordinates and does not invent zero probability radii', () => {
+  for (const [section, field] of [
+    ['analysis', 'CoordinateLongitude'],
+    ['analysis', 'CoordinateLatitude'],
+    ['forecast', 'CoordinateLongitude'],
+    ['forecast', 'CoordinateLatitude'],
+  ]) {
+    const payload = product();
+    const [storm] = payload.cwaopendata.Dataset.TropicalCyclones.TropicalCyclone;
+    const entry =
+      section === 'analysis'
+        ? storm.AnalysisData.Fix.at(-1)
+        : storm.ForecastData.Fix[0];
+    entry[field] = '   ';
+    assert.throws(
+      () => parseCwaCyclones(payload, NOW),
+      /invalid_cwa_cyclone_data/,
+      `${section} ${field} must not be coerced to zero`,
+    );
+  }
+
+  const blankRadius = product();
+  const [radiusStorm] =
+    blankRadius.cwaopendata.Dataset.TropicalCyclones.TropicalCyclone;
+  radiusStorm.ForecastData.Fix[0].RadiusOf70PercentProbability.Radius[
+    '#text'
+  ] = '   ';
+  const [parsed] = parseCwaCyclones(blankRadius, NOW);
+  assert.equal(parsed.forecastPoints[0].probabilityRadiusKm, null);
+
+  const spaced = product();
+  const [spacedStorm] =
+    spaced.cwaopendata.Dataset.TropicalCyclones.TropicalCyclone;
+  spacedStorm.AnalysisData.Fix[1].CoordinateLongitude = ' 121.5 ';
+  assert.equal(parseCwaCyclones(spaced, NOW)[0].position.longitude, 121.5);
+});
+
 test('CWA fetch uses a fixed endpoint, server Authorization header, timeout, cap, and sanitized errors', async () => {
   const calls = [];
   const fetched = await fetchCwaCyclones({

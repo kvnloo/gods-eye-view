@@ -72,7 +72,9 @@ the block's own polygon (the plate uses the same material and comes out as
 paving, darker where the walls stand). A polygon's texture coordinates carry
 no height, so the shader places each fragment in metres east/north/up of the
 footprint's middle, relative to the eye. It is opaque and lit by the scene
-sun; faces turned from the sun keep half their colour as skylight. The roof
+sun; faces turned from the sun keep half their colour as skylight. The block
+casts its shadow and receives none (a shadow map speckles a lit roof that it
+falls back on); the paving under it and the map take the shadow. The roof
 has a coping, the parapet's shade on the side the sun comes over, a stair
 core and three units. Those are painted as the eye sees them: they are not
 geometry and add nothing to the height or to the cast shadow. A thin light

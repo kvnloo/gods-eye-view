@@ -319,7 +319,9 @@ export function mountCityMassing({
             height: base,
             extrudedHeight: base + massing.heightMeters,
             material: facadeMaterial(() => site?.look),
-            shadows: Cesium.ShadowMode.ENABLED,
+            // The block casts and receives nothing: its own shader shades
+            // it, and a shadow map speckles a lit roof it falls back on.
+            shadows: Cesium.ShadowMode.CAST_ONLY,
           },
         }),
     };
@@ -330,17 +332,10 @@ export function mountCityMassing({
   }
 
   // The building the block is drawn as, and what its shader reads, as the
-  // block now stands: its storeys, its ground and whether the shadow map
-  // (which darkens the faces turned from the sun) is on.
+  // block now stands: its storeys and its ground.
   function dress() {
     site.facade = massingFacade(site.massing);
-    site.look =
-      site.facade &&
-      facadeUniforms(
-        site.facade,
-        site.base,
-        viewer.shadows ? scene.shadowMap?.darkness : null,
-      );
+    site.look = site.facade && facadeUniforms(site.facade, site.base);
   }
 
   // The study of the standing block against the edge, or null while it is off.
@@ -496,10 +491,7 @@ export function mountCityMassing({
       publish(site.plot);
     mark();
     const shadows = site.shadowsBefore || site.sun?.elevationDeg > 0;
-    if (viewer.shadows !== shadows) {
-      viewer.shadows = shadows;
-      dress();
-    }
+    if (viewer.shadows !== shadows) viewer.shadows = shadows;
     const { base, massing } = site;
     const top = base + massing.heightMeters;
     const tip = shadowTip(massing.footprint, massing.heightMeters, site.sun);
@@ -690,7 +682,8 @@ export function mountCityMassing({
         plateBottom: site?.plate.polygon.height.getValue() ?? null,
         shadowMap: viewer.shadows,
         blockShadows:
-          site?.block?.polygon.shadows.getValue() === Cesium.ShadowMode.ENABLED,
+          site?.block?.polygon.shadows.getValue() ===
+          Cesium.ShadowMode.CAST_ONLY,
         // The plate and block as they now stand are on screen.
         drawn: Boolean(site?.block) && !build && drawn(),
         sun: site?.sun ?? null,

@@ -572,22 +572,22 @@ test('the block is drawn as an opaque building from its own storeys, with no cya
   owner.destroy();
 });
 
-test('the faces turned from the sun are lifted against the shadow map only while it is on', async () => {
-  const day = mount();
-  day.viewer.scene.shadowMap.darkness = 0.3;
-  await day.select({ plot: { id: plot.id } });
-  const lit = day.ds.entities.getById('city-massing-block').polygon.material;
-  // While the block shows, its shadow is as dark as one in the imagery.
-  assert.equal(day.viewer.scene.shadowMap.darkness, 0.4);
-  within(lit.getValue().gevShade, 0.5 / 0.4, 1e-9, 'shadow map on');
-  day.owner.destroy();
-  assert.equal(day.viewer.scene.shadowMap.darkness, 0.3, 'restored');
-  const night = mount({ time: NIGHT });
-  night.viewer.scene.shadowMap.darkness = 0.3;
-  await night.select({ plot: { id: plot.id } });
-  const dark = night.ds.entities.getById('city-massing-block').polygon.material;
-  assert.equal(dark.getValue().gevShade, 0.5, 'no shadow map: skylight only');
-  night.owner.destroy();
+test('the block casts and receives nothing; its shadow is as dark as one in the imagery while it shows', async () => {
+  const { viewer, ds, select, owner } = mount();
+  viewer.scene.shadowMap.darkness = 0.3;
+  await select({ plot: { id: plot.id } });
+  const { block, plate } = {
+    block: ds.entities.getById('city-massing-block').polygon,
+    plate: ds.entities.getById('city-massing-plate').polygon,
+  };
+  // A shadow map speckles a lit roof it falls back on: the shader shades the
+  // block itself, and the paving under it takes the shadow.
+  assert.equal(block.shadows.getValue(), Cesium.ShadowMode.CAST_ONLY);
+  assert.equal(plate.shadows.getValue(), Cesium.ShadowMode.RECEIVE_ONLY);
+  assert.equal(plate.material.type, 'GevCityMassingFacade', 'paving');
+  assert.equal(viewer.scene.shadowMap.darkness, 0.4);
+  owner.destroy();
+  assert.equal(viewer.scene.shadowMap.darkness, 0.3, 'restored');
 });
 
 test('the study marks are thin ground lines: NOW solid, WAS dashed, no fill over the cast shadow', async () => {

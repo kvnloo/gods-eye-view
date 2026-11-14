@@ -208,11 +208,10 @@ czm_material czm_getMaterial(czm_materialInput materialInput) {
     color = mix(color, mean, smoothstep(0.35, 0.9, max(aaBay, aaLevel)));
     edge = min(halfLength - abs(along), top - z);
   }
-  // Lit by the scene sun. With the shadow map on, Cesium darkens the block's
-  // faces turned from the sun itself (gevShade lifts them to skylight); with
-  // it off, and on the plate, which casts nothing, the skylight is ours.
+  // Lit by the scene sun: a face turned from it keeps its skylight. (The
+  // block casts but receives no shadow, so nothing else darkens it.)
   float towards = smoothstep(0.0, 0.2, sunward);
-  color *= mix(p.z < 0.2 ? ${number(SHADE_SIDE)} : gevShade, 0.82 + 0.18 * sunward, towards);
+  color *= mix(${number(SHADE_SIDE)}, 0.82 + 0.18 * sunward, towards);
   float glint = pow(max(dot(reflect(-czm_lightDirectionEC, materialInput.normalEC), toEye), 0.0), 48.0);
   color += pane * towards * glint * 0.7;
   // A proposal, not a survey: a thin light along the roofline and corners.
@@ -251,7 +250,6 @@ function register() {
         gevMiddles: ZERO4,
         gevBays: ZERO4,
         gevLevels: ZERO4,
-        gevShade: SHADE_SIDE,
       },
       source: SOURCE,
     },
@@ -261,10 +259,9 @@ function register() {
 /**
  * What the shader needs for a facade (`massingFacade`) standing at `base`
  * metres: where its origin is, the local east/north/up, its first four walls
- * (a plot footprint has four) and its levels. `shadowDarkness` is the shadow
- * map's darkness while it is on, else null.
+ * (a plot footprint has four) and its levels.
  */
-export function facadeUniforms(facade, base, shadowDarkness = null) {
+export function facadeUniforms(facade, base) {
   const origin = Cesium.Cartesian3.fromDegrees(...facade.origin, base);
   const encoded = Cesium.EncodedCartesian3.fromCartesian(origin);
   const frame = Cesium.Transforms.eastNorthUpToFixedFrame(origin);
@@ -298,7 +295,6 @@ export function facadeUniforms(facade, base, shadowDarkness = null) {
       facade.heightMeters,
       facade.parapet.topMeters - facade.parapet.bottomMeters,
     ),
-    gevShade: shadowDarkness ? SHADE_SIDE / shadowDarkness : SHADE_SIDE,
   };
 }
 

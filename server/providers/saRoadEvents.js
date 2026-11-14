@@ -110,12 +110,17 @@ function pageUrl(base, { index, orderBy }, offset) {
   return url.href;
 }
 
-/** Seconds from a Retry-After header, as bounded milliseconds (or null). */
-function retryAfterMs(response, policy) {
-  const seconds = Number(response.headers?.get?.('retry-after'));
-  if (!Number.isFinite(seconds) || seconds < 0) return null;
+/** Retry-After delta-seconds or HTTP-date, bounded in milliseconds. */
+function retryAfterMs(response, policy, nowMs) {
+  const header = response.headers?.get?.('retry-after');
+  if (header == null) return null;
+  const seconds = Number(header);
+  const delayMs = Number.isFinite(seconds)
+    ? seconds * 1000
+    : Date.parse(header) - nowMs;
+  if (!Number.isFinite(delayMs) || delayMs < 0) return null;
   return Math.min(
-    Math.max(seconds * 1000, policy.retryAfterFailureMs),
+    Math.max(delayMs, policy.retryAfterFailureMs),
     policy.maxRetryAfterMs,
   );
 }
@@ -153,7 +158,7 @@ export function saRoadEventsProxy({
         throw Object.assign(new Error('sa_upstream_unavailable'), {
           status: response.status,
           ...(response.status === 429
-            ? { retryAfterMs: retryAfterMs(response, policy) }
+            ? { retryAfterMs: retryAfterMs(response, policy, now()) }
             : {}),
         });
       }

@@ -16,3 +16,4 @@
   the row says so rather than looking quiet. Data: Traffic SA, Department for
   Infrastructure and Transport, Government of South Australia (CC BY 4.0)
   (bennypixel, #1090).
+- Honor HTTP-date as well as numeric `Retry-After` headers on Traffic SA upstream 429s, without retrying the throttled group early or blocking the other groups (follow-up by kvnloo on bennypixel's #1090 layer).

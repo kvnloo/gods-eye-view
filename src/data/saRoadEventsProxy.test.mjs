@@ -862,6 +862,44 @@ test('a 429 is honoured: bounded Retry-After backoff and no mirror shopping', as
   assert.equal(huge.calls.length, 6, 'Retry-After is capped');
 });
 
+test('HTTP-date Retry-After holds only the throttled group until the date', async () => {
+  const start = Date.UTC(2026, 9, 17, 0, 0, 0);
+  const until = start + 300_000;
+  let clock = start;
+  let limited = true;
+  const service = upstream({
+    fail: (request) =>
+      limited && request.group === 'incidents'
+        ? new Response('slow down', {
+            status: 429,
+            headers: { 'retry-after': new Date(until).toUTCString() },
+          })
+        : null,
+  });
+  const request = install({ now: () => clock, fetchImpl: service.fetchImpl });
+  const first = await request();
+  assert.equal(first.status, 200);
+  assert.equal(statuses(first).incidents, 'unavailable');
+  assert.equal(groupCalls(service, 'incidents').length, 1);
+
+  clock = start + SA_ROAD_EVENTS_POLICY.retryAfterFailureMs + 1;
+  const during = await request();
+  assert.equal(during.status, 200);
+  assert.equal(statuses(during).roadworks, 'live');
+  assert.equal(statuses(during).closures, 'live');
+  assert.equal(
+    groupCalls(service, 'incidents').length,
+    1,
+    'HTTP-date must prevent the early retry after the default minute',
+  );
+
+  limited = false;
+  clock = until;
+  const recovered = await request();
+  assert.equal(statuses(recovered).incidents, 'live');
+  assert.equal(groupCalls(service, 'incidents').length, 2);
+});
+
 test('a non-OK upstream body is cancelled and an oversized one is refused', async () => {
   let cancelled = 0;
   const service = upstream({

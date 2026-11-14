@@ -776,3 +776,64 @@ test('the real portal lays out once the groups have moved and puts back the focu
   await nextTick();
   assert.deepEqual(layouts, [true]);
 });
+
+test('custom picker colors survive preset and template switches', async (t) => {
+  const { store, $ } = fixture(t);
+  const { owner } = settings(store);
+  owner._displayAccents = {};
+  owner._hudVariantShown = 'cyber';
+  t.after(() => {
+    localStorage.removeItem('gev:display-accents:v1');
+    owner._hudVariantShown = 'tactical';
+    owner._displayAccents = {};
+    owner._applyDisplayAccent();
+  });
+
+  owner._setDisplayAccent('custom', '#123456');
+  owner._setDisplayAccent('red');
+  await nextTick();
+  assert.equal($('display-accent-custom').value, '#123456');
+  assert.equal(
+    document.querySelector('[data-accent="red"]').getAttribute('aria-pressed'),
+    'true',
+  );
+  assert.equal(
+    JSON.parse(localStorage.getItem('gev:display-accents:v1')).cyber.customColor,
+    '#123456',
+  );
+
+  owner._hudVariantShown = 'minimal';
+  owner._applyDisplayAccent();
+  owner._publishDisplay();
+  await nextTick();
+  assert.equal($('display-accent-custom').value, '#7d4fae');
+  assert.equal(
+    document.documentElement.style.getPropertyValue('--display-accent'),
+    '',
+  );
+  owner._setDisplayAccent('custom', '#aabbcc');
+  owner._setDisplayAccent('amber');
+  await nextTick();
+  assert.equal($('display-accent-custom').value, '#aabbcc');
+
+  owner._hudVariantShown = 'cyber';
+  owner._applyDisplayAccent();
+  owner._publishDisplay();
+  await nextTick();
+  assert.equal($('display-accent-custom').value, '#123456');
+  assert.equal(
+    document.documentElement.style.getPropertyValue('--display-accent'),
+    '#c45454',
+  );
+  owner._setDisplayAccent('custom', '#123456');
+  await nextTick();
+  assert.equal(
+    document.documentElement.style.getPropertyValue('--display-accent'),
+    '#123456',
+  );
+  assert.equal(
+    JSON.parse(localStorage.getItem('gev:display-accents:v1')).minimal
+      .customColor,
+    '#aabbcc',
+  );
+});

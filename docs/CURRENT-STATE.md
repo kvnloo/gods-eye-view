@@ -4824,6 +4824,9 @@ B04/B03/B02, from the Copernicus Data Space Ecosystem Sentinel Hub Process API.
   from the Catalog API, cached 6 h; a per-UTC-day request budget
   (`SENTINEL_HUB_DAILY_REQUEST_BUDGET`, default 300 ≈ 9,300 / month against the
   free 10,000). Fixed CDSE hosts, redirects refused, same-site gate, GET only.
+  Process/Catalog calls reserve a budget slot synchronously after OAuth,
+  including on 401 retries; concurrent excess requests receive HTTP 429
+  or a stale cached tile. Budget file loading and writes are serialized.
   Pure request shaping lives in `src/data/sentinel2Tiles.js`.
 - **Resolution.** The provider requests z8–z14 (z14 ≈ 9.6 m/px, the 10 m native
   scale); the layer draws on terrain levels 7–14 (`SENTINEL2_LAYER_OPTIONS`).

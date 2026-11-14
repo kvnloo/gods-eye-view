@@ -404,3 +404,71 @@ test('scene lookups pick the least-cloudy scene and cache per 0.1° cell', async
   for (const bad of ['/scene', '/scene?lon=200&lat=0', '/scene?lon=x&lat=1'])
     assert.equal((await request(bad)).status, 400, bad);
 });
+
+test('a cold OAuth mint cannot overspend a shared tile and scene budget', async (t) => {
+  isolate(t, { ...keyed, SENTINEL_HUB_DAILY_REQUEST_BUDGET: '3' });
+  let releaseToken;
+  const tokenGate = new Promise((resolve) => {
+    releaseToken = resolve;
+  });
+  let signalMint;
+  const mintStarted = new Promise((resolve) => {
+    signalMint = resolve;
+  });
+  const upstreamCalls = [];
+  let minted = 0;
+  t.mock.method(globalThis, 'fetch', async (url) => {
+    if (url === TOKEN_URL) {
+      minted++;
+      signalMint();
+      await tokenGate;
+      return Response.json({ access_token: 'cold-token', expires_in: 600 });
+    }
+    if (url === PROCESS_URL) {
+      upstreamCalls.push(url);
+      return new Response(PNG, { headers: { 'Content-Type': 'image/png' } });
+    }
+    if (url === CATALOG_URL) {
+      upstreamCalls.push(url);
+      return Response.json({ features: [] });
+    }
+    throw new Error('unexpected upstream ' + url);
+  });
+
+  const request = install(sentinel2Proxy());
+  const pending = [
+    ...Array.from({ length: 8 }, (_, x) =>
+      request('/tile/10/' + (600 + x) + '/400.png'),
+    ),
+    request('/scene?lon=31.2&lat=30.0'),
+  ];
+  await mintStarted;
+  // Every caller must reach the shared pending token before the mint completes.
+  await new Promise((resolve) => setImmediate(resolve));
+  releaseToken();
+  const replies = await Promise.all(pending);
+  assert.equal(minted, 1);
+  assert.equal(upstreamCalls.length, 3, 'Process and Catalog share the cap');
+  assert.equal(replies.filter((reply) => reply.status === 200).length, 3);
+  assert.equal(replies.filter((reply) => reply.status === 429).length, 6);
+  for (const reply of replies.filter((reply) => reply.status === 429))
+    assert.deepEqual(json(reply), { error: 'budget' });
+  assert.equal(json(await request('/status')).dailyCount, 3);
+});
+
+test('a 401 retry cannot spend a budget slot that is already consumed', async (t) => {
+  isolate(t, { ...keyed, SENTINEL_HUB_DAILY_REQUEST_BUDGET: '1' });
+  const upstream = fakeUpstream(t, {
+    process: (init) =>
+      init.headers.Authorization === 'Bearer token-1'
+        ? new Response(null, { status: 401 })
+        : new Response(PNG, { headers: { 'Content-Type': 'image/png' } }),
+  });
+  const request = install(sentinel2Proxy());
+  const tile = await request('/tile/10/600/400.png');
+  assert.equal(tile.status, 429);
+  assert.deepEqual(json(tile), { error: 'budget' });
+  assert.equal(upstream.processCalls().length, 1);
+  assert.equal(upstream.tokenCalls().length, 2);
+  assert.equal(json(await request('/status')).dailyCount, 1);
+});

@@ -102,7 +102,10 @@ export function sentinel2Proxy() {
 
   /** @type {{date:string, count:number}|null} */
   let budget = null;
-  let budgetLoaded = false;
+  /** @type {Promise<void>|null} */
+  let budgetLoad = null;
+  let budgetWrites = Promise.resolve();
+  const BUDGET_DENIED = Symbol('sentinel2-budget-denied');
 
   const credentials = () => {
     const clientId = String(process.env.SENTINEL_HUB_CLIENT_ID || '').trim();
@@ -122,33 +125,40 @@ export function sentinel2Proxy() {
       : SENTINEL2_DEFAULT_DAILY_BUDGET;
   }
 
-  async function loadBudgetOnce() {
-    if (budgetLoaded) return;
-    budgetLoaded = true;
-    try {
-      const parsed = JSON.parse(await fsp.readFile(BUDGET_PATH, 'utf8'));
-      if (
-        parsed &&
-        typeof parsed.date === 'string' &&
-        Number.isFinite(parsed.count)
-      ) {
-        budget = parsed;
-      }
-    } catch {
-      /* no budget file yet */
+  function loadBudgetOnce() {
+    if (!budgetLoad) {
+      budgetLoad = (async () => {
+        try {
+          const parsed = JSON.parse(await fsp.readFile(BUDGET_PATH, 'utf8'));
+          if (
+            parsed &&
+            typeof parsed.date === 'string' &&
+            Number.isFinite(parsed.count)
+          ) {
+            budget = parsed;
+          }
+        } catch {
+          /* no budget file yet */
+        }
+      })();
     }
+    return budgetLoad;
   }
 
-  async function persistBudget() {
-    try {
-      await fsp.mkdir(CACHE_DIR, { recursive: true });
-      await fsp.writeFile(BUDGET_PATH, JSON.stringify(budget), 'utf8');
-    } catch (err) {
-      console.warn(
-        '[sentinel2-proxy] budget write failed:',
-        err?.message || err,
-      );
-    }
+  function persistBudget() {
+    const snapshot = JSON.stringify(budget);
+    budgetWrites = budgetWrites
+      .then(async () => {
+        await fsp.mkdir(CACHE_DIR, { recursive: true });
+        await fsp.writeFile(BUDGET_PATH, snapshot, 'utf8');
+      })
+      .catch((err) => {
+        console.warn(
+          '[sentinel2-proxy] budget write failed:',
+          err?.message || err,
+        );
+      });
+    return budgetWrites;
   }
 
   function currentBudget() {
@@ -158,10 +168,16 @@ export function sentinel2Proxy() {
 
   const overBudget = () => isOverBudget(currentBudget(), dailyBudgetLimit());
 
-  /** Count one Sentinel Hub request — upstream counts it whatever it answers. */
-  function recordUpstreamRequest() {
-    currentBudget().count += 1;
+  /**
+   * Reserve a Process/Catalog request synchronously, including after a 401.
+   * Checking and incrementing without an await prevents cold-token stampedes.
+   */
+  function reserveUpstreamRequest() {
+    const today = currentBudget();
+    if (isOverBudget(today, dailyBudgetLimit())) return false;
+    today.count += 1;
     void persistBudget();
+    return true;
   }
 
   /**
@@ -246,7 +262,11 @@ export function sentinel2Proxy() {
     for (let attempt = 0; attempt < 2; attempt += 1) {
       const bearer = await getToken(creds, { force: attempt > 0 });
       if (!bearer) throw new Error('no token');
-      recordUpstreamRequest();
+      if (!reserveUpstreamRequest()) {
+        const err = new Error('daily budget exhausted');
+        err.code = 'SENTINEL2_BUDGET';
+        throw err;
+      }
       const res = await upstream(url, {
         ...init,
         headers: { ...init.headers, Authorization: `Bearer ${bearer}` },
@@ -422,6 +442,7 @@ export function sentinel2Proxy() {
                   return entry;
                 })
                 .catch((err) => {
+                  if (err?.code === 'SENTINEL2_BUDGET') return BUDGET_DENIED;
                   console.warn(
                     `[sentinel2-proxy] scene ${point.key} failed:`,
                     err?.message || err,
@@ -432,8 +453,10 @@ export function sentinel2Proxy() {
             );
           }
           const fresh = await sceneInflight.get(point.key);
-          if (fresh) sendScene(fresh.scene);
+          if (fresh && fresh !== BUDGET_DENIED) sendScene(fresh.scene);
           else if (cached) sendScene(cached.scene);
+          else if (fresh === BUDGET_DENIED)
+            sendJson(429, { error: 'budget' });
           else sendJson(502, { error: 'upstream' });
           return;
         }
@@ -485,6 +508,7 @@ export function sentinel2Proxy() {
                 return fresh;
               })
               .catch((err) => {
+                if (err?.code === 'SENTINEL2_BUDGET') return BUDGET_DENIED;
                 console.warn(
                   `[sentinel2-proxy] ${key} fetch failed (${err?.message || err}) — serving stale if any`,
                 );
@@ -494,8 +518,14 @@ export function sentinel2Proxy() {
           );
         }
         const fresh = await tileInflight.get(key);
-        if (fresh) sendTile(fresh.buf, 'MISS');
-        else if (entry) sendTile(entry.buf, 'STALE-ERROR');
+        if (fresh && fresh !== BUDGET_DENIED) sendTile(fresh.buf, 'MISS');
+        else if (entry)
+          sendTile(
+            entry.buf,
+            fresh === BUDGET_DENIED ? 'STALE-BUDGET' : 'STALE-ERROR',
+          );
+        else if (fresh === BUDGET_DENIED)
+          sendJson(429, { error: 'budget' });
         else sendJson(502, { error: 'upstream' });
       } catch (err) {
         console.warn('[sentinel2-proxy] error:', err?.message || err);

@@ -219,6 +219,32 @@ test('the card keeps clear of the right panel stack', async (t) => {
   assert.equal(m.host().style.right, '312px');
 });
 
+test('the aircraft type card stays on-screen beside a wide panel on mobile', async (t) => {
+  const m = mount(TRACKED, t);
+  const stack = document.body.appendChild(document.createElement('div'));
+  stack.id = 'right-panel-stack';
+  stack.getBoundingClientRect = () => ({ left: 28, width: 300, height: 460 });
+
+  const previousWidth = Object.getOwnPropertyDescriptor(window, 'innerWidth');
+  Object.defineProperty(window, 'innerWidth', {
+    value: 360,
+    configurable: true,
+  });
+  t.after(() => {
+    if (previousWidth)
+      Object.defineProperty(window, 'innerWidth', previousWidth);
+    else delete window.innerWidth;
+  });
+
+  await m.emit('gev:awareness-subject-selected');
+  const right = Number.parseFloat(m.host().style.right);
+  assert.ok(Number.isFinite(right), 'the card has a finite right offset');
+  assert.ok(
+    360 - right - 320 >= 16,
+    `the 320px card should remain 16px from the left edge (right=${right}px)`,
+  );
+});
+
 test('destroy removes the card from the page', (t) => {
   const m = mount(TRACKED, t);
   m.card.destroy();

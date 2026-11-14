@@ -32,7 +32,9 @@ network. The photo shows the type, not the tracked airframe, with its author,
 licence and a link to the source beside it. A type the library lacks shows the
 live telemetry and says the type is not in the library yet. The card is cyan
 for a civil aircraft and amber for a military one, and hides when tracking
-clears. The tracked aircraft's model is drawn as a scanning hologram in the
+clears. The card stays within the viewport when a right-side panel leaves too
+little room beside it. The tracked aircraft's model is drawn as a scanning
+hologram in the
 same colour. The hologram turns solid as the model shrinks below about 160
 screen pixels, so a distant plane stays readable. The shader is set when the
 model is created, and deselecting releases the model. Infrared boost keeps its

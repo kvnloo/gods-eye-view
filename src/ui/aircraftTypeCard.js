@@ -15,6 +15,8 @@ const LAYER_IDS = new Set(['flights', 'military']);
 const REFRESH_MS = 1000;
 const GAP_PX = 12;
 const SIDE_MARGIN_PX = 16;
+// Match .gev-type-card width; CSS caps it to the available viewport width.
+const CARD_WIDTH_PX = 320;
 
 /**
  * Mount the card. `getTracked` returns the tracked contact's descriptor, with
@@ -62,11 +64,20 @@ export function createAircraftTypeCard({
     const stack = documentRef.getElementById('right-panel-stack');
     const rect = stack?.getBoundingClientRect?.();
     const visible = rect && rect.width > 0 && rect.height > 0;
-    host.style.right = `${
-      visible
-        ? Math.max(SIDE_MARGIN_PX, windowRef.innerWidth - rect.left + GAP_PX)
-        : SIDE_MARGIN_PX
-    }px`;
+    const desiredRight = visible
+      ? Math.max(SIDE_MARGIN_PX, windowRef.innerWidth - rect.left + GAP_PX)
+      : SIDE_MARGIN_PX;
+    // If the panel leaves no room beside it, overlap instead of moving
+    // the selected aircraft card past the left edge of the viewport.
+    const cardWidth = Math.min(
+      CARD_WIDTH_PX,
+      Math.max(0, windowRef.innerWidth - SIDE_MARGIN_PX * 2),
+    );
+    const maxRight = Math.max(
+      SIDE_MARGIN_PX,
+      windowRef.innerWidth - cardWidth - SIDE_MARGIN_PX,
+    );
+    host.style.right = `${Math.min(desiredRight, maxRight)}px`;
   }
 
   function refresh() {

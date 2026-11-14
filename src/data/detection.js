@@ -1387,6 +1387,8 @@ function _drawOverlay(frame) {
       cohortByLayer: {},
       cohortCount: 0,
       placementBuildCount: 0,
+      // Remains cumulative even when the final source stops reporting contacts.
+      paintReuseCount: _paintReuseCount,
       selectedCount: 0,
       fadingCount: 0,
       didSolve: false,

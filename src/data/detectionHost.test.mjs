@@ -1892,3 +1892,29 @@ test('turning detection off lets go of the kept sweep', () => {
     env.cleanup();
   }
 });
+
+test('paint reuse telemetry remains cumulative when the last contact disappears', () => {
+  const env = installEnvironment();
+  const contacts = steadyContacts();
+  try {
+    initWorldOverlay(env.viewer);
+    initDetection(env.viewer, [contacts.layer], () => {});
+    setMode('DENSE');
+    settleFrame(env);
+    nextFrame(env);
+    const reused = getDetectionDiagnostics().paintReuseCount;
+    assert.ok(reused > 0, 'unchanged contacts should reuse the prior sweep');
+
+    contacts.objects.length = 0;
+    nextFrame(env);
+    const empty = getDetectionDiagnostics();
+    assert.equal(empty.observationCount, 0);
+    assert.equal(
+      empty.paintReuseCount,
+      reused,
+      'the cumulative counter must remain readable when the scene empties',
+    );
+  } finally {
+    env.cleanup();
+  }
+});

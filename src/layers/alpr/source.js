@@ -107,12 +107,26 @@ export function createAlprTileSource({
   metadataMaxAgeMs = Infinity,
   now = () => Date.now(),
 } = {}) {
+  // The existing ALPR publisher uses 404 for a tile with no cameras. Only
+  // convert missing detail tiles; a missing TileJSON or other HTTP error is
+  // still a real source failure.
+  const fetchCameraTile = async (url, options) => {
+    const response = await tileFetchImpl(url, options);
+    if (
+      tileOrigin !== EXISTING_TILE_ORIGIN ||
+      response.status !== 404 ||
+      !/\/\d+\/\d+\/\d+\.(?:mvt|pbf)$/.test(new URL(url).pathname)
+    )
+      return response;
+    await response.body?.cancel().catch(() => {});
+    return new Response(new Uint8Array(0));
+  };
   const sources = ['us', 'ca'].map((country) =>
     createVectorTileSource({
       tileJsonUrl: `${tileOrigin}/cameras-${country}-hourly.json`,
       allowedOrigin: tileOrigin,
       decode: decodeAlprTile,
-      fetchImpl: tileFetchImpl,
+      fetchImpl: fetchCameraTile,
       maxTiles: DETAIL_MAX_TILES,
       ttlMs: 60 * 60 * 1000,
       now,

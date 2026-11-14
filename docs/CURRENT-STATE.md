@@ -1482,8 +1482,10 @@ The existing ALPR layer merges DeFlock Maps' current primary US/Canada feed
 are merged, preferring a newer timestamped OSM edit; published way centroids
 remain distinct from node ids, and existing `alpr:<node-id>` ids stay stable.
 Either feed can carry the layer while its peer is unavailable: the row reports
-partial sources and retries after 30 seconds. DeFlock's build-pinned aliases are
-reread after an hour. The focused source/lifecycle tests cover merging, refresh,
+partial sources and retries after 30 seconds. An HTTP 404 from an existing-feed
+camera detail tile means that tile has no cameras, not a source outage; missing
+TileJSON and other HTTP failures remain errors. DeFlock's build-pinned aliases
+are reread after an hour. The focused source/lifecycle tests cover merging, refresh,
 cancellation and recovery.
 
 The optional **ALPR Cameras** layer shows community-mapped OpenStreetMap locations,

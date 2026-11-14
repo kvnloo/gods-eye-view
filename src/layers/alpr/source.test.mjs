@@ -285,6 +285,41 @@ test('DeFlock uses its published primary host and refreshes build-pinned URLs ho
   source.destroy();
 });
 
+test('an empty existing-feed tile is not a failed camera source', async () => {
+  let missingTiles = 0;
+  const tileFetchImpl = async (url) => {
+    const origin = new URL(url).origin;
+    if (url.endsWith('.json'))
+      return Response.json({
+        tiles: [`${origin}/cameras-us-hourly/{z}/{x}/{y}.mvt`],
+        bounds: [-160, 17, -64, 59],
+      });
+    if (origin === DEFLOCK_TILE_ORIGIN)
+      return new Response(new Uint8Array(0));
+    missingTiles++;
+    return new Response('No cameras in this tile', { status: 404 });
+  };
+  const source = createCombinedAlprSource({
+    sources: [
+      createDeflockAlprSource({ tileFetchImpl }),
+      createAlprTileSource({ tileFetchImpl }),
+    ],
+  });
+  try {
+    const result = await source.fetch(austin);
+    assert.ok(missingTiles > 0);
+    assert.deepEqual(result.records, []);
+    assert.equal(result.partialSources, false);
+    assert.equal(result.saturated, false);
+    assert.equal(result.noCoverage, false);
+    const fetched = missingTiles;
+    await source.fetch(austin);
+    assert.equal(missingTiles, fetched, 'empty tiles remain cacheable');
+  } finally {
+    source.destroy();
+  }
+});
+
 test('missing US tiles cannot suppress a healthy Canadian dataset', async () => {
   const calls = [];
   const source = createAlprTileSource({

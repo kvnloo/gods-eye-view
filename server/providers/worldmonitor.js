@@ -12,6 +12,14 @@ const MAX_BYTES = 2 * 1024 * 1024;
 const TIMEOUT_MS = 25_000;
 const STATES = new Set(['complete', 'partial', 'stale', 'unavailable']);
 const VARIANTS = new Set(['full', 'tech', 'finance', 'happy', 'commodity']);
+
+// Keep a stale-source warning even when malformed items must be discarded.
+const normalizedStatus = (state, rejected, validItems) => {
+  if (state === 'unavailable' || (rejected && !validItems))
+    return 'unavailable';
+  if (state === 'stale') return 'stale';
+  return rejected ? 'partial' : state;
+};
 const text = (value, max = 1000) =>
   typeof value === 'string' ? value.slice(0, max) : null;
 const object = (value) =>
@@ -287,11 +295,7 @@ export function createWorldMonitorClient({
       const rejected =
         body.state !== 'unavailable' &&
         headlines.length < Math.min(raw.length, 5);
-      const status = rejected
-        ? headlines.length
-          ? 'partial'
-          : 'unavailable'
-        : body.state;
+      const status = normalizedStatus(body.state, rejected, headlines.length);
       return {
         ...envelope(),
         status,
@@ -423,14 +427,11 @@ export function createWorldMonitorClient({
       rows.sort((a, b) =>
         (b.publishedAt || '').localeCompare(a.publishedAt || ''),
       );
-      const status =
-        body.coverage.state === 'unavailable'
-          ? 'unavailable'
-          : rejected
-            ? rows.length
-              ? 'partial'
-              : 'unavailable'
-            : body.coverage.state;
+      const status = normalizedStatus(
+        body.coverage.state,
+        rejected,
+        rows.length,
+      );
       const available = status === 'unavailable' ? [] : rows;
       const items = available.slice(0, limit);
       return {

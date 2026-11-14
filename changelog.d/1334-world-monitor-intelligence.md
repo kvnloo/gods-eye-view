@@ -6,3 +6,6 @@
   Credentials stay server-side and go only to loopback or private addresses;
   results keep source times and report partial, stale or unavailable coverage
   rather than inventing a zero (hifiguy, #1334).
+- Preserve stale World Monitor coverage when malformed article rows are dropped,
+  so headline and digest summaries retain their freshness warning
+  (follow-up to hifiguy's #1334).

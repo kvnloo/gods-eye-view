@@ -505,3 +505,32 @@ test('without a configured World Monitor, no surface carries its tools', async (
     false,
   );
 });
+
+test('malformed article rows must not hide stale source coverage', async (t) => {
+  const base = await fixture(t, (req, res) => {
+    if (req.url.includes('list-country-headlines')) {
+      json(res, {
+        ...headlines,
+        state: 'stale',
+        countries: { US: { items: [headline, { title: null }] } },
+      });
+      return;
+    }
+    json(res, {
+      ...digest,
+      categories: { politics: { items: [headline, { title: null }] } },
+    });
+  });
+  const client = createWorldMonitorClient({
+    env: { WORLD_MONITOR_API_BASE: base },
+  });
+  const news = await client.getCountryHeadlines('US');
+  assert.equal(news.status, 'stale');
+  assert.equal(news.coverage.state, 'stale');
+  assert.equal(news.headlines.length, 1);
+  const feed = await client.getFeedDigest();
+  assert.equal(feed.status, 'stale');
+  assert.equal(feed.coverage.state, 'stale');
+  assert.equal(feed.coverage.servedStale, true);
+  assert.equal(feed.returned, 1);
+});

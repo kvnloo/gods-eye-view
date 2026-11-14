@@ -6131,7 +6131,8 @@ entry reads its own environment for the same switch.
 
 - Results distinguish retrieval time from source time and report `complete`,
   `partial`, `stale` or `unavailable` coverage. Missing risk is unavailable,
-  never zero.
+  never zero. Malformed article rows are discarded without hiding a stale-source
+  warning.
 - Credentials and the backend address stay server-side; the browser receives
   only the enabled switch. Credentials go only to loopback or private
   addresses, with DNS pinned to the checked address and redirects refused.

@@ -5,6 +5,7 @@ import {
   prioritizeSources,
 } from './normalize.js';
 import { readResponseTextCapped } from '../common/http.js';
+import { haversineKm } from '../common/geo.js';
 
 /** DGT (Dirección General de Tráfico) publishes its whole road-camera
  * network as one DATEX II 3.7 document, keyless, refreshed continuously
@@ -262,9 +263,32 @@ export async function loadSpainSources() {
       signal,
     );
     const cameras = new Map();
+    const frames = new Map();
+    const conflictingFrames = new Set();
     for (const row of parseSpainDgtXml(xml)) {
       const camera = spainCameraToSource(row);
-      if (camera && !cameras.has(camera.id)) cameras.set(camera.id, camera);
+      if (!camera || cameras.has(camera.id)) continue;
+      const previous = frames.get(camera.url);
+      if (previous) {
+        // One still is not two distinct projected cameras. A widely
+        // separated alias has no trustworthy location, so omit both.
+        if (
+          haversineKm(previous.lat, previous.lon, camera.lat, camera.lon) > 0.5
+        ) {
+          conflictingFrames.add(camera.url);
+        }
+        continue;
+      }
+      frames.set(camera.url, camera);
+      cameras.set(camera.id, camera);
+    }
+    for (const url of conflictingFrames) {
+      cameras.delete(frames.get(url).id);
+    }
+    if (conflictingFrames.size) {
+      console.warn(
+        `[CCTV] Spain DGT omitted ${conflictingFrames.size} frames with conflicting locations`,
+      );
     }
     if (!cameras.size) throw new Error('no usable cameras in the document');
     const sources = prioritizeSources(

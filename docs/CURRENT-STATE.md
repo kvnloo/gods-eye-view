@@ -1645,7 +1645,10 @@ only `typeOfDevice` `camera` entries are kept. The only frame URL registered
 with the proxy is the exact `https://etraffic.dgt.es/camarasEtraffic/<id>.jpg`
 shape, with no query, port or userinfo. The publication gives the carriageway
 direction, not the camera bearing, so poses use the low-confidence heading
-prior. The NAP lists the dataset as Creative Commons Attribution; the CCTV
+prior. Nearby device aliases of one frame URL share a source; a frame
+whose locations differ by more than 500 m is omitted instead of being
+projected at conflicting anchors. The NAP lists the dataset as Creative
+Commons Attribution; the CCTV
 panel and the data-attribution lightbox credit DGT. `CCTV_SPAIN_ENABLED=0`
 disables the pack; `CCTV_SPAIN_MAX_SOURCES` sets its cap (default 800, bounded
 to 1–2000), and `CCTV_SPAIN_URL` overrides the document URL.

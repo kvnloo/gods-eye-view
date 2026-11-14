@@ -240,6 +240,47 @@ test('the loader turns the document into deduplicated sources', async (t) => {
   ]);
 });
 
+test('one DGT still cannot create conflicting projected camera anchors', async (t) => {
+  t.mock.method(console, 'log', () => {});
+  t.mock.method(console, 'warn', () => {});
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async () =>
+      new Response(
+        document([
+          cameraBlock(),
+          cameraBlock({
+            id: '999999',
+            lat: 40.4168,
+            lon: -3.7038,
+            url: 'https://etraffic.dgt.es/camarasEtraffic/176130.jpg',
+          }),
+          cameraBlock({
+            id: '91337',
+            lat: 41.3874,
+            lon: 2.1686,
+            url: 'https://etraffic.dgt.es/camarasEtraffic/91337.jpg',
+          }),
+          cameraBlock({
+            id: '777777',
+            lat: 41.3875,
+            lon: 2.1687,
+            url: 'https://etraffic.dgt.es/camarasEtraffic/91337.jpg',
+          }),
+          cameraBlock({
+            id: '55555',
+            url: 'https://etraffic.dgt.es/camarasEtraffic/55555.jpg',
+          }),
+        ]),
+      ),
+  );
+  assert.deepEqual(
+    (await loadSpainSources()).map((camera) => camera.id).sort(),
+    ['es-dgt-55555', 'es-dgt-91337'],
+  );
+});
+
 test('a redirected, failed or oversized document contributes an empty pack', async (t) => {
   t.mock.method(console, 'warn', () => {});
   for (const status of [302, 503]) {

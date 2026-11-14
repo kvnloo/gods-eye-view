@@ -135,6 +135,53 @@ test('regObs observations keep the path, drop unknowns and fix the trigger spell
   assert.equal(second.regionId, 'NO-3024');
 });
 
+test('regObs -1 heights are missing, not negative elevations', () => {
+  const common = {
+    DtObsTime: '2026-03-07T12:00:00Z',
+    ObsLocation: { Latitude: 61, Longitude: 7 },
+  };
+  const observations = normalizeRegobsObservations([
+    {
+      ...common,
+      RegId: 11,
+      AvalancheObs: { HeightStartZone: -1, HeightStopZone: '-1' },
+    },
+    {
+      ...common,
+      RegId: 12,
+      AvalancheObs: { HeightStartZone: 900, HeightStopZone: -1 },
+    },
+    {
+      ...common,
+      RegId: 13,
+      AvalancheObs: { HeightStartZone: 0, HeightStopZone: 0 },
+    },
+  ]);
+  const byId = new Map(
+    observations.map((observation) => [observation.id, observation]),
+  );
+  const unknown = byId.get('11');
+  assert.deepEqual(
+    [unknown.startElevationM, unknown.stopElevationM],
+    [null, null],
+    'regObs -1 means height not provided, not below sea level',
+  );
+  assert.ok(
+    !observationCard(unknown).details.some(
+      (line) => line.includes(' m drop') || line.startsWith('Release at -'),
+    ),
+    'unknown heights must not produce a fictitious drop in the card',
+  );
+  const partial = byId.get('12');
+  assert.deepEqual(
+    [partial.startElevationM, partial.stopElevationM],
+    [900, null],
+  );
+  assert.ok(observationCard(partial).details.includes('Release at 900 m'));
+  const seaLevel = byId.get('13');
+  assert.deepEqual([seaLevel.startElevationM, seaLevel.stopElevationM], [0, 0]);
+});
+
 test('EAWS outlines keep current Norwegian regions, rounded', () => {
   const ring = [
     [7.123456, 61.987654],

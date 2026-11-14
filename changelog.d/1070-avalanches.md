@@ -8,3 +8,5 @@
   forecasts. Off-season the panel replays the last season from its busiest
   week, with a bar per week to choose another. A country whose service is down
   drops out without blanking the others (Udaydsmls, #1070).
+- Ignore regObs negative missing-elevation sentinels in avalanche cards,
+  retaining valid zero-metre heights and partial observations.

@@ -22,6 +22,8 @@ most reported avalanches, with the season shown as a bar per week. Avalanche
 markers join the pick-ownership registry; region fills deliberately do not, so
 other layers' markers stay clickable over the mountains. Cards go through the
 world-overlay host, and an avalanche card links to its regObs report.
+Negative regObs height sentinels (including `-1`) render as unknown in cards,
+not as negative elevations or a fictitious zero-metre drop.
 Analyst region queries resolve unique Natural Earth names offline without
 geocoding, so Gold Coast and Ivory Coast name the West African natural regions.
 Duplicate names require a geocoded containment anchor; when several entries for

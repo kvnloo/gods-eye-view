@@ -38,6 +38,12 @@ const finite = (value) =>
       ? Number(value)
       : null;
 
+/** regObs encodes missing elevations as negative sentinels (usually -1). */
+const elevation = (value) => {
+  const meters = finite(value);
+  return meters !== null && meters >= 0 ? meters : null;
+};
+
 const text = (value, max = 600) => {
   const clean = String(value ?? '')
     .replace(/\s+/g, ' ')
@@ -134,8 +140,8 @@ export function normalizeRegobsObservations(rows) {
       size: unknown(tidy(obs.DestructiveSizeName)),
       trigger: unknown(tidy(obs.AvalancheTriggerName)),
       type: unknown(tidy(obs.AvalancheName)),
-      startElevationM: finite(obs.HeightStartZone),
-      stopElevationM: finite(obs.HeightStopZone),
+      startElevationM: elevation(obs.HeightStartZone),
+      stopElevationM: elevation(obs.HeightStopZone),
       regionId: Number.isInteger(regionTid) ? `NO-${regionTid}` : null,
       region: text(location.ForecastRegionName, 80),
       observer: text(row.Observer?.NickName, 80),

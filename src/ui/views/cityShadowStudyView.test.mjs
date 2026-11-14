@@ -5,7 +5,11 @@ import { createApp, h, nextTick } from 'vue';
 import { createPinia } from 'pinia';
 import { useCityPlayStore } from '../stores/cityPlay.js';
 import CityShadowStudy from './panels/CityShadowStudy.vue';
+import { plotMassing } from '../../data/cityMassing.js';
+import { snapPlot } from '../../data/cityPlot.js';
 import { shadowFit } from '../../data/cityShadowFit.js';
+
+const plot = snapPlot({ lat: 37.8007, lon: -122.4103 });
 
 // What the globe owner publishes for a 3.2 m storey block at winter noon.
 const SUN = { elevationDeg: 28.8, azimuthDeg: 180 };
@@ -17,14 +21,21 @@ function massingView({
   ...shadow
 } = {}) {
   const study = { on: true, edgeMeters: 20, ...shadow };
+  const of = (count) => plotMassing({ corners: plot.corners, storeys: count });
   return {
     on,
     storeys,
+    homes: of(storeys).homes,
+    far: of(storeys).far,
     sunElevationDeg: sun?.elevationDeg ?? null,
     shadow: {
       picking: false,
       edgeSet: false,
       winter: true,
+      was:
+        wasStoreys === storeys
+          ? null
+          : { homes: of(wasStoreys).homes, far: of(wasStoreys).far },
       ...study,
       plan: study.on
         ? shadowFit({
@@ -134,7 +145,7 @@ test('before a fit: the plan on the sidewalk, the assumed distance and what FIT 
   assert.equal(text('[data-city-shadow-fit]'), 'Fit to sun · Floors 6 → 3 EST');
   assert.equal($('[data-city-shadow-fit]').disabled, false);
   assert.equal($('[data-city-shadow-winter]'), null, 'the scene is in winter');
-  assert.equal($('[data-city-shadow-note]'), null);
+  assert.equal($('[data-city-shadow-note]'), null, 'no change, no cost yet');
   // The two tips, worded by the shared formatter, at the ends of the lines.
   assert.equal(
     text('[data-city-shadow-tip="now"]'),
@@ -168,6 +179,11 @@ test('after a fit: FLOORS 6 → 3 EST, the shadow clears, WAS and NOW at the tip
   });
   await settle();
   assert.equal(value('floors'), '6 → 3 EST');
+  // What the cut cost, through the same formatter.
+  assert.equal(
+    text('[data-city-shadow-cost]'),
+    'Homes 46 → 23 EST · FAR 3.84 → 1.92',
+  );
   assert.equal(text('[data-city-shadow-row="edge"] dt'), 'Clears sidewalk by');
   assert.equal(value('edge'), '3 m EST');
   assert.equal($('[data-city-shadow-assumed]'), null, 'the player set it');

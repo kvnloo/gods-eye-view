@@ -36,6 +36,13 @@ test('a noon shadow leaves the north face: the band is the block wide and as lon
   });
 });
 
+test('a padded band is that much wider on each side and no longer', () => {
+  const band = shadowBand(footprint, { azimuthDeg: 180 }, 20, 6).map(local);
+  near(band[0][0], 22, 'near left');
+  near(band[1][0], -22, 'near right');
+  near(band[2][1], 36, 'far side');
+});
+
 test('a morning shadow leaves the west face', () => {
   // The sun due east: the shadow falls west.
   const band = shadowBand(footprint, { azimuthDeg: 90 }, 35).map(local);

@@ -855,6 +855,7 @@ async function study() {
       ),
       edgeLabel: text(row('edge')?.querySelector('dt')),
       assumed: Boolean(document.querySelector('[data-city-shadow-assumed]')),
+      cost: text(document.querySelector('[data-city-shadow-cost]')),
       fit: text(document.querySelector('[data-city-shadow-fit]')),
       fitDisabled: document.querySelector('[data-city-shadow-fit]')?.disabled,
       tips: Object.fromEntries(
@@ -1549,6 +1550,7 @@ try {
         edge: '15 m EST',
       });
       assert.equal(shown.edgeLabel, 'Onto sidewalk');
+      assert.equal(shown.cost, null, 'no change yet, no cost line');
       assert.equal(shown.fit, 'Fit to sun · Floors 6 → 3 EST');
       assert.deepEqual(await readout(), shows(s));
       await insideViewport(S.study, DESKTOP);
@@ -1639,6 +1641,8 @@ try {
         edge: '3 m EST',
       });
       assert.equal(shown.edgeLabel, 'Clears sidewalk by');
+      // What the cut cost: the homes and FAR of six storeys beside three.
+      assert.equal(shown.cost, 'Homes 46 → 23 EST · FAR 3.84 → 1.92');
       assert.equal(shown.fit, 'Fit to sun');
       assert.equal(shown.fitDisabled, true, 'fitted: nothing more to cut');
       // HOMES and FAR follow in the massing readout.

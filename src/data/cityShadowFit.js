@@ -101,15 +101,16 @@ function shadowFrame(footprint, sun) {
 /**
  * The ground a shadow of `meters` covers beyond the block's face, as [lon,
  * lat] corners: near left, near right, far right, far left. The far side is
- * the shadow's tip, and at the edge's distance it is the protected edge.
+ * the shadow's tip, and at the edge's distance it is the protected edge,
+ * drawn `pad` metres wider on each side.
  */
-export function shadowBand(footprint, sun, meters) {
+export function shadowBand(footprint, sun, meters, pad = 0) {
   const { left, right, point } = shadowFrame(footprint, sun);
   return [
-    point(0, left),
-    point(0, right),
-    point(meters, right),
-    point(meters, left),
+    point(0, left - pad),
+    point(0, right + pad),
+    point(meters, right + pad),
+    point(meters, left - pad),
   ];
 }
 

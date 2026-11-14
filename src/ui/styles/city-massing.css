@@ -118,6 +118,9 @@ body:has([data-city-shadow-on='true']) [data-city-play-wheel] {
 .city-shadow[data-city-shadow-on='true'] {
   width: 300px;
 }
+.city-shadow .city-massing-row {
+  min-height: 28px;
+}
 .city-shadow .city-massing-value {
   text-transform: none;
 }
@@ -158,6 +161,11 @@ body:has([data-city-shadow-on='true']) [data-city-play-wheel] {
   margin: 6px 0 0;
   letter-spacing: 0.02em;
   text-transform: none;
+}
+.city-shadow-cost {
+  margin-top: 2px;
+  color: var(--accent);
+  text-transform: uppercase;
 }
 .city-shadow-tip {
   position: fixed;

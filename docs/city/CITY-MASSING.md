@@ -144,7 +144,8 @@ sidewalk.
   the minute `citySun` puts the sun highest (28.8° at San Francisco). No sun
   angle is typed in or assumed. With the sun down the reach is a dash and there
   is nothing to fit.
-- **On the ground.** The protected edge is a line across the shadow. The shadow
+- **On the ground.** The protected edge is an amber line across the shadow,
+  reaching 6 m past its sides. The shadow
   as it now falls is a filled band (NOW). Beside it is a dashed outline: before
   a change, what a fit would leave (FIT TO SUN); after one, the shadow of the
   storeys the study started from (WAS). Each band ends in a tip label, worded
@@ -157,7 +158,10 @@ sidewalk.
   edge the panel says so. It changes the storey count, never the storey height
   (floor-to-floor is held to 2.8 to 4.5 m; massing's own is 3.2 m).
 - **Readouts.** FLOORS `6 → 3 EST`, and ONTO SIDEWALK or CLEARS SIDEWALK BY in
-  metres EST. HOMES, FAR, HEIGHT and SHADOW REACH follow in the massing readout.
+  metres EST. Once the storeys changed, one line states what that cost:
+  `HOMES 46 → 23 EST · FAR 3.84 → 1.92`, the massing readout's own HOMES and
+  FAR for the storeys the study started from and for the ones that stand. The
+  massing readout itself follows with HEIGHT, FAR, HOMES and SHADOW REACH.
 
 `src/data/cityShadowFit.js` is the one owner of the numbers (pure):
 `shadowFit({storeys, wasStoreys, storeyHeightMeters, sun, edgeMeters})` returns
@@ -243,8 +247,9 @@ back to 20 m by SET ON MAP and a click on the ground across the street. It
 asserts the panel, the two tip labels and the entities on the ground against
 `shadowFit` (each line's length within half a metre), takes
 `09-shadow-reaches.png`, presses FIT TO SUN and asserts three storeys, the
-dashed WAS line, the filled NOW band, `FLOORS 6 → 3 EST`, the massing readout
-(23 homes, FAR 1.92) and that nothing was saved (`10-fit-to-sun.png`).
+dashed WAS line, the filled NOW band, `FLOORS 6 → 3 EST`, the cost line
+(`HOMES 46 → 23 EST · FAR 3.84 → 1.92`), the massing readout (23 homes, FAR
+1.92) and that nothing was saved (`10-fit-to-sun.png`).
 
 `src/tooling/qaCityMassingJourney.test.mjs` fails if any of these steps drops
 out of the journey.

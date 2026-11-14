@@ -46,9 +46,12 @@ const BLOCK = Cesium.Color.fromCssColorString('#e8edf1');
 const PLATE = Cesium.Color.fromCssColorString('#8d949b');
 const ACCENT = Cesium.Color.fromCssColorString('#2ec8e8');
 // The shadow study on the ground: the shadow as it now falls is filled, the
-// one it is held against (was, or what a fit would leave) is a dashed outline.
+// one it is held against (was, or what a fit would leave) is a dashed outline,
+// and the protected edge is an amber line reaching past the shadow's sides.
 const SHADE = Cesium.Color.fromCssColorString('#04080e').withAlpha(0.5);
 const WAS = Cesium.Color.WHITE;
+const EDGE = Cesium.Color.fromCssColorString('#ffb454');
+const EDGE_PAD_METERS = 6;
 const MAX_EDGE_METERS = 200;
 
 /**
@@ -207,9 +210,11 @@ export function mountCityMassing({
   // and the edge's distance, all from the face the shadow leaves.
   function drawnMeters() {
     const span = (a, b) => Cesium.Cartesian3.distance(a, b);
-    const corner = ds.entities
+    const middle = (a, b) =>
+      Cesium.Cartesian3.midpoint(a, b, new Cesium.Cartesian3());
+    const face = ds.entities
       .getById(`${OWNER}-shadow-now`)
-      .polygon.hierarchy.getValue().positions[1];
+      .polygon.hierarchy.getValue().positions;
     return Object.fromEntries(
       marks.map((entity) => {
         const at = entity.polyline?.positions.getValue();
@@ -219,7 +224,7 @@ export function mountCityMassing({
           corners
             ? span(corners[1], corners[2])
             : at.length === 2
-              ? span(corner, at[0])
+              ? span(middle(face[0], face[1]), middle(at[0], at[1]))
               : span(at[0], at[1]),
         ];
       }),
@@ -347,8 +352,8 @@ export function mountCityMassing({
       ds.entities.add({ id: `${OWNER}-shadow-${id}`, ...graphics });
     const ground = (corners) =>
       Cesium.Cartesian3.fromDegreesArray(corners.flat());
-    const polyline = (positions, material) => ({
-      polyline: { positions, width: 4, clampToGround: true, material },
+    const polyline = (positions, material, width = 4) => ({
+      polyline: { positions, width, clampToGround: true, material },
     });
     marks = lines.map((line) => {
       const [nearLeft, nearRight, farRight, farLeft] = ground(
@@ -374,7 +379,21 @@ export function mountCityMassing({
     });
     if (lines.length)
       marks.push(
-        add('edge', polyline(ground(band(edgeMeters).slice(2)), ACCENT)),
+        add(
+          'edge',
+          polyline(
+            ground(
+              shadowBand(
+                site.massing.footprint,
+                site.sun,
+                edgeMeters,
+                EDGE_PAD_METERS,
+              ).slice(2),
+            ),
+            EDGE,
+            6,
+          ),
+        ),
       );
     rendered();
   }
@@ -524,6 +543,8 @@ export function mountCityMassing({
         edgeSet,
         winter: inWinter(plot.center.lat, sceneTime()),
         plan: standing ? plan() : null,
+        // What the storeys the study started from held, once they changed.
+        was: study && wasStoreys !== storeys ? wasMassing(plot) : null,
       },
     });
   }
@@ -542,6 +563,14 @@ export function mountCityMassing({
     if (plot && on) show(plot);
     else hide();
     publish(plot);
+  }
+
+  function wasMassing(plot) {
+    const { homes, far } = plotMassing({
+      corners: plot.corners,
+      storeys: wasStoreys,
+    });
+    return { homes, far };
   }
 
   // A study control changed something: redraw the ground and the readout.

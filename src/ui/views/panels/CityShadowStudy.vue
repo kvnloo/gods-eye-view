@@ -43,6 +43,16 @@ const fitFloors = computed(() => {
   const p = plan.value;
   return p?.canFit ? hudFigure({ before: p.now.storeys, value: p.fit.storeys, estimate: true }) : null;
 });
+// What the change cost, once the storeys changed: homes and FAR, before → after.
+const cost = computed(() => {
+  const was = plan.value?.was && study.value.was;
+  if (!was) return null;
+  const far = (value) => Math.round(value * 100) / 100;
+  return [
+    `${t('Homes')} ${hudFigure({ before: was.homes, value: massing.value.homes, estimate: true })}`,
+    `${t('FAR', { context: 'floor area ratio' })} ${hudFigure({ before: far(was.far), value: far(massing.value.far) })}`,
+  ].join(' · ');
+});
 const note = computed(() => {
   const p = plan.value;
   if (study.value?.picking) return t('Click the ground across the street');
@@ -183,6 +193,7 @@ onBeforeUnmount(() => {
           </dd>
         </div>
       </template>
+      <p v-if="cost" class="city-shadow-note city-shadow-cost" data-city-shadow-cost>{{ cost }}</p>
       <button type="button" class="city-shadow-button city-shadow-fit" data-city-shadow-fit :disabled="!fitFloors" @click="massingControls?.fit()">
         {{ t('Fit to sun') }}<template v-if="fitFloors"> · {{ t('Floors') }} {{ fitFloors }}</template>
       </button>

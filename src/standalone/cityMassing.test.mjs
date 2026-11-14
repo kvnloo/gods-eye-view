@@ -385,6 +385,7 @@ test('PROTECT SIDEWALK draws the plan, what a fit would leave and the edge; FIT 
   within(s.study.drawn.edge, 20, 0.3, 'edge');
   assert.equal(store.massing.shadow.plan.canFit, true);
   assert.ok(store.massing.shadow.plan.now.overMeters > 0, 'on the sidewalk');
+  assert.equal(store.massing.shadow.was, null, 'nothing changed yet');
   assert.deepEqual(Object.keys(store.massingAnchors.tips), ['now', 'fit']);
 
   store.massingControls.fit();
@@ -411,6 +412,9 @@ test('PROTECT SIDEWALK draws the plan, what a fit would leave and the edge; FIT 
   assert.equal(s.study.plan.canFit, false);
   assert.equal(store.massing.homes, 23);
   within(store.massing.far, 1.92, 1e-9, 'FAR');
+  // What the cut cost: the six storeys' homes and FAR beside the new ones.
+  assert.equal(store.massing.shadow.was.homes, 46);
+  within(store.massing.shadow.was.far, 3.84, 1e-9, 'FAR before');
   assert.deepEqual(Object.keys(store.massingAnchors.tips), ['was', 'now']);
   store.massingControls.fit();
   assert.equal(win.__gevCityMassing.snapshot().storeys, 3, 'fitted: a no-op');

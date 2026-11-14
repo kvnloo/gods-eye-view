@@ -100,8 +100,10 @@ const SPIKE_ARM = '/city-massing-spike/arm.json';
 //   4 play mode's selection outline steps aside while the block stands;
 //   5 the GLB shadows itself ("shadows": "ENABLED"), with "self":
 //     {"normalOffsetScale", "depthBias", "darkness"} on the shadow map;
-//   6 the shadow takes "tone" (cityMassingSeat.js SEAT_TONE: a wider edge,
-//     the tiles' cooler shade) and the NOW line over its end goes faint.
+//   6 the NOW line over the shadow's end goes faint.
+// At any level "tone" replaces cityMassingSeat.js SEAT_TONE (the shadow's
+// edge width and what it keeps of red and blue) and "steps" squares the
+// closing walls.
 // The colours are read this far outside the plot's edge.
 const TONE_OUT_METERS = 5;
 const TONE_RISE_METERS = 1.5;
@@ -194,7 +196,8 @@ export function mountCityMassing({
         // The tiles carry their own (high, summer) light and take none from
         // the scene. arm.json may say how the GLB answers the scene sun:
         // "sun" scales its light, "env" its sky light, "shade": [a, s] has
-        // it keep a of its colour and add s where it faces the sun.
+        // it keep a of its colour and add s where it faces the sun, "tilesSun"
+        // the same for the sun baked into the tiles.
         if (arm.sun)
           primitive.lightColor = new Cesium.Cartesian3(
             arm.sun,
@@ -203,12 +206,20 @@ export function mountCityMassing({
           );
         if (arm.env && primitive.environmentMapManager)
           primitive.environmentMapManager.brightness = arm.env;
+        const [gain = 0, east = 0, north = 0, up = 1] = arm.tilesSun ?? [];
         if (arm.shade)
           primitive.customShader = new Cesium.CustomShader({
             lightingModel: Cesium.LightingModel.UNLIT,
             fragmentShaderText: `void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
-              float d = max(dot(normalize(fsInput.attributes.normalEC), czm_lightDirectionEC), 0.0);
-              material.diffuse *= ${Number(arm.shade[0]).toFixed(3)} + ${Number(arm.shade[1]).toFixed(3)} * d;
+              vec3 n = normalize(fsInput.attributes.normalEC);
+              float d = max(dot(n, czm_lightDirectionEC), 0.0);
+              // "tilesSun": [t, east, north, up]: t more where it faces the sun the
+              // tiles were photographed under (the GLB's axes: east +X, up +Y, north -Z).
+              vec4 tiles = vec4(${[east, up, -north, gain]
+                .map((v) => Number(v).toFixed(4))
+                .join(', ')});
+              float t = tiles.w * max(dot(n, normalize((czm_modelView * vec4(tiles.xyz, 0.0)).xyz)), 0.0);
+              material.diffuse *= ${Number(arm.shade[0]).toFixed(3)} + ${Number(arm.shade[1]).toFixed(3)} * d + t;
               // "grade": [colour kept, r, g, b, share of that haze]: toward the tiles' tone.
               vec4 grade = vec4(${(arm.grade ?? [1, 0, 0, 0, 0])
                 .slice(1)
@@ -426,16 +437,33 @@ export function mountCityMassing({
       Math.max,
     );
     if (heights.every((height) => height - top < 0.2)) return null;
+    // SPIKE ("seat": {"steps": true}): each stretch stands as high as the
+    // taller neighbour at either end, so the walls rise in steps like party
+    // walls, not in slopes that leave slivers of the mesh's inside showing.
+    const part = (a, b, t) => [
+      a[0] + (b[0] - a[0]) * t,
+      a[1] + (b[1] - a[1]) * t,
+    ];
+    const posts =
+      seated && arm.seat.steps
+        ? ring.flatMap(({ on }, i) => {
+            const next = ring[(i + 1) % n].on;
+            const height = Math.max(heights[i], heights[(i + 1) % n]);
+            return [
+              { on: part(on, next, 0.003), height },
+              { on: part(on, next, 0.997), height },
+            ];
+          })
+        : ring.map(({ on }, i) => ({ on, height: heights[i] }));
+    posts.push(posts[0]);
     return ds.entities.add({
       id: `${OWNER}-sides`,
       wall: {
         positions: Cesium.Cartesian3.fromDegreesArray(
-          [...ring, ring[0]].flatMap(({ on }) => on),
+          posts.flatMap(({ on }) => on),
         ),
-        minimumHeights: Array(n + 1).fill(top),
-        maximumHeights: [...heights, heights[0]].map((height) =>
-          Math.max(height, top + 0.05),
-        ),
+        minimumHeights: posts.map(() => top),
+        maximumHeights: posts.map(({ height }) => Math.max(height, top + 0.05)),
         material: seated ? groundMaterial(() => site?.ground) : SIDES,
         shadows: seated
           ? Cesium.ShadowMode.DISABLED
@@ -683,10 +711,9 @@ export function mountCityMassing({
         SHADOW_DARKNESS,
         site.seat.level >= 2 ? 1 : 0,
       ),
-      gevSeatTone:
-        site.seat.level >= 6 && arm.seat.tone
-          ? new Cesium.Cartesian4(...arm.seat.tone)
-          : SEAT_TONE,
+      gevSeatTone: arm.seat.tone
+        ? new Cesium.Cartesian4(...arm.seat.tone)
+        : SEAT_TONE,
     };
   }
 

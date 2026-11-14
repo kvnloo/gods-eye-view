@@ -3919,5 +3919,30 @@
   "Assumed": "הנחה",
   "Set on map": "קביעה במפה",
   "Set the scene to solar noon on the winter solstice here": "הגדרת הסצנה לצהרי השמש ביום ההיפוך החורפי כאן",
-  "Winter noon": "צהרי חורף"
+  "Winter noon": "צהרי חורף",
+  "{years} YR": "{years} שנים",
+  "timeline stage|NOW": "כעת",
+  "GROWTH FLOORS {floors}": "קומות הצמיחה {floors}",
+  "LOWER THAN AN EARLIER STAGE": "נמוך משלב קודם",
+  "HOMES {homes}": "דירות {homes}",
+  "RESIDENTIAL FLOOR AREA {area}": "שטח רצפות למגורים {area}",
+  "HOME DELIVERIES {rate}": "משלוחים לבתים {rate}",
+  "per day|/d": "/יום",
+  "ASSUMED: A DELIVERY A DAY FOR EVERY {homes} HOMES": "הנחה: משלוח אחד ביום לכל {homes} דירות",
+  "COST: NO WORKS YET": "מחיר: עדיין אין עבודות",
+  "LOCKED PLOTS KEEP THEIR SUN FIT": "חלקות נעולות שומרות על התאמתן לשמש",
+  "DISTRICT · {count} PLOTS · {area}": {
+    "one": "רובע · חלקה {count} · {area}",
+    "two": "רובע · {count} חלקות · {area}",
+    "other": "רובע · {count} חלקות · {area}"
+  },
+  "COST: NEIGHBOURS LIVE BESIDE ROOF WORKS ON {count} PLOTS": {
+    "one": "מחיר: השכנים גרים ליד עבודות גג בחלקה {count}",
+    "two": "מחיר: השכנים גרים ליד עבודות גג ב־{count} חלקות",
+    "other": "מחיר: השכנים גרים ליד עבודות גג ב־{count} חלקות"
+  },
+  "Growth timeline": "ציר זמן הצמיחה",
+  "Growth timeline for this district": "ציר זמן הצמיחה של הרובע הזה",
+  "Timeline stage": "שלב בציר הזמן",
+  "Sun fit": "התאמה לשמש"
 }

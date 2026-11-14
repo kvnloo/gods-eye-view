@@ -181,6 +181,86 @@ or a season. The edge is where the player put it, not a surveyed kerb. The
 study is desktop only (a phone keeps the massing readout alone), and nothing
 of it is saved.
 
+## Grow a district on a timeline
+
+A district is a block of plots. With a plot selected in play mode, shift-click
+a second plot: the cells between the two become the district (both included,
+at most 10 plots a side), each outlined, and the camera frames it whole. The
+first plot stays selected and is the district's **anchor**. A plain click, Esc
+or leaving the mode drops the district. The plot grid's rows are offset
+against each other like bricks (each row's columns are as wide as 40 m is at
+its own latitude), so `plotBlock` in `src/data/cityPlot.js` takes as many
+cells in every row as the two plots are apart: four plots along and four
+across give 25 plots, 40,000 m².
+
+With a district selected a panel at the right holds one toggle, **GROWTH
+TIMELINE**, and the district's line (`DISTRICT · 25 PLOTS · 40,000 m²`); the
+one plot's readout and shadow study step aside until a plain click selects a
+plot again. The timeline is off by default. On:
+
+- **Blocks.** Every plot of the district gets a plate and an assumed block, in
+  place of the one block and its readout. It is the massing block exactly as
+  the single plot has it (`stand()` in `src/standalone/cityMassing.js` builds
+  both: the sampled ground, the cut in 3D tiles, the same look), as tall as the
+  plan says for that plot at that stage. The timeline gives a block its height
+  and nothing else.
+- **The rail.** One rail with three stops, **NOW**, **5 YR** and **15 YR**; the
+  stage shown is filled. The cohort stands at the stage's storeys: 3, 4 and 5
+  by default.
+- **The cohort.** By default the 12 of every 25 plots (rounded up) farthest
+  from the anchor: the anchor is the frontage the player worked on, the cohort
+  is inland. The other plots are counted at three storeys at every stage.
+- **Editing.** − / + beside GROWTH FLOORS change the cohort's storeys at the
+  stage shown, one storey at a time, 1 to 60. A stage edited below an earlier
+  one stays as the player set it and reads **LOWER THAN AN EARLIER STAGE**.
+- **Sun lock.** A plot that FIT TO SUN cut keeps the storeys the fit left at
+  every stage, in the cohort or not, under a **SUN FIT** badge above its block,
+  and the panel says `LOCKED PLOTS KEEP THEIR SUN FIT`. The plan never raises
+  it, whatever a stage is edited to. Stepping that plot's own storeys (the
+  massing readout's stepper) is the player's own change and releases the lock.
+- **Figures.** Each stage states each figure once, through `hudFigure`, a
+  change read from NOW to the stage: `GROWTH FLOORS 3 → 5 EST`,
+  `HOMES 575 → 755 EST`, `RESIDENTIAL FLOOR AREA 49,152 → 64,881 m² EST`,
+  `HOME DELIVERIES 96 → 126 /d EST` with its rate on the next line
+  (`ASSUMED: A DELIVERY A DAY FOR EVERY 6 HOMES`), and one cost line in words
+  with a count: `COST: NEIGHBOURS LIVE BESIDE ROOF WORKS ON 12 PLOTS` (the
+  plots whose storeys differ from NOW; `COST: NO WORKS YET` at NOW).
+
+Homes and floor area are not new numbers: each stage sums `plotMassing` over
+the district's plots at their storeys (so 23 homes for a three-storey plot,
+30 for four, 38 for five), and residential floor area is its floor area times
+its own residential share. Deliveries are homes ÷ the homes-per-delivery rate,
+rounded up; while the rate is unknown there is no deliveries line at all,
+never a zero. The plan's own assumptions (`GROWTH_ASSUMPTIONS`: storeys 3, 4,
+5; three storeys elsewhere; 12 of 25 plots; six homes per delivery a day) come
+from the City builder design loop's growth round.
+
+There is **no goal score** on this screen (the app holds no basis for one per
+stage) and **no canopy figure** (the app's canopy figure is a possible world's
+plan, not a growth stage's).
+
+`src/data/cityGrowth.js` is the one owner of the plan (pure):
+`growthPlan({plots, anchorId, cohort, storeys, baseStoreys, locks,
+homesPerDelivery})` returns the cohort, the locked plots and, per stage, the
+storeys, every plot's block, homes, floor area, residential floor area,
+deliveries a day, `works` and `lowered`; `growthCohort` picks the default
+cohort and `editStage` is the player's edit. `src/data/cityGrowth.test.mjs` is
+a fixed table: 25 plots with a 12-plot cohort give 575, 659 and 755 homes; a
+locked plot inside the cohort stays at its fit; a district of one plot is the
+single-plot massing. `src/ui/cityGrowthLines.js` words a stage.
+
+While the timeline is on, the play wheel and the play bar's counters step
+aside (they count saved possible worlds; `PLOTS 0` beside a district of 25
+plots reads as a contradiction). The timeline is desktop only. It does not
+turn the shadow map on, so the district's blocks cast no shadow yet, and it
+does not tell the cohort from the other plots by colour: both are the massing
+block. Nothing of it is saved: another district, or a reload, starts from the
+plan again.
+
+These are assumed blocks on a 40 m grid, the same on every plot: no existing
+buildings, no parcels, no phasing within a stage, and no shadow check of the
+grown plots against each other.
+
 ## Persistence
 
 None. Massing is computed on load from the plot and never written to the city
@@ -250,6 +330,20 @@ asserts the panel, the two tip labels and the entities on the ground against
 dashed WAS line, the filled NOW band, `FLOORS 6 → 3 EST`, the cost line
 (`HOMES 46 → 23 EST · FAR 3.84 → 1.92`), the massing readout (23 homes, FAR
 1.92) and that nothing was saved (`10-fit-to-sun.png`).
+
+On a third page, looking north, the journey grows a district: it fits the
+plot to the winter-noon sun (three storeys, the sun lock), shift-clicks the
+plot four rows and four columns away and asserts a district of 25 plots, all
+on screen, with GROWTH TIMELINE offered and off (`11-district-selected.png`).
+With it on it steps the rail through NOW, 5 YR and 15 YR
+(`12-growth-now.png`, `13-growth-5yr.png`, `14-growth-15yr.png`) and at each
+stop asserts the panel's lines against `growthLines` for the plan of
+`growthPlan`, one rail with the right stop pressed, HOMES stated once on the
+whole page, every one of the 25 drawn blocks as tall as the plan says (the
+cohort 9.6, 12.8 and 16 m) and
+the fitted corner at 9.6 m under one SUN FIT badge at every stage. It then
+moves the camera to the corner plot (`15-growth-locked-corner.png`): still
+three storeys, still locked, nothing saved.
 
 `src/tooling/qaCityMassingJourney.test.mjs` fails if any of these steps drops
 out of the journey.

@@ -26,6 +26,15 @@ export const useCityPlayStore = defineStore('gev-city-play', () => {
   const massingAnchors = shallowRef(null);
   const massingControls = shallowRef(null);
 
+  /**
+   * The growth timeline of a selected district (the same owner, behind
+   * ?massing=1): `{on, stage, plan}` with the plan of src/data/cityGrowth.js,
+   * and the screen points of its sun-locked blocks. The massing controls
+   * gain `{growth, stage, stepStage}`. Null while no district is selected.
+   */
+  const growth = shallowRef(null);
+  const growthAnchors = shallowRef(null);
+
   function publish(next) {
     view.value = next && markRaw(next);
   }
@@ -44,6 +53,12 @@ export const useCityPlayStore = defineStore('gev-city-play', () => {
   function connectMassing(next) {
     massingControls.value = next && markRaw(next);
   }
+  function publishGrowth(next) {
+    growth.value = next && markRaw(next);
+  }
+  function placeGrowth(next) {
+    growthAnchors.value = next && markRaw(next);
+  }
   return {
     view,
     anchors,
@@ -57,5 +72,9 @@ export const useCityPlayStore = defineStore('gev-city-play', () => {
     publishMassing,
     placeMassing,
     connectMassing,
+    growth,
+    growthAnchors,
+    publishGrowth,
+    placeGrowth,
   };
 });

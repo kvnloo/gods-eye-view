@@ -3919,5 +3919,30 @@
   "Assumed": "Suposto",
   "Set on map": "Definir no mapa",
   "Set the scene to solar noon on the winter solstice here": "Ajustar a cena para o meio-dia solar do solstício de inverno aqui",
-  "Winter noon": "Meio-dia de inverno"
+  "Winter noon": "Meio-dia de inverno",
+  "{years} YR": "{years} ANOS",
+  "timeline stage|NOW": "AGORA",
+  "GROWTH FLOORS {floors}": "ANDARES DE CRESCIMENTO {floors}",
+  "LOWER THAN AN EARLIER STAGE": "MAIS BAIXO QUE UMA ETAPA ANTERIOR",
+  "HOMES {homes}": "MORADIAS {homes}",
+  "RESIDENTIAL FLOOR AREA {area}": "ÁREA RESIDENCIAL {area}",
+  "HOME DELIVERIES {rate}": "ENTREGAS AO DOMICÍLIO {rate}",
+  "per day|/d": "/dia",
+  "ASSUMED: A DELIVERY A DAY FOR EVERY {homes} HOMES": "SUPOSIÇÃO: UMA ENTREGA POR DIA A CADA {homes} MORADIAS",
+  "COST: NO WORKS YET": "CUSTO: AINDA SEM OBRAS",
+  "LOCKED PLOTS KEEP THEIR SUN FIT": "OS LOTES BLOQUEADOS MANTÊM O AJUSTE AO SOL",
+  "DISTRICT · {count} PLOTS · {area}": {
+    "one": "BAIRRO · {count} LOTE · {area}",
+    "many": "BAIRRO · {count} LOTES · {area}",
+    "other": "BAIRRO · {count} LOTES · {area}"
+  },
+  "COST: NEIGHBOURS LIVE BESIDE ROOF WORKS ON {count} PLOTS": {
+    "one": "CUSTO: OS VIZINHOS VIVEM AO LADO DE OBRAS NA COBERTURA EM {count} LOTE",
+    "many": "CUSTO: OS VIZINHOS VIVEM AO LADO DE OBRAS NA COBERTURA EM {count} LOTES",
+    "other": "CUSTO: OS VIZINHOS VIVEM AO LADO DE OBRAS NA COBERTURA EM {count} LOTES"
+  },
+  "Growth timeline": "Cronologia de crescimento",
+  "Growth timeline for this district": "Cronologia de crescimento deste bairro",
+  "Timeline stage": "Etapa da cronologia",
+  "Sun fit": "Ajuste ao sol"
 }

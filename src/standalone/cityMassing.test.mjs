@@ -5,7 +5,8 @@ import { createPinia } from 'pinia';
 import { nextTick } from 'vue';
 import { useCityPlayStore } from '../ui/stores/cityPlay.js';
 import { getRenderGovernorDiagnostics } from '../renderGovernor.js';
-import { snapPlot } from '../data/cityPlot.js';
+import { PLOT_METERS, plotBlock, snapPlot } from '../data/cityPlot.js';
+import { growthPlan } from '../data/cityGrowth.js';
 import { mountCityMassing } from './cityMassing.js';
 
 const plot = snapPlot({ lat: 37.8006, lon: -122.4103 });
@@ -506,5 +507,165 @@ test('with the sun down the study draws nothing and FIT TO SUN does nothing', as
   store.massingControls.pickEdge();
   assert.equal(store.massingControls.click(north(43)), false);
   assert.equal(win.__gevCityMassing.snapshot().study.drawn, false);
+  owner.destroy();
+});
+
+// The 25 plots from the test plot out to the one four rows north and four
+// columns east of it: a district as play mode's shift-click selects it.
+const FAR_CORNER = snapPlot({
+  lat: plot.center.lat + (4 * PLOT_METERS) / 111_320,
+  lon:
+    plot.center.lon +
+    (4 * PLOT_METERS) /
+      (111_320 * Math.cos((plot.center.lat * Math.PI) / 180)),
+});
+const DISTRICT = plotBlock(plot, FAR_CORNER);
+const districtView = (anchor = plot) => ({
+  plot: { id: anchor.id },
+  district: DISTRICT.map((cell) => cell.id),
+});
+const blockOf = (ds, id) => ds.entities.getById(`city-massing-block-${id}`);
+const heightOf = (ds, id) =>
+  blockOf(ds, id).polygon.extrudedHeight.getValue() -
+  blockOf(ds, id).polygon.height.getValue();
+
+test('GROWTH stands a block on every plot of the district, and the rail stages the cohort 3 → 4 → 5 storeys', async () => {
+  const { viewer, store, win, ds, select, owner } = mount();
+  await select(districtView());
+  assert.equal(DISTRICT.length, 25);
+  assert.equal(store.growth.on, false, 'off until GROWTH is pressed');
+  assert.equal(store.growth.plan.plots, 25);
+  // The one block's look, to hold every district block to.
+  const look = ({ polygon }) => [
+    polygon.material.color.getValue().toCssHexString(),
+    polygon.outline.getValue(),
+    polygon.outlineColor.getValue().toCssHexString(),
+    polygon.shadows.getValue(),
+  ];
+  const one = look(ds.entities.getById('city-massing-block'));
+  assert.equal(win.__gevCityMassing.snapshot().growth, false);
+
+  store.massingControls.growth();
+  assert.equal(store.growth.on, true);
+  assert.equal(store.growth.stage, 0);
+  assert.equal(ds.entities.getById('city-massing-block'), undefined);
+  assert.equal(ds.entities.values.length, 50, '25 plates and 25 blocks');
+  for (const cell of DISTRICT)
+    assert.deepEqual(look(blockOf(ds, cell.id)), one, 'the massing block as it is');
+  const plan = growthPlan({ plots: DISTRICT, anchorId: plot.id });
+  assert.deepEqual(store.growth.plan.cohort, plan.cohort);
+  assert.deepEqual(
+    store.growth.plan.stages.map((stage) => stage.homes),
+    [575, 659, 755],
+  );
+  for (const index of [0, 1, 2, 0]) {
+    store.massingControls.stage(index);
+    assert.equal(store.growth.stage, index);
+    const drawn = win.__gevCityMassing.snapshot().growth;
+    assert.equal(drawn.stage, index);
+    for (const block of plan.stages[index].blocks) {
+      within(heightOf(ds, block.plotId), block.heightMeters, 1e-9, block.plotId);
+      assert.equal(
+        blockOf(ds, block.plotId).polygon.height.getValue(),
+        -8.25,
+        'on the sampled ground',
+      );
+    }
+    assert.deepEqual(
+      drawn.blocks.map((block) => block.plotId),
+      DISTRICT.map((cell) => cell.id),
+    );
+  }
+  store.massingControls.stage(7);
+  assert.equal(store.growth.stage, 0, 'no such stop');
+
+  store.massingControls.growth();
+  assert.equal(store.growth.on, false);
+  assert.equal(ds.entities.values.length, 2, 'the one plate and block again');
+  assert.ok(ds.entities.getById('city-massing-block'));
+  assert.equal(viewer.shadows, true, 'still lit for the one block');
+  await select(null);
+  assert.equal(store.growth, null);
+  assert.equal(ds.entities.values.length, 0);
+  assert.equal(viewer.shadows, false, 'the shadow map is restored');
+  owner.destroy();
+});
+
+test('a plot fitted to the sun is locked: no stage raises it, a badge marks it, and the stepper releases it', async () => {
+  const { store, win, ds, select, render, owner } = mount({
+    time: WINTER_NOON,
+  });
+  await select({ plot: { id: plot.id } });
+  store.massingControls.study();
+  store.massingControls.fit();
+  assert.deepEqual(win.__gevCityMassing.snapshot().locks, { [plot.id]: 3 });
+  // The district is picked from its far corner: the fitted plot is in the cohort.
+  await select(districtView(FAR_CORNER));
+  store.massingControls.growth();
+  assert.ok(store.growth.plan.cohort.includes(plot.id));
+  assert.deepEqual(store.growth.plan.locked, [plot.id]);
+  for (const index of [0, 1, 2]) {
+    store.massingControls.stage(index);
+    within(heightOf(ds, plot.id), 3 * 3.2, 1e-9, `stage ${index}`);
+    const other = store.growth.plan.cohort.find((id) => id !== plot.id);
+    within(heightOf(ds, other), (3 + index) * 3.2, 1e-9, 'the cohort rises');
+  }
+  assert.deepEqual(
+    win.__gevCityMassing
+      .snapshot()
+      .growth.blocks.filter((block) => block.locked)
+      .map((block) => block.plotId),
+    [plot.id],
+  );
+  render();
+  assert.deepEqual(
+    store.growthAnchors.locks.map((lock) => lock.plotId),
+    [plot.id],
+  );
+  assert.deepEqual(store.growthAnchors.locks[0].at, { x: 700, y: 450 });
+  store.massingControls.growth();
+  assert.equal(store.growthAnchors, null, 'off: no badge');
+  // The player's own stepper on that plot changes the block the fit left.
+  await select({ plot: { id: plot.id } });
+  store.massingControls.step(1);
+  assert.deepEqual(win.__gevCityMassing.snapshot().locks, {});
+  owner.destroy();
+});
+
+test('the player edits the storeys of the stage shown; a stage below an earlier one is flagged, and another district starts from the plan', async () => {
+  const { store, ds, select, owner } = mount();
+  await select(districtView());
+  store.massingControls.stepStage(1);
+  assert.equal(store.growth.plan.stages[0].storeys, 3, 'GROWTH is off');
+  store.massingControls.growth();
+  store.massingControls.stage(2);
+  store.massingControls.stepStage(-2);
+  assert.deepEqual(
+    store.growth.plan.stages.map((stage) => [stage.storeys, stage.lowered]),
+    [
+      [3, false],
+      [4, false],
+      [3, true],
+    ],
+  );
+  const grown = store.growth.plan.cohort[0];
+  within(heightOf(ds, grown), 3 * 3.2, 1e-9, 'the edit is drawn');
+  store.massingControls.stepStage(4);
+  assert.equal(store.growth.plan.stages[2].storeys, 7);
+  assert.equal(store.growth.plan.stages[2].lowered, false);
+  within(heightOf(ds, grown), 7 * 3.2, 1e-9, 'and drawn again');
+  // A smaller district: the timeline is off, at NOW, on the plan's storeys.
+  await select({
+    plot: { id: plot.id },
+    district: DISTRICT.slice(0, 5).map((cell) => cell.id),
+  });
+  assert.equal(store.growth.on, false);
+  assert.equal(store.growth.stage, 0);
+  assert.equal(store.growth.plan.plots, 5);
+  assert.deepEqual(
+    store.growth.plan.stages.map((stage) => stage.storeys),
+    [3, 4, 5],
+  );
+  assert.equal(ds.entities.getById(`city-massing-block-${grown}`), undefined);
   owner.destroy();
 });

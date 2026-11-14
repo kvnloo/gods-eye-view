@@ -12,7 +12,10 @@ import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from 'playwright-core';
 import sharp from 'sharp';
+import { growthPlan } from '../src/data/cityGrowth.js';
+import { PLOT_METERS, plotFromId, snapPlot } from '../src/data/cityPlot.js';
 import { shadowFit } from '../src/data/cityShadowFit.js';
+import { growthLines, growthStageLabel } from '../src/ui/cityGrowthLines.js';
 import { shadowTip } from '../src/ui/cityShadowTip.js';
 import { textLegibility } from '../src/ui/legibility.js';
 import {
@@ -75,6 +78,10 @@ const S = {
   pick: '[data-city-shadow-pick]',
   fit: '[data-city-shadow-fit]',
   tip: '[data-city-shadow-tip]',
+  // The growth timeline of a district (GROWTH TIMELINE).
+  growth: '[data-city-growth]',
+  growthToggle: '[data-city-growth-toggle]',
+  lock: '[data-city-growth-lock]',
 };
 const report = {
   startedAt: new Date().toISOString(),
@@ -933,6 +940,37 @@ async function edgePoint(meters) {
   }, meters);
 }
 
+// The growth timeline as a user reads it: the stop that is pressed, the lines
+// in order, and every place on the page that states the homes.
+async function timeline() {
+  return page.evaluate(() => {
+    const text = (el) => el.textContent.replace(/\s+/g, ' ').trim();
+    return {
+      rails: document.querySelectorAll('[data-city-growth-rail]').length,
+      stops: [...document.querySelectorAll('[data-city-growth-stop]')].map(
+        (stop) => [text(stop), stop.getAttribute('aria-pressed')],
+      ),
+      lines: [...document.querySelectorAll('[data-city-growth-line]')].map(
+        (line) => text(line.querySelector('[data-city-growth-text]') ?? line),
+      ),
+      homes: document.body.innerText.match(/HOMES \d[^\n]*/gi) ?? [],
+      locks: [...document.querySelectorAll('[data-city-growth-lock]')].map(
+        (lock) => lock.getBoundingClientRect().toJSON(),
+      ),
+    };
+  });
+}
+// The plot `rows` north and `cols` east of one, on the plot grid.
+function plotBeside(plot, rows, cols) {
+  return snapPlot({
+    lat: plot.center.lat + (rows * PLOT_METERS) / 111_320,
+    lon:
+      plot.center.lon +
+      (cols * PLOT_METERS) /
+        (111_320 * Math.cos((plot.center.lat * Math.PI) / 180)),
+  });
+}
+
 async function massingOn(plotId) {
   await locator(S.toggle).click();
   await massingShown(plotId);
@@ -1674,6 +1712,292 @@ try {
       await screenshot('10-fit-to-sun');
       await page.waitForTimeout(1500);
       report.measurements.shadowFit.marks.end = sinceOpen();
+    },
+  );
+  await page.close();
+
+  // The growth timeline on its own page: the plot is fitted to the sun first,
+  // then it anchors a district of 25 plots.
+  page = await openPage(context, 'growth');
+  const sinceGrowth = () => (Date.now() - opened.growth) / 1000;
+  const growthMarks = {};
+  let district = null;
+  await check(
+    'A shift-click on a second plot selects the 25-plot district around the sun-fitted plot and frames it; GROWTH TIMELINE is offered, off',
+    async () => {
+      // Looking north: the sunlit faces of the blocks are toward the camera.
+      await startup(true);
+      await setSun(SUN_TIME);
+      await locator(S.pill).click();
+      await locator(S.play).waitFor({ state: 'visible' });
+      await selectPlot();
+      await massingOn(PLOT);
+      assert.equal(await locator(S.growth).count(), 0, 'no district yet');
+      // The shadow decision (#330): six storeys fitted to the winter-noon sun.
+      await locator(S.studyToggle).click();
+      await locator(S.winter).click();
+      await until(
+        () => {
+          const s = window.__gevCityMassing.snapshot();
+          return Math.abs(s.sun.azimuthDeg - 180) < 1 && s.drawn;
+        },
+        'the scene at winter solar noon',
+        30000,
+      );
+      await locator(S.fit).click();
+      await until(
+        () => window.__gevCityMassing.snapshot().storeys === 3,
+        'fitted to three storeys',
+        30000,
+      );
+      assert.deepEqual((await massing()).locks, { [PLOT]: 3 });
+      growthMarks.start = sinceGrowth();
+      // The far corner of the district: four plots along and four across,
+      // whichever such plot is on the free map.
+      const corner = plotFromId(PLOT);
+      let far = null;
+      for (const [rows, cols] of [
+        [4, 4],
+        [4, -4],
+        [-4, 4],
+        [-4, -4],
+      ]) {
+        const plot = plotBeside(corner, rows, cols);
+        const at = await plotPoint(plot.id);
+        if (at?.free) {
+          far = { plot, at };
+          break;
+        }
+      }
+      assert.ok(far, 'a plot four rows and four columns away is on the map');
+      await page.mouse.move(far.at.x, far.at.y);
+      await page.keyboard.down('Shift');
+      await page.mouse.click(far.at.x, far.at.y);
+      await page.keyboard.up('Shift');
+      await until(
+        () => window.__gevCityPlay.snapshot().district?.length === 25,
+        'a district of 25 plots',
+        20000,
+      );
+      const p = await play();
+      district = p.district.map(plotFromId);
+      assert.equal(
+        p.plot.id,
+        PLOT,
+        'the fitted plot stays selected: the anchor',
+      );
+      assert.ok(p.district.includes(PLOT) && p.district.includes(far.plot.id));
+      await until(
+        () => !window.__godsEyeView.viewer.camera._currentFlight,
+        'the camera framed the district',
+        30000,
+      );
+      await tilesLoaded();
+      // District zoom: every plot of it is on screen.
+      const inView = await page.evaluate(async (ids) => {
+        const { plotFromId } = await import('/src/data/cityPlot.js');
+        const { scene } = window.__godsEyeView.viewer;
+        return ids.map((id) => {
+          const { center } = plotFromId(id);
+          const at = {
+            longitude: (center.lon * Math.PI) / 180,
+            latitude: (center.lat * Math.PI) / 180,
+            height: 0,
+          };
+          at.height = scene.globe.getHeight(at) ?? 0;
+          const q = scene.cartesianToCanvasCoordinates(
+            scene.globe.ellipsoid.cartographicToCartesian(at),
+          );
+          return Boolean(
+            q && q.x > 0 && q.y > 0 && q.x < innerWidth && q.y < innerHeight,
+          );
+        });
+      }, p.district);
+      assert.ok(inView.every(Boolean), `plots on screen: ${inView}`);
+      await locator(S.growth).waitFor({ state: 'visible' });
+      assert.equal(
+        await locator(S.growthToggle).getAttribute('aria-pressed'),
+        'false',
+      );
+      const shown = await timeline();
+      assert.deepEqual(shown.lines, ['DISTRICT · 25 PLOTS · 40,000 m²']);
+      assert.equal(shown.rails, 0, 'no rail until GROWTH TIMELINE is on');
+      assert.equal((await massing()).growth, false, 'no district blocks yet');
+      await screenshot('11-district-selected');
+    },
+  );
+
+  await check(
+    'GROWTH TIMELINE: one rail steps NOW / 5 YR / 15 YR, the 12-plot cohort stands at 3, 4 and 5 storeys, and each stage states its homes once',
+    async () => {
+      // The M1 function's plan for this district, anchored at the fitted plot.
+      const plan = growthPlan({
+        plots: district,
+        anchorId: PLOT,
+        locks: { [PLOT]: 3 },
+      });
+      assert.equal(plan.cohort.length, 12);
+      assert.deepEqual(
+        plan.stages.map((stage) => stage.homes),
+        [575, 659, 755],
+      );
+      await locator(S.growthToggle).click();
+      await locator(S.readout).waitFor({ state: 'detached' });
+      const stages = [];
+      for (const [index, stage] of plan.stages.entries()) {
+        const label = growthStageLabel(stage);
+        await locator(`[data-city-growth-stop="${stage.id}"]`).click();
+        await until(
+          (i) => {
+            const g = window.__gevCityMassing.snapshot().growth;
+            return g && g.stage === i && g.drawn;
+          },
+          `${label}: the district's blocks drawn`,
+          60000,
+          index,
+        );
+        await page.waitForTimeout(1500);
+        const s = await massing();
+        const shown = await timeline();
+        // The entities are the plan: every block as tall as the function says.
+        assert.equal(s.growth.blocks.length, 25);
+        for (const [b, block] of stage.blocks.entries()) {
+          assert.equal(s.growth.blocks[b].plotId, block.plotId);
+          assert.ok(
+            Math.abs(s.growth.blocks[b].heightMeters - block.heightMeters) <
+              1e-6,
+            `${label} ${block.plotId}: ${s.growth.blocks[b].heightMeters} m drawn, the plan says ${block.heightMeters} m`,
+          );
+        }
+        assert.equal(shown.rails, 1, 'one rail');
+        assert.deepEqual(
+          shown.stops,
+          plan.stages.map((stop, i) => [
+            growthStageLabel(stop),
+            String(i === index),
+          ]),
+        );
+        assert.deepEqual(
+          shown.lines,
+          growthLines(plan, index).map((line) => line.text),
+        );
+        assert.equal(shown.homes.length, 1, `HOMES once: ${shown.homes}`);
+        assert.equal(shown.locks.length, 1, 'one lock badge');
+        await insideViewport(S.growth, DESKTOP);
+        await insideViewport(S.lock, DESKTOP);
+        for (const other of [...HUD, S.lock]) await noOverlap(S.growth, other);
+        assert.equal(await locator(S.ring).count(), 0, 'the wheel is aside');
+        stages.push({
+          stage: label,
+          homes: stage.homes,
+          lines: shown.lines,
+          locked: s.growth.blocks.find((block) => block.plotId === PLOT),
+          cohort: s.growth.blocks.find(
+            (block) => block.plotId === plan.cohort[0],
+          ).heightMeters,
+        });
+        growthMarks[stage.id] = sinceGrowth();
+        await screenshot(`${12 + index}-growth-${stage.id}`);
+      }
+      assert.deepEqual(
+        stages.map((stage) => stage.lines[2]),
+        ['HOMES 575 EST', 'HOMES 575 → 659 EST', 'HOMES 575 → 755 EST'],
+      );
+      assert.deepEqual(
+        stages.map((stage) => Number(stage.cohort.toFixed(1))),
+        [9.6, 12.8, 16],
+        'the cohort at 3, 4 and 5 storeys of 3.2 m',
+      );
+      // Growth never undoes the shadow decision: the fitted plot at every stage.
+      assert.deepEqual(
+        stages.map((stage) => [
+          stage.locked.locked,
+          Number(stage.locked.heightMeters.toFixed(6)),
+        ]),
+        Array(3).fill([true, 9.6]),
+      );
+      report.measurements.growth = {
+        district: district.map((plot) => plot.id),
+        cohort: plan.cohort,
+        locked: plan.locked,
+        stages,
+        // What a reader of each screenshot should answer (the M1 function).
+        expected: {
+          s1: { stage: stages[0].stage, homes: stages[0].homes },
+          s2: { stage: stages[1].stage, homes: stages[1].homes },
+          s3: { stage: stages[2].stage, homes: stages[2].homes },
+          s4: { stage: stages[2].stage, homes: stages[2].homes },
+        },
+      };
+    },
+  );
+
+  await check(
+    'Up close at 15 YR the sun-fitted corner still stands at three storeys under its SUN FIT badge; nothing is saved',
+    async () => {
+      // The camera 230 m from the corner plot, looking down 34° the way it looks now.
+      await page.evaluate(async (id) => {
+        const { plotFromId } = await import('/src/data/cityPlot.js');
+        const { viewer } = window.__godsEyeView;
+        const { center } = plotFromId(id);
+        const rad = Math.PI / 180;
+        const { heading } = viewer.camera;
+        const pitch = -34 * rad;
+        const back = 230 * Math.cos(pitch);
+        const ground =
+          viewer.scene.globe.getHeight({
+            longitude: center.lon * rad,
+            latitude: center.lat * rad,
+            height: 0,
+          }) ?? 0;
+        viewer.camera.flyTo({
+          destination: viewer.scene.globe.ellipsoid.cartographicToCartesian({
+            longitude:
+              (center.lon -
+                (Math.sin(heading) * back) /
+                  (111_320 * Math.cos(center.lat * rad))) *
+              rad,
+            latitude: (center.lat - (Math.cos(heading) * back) / 111_320) * rad,
+            height: ground - 230 * Math.sin(pitch),
+          }),
+          orientation: { heading, pitch, roll: 0 },
+          duration: 1.2,
+        });
+      }, PLOT);
+      await page.waitForTimeout(300);
+      await until(
+        () => !window.__godsEyeView.viewer.camera._currentFlight,
+        'the camera at the corner plot',
+        30000,
+      );
+      await tilesLoaded();
+      await until(
+        () => window.__gevCityMassing.snapshot().growth?.drawn,
+        'the blocks drawn up close',
+        60000,
+      );
+      await page.waitForTimeout(1500);
+      const s = await massing();
+      const shown = await timeline();
+      assert.equal(s.growth.stage, 2, 'still at 15 YR');
+      const corner = s.growth.blocks.find((block) => block.plotId === PLOT);
+      assert.ok(corner.locked && Math.abs(corner.heightMeters - 9.6) < 1e-6);
+      assert.equal(shown.locks.length, 1, 'the lock badge is on screen');
+      assert.equal(shown.lines[2], 'HOMES 575 → 755 EST');
+      assert.equal(shown.lines.at(-1), 'LOCKED PLOTS KEEP THEIR SUN FIT');
+      assert.equal(shown.homes.length, 1, `HOMES once: ${shown.homes}`);
+      await insideViewport(S.lock, DESKTOP);
+      await noOverlap(S.growth, S.lock);
+      assert.deepEqual(
+        Object.keys(await storage()).filter((k) => /massing|growth/i.test(k)),
+        [],
+        'no massing or growth key in storage',
+      );
+      growthMarks.corner = sinceGrowth();
+      await screenshot('15-growth-locked-corner');
+      await page.waitForTimeout(1500);
+      growthMarks.end = sinceGrowth();
+      report.measurements.growth.marks = growthMarks;
     },
   );
   await page.close();

@@ -3737,5 +3737,26 @@
   "Assumed": "假定",
   "Set on map": "在地圖上設定",
   "Set the scene to solar noon on the winter solstice here": "將場景設為此地冬至日的太陽正午",
-  "Winter noon": "冬至正午"
+  "Winter noon": "冬至正午",
+  "{years} YR": "{years} 年後",
+  "timeline stage|NOW": "現在",
+  "GROWTH FLOORS {floors}": "成長地塊樓層 {floors}",
+  "LOWER THAN AN EARLIER STAGE": "低於較早階段",
+  "HOMES {homes}": "住宅戶數 {homes}",
+  "RESIDENTIAL FLOOR AREA {area}": "住宅樓地板面積 {area}",
+  "HOME DELIVERIES {rate}": "宅配 {rate}",
+  "per day|/d": "/天",
+  "ASSUMED: A DELIVERY A DAY FOR EVERY {homes} HOMES": "假定：每 {homes} 戶住宅每天一次配送",
+  "COST: NO WORKS YET": "代價：尚無施工",
+  "LOCKED PLOTS KEEP THEIR SUN FIT": "鎖定地塊保持其日照調整",
+  "DISTRICT · {count} PLOTS · {area}": {
+    "other": "街區 · {count} 個地塊 · {area}"
+  },
+  "COST: NEIGHBOURS LIVE BESIDE ROOF WORKS ON {count} PLOTS": {
+    "other": "代價：鄰居住在 {count} 個地塊的屋頂施工旁"
+  },
+  "Growth timeline": "成長時間軸",
+  "Growth timeline for this district": "此街區的成長時間軸",
+  "Timeline stage": "時間軸階段",
+  "Sun fit": "日照調整"
 }

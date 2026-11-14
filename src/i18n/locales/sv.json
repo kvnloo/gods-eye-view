@@ -3828,5 +3828,28 @@
   "Assumed": "Antaget",
   "Set on map": "Ange på kartan",
   "Set the scene to solar noon on the winter solstice here": "Ställ scenen till sann middag vid vintersolståndet här",
-  "Winter noon": "Vintermiddag"
+  "Winter noon": "Vintermiddag",
+  "{years} YR": "{years} ÅR",
+  "timeline stage|NOW": "NU",
+  "GROWTH FLOORS {floors}": "TILLVÄXTVÅNINGAR {floors}",
+  "LOWER THAN AN EARLIER STAGE": "LÄGRE ÄN ETT TIDIGARE SKEDE",
+  "HOMES {homes}": "BOSTÄDER {homes}",
+  "RESIDENTIAL FLOOR AREA {area}": "BOSTADSAREA {area}",
+  "HOME DELIVERIES {rate}": "HEMLEVERANSER {rate}",
+  "per day|/d": "/dag",
+  "ASSUMED: A DELIVERY A DAY FOR EVERY {homes} HOMES": "ANTAGANDE: EN LEVERANS OM DAGEN PER {homes} BOSTÄDER",
+  "COST: NO WORKS YET": "KOSTNAD: INGA ARBETEN ÄNNU",
+  "LOCKED PLOTS KEEP THEIR SUN FIT": "LÅSTA TOMTER BEHÅLLER SIN SOLANPASSNING",
+  "DISTRICT · {count} PLOTS · {area}": {
+    "one": "KVARTER · {count} TOMT · {area}",
+    "other": "KVARTER · {count} TOMTER · {area}"
+  },
+  "COST: NEIGHBOURS LIVE BESIDE ROOF WORKS ON {count} PLOTS": {
+    "one": "KOSTNAD: GRANNAR BOR INTILL TAKARBETEN PÅ {count} TOMT",
+    "other": "KOSTNAD: GRANNAR BOR INTILL TAKARBETEN PÅ {count} TOMTER"
+  },
+  "Growth timeline": "Tillväxttidslinje",
+  "Growth timeline for this district": "Tillväxttidslinje för det här kvarteret",
+  "Timeline stage": "Skede på tidslinjen",
+  "Sun fit": "Solanpassad"
 }

@@ -11,6 +11,12 @@ import {
   stepStoreys,
 } from '../data/cityMassing.js';
 import {
+  GROWTH_ASSUMPTIONS,
+  GROWTH_STAGES,
+  editStage,
+  growthPlan,
+} from '../data/cityGrowth.js';
+import {
   ASSUMED_EDGE_METERS,
   edgeDistance,
   inWinter,
@@ -53,6 +59,8 @@ const WAS = Cesium.Color.WHITE;
 const EDGE = Cesium.Color.fromCssColorString('#ffb454');
 const EDGE_PAD_METERS = 6;
 const MAX_EDGE_METERS = 200;
+// A sun-locked block's badge sits this far above the block.
+const BADGE_RISE = 3;
 
 /**
  * Massing v0 on the globe, mounted only behind ?massing=1: once MASSING is
@@ -63,8 +71,12 @@ const MAX_EDGE_METERS = 200;
  * its storeys through the play store. PROTECT SIDEWALK adds the shadow study
  * (src/data/cityShadowFit.js): the block's shadow against an edge across the
  * street, drawn on the ground, and FIT TO SUN, which cuts the storeys until the
- * shadow clears it. Nothing is saved: the block is computed from the plot
- * whenever it shows, from the defaults after a reload.
+ * shadow clears it. With a district selected (play mode's shift-click),
+ * GROWTH stands the same plate and block on every plot of it, as tall as the
+ * timeline stage shown has them (src/data/cityGrowth.js): the cohort rises
+ * stage by stage and a plot that was fitted to the sun keeps its storeys.
+ * Nothing is saved: every block is computed from its plot whenever it shows,
+ * from the defaults after a reload.
  */
 export function mountCityMassing({
   viewer,
@@ -96,6 +108,18 @@ export function mountCityMassing({
   let marks = [];
   let marksKey = '0';
   let studyPlot = null;
+  // Growth: the storeys FIT TO SUN left on a plot (its lock), whether the
+  // timeline is on, its stage, the cohort's storeys per stage as the player
+  // edited them, and one stand per district plot while it shows.
+  const fits = new Map();
+  let growth = false;
+  let stage = 0;
+  let stageStoreys = GROWTH_ASSUMPTIONS.storeys;
+  let districtKey = '';
+  let stands = [];
+  let removeGrowthFrame = null;
+  let lastBadges = '';
+  let lastGrowth = 'null';
   const sphere = new Cesium.BoundingSphere();
 
   const playEntities = () =>
@@ -178,7 +202,12 @@ export function mountCityMassing({
     const display = viewer.dataSourceDisplay;
     if (typeof display?.getBoundingSphere !== 'function') return true;
     try {
-      return [site?.plate, site?.block, ...marks]
+      return [
+        site?.plate,
+        site?.block,
+        ...marks,
+        ...stands.flatMap((s) => [s.plate, s.block]),
+      ]
         .filter(Boolean)
         .every(
           (entity) =>
@@ -256,6 +285,41 @@ export function mountCityMassing({
     rendered();
   }
 
+  // A plot's ground plate and its assumed block, standing on the ground: the
+  // one place a block gets its look, for the selected plot and (named by its
+  // plot) for each plot of a district.
+  function stand(plot, massing, ground, name = '') {
+    const base = ground?.base ?? 0;
+    return {
+      plate: ds.entities.add({
+        id: `${OWNER}-plate${name}`,
+        polygon: {
+          hierarchy: Cesium.Cartesian3.fromDegreesArray(plot.corners.flat()),
+          height: (ground?.floor ?? base) - PLATE_DEPTH,
+          extrudedHeight: base + PLATE_RISE,
+          material: PLATE,
+          shadows: Cesium.ShadowMode.RECEIVE_ONLY,
+        },
+      }),
+      block:
+        massing.footprint &&
+        ds.entities.add({
+          id: `${OWNER}-block${name}`,
+          polygon: {
+            hierarchy: Cesium.Cartesian3.fromDegreesArray(
+              massing.footprint.flat(),
+            ),
+            height: base,
+            extrudedHeight: base + massing.heightMeters,
+            material: BLOCK,
+            outline: true,
+            outlineColor: ACCENT,
+            shadows: Cesium.ShadowMode.ENABLED,
+          },
+        }),
+    };
+  }
+
   function show(plot) {
     if (site?.plot.id === plot.id) return;
     hide();
@@ -285,32 +349,7 @@ export function mountCityMassing({
       globe: Boolean(scene.globe?.show),
       ready: false,
       cuts: cut(plot),
-      plate: ds.entities.add({
-        id: `${OWNER}-plate`,
-        polygon: {
-          hierarchy: Cesium.Cartesian3.fromDegreesArray(plot.corners.flat()),
-          height: (ground?.floor ?? base) - PLATE_DEPTH,
-          extrudedHeight: base + PLATE_RISE,
-          material: PLATE,
-          shadows: Cesium.ShadowMode.RECEIVE_ONLY,
-        },
-      }),
-      block:
-        massing.footprint &&
-        ds.entities.add({
-          id: `${OWNER}-block`,
-          polygon: {
-            hierarchy: Cesium.Cartesian3.fromDegreesArray(
-              massing.footprint.flat(),
-            ),
-            height: base,
-            extrudedHeight: base + massing.heightMeters,
-            material: BLOCK,
-            outline: true,
-            outlineColor: ACCENT,
-            shadows: Cesium.ShadowMode.ENABLED,
-          },
-        }),
+      ...stand(plot, massing, ground),
     };
     removeFrame = scene.postRender.addEventListener(frame);
     mark();
@@ -549,6 +588,101 @@ export function mountCityMassing({
     });
   }
 
+  // The district play mode selected, as grid plots.
+  function district() {
+    const view = store.view;
+    const ids = view?.active && !view.pending ? view.district : null;
+    return ids?.length ? ids.map(plotFromId) : null;
+  }
+
+  function clearStands() {
+    removeGrowthFrame();
+    for (const { plate, block, cuts } of stands) {
+      ds.entities.remove(plate);
+      ds.entities.remove(block);
+      uncut(cuts);
+    }
+    stands = [];
+    lastBadges = '';
+    store.placeGrowth(null);
+    rendered();
+  }
+
+  // Each frame of the timeline: tiles that loaded since re-ground the blocks,
+  // and each sun-locked block's badge follows it on screen.
+  function growthFrame() {
+    const ready = tilesReady();
+    if (ready && !stands.ready)
+      for (const s of stands) {
+        const ground = measure(s.plot);
+        if (!ground || Math.abs(ground.base - s.base) < REGROUND_METERS)
+          continue;
+        s.plate.polygon.height = ground.floor - PLATE_DEPTH;
+        s.plate.polygon.extrudedHeight = ground.base + PLATE_RISE;
+        s.block.polygon.height = ground.base;
+        s.block.polygon.extrudedHeight = s.top += ground.base - s.base;
+        s.base = ground.base;
+        rendered();
+      }
+    stands.ready = ready;
+    const locks = stands
+      .filter((s) => s.locked)
+      .map((s) => ({
+        plotId: s.plot.id,
+        at: project(s.plot.center.lon, s.plot.center.lat, s.top + BADGE_RISE),
+      }))
+      .filter((lock) => lock.at);
+    const key = JSON.stringify(locks);
+    if (key === lastBadges) return;
+    lastBadges = key;
+    store.placeGrowth({ locks });
+  }
+
+  // The district's plan and, with GROWTH on, a block on every plot of it as
+  // tall as the stage shown has it. Null without a district.
+  function stageDistrict(plots) {
+    if (!plots) return null;
+    const plan = growthPlan({
+      plots,
+      anchorId: store.view.plot?.id,
+      storeys: stageStoreys,
+      locks: Object.fromEntries(
+        plots
+          .filter((plot) => fits.has(plot.id))
+          .map((plot) => [plot.id, fits.get(plot.id)]),
+      ),
+    });
+    if (!growth) return plan;
+    const blocks = plan.stages[stage].blocks;
+    if (!stands.length) {
+      stands = plots.map((plot, i) => {
+        const ground = measure(plot);
+        const massing = plotMassing({
+          corners: plot.corners,
+          storeys: blocks[i].storeys,
+        });
+        return {
+          plot,
+          base: ground?.base ?? 0,
+          cuts: cut(plot),
+          ...stand(plot, massing, ground, `-${plot.id}`),
+        };
+      });
+      removeGrowthFrame = scene.postRender.addEventListener(growthFrame);
+    }
+    blocks.forEach((block, i) => {
+      const s = stands[i];
+      s.locked = block.locked;
+      if (s.storeys === block.storeys) return;
+      s.storeys = block.storeys;
+      s.top = s.base + block.heightMeters;
+      s.block.polygon.extrudedHeight = s.top;
+      lastBadges = '';
+      rendered();
+    });
+    return plan;
+  }
+
   function sync() {
     if (disposed) return;
     const plot = selected();
@@ -560,9 +694,29 @@ export function mountCityMassing({
       edgeSet = false;
       picking = false;
     }
-    if (plot && on) show(plot);
+    const plots = district();
+    // A timeline belongs to its district: another one starts from the plan.
+    const key = plots ? plots.map((cell) => cell.id).join() : '';
+    if (key !== districtKey) {
+      districtKey = key;
+      growth = false;
+      stage = 0;
+      stageStoreys = GROWTH_ASSUMPTIONS.storeys;
+    }
+    // The timeline's blocks stand in place of the one block.
+    if (!growth && stands.length) clearStands();
+    if (plot && on && !growth) show(plot);
     else hide();
     publish(plot);
+    const plan = stageDistrict(plots);
+    const next = plan && { on: growth, stage, plan, maxStoreys: MAX_STOREYS };
+    // Play mode republishes on every hover: the timeline only when it changed.
+    const told = JSON.stringify(
+      next && [growth, stage, stageStoreys, key, plan.locked],
+    );
+    if (told === lastGrowth) return;
+    lastGrowth = told;
+    store.publishGrowth(next);
   }
 
   function wasMassing(plot) {
@@ -597,6 +751,8 @@ export function mountCityMassing({
       const next = stepStoreys(storeys, delta);
       if (next === storeys) return;
       storeys = next;
+      // The player's own change releases the plot's sun lock.
+      fits.delete(selected()?.id);
       if (site?.block) extrude();
       publish(selected());
     },
@@ -641,8 +797,27 @@ export function mountCityMassing({
       const next = plan();
       if (!next?.canFit || !site?.block) return;
       storeys = next.fit.storeys;
+      // The plot is sun-locked: a growth timeline never raises it.
+      fits.set(site.plot.id, storeys);
       extrude();
       restudy();
+    },
+    // GROWTH: the district's blocks on the timeline, in place of the one block.
+    growth() {
+      if (!district()) return;
+      growth = !growth;
+      sync();
+    },
+    stage(index) {
+      if (!growth || !GROWTH_STAGES[index]) return;
+      stage = index;
+      sync();
+    },
+    // The player's edit: the cohort's storeys at the stage shown.
+    stepStage(delta) {
+      if (!growth) return;
+      stageStoreys = editStage(stageStoreys, stage, delta);
+      sync();
     },
   };
   store.connectMassing(controls);
@@ -680,6 +855,20 @@ export function mountCityMassing({
           plan: plan(),
           drawn: marks.length > 0 && drawnMeters(),
         },
+        // The sun locks, and the timeline's blocks as the entities hold them.
+        locks: Object.fromEntries(fits),
+        growth: stands.length > 0 && {
+          stage,
+          storeys: stageStoreys,
+          drawn: !build && drawn(),
+          blocks: stands.map((s) => ({
+            plotId: s.plot.id,
+            locked: s.locked,
+            heightMeters:
+              s.block.polygon.extrudedHeight.getValue() -
+              s.block.polygon.height.getValue(),
+          })),
+        },
       }),
   });
   if (win) win.__gevCityMassing = probe;
@@ -691,12 +880,14 @@ export function mountCityMassing({
       disposed = true;
       stop();
       hide();
+      if (stands.length) clearStands();
       built();
       if (win?.__gevCityMassing === probe) delete win.__gevCityMassing;
       if (store.massingControls === controls) {
         store.connectMassing(null);
         store.publishMassing(null);
         store.placeMassing(null);
+        store.publishGrowth(null);
       }
       Promise.resolve(added).then(() => viewer.dataSources?.remove(ds, true));
     },

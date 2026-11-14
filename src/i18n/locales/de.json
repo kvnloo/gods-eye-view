@@ -3828,5 +3828,28 @@
   "Assumed": "Angenommen",
   "Set on map": "Auf Karte setzen",
   "Set the scene to solar noon on the winter solstice here": "Szene auf den wahren Mittag der Wintersonnenwende an diesem Ort stellen",
-  "Winter noon": "Wintermittag"
+  "Winter noon": "Wintermittag",
+  "{years} YR": "{years} J.",
+  "timeline stage|NOW": "JETZT",
+  "GROWTH FLOORS {floors}": "WACHSTUMSGESCHOSSE {floors}",
+  "LOWER THAN AN EARLIER STAGE": "NIEDRIGER ALS EINE FRÜHERE STUFE",
+  "HOMES {homes}": "WOHNUNGEN {homes}",
+  "RESIDENTIAL FLOOR AREA {area}": "WOHNFLÄCHE {area}",
+  "HOME DELIVERIES {rate}": "HAUSLIEFERUNGEN {rate}",
+  "per day|/d": "/Tag",
+  "ASSUMED: A DELIVERY A DAY FOR EVERY {homes} HOMES": "ANNAHME: EINE LIEFERUNG AM TAG JE {homes} WOHNUNGEN",
+  "COST: NO WORKS YET": "KOSTEN: NOCH KEINE BAUARBEITEN",
+  "LOCKED PLOTS KEEP THEIR SUN FIT": "GESPERRTE FLÄCHEN BEHALTEN IHRE SONNENANPASSUNG",
+  "DISTRICT · {count} PLOTS · {area}": {
+    "one": "QUARTIER · {count} FLÄCHE · {area}",
+    "other": "QUARTIER · {count} FLÄCHEN · {area}"
+  },
+  "COST: NEIGHBOURS LIVE BESIDE ROOF WORKS ON {count} PLOTS": {
+    "one": "KOSTEN: NACHBARN WOHNEN NEBEN DACHBAUSTELLEN AUF {count} FLÄCHE",
+    "other": "KOSTEN: NACHBARN WOHNEN NEBEN DACHBAUSTELLEN AUF {count} FLÄCHEN"
+  },
+  "Growth timeline": "Wachstumszeitachse",
+  "Growth timeline for this district": "Wachstumszeitachse für dieses Quartier",
+  "Timeline stage": "Stufe der Zeitachse",
+  "Sun fit": "Sonnenanpassung"
 }

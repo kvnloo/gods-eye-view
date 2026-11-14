@@ -4192,5 +4192,36 @@
   "Assumed": "مفترض",
   "Set on map": "تحديد على الخريطة",
   "Set the scene to solar noon on the winter solstice here": "ضبط المشهد على الظهيرة الشمسية يوم الانقلاب الشتوي هنا",
-  "Winter noon": "ظهيرة الشتاء"
+  "Winter noon": "ظهيرة الشتاء",
+  "{years} YR": "{years} س",
+  "timeline stage|NOW": "الآن",
+  "GROWTH FLOORS {floors}": "طوابق النمو {floors}",
+  "LOWER THAN AN EARLIER STAGE": "أدنى من مرحلة سابقة",
+  "HOMES {homes}": "المساكن {homes}",
+  "RESIDENTIAL FLOOR AREA {area}": "مساحة الطوابق السكنية {area}",
+  "HOME DELIVERIES {rate}": "توصيلات المنازل {rate}",
+  "per day|/d": "/يوم",
+  "ASSUMED: A DELIVERY A DAY FOR EVERY {homes} HOMES": "افتراض: توصيلة واحدة يوميًا لكل {homes} مساكن",
+  "COST: NO WORKS YET": "الكلفة: لا أعمال بعد",
+  "LOCKED PLOTS KEEP THEIR SUN FIT": "القطع المقفلة تحتفظ بمواءمتها مع الشمس",
+  "DISTRICT · {count} PLOTS · {area}": {
+    "zero": "الحي · {count} قطعة · {area}",
+    "one": "الحي · قطعة واحدة ({count}) · {area}",
+    "two": "الحي · قطعتان ({count}) · {area}",
+    "few": "الحي · {count} قطع · {area}",
+    "many": "الحي · {count} قطعة · {area}",
+    "other": "الحي · {count} قطعة · {area}"
+  },
+  "COST: NEIGHBOURS LIVE BESIDE ROOF WORKS ON {count} PLOTS": {
+    "zero": "الكلفة: الجيران يسكنون بجوار أعمال الأسطح في {count} قطعة",
+    "one": "الكلفة: الجيران يسكنون بجوار أعمال الأسطح في قطعة واحدة ({count})",
+    "two": "الكلفة: الجيران يسكنون بجوار أعمال الأسطح في قطعتين ({count})",
+    "few": "الكلفة: الجيران يسكنون بجوار أعمال الأسطح في {count} قطع",
+    "many": "الكلفة: الجيران يسكنون بجوار أعمال الأسطح في {count} قطعة",
+    "other": "الكلفة: الجيران يسكنون بجوار أعمال الأسطح في {count} قطعة"
+  },
+  "Growth timeline": "الخط الزمني للنمو",
+  "Growth timeline for this district": "الخط الزمني لنمو هذا الحي",
+  "Timeline stage": "مرحلة الخط الزمني",
+  "Sun fit": "مواءمة الشمس"
 }

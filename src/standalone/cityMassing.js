@@ -150,11 +150,14 @@ export function mountCityMassing({
     site.block.show = !url;
     if (!url) return rendered();
     const { footprint, heightMeters } = site.massing;
-    const mean = (k) => footprint.reduce((a, c) => a + c[k], 0) / footprint.length;
+    const mean = (k) =>
+      footprint.reduce((a, c) => a + c[k], 0) / footprint.length;
     const at = Cesium.Cartesian3.fromDegrees(mean(0), mean(1), site.base);
     // The app's plot metric (111,320 m a degree) against the ellipsoid's.
     const { points } = localFrame(footprint);
-    const [a, b] = Cesium.Cartesian3.fromDegreesArray(footprint.slice(0, 2).flat());
+    const [a, b] = Cesium.Cartesian3.fromDegreesArray(
+      footprint.slice(0, 2).flat(),
+    );
     const k =
       Cesium.Cartesian3.distance(a, b) /
       Math.hypot(points[1][0] - points[0][0], points[1][1] - points[0][1]);
@@ -168,8 +171,18 @@ export function mountCityMassing({
       site.model.modelMatrix = modelMatrix;
       return rendered();
     }
-    const mine = (site.model = { url, modelMatrix, primitive: null, ready: false });
-    const load = { url, storeys, heightMeters, startedMs: win.performance.now() };
+    const mine = (site.model = {
+      url,
+      modelMatrix,
+      primitive: null,
+      ready: false,
+    });
+    const load = {
+      url,
+      storeys,
+      heightMeters,
+      startedMs: win.performance.now(),
+    };
     spike.loads.push(load);
     const keep = win.setInterval(() => scene.requestRender(), 100);
     Cesium.Model.fromGltfAsync({
@@ -187,7 +200,11 @@ export function mountCityMassing({
         // "sun" scales its light, "env" its sky light, "shade": [a, s] has
         // it keep a of its colour and add s where it faces the sun.
         if (arm.sun)
-          primitive.lightColor = new Cesium.Cartesian3(arm.sun, arm.sun, arm.sun);
+          primitive.lightColor = new Cesium.Cartesian3(
+            arm.sun,
+            arm.sun,
+            arm.sun,
+          );
         if (arm.env && primitive.environmentMapManager)
           primitive.environmentMapManager.brightness = arm.env;
         if (arm.shade)

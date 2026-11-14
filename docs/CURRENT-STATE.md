@@ -940,6 +940,11 @@ and result presentation. Existing search providers and camera handoff policy are
 preserved. Replacing or closing a POI row cancels its pending expansion frame;
 destruction releases listeners, pending searches and the orbit indicator.
 
+The Lisbon, Cascais, Porto and Faro city presets retain five named viewpoints
+per city. Cascais and Faro landmark pins use the geographic anchors reviewed
+for #996; the Faro overview extends south and west to include both Praia de
+Faro and Ilha Deserta rather than framing airport/lagoon locations.
+
 Contacts and mapped-site search feedback filter subject-window installation matches by surface distance from the current subject position, within the stated 100 km radius; the retained tile-fetch square is only a loading window.
 
 Search arrivals (location bar and voice) end above the rendered surface.

@@ -374,8 +374,8 @@ export const CITY_POIS = {
       },
       {
         name: 'Santa Marta Lighthouse',
-        lat: 38.6907,
-        lon: -9.4156,
+        lat: 38.6904,
+        lon: -9.421,
         alt: 350,
         pitch: -28,
         heading: 90,
@@ -383,8 +383,8 @@ export const CITY_POIS = {
       },
       {
         name: 'Cascais Citadel',
-        lat: 38.6918,
-        lon: -9.415,
+        lat: 38.6937,
+        lon: -9.4191,
         alt: 400,
         pitch: -25,
         heading: 180,
@@ -392,8 +392,8 @@ export const CITY_POIS = {
       },
       {
         name: 'Boca do Inferno',
-        lat: 38.6965,
-        lon: -9.429,
+        lat: 38.6911,
+        lon: -9.4308,
         alt: 350,
         pitch: -30,
         heading: 270,
@@ -469,7 +469,7 @@ export const CITY_POIS = {
     name: 'Faro',
     groundElevation: 5,
     viewBounds: {
-      southwest: { lat: 36.99, lng: -7.98 },
+      southwest: { lat: 36.96, lng: -7.99 },
       northeast: { lat: 37.04, lng: -7.92 },
     },
     pois: [
@@ -484,8 +484,8 @@ export const CITY_POIS = {
       },
       {
         name: 'Faro Marina',
-        lat: 37.012,
-        lon: -7.932,
+        lat: 37.0151,
+        lon: -7.9363,
         alt: 350,
         pitch: -25,
         heading: 90,
@@ -493,8 +493,8 @@ export const CITY_POIS = {
       },
       {
         name: 'Sé de Faro',
-        lat: 37.0165,
-        lon: -7.933,
+        lat: 37.0133,
+        lon: -7.9347,
         alt: 350,
         pitch: -28,
         heading: 180,
@@ -502,8 +502,8 @@ export const CITY_POIS = {
       },
       {
         name: 'Praia de Faro',
-        lat: 37.018,
-        lon: -7.965,
+        lat: 37.0031,
+        lon: -7.986,
         alt: 500,
         pitch: -30,
         heading: 270,
@@ -511,8 +511,8 @@ export const CITY_POIS = {
       },
       {
         name: 'Ilha Deserta',
-        lat: 36.998,
-        lon: -7.97,
+        lat: 36.972,
+        lon: -7.929,
         alt: 500,
         pitch: -30,
         heading: 45,

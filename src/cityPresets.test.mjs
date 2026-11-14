@@ -194,3 +194,44 @@ test('containment follows a span across the antimeridian', () => {
     );
   }
 });
+
+const PORTUGAL_LANDMARK_ANCHORS = [
+  ['cascais', 'Santa Marta Lighthouse', 38.6904, -9.421],
+  ['cascais', 'Cascais Citadel', 38.6937, -9.4191],
+  ['cascais', 'Boca do Inferno', 38.6911, -9.4308],
+  ['faro', 'Faro Marina', 37.0151, -7.9363],
+  ['faro', 'Sé de Faro', 37.0133, -7.9347],
+  ['faro', 'Praia de Faro', 37.0031, -7.986],
+  ['faro', 'Ilha Deserta', 36.972, -7.929],
+];
+
+test('Portuguese landmark pins match geographic anchors inside their city view', () => {
+  const radians = (degrees) => (degrees * Math.PI) / 180;
+  for (const [id, name, latitude, longitude] of PORTUGAL_LANDMARK_ANCHORS) {
+    const city = CITY_POIS[id];
+    assert.ok(city, 'missing ' + id + ' city preset');
+    const poi = city.pois.find((entry) => entry.name === name);
+    assert.ok(poi, 'missing ' + id + ' · ' + name);
+
+    const dLat = radians(poi.lat - latitude);
+    const dLon = radians(poi.lon - longitude);
+    const arc =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(radians(latitude)) *
+        Math.cos(radians(poi.lat)) *
+        Math.sin(dLon / 2) ** 2;
+    const distanceM = 2 * 6_371_000 * Math.asin(Math.min(1, Math.sqrt(arc)));
+    assert.ok(
+      distanceM <= 250,
+      id + ' · ' + name + ' is ' + Math.round(distanceM) + ' m from its reference site',
+    );
+
+    const { southwest: sw, northeast: ne } = city.viewBounds;
+    assert.ok(
+      latitude >= sw.lat &&
+        latitude <= ne.lat &&
+        lonWithin(longitude, sw.lng, ne.lng),
+      id + ' · ' + name + ' reference site is outside the city viewBounds',
+    );
+  }
+});

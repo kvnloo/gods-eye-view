@@ -10,6 +10,7 @@ import {
   plotMassing,
   stepStoreys,
 } from '../data/cityMassing.js';
+import { massingFacade } from '../data/cityMassingFacade.js';
 import {
   ASSUMED_EDGE_METERS,
   edgeDistance,
@@ -23,6 +24,7 @@ import {
   releaseContinuousRender,
 } from '../renderGovernor.js';
 import { worldClock } from '../time/worldClock.js';
+import { facadeMaterial, facadeUniforms } from './cityMassingLook.js';
 
 const OWNER = 'city-massing';
 // The plate fills the plot from below the ground to just above it: the globe
@@ -42,14 +44,13 @@ const BUILD_FRAMES = 2;
 const REGROUND_METERS = 0.5;
 // Screen points this far outside the canvas no longer anchor the readout.
 const PAD = 40;
-const BLOCK = Cesium.Color.fromCssColorString('#e8edf1');
-const PLATE = Cesium.Color.fromCssColorString('#8d949b');
+const PLATE = Cesium.Color.fromCssColorString('#8c8a84');
 const ACCENT = Cesium.Color.fromCssColorString('#2ec8e8');
-// The shadow study on the ground: the shadow as it now falls is filled, the
-// one it is held against (was, or what a fit would leave) is a dashed outline,
-// and the protected edge is an amber line reaching past the shadow's sides.
-const SHADE = Cesium.Color.fromCssColorString('#04080e').withAlpha(0.5);
-const WAS = Cesium.Color.WHITE;
+// The shadow study on the ground, as thin lines over the shadow the block
+// really casts: the shadow as it now falls is a solid outline, the one it is
+// held against (was, or what a fit would leave) a dashed one, and the
+// protected edge an amber line reaching past the shadow's sides.
+const LINE = Cesium.Color.WHITE;
 const EDGE = Cesium.Color.fromCssColorString('#ffb454');
 const EDGE_PAD_METERS = 6;
 const MAX_EDGE_METERS = 200;
@@ -57,9 +58,10 @@ const MAX_EDGE_METERS = 200;
 /**
  * Massing v0 on the globe, mounted only behind ?massing=1: once MASSING is
  * on, the selected play-mode plot gets a ground plate and an assumed block
- * standing on the sampled ground, casting its shadow from the scene sun. On 3D
- * tiles the plot is cut out of the mesh so the block never intersects the real
- * building. The readout (CityMassingReadout.vue) shows its numbers and steps
+ * standing on the sampled ground, drawn as a building from its own storeys
+ * (src/data/cityMassingFacade.js) and casting its shadow from the scene sun.
+ * On 3D tiles the plot is cut out of the mesh so the block never intersects
+ * the real building. The readout (CityMassingReadout.vue) shows its numbers and steps
  * its storeys through the play store. PROTECT SIDEWALK adds the shadow study
  * (src/data/cityShadowFit.js): the block's shadow against an edge across the
  * street, drawn on the ground, and FIT TO SUN, which cuts the storeys until the
@@ -212,20 +214,17 @@ export function mountCityMassing({
     const span = (a, b) => Cesium.Cartesian3.distance(a, b);
     const middle = (a, b) =>
       Cesium.Cartesian3.midpoint(a, b, new Cesium.Cartesian3());
-    const face = ds.entities
+    const [nearLeft, , , nearRight] = ds.entities
       .getById(`${OWNER}-shadow-now`)
-      .polygon.hierarchy.getValue().positions;
+      .polyline.positions.getValue();
     return Object.fromEntries(
       marks.map((entity) => {
-        const at = entity.polyline?.positions.getValue();
-        const corners = entity.polygon?.hierarchy.getValue().positions;
+        const at = entity.polyline.positions.getValue();
         return [
           entity.id.slice(`${OWNER}-shadow-`.length),
-          corners
-            ? span(corners[1], corners[2])
-            : at.length === 2
-              ? span(middle(face[0], face[1]), middle(at[0], at[1]))
-              : span(at[0], at[1]),
+          at.length === 2
+            ? span(middle(nearLeft, nearRight), middle(at[0], at[1]))
+            : span(at[0], at[1]),
         ];
       }),
     );
@@ -305,16 +304,29 @@ export function mountCityMassing({
             ),
             height: base,
             extrudedHeight: base + massing.heightMeters,
-            material: BLOCK,
-            outline: true,
-            outlineColor: ACCENT,
+            material: facadeMaterial(() => site?.look),
             shadows: Cesium.ShadowMode.ENABLED,
           },
         }),
     };
+    dress();
     removeFrame = scene.postRender.addEventListener(frame);
     mark();
     rendered();
+  }
+
+  // The building the block is drawn as, and what its shader reads, as the
+  // block now stands: its storeys, its ground and whether the shadow map
+  // (which darkens the faces turned from the sun) is on.
+  function dress() {
+    site.facade = massingFacade(site.massing);
+    site.look =
+      site.facade &&
+      facadeUniforms(
+        site.facade,
+        site.base,
+        viewer.shadows ? scene.shadowMap?.darkness : null,
+      );
   }
 
   // The study of the standing block against the edge, or null while it is off.
@@ -331,7 +343,7 @@ export function mountCityMassing({
   }
 
   // Draw the study on the ground when it changed: the protected edge, the
-  // shadow as it now falls (filled) and the one it is held against (dashed).
+  // shadow as it now falls (solid) and the one it is held against (dashed).
   function mark() {
     const lines = site?.block ? (plan()?.lines ?? []) : [];
     const band = (meters) =>
@@ -352,30 +364,25 @@ export function mountCityMassing({
       ds.entities.add({ id: `${OWNER}-shadow-${id}`, ...graphics });
     const ground = (corners) =>
       Cesium.Cartesian3.fromDegreesArray(corners.flat());
-    const polyline = (positions, material, width = 4) => ({
+    const polyline = (positions, material, width = 3) => ({
       polyline: { positions, width, clampToGround: true, material },
     });
     marks = lines.map((line) => {
       const [nearLeft, nearRight, farRight, farLeft] = ground(
         band(line.reachMeters),
       );
-      return line.kind === 'now'
-        ? add('now', {
-            polygon: {
-              hierarchy: [nearLeft, nearRight, farRight, farLeft],
-              material: SHADE,
-            },
-          })
-        : add(
-            line.kind,
-            polyline(
-              [nearLeft, farLeft, farRight, nearRight],
-              new Cesium.PolylineDashMaterialProperty({
-                color: line.kind === 'was' ? WAS : ACCENT,
+      return add(
+        line.kind,
+        polyline(
+          [nearLeft, farLeft, farRight, nearRight],
+          line.kind === 'now'
+            ? LINE
+            : new Cesium.PolylineDashMaterialProperty({
+                color: line.kind === 'was' ? LINE : ACCENT,
                 dashLength: 14,
               }),
-            ),
-          );
+        ),
+      );
     });
     if (lines.length)
       marks.push(
@@ -391,7 +398,7 @@ export function mountCityMassing({
               ).slice(2),
             ),
             EDGE,
-            6,
+            4,
           ),
         ),
       );
@@ -413,6 +420,7 @@ export function mountCityMassing({
       site.block.polygon.extrudedHeight =
         ground.base + site.massing.heightMeters;
     }
+    dress();
     rendered();
   }
 
@@ -420,6 +428,7 @@ export function mountCityMassing({
   function extrude() {
     site.massing = plotMassing({ corners: site.plot.corners, storeys });
     site.block.polygon.extrudedHeight = site.base + site.massing.heightMeters;
+    dress();
     mark();
     rendered();
   }
@@ -475,7 +484,10 @@ export function mountCityMassing({
       publish(site.plot);
     mark();
     const shadows = site.shadowsBefore || site.sun?.elevationDeg > 0;
-    if (viewer.shadows !== shadows) viewer.shadows = shadows;
+    if (viewer.shadows !== shadows) {
+      viewer.shadows = shadows;
+      dress();
+    }
     const { base, massing } = site;
     const top = base + massing.heightMeters;
     const tip = shadowTip(massing.footprint, massing.heightMeters, site.sun);
@@ -671,6 +683,9 @@ export function mountCityMassing({
         drawn: Boolean(site?.block) && !build && drawn(),
         sun: site?.sun ?? null,
         cuts: site?.cuts.length ?? 0,
+        // The building the block is drawn as, and its material on the entity.
+        facade: site?.facade ?? null,
+        blockMaterial: site?.block?.polygon.material.type ?? null,
         // The shadow study: its plan, and the lines as the entities hold them.
         study: study && {
           wasStoreys,

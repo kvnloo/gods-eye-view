@@ -508,3 +508,99 @@ test('with the sun down the study draws nothing and FIT TO SUN does nothing', as
   assert.equal(win.__gevCityMassing.snapshot().study.drawn, false);
   owner.destroy();
 });
+
+// --- The look: the block is drawn as a building ---------------------------
+test('the block is drawn as an opaque building from its own storeys, with no cyan cage', async () => {
+  const { store, win, ds, select, owner } = mount();
+  await select({ plot: { id: plot.id } });
+  let s = win.__gevCityMassing.snapshot();
+  const block = ds.entities.getById('city-massing-block').polygon;
+  assert.equal(s.blockMaterial, 'GevCityMassingFacade');
+  // Cesium registers the material type when it first asks for it (in a
+  // browser); here the image types its uniform check names stand in.
+  for (const name of [
+    'HTMLCanvasElement',
+    'HTMLImageElement',
+    'ImageBitmap',
+    'OffscreenCanvas',
+  ])
+    globalThis[name] ??= class {};
+  assert.equal(block.material.getType(), s.blockMaterial);
+  assert.equal(
+    Cesium.Material.fromType(s.blockMaterial).isTranslucent(),
+    false,
+    'the body is opaque',
+  );
+  assert.equal(block.outline, undefined, 'no wireframe on the block');
+  assert.equal(s.facade.bands.length, 6);
+  assert.equal(s.facade.bands[0].kind, 'shopfront');
+  within(s.facade.heightMeters, s.blockTop - s.base, 1e-9, 'top');
+  // What the shader reads is the block as it stands: storeys, storey height,
+  // top and parapet, around an origin at the footprint's middle on the ground.
+  let look = block.material.getValue();
+  assert.deepEqual(
+    [look.gevLevels.x, look.gevLevels.y, look.gevLevels.z],
+    [6, 3.2, s.facade.heightMeters],
+  );
+  within(look.gevLevels.w, 0.576, 1e-9, 'parapet');
+  const origin = Cesium.Cartographic.fromCartesian(
+    Cesium.Cartesian3.add(
+      look.gevOriginHigh,
+      look.gevOriginLow,
+      new Cesium.Cartesian3(),
+    ),
+  );
+  within(origin.height, -8.25, 1e-3, 'origin on the ground');
+  within(Cesium.Math.toDegrees(origin.latitude), plot.center.lat, 1e-6, 'lat');
+  // Four walls of 32 m in ten bays, each facing out along its own normal.
+  for (const wall of [look.gevWall0, look.gevWall1, look.gevWall2, look.gevWall3]) {
+    within(Math.hypot(wall.x, wall.y), 1, 1e-9, 'unit normal');
+    within(wall.z, 16, 0.01, 'wall 16 m from the middle');
+    within(wall.w, 16, 0.01, 'half of 32 m');
+  }
+  assert.deepEqual(
+    [look.gevBays.x, look.gevBays.y, look.gevBays.z, look.gevBays.w],
+    [10, 10, 10, 10],
+  );
+  // The stepper re-dresses the standing block: no new entity, new levels.
+  store.massingControls.step(-1);
+  s = win.__gevCityMassing.snapshot();
+  assert.equal(s.facade.bands.length, 5);
+  look = block.material.getValue();
+  assert.deepEqual([look.gevLevels.x, look.gevLevels.z], [5, 16]);
+  assert.equal(ds.entities.getById('city-massing-block').polygon, block);
+  owner.destroy();
+});
+
+test('the faces turned from the sun are lifted against the shadow map only while it is on', async () => {
+  const day = mount();
+  day.viewer.scene.shadowMap.darkness = 0.3;
+  await day.select({ plot: { id: plot.id } });
+  const lit = day.ds.entities.getById('city-massing-block').polygon.material;
+  within(lit.getValue().gevShade, 0.5 / 0.3, 1e-9, 'shadow map on');
+  day.owner.destroy();
+  const night = mount({ time: NIGHT });
+  night.viewer.scene.shadowMap.darkness = 0.3;
+  await night.select({ plot: { id: plot.id } });
+  const dark = night.ds.entities.getById('city-massing-block').polygon.material;
+  assert.equal(dark.getValue().gevShade, 0.5, 'no shadow map: skylight only');
+  night.owner.destroy();
+});
+
+test('the study marks are thin ground lines: NOW solid, WAS dashed, no fill over the cast shadow', async () => {
+  const { store, ds, select, render, owner } = mount({ time: WINTER_NOON });
+  await select({ plot: { id: plot.id } });
+  store.massingControls.study();
+  store.massingControls.fit();
+  render();
+  const now = ds.entities.getById('city-massing-shadow-now');
+  const was = ds.entities.getById('city-massing-shadow-was');
+  assert.equal(now.polygon, undefined, 'the shadow map draws the shadow');
+  for (const line of [now, was]) {
+    assert.equal(line.polyline.clampToGround.getValue(), true);
+    assert.ok(line.polyline.width.getValue() <= 4, 'thin');
+  }
+  assert.ok(now.polyline.material instanceof Cesium.ColorMaterialProperty);
+  assert.ok(was.polyline.material instanceof Cesium.PolylineDashMaterialProperty);
+  owner.destroy();
+});

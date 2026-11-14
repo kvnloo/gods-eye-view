@@ -15,7 +15,7 @@ export const FACADE = Object.freeze({
   parapetShare: 0.18,
   parapetMaxMeters: 0.6,
   shopfront: Object.freeze({ sill: 0.1, head: 0.72, share: 0.8 }),
-  floor: Object.freeze({ sill: 0.3, head: 0.8, share: 0.5 }),
+  floor: Object.freeze({ sill: 0.26, head: 0.8, share: 0.56 }),
   // The sign band over the shopfront glass, as shares of the ground storey.
   fascia: Object.freeze({ bottom: 0.76, top: 0.92 }),
   colors: Object.freeze({

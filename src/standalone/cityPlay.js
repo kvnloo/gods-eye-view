@@ -1,4 +1,5 @@
 import * as Cesium from 'cesium';
+import { watch } from 'vue';
 import { msg, t } from '../i18n/index.js';
 import { claimPointer, releasePointer } from '../data/inputOwnership.js';
 import { neighborPlots, plotPoint, snapPlot } from '../data/cityPlot.js';
@@ -184,7 +185,9 @@ export function mountCityPlay({
     const base = baseHeight(plot);
     // Choosing shows the prism and neighbour grid; once a concept stands on the
     // plot only its outline and projector edges remain, so the concept leads.
-    const choosing = state.wheel || !shownByPlot().has(plot.id);
+    // A massing block (behind ?massing=1) leads like a concept does.
+    const choosing =
+      (state.wheel || !shownByPlot().has(plot.id)) && !store.massing?.on;
     for (const cell of choosing && !capturing ? neighborPlots(plot, 1) : []) {
       grid.push(
         ds.entities.add({
@@ -1066,6 +1069,11 @@ export function mountCityPlay({
   if (win) win.__gevCityPlay = probe;
   store.connect(controls);
   present();
+  // The selection prism steps aside while a massing block stands.
+  const stopMassing = watch(
+    () => Boolean(store.massing?.on),
+    () => render(),
+  );
 
   return {
     receive(next) {
@@ -1076,6 +1084,7 @@ export function mountCityPlay({
     destroy() {
       if (disposed) return;
       controls.exit();
+      stopMassing();
       disposed = true;
       if (win?.__gevCityPlay === probe) delete win.__gevCityPlay;
       Promise.resolve(added).then(() => viewer.dataSources?.remove(ds, true));

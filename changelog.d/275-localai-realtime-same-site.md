@@ -1,0 +1,1 @@
+- Guard LocalAI Realtime backend-status and SDP-relay endpoints with the shared same-site request policy, preventing cross-site browser and forwarded requests from starting a local process or forwarding SDP. Same-origin browser sessions and direct non-browser tools remain supported. Original provider by devv-shayan; same-site policy reused from upstream main.

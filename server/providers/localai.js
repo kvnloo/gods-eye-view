@@ -2,6 +2,7 @@ import { spawn as spawnProcess } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
 import { incompleteDownloadBytes } from './localai/files.js';
+import { sameSiteGated } from './common/same-site.js';
 import {
   LOCAL_AI_REALTIME_MODEL_DEFAULT,
   LOCAL_AI_REALTIME_URL_DEFAULT,
@@ -443,8 +444,11 @@ export function createLocalAiRealtime({
   }
 
   function install(middlewares) {
-    middlewares.use('/api/realtime/local-backend', backendRoute);
-    middlewares.use('/api/realtime/local-calls', callsRoute);
+    middlewares.use(
+      '/api/realtime/local-backend',
+      sameSiteGated(backendRoute),
+    );
+    middlewares.use('/api/realtime/local-calls', sameSiteGated(callsRoute));
   }
 
   function dispose() {

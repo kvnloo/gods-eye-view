@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
+import path from 'node:path';
 import {
   createLocalAiRealtime,
   isLoopbackOrigin,
@@ -67,7 +68,7 @@ test('LocalAI auto-start uses direct spawn with no shell', async () => {
   assert.equal(calls[0].options.cwd, '/models/localai');
   assert.equal(
     calls[0].options.env.LOCALAI_MODELS_PATH,
-    '/models/localai/models',
+    path.join('/models/localai', 'models'),
   );
 
   runtime.dispose();
@@ -261,4 +262,125 @@ test('LocalAI reports download progress without blocking, and fails only on a st
   const stalled = await runtime.status();
   assert.equal(stalled.state, 'unavailable');
   assert.match(stalled.detail, /stalled/);
+});
+
+test('LocalAI routes reject cross-site and forwarded requests before side effects', async () => {
+  const upstreamRequests = [];
+  let spawnCount = 0;
+  const runtime = createLocalAiRealtime({
+    fetchImpl: async (url) => {
+      upstreamRequests.push(url);
+      throw new Error('offline');
+    },
+    spawnImpl() {
+      spawnCount += 1;
+      throw new Error('blocked request must not start LocalAI');
+    },
+  });
+  const routes = new Map();
+  runtime.install({
+    use(endpoint, handler) {
+      routes.set(endpoint, handler);
+    },
+  });
+
+  const cases = [
+    {
+      endpoint: '/api/realtime/local-backend',
+      method: 'POST',
+      headers: {
+        origin: 'https://evil.example',
+        'sec-fetch-site': 'cross-site',
+      },
+    },
+    {
+      endpoint: '/api/realtime/local-backend',
+      method: 'GET',
+      headers: { 'sec-fetch-site': 'cross-site' },
+    },
+    {
+      endpoint: '/api/realtime/local-calls',
+      method: 'POST',
+      headers: {
+        origin: 'https://evil.example',
+        'sec-fetch-site': 'cross-site',
+      },
+    },
+    {
+      endpoint: '/api/realtime/local-calls',
+      method: 'POST',
+      headers: {
+        origin: 'http://localhost:4173',
+        'sec-fetch-site': 'same-origin',
+        'x-forwarded-for': '203.0.113.1',
+      },
+    },
+  ];
+  for (const { endpoint, method, headers } of cases) {
+    const req = new EventEmitter();
+    req.method = method;
+    req.url = endpoint;
+    req.headers = { host: 'localhost:4173', ...headers };
+    req.socket = { encrypted: false };
+    req.destroy = () => {};
+    const res = responseRecorder();
+    const pending = routes.get(endpoint)(req, res);
+    if (endpoint.endsWith('/local-calls')) {
+      req.emit('data', Buffer.from('offer-sdp'));
+      req.emit('end');
+    }
+    await pending;
+    assert.equal(res.statusCode, 403, `${method} ${endpoint}`);
+    assert.equal(res.headers['cache-control'], 'no-store');
+  }
+  assert.equal(spawnCount, 0, 'cross-site requests cannot launch LocalAI');
+  assert.deepEqual(upstreamRequests, [], 'no LocalAI request is made');
+});
+
+test('LocalAI installed SDP route permits same-origin browser and direct clients', async () => {
+  const forwarded = [];
+  const runtime = createLocalAiRealtime({
+    environment: { GEV_LOCAL_REALTIME_MODEL: 'voice-pipeline' },
+    fetchImpl: async (url, options) => {
+      forwarded.push({ url, options });
+      return {
+        ok: true,
+        status: 201,
+        text: async () => JSON.stringify({ sdp: 'answer-sdp' }),
+      };
+    },
+  });
+  const routes = new Map();
+  runtime.install({
+    use(endpoint, handler) {
+      routes.set(endpoint, handler);
+    },
+  });
+
+  for (const headers of [
+    {
+      host: 'localhost:4173',
+      origin: 'http://localhost:4173',
+      'sec-fetch-site': 'same-origin',
+    },
+    { host: 'localhost:4173' },
+  ]) {
+    const req = new EventEmitter();
+    req.method = 'POST';
+    req.url = '/api/realtime/local-calls';
+    req.headers = headers;
+    req.socket = { encrypted: false };
+    req.destroy = () => {};
+    const res = responseRecorder();
+    const pending = routes.get('/api/realtime/local-calls')(req, res);
+    req.emit('data', Buffer.from('offer-sdp'));
+    req.emit('end');
+    await pending;
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body, 'answer-sdp');
+  }
+  assert.equal(forwarded.length, 2);
+  for (const request of forwarded) {
+    assert.equal(JSON.parse(request.options.body).model, 'voice-pipeline');
+  }
 });

@@ -80,6 +80,9 @@ stopped conversation or send output into a replacement. See [voice ownership](VO
 - LocalAI signalling is relayed through the dev server to avoid browser CORS
   configuration and to translate the raw SDP offer into LocalAI 4.9.0's JSON
   request shape. Media still uses the negotiated WebRTC connection.
+- LocalAI backend-status and SDP-relay routes reject cross-site browser and
+  forwarded requests before starting a child process or relaying an offer.
+  Same-origin browser sessions and direct non-browser tools remain supported.
 - The POWER UP panel installs local voice in place: `GET /api/setup/local-voice`
   reports supported/ready/step state plus the resolved/recommended LLM and
   hardware budget, and `POST` starts the profile's plan, both

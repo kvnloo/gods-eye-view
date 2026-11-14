@@ -85,9 +85,11 @@ export function decodeLevel3(bytes, expected) {
   const uncompressedSize = view.getUint32(pdb + 84);
   const symbologyAt = start + view.getUint32(pdb + 90) * 2;
   if (compression !== 1) fail(`compression ${compression}`);
-  if (uncompressedSize > MAX_UNCOMPRESSED_BYTES) fail('uncompressed size');
+  if (uncompressedSize === 0 || uncompressedSize > MAX_UNCOMPRESSED_BYTES)
+    fail('uncompressed size');
+  // A declared size is an allocation bound, not just a post-decode check.
   const symbology = new Uint8Array(
-    Bunzip.decode(Buffer.from(bytes.subarray(symbologyAt))),
+    Bunzip.decode(Buffer.from(bytes.subarray(symbologyAt)), uncompressedSize),
   );
   if (symbology.length !== uncompressedSize) fail('decompressed size');
   const block = new DataView(symbology.buffer, symbology.byteOffset);

@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import Bunzip from 'seek-bzip';
 import { birdMigrationProxy } from '../../server/providers/birdMigration.js';
+import { decodeLevel3 } from '../../server/providers/birdMigration/level3.js';
 import { reduceStation } from '../../server/providers/birdMigration/vad.js';
 import { parseMotion } from '../layers/birdMigration/wire.js';
 
@@ -192,4 +194,71 @@ test('motion is refused for a time that is not an advertised tick', async () => 
     400,
   );
   assert.equal((await get('/motion?time=garbage')).status, 400);
+});
+
+
+// The compressed fixtures are deterministic bzip2: a 38-byte radial packet and
+// a 4 MiB + 8 KiB zero stream. Neither needs a live NWS request.
+const VALID_LEVEL3_BZIP =
+  'QlpoOTFBWSZTWcm46PYAAA3gAPgwQAAAAKAAMQwIGNUxqRcIjVB5HtHePi7kinChIZNx0ew=';
+const OVERSIZED_LEVEL3_BZIP =
+  'QlpoOTFBWSZTWdtFKEkAIDBCAMAAAAQACCAAMMwFKaYFANiCgHi7kinChIbaKUJI';
+const MAX_LEVEL3_SYMBOLOGY = 4 * 1024 * 1024;
+
+function level3Product(compressed, declaredSize) {
+  const prefix = Buffer.from('SDUS54 KDMX 110330\r\r\nN0UDMX\r\r\n');
+  const bytes = Buffer.alloc(prefix.length + 120 + compressed.length);
+  prefix.copy(bytes);
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const start = prefix.length;
+  const pdb = start + 18;
+  view.setInt16(start, 99); // N0U
+  view.setInt16(pdb, -1);
+  view.setInt32(pdb + 2, 41_600);
+  view.setInt32(pdb + 6, -93_700);
+  view.setInt16(pdb + 12, 99);
+  view.setInt16(pdb + 22, 20_000);
+  view.setInt32(pdb + 24, 3600);
+  view.setInt16(pdb + 40, 5); // 0.5 degree elevation
+  view.setInt16(pdb + 44, 10); // 1 m/s per velocity code
+  view.setInt16(pdb + 82, 1); // bzip2
+  view.setUint32(pdb + 84, declaredSize);
+  view.setUint32(pdb + 90, 60); // symbology begins 120 bytes after message start
+  compressed.copy(bytes, start + 120);
+  return bytes;
+}
+
+test('Level III decodes a valid bounded N0U digital radial packet', () => {
+  const bytes = level3Product(Buffer.from(VALID_LEVEL3_BZIP, 'base64'), 38);
+  const result = decodeLevel3(bytes, 'N0U');
+  assert.equal(result.product, 'N0U');
+  assert.equal(result.radials.length, 1);
+  assert.equal(result.radials[0].widthDeg, 1);
+  assert.equal(result.radials[0].values[0], 0);
+});
+
+test('Level III passes its 4 MiB output cap to bzip before decoding', () => {
+  const bytes = level3Product(
+    Buffer.from(OVERSIZED_LEVEL3_BZIP, 'base64'),
+    MAX_LEVEL3_SYMBOLOGY,
+  );
+  const originalDecode = Bunzip.decode;
+  let allocatedCapacity;
+  Bunzip.decode = (input, expectedSize) => {
+    allocatedCapacity = expectedSize;
+    if (expectedSize !== MAX_LEVEL3_SYMBOLOGY)
+      throw new Error('Level III bzip expansion is not bounded');
+    return originalDecode(input, expectedSize);
+  };
+  try {
+    assert.throws(() => decodeLevel3(bytes, 'N0U'));
+    assert.equal(allocatedCapacity, MAX_LEVEL3_SYMBOLOGY);
+  } finally {
+    Bunzip.decode = originalDecode;
+  }
+});
+
+test('Level III rejects zero-length symbology before bzip decoding', () => {
+  const bytes = level3Product(Buffer.from(VALID_LEVEL3_BZIP, 'base64'), 0);
+  assert.throws(() => decodeLevel3(bytes, 'N0U'), /uncompressed size/);
 });

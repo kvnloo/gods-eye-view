@@ -5001,6 +5001,11 @@ The maximum gap is 30 minutes for radar, regional infrared and lightning, and
 and reports the gap; rows show actual displayed UTC time with synced/nearest labels.
 Manifest rollover preserves the requested history time, even when frames expire.
 
+The optional Bird Migration row reads N0U velocity and N0C correlation
+through the same-origin `/api/migration` proxy. Level III bzip symbology
+is decoded into a fixed, header-declared output size (at most 4 MiB);
+zero-length declarations and streams exceeding that size are rejected.
+
 Latest follows each product's own newest frame, so its timestamps can differ.
 Playback advances two seconds after all products settle, wraps, and stops with
 fewer than two union times or when all products are suspended. Hidden documents,

@@ -5,3 +5,5 @@
   are saved locally. The app and its menu button hide when Live Vessels is off.
 - Keep civilian vessel names and detail cards selection-only while preserving
   ambient detection labels for explicitly military AIS types. (@dylanmaniatakes)
+- Apply display filters to nearby 3D model candidates and model-to-icon handback,
+  so filtered vessels do not reappear as 3D hulls or sprites.

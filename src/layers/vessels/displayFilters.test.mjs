@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createVesselDisplayFilters } from './displayFilters.js';
+import { vesselModelCandidate } from './rendering.js';
 
 test('vessel display controls retain the full searchable roster and immediately refresh the map', () => {
   const records = Array.from({ length: 120 }, (_, i) => ({
@@ -72,4 +73,61 @@ test('vessel display controls retain the full searchable roster and immediately 
   });
   display.prepare();
   assert.equal(records.filter(display.allows).length, 120);
+});
+
+test('3D vessel candidates respect filters immediately and preserve selected contacts', () => {
+  const waterline = { x: 3, y: 4, z: 0 };
+  const stopped = {
+    mmsi: '100000001',
+    type: 71,
+    speed: 0,
+    position: waterline,
+  };
+  const moving = {
+    mmsi: '100000002',
+    type: 71,
+    speed: 8,
+    position: waterline,
+  };
+  const state = {
+    records: { all: [stopped, moving] },
+    selectedRecord: null,
+    viewer: {
+      camera: {
+        positionCartographic: { height: 500 },
+        frustum: { fovy: Math.PI / 3 },
+      },
+      scene: { canvas: { clientHeight: 900 } },
+    },
+  };
+  const display = createVesselDisplayFilters({
+    vesselState: { state },
+    parts: {
+      rendering: { getVisual: (record) => record, updateVisibility() {} },
+    },
+    services: { render: { governorRequestRender() {} } },
+  });
+  display.set({ underwayOnly: true, declutterEnabled: false });
+  display.prepare();
+  const cameraPosition = { x: 0, y: 0, z: 0 };
+  const modelCandidate = (record, maxDistanceSquared = 100) =>
+    vesselModelCandidate(
+      record,
+      waterline,
+      display.allows,
+      cameraPosition,
+      maxDistanceSquared,
+    );
+
+  assert.equal(modelCandidate(stopped), false, 'stopped hull is filtered');
+  assert.equal(modelCandidate(moving), true, 'moving hull remains eligible');
+  state.selectedRecord = stopped;
+  display.prepare();
+  assert.equal(modelCandidate(stopped), true, 'selection bypasses filtering');
+  assert.equal(modelCandidate(moving, 16), false, 'keep radius still applies');
+  assert.equal(
+    vesselModelCandidate(moving, null, display.allows, cameraPosition, 100),
+    false,
+    'missing model position is ineligible',
+  );
 });

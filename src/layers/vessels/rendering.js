@@ -33,6 +33,23 @@ const FOLLOW_POSITION_MS = 250;
 /** How often the vessels near enough for a model are gathered again (wall ms). */
 const MODEL_CANDIDATES_MS = 500;
 
+/** A vessel hidden by the display filters must not reappear as a 3D hull. */
+export function vesselModelCandidate(
+  record,
+  waterline,
+  allows,
+  cameraPosition = null,
+  maxDistanceSquared = Infinity,
+) {
+  return (
+    Boolean(waterline) &&
+    (allows?.(record) ?? true) &&
+    (!cameraPosition ||
+      Cesium.Cartesian3.distanceSquared(cameraPosition, waterline) <=
+        maxDistanceSquared)
+  );
+}
+
 export function createRendering({
   vesselState,
   services,
@@ -253,6 +270,7 @@ export function createRendering({
   function billboardShown(record, occluder) {
     const visual = getVisual(record);
     return (
+      (components.display?.allows(record) ?? true) &&
       isVisible(visual.surfacePosition, occluder) &&
       record.id !== state.cockpitSubjectId &&
       !visual.modelOwnsVisual
@@ -286,11 +304,14 @@ export function createRendering({
         : policy.keepM;
     const limitSq = keepM * keepM * 1.44;
     for (const record of state.records.all) {
-      const waterline = getVisual(record).waterline;
-      if (!waterline) continue;
       if (
-        Cesium.Cartesian3.distanceSquared(camera.positionWC, waterline) >
-        limitSq
+        !vesselModelCandidate(
+          record,
+          getVisual(record).waterline,
+          components.display?.allows,
+          camera.positionWC,
+          limitSq,
+        )
       )
         continue;
       into.set(record.id, modelItem(record, set));
@@ -329,7 +350,14 @@ export function createRendering({
       gatherModelItems(set, next);
     } else {
       for (const [id, item] of modelItems)
-        if (state.records.byId.get(id) === item.record)
+        if (
+          state.records.byId.get(id) === item.record &&
+          vesselModelCandidate(
+            item.record,
+            getVisual(item.record).waterline,
+            components.display?.allows,
+          )
+        )
           next.set(id, modelItem(item.record, set));
     }
     for (const [id, item] of modelItems)

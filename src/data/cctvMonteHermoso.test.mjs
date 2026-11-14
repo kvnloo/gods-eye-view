@@ -71,3 +71,51 @@ test('existing HLS relay follows the Montevisión master context into TS segment
   puller.release(camera.id, 'test-lease');
   assert.equal(puller.stats().sessions, 0);
 });
+
+test('Monte Hermoso joins the live catalog by default and honors its kill switch', async (t) => {
+  const keys = [
+    'CCTV_SOURCES_FILE',
+    'CCTV_SOURCES_JSON',
+    'CCTV_FORCE_AUSTIN',
+    'CCTV_MAX_SOURCES',
+    'CCTV_MONTE_HERMOSO_ENABLED',
+  ];
+  const previous = new Map(keys.map((key) => [key, process.env[key]]));
+  t.after(() => {
+    for (const [key, value] of previous) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
+
+  process.env.CCTV_SOURCES_FILE = '/nonexistent/monte-hermoso-test.json';
+  process.env.CCTV_SOURCES_JSON = '[]';
+  process.env.CCTV_FORCE_AUSTIN = '1';
+  process.env.CCTV_MAX_SOURCES = '5000';
+  delete process.env.CCTV_MONTE_HERMOSO_ENABLED;
+
+  // No live external requests: this pack uses a fixed, public master URL.
+  t.mock.method(globalThis, 'fetch', async () => {
+    throw new Error('offline fixture');
+  });
+  t.mock.method(console, 'warn', () => {});
+
+  const { createCctvCatalog } = await import(
+    '../../server/providers/cctv/catalog.js'
+  );
+  const { id } = loadMonteHermosoSources()[0];
+  const readCamera = async () => {
+    const sources = await createCctvCatalog({ sourceRoot: '/nonexistent' })();
+    return sources.filter((source) => source.id === id);
+  };
+
+  // Loader/relay tests alone would pass if catalog registration were omitted.
+  assert.deepEqual(
+    (await readCamera()).map(({ pack, feedType }) => [pack, feedType]),
+    [['monte-hermoso', 'hls']],
+    'default catalog should publish the webcam as an HLS source',
+  );
+
+  process.env.CCTV_MONTE_HERMOSO_ENABLED = '0';
+  assert.deepEqual(await readCamera(), [], 'kill switch removes the camera');
+});

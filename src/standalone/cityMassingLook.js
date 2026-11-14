@@ -1,8 +1,9 @@
 import * as Cesium from 'cesium';
 import { FACADE } from '../data/cityMassingFacade.js';
 
-// The massing block drawn as a building: a Cesium fabric material on the
-// block's own polygon. The polygon's texture coordinates carry no height, so
+// The massing block drawn as a building, and the plate it stands on as
+// paving: one Cesium fabric material on their own polygons. A polygon's
+// texture coordinates carry no height, so
 // the shader finds each fragment in metres east/north/up of the footprint's
 // middle itself, relative to the eye (the camera and the origin both split
 // high/low, so the metres hold at globe scale), and lays the facade out from
@@ -22,8 +23,27 @@ const SOURCE = `
 float gevBox(float x, float lo, float hi, float aa) {
   return smoothstep(lo - aa, lo + aa, x) - smoothstep(hi - aa, hi + aa, x);
 }
+float gevRect(vec2 q, vec2 lo, vec2 hi, float aa) {
+  return gevBox(q.x, lo.x, hi.x, aa) * gevBox(q.y, lo.y, hi.y, aa);
+}
 float gevHash(vec2 cell) {
   return fract(sin(dot(cell, vec2(127.1, 311.7))) * 43758.5453);
+}
+// A box painted on the roof deck as the eye sees it: the shade it throws, the
+// side toward the eye and its top. lean and fall are how far a metre of
+// height shifts along the deck for the eye and for the sun. No geometry: it
+// adds nothing to the height or to the cast shadow.
+vec3 gevPlant(vec3 color, vec2 q, vec2 lo, vec2 hi, float h, vec2 lean, vec2 fall, float aa, vec3 paint) {
+  float shade = 0.0;
+  float side = gevRect(q, lo, hi, aa);
+  for (int i = 1; i <= 4; i++) {
+    float t = h * float(i) / 4.0;
+    shade = max(shade, gevRect(q - fall * t, lo, hi, aa));
+    side = max(side, gevRect(q - lean * t, lo, hi, aa));
+  }
+  color *= 1.0 - 0.55 * shade;
+  color = mix(color, paint * 0.62, side);
+  return mix(color, paint, gevRect(q - lean * h, lo, hi, aa));
 }
 czm_material czm_getMaterial(czm_materialInput materialInput) {
   czm_material material = czm_getDefaultMaterial(materialInput);
@@ -33,26 +53,65 @@ czm_material czm_getMaterial(czm_materialInput materialInput) {
   vec3 p = vec3(dot(world, gevEast), dot(world, gevNorth), dot(world, gevUp));
   vec3 normal = czm_inverseViewRotation * materialInput.normalEC;
   vec3 n = vec3(dot(normal, gevEast), dot(normal, gevNorth), dot(normal, gevUp));
+  vec3 toEye = normalize(materialInput.positionToEyeEC);
+  vec3 eyeWorld = czm_inverseViewRotation * toEye;
+  vec3 eye = vec3(dot(eyeWorld, gevEast), dot(eyeWorld, gevNorth), dot(eyeWorld, gevUp));
+  vec3 sunWorld = czm_inverseViewRotation * czm_lightDirectionEC;
+  vec3 sun = vec3(dot(sunWorld, gevEast), dot(sunWorld, gevNorth), dot(sunWorld, gevUp));
   float storeys = gevLevels.x;
   float storeyMeters = gevLevels.y;
   float top = gevLevels.z;
   float parapet = gevLevels.w;
-  vec3 toEye = normalize(materialInput.positionToEyeEC);
   float sunward = dot(materialInput.normalEC, czm_lightDirectionEC);
+  // Metres inside each wall: negative outside the footprint.
+  vec4 inside = vec4(
+    gevWall0.z - dot(p.xy, gevWall0.xy), gevWall1.z - dot(p.xy, gevWall1.xy),
+    gevWall2.z - dot(p.xy, gevWall2.xy), gevWall3.z - dot(p.xy, gevWall3.xy));
+  float within = min(min(inside.x, inside.y), min(inside.z, inside.w));
   vec3 color;
-  float edge;
+  float edge = 1000.0;
   float pane = 0.0;
-  if (n.z > 0.5) {
-    // The roof: a membrane in panels, darker under the parapet, coping around.
-    edge = min(
-      min(gevWall0.z - dot(p.xy, gevWall0.xy), gevWall1.z - dot(p.xy, gevWall1.xy)),
-      min(gevWall2.z - dot(p.xy, gevWall2.xy), gevWall3.z - dot(p.xy, gevWall3.xy)));
-    float pixel = fwidth(edge);
-    vec2 seam = abs(fract(p.xy / 4.0) - 0.5) * 4.0;
+  if (p.z < 0.2) {
+    // The plate under the block: paving slabs, darker where the walls stand.
+    vec2 joint = (0.5 - abs(fract(p.xy / 2.0) - 0.5)) * 2.0;
+    color = ${rgb(colors.paving)} * (0.93 + 0.07 *
+      smoothstep(0.0, 0.05 + fwidth(p.x) + fwidth(p.y), min(joint.x, joint.y)));
+    color *= 1.0 - 0.45 * exp(min(within, 0.0) / 0.8);
+  } else if (n.z > 0.5) {
+    // The roof: a membrane in panels behind the parapet, which shades the
+    // deck along the sides the sun comes over; coping around.
+    float pixel = fwidth(within);
+    vec2 seam = (0.5 - abs(fract(p.xy / 4.0) - 0.5)) * 4.0;
     color = ${rgb(colors.roof)} *
-      (0.93 + 0.07 * smoothstep(0.0, 0.08 + pixel, 2.0 - max(seam.x, seam.y)));
-    color *= 0.76 + 0.24 * smoothstep(0.4, 1.8, edge);
-    color = mix(${rgb(colors.coping)}, color, smoothstep(0.4 - pixel, 0.4 + pixel, edge));
+      (0.93 + 0.07 * smoothstep(0.0, 0.08 + pixel, min(seam.x, seam.y)));
+    vec4 over = max(vec4(dot(gevWall0.xy, sun.xy), dot(gevWall1.xy, sun.xy),
+      dot(gevWall2.xy, sun.xy), dot(gevWall3.xy, sun.xy)), 0.0) * parapet / max(sun.z, 0.05);
+    vec4 lit = inside - 0.4 - over;
+    float shaded = sun.z > 0.0
+      ? 1.0 - smoothstep(-pixel, pixel, min(min(lit.x, lit.y), min(lit.z, lit.w)))
+      : 0.0;
+    color *= 1.0 - 0.5 * shaded;
+    color *= 0.84 + 0.16 * smoothstep(0.4, 1.6, within);
+    // Plant where the deck has room: a stair core and three units.
+    float halfLength = gevWall0.w;
+    float depth = inside.x + inside.z;
+    if (halfLength > 9.0 && depth > 18.0) {
+      vec2 along = vec2(-gevWall0.y, gevWall0.x);
+      vec2 q = vec2(dot(p.xy, along) - gevMiddles.x, inside.x);
+      vec2 lean = eye.z > 0.2 ? -eye.xy / eye.z : vec2(0.0);
+      vec2 fall = sun.z > 0.05 ? -sun.xy / sun.z : vec2(0.0);
+      lean = vec2(dot(lean, along), -dot(lean, gevWall0.xy));
+      fall = vec2(dot(fall, along), -dot(fall, gevWall0.xy));
+      color = gevPlant(color, q, vec2(6.0 - halfLength, 7.0), vec2(11.0 - halfLength, 11.5),
+        2.6, lean, fall, pixel, ${rgb(colors.coping)} * 0.9);
+      for (int unit = 0; unit < 3; unit++) {
+        float x = 2.0 + 3.4 * float(unit);
+        color = gevPlant(color, q, vec2(x, depth - 9.0), vec2(x + 2.2, depth - 6.8),
+          1.3, lean, fall, pixel, vec3(0.74, 0.76, 0.78));
+      }
+    }
+    color = mix(${rgb(colors.coping)}, color, smoothstep(0.4 - pixel, 0.4 + pixel, within));
+    edge = within;
   } else {
     // The wall this fragment is on: the one its normal points along.
     vec4 wall = gevWall0;
@@ -67,8 +126,9 @@ czm_material czm_getMaterial(czm_materialInput materialInput) {
     facing = dot(n.xy, gevWall3.xy);
     if (facing > best) { wall = gevWall3; middle = gevMiddles.w; bays = gevBays.w; id = 3.0; }
     float halfLength = wall.w;
+    float bayMeters = 2.0 * halfLength / bays;
     float along = dot(p.xy, vec2(-wall.y, wall.x)) - middle;
-    float bay = (along + halfLength) * bays / (2.0 * halfLength);
+    float bay = (along + halfLength) / bayMeters;
     float z = clamp(p.z, 0.0, top);
     float level = z / storeyMeters;
     float storey = min(floor(level), storeys - 1.0);
@@ -77,44 +137,56 @@ czm_material czm_getMaterial(czm_materialInput materialInput) {
     float aaBay = fwidth(bay);
     float aaLevel = fwidth(level);
     bool shop = storey < 0.5;
-    float sill = shop ? ${number(shopfront.sill)} : ${number(floor.sill)};
+    // The door: the middle bay of the shopfront is glazed to the ground.
+    bool door = shop && abs(floor(bay) - floor(bays / 2.0)) < 0.5;
+    float sill = shop ? (door ? 0.02 : ${number(shopfront.sill)}) : ${number(floor.sill)};
     float head = shop ? ${number(shopfront.head)} : ${number(floor.head)};
     float share = shop ? ${number(shopfront.share)} : ${number(floor.share)};
-    // Frames 8 cm wide around the glass and down its middle.
-    float frameBay = 0.08 * bays / (2.0 * halfLength);
-    float frameLevel = 0.08 / storeyMeters;
-    float glass = gevBox(f, 0.5 - share / 2.0, 0.5 + share / 2.0, aaBay) *
-      gevBox(g, sill, head, aaLevel);
-    pane = gevBox(f, 0.5 - share / 2.0 + frameBay, 0.5 + share / 2.0 - frameBay, aaBay) *
-      gevBox(g, sill + frameLevel, head - frameLevel, aaLevel) *
-      (1.0 - gevBox(f, 0.5 - frameBay / 2.0, 0.5 + frameBay / 2.0, aaBay));
+    float lo = 0.5 - share / 2.0;
+    float hi = 0.5 + share / 2.0;
+    // A stone surround 16 cm wide, frames 7 cm wide: three lights to a
+    // shopfront, two sashes to a window.
+    vec2 trim = vec2(0.16 / bayMeters, 0.16 / storeyMeters);
+    vec2 frame = vec2(0.07 / bayMeters, 0.07 / storeyMeters);
+    float opening = gevBox(f, lo, hi, aaBay) * gevBox(g, sill, head, aaLevel);
+    float lights = shop ? 3.0 : 2.0;
+    float bar = frame.x * lights / share;
+    pane = opening * gevBox(g, sill + frame.y, head - frame.y, aaLevel) *
+      gevBox(fract((f - lo) / share * lights), bar, 1.0 - bar, aaBay * lights / share);
     // Stone in courses of panels, the piers a touch lighter than the bays.
-    color = ${rgb(colors.body)} *
-      (1.04 - 0.05 * gevBox(f, 0.5 - share / 2.0, 0.5 + share / 2.0, aaBay));
+    color = ${rgb(colors.body)} * (1.04 - 0.05 * gevBox(f, lo, hi, aaBay));
     color *= 1.0 + 0.05 * (gevHash(floor(vec2(bay * 4.0, level * 8.0))) - 0.5) *
       (1.0 - smoothstep(0.08, 0.3, max(aaBay * 4.0, aaLevel * 8.0)));
     if (shop) {
-      color = mix(color, ${rgb(colors.frame)}, 0.22);
+      // A plinth, and the sign band with the line of shade under it.
+      color = mix(color * 0.95, ${rgb(colors.frame)}, 0.55 * gevBox(g, -1.0, 0.07, aaLevel));
       color = mix(color, ${rgb(colors.fascia)},
         gevBox(g, ${number(fascia.bottom)}, ${number(fascia.top)}, aaLevel));
+      color *= 1.0 - 0.3 * gevBox(g, ${number(fascia.bottom)} - 0.04, ${number(fascia.bottom)}, aaLevel);
     } else {
-      // A course at each floor line.
+      // A course at each floor line, a surround to each window and the
+      // shade under its sill.
       color *= 1.0 - 0.14 * gevBox(g, -1.0, 0.045, aaLevel);
+      color = mix(color, ${rgb(colors.coping)} * 0.97,
+        gevBox(f, lo - trim.x, hi + trim.x, aaBay) * gevBox(g, sill - trim.y, head + trim.y, aaLevel));
+      color *= 1.0 - 0.25 * gevBox(f, lo - trim.x, hi + trim.x, aaBay) *
+        gevBox(g, sill - trim.y - 0.035, sill - trim.y, aaLevel);
     }
-    color = mix(color, ${rgb(colors.frame)}, glass);
-    // Each window its own: darker or lighter glass, some with a blind down.
+    color = mix(color, ${rgb(colors.frame)}, opening);
+    // Each window its own: darker or lighter glass, some with a blind down;
+    // the sky in it, more toward the head and at a glancing eye.
     float room = gevHash(vec2(floor(bay) + 31.0 * id, storey));
     vec3 glazing = ${rgb(colors.glass)} * (0.7 + 0.9 * room);
-    float blind = step(0.58, room) *
+    float blind = shop ? 0.0 : step(0.58, room) *
       step(mix(head, sill, 0.25 + 0.45 * fract(room * 13.0)), g);
     glazing = mix(glazing, ${rgb(colors.blind)} * 0.82, blind);
+    if (shop) glazing = mix(glazing, vec3(0.46, 0.5, 0.5), door ? 0.0 : 0.3);
     float fresnel = pow(1.0 - max(dot(materialInput.normalEC, toEye), 0.0), 3.0);
-    glazing = mix(glazing, vec3(0.62, 0.74, 0.86), (1.0 - blind) * (0.16 + 0.6 * fresnel));
+    glazing = mix(glazing, vec3(0.62, 0.74, 0.86), (1.0 - blind) *
+      (0.12 + 0.55 * fresnel + 0.16 * smoothstep(sill, head, g)));
     // The glass sits back in the wall: the head throws a shade on it.
     glazing *= 1.0 - 0.4 * smoothstep(head - 0.2 * (head - sill), head, g);
     color = mix(color, glazing, pane);
-    // Where the wall meets the ground.
-    color *= 0.84 + 0.16 * smoothstep(0.0, 0.9, z);
     // The parapet: coping over a shadow line, above the top windows.
     color *= 1.0 - 0.2 * gevBox(z, top - parapet - 0.12, top - parapet, fwidth(z));
     color = mix(color, ${rgb(colors.coping)},
@@ -124,13 +196,13 @@ czm_material czm_getMaterial(czm_materialInput materialInput) {
     color = mix(color, mean, smoothstep(0.35, 0.9, max(aaBay, aaLevel)));
     edge = min(halfLength - abs(along), top - z);
   }
-  // Lit by the scene sun. With the shadow map on, Cesium darkens the faces
-  // turned from the sun itself (gevShade lifts them to skylight); with it
-  // off, gevShade is the skylight.
-  float lit = smoothstep(0.0, 0.2, sunward);
-  color *= mix(gevShade, 0.82 + 0.18 * sunward, lit);
+  // Lit by the scene sun. With the shadow map on, Cesium darkens the block's
+  // faces turned from the sun itself (gevShade lifts them to skylight); with
+  // it off, and on the plate, which casts nothing, the skylight is ours.
+  float towards = smoothstep(0.0, 0.2, sunward);
+  color *= mix(p.z < 0.2 ? ${number(SHADE_SIDE)} : gevShade, 0.82 + 0.18 * sunward, towards);
   float glint = pow(max(dot(reflect(-czm_lightDirectionEC, materialInput.normalEC), toEye), 0.0), 48.0);
-  color += pane * lit * glint * 0.7;
+  color += pane * towards * glint * 0.7;
   // A proposal, not a survey: a thin light along the roofline and corners.
   float line = 1.0 - smoothstep(0.0, max(0.16, 1.5 * fwidth(edge)), edge);
   material.diffuse = vec3(0.0);

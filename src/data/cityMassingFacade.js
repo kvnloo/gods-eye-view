@@ -26,6 +26,7 @@ export const FACADE = Object.freeze({
     fascia: '#c9924b',
     coping: '#eceae4',
     roof: '#9a9fa3',
+    paving: '#989690',
     glow: '#cfeef6',
   }),
 });

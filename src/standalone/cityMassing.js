@@ -42,14 +42,17 @@ const BUILD_MAX_MS = 20000;
 const BUILD_FRAMES = 2;
 // Once the framed tiles load, a ground this much off stands the block anew.
 const REGROUND_METERS = 0.5;
+// How dark the block's shadow lies on the map while it shows (Cesium's own
+// 0.3 is harsher than the shadows already in aerial imagery).
+const SHADOW_DARKNESS = 0.4;
 // Screen points this far outside the canvas no longer anchor the readout.
 const PAD = 40;
 const PLATE = Cesium.Color.fromCssColorString('#8c8a84');
 const ACCENT = Cesium.Color.fromCssColorString('#2ec8e8');
 // The shadow study on the ground, as thin lines over the shadow the block
-// really casts: the shadow as it now falls is a solid outline, the one it is
-// held against (was, or what a fit would leave) a dashed one, and the
-// protected edge an amber line reaching past the shadow's sides.
+// really casts, each where a shadow ends: a solid line for the shadow as it
+// now falls, a dashed one for the shadow it is held against (was, or what a
+// fit would leave), and the protected edge in amber, reaching past the sides.
 const LINE = Cesium.Color.WHITE;
 const EDGE = Cesium.Color.fromCssColorString('#ffb454');
 const EDGE_PAD_METERS = 6;
@@ -208,25 +211,24 @@ export function mountCityMassing({
     scene.requestRender();
   }
 
-  // Metres along the shadow, read off the drawn entities: each line's length
-  // and the edge's distance, all from the face the shadow leaves.
+  // Metres along the shadow, read off the drawn entities: how far each line
+  // lies from the face the shadow leaves.
   function drawnMeters() {
-    const span = (a, b) => Cesium.Cartesian3.distance(a, b);
-    const middle = (a, b) =>
+    const middle = ([a, b]) =>
       Cesium.Cartesian3.midpoint(a, b, new Cesium.Cartesian3());
-    const [nearLeft, , , nearRight] = ds.entities
-      .getById(`${OWNER}-shadow-now`)
-      .polyline.positions.getValue();
+    const face = middle(
+      Cesium.Cartesian3.fromDegreesArray(
+        shadowBand(site.massing.footprint, site.sun, 0).slice(0, 2).flat(),
+      ),
+    );
     return Object.fromEntries(
-      marks.map((entity) => {
-        const at = entity.polyline.positions.getValue();
-        return [
-          entity.id.slice(`${OWNER}-shadow-`.length),
-          at.length === 2
-            ? span(middle(nearLeft, nearRight), middle(at[0], at[1]))
-            : span(at[0], at[1]),
-        ];
-      }),
+      marks.map((entity) => [
+        entity.id.slice(`${OWNER}-shadow-`.length),
+        Cesium.Cartesian3.distance(
+          face,
+          middle(entity.polyline.positions.getValue()),
+        ),
+      ]),
     );
   }
 
@@ -250,7 +252,10 @@ export function mountCityMassing({
     uncut(site.cuts);
     viewer.shadows = site.shadowsBefore;
     if (scene.globe) scene.globe.shadows = site.globeShadows;
-    if (scene.shadowMap) scene.shadowMap.softShadows = site.softShadows;
+    if (scene.shadowMap) {
+      scene.shadowMap.softShadows = site.softShadows;
+      scene.shadowMap.darkness = site.darkness;
+    }
     site = null;
     rendered();
   }
@@ -265,11 +270,16 @@ export function mountCityMassing({
     const shadowsBefore = viewer.shadows;
     const globeShadows = scene.globe?.shadows;
     const softShadows = scene.shadowMap?.softShadows;
+    const darkness = scene.shadowMap?.darkness;
     // A cast shadow needs the sun above the horizon. The globe receives it,
-    // with soft (filtered) edges so the band reads as a shadow on the ground.
+    // with soft (filtered) edges and no darker than a shadow in the imagery,
+    // so the band reads as a shadow on the ground.
     viewer.shadows = shadowsBefore || sun?.elevationDeg > 0;
     if (scene.globe) scene.globe.shadows = Cesium.ShadowMode.RECEIVE_ONLY;
-    if (scene.shadowMap) scene.shadowMap.softShadows = true;
+    if (scene.shadowMap) {
+      scene.shadowMap.softShadows = true;
+      scene.shadowMap.darkness = SHADOW_DARKNESS;
+    }
     site = {
       plot,
       base,
@@ -279,6 +289,7 @@ export function mountCityMassing({
       shadowsBefore,
       globeShadows,
       softShadows,
+      darkness,
       // The surface this block was cut into and stood on, checked each frame.
       tilesets: shownTilesets(),
       globe: Boolean(scene.globe?.show),
@@ -290,7 +301,10 @@ export function mountCityMassing({
           hierarchy: Cesium.Cartesian3.fromDegreesArray(plot.corners.flat()),
           height: (ground?.floor ?? base) - PLATE_DEPTH,
           extrudedHeight: base + PLATE_RISE,
-          material: PLATE,
+          // Paving around a block (the same material knows the ground).
+          material: massing.footprint
+            ? facadeMaterial(() => site?.look)
+            : PLATE,
           shadows: Cesium.ShadowMode.RECEIVE_ONLY,
         },
       }),
@@ -342,8 +356,9 @@ export function mountCityMassing({
       : null;
   }
 
-  // Draw the study on the ground when it changed: the protected edge, the
-  // shadow as it now falls (solid) and the one it is held against (dashed).
+  // Draw the study on the ground when it changed: the protected edge, where
+  // the shadow now ends (solid) and where the one it is held against does
+  // (dashed).
   function mark() {
     const lines = site?.block ? (plan()?.lines ?? []) : [];
     const band = (meters) =>
@@ -367,14 +382,11 @@ export function mountCityMassing({
     const polyline = (positions, material, width = 3) => ({
       polyline: { positions, width, clampToGround: true, material },
     });
-    marks = lines.map((line) => {
-      const [nearLeft, nearRight, farRight, farLeft] = ground(
-        band(line.reachMeters),
-      );
-      return add(
+    marks = lines.map((line) =>
+      add(
         line.kind,
         polyline(
-          [nearLeft, farLeft, farRight, nearRight],
+          ground(band(line.reachMeters).slice(2)),
           line.kind === 'now'
             ? LINE
             : new Cesium.PolylineDashMaterialProperty({
@@ -382,8 +394,8 @@ export function mountCityMassing({
                 dashLength: 14,
               }),
         ),
-      );
-    });
+      ),
+    );
     if (lines.length)
       marks.push(
         add(

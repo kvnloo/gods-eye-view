@@ -577,8 +577,11 @@ test('the faces turned from the sun are lifted against the shadow map only while
   day.viewer.scene.shadowMap.darkness = 0.3;
   await day.select({ plot: { id: plot.id } });
   const lit = day.ds.entities.getById('city-massing-block').polygon.material;
-  within(lit.getValue().gevShade, 0.5 / 0.3, 1e-9, 'shadow map on');
+  // While the block shows, its shadow is as dark as one in the imagery.
+  assert.equal(day.viewer.scene.shadowMap.darkness, 0.4);
+  within(lit.getValue().gevShade, 0.5 / 0.4, 1e-9, 'shadow map on');
   day.owner.destroy();
+  assert.equal(day.viewer.scene.shadowMap.darkness, 0.3, 'restored');
   const night = mount({ time: NIGHT });
   night.viewer.scene.shadowMap.darkness = 0.3;
   await night.select({ plot: { id: plot.id } });

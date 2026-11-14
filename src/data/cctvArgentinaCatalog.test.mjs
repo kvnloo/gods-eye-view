@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { normalizeSourceItem } from '../../server/providers/cctv/normalize.js';
+import { cctvProxy } from '../../server/providers/cctv.js';
 import { allocateSourceCap } from '../../server/providers/cctv/cap.js';
 import {
   fetchWithinHost,
@@ -384,4 +386,116 @@ test('IPCamLive redirect exception still enforces raster MIME validation', async
       type === 'image/jpeg' ? type : null,
     );
   }
+});
+
+test('registered Argentina IPCamLive snapshot follows rotating hosts through /frame', async (t) => {
+  const camera = catalog.find((entry) => entry.id === 'ar-bayo-telecabina1500');
+  assert.ok(camera?.snapshotAliasUrl, 'use a real catalog alias');
+  const keys = [
+    'CCTV_SOURCES_FILE',
+    'CCTV_SOURCES_JSON',
+    'CCTV_FORCE_AUSTIN',
+    'CCTV_PREFER_AUSTIN',
+    'CCTV_MAX_SOURCES',
+    'GOOGLE_MAPS_API_KEY',
+    'GOOGLE_MAPS_SERVER_API_KEY',
+  ];
+  const previous = new Map(keys.map((key) => [key, process.env[key]]));
+  const originalFetch = globalThis.fetch;
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+    for (const [key, value] of previous) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
+  process.env.CCTV_SOURCES_FILE = fileURLToPath(
+    new URL('../../config/cctv_sources.argentina.json', import.meta.url),
+  );
+  process.env.CCTV_SOURCES_JSON = '[]';
+  process.env.CCTV_FORCE_AUSTIN = '0';
+  process.env.CCTV_PREFER_AUSTIN = '0';
+  process.env.CCTV_MAX_SOURCES = '128';
+  delete process.env.GOOGLE_MAPS_API_KEY;
+  delete process.env.GOOGLE_MAPS_SERVER_API_KEY;
+
+  const targets = [
+    'https://s123.ipcamlive.com/streams/abcd1234/snapshot.jpg',
+    'https://s456.ipcamlive.com/streams/efgh5678/snapshot.jpg',
+  ];
+  const requests = [];
+  let aliasFetches = 0;
+  globalThis.fetch = async (url, init) => {
+    const address = String(url);
+    requests.push(address);
+    assert.equal(init.redirect, 'manual');
+    assert.equal(init.credentials, 'omit');
+    assert.equal(new Headers(init.headers).has('authorization'), false);
+    assert.equal(new Headers(init.headers).has('cookie'), false);
+    if (address === camera.snapshotAliasUrl) {
+      return new Response(null, {
+        status: 302,
+        headers: { location: targets[aliasFetches++] },
+      });
+    }
+    const index = targets.indexOf(address);
+    assert.notEqual(index, -1, `unexpected fetch: ${address}`);
+    return new Response(Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, index]), {
+      headers: { 'content-type': 'image/jpeg' },
+    });
+  };
+
+  let handler;
+  cctvProxy().configureServer({
+    middlewares: {
+      use: (_path, callback) => {
+        handler = callback;
+      },
+    },
+  });
+  assert.equal(typeof handler, 'function');
+
+  async function frame() {
+    const res = {
+      statusCode: 0,
+      headers: {},
+      writableEnded: false,
+      setHeader(name, value) {
+        this.headers[name] = value;
+      },
+      writeHead(status, headers = {}) {
+        this.statusCode = status;
+        Object.assign(this.headers, headers);
+      },
+      end(body) {
+        this.body = Buffer.from(body || []);
+        this.writableEnded = true;
+      },
+    };
+    await handler(
+      {
+        method: 'GET',
+        url: `/frame/${camera.id}`,
+        headers: { host: 'localhost:4173' },
+      },
+      res,
+    );
+    return res;
+  }
+
+  for (const [index, target] of targets.entries()) {
+    const result = await frame();
+    assert.equal(result.statusCode, 200);
+    assert.equal(result.headers['Content-Type'], 'image/jpeg');
+    assert.equal(result.headers['X-CCTV-Source'], 'upstream-image');
+    assert.deepEqual(
+      result.body,
+      Buffer.from([0xff, 0xd8, 0xff, 0xe0, index]),
+    );
+    assert.deepEqual(requests.slice(index * 2), [
+      camera.snapshotAliasUrl,
+      target,
+    ]);
+  }
+  assert.equal(aliasFetches, 2);
 });

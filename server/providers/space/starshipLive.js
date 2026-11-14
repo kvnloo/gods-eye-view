@@ -158,6 +158,7 @@ function vehicleFromCurrent(id, raw, names, sampleHistory) {
   const derivedHeading = nextPoint
     ? headingFromSegment({ lat, lon }, nextPoint)
     : 0;
+  const reportedAt = finite(raw.wall ?? raw.time);
   const reportedSpeed = finite(raw.spd ?? raw.speed ?? raw.velocity, 0) ?? 0;
   const currentSample = liveSample(raw);
   const previousSample = sampleHistory?.get(id) ?? null;
@@ -180,9 +181,11 @@ function vehicleFromCurrent(id, raw, names, sampleHistory) {
     speed: derivedSpeed,
     heading: finite(raw.hdg ?? raw.heading, derivedHeading) ?? derivedHeading,
     positionAt:
-      finite(raw.wall ?? raw.time) !== null
-        ? finite(raw.wall ?? raw.time) * 1000
-        : Date.now(),
+      reportedAt === null
+        ? Date.now()
+        : reportedAt >= 1_000_000_000_000
+          ? reportedAt
+          : reportedAt * 1000,
   };
 }
 

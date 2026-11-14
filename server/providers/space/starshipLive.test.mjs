@@ -32,6 +32,16 @@ test('normalizes a samples-array Starship feed', () => {
   assert.equal(snapshot.status.connected, true);
 });
 
+test('preserves millisecond wall timestamps and converts second timestamps', () => {
+  const positionAt = (wall) =>
+    normalizeStarshipLiveSnapshot({
+      samples: [{ veh: 'ship42', lat: 25.9968, lon: -97.158, wall }],
+    }).vehicles[0].positionAt;
+
+  assert.equal(positionAt(1_794_608_923_746), 1_794_608_923_746);
+  assert.equal(positionAt(1_794_608_923), 1_794_608_923_000);
+});
+
 test('derives heading from the feed trajectory when heading is absent', () => {
   const snapshot = normalizeStarshipLiveSnapshot(
     {

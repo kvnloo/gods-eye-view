@@ -195,6 +195,62 @@ test('find_infrastructure returns NVE facts for Norwegian dams only', async () =
   assert.match(result.data.attribution, /NVE \(NLOD\)/);
 });
 
+test('find_infrastructure preserves NVE facts without purpose or power plant', async () => {
+  const sparseNorway = mapAnalystRecord(
+    {
+      id: 'nve-dam-sparse',
+      lat: 60.30177,
+      lon: 11.17056,
+      properties: {
+        name: 'Sparse NVE dam',
+        source: 'nve',
+        nve: { damType: 'Concrete', built: 1952, municipality: 'Eidsvoll' },
+      },
+    },
+    'local-dams',
+  );
+  const osm = mapAnalystRecord(
+    {
+      id: 'osm-1',
+      lat: 60.302,
+      lon: 11.171,
+      properties: { name: 'OpenStreetMap dam', tags: {} },
+    },
+    'local-dams',
+  );
+  const catalog = composeCatalog({
+    tools: coreTools,
+    services: {
+      infrastructure: { getRecords: async () => [sparseNorway, osm] },
+    },
+  });
+  const result = await catalog.call('find_infrastructure', {
+    kind: 'dams',
+    area: { lat: 60.3, lon: 11.17, radius_km: 10 },
+  });
+  assert.deepEqual(
+    result.data.rows.find((row) => row.name === 'Sparse NVE dam'),
+    {
+      name: 'Sparse NVE dam',
+      operator: null,
+      river: null,
+      output: null,
+      purpose: null,
+      dam_type: 'Concrete',
+      built: 1952,
+      power_plant: null,
+      municipality: 'Eidsvoll',
+      lat: 60.30177,
+      lon: 11.17056,
+      distance_km: 0.2,
+    },
+  );
+  const osmRow = result.data.rows.find(
+    (row) => row.name === 'OpenStreetMap dam',
+  );
+  assert.equal('dam_type' in osmRow, false, 'OSM dams have no NVE-only keys');
+});
+
 test('an NVE dam card follows the UI language when the app passes t()', () => {
   try {
     setLocale('es');

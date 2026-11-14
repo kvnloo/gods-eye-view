@@ -60,7 +60,11 @@ export const findInfrastructure = defineTool({
           : {
               river: record.river,
               output: record.output,
-              ...(record.purpose || record.powerPlant
+              ...(record.purpose ||
+              record.damType ||
+              record.built != null ||
+              record.powerPlant ||
+              record.municipality
                 ? {
                     purpose: record.purpose,
                     dam_type: record.damType,

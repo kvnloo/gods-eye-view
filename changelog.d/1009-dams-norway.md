@@ -5,3 +5,5 @@
   `scripts/build-dams-norway.py`; the layer and query source load a main file
   plus regional supplements. The layer's source label now reads "OpenInfraMap
   · NVE" instead of "USACE" (trygvehhh, #1009).
+- `find_infrastructure` keeps available NVE year, dam type and municipality
+  even without purpose or power-plant names.

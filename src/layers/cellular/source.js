@@ -70,7 +70,9 @@ function parseAzimuths(tags = {}) {
   const azimuths = new Set();
   for (const value of values) {
     for (const token of String(value ?? '').split(/[;,]/)) {
-      const number = Number(token.trim().replace(/°$/, ''));
+      const direction = token.trim().replace(/°$/, '');
+      if (!direction) continue;
+      const number = Number(direction);
       if (Number.isFinite(number) && number >= 0 && number < 360)
         azimuths.add(Math.round(number * 10) / 10);
     }

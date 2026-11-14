@@ -32,6 +32,31 @@ test('OSM mobile site normalization preserves mapped operator, technology, and s
   assert.equal(site.heightM, 35);
 });
 
+test('cellular sites without direction tags do not invent north-facing sectors', () => {
+  const site = {
+    type: 'node',
+    id: 43,
+    lat: 43.65,
+    lon: -79.38,
+    tags: { 'communication:mobile_phone': 'yes' },
+  };
+  assert.deepEqual(normalizeCellularSite(site).sectorAzimuths, []);
+  assert.deepEqual(
+    normalizeCellularSite({
+      ...site,
+      tags: { ...site.tags, 'lte:direction': ' ; ° ' },
+    }).sectorAzimuths,
+    [],
+  );
+  assert.deepEqual(
+    normalizeCellularSite({
+      ...site,
+      tags: { ...site.tags, 'lte:direction': '0;120°' },
+    }).sectorAzimuths,
+    [0, 120],
+  );
+});
+
 test('logical cell normalization creates stable radio/PLMN/area/cell identity', () => {
   const cell = normalizeCellularCell({
     radio: 'LTE',

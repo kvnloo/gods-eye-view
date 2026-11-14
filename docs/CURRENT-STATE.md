@@ -423,7 +423,8 @@ physical sites from community-observed logical cells. OpenStreetMap supplies the
 keyless physical-site path through `/api/cellular-networks`, preserving mapped
 operator, structure, height, reference, explicit technology tags and sector
 directions when contributors supplied them. Sector rays are rendered only from
-mapped azimuths and are not inferred RF coverage.
+mapped azimuths and are not inferred RF coverage. Empty or missing
+OSM direction tags produce no sector ray; an explicit mapped `0°` is valid.
 
 An optional server-side `OPENCELLID_API_KEY` adds OpenCellID GSM, UMTS, LTE,
 NR, NB-IoT and CDMA logical-cell observations. Those records may expose

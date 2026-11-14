@@ -1,0 +1,1 @@
+- Render cellular antenna-sector rays only for explicitly mapped OSM directions; missing or blank tags no longer invent north-facing rays, while an explicit `0°` stays valid (arman-dogru, kvnloo, #651).

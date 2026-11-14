@@ -21,14 +21,23 @@ docks. Turn it on and the plot gets:
   slope and never z-fights the globe;
 - a **block** on the plot inset by the setback, standing on the sampled ground
   at the plot centre (or on the street when the centre sample hits a roof),
-  height = storeys x storey height;
+  height = storeys x storey height, drawn as a building (see
+  [The look](#the-look));
 - a **cast shadow** from the scene sun (the scene clock's sun, the same one
   Cesium lights the globe with): the scene shadow map is on while the block
   shows, only when the sun is above the horizon. The globe receives it, with
-  soft (filtered) edges so it reads as a band on the ground. Cesium's default
-  sun shadow map (4 cascades of 2048 x 2048 texels) resolves it: the journey
-  measures the 45 m band of a 19 m block at a 23° sun. All of it is restored
-  when the block hides.
+  soft (filtered) edges and a darkness of 0.4 (Cesium's own 0.3 is harsher
+  than the shadows already in aerial imagery), so it reads as a shadow on the
+  ground. Cesium's default sun shadow map (4 cascades of 2048 x 2048 texels)
+  resolves it: the journey measures the 45 m band of a 19 m block at a 23°
+  sun. Those texels are spread over everything out to the map's maximum
+  distance (5 km), which from 800 m left the shadow striped on 3D tiles, so
+  while a block shows the map ends 1.6 times the eye's distance to it (never
+  nearer than 300 m). All of it is restored when the block hides.
+
+While a block stands, play mode's selection prism (the translucent box drawn
+while a plot is being chosen) steps aside, as it does for a concept; the plot
+outline on the ground stays.
 
 The app renders on demand and entity geometry builds over several frames, so
 after every change (MASSING on, the stepper, a new ground) massing keeps frames
@@ -41,8 +50,57 @@ the plate fills the cut at street height and the mesh takes the block's shadow
 without casting its own (its light is baked in). The cut joins any existing
 clipping and is removed when the block hides.
 
+The mesh is a hollow shell, and a 40 m grid cell is not a parcel: the cut can
+slice a neighbour in two and can leave the plate below the ground around it.
+So that the cut never shows the sky through the mesh, two things hold while
+the block stands (both restored when it hides):
+
+- the mesh is drawn with its inside too (`backFaceCulling` off);
+- a blank wall closes the cut along the plot's edge, from the plate up to the
+  mesh sampled every 4 m, 1 m outside the edge. A height counts only when the
+  samples on both sides reach it too, so a neighbour raises a party wall and
+  a lone tree or pole does not. The wall takes the block's shadow.
+
+A neighbour as tall as the block can stand between it and the street: the
+block's shadow then lies on that neighbour's walls, as it would, and the
+level-ground reach in the readout is not where it ends.
+
 The block hides in the district tier and while Reimagine captures and
 generates, so a concept is made from the plot as it is.
+
+## The look
+
+The block is an estimate, and it is drawn as a building so its size reads
+against the city: a look, never a design. `src/data/cityMassingFacade.js`
+(pure; fixed table in `src/data/cityMassingFacade.test.mjs`) lays it out from
+the massing's own numbers:
+
+- one floor band per storey, each the massing's storey height;
+- the ground band is a shopfront (three lights to a bay, a door in the middle
+  bay, a plinth and a sign band); every band above it is a floor of windows
+  with stone surrounds;
+- each wall is divided into whole window bays (a 32 m wall has ten of 3.2 m);
+- the parapet is the top 0.58 m of the top band, never above it, so the top
+  of the building is the massing height and every shadow number holds;
+- solid colours in the app's palette (stone, slate frames, an amber sign
+  band). Cyan stays the plot outline.
+
+`src/standalone/cityMassingLook.js` draws it as a Cesium fabric material on
+the block's own polygon (the plate uses the same material and comes out as
+paving, darker where the walls stand). A polygon's texture coordinates carry
+no height, so the shader places each fragment in metres east/north/up of the
+footprint's middle, relative to the eye. It is opaque and lit by the scene
+sun; faces turned from the sun keep half their colour as skylight. The block
+casts its shadow and receives none (a shadow map speckles a lit roof that it
+falls back on); the paving under it and the map take the shadow. The roof
+has a coping, the parapet's shade on the side the sun comes over, a stair
+core and three units. Those are painted as the eye sees them: they are not
+geometry and add nothing to the height or to the cast shadow. A thin light
+along the roofline and the corners marks the building as a proposal.
+
+Limits: a footprint's first four walls are laid out (a plot footprint has
+four); nothing is modelled inside or behind the glass; the facade does not
+know the street, so every wall gets a shopfront.
 
 ## The readout
 
@@ -144,11 +202,16 @@ sidewalk.
   the minute `citySun` puts the sun highest (28.8° at San Francisco). No sun
   angle is typed in or assumed. With the sun down the reach is a dash and there
   is nothing to fit.
-- **On the ground.** The protected edge is an amber line across the shadow,
-  reaching 6 m past its sides. The shadow
-  as it now falls is a filled band (NOW). Beside it is a dashed outline: before
-  a change, what a fit would leave (FIT TO SUN); after one, the shadow of the
-  storeys the study started from (WAS). Each band ends in a tip label, worded
+- **On the ground.** The shadow itself is the one the block casts (the scene
+  shadow map), so it follows the ground and stops short where a street rises.
+  Over it lie thin lines, clamped to the ground on the globe. On 3D tiles a
+  ground line smears down every wall it meets, so there each line runs level,
+  half a metre over the block's base, and shows faintly where a building or
+  rising ground stands in front of it. The lines are: the protected edge in amber,
+  reaching 6 m past the shadow's sides; a solid line where the shadow now ends
+  on level ground (NOW); and a dashed one: before a change, where a fit would
+  leave it (FIT TO SUN); after one, where the shadow of the storeys the study
+  started from ended (WAS). Each line ends in a tip label, worded
   by `src/ui/cityShadowTip.js` through `hudFigure`:
   `SHADOW WAS 35 m · 15 m ONTO SIDEWALK EST`,
   `SHADOW NOW 17 m · CLEARS SIDEWALK BY 3 m EST`.
@@ -205,7 +268,12 @@ scene sun through the page's world clock and, at 1440x900:
    lowest street sample when a structure stands on the plot), and the drawn
    plate reaches below it. On 3D tiles every shown tileset is cut and nothing
    of the mesh stands above the base inside the plot;
-3. measures the cast shadow: ground inside the expected shadow is darker with
+3. reads the building off the canvas: the block's material is the facade,
+   it has a band per storey with a shopfront at the ground, a line of pixels
+   along the wall facing the camera crosses one dark run per window bay while
+   the wall under the windows is plain, and play mode's selection prism is
+   not drawn (`02b-building.png`);
+4. measures the cast shadow: ground inside the expected shadow is darker with
    the shadow map on than off, the sun side is not. Each capture is the canvas
    read inside the `postRender` of a frame the journey asked for
    (`scene.requestRender()`). If the on and off captures come from one frame or
@@ -218,19 +286,19 @@ scene sun through the page's world clock and, at 1440x900:
    massing sun, and the rendered shadow ends within max(1 m, 5 %) of
    height / tan(altitude), height being the block top above the ground at the
    tip (the ground may slope);
-4. reads the readout (19.2 m EST, 6, 3.84, 6,144 m²), counts three controls,
+5. reads the readout (19.2 m EST, 6, 3.84, 6,144 m²), counts three controls,
    checks it covers no block corner, shadow point or HUD element, and audits
    legibility (4.5:1, 12 px caps);
-5. steps +2: 25.6 m, 8, 5.12, 8,192 m², the block entity re-extruded,
+6. steps +2: 25.6 m, 8, 5.12, 8,192 m², the block entity re-extruded,
    ground between the 6- and 8-storey shadow tips goes from lit to shaded, the
    rendered shadow again ends within max(1 m, 5 %) of the formula and is
    1.333 ±5 % times as long as at 6 storeys;
    the saved document is byte-for-byte unchanged;
-6. closes the page and opens a fresh one: zoning is restored from the save,
+7. closes the page and opens a fresh one: zoning is restored from the save,
    massing starts again from the defaults (recomputed, not restored);
-7. at 390x844 steps once more: the readout fits, works and covers neither
+8. at 390x844 steps once more: the readout fits, works and covers neither
    the HUD nor the block and its shadow;
-8. opens the app without the flag: no readout, entities, shadows or probe.
+9. opens the app without the flag: no readout, entities, shadows or probe.
 
 With `QA_VIDEO_DIR` set, each page's video is written as an MP4, and the
 journey cuts a 30 s `demo.mp4` from the journey page alone (no loading splash):
@@ -247,9 +315,12 @@ back to 20 m by SET ON MAP and a click on the ground across the street. It
 asserts the panel, the two tip labels and the entities on the ground against
 `shadowFit` (each line's length within half a metre), takes
 `09-shadow-reaches.png`, presses FIT TO SUN and asserts three storeys, the
-dashed WAS line, the filled NOW band, `FLOORS 6 → 3 EST`, the cost line
+dashed WAS line, the NOW line, `FLOORS 6 → 3 EST`, the cost line
 (`HOMES 46 → 23 EST · FAR 3.84 → 1.92`), the massing readout (23 homes, FAR
-1.92) and that nothing was saved (`10-fit-to-sun.png`).
+1.92) and that nothing was saved (`10-fit-to-sun.png`). Last it measures the
+shadow under the study: ground inside the NOW band is at least 25 % darker
+with the shadow map on than off, a band beside it is not darkened, and NOW is
+a line, not a filled patch (`11-cast-shadow-study.png`).
 
 `src/tooling/qaCityMassingJourney.test.mjs` fails if any of these steps drops
 out of the journey.

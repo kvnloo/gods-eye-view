@@ -50,7 +50,10 @@ function harness(t, count = 2, { floor = null } = {}) {
     state,
     requestFrame: (step) => frames.push(step),
     services: {
-      groundFloor: { cachedGroundFloor: () => floor },
+      groundFloor: {
+        cachedGroundFloor: (latitude, longitude) =>
+          typeof floor === 'function' ? floor(latitude, longitude) : floor,
+      },
       overlays: {
         registerPaintLane(_lane, painter) {
           paint = painter;
@@ -327,6 +330,36 @@ test('a paint never samples the surface; frames take one sample each', (t) => {
     assert.ok(Math.abs(anchorHeight(h, record.id) - 172) < 0.01);
   h.paint();
   assert.ok(h.draw.length > 0, 'anchored cameras paint on the overlay');
+});
+
+test('an unanswerable camera does not starve other surface anchors', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  const h = harness(t, 2, {
+    floor: (latitude) => (latitude > 30.00005 ? 150 : null),
+  });
+  // A streaming photoreal tile has no depth answer for camera:0, while
+  // camera:1 already has a floor that can be refined to the visible surface.
+  const sampled = photoreal(h, (latitude) =>
+    latitude < 30.00005 ? undefined : 172,
+  );
+  h.overlay.sync(h.records);
+  h.paint();
+  assert.equal(h.entities.getById('camera:0').gevAlprCanvasPosition, undefined);
+  assert.ok(Math.abs(anchorHeight(h, 'camera:1') - 151.5) < 0.01);
+
+  assert.equal(h.frame(), true);
+  assert.equal(sampled.length, 1, 'the missing camera gets the first attempt');
+  t.mock.timers.tick(250);
+  assert.equal(h.frame(), true);
+  assert.equal(sampled.length, 2, 'one sample per frame');
+  assert.ok(
+    Math.abs(Cesium.Math.toDegrees(sampled[1].latitude) - 30.0001) < 1e-5,
+    'the second frame reaches the floor-placed camera',
+  );
+  assert.ok(
+    Math.abs(anchorHeight(h, 'camera:1') - 173.5) < 0.01,
+    'a failed height lookup cannot prevent other anchors from settling',
+  );
 });
 
 test('a terrain globe is read from its mesh, never depth-sampled', (t) => {

@@ -1520,7 +1520,9 @@ surface is read outside the overlay paint, one camera per frame: a terrain
 globe answers from its loaded mesh (`globe.getHeight`) and only photoreal
 tiles are depth-sampled (`scene.sampleHeight`). Answers are kept per camera
 until the map source changes, so a refresh or turning the layer off and on
-samples nothing again. Unknown bearings never acquire a wedge. The selected
+samples nothing again. Missing surface answers cannot monopolize the sample
+slot: other cameras still receive refinement turns. Unknown bearings never
+acquire a wedge. The selected
 card's `DIRECTION` wraps after rounding to whole degrees, so a mapped bearing
 of 359.5° or more reads `0°` rather than `360°`. The row reads
 `N nearby · M on screen`; when every loaded camera is outside the view it adds

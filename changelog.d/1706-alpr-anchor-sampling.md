@@ -2,3 +2,5 @@
   again each time the layer is switched back on. On a terrain globe their
   height comes from the loaded terrain and is remembered per camera; some
   badges move a few metres onto the drawn surface (mazy1998, #1706).
+  A missing surface height no longer blocks refinement of other cameras
+  (mazy1998 and kvnloo, #1706).

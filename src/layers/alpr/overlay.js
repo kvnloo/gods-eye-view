@@ -40,7 +40,8 @@ export function createAlprOverlay({
     images = [],
     destroyed = false,
     lastCamera = null,
-    sampling = false;
+    sampling = false,
+    sampleCursor = 0;
   // Rendered-surface answers by camera id. Entities are rebuilt by a refresh
   // and by turning the layer off and on; keeping the answers on them meant
   // every rebuild sampled the same cameras again.
@@ -104,6 +105,7 @@ export function createAlprOverlay({
       nativeVisible(entity, true);
     }
     surfaceAnswers.clear();
+    sampleCursor = 0;
     state.lastAnchorSampleAt = 0;
     retryUntil = Date.now() + 15000;
     requestPaint();
@@ -239,6 +241,22 @@ export function createAlprOverlay({
         direction: Cesium.Cartesian3.clone(camera.directionWC),
       };
     const canSample = scene.globe?.show || scene.sampleHeightSupported;
+    // Allocate each frame's slot across all pending cameras. Without this,
+    // one camera with an unanswerable surface always wins the first pass and
+    // starves settled cameras that still need their floor anchors refined.
+    const pendingSamples = records.filter((record) => {
+      const entity = state.dataSource.entities.getById(record.id);
+      return (
+        entity &&
+        (!entity.gevAlprCanvasPosition ||
+          (canSample &&
+            entity.gevAlprSurfaceCheckedFor !==
+              entity.gevAlprCanvasPosition))
+      );
+    });
+    const nextSampleId = pendingSamples.length
+      ? pendingSamples[sampleCursor++ % pendingSamples.length].id
+      : null;
     let samples = SURFACE_SAMPLES_PER_FRAME,
       pending = false,
       progressed = false,
@@ -249,7 +267,8 @@ export function createAlprOverlay({
       if (!entity || entity.gevAlprCanvasPosition) continue;
       // The floor may have resolved since the paint that found none.
       if (anchorFor(record, entity)) moved = true;
-      else if (!canSample || samples <= 0) pending = true;
+      else if (!canSample || samples <= 0 || record.id !== nextSampleId)
+        pending = true;
       else {
         samples -= 1;
         const sample = surfaceHeight(record, entity);
@@ -265,7 +284,12 @@ export function createAlprOverlay({
       const anchor = entity?.gevAlprCanvasPosition;
       if (!anchor || !canSample || entity.gevAlprSurfaceCheckedFor === anchor)
         continue;
-      if (!still || !surfaceSettled(scene) || samples <= 0) {
+      if (
+        !still ||
+        !surfaceSettled(scene) ||
+        samples <= 0 ||
+        record.id !== nextSampleId
+      ) {
         pending = true;
         continue;
       }

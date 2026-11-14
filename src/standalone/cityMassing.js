@@ -27,7 +27,12 @@ import {
 } from '../renderGovernor.js';
 import { worldClock } from '../time/worldClock.js';
 import { facadeMaterial, facadeUniforms } from './cityMassingLook.js';
-import { groundMaterial, medianColour, seatShader } from './cityMassingSeat.js';
+import {
+  SEAT_TONE,
+  groundMaterial,
+  medianColour,
+  seatShader,
+} from './cityMassingSeat.js';
 
 const OWNER = 'city-massing';
 // The plate fills the plot from below the ground to just above it: the globe
@@ -90,16 +95,21 @@ const SPIKE_ARM = '/city-massing-spike/arm.json';
 //     on the tiles, the plate and the closing walls (no shadow map on them),
 //     and the study lines over it are half as wide;
 //   2 the block hides part of the sky from the ground at its foot;
-//   3 the plate and the closing walls take the colours the map showed around
-//     the plot before it was cut;
+//   3 the plate and the closing walls take the colour the street showed
+//     around the plot before it was cut;
 //   4 play mode's selection outline steps aside while the block stands;
 //   5 the GLB shadows itself ("shadows": "ENABLED"), with "self":
-//     {"normalOffsetScale", "depthBias", "darkness"} on the shadow map.
+//     {"normalOffsetScale", "depthBias", "darkness"} on the shadow map;
+//   6 the shadow takes "tone" (cityMassingSeat.js SEAT_TONE: a wider edge,
+//     the tiles' cooler shade) and the NOW line over its end goes faint.
 // The colours are read this far outside the plot's edge.
 const TONE_OUT_METERS = 5;
 const TONE_RISE_METERS = 1.5;
 const TONE_WALL = 0.8;
-const PRISM_METERS = 26;
+const NOW_FAINT = 0.45;
+const paved = (c) =>
+  Math.max(...c) >= 60 &&
+  Math.max(...c) - Math.min(...c) <= 0.12 * Math.max(...c);
 const rgb = ({ red, green, blue }) => new Cesium.Cartesian3(red, green, blue);
 
 /**
@@ -314,36 +324,29 @@ export function mountCityMassing({
     }
   }
 
-  // SPIKE: the colours the map shows around the plot before it is cut, read
-  // off a frame: the street's for the plate, what stands higher for the walls
-  // that close the cut. Nothing behind play mode's selection prism counts.
+  // SPIKE: the colour the paving shows around the plot before it is cut, read
+  // off a frame: the median of the ground-level points TONE_OUT_METERS outside
+  // its edge that are paving (near grey and not in deep shade: a back yard's
+  // trees are at ground level too and read green). What stands higher there
+  // is seen through play mode's selection prism and reads cyan, so the closing
+  // walls take the paving's colour too, darker.
   function tones(plot, base) {
     try {
       scene.render(viewer.clock.currentTime);
       const k = scene.drawingBufferWidth / scene.canvas.clientWidth;
-      const screen = ([lon, lat], height) =>
-        scene.cartesianToCanvasCoordinates(
-          Cesium.Cartesian3.fromDegrees(lon, lat, height),
-        );
-      const prism = plot.corners
-        .flatMap((corner) => [
-          screen(corner, base),
-          screen(corner, base + PRISM_METERS),
-        ])
-        .filter(Boolean);
-      const within = (at, pick, pad) =>
-        at[pick] > Math.min(...prism.map((p) => p[pick])) - pad &&
-        at[pick] < Math.max(...prism.map((p) => p[pick])) + pad;
       const ground = [];
-      const sides = [];
       for (const { out } of edgeRing(
         plot.corners,
         SIDE_STEP_METERS,
         TONE_OUT_METERS,
       )) {
         const height = sample(out);
-        const at = Number.isFinite(height) && screen(out, height);
-        if (!at || (within(at, 'x', 8) && within(at, 'y', 8))) continue;
+        const at =
+          Math.abs(height - base) < TONE_RISE_METERS &&
+          scene.cartesianToCanvasCoordinates(
+            Cesium.Cartesian3.fromDegrees(...out, height),
+          );
+        if (!at) continue;
         const x = Math.round(at.x * k) - 1;
         const y = scene.drawingBufferHeight - Math.round(at.y * k) - 2;
         if (
@@ -355,21 +358,15 @@ export function mountCityMassing({
           continue;
         const px = scene.context.readPixels({ x, y, width: 3, height: 3 });
         const mean = (c) =>
-          Array.from({ length: 9 }, (_, i) => px[4 * i + c]).reduce(
-            (a, v) => a + v,
-            0,
-          ) / 9;
-        (height - base > TONE_RISE_METERS ? sides : ground).push([
-          mean(0),
-          mean(1),
-          mean(2),
-        ]);
+          Math.round(
+            Array.from({ length: 9 }, (_, i) => px[4 * i + c]).reduce(
+              (a, v) => a + v,
+              0,
+            ) / 9,
+          );
+        ground.push([mean(0), mean(1), mean(2)]);
       }
-      return {
-        samples: [ground.length, sides.length],
-        ground: medianColour(ground),
-        sides: medianColour(sides),
-      };
+      return { samples: ground, ground: medianColour(ground.filter(paved)) };
     } catch (error) {
       return { error: String(error) };
     }
@@ -581,13 +578,12 @@ export function mountCityMassing({
         if (!site?.look) return;
         site.ground.gevSeatOn.x = viewer.shadows ? 1 : 0;
         seat.place(
-          site.look,
+          site.ground,
           Cesium.Matrix4.multiplyByPoint(
             viewer.camera.viewMatrix,
             site.origin,
             new Cesium.Cartesian3(),
           ),
-          site.ground.gevSeatOn,
         );
       });
       seat.stop = () => {
@@ -674,12 +670,12 @@ export function mountCityMassing({
       ...site.facade.origin,
       site.base,
     );
-    const { ground, sides } = site.seat.tones;
+    const { ground } = site.seat.tones;
     site.ground = {
       ...site.look,
       gevGround: ground ?? rgb(PLATE),
-      gevSides: sides
-        ? Cesium.Cartesian3.multiplyByScalar(sides, TONE_WALL, sides.clone())
+      gevSides: ground
+        ? Cesium.Cartesian3.multiplyByScalar(ground, TONE_WALL, ground.clone())
         : rgb(SIDES),
       // The sun's shadow shows, the sky's share of the light, the sky hidden.
       gevSeatOn: new Cesium.Cartesian3(
@@ -687,6 +683,10 @@ export function mountCityMassing({
         SHADOW_DARKNESS,
         site.seat.level >= 2 ? 1 : 0,
       ),
+      gevSeatTone:
+        site.seat.level >= 6 && arm.seat.tone
+          ? new Cesium.Cartesian4(...arm.seat.tone)
+          : SEAT_TONE,
     };
   }
 
@@ -749,11 +749,12 @@ export function mountCityMassing({
               material: stroke(color, dashed),
             },
       });
+    const faint = site.seat?.level >= 6 ? NOW_FAINT : 1;
     marks = lines.map(({ kind, reachMeters }) =>
       line(
         kind,
         band(reachMeters).slice(2),
-        kind === 'was' || kind === 'now' ? LINE : ACCENT,
+        kind === 'now' ? LINE.withAlpha(faint) : kind === 'was' ? LINE : ACCENT,
         kind !== 'now',
       ),
     );

@@ -104,6 +104,11 @@ const SPIKE_ARM = '/city-massing-spike/arm.json';
 // At any level "tone" replaces cityMassingSeat.js SEAT_TONE (the shadow's
 // edge width and what it keeps of red and blue) and "steps" squares the
 // closing walls.
+// SPIKE: "view": {"sun": [east, north, up], "light": [a, s]} is the VIEW look:
+// the GLB is lit (a of its colour, s more where it faces that sun) and its
+// shadow is cast from the sun the tiles were photographed under, measured from
+// the tiles' own shadows (lanes/q15/tools/sun_fit.py). The study keeps its
+// own sun: its WAS/NOW lines and every number stay where they were.
 // The colours are read this far outside the plot's edge.
 const TONE_OUT_METERS = 5;
 const TONE_RISE_METERS = 1.5;
@@ -207,19 +212,31 @@ export function mountCityMassing({
         if (arm.env && primitive.environmentMapManager)
           primitive.environmentMapManager.brightness = arm.env;
         const [gain = 0, east = 0, north = 0, up = 1] = arm.tilesSun ?? [];
-        if (arm.shade)
+        if (arm.shade || arm.view)
           primitive.customShader = new Cesium.CustomShader({
             lightingModel: Cesium.LightingModel.UNLIT,
+            uniforms: {
+              u_viewSun: {
+                type: Cesium.UniformType.VEC3,
+                value: new Cesium.Cartesian3(),
+              },
+            },
             fragmentShaderText: `void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
               vec3 n = normalize(fsInput.attributes.normalEC);
               float d = max(dot(n, czm_lightDirectionEC), 0.0);
+              if (dot(u_viewSun, u_viewSun) > 0.0) {
+                // VIEW look: lit from the tiles' sun (a world direction), not the scene's.
+                d = max(dot(n, normalize(czm_viewRotation * u_viewSun)), 0.0);
+                material.diffuse *= ${Number(arm.view?.light?.[0] ?? 0.45).toFixed(3)} + ${Number(arm.view?.light?.[1] ?? 0.7).toFixed(3)} * d;
+                return;
+              }
               // "tilesSun": [t, east, north, up]: t more where it faces the sun the
               // tiles were photographed under (the GLB's axes: east +X, up +Y, north -Z).
               vec4 tiles = vec4(${[east, up, -north, gain]
                 .map((v) => Number(v).toFixed(4))
                 .join(', ')});
               float t = tiles.w * max(dot(n, normalize((czm_modelView * vec4(tiles.xyz, 0.0)).xyz)), 0.0);
-              material.diffuse *= ${Number(arm.shade[0]).toFixed(3)} + ${Number(arm.shade[1]).toFixed(3)} * d + t;
+              material.diffuse *= ${Number(arm.shade?.[0] ?? 1).toFixed(3)} + ${Number(arm.shade?.[1] ?? 0).toFixed(3)} * d + t;
               // "grade": [colour kept, r, g, b, share of that haze]: toward the tiles' tone.
               vec4 grade = vec4(${(arm.grade ?? [1, 0, 0, 0, 0])
                 .slice(1)
@@ -230,10 +247,7 @@ export function mountCityMassing({
             }`,
           });
         entry.primitive = scene.primitives.add(primitive);
-        if (site?.model === entry) {
-          primitive.modelMatrix = entry.modelMatrix;
-          primitive.show = true;
-        }
+        if (site?.model === entry) place(entry);
         load.fetchedMs = win.performance.now() - load.startedMs;
         primitive.readyEvent.addEventListener(() => {
           win.clearInterval(keep);
@@ -257,6 +271,12 @@ export function mountCityMassing({
       });
   }
 
+  function place({ primitive, modelMatrix, viewSun }) {
+    primitive.modelMatrix = modelMatrix;
+    primitive.show = true;
+    primitive.customShader?.setUniform('u_viewSun', viewSun);
+  }
+
   // SPIKE: the GLB for the standing storeys takes the block's place (the
   // block entity stays, hidden, for its numbers); none: the block shows.
   function stand() {
@@ -278,17 +298,29 @@ export function mountCityMassing({
     const k =
       Cesium.Cartesian3.distance(a, b) /
       Math.hypot(points[1][0] - points[0][0], points[1][1] - points[0][1]);
+    const frame = Cesium.Transforms.eastNorthUpToFixedFrame(at);
     entry.modelMatrix = Cesium.Matrix4.multiplyByScale(
-      Cesium.Transforms.eastNorthUpToFixedFrame(at),
+      frame,
       new Cesium.Cartesian3(k, k, 1),
       new Cesium.Matrix4(),
     );
-    if (entry.primitive) {
-      entry.primitive.modelMatrix = entry.modelMatrix;
-      entry.primitive.show = true;
-    }
+    entry.viewSun = Cesium.Matrix4.multiplyByPointAsVector(
+      frame,
+      viewSun(),
+      new Cesium.Cartesian3(),
+    );
+    if (entry.primitive) place(entry);
     rendered();
   }
+
+  // SPIKE: the VIEW look's sun as a unit vector east, north, up, or zero.
+  const viewSun = () =>
+    arm?.view?.sun
+      ? Cesium.Cartesian3.normalize(
+          new Cesium.Cartesian3(...arm.view.sun),
+          new Cesium.Cartesian3(),
+        )
+      : new Cesium.Cartesian3();
 
   const playEntities = () =>
     viewer.dataSources.getByName('gev-city-play')[0]?.entities.values ?? [];
@@ -714,6 +746,7 @@ export function mountCityMassing({
       gevSeatTone: arm.seat.tone
         ? new Cesium.Cartesian4(...arm.seat.tone)
         : SEAT_TONE,
+      gevViewSun: viewSun(),
     };
   }
 

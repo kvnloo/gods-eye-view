@@ -16,6 +16,8 @@ import * as Cesium from 'cesium';
 // each wall is (outward normal, offset, half length), as cityMassingLook has it.
 // tone = (the edge's width at the wall in metres, metres more per metre out,
 // what a shadow keeps of red and of blue: the tiles' own shade is cooler).
+// viewSun (east, north, up; zero = the scene sun) is the sun the shadow is cast
+// from in the "view" look: the one the photogrammetry was photographed under.
 export const SEAT_TONE = new Cesium.Cartesian4(0.5, 0.07, 1, 1);
 export const SEAT_GLSL = `
 float gevSeatFoot(vec2 q, vec4 w0, vec4 w1, vec4 w2, vec4 w3) {
@@ -83,6 +85,7 @@ czm_material czm_getMaterial(czm_materialInput materialInput) {
   vec3 p = vec3(dot(world, gevEast), dot(world, gevNorth), dot(world, gevUp));
   vec3 sunWorld = czm_inverseViewRotation * czm_lightDirectionEC;
   vec3 sun = vec3(dot(sunWorld, gevEast), dot(sunWorld, gevNorth), dot(sunWorld, gevUp));
+  if (dot(gevViewSun, gevViewSun) > 0.0) sun = gevViewSun;
   vec3 color;
   if (abs(dot(czm_inverseViewRotation * materialInput.normalEC, gevUp)) > 0.5) {
     // The plate: the colour the street around the plot shows, in worn slabs.
@@ -121,6 +124,7 @@ const GROUND_UNIFORMS = {
   gevSides: ZERO3,
   gevSeatOn: ZERO3,
   gevSeatTone: ZERO4,
+  gevViewSun: ZERO3,
 };
 let registered = false;
 
@@ -181,6 +185,7 @@ export function seatShader() {
       u_levels: { type: VEC4, value: new Cesium.Cartesian4() },
       u_seatOn: { type: VEC3, value: new Cesium.Cartesian3() },
       u_seatTone: { type: VEC4, value: new Cesium.Cartesian4() },
+      u_viewSun: { type: VEC3, value: new Cesium.Cartesian3() },
     },
     fragmentShaderText: `${SEAT_GLSL}
 void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
@@ -188,6 +193,7 @@ void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
   vec3 p = vec3(dot(world, u_east), dot(world, u_north), dot(world, u_up));
   vec3 sunWorld = czm_inverseViewRotation * czm_lightDirectionEC;
   vec3 sun = vec3(dot(sunWorld, u_east), dot(sunWorld, u_north), dot(sunWorld, u_up));
+  if (dot(u_viewSun, u_viewSun) > 0.0) sun = u_viewSun;
   material.diffuse *= pow(gevSeatLight(
     gevSeat(p, sun, u_levels.z, u_seatTone, u_wall0, u_wall1, u_wall2, u_wall3), u_seatOn, u_seatTone), vec3(2.2));
 }`,
@@ -204,6 +210,7 @@ void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
       shader.setUniform('u_levels', look.gevLevels);
       shader.setUniform('u_seatOn', look.gevSeatOn);
       shader.setUniform('u_seatTone', look.gevSeatTone);
+      shader.setUniform('u_viewSun', look.gevViewSun);
     },
   };
 }

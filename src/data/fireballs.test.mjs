@@ -48,6 +48,24 @@ test('normalizeFireballSnapshot: null/missing optional numeric fields become nul
   assert.equal(rows[0].velocityKmS, null);
 });
 
+test('normalizeFireballSnapshot: absent coordinates reject the entire snapshot', () => {
+  for (const [column, missing] of [
+    [3, null],
+    [3, ''],
+    [3, ' '],
+    [5, null],
+    [5, ''],
+    [5, ' '],
+  ]) {
+    const row = [...ROW];
+    row[column] = missing;
+    assert.equal(
+      normalizeFireballSnapshot({ fields: FIELDS, data: [ROW, row] }),
+      null,
+      `missing coordinate in column ${column} must invalidate all rows`,
+    );
+  }
+});
 test('normalizeFireballSnapshot: rejects the whole snapshot on malformed input', () => {
   assert.equal(normalizeFireballSnapshot(null), null);
   assert.equal(normalizeFireballSnapshot({ fields: FIELDS, data: 'nope' }), null);
@@ -228,6 +246,10 @@ test('malformed fireball refresh preserves prior entities, overlays, count and t
     for (const bad of [
       { fields: FIELDS, data: 'nope' },
       { fields: ['date'], data: [ROW] },
+      {
+        fields: FIELDS,
+        data: [ROW.map((value, index) => (index === 3 ? null : value))],
+      },
       null,
     ]) {
       respond(bad);

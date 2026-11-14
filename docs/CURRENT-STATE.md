@@ -842,9 +842,11 @@ request instead of after the 30 min client cache. `records.js` builds its
 column index from the response `fields` header, signs coordinates from the N/S/E/W
 columns and treats `null` altitude/velocity as unknown rather than zero. Markers are
 static ground-clamped discs plus a point, colored and sized by approximate impact
-energy (kt TNT); labels flow through the shared overlay host. Malformed snapshots
-preserve the last good entities, overlays, count and timestamp. The layer id is
-`fireballs` (share token `5`, Events panel group).
+energy (kt TNT); labels flow through the shared overlay host. Missing latitude
+or longitude invalidates the whole response rather than placing a false marker
+on a zero-degree coordinate; malformed snapshots preserve the last good entities,
+overlays, count and timestamp. The layer id is `fireballs` (share token `5`,
+Events panel group).
 
 ## Vessel components and sources
 

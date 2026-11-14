@@ -16,6 +16,12 @@ function columnIndex(fields) {
 }
 
 function signedCoordinate(magnitude, dir, positiveDir) {
+  // Missing coordinates must invalidate the snapshot, not become 0° through Number().
+  if (
+    magnitude == null ||
+    (typeof magnitude === 'string' && magnitude.trim() === '')
+  )
+    return null;
   const value = Number(magnitude);
   if (!Number.isFinite(value)) return null;
   const normalizedDir = typeof dir === 'string' ? dir.trim().toUpperCase() : '';

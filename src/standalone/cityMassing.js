@@ -8,6 +8,7 @@ import {
   edgeProbes,
   edgeRing,
   groundBase,
+  localFrame,
   plotMassing,
   stepStoreys,
 } from '../data/cityMassing.js';
@@ -75,6 +76,12 @@ const SIDE_STEP_METERS = 4;
 const SIDE_OUT_METERS = 1;
 const SIDES = Cesium.Color.fromCssColorString('#6f6c66');
 const MAX_EDGE_METERS = 200;
+// SPIKE (exp/city-real-asset-spike, not product): a GLB per storey count may
+// stand in for the block. public/city-massing-spike/arm.json names them:
+// {"models": {"3": "/city-massing-spike/x.glb"}, "shadows": "ENABLED"}. The
+// GLB is in metres around the footprint's centre, base at 0, Blender's
+// export axes (east = +X, up = +Y, north = -Z). No file: the block as it was.
+const SPIKE_ARM = '/city-massing-spike/arm.json';
 
 /**
  * Massing v0 on the globe, mounted only behind ?massing=1: once MASSING is
@@ -120,6 +127,82 @@ export function mountCityMassing({
   let marksKey = '0';
   let studyPlot = null;
   const sphere = new Cesium.BoundingSphere();
+  let arm = null;
+  const spike = { loads: [] };
+  win
+    ?.fetch?.(SPIKE_ARM)
+    .then((reply) => reply.json())
+    .then((json) => {
+      arm = json;
+      if (site?.block) stand();
+    })
+    .catch(() => {});
+
+  // SPIKE: the GLB for the standing storeys takes the block's place (the
+  // block entity stays, hidden, for its numbers); none: the block shows.
+  function stand() {
+    const url = arm?.models?.[storeys] ?? null;
+    if (site.model && site.model.url !== url) {
+      scene.primitives.remove(site.model.primitive);
+      site.model = null;
+    }
+    site.block.show = !url;
+    if (!url) return rendered();
+    const { footprint, heightMeters } = site.massing;
+    const mean = (k) => footprint.reduce((a, c) => a + c[k], 0) / footprint.length;
+    const at = Cesium.Cartesian3.fromDegrees(mean(0), mean(1), site.base);
+    // The app's plot metric (111,320 m a degree) against the ellipsoid's.
+    const { points } = localFrame(footprint);
+    const [a, b] = Cesium.Cartesian3.fromDegreesArray(footprint.slice(0, 2).flat());
+    const k =
+      Cesium.Cartesian3.distance(a, b) /
+      Math.hypot(points[1][0] - points[0][0], points[1][1] - points[0][1]);
+    const modelMatrix = Cesium.Matrix4.multiplyByScale(
+      Cesium.Transforms.eastNorthUpToFixedFrame(at),
+      new Cesium.Cartesian3(k, k, 1),
+      new Cesium.Matrix4(),
+    );
+    if (site.model) {
+      if (site.model.primitive) site.model.primitive.modelMatrix = modelMatrix;
+      site.model.modelMatrix = modelMatrix;
+      return rendered();
+    }
+    const mine = (site.model = { url, modelMatrix, primitive: null, ready: false });
+    const load = { url, storeys, heightMeters, startedMs: win.performance.now() };
+    spike.loads.push(load);
+    const keep = win.setInterval(() => scene.requestRender(), 100);
+    Cesium.Model.fromGltfAsync({
+      url,
+      modelMatrix,
+      forwardAxis: Cesium.Axis.X,
+      shadows: Cesium.ShadowMode[arm.shadows ?? 'ENABLED'],
+      ...(arm.options ?? {}),
+    })
+      .then((primitive) => {
+        if (site?.model !== mine) return win.clearInterval(keep);
+        primitive.modelMatrix = mine.modelMatrix;
+        mine.primitive = scene.primitives.add(primitive);
+        load.fetchedMs = win.performance.now() - load.startedMs;
+        primitive.readyEvent.addEventListener(() => {
+          win.clearInterval(keep);
+          mine.ready = true;
+          load.readyMs = win.performance.now() - load.startedMs;
+          load.triangles = primitive.statistics?.trianglesLength ?? null;
+          load.texturesBytes = primitive.statistics?.texturesByteLength ?? null;
+          load.geometryBytes = primitive.statistics?.geometryByteLength ?? null;
+          rendered();
+        });
+      })
+      .catch((error) => {
+        win.clearInterval(keep);
+        load.error = String(error);
+        if (site?.model === mine) {
+          site.model = null;
+          site.block.show = true;
+        }
+      });
+    rendered();
+  }
 
   const playEntities = () =>
     viewer.dataSources.getByName('gev-city-play')[0]?.entities.values ?? [];
@@ -247,7 +330,8 @@ export function mountCityMassing({
     const display = viewer.dataSourceDisplay;
     if (typeof display?.getBoundingSphere !== 'function') return true;
     try {
-      return [site?.plate, site?.block, ...marks]
+      if (site?.model && !site.model.ready) return false;
+      return [site?.plate, !site?.model && site?.block, ...marks]
         .filter(Boolean)
         .every(
           (entity) =>
@@ -319,6 +403,7 @@ export function mountCityMassing({
     removeFrame = null;
     lastAnchors = '';
     store.placeMassing(null);
+    if (site.model?.primitive) scene.primitives.remove(site.model.primitive);
     ds.entities.removeAll();
     marks = [];
     marksKey = '0';
@@ -403,6 +488,7 @@ export function mountCityMassing({
         }),
     };
     dress();
+    if (site.block) stand();
     removeFrame = scene.postRender.addEventListener(frame);
     mark();
     rendered();
@@ -518,6 +604,7 @@ export function mountCityMassing({
         ground.base + site.massing.heightMeters;
     }
     dress();
+    if (site.block) stand();
     rendered();
   }
 
@@ -526,6 +613,7 @@ export function mountCityMassing({
     site.massing = plotMassing({ corners: site.plot.corners, storeys });
     site.block.polygon.extrudedHeight = site.base + site.massing.heightMeters;
     dress();
+    stand();
     mark();
     rendered();
   }
@@ -797,6 +885,7 @@ export function mountCityMassing({
         // The building the block is drawn as, and its material on the entity.
         facade: site?.facade ?? null,
         blockMaterial: site?.block?.polygon.material.type ?? null,
+        spike: { arm, model: site?.model?.url ?? null, loads: spike.loads },
         // The shadow study: its plan, and the lines as the entities hold them.
         study: study && {
           wasStoreys,

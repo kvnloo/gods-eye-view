@@ -525,11 +525,9 @@ const districtView = (anchor = plot) => ({
   district: DISTRICT.map((cell) => cell.id),
 });
 const blockOf = (ds, id) => ds.entities.getById(`city-massing-block-${id}`);
-const riseOf = (ds, id) => ds.entities.getById(`city-massing-rise-${id}`);
-// A block's top above its base: the glass a stage adds stands on the block.
 const heightOf = (ds, id) =>
-  (riseOf(ds, id).show ? riseOf(ds, id) : blockOf(ds, id)).polygon
-    .extrudedHeight.getValue() - blockOf(ds, id).polygon.height.getValue();
+  blockOf(ds, id).polygon.extrudedHeight.getValue() -
+  blockOf(ds, id).polygon.height.getValue();
 
 test('GROWTH stands a block on every plot of the district, and the rail stages the cohort 3 → 4 → 5 storeys', async () => {
   const { viewer, store, win, ds, select, owner } = mount();
@@ -537,27 +535,23 @@ test('GROWTH stands a block on every plot of the district, and the rail stages t
   assert.equal(DISTRICT.length, 25);
   assert.equal(store.growth.on, false, 'off until GROWTH is pressed');
   assert.equal(store.growth.plan.plots, 25);
-  assert.ok(ds.entities.getById('city-massing-block'), 'the one block stands');
+  // The one block's look, to hold every district block to.
+  const look = ({ polygon }) => [
+    polygon.material.color.getValue().toCssHexString(),
+    polygon.outline.getValue(),
+    polygon.outlineColor.getValue().toCssHexString(),
+    polygon.shadows.getValue(),
+  ];
+  const one = look(ds.entities.getById('city-massing-block'));
   assert.equal(win.__gevCityMassing.snapshot().growth, false);
 
   store.massingControls.growth();
   assert.equal(store.growth.on, true);
   assert.equal(store.growth.stage, 0);
   assert.equal(ds.entities.getById('city-massing-block'), undefined);
-  assert.equal(ds.entities.values.length, 75, 'a plate, a block, a rise each');
-  assert.ok(
-    DISTRICT.every((cell) => !riseOf(ds, cell.id).show),
-    'NOW adds nothing',
-  );
-  assert.ok(
-    DISTRICT.every((cell) =>
-      ds.entities
-        .getById(`city-massing-plate-${cell.id}`)
-        .polygon.outline.getValue(),
-    ),
-    'each plate is edged: the district is outlined',
-  );
-  assert.equal(viewer.shadows, true, 'the sun is up: the shadow map is on');
+  assert.equal(ds.entities.values.length, 50, '25 plates and 25 blocks');
+  for (const cell of DISTRICT)
+    assert.deepEqual(look(blockOf(ds, cell.id)), one, 'the massing block as it is');
   const plan = growthPlan({ plots: DISTRICT, anchorId: plot.id });
   assert.deepEqual(store.growth.plan.cohort, plan.cohort);
   assert.deepEqual(
@@ -584,36 +578,6 @@ test('GROWTH stands a block on every plot of the district, and the rail stages t
   }
   store.massingControls.stage(7);
   assert.equal(store.growth.stage, 0, 'no such stop');
-  // What a stage adds is glass on the block that stands now.
-  store.massingControls.stage(2);
-  const grown = plan.cohort[0];
-  assert.equal(riseOf(ds, grown).show, true);
-  within(
-    blockOf(ds, grown).polygon.extrudedHeight.getValue(),
-    -8.25 + 3 * 3.2,
-    1e-9,
-    'the three storeys of NOW stay',
-  );
-  within(
-    riseOf(ds, grown).polygon.height.getValue(),
-    -8.25 + 3 * 3.2,
-    1e-9,
-    'the rise starts on them',
-  );
-  assert.ok(riseOf(ds, grown).polygon.material.color.getValue().alpha < 1);
-  assert.equal(riseOf(ds, plot.id).show, false, 'the anchor is not cohort');
-  assert.deepEqual(
-    win.__gevCityMassing
-      .snapshot()
-      .growth.blocks.map((block) => Number(block.addedMeters.toFixed(6))),
-    plan.stages[2].blocks.map((block) => (block.cohort ? 6.4 : 0)),
-  );
-  // The cohort stands like the one block; the plots the plan leaves are grey.
-  const colour = (id) =>
-    blockOf(ds, id).polygon.material.color.getValue().toCssHexString();
-  assert.equal(colour(grown), '#e8edf1');
-  assert.equal(colour(plot.id), '#a3acb4');
-  store.massingControls.stage(0);
 
   store.massingControls.growth();
   assert.equal(store.growth.on, false);

@@ -1887,16 +1887,14 @@ try {
         await insideViewport(S.lock, DESKTOP);
         for (const other of [...HUD, S.lock]) await noOverlap(S.growth, other);
         assert.equal(await locator(S.ring).count(), 0, 'the wheel is aside');
-        const grown = s.growth.blocks.find(
-          (block) => block.plotId === plan.cohort[0],
-        );
         stages.push({
           stage: label,
           homes: stage.homes,
           lines: shown.lines,
           locked: s.growth.blocks.find((block) => block.plotId === PLOT),
-          cohort: grown.heightMeters,
-          added: grown.addedMeters,
+          cohort: s.growth.blocks.find(
+            (block) => block.plotId === plan.cohort[0],
+          ).heightMeters,
         });
         growthMarks[stage.id] = sinceGrowth();
         await screenshot(`${12 + index}-growth-${stage.id}`);
@@ -1909,11 +1907,6 @@ try {
         stages.map((stage) => Number(stage.cohort.toFixed(1))),
         [9.6, 12.8, 16],
         'the cohort at 3, 4 and 5 storeys of 3.2 m',
-      );
-      assert.deepEqual(
-        stages.map((stage) => Number(stage.added.toFixed(1))),
-        [0, 3.2, 6.4],
-        'what each stage adds stands as glass on the three storeys of NOW',
       );
       // Growth never undoes the shadow decision: the fitted plot at every stage.
       assert.deepEqual(

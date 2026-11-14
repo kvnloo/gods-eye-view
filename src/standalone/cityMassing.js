@@ -58,15 +58,9 @@ const SHADE = Cesium.Color.fromCssColorString('#04080e').withAlpha(0.5);
 const WAS = Cesium.Color.WHITE;
 const EDGE = Cesium.Color.fromCssColorString('#ffb454');
 const EDGE_PAD_METERS = 6;
-// A district's blocks on the growth timeline: the cohort that grows stands
-// like the single block, with the storeys a stage adds as glass on top; a
-// sun-locked plot is edged in the protected edge's amber, and the plots the
-// plan leaves alone are a quiet grey.
-const QUIET = Cesium.Color.fromCssColorString('#a3acb4');
-const GLASS = ACCENT.withAlpha(0.55);
-// A lock badge sits this far above its block.
-const BADGE_RISE = 3;
 const MAX_EDGE_METERS = 200;
+// A sun-locked block's badge sits this far above the block.
+const BADGE_RISE = 3;
 
 /**
  * Massing v0 on the globe, mounted only behind ?massing=1: once MASSING is
@@ -78,10 +72,11 @@ const MAX_EDGE_METERS = 200;
  * (src/data/cityShadowFit.js): the block's shadow against an edge across the
  * street, drawn on the ground, and FIT TO SUN, which cuts the storeys until the
  * shadow clears it. With a district selected (play mode's shift-click),
- * GROWTH stands a block on every plot of it for the timeline stage shown
- * (src/data/cityGrowth.js): the cohort rises stage by stage and a plot that
- * was fitted to the sun keeps its storeys. Nothing is saved: every block is
- * computed from its plot whenever it shows, from the defaults after a reload.
+ * GROWTH stands the same plate and block on every plot of it, as tall as the
+ * timeline stage shown has them (src/data/cityGrowth.js): the cohort rises
+ * stage by stage and a plot that was fitted to the sun keeps its storeys.
+ * Nothing is saved: every block is computed from its plot whenever it shows,
+ * from the defaults after a reload.
  */
 export function mountCityMassing({
   viewer,
@@ -122,7 +117,6 @@ export function mountCityMassing({
   let stageStoreys = GROWTH_ASSUMPTIONS.storeys;
   let districtKey = '';
   let stands = [];
-  let lit = null;
   let removeGrowthFrame = null;
   let lastBadges = '';
   let lastGrowth = 'null';
@@ -203,26 +197,6 @@ export function mountCityMassing({
     }
   }
 
-  // The shadow map for our blocks: on while the sun is up, received by the
-  // globe with soft (filtered) edges so a band reads as a shadow on the ground.
-  function light(sun) {
-    const before = {
-      shadows: viewer.shadows,
-      globe: scene.globe?.shadows,
-      soft: scene.shadowMap?.softShadows,
-    };
-    viewer.shadows = before.shadows || sun?.elevationDeg > 0;
-    if (scene.globe) scene.globe.shadows = Cesium.ShadowMode.RECEIVE_ONLY;
-    if (scene.shadowMap) scene.shadowMap.softShadows = true;
-    return before;
-  }
-
-  function unlight(before) {
-    viewer.shadows = before.shadows;
-    if (scene.globe) scene.globe.shadows = before.globe;
-    if (scene.shadowMap) scene.shadowMap.softShadows = before.soft;
-  }
-
   // Whether the plate and block are drawn (their geometry has built).
   function drawn() {
     const display = viewer.dataSourceDisplay;
@@ -232,7 +206,7 @@ export function mountCityMassing({
         site?.plate,
         site?.block,
         ...marks,
-        ...stands.flatMap((s) => [s.plate, s.block, s.rise.show && s.rise]),
+        ...stands.flatMap((s) => [s.plate, s.block]),
       ]
         .filter(Boolean)
         .every(
@@ -304,12 +278,16 @@ export function mountCityMassing({
     marks = [];
     marksKey = '0';
     uncut(site.cuts);
-    unlight(site.lit);
+    viewer.shadows = site.shadowsBefore;
+    if (scene.globe) scene.globe.shadows = site.globeShadows;
+    if (scene.shadowMap) scene.shadowMap.softShadows = site.softShadows;
     site = null;
     rendered();
   }
 
-  // A plot's ground plate and its assumed block, standing on the ground.
+  // A plot's ground plate and its assumed block, standing on the ground: the
+  // one place a block gets its look, for the selected plot and (named by its
+  // plot) for each plot of a district.
   function stand(plot, massing, ground, name = '') {
     const base = ground?.base ?? 0;
     return {
@@ -349,14 +327,23 @@ export function mountCityMassing({
     const base = ground?.base ?? 0;
     const massing = plotMassing({ corners: plot.corners, storeys });
     const sun = sunAt(plot);
+    const shadowsBefore = viewer.shadows;
+    const globeShadows = scene.globe?.shadows;
+    const softShadows = scene.shadowMap?.softShadows;
+    // A cast shadow needs the sun above the horizon. The globe receives it,
+    // with soft (filtered) edges so the band reads as a shadow on the ground.
+    viewer.shadows = shadowsBefore || sun?.elevationDeg > 0;
+    if (scene.globe) scene.globe.shadows = Cesium.ShadowMode.RECEIVE_ONLY;
+    if (scene.shadowMap) scene.shadowMap.softShadows = true;
     site = {
       plot,
       base,
       sampled: ground !== null,
       massing,
       sun,
-      // A cast shadow needs the sun above the horizon.
-      lit: light(sun),
+      shadowsBefore,
+      globeShadows,
+      softShadows,
       // The surface this block was cut into and stood on, checked each frame.
       tilesets: shownTilesets(),
       globe: Boolean(scene.globe?.show),
@@ -526,7 +513,7 @@ export function mountCityMassing({
     if ((reach === null ? null : Math.round(reach)) !== lastReach)
       publish(site.plot);
     mark();
-    const shadows = site.lit.shadows || site.sun?.elevationDeg > 0;
+    const shadows = site.shadowsBefore || site.sun?.elevationDeg > 0;
     if (viewer.shadows !== shadows) viewer.shadows = shadows;
     const { base, massing } = site;
     const top = base + massing.heightMeters;
@@ -610,12 +597,12 @@ export function mountCityMassing({
 
   function clearStands() {
     removeGrowthFrame();
-    for (const { plate, block, rise, cuts } of stands) {
-      for (const entity of [plate, block, rise]) ds.entities.remove(entity);
+    for (const { plate, block, cuts } of stands) {
+      ds.entities.remove(plate);
+      ds.entities.remove(block);
       uncut(cuts);
     }
     stands = [];
-    unlight(lit);
     lastBadges = '';
     store.placeGrowth(null);
     rendered();
@@ -625,18 +612,18 @@ export function mountCityMassing({
   // and each sun-locked block's badge follows it on screen.
   function growthFrame() {
     const ready = tilesReady();
-    if (ready && !stands.ready) {
+    if (ready && !stands.ready)
       for (const s of stands) {
         const ground = measure(s.plot);
         if (!ground || Math.abs(ground.base - s.base) < REGROUND_METERS)
           continue;
         s.plate.polygon.height = ground.floor - PLATE_DEPTH;
         s.plate.polygon.extrudedHeight = ground.base + PLATE_RISE;
-        s.block.polygon.height = s.base = ground.base;
-        s.key = '';
+        s.block.polygon.height = ground.base;
+        s.block.polygon.extrudedHeight = s.top += ground.base - s.base;
+        s.base = ground.base;
+        rendered();
       }
-      stageDistrict(district());
-    }
     stands.ready = ready;
     const locks = stands
       .filter((s) => s.locked)
@@ -651,8 +638,8 @@ export function mountCityMassing({
     store.placeGrowth({ locks });
   }
 
-  // The district's plan and, with GROWTH on, its blocks standing as the stage
-  // shown has them. Null without a district.
+  // The district's plan and, with GROWTH on, a block on every plot of it as
+  // tall as the stage shown has it. Null without a district.
   function stageDistrict(plots) {
     if (!plots) return null;
     const plan = growthPlan({
@@ -668,7 +655,6 @@ export function mountCityMassing({
     if (!growth) return plan;
     const blocks = plan.stages[stage].blocks;
     if (!stands.length) {
-      lit = light(sunAt(plots[0]));
       stands = plots.map((plot, i) => {
         const ground = measure(plot);
         const massing = plotMassing({
@@ -680,54 +666,17 @@ export function mountCityMassing({
           base: ground?.base ?? 0,
           cuts: cut(plot),
           ...stand(plot, massing, ground, `-${plot.id}`),
-          // What a stage adds to the block that stands now.
-          rise: ds.entities.add({
-            id: `${OWNER}-rise-${plot.id}`,
-            show: false,
-            polygon: {
-              hierarchy: Cesium.Cartesian3.fromDegreesArray(
-                massing.footprint.flat(),
-              ),
-              material: GLASS,
-              outline: true,
-              outlineColor: ACCENT,
-              closeBottom: false,
-              shadows: Cesium.ShadowMode.CAST_ONLY,
-            },
-          }),
         };
       });
-      // Each plate's edge is the district's outline: the plates cover the
-      // one play mode drapes on the ground.
-      for (const { plate } of stands) {
-        plate.polygon.outline = true;
-        plate.polygon.outlineColor = ACCENT;
-      }
       removeGrowthFrame = scene.postRender.addEventListener(growthFrame);
     }
     blocks.forEach((block, i) => {
       const s = stands[i];
-      const now = plan.stages[0].blocks[i];
-      const role = block.locked ? 'locked' : block.cohort ? 'cohort' : 'quiet';
-      const key = `${now.storeys}:${block.storeys}:${role}`;
-      if (s.key === key) return;
-      s.key = key;
       s.locked = block.locked;
+      if (s.storeys === block.storeys) return;
+      s.storeys = block.storeys;
       s.top = s.base + block.heightMeters;
-      const stays = s.base + Math.min(block.heightMeters, now.heightMeters);
-      s.block.polygon.extrudedHeight = stays;
-      // From a district's distance the shadow map stripes a face that takes
-      // shadow: the blocks cast theirs on the ground and take none.
-      s.block.polygon.shadows = Cesium.ShadowMode.CAST_ONLY;
-      s.block.polygon.material = role === 'quiet' ? QUIET : BLOCK;
-      s.block.polygon.outlineColor = {
-        locked: EDGE,
-        cohort: ACCENT,
-        quiet: PLATE,
-      }[role];
-      s.rise.show = s.top > stays;
-      s.rise.polygon.height = stays;
-      s.rise.polygon.extrudedHeight = s.top;
+      s.block.polygon.extrudedHeight = s.top;
       lastBadges = '';
       rendered();
     });
@@ -754,8 +703,7 @@ export function mountCityMassing({
       stage = 0;
       stageStoreys = GROWTH_ASSUMPTIONS.storeys;
     }
-    // The timeline's blocks stand in place of the one block, and each gives
-    // the shadow map back before the other takes it.
+    // The timeline's blocks stand in place of the one block.
     if (!growth && stands.length) clearStands();
     if (plot && on && !growth) show(plot);
     else hide();
@@ -916,17 +864,9 @@ export function mountCityMassing({
           blocks: stands.map((s) => ({
             plotId: s.plot.id,
             locked: s.locked,
-            // The block that stands now and, on top, what the stage adds.
             heightMeters:
-              (s.rise.show
-                ? s.rise
-                : s.block
-              ).polygon.extrudedHeight.getValue() -
+              s.block.polygon.extrudedHeight.getValue() -
               s.block.polygon.height.getValue(),
-            addedMeters: s.rise.show
-              ? s.rise.polygon.extrudedHeight.getValue() -
-                s.rise.polygon.height.getValue()
-              : 0,
           })),
         },
       }),

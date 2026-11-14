@@ -199,14 +199,14 @@ one plot's readout and shadow study step aside until a plain click selects a
 plot again. The timeline is off by default. On:
 
 - **Blocks.** Every plot of the district gets a plate and an assumed block, in
-  place of the one block and its readout, through the same code that stands
-  the single block (the sampled ground, the cut in 3D tiles). The **cohort**
-  that grows stands like the single block; the plots the plan leaves alone are
-  a quiet grey; a sun-locked plot is edged in amber.
+  place of the one block and its readout. It is the massing block exactly as
+  the single plot has it (`stand()` in `src/standalone/cityMassing.js` builds
+  both: the sampled ground, the cut in 3D tiles, the same look), as tall as the
+  plan says for that plot at that stage. The timeline gives a block its height
+  and nothing else.
 - **The rail.** One rail with three stops, **NOW**, **5 YR** and **15 YR**; the
   stage shown is filled. The cohort stands at the stage's storeys: 3, 4 and 5
-  by default. The storeys of NOW stay as they are, and what a stage adds on top
-  is drawn as glass, so the growth is visible from above.
+  by default.
 - **The cohort.** By default the 12 of every 25 plots (rounded up) farthest
   from the anchor: the anchor is the frontage the player worked on, the cohort
   is inland. The other plots are counted at three storeys at every stage.
@@ -251,10 +251,11 @@ single-plot massing. `src/ui/cityGrowthLines.js` words a stage.
 
 While the timeline is on, the play wheel and the play bar's counters step
 aside (they count saved possible worlds; `PLOTS 0` beside a district of 25
-plots reads as a contradiction). The timeline is desktop only, the district
-blocks cast shadows but take none (at a district's distance the shadow map
-stripes a face that does), and nothing of it is saved: another district, or a
-reload, starts from the plan again.
+plots reads as a contradiction). The timeline is desktop only. It does not
+turn the shadow map on, so the district's blocks cast no shadow yet, and it
+does not tell the cohort from the other plots by colour: both are the massing
+block. Nothing of it is saved: another district, or a reload, starts from the
+plan again.
 
 These are assumed blocks on a 40 m grid, the same on every plot: no existing
 buildings, no parcels, no phasing within a stage, and no shadow check of the
@@ -339,7 +340,7 @@ With it on it steps the rail through NOW, 5 YR and 15 YR
 stop asserts the panel's lines against `growthLines` for the plan of
 `growthPlan`, one rail with the right stop pressed, HOMES stated once on the
 whole page, every one of the 25 drawn blocks as tall as the plan says (the
-cohort 9.6, 12.8 and 16 m, the added storeys as glass on the first three) and
+cohort 9.6, 12.8 and 16 m) and
 the fitted corner at 9.6 m under one SUN FIT badge at every stage. It then
 moves the camera to the corner plot (`15-growth-locked-corner.png`): still
 three storeys, still locked, nothing saved.

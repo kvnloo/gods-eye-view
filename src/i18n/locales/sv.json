@@ -3804,5 +3804,10 @@
   "Homes": "Bostäder",
   "Assumed {share}% of the floor area is homes of {size} m² each": "Antaget: {share} % av bruttoarean är bostäder på {size} m² vardera",
   "Shadow reach": "Skuggans längd",
-  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Höjd ÷ tan(solhöjd {altitude}°), på plan mark"
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Höjd ÷ tan(solhöjd {altitude}°), på plan mark",
+  "SHADOW WAS {reach}": "SKUGGA FÖRE {reach}",
+  "SHADOW NOW {reach}": "SKUGGA NU {reach}",
+  "FIT TO SUN {reach}": "ANPASSAD TILL SOLEN {reach}",
+  "m ONTO SIDEWALK": "m IN PÅ TROTTOAREN",
+  "CLEARS SIDEWALK BY {gap}": "GÅR FRI FRÅN TROTTOAREN MED {gap}"
 }

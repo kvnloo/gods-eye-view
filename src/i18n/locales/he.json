@@ -3895,5 +3895,10 @@
   "Homes": "דירות",
   "Assumed {share}% of the floor area is homes of {size} m² each": "הנחה: {share}% משטח הרצפות הם דירות של {size} מ\"ר כל אחת",
   "Shadow reach": "אורך הצל",
-  "Height ÷ tan(sun altitude {altitude}°), on level ground": "גובה ÷ tan(גובה השמש {altitude}°), על קרקע מישורית"
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "גובה ÷ tan(גובה השמש {altitude}°), על קרקע מישורית",
+  "SHADOW WAS {reach}": "הצל היה {reach}",
+  "SHADOW NOW {reach}": "הצל כעת {reach}",
+  "FIT TO SUN {reach}": "בהתאמה לשמש {reach}",
+  "m ONTO SIDEWALK": "מ׳ על המדרכה",
+  "CLEARS SIDEWALK BY {gap}": "רחוק מהמדרכה {gap}"
 }

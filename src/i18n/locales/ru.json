@@ -3986,5 +3986,10 @@
   "Homes": "Квартиры",
   "Assumed {share}% of the floor area is homes of {size} m² each": "Допущение: {share}% площади этажей — квартиры по {size} м²",
   "Shadow reach": "Длина тени",
-  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Высота ÷ tan(высота солнца {altitude}°), на ровной земле"
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Высота ÷ tan(высота солнца {altitude}°), на ровной земле",
+  "SHADOW WAS {reach}": "ТЕНЬ БЫЛА {reach}",
+  "SHADOW NOW {reach}": "ТЕНЬ СЕЙЧАС {reach}",
+  "FIT TO SUN {reach}": "ПО СОЛНЦУ {reach}",
+  "m ONTO SIDEWALK": "м НА ТРОТУАРЕ",
+  "CLEARS SIDEWALK BY {gap}": "ДО ТРОТУАРА {gap}"
 }

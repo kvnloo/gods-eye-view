@@ -3986,5 +3986,10 @@
   "Homes": "Квартири",
   "Assumed {share}% of the floor area is homes of {size} m² each": "Припущення: {share}% площі поверхів — квартири по {size} м²",
   "Shadow reach": "Довжина тіні",
-  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Висота ÷ tan(висота сонця {altitude}°), на рівній землі"
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Висота ÷ tan(висота сонця {altitude}°), на рівній землі",
+  "SHADOW WAS {reach}": "ТІНЬ БУЛА {reach}",
+  "SHADOW NOW {reach}": "ТІНЬ ЗАРАЗ {reach}",
+  "FIT TO SUN {reach}": "ЗА СОНЦЕМ {reach}",
+  "m ONTO SIDEWALK": "м НА ТРОТУАРІ",
+  "CLEARS SIDEWALK BY {gap}": "ДО ТРОТУАРУ {gap}"
 }

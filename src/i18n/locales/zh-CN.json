@@ -3713,5 +3713,10 @@
   "Homes": "住宅套数",
   "Assumed {share}% of the floor area is homes of {size} m² each": "假设：建筑面积的 {share}% 为住宅，每套 {size} m²",
   "Shadow reach": "阴影长度",
-  "Height ÷ tan(sun altitude {altitude}°), on level ground": "高度 ÷ tan(太阳高度角 {altitude}°)，按平地计"
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "高度 ÷ tan(太阳高度角 {altitude}°)，按平地计",
+  "SHADOW WAS {reach}": "原阴影 {reach}",
+  "SHADOW NOW {reach}": "现阴影 {reach}",
+  "FIT TO SUN {reach}": "按日照调整后 {reach}",
+  "m ONTO SIDEWALK": "m 落在人行道上",
+  "CLEARS SIDEWALK BY {gap}": "距人行道 {gap}"
 }

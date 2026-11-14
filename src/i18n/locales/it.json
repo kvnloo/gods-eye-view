@@ -3895,5 +3895,10 @@
   "Homes": "Abitazioni",
   "Assumed {share}% of the floor area is homes of {size} m² each": "Ipotesi: il {share}% della superficie lorda sono abitazioni da {size} m² ciascuna",
   "Shadow reach": "Lunghezza dell'ombra",
-  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Altezza ÷ tan(altezza del sole {altitude}°), su terreno piano"
+  "Height ÷ tan(sun altitude {altitude}°), on level ground": "Altezza ÷ tan(altezza del sole {altitude}°), su terreno piano",
+  "SHADOW WAS {reach}": "OMBRA PRIMA {reach}",
+  "SHADOW NOW {reach}": "OMBRA ORA {reach}",
+  "FIT TO SUN {reach}": "ADATTATA AL SOLE {reach}",
+  "m ONTO SIDEWALK": "m SUL MARCIAPIEDE",
+  "CLEARS SIDEWALK BY {gap}": "LIBERA IL MARCIAPIEDE DI {gap}"
 }

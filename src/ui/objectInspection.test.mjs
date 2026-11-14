@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as Cesium from 'cesium';
 import {
+  clearSelectedEntityContextForLayer,
   getContextStore,
   selectTrackedSubjectContext,
 } from '../data/contextStore.js';
@@ -186,5 +187,19 @@ test('dragging over a selected object cannot open or focus its inspector', (t) =
   s.actions.get(types.LEFT_CLICK)({ position: { x: 20, y: 20 } });
   s.flush();
   assert.equal(s.reveals(), 0);
+  assert.equal(s.focused.length, 0);
+});
+
+test('clearing selection hides the inspector even while last-known telemetry remains', (t) => {
+  const s = setup(t);
+  s.actions.get(Cesium.ScreenSpaceEventType.LEFT_CLICK)({
+    position: { x: 1, y: 1 },
+  });
+  s.flush();
+  assert.equal(s.models.at(-1).id, 'abc123');
+  clearSelectedEntityContextForLayer('flights');
+  s.flush();
+  assert.equal(s.models.at(-1), null);
+  assert.equal(s.owner.focus(), false);
   assert.equal(s.focused.length, 0);
 });

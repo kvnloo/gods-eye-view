@@ -230,7 +230,10 @@ export function createObjectInspection({
       if (stopped) return;
       const context = getSelectedEntityContext({ dataManager: getManager() });
       if (!context) {
+        // A cleared selection must not retain a stale live-layer inspector.
+        target = null;
         refresh();
+        watch();
         return;
       }
       const layer = getManager()?.layers.get(context.layerId)?.module;

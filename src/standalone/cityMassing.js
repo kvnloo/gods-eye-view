@@ -78,7 +78,8 @@ const SIDES = Cesium.Color.fromCssColorString('#6f6c66');
 const MAX_EDGE_METERS = 200;
 // SPIKE (exp/city-real-asset-spike, not product): a GLB per storey count may
 // stand in for the block. public/city-massing-spike/arm.json names them:
-// {"models": {"3": "/city-massing-spike/x.glb"}, "shadows": "ENABLED"}. The
+// {"models": {"3": "/city-massing-spike/x.glb"}, "shadows": "ENABLED"}
+// (optional "sun", "env", "shade": how it answers the scene sun). The
 // GLB is in metres around the footprint's centre, base at 0, Blender's
 // export axes (east = +X, up = +Y, north = -Z). No file: the block as it was.
 const SPIKE_ARM = '/city-massing-spike/arm.json';
@@ -181,6 +182,22 @@ export function mountCityMassing({
       .then((primitive) => {
         if (site?.model !== mine) return win.clearInterval(keep);
         primitive.modelMatrix = mine.modelMatrix;
+        // The tiles carry their own (high, summer) light and take none from
+        // the scene. arm.json may say how the GLB answers the scene sun:
+        // "sun" scales its light, "env" its sky light, "shade": [a, s] has
+        // it keep a of its colour and add s where it faces the sun.
+        if (arm.sun)
+          primitive.lightColor = new Cesium.Cartesian3(arm.sun, arm.sun, arm.sun);
+        if (arm.env && primitive.environmentMapManager)
+          primitive.environmentMapManager.brightness = arm.env;
+        if (arm.shade)
+          primitive.customShader = new Cesium.CustomShader({
+            lightingModel: Cesium.LightingModel.UNLIT,
+            fragmentShaderText: `void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
+              float d = max(dot(normalize(fsInput.attributes.normalEC), czm_lightDirectionEC), 0.0);
+              material.diffuse *= ${Number(arm.shade[0]).toFixed(3)} + ${Number(arm.shade[1]).toFixed(3)} * d;
+            }`,
+          });
         mine.primitive = scene.primitives.add(primitive);
         load.fetchedMs = win.performance.now() - load.startedMs;
         primitive.readyEvent.addEventListener(() => {

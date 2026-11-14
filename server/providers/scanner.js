@@ -182,6 +182,7 @@ export function createScannerMiddleware({
       await assertPublicHost(url, feed.allowPrivate);
       const upstream = await fetchImpl(url.href, {
         signal: controller.signal,
+        redirect: 'error',
         headers: { 'User-Agent': SCANNER_USER_AGENT, 'Icy-MetaData': '0' },
       });
       clearTimeout(connectTimer);

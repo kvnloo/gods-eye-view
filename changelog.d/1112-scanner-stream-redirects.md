@@ -1,0 +1,1 @@
+- Reject upstream redirects in the police-scanner stream proxy so a registered feed cannot relay audio from an unchecked redirect destination (SilverhandV32's scanner layer; security finding by quanticsoul4772, #1112).

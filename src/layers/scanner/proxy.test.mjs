@@ -107,6 +107,44 @@ test('stream feeds are piped as audio through the registered URL', async () => {
   );
 });
 
+test('scanner proxy rejects stream redirects before contacting a private destination', async () => {
+  let privateRequests = 0;
+  const privateServer = http.createServer((_req, res) => {
+    privateRequests++;
+    res.writeHead(200, { 'Content-Type': 'audio/mpeg' });
+    res.end('PRIVATE-AUDIO');
+  });
+  await new Promise((resolve) => privateServer.listen(0, '127.0.0.1', resolve));
+  const redirectServer = http.createServer((_req, res) => {
+    res.writeHead(302, {
+      Location: `http://127.0.0.1:${privateServer.address().port}/private`,
+    });
+    res.end();
+  });
+  try {
+    await new Promise((resolve) => redirectServer.listen(0, '127.0.0.1', resolve));
+    await withServer(
+      {
+        fetchImpl: (_url, init) =>
+          fetch(`http://127.0.0.1:${redirectServer.address().port}/start`, init),
+      },
+      async (base) => {
+        const response = await fetch(`${base}/stream/city-pd`);
+        assert.equal(response.status, 502);
+        assert.equal(privateRequests, 0);
+      },
+    );
+  } finally {
+    redirectServer.closeAllConnections?.();
+    privateServer.closeAllConnections?.();
+    await Promise.all(
+      [redirectServer, privateServer]
+        .filter((server) => server.listening)
+        .map((server) => new Promise((resolve) => server.close(resolve))),
+    );
+  }
+});
+
 test('private addresses are refused unless the feed opts in', async () => {
   await withServer(
     {

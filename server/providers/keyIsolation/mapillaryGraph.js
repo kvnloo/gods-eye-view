@@ -124,8 +124,13 @@ export function createMapillaryGraphHandler({
       } catch {
         return sendJson(res, 502, { error: 'Mapillary answer was too large' });
       }
-      // Never echo the token, even if an upstream error body quotes it.
-      if (text.includes(token))
+      // Refuse the credential even when an upstream error URL-encodes it.
+      const encodedToken = encodeURIComponent(token);
+      if (
+        text.includes(token) ||
+        (encodedToken !== token &&
+          text.toLowerCase().includes(encodedToken.toLowerCase()))
+      )
         return sendJson(res, 502, { error: 'Mapillary answer refused' });
       if (res.writableEnded) return undefined;
       // Pass Mapillary's JSON (including its error bodies) straight through.

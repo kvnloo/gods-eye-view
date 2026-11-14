@@ -368,6 +368,21 @@ test('graph: an answer that quotes the token is refused; bad paths never reach M
   assert.equal(n, before);
 });
 
+test('graph: percent-encoded token echoes from an upstream error are refused', async () => {
+  const encoded = encodeURIComponent(MLY);
+  for (const reflected of [encoded, encoded.replaceAll('%7C', '%7c')]) {
+    const handler = createMapillaryGraphHandler({
+      env: { MAPILLARY_CLIENT_TOKEN: MLY },
+      fetchImpl: async () =>
+        response({ error: { message: `Invalid OAuth ${reflected}` } }, 400),
+    });
+    const res = await call(handler, { url: '/images?fields=id' });
+    assert.equal(res.status, 502, reflected);
+    assert.deepEqual(res.json(), { error: 'Mapillary answer refused' });
+    assert.ok(!decodeURIComponent(res.text).includes(MLY));
+  }
+});
+
 test('graph: upstream errors without the token pass through with their status', async () => {
   const handler = createMapillaryGraphHandler({
     env: { MAPILLARY_CLIENT_TOKEN: MLY },

@@ -3940,5 +3940,9 @@
     "one": "COSTO: I VICINI VIVONO ACCANTO A CANTIERI SUL TETTO IN {count} LOTTO",
     "many": "COSTO: I VICINI VIVONO ACCANTO A CANTIERI SUL TETTO IN {count} LOTTI",
     "other": "COSTO: I VICINI VIVONO ACCANTO A CANTIERI SUL TETTO IN {count} LOTTI"
-  }
+  },
+  "Growth timeline": "Cronologia di crescita",
+  "Growth timeline for this district": "Cronologia di crescita di questo quartiere",
+  "Timeline stage": "Fase della cronologia",
+  "Sun fit": "Adattato al sole"
 }

@@ -3847,5 +3847,9 @@
   "COST: NEIGHBOURS LIVE BESIDE ROOF WORKS ON {count} PLOTS": {
     "one": "KOSTNAD: GRANNAR BOR INTILL TAKARBETEN PÅ {count} TOMT",
     "other": "KOSTNAD: GRANNAR BOR INTILL TAKARBETEN PÅ {count} TOMTER"
-  }
+  },
+  "Growth timeline": "Tillväxttidslinje",
+  "Growth timeline for this district": "Tillväxttidslinje för det här kvarteret",
+  "Timeline stage": "Skede på tidslinjen",
+  "Sun fit": "Solanpassad"
 }

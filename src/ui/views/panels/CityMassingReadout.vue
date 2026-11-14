@@ -9,9 +9,10 @@ import { boundsOf, placeBeside } from '../../cityPlayModel.js';
 // height, storeys, FAR, floor area, homes and shadow reach, with one storeys stepper. The globe
 // owner (src/standalone/cityMassing.js) publishes the numbers and the screen
 // points of the block and its shadow; every click goes back through its controls.
-const { view, anchors, massing, massingAnchors, massingControls } = storeToRefs(useCityPlayStore());
+const { view, anchors, massing, massingAnchors, massingControls, growth } = storeToRefs(useCityPlayStore());
 
-const shown = computed(() => Boolean(view.value?.active && view.value.plot && view.value.tier !== 'district' && massing.value?.plotId === view.value.plot.id));
+// A selected district has its own panel (CityGrowthTimeline.vue): the one plot's readout, and the shadow study beside it, step aside.
+const shown = computed(() => Boolean(view.value?.active && view.value.plot && view.value.tier !== 'district' && massing.value?.plotId === view.value.plot.id && !growth.value));
 const on = computed(() => Boolean(massing.value?.on));
 // Missing stays a dash, never zero.
 const number = (value, options) => (Number.isFinite(value) ? formatNumber(value, options) : '—');

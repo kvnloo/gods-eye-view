@@ -3754,5 +3754,9 @@
   },
   "COST: NEIGHBOURS LIVE BESIDE ROOF WORKS ON {count} PLOTS": {
     "other": "代价：邻居住在 {count} 个地块的屋顶施工旁"
-  }
+  },
+  "Growth timeline": "增长时间线",
+  "Growth timeline for this district": "该片区的增长时间线",
+  "Timeline stage": "时间线阶段",
+  "Sun fit": "日照适配"
 }

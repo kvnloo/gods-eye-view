@@ -3754,5 +3754,9 @@
   },
   "COST: NEIGHBOURS LIVE BESIDE ROOF WORKS ON {count} PLOTS": {
     "other": "コスト: {count}区画で屋上工事の隣に住民が暮らす"
-  }
+  },
+  "Growth timeline": "成長タイムライン",
+  "Growth timeline for this district": "この地区の成長タイムライン",
+  "Timeline stage": "タイムラインの段階",
+  "Sun fit": "日照調整"
 }

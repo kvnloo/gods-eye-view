@@ -553,6 +553,12 @@ export function createPlayState() {
   };
 }
 
+// A district (the selected plot's block out to a second plot) is a key the
+// state holds only while one is selected.
+function withoutDistrict({ district: _, ...state }) {
+  return state;
+}
+
 /** Mode state. Unchanged input returns the same object. */
 export function playReducer(state, action) {
   switch (action.type) {
@@ -560,7 +566,7 @@ export function playReducer(state, action) {
       return state.active
         ? state
         : {
-            ...state,
+            ...withoutDistrict(state),
             active: true,
             plot: null,
             hover: null,
@@ -570,7 +576,7 @@ export function playReducer(state, action) {
           };
     case 'exit':
       return {
-        ...state,
+        ...withoutDistrict(state),
         active: false,
         plot: null,
         hover: null,
@@ -585,13 +591,24 @@ export function playReducer(state, action) {
     case 'select':
       if (!state.active) return state;
       return {
-        ...state,
+        ...withoutDistrict(state),
         plot: action.plot,
         hover: null,
         focusId: state.plot?.id === action.plot?.id ? state.focusId : null,
         wheel: true,
         zoneMenu: false,
       };
+    case 'district':
+      // The wheel steps aside for the district's own controls.
+      return state.active && state.plot && action.plots?.length
+        ? {
+            ...state,
+            district: action.plots,
+            hover: null,
+            wheel: false,
+            zoneMenu: false,
+          }
+        : state;
     case 'wheel':
       return state.active && state.wheel !== Boolean(action.open)
         ? { ...state, wheel: Boolean(action.open) }
@@ -618,7 +635,7 @@ export function playReducer(state, action) {
         : state;
     case 'clear':
       return {
-        ...state,
+        ...withoutDistrict(state),
         plot: null,
         focusId: null,
         wheel: false,

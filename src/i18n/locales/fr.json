@@ -3940,5 +3940,9 @@
     "one": "COÛT : LES VOISINS VIVENT À CÔTÉ DE TRAVAUX EN TOITURE SUR {count} PARCELLE",
     "many": "COÛT : LES VOISINS VIVENT À CÔTÉ DE TRAVAUX EN TOITURE SUR {count} PARCELLES",
     "other": "COÛT : LES VOISINS VIVENT À CÔTÉ DE TRAVAUX EN TOITURE SUR {count} PARCELLES"
-  }
+  },
+  "Growth timeline": "Chronologie de croissance",
+  "Growth timeline for this district": "Chronologie de croissance de ce quartier",
+  "Timeline stage": "Étape de la chronologie",
+  "Sun fit": "Ajusté au soleil"
 }

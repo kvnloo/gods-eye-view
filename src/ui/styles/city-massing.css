@@ -234,3 +234,104 @@ body:has([data-city-shadow-on='true']) [data-city-play-wheel] {
     align-items: center;
   }
 }
+
+/* The growth timeline of a district (CityGrowthTimeline.vue): the same glass,
+   at the right of the view the district is framed in. Its lines keep their
+   case, so metres read "m²". While it is on, the play wheel and the play
+   bar's counters step aside: they count saved possible worlds, and "PLOTS 0"
+   beside a district of 25 plots reads as a contradiction. */
+body:has([data-city-growth-on='true']) :is([data-city-play-wheel], .city-play-stat) {
+  display: none;
+}
+.city-growth {
+  top: 128px;
+  right: 24px;
+}
+.city-growth[data-city-growth-on='true'] {
+  width: 420px;
+}
+.city-growth-line {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 28px;
+  margin: 0;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+.city-growth-line[data-city-growth-line='district'] {
+  margin-top: 6px;
+  color: color-mix(in srgb, var(--text-primary) 76%, transparent);
+}
+.city-growth-line--homes {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.city-growth-line--lowered {
+  color: var(--warning, #ffb454);
+}
+.city-growth-steps {
+  display: inline-flex;
+  gap: 6px;
+}
+/* One rail: a line through the three stops, the stage shown filled. */
+.city-growth-rail {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  margin: 10px 0;
+}
+.city-growth-rail::before {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  left: 12px;
+  height: 2px;
+  content: '';
+  background: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.city-growth-stop {
+  position: relative;
+  min-width: 84px;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: 999px;
+  background: #060b10;
+  color: color-mix(in srgb, var(--text-primary) 76%, transparent);
+  font: 600 12px var(--font-mono);
+  letter-spacing: 0.14em;
+  cursor: pointer;
+}
+.city-growth-stop[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--bg-dark);
+  box-shadow: 0 0 14px var(--accent-glow);
+}
+/* A sun-locked block's badge, above the block on the globe. */
+.city-growth-lock {
+  position: fixed;
+  z-index: 121;
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  padding: 3px 9px;
+  border: 1px solid #ffb454;
+  border-radius: 999px;
+  font: 600 11px var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #ffb454;
+  background: rgba(4, 8, 12, 0.84);
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+}
+.city-growth-lock svg {
+  width: 12px;
+  height: 12px;
+  fill: currentColor;
+}

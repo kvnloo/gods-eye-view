@@ -1460,5 +1460,7 @@
   "src/data/cityShadowBand.test.mjs",
   "src/ui/views/cityShadowStudyView.test.mjs",
   "src/data/cityGrowth.test.mjs",
-  "src/data/cityPlotBlock.test.mjs"
+  "src/data/cityPlotBlock.test.mjs",
+  "src/ui/views/cityGrowthTimelineView.test.mjs",
+  "src/ui/cityPlayDistrict.test.mjs"
 ]

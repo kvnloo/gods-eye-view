@@ -3940,5 +3940,9 @@
     "one": "CUSTO: OS VIZINHOS VIVEM AO LADO DE OBRAS NA COBERTURA EM {count} LOTE",
     "many": "CUSTO: OS VIZINHOS VIVEM AO LADO DE OBRAS NA COBERTURA EM {count} LOTES",
     "other": "CUSTO: OS VIZINHOS VIVEM AO LADO DE OBRAS NA COBERTURA EM {count} LOTES"
-  }
+  },
+  "Growth timeline": "Cronologia de crescimento",
+  "Growth timeline for this district": "Cronologia de crescimento deste bairro",
+  "Timeline stage": "Etapa da cronologia",
+  "Sun fit": "Ajuste ao sol"
 }

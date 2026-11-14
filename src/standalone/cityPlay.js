@@ -1,7 +1,12 @@
 import * as Cesium from 'cesium';
 import { msg, t } from '../i18n/index.js';
 import { claimPointer, releasePointer } from '../data/inputOwnership.js';
-import { neighborPlots, plotPoint, snapPlot } from '../data/cityPlot.js';
+import {
+  neighborPlots,
+  plotBlock,
+  plotPoint,
+  snapPlot,
+} from '../data/cityPlot.js';
 import { observerSolarPosition } from '../data/satellitePass.js';
 import { CITY_LAND_USES, MAX_ZONED_PLOTS } from '../data/cityLandUse.js';
 import { presentCityWalkAccess } from '../ui/cityWalkAccess.js';
@@ -55,6 +60,8 @@ const CLASSIFY = Cesium.ClassificationType.BOTH;
 const FRAMES = {
   oblique: { pitch: -34, range: 290 },
   detail: { pitch: -30, range: 225 },
+  // A district fills the view: its range is this many times its radius.
+  district: { pitch: -32, fit: 4 },
 };
 
 function ring(plot, height) {
@@ -184,14 +191,17 @@ export function mountCityPlay({
     const base = baseHeight(plot);
     // Choosing shows the prism and neighbour grid; once a concept stands on the
     // plot only its outline and projector edges remain, so the concept leads.
-    const choosing = state.wheel || !shownByPlot().has(plot.id);
-    for (const cell of choosing && !capturing ? neighborPlots(plot, 1) : []) {
+    const district = state.district;
+    const choosing = !district && (state.wheel || !shownByPlot().has(plot.id));
+    // A district outlines its own plots in place of the neighbour grid.
+    for (const cell of district ??
+      (choosing && !capturing ? neighborPlots(plot, 1) : [])) {
       grid.push(
         ds.entities.add({
           polyline: {
             positions: ring(cell),
-            width: 2,
-            material: ACCENT.withAlpha(0.36),
+            width: district ? 3 : 2,
+            material: ACCENT.withAlpha(district ? 0.8 : 0.36),
             clampToGround: true,
             classificationType: CLASSIFY,
           },
@@ -575,6 +585,8 @@ export function mountCityPlay({
         size: plot.sizeMeters,
         use: useOf(plot.id),
       },
+      // The plots of the selected district; the selected plot is its anchor.
+      district: state.district?.map((cell) => cell.id) ?? null,
       actions: wheelActions({
         pending: data.pending || framing,
         full: data.full,
@@ -747,10 +759,21 @@ export function mountCityPlay({
     // to the ground pick, which snaps to the plot under the cursor.
     return entity._cityPlot ?? null;
   }
-  function onClick({ position }) {
+  function onClick({ position }, extend = false) {
     if (framing) return;
     // An armed massing tool (the protected edge) takes the next ground click.
     if (store.massingControls?.click?.(pickPoint(position))) return;
+    // Shift-click a second plot: the block between it and the selected plot
+    // becomes a district, framed whole.
+    if (extend && state.plot) {
+      const point = pickPoint(position);
+      const block = plotBlock(state.plot, point && snapPlot(point));
+      if (block) {
+        dispatch({ type: 'district', plots: block });
+        frameDistrict(block);
+      }
+      return;
+    }
     // Clicking a concept card or the selected footprint selects that plot again.
     const mine = ownPlot(position);
     if (mine) {
@@ -834,6 +857,22 @@ export function mountCityPlay({
           cancel: () => resolve(false),
         },
       );
+    });
+  }
+  function frameDistrict(plots) {
+    const base = baseHeight(plots[0]);
+    const sphere = Cesium.BoundingSphere.fromPoints(
+      plots.flatMap((cell) => ring(cell, base).slice(0, 4)),
+    );
+    viewer.camera.cancelFlight?.();
+    viewer.camera.flyToBoundingSphere(sphere, {
+      offset: new Cesium.HeadingPitchRange(
+        viewer.camera.heading,
+        Cesium.Math.toRadians(FRAMES.district.pitch),
+        sphere.radius * FRAMES.district.fit,
+      ),
+      duration: 1.4,
+      easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT,
     });
   }
   // Give the map a bounded moment to load the framed tiles before capture.
@@ -944,6 +983,11 @@ export function mountCityPlay({
       notice = null;
       handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
       handler.setInputAction(onClick, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+      handler.setInputAction(
+        (event) => onClick(event, true),
+        Cesium.ScreenSpaceEventType.LEFT_CLICK,
+        Cesium.KeyboardEventModifier.SHIFT,
+      );
       handler.setInputAction(onMove, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
       // Borrow the Viewer's own select/track clicks for the mode's lifetime.
       const stock = viewer.screenSpaceEventHandler;
@@ -1061,6 +1105,7 @@ export function mountCityPlay({
         bodyClass: doc.body.classList.contains(BODY_CLASS),
         zoning: zoning().map((z) => ({ plotId: z.plot.id, use: z.use })),
         zoneTints: ds.show ? zoneTints.size : 0,
+        district: state.district?.map((cell) => cell.id) ?? null,
       }),
   });
   if (win) win.__gevCityPlay = probe;

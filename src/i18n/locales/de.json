@@ -3847,5 +3847,9 @@
   "COST: NEIGHBOURS LIVE BESIDE ROOF WORKS ON {count} PLOTS": {
     "one": "KOSTEN: NACHBARN WOHNEN NEBEN DACHBAUSTELLEN AUF {count} FLÄCHE",
     "other": "KOSTEN: NACHBARN WOHNEN NEBEN DACHBAUSTELLEN AUF {count} FLÄCHEN"
-  }
+  },
+  "Growth timeline": "Wachstumszeitachse",
+  "Growth timeline for this district": "Wachstumszeitachse für dieses Quartier",
+  "Timeline stage": "Stufe der Zeitachse",
+  "Sun fit": "Sonnenanpassung"
 }

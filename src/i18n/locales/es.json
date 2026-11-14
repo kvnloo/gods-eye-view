@@ -3940,5 +3940,9 @@
     "one": "COSTE: LOS VECINOS VIVEN JUNTO A OBRAS EN CUBIERTA EN {count} PARCELA",
     "many": "COSTE: LOS VECINOS VIVEN JUNTO A OBRAS EN CUBIERTA EN {count} PARCELAS",
     "other": "COSTE: LOS VECINOS VIVEN JUNTO A OBRAS EN CUBIERTA EN {count} PARCELAS"
-  }
+  },
+  "Growth timeline": "Cronología de crecimiento",
+  "Growth timeline for this district": "Cronología de crecimiento de este distrito",
+  "Timeline stage": "Etapa de la cronología",
+  "Sun fit": "Ajuste al sol"
 }

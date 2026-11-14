@@ -3,3 +3,5 @@
   about a zero axis; that rotation is now ignored, and a render loop stopped by
   any error is restarted from the last drawn camera pose, up to three times in
   ten seconds (mazy1998, #1704).
+- A failed frame with a non-finite camera up vector does not replace the last
+  usable recovery pose (follow-up to mazy1998's #1704).

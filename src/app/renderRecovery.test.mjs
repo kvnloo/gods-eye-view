@@ -166,6 +166,20 @@ test('a frame drawn with a broken camera is not kept as the pose to return to', 
   assertPose(camera, drawn);
 });
 
+test('a failed postRender with an invalid up vector preserves the last good pose', () => {
+  const { viewer, camera, postRender, fail } = viewerFixture();
+  installRenderRecovery(viewer, { now: () => 0, requestRender: () => {} });
+  postRender.raiseEvent();
+  const drawn = pose(camera);
+
+  // Cesium may still raise postRender after a frame fails, even when the
+  // camera's up vector is invalid but position and direction remain finite.
+  camera.up.y = NaN;
+  postRender.raiseEvent();
+  quietly(() => fail(new Error('broken camera up vector')));
+  assertPose(camera, drawn);
+});
+
 test('an error that keeps returning is shown and rendering stays stopped', () => {
   const { viewer, panels, fail } = viewerFixture();
   let at = 0;

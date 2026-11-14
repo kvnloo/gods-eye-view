@@ -104,7 +104,14 @@ export function installRenderRecovery(
   const up = new Cesium.Cartesian3();
   let hasPose = false;
   const removePostRender = scene.postRender.addEventListener(() => {
-    if (!finite(camera.position) || !finite(camera.direction)) return;
+    // Cesium may raise postRender even after a failed frame. Keep the last
+    // drawable orientation instead of saving an invalid up vector.
+    if (
+      !finite(camera.position) ||
+      !finite(camera.direction) ||
+      !finite(camera.up)
+    )
+      return;
     Cesium.Cartesian3.clone(camera.position, position);
     Cesium.Cartesian3.clone(camera.direction, direction);
     Cesium.Cartesian3.clone(camera.up, up);

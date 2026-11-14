@@ -43,6 +43,9 @@ Touch-first devices use three times the default Cesium zoom sensitivity, so
 pinching traverses globe and street scales with fewer gestures. Cesium retains
 its distance-aware zoom, collision handling and minimum/maximum distance limits.
 Fine-pointer desktop mouse and trackpad sensitivity is unchanged.
+At whole-globe scale, wheel zoom at the exact screen centre skips Cesium's
+degenerate zero-axis rotation and continues zooming; ordinary rotations are
+unchanged.
 
 User zoom is capped at 40,000 km (or a stricter host limit). Explicit camera
 flight, share-link and story destinations can go farther; from there, user zoom

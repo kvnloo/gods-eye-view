@@ -125,6 +125,7 @@ const GROUND_UNIFORMS = {
   gevSeatOn: ZERO3,
   gevSeatTone: ZERO4,
   gevViewSun: ZERO3,
+  gevSeatKnee: ZERO3,
 };
 let registered = false;
 
@@ -186,6 +187,7 @@ export function seatShader() {
       u_seatOn: { type: VEC3, value: new Cesium.Cartesian3() },
       u_seatTone: { type: VEC4, value: new Cesium.Cartesian4() },
       u_viewSun: { type: VEC3, value: new Cesium.Cartesian3() },
+      u_seatKnee: { type: VEC3, value: new Cesium.Cartesian3() },
     },
     fragmentShaderText: `${SEAT_GLSL}
 void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
@@ -194,8 +196,17 @@ void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
   vec3 sunWorld = czm_inverseViewRotation * czm_lightDirectionEC;
   vec3 sun = vec3(dot(sunWorld, u_east), dot(sunWorld, u_north), dot(sunWorld, u_up));
   if (dot(u_viewSun, u_viewSun) > 0.0) sun = u_viewSun;
-  material.diffuse *= pow(gevSeatLight(
-    gevSeat(p, sun, u_levels.z, u_seatTone, u_wall0, u_wall1, u_wall2, u_wall3), u_seatOn, u_seatTone), vec3(2.2));
+  vec3 light = gevSeatLight(
+    gevSeat(p, sun, u_levels.z, u_seatTone, u_wall0, u_wall1, u_wall2, u_wall3), u_seatOn, u_seatTone);
+  // The tiles carry their own shade. knee = (as dark as that shade, as bright as
+  // lit paving, as the screen shows them; the least share taken): a point
+  // already in the tiles' shade takes only that least share of the block's
+  // shadow, so the two lie as one and the block's still shows over all its reach.
+  if (u_seatKnee.y > 0.0) {
+    float seen = dot(pow(material.diffuse, vec3(1.0 / 2.2)), vec3(0.2126, 0.7152, 0.0722));
+    light = mix(vec3(1.0), light, max(u_seatKnee.z, smoothstep(u_seatKnee.x, u_seatKnee.y, seen)));
+  }
+  material.diffuse *= pow(light, vec3(2.2));
 }`,
   });
   return {
@@ -211,6 +222,7 @@ void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
       shader.setUniform('u_seatOn', look.gevSeatOn);
       shader.setUniform('u_seatTone', look.gevSeatTone);
       shader.setUniform('u_viewSun', look.gevViewSun);
+      shader.setUniform('u_seatKnee', look.gevSeatKnee);
     },
   };
 }

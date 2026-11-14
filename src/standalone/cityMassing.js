@@ -103,7 +103,13 @@ const SPIKE_ARM = '/city-massing-spike/arm.json';
 //   6 the NOW line over the shadow's end goes faint.
 // At any level "tone" replaces cityMassingSeat.js SEAT_TONE (the shadow's
 // edge width and what it keeps of red and blue) and "steps" squares the
-// closing walls.
+// closing walls, and "cut": m cuts the tiles only m metres outside the block's
+// footprint, not along the plot's edge: the neighbours the plot's edge sliced
+// stand whole up to the block, and the plate and the closing walls shrink to
+// that strip. "keeps" is what the block's shadow keeps of the light (the
+// tiles' own shade keeps 0.27 and is bluer: "tone"), and "knee": [dark, lit,
+// least] has what the tiles already shade take only that least share of it
+// (cityMassingSeat.js).
 // SPIKE: "view": {"sun": [east, north, up], "light": [a, s]} is the VIEW look:
 // the GLB is lit (a of its colour, s more where it faces that sun) and its
 // shadow is cast from the sun the tiles were photographed under, measured from
@@ -627,6 +633,18 @@ export function mountCityMassing({
     const level =
       massing.footprint && shownTilesets().length ? (arm?.seat?.level ?? 0) : 0;
     const seat = level > 0 ? seatShader() : null;
+    // What is cut out of the tiles, plated and closed: the plot, or (SPIKE)
+    // the footprint and a margin.
+    const hole =
+      seat && arm.seat.cut >= 0
+        ? {
+            corners: plotMassing({
+              corners: plot.corners,
+              storeys,
+              setbackMeters: Math.max(0, massing.setbackMeters - arm.seat.cut),
+            }).footprint,
+          }
+        : plot;
     if (seat) {
       seat.level = level;
       seat.tones = level >= 3 ? tones(plot, base) : {};
@@ -677,12 +695,13 @@ export function mountCityMassing({
       tilesets: shownTilesets(),
       globe: Boolean(scene.globe?.show),
       ready: false,
-      sides: close(plot, base + PLATE_RISE, seat),
-      cuts: cut(plot, seat?.shader),
+      hole,
+      sides: close(hole, base + PLATE_RISE, seat),
+      cuts: cut(hole, seat?.shader),
       plate: ds.entities.add({
         id: `${OWNER}-plate`,
         polygon: {
-          hierarchy: Cesium.Cartesian3.fromDegreesArray(plot.corners.flat()),
+          hierarchy: Cesium.Cartesian3.fromDegreesArray(hole.corners.flat()),
           height: (ground?.floor ?? base) - PLATE_DEPTH,
           extrudedHeight: base + PLATE_RISE,
           // Paving around a block (the same material knows the ground).
@@ -740,9 +759,10 @@ export function mountCityMassing({
       // The sun's shadow shows, the sky's share of the light, the sky hidden.
       gevSeatOn: new Cesium.Cartesian3(
         1,
-        SHADOW_DARKNESS,
+        arm.seat.keeps ?? SHADOW_DARKNESS,
         site.seat.level >= 2 ? 1 : 0,
       ),
+      gevSeatKnee: new Cesium.Cartesian3(...(arm.seat.knee ?? [0, 0, 0])),
       gevSeatTone: arm.seat.tone
         ? new Cesium.Cartesian4(...arm.seat.tone)
         : SEAT_TONE,
@@ -848,7 +868,7 @@ export function mountCityMassing({
     site.plate.polygon.height = ground.floor - PLATE_DEPTH;
     site.plate.polygon.extrudedHeight = ground.base + PLATE_RISE;
     if (site.sides) ds.entities.remove(site.sides);
-    site.sides = close(site.plot, ground.base + PLATE_RISE, site.seat);
+    site.sides = close(site.hole, ground.base + PLATE_RISE, site.seat);
     if (site.block) {
       site.block.polygon.height = ground.base;
       site.block.polygon.extrudedHeight =

@@ -359,3 +359,57 @@ test('a failed stop lookup leaves the alerts intact and unplaced', async (t) => 
   assert.deepEqual(body.stops, []);
   assert.equal(warn.mock.callCount(), 1);
 });
+
+test('a stalled stop lookup times out without hiding already decoded alerts', async (t) => {
+  const warn = t.mock.method(console, 'warn', () => {});
+  const seen = [];
+  const service = createTransitService({
+    fetchImpl: async (url, { signal } = {}) => {
+      seen.push(url);
+      if (url.startsWith('https://cdn.mbta.com/'))
+        return json({
+          header: { incrementality: 'FULL_DATASET' },
+          entity: [
+            {
+              id: '9',
+              alert: {
+                effect: 'STOP_MOVED',
+                effect_detail: 'STOP_MOVE',
+                header_text: { translation: [{ text: 'Stop moved' }] },
+                informed_entity: [{ route_id: '60', stop_id: '1521' }],
+              },
+            },
+          ],
+        });
+      if (url.startsWith('https://api-v3.mbta.com/stops?'))
+        return new Promise((_, reject) => {
+          if (signal.aborted) {
+            reject(signal.reason);
+            return;
+          }
+          signal.addEventListener('abort', () => reject(signal.reason), {
+            once: true,
+          });
+        });
+      throw new Error(`unexpected ${url}`);
+    },
+  });
+  t.after(service.close);
+
+  const response = await service.handle(request('/api/transit/alerts/mbta'));
+  assert.equal(
+    response.status,
+    200,
+    'optional stop timeout does not become a 504',
+  );
+  const body = await response.json();
+  assert.equal(body.count, 1);
+  assert.equal(body.alerts[0].header, 'Stop moved');
+  assert.deepEqual(body.stops, [], 'alerts remain available without markers');
+  assert.equal(warn.mock.callCount(), 1);
+  assert.equal(seen.filter((url) => url.includes('/stops?')).length, 1);
+
+  const cached = await service.handle(request('/api/transit/alerts/mbta'));
+  assert.equal(cached.status, 200);
+  assert.equal(cached.headers.get('x-gev-cache'), 'HIT');
+});

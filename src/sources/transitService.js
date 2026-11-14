@@ -25,6 +25,8 @@ export const TRANSIT_STOP_CACHE_MAX = 5_000;
 export const TRANSIT_STOP_LOOKUP_CHUNK = 100;
 /** Byte cap for one stop lookup (100 stops are ~15 KB). */
 export const TRANSIT_STOP_LOOKUP_MAX_BYTES = 2 * 1024 * 1024;
+/** Optional stop enrichment must not exhaust the alert snapshot deadline. */
+const TRANSIT_STOP_LOOKUP_TIMEOUT_MS = 2_000;
 import {
   TRANSIT_ADMISSION_MAX_GLOBAL,
   TRANSIT_ADMISSION_MAX_PER_FEED,
@@ -200,13 +202,20 @@ export function createTransitService({ fetchImpl = fetch } = {}) {
       const cached = stopCache.get(key(id));
       return !cached || now - cached.at > TRANSIT_STOP_CACHE_TTL_MS;
     });
+    // All chunks share one short deadline; stop locations are optional.
+    const lookupSignal = missing.length
+      ? AbortSignal.any([
+          signal,
+          AbortSignal.timeout(TRANSIT_STOP_LOOKUP_TIMEOUT_MS),
+        ])
+      : signal;
     for (let i = 0; i < missing.length; i += TRANSIT_STOP_LOOKUP_CHUNK) {
       const chunk = missing.slice(i, i + TRANSIT_STOP_LOOKUP_CHUNK);
       const url = `${base}&filter%5Bid%5D=${chunk.map(encodeURIComponent).join(',')}`;
       try {
         const { response, finalUrl } = await fetchTransitFeed(
           feed,
-          signal,
+          lookupSignal,
           fetchImpl,
           null,
           { url, accept: TRANSIT_NETWORK_ACCEPT },
@@ -231,7 +240,8 @@ export function createTransitService({ fetchImpl = fetch } = {}) {
         for (const id of chunk)
           stopCache.set(key(id), { at: now, stop: found.get(id) || null });
       } catch (error) {
-        if (signal.aborted) throw error;
+        // A cancelled optional lookup cannot invalidate decoded service alerts.
+        // refreshNetwork still rejects if the entire service has closed.
         console.warn(
           `[transit-proxy] ${feed.id} stop lookup failed: ${error?.message || error}`,
         );

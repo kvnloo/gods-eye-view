@@ -105,7 +105,7 @@ media segments, and serves local session-and-lease-scoped routes. Init and
 segment references must remain on the registered origin. Redirects, encryption,
 byte ranges and mixed MPEG-TS/fMP4 containers are rejected.
 
-Each init file is capped at 256 KiB, each segment at 4 MiB, and each playlist at
+Each init file is capped at 256 KiB, each segment at 12 MiB, and each playlist at
 256 KiB. Shared init bytes count toward the same 24 MiB per-session cache as the
 12 retained segments. Unreferenced init files are evicted, and encoder restarts
 or discontinuities refetch reused init URLs. Two sessions and eight leases per

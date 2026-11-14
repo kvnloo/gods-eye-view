@@ -12,6 +12,7 @@ import {
   DEFAULT_MISIONES_LOCATIONS_FILE,
 } from '../../server/providers/cctv/misiones.js';
 import { createCctvCatalog } from '../../server/providers/cctv/catalog.js';
+import { HLS_LIMITS } from '../../server/providers/cctv/stream.js';
 
 const research = JSON.parse(
   fs.readFileSync(
@@ -41,6 +42,16 @@ const row = (overrides = {}) => ({
   title: 'Arco / Acceso Posadas',
   cover: 'https://untrusted.example/cover.jpg',
   ...overrides,
+});
+
+test('Misiones guide reports the HLS relay segment cap', () => {
+  const guide = fs.readFileSync(
+    new URL('../../docs/CCTV-MISIONES.md', import.meta.url),
+    'utf8',
+  );
+  const segmentMiB = HLS_LIMITS.segmentBytes / (1024 * 1024);
+  assert.equal(Number.isInteger(segmentMiB), true);
+  assert.match(guide, new RegExp(`each segment at ${segmentMiB} MiB`));
 });
 
 test('research references and candidates never become camera positions', () => {

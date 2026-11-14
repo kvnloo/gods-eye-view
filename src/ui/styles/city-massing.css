@@ -108,6 +108,83 @@
   filter: drop-shadow(0 0 4px var(--accent-glow));
 }
 
+/* The shadow study beside the readout (CityShadowStudy.vue): the same glass.
+   Its figures keep their case, so metres read "m"; the tip labels sit on the
+   globe at the ends of the study's ground lines. While the study is on the
+   play wheel steps aside: its ring is as wide as the shadow it would cover. */
+body:has([data-city-shadow-on='true']) [data-city-play-wheel] {
+  visibility: hidden;
+}
+.city-shadow[data-city-shadow-on='true'] {
+  width: 300px;
+}
+.city-shadow .city-massing-value {
+  text-transform: none;
+}
+.city-shadow-alert .city-massing-value {
+  color: var(--warning, #ffb454);
+  text-shadow: none;
+}
+.city-shadow-button {
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--accent);
+  font: 600 12px var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.city-shadow-button[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--bg-dark);
+}
+.city-shadow-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.city-shadow-set {
+  min-height: 30px;
+}
+.city-shadow-fit {
+  width: 100%;
+  min-height: 34px;
+  margin-top: 6px;
+  letter-spacing: 0.04em;
+}
+.city-shadow-note {
+  margin: 6px 0 0;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+.city-shadow-tip {
+  position: fixed;
+  z-index: 121;
+  margin: 0;
+  padding: 6px 12px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  font: 600 13px var(--font-mono);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: var(--text-primary);
+  background: rgba(4, 8, 12, 0.84);
+  pointer-events: none;
+}
+.city-shadow-tip[data-city-shadow-tip='was'] {
+  border-color: #fff;
+}
+.city-shadow-tip:not([data-city-shadow-tip='now']) {
+  border-style: dashed;
+}
+.city-massing-leader circle {
+  fill: var(--accent);
+  stroke: var(--bg-dark);
+  stroke-width: 2;
+}
+
 /* A phone with the play wheel open leaves only a short band above or below it
    (about 70 px): the toggle and the rows wrap into two 24 px lines. */
 @media (max-width: 599px) {

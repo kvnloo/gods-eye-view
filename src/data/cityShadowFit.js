@@ -2,7 +2,7 @@
 // against a protected edge across the street, and the most storeys that still
 // clear it. Pure: metres, degrees, UTC epoch milliseconds. An estimate on
 // level ground from the block's height and the sun, never a daylight study.
-import { MAX_STOREYS } from './cityMassing.js';
+import { MAX_STOREYS, localFrame } from './cityMassing.js';
 import { shadowReach, sunPosition } from './citySun.js';
 
 /** A storey's floor-to-floor: a fit changes the storey count, never this. */
@@ -72,6 +72,50 @@ export function shadowFit({
       !up ? [] : was ? [was, now] : canFit ? [now, fit] : [now],
     ),
   });
+}
+
+// A block's shadow on the ground: `along` runs from the face the shadow leaves
+// (zero) away from the sun, `across` spans the block's width.
+function shadowFrame(footprint, sun) {
+  const frame = localFrame(footprint);
+  const az = (sun.azimuthDeg * Math.PI) / 180;
+  const [ux, uy] = [-Math.sin(az), -Math.cos(az)];
+  const along = frame.points.map(([x, y]) => x * ux + y * uy);
+  const across = frame.points.map(([x, y]) => y * ux - x * uy);
+  const face = Math.max(...along);
+  return {
+    left: Math.min(...across),
+    right: Math.max(...across),
+    distance: (lonLat) => {
+      const [x, y] = frame.toMeters(lonLat);
+      return x * ux + y * uy - face;
+    },
+    point: (meters, side) =>
+      frame.toLonLat([
+        (face + meters) * ux - side * uy,
+        (face + meters) * uy + side * ux,
+      ]),
+  };
+}
+
+/**
+ * The ground a shadow of `meters` covers beyond the block's face, as [lon,
+ * lat] corners: near left, near right, far right, far left. The far side is
+ * the shadow's tip, and at the edge's distance it is the protected edge.
+ */
+export function shadowBand(footprint, sun, meters) {
+  const { left, right, point } = shadowFrame(footprint, sun);
+  return [
+    point(0, left),
+    point(0, right),
+    point(meters, right),
+    point(meters, left),
+  ];
+}
+
+/** How far a ground point is beyond the block's face, along the shadow. */
+export function edgeDistance(footprint, sun, lonLat) {
+  return shadowFrame(footprint, sun).distance(lonLat);
 }
 
 /** Whether a scene time is in winter there: December to February north of the equator, June to August south of it. */

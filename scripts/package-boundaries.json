@@ -169,6 +169,8 @@
       "src/ui/views/panels/GlobeActions.vue",
       "src/ui/views/panels/CityPlayOverlay.vue",
       "src/ui/views/panels/CityMassingReadout.vue",
+      "src/ui/views/panels/CityShadowStudy.vue",
+      "src/ui/cityShadowTip.js",
       "src/ui/stores/cityPlay.js",
       "src/ui/cityPlayModel.js",
       "src/ui/cityHudFigure.js",

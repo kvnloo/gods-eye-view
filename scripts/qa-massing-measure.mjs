@@ -33,15 +33,20 @@ export function distinctFrames(a, b, label) {
     );
 }
 
-/** The camera for QA_PLOT: south of the plot centre, looking north at 45°. */
-export function siteForPlot(id, alt = 600) {
+/**
+ * The camera for QA_PLOT: south of the plot centre, looking north at 45°. With
+ * a `heading` (degrees clockwise from north) it looks that way from behind.
+ */
+export function siteForPlot(id, alt = 600, heading = 0) {
   const plot = plotFromId(id);
   if (!plot) throw new TypeError(`QA_PLOT must be a plot id: ${id}`);
+  const turn = (heading * Math.PI) / 180;
+  const east = METERS_PER_DEGREE * Math.cos((plot.center.lat * Math.PI) / 180);
   return {
-    lat: plot.center.lat - alt / METERS_PER_DEGREE,
-    lon: plot.center.lon,
+    lat: plot.center.lat - (Math.cos(turn) * alt) / METERS_PER_DEGREE,
+    lon: plot.center.lon - (Math.sin(turn) * alt) / east,
     alt,
-    heading: 0,
+    heading,
     pitch: -45,
   };
 }

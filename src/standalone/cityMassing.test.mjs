@@ -331,3 +331,176 @@ test('with the sun down SHADOW REACH is missing, never zero', async () => {
   assert.equal(store.massing.homes, 46);
   owner.destroy();
 });
+
+// --- The shadow study (PROTECT SIDEWALK) ---------------------------------
+// Solar noon at the plot on the winter solstice: the sun 28.8° up, due south.
+const WINTER_NOON = '2026-12-21T20:07:41Z';
+const within = (actual, expected, tolerance, label) =>
+  assert.ok(
+    Math.abs(actual - expected) <= tolerance,
+    `${label}: ${actual} != ${expected} ±${tolerance}`,
+  );
+const studyIds = (ds) =>
+  ds.entities.values
+    .map((entity) => entity.id)
+    .filter((id) => id.includes('-shadow-'))
+    .sort();
+// A ground point `meters` north of the plot centre.
+const north = (meters) => ({
+  lat: plot.center.lat + meters / 111_320,
+  lon: plot.center.lon,
+});
+
+test('PROTECT SIDEWALK draws the plan, what a fit would leave and the edge; FIT TO SUN cuts 6 storeys to 3', async () => {
+  const { store, win, ds, select, render, owner } = mount({
+    time: WINTER_NOON,
+  });
+  await select({ plot: { id: plot.id } });
+  assert.deepEqual(studyIds(ds), [], 'off by default: nothing on the ground');
+  assert.equal(store.massing.shadow.on, false);
+  assert.equal(store.massing.shadow.plan, null);
+  assert.equal(store.massing.shadow.winter, true);
+  assert.equal(win.__gevCityMassing.snapshot().study, false);
+  store.massingControls.study();
+  render();
+  let s = win.__gevCityMassing.snapshot();
+  assert.deepEqual(studyIds(ds), [
+    'city-massing-shadow-edge',
+    'city-massing-shadow-fit',
+    'city-massing-shadow-now',
+  ]);
+  assert.deepEqual(
+    s.study.plan.lines.map((line) => [line.kind, line.storeys]),
+    [
+      ['now', 6],
+      ['fit', 3],
+    ],
+  );
+  assert.equal(s.study.edgeMeters, 20);
+  assert.equal(s.study.edgeSet, false, 'assumed until the player sets it');
+  // The entities are as long as the plan says, and the edge is 20 m out.
+  for (const line of s.study.plan.lines)
+    within(s.study.drawn[line.kind], line.reachMeters, 0.3, line.kind);
+  within(s.study.drawn.now, 34.9, 0.3, '6 storeys of 3.2 m at 28.8°');
+  within(s.study.drawn.edge, 20, 0.3, 'edge');
+  assert.equal(store.massing.shadow.plan.canFit, true);
+  assert.ok(store.massing.shadow.plan.now.overMeters > 0, 'on the sidewalk');
+  assert.deepEqual(Object.keys(store.massingAnchors.tips), ['now', 'fit']);
+
+  store.massingControls.fit();
+  render();
+  s = win.__gevCityMassing.snapshot();
+  assert.equal(s.storeys, 3);
+  const block = ds.entities.getById('city-massing-block').polygon;
+  within(block.extrudedHeight.getValue(), -8.25 + 9.6, 1e-9, 'block top');
+  assert.deepEqual(studyIds(ds), [
+    'city-massing-shadow-edge',
+    'city-massing-shadow-now',
+    'city-massing-shadow-was',
+  ]);
+  assert.deepEqual(
+    s.study.plan.lines.map((line) => [line.kind, line.storeys]),
+    [
+      ['was', 6],
+      ['now', 3],
+    ],
+  );
+  within(s.study.drawn.was, 34.9, 0.3, 'was');
+  within(s.study.drawn.now, 17.5, 0.3, 'now');
+  assert.ok(s.study.plan.now.overMeters < 0, 'clears the sidewalk');
+  assert.equal(s.study.plan.canFit, false);
+  assert.equal(store.massing.homes, 23);
+  within(store.massing.far, 1.92, 1e-9, 'FAR');
+  assert.deepEqual(Object.keys(store.massingAnchors.tips), ['was', 'now']);
+  store.massingControls.fit();
+  assert.equal(win.__gevCityMassing.snapshot().storeys, 3, 'fitted: a no-op');
+
+  store.massingControls.study();
+  render();
+  assert.deepEqual(studyIds(ds), [], 'study off: the ground is clear');
+  assert.equal(store.massing.shadow.on, false);
+  assert.equal(store.massingAnchors.tips.now, undefined);
+  owner.destroy();
+});
+
+test('SET ON MAP takes one ground click as the edge, measured from the block face along the shadow; the stepper moves it', async () => {
+  const { store, win, select, render, owner } = mount({ time: WINTER_NOON });
+  await select({ plot: { id: plot.id } });
+  store.massingControls.study();
+  assert.equal(
+    store.massingControls.click(north(43)),
+    false,
+    'not armed: play mode keeps the click',
+  );
+  store.massingControls.pickEdge();
+  assert.equal(store.massing.shadow.picking, true);
+  // The block's north face is 16 m north of the centre: 27 m beyond it.
+  assert.equal(store.massingControls.click(north(16 + 27)), true);
+  assert.deepEqual(
+    [
+      store.massing.shadow.edgeMeters,
+      store.massing.shadow.edgeSet,
+      store.massing.shadow.picking,
+    ],
+    [27, true, false],
+  );
+  render();
+  within(win.__gevCityMassing.snapshot().study.drawn.edge, 27, 0.3, 'edge');
+  assert.equal(store.massing.shadow.plan.fit.storeys, 4);
+  // A click on the block or behind the face is taken and sets nothing: the
+  // tool stays armed until a click lands across the street or it is put down.
+  store.massingControls.pickEdge();
+  assert.equal(store.massingControls.click(north(0)), true);
+  assert.equal(store.massing.shadow.edgeMeters, 27);
+  assert.equal(store.massing.shadow.picking, true);
+  store.massingControls.pickEdge();
+  assert.equal(store.massing.shadow.picking, false);
+  store.massingControls.stepEdge(-1);
+  store.massingControls.stepEdge(-1);
+  store.massingControls.stepEdge(1);
+  assert.equal(store.massing.shadow.edgeMeters, 26);
+  for (let i = 0; i < 40; i++) store.massingControls.stepEdge(-1);
+  assert.equal(store.massing.shadow.edgeMeters, 1, 'never nearer than 1 m');
+  assert.equal(store.massing.shadow.plan.cannotClear, true);
+  // Another plot starts again from the assumption.
+  const other = snapPlot({ lat: 37.8016, lon: -122.4103 });
+  await select({ plot: { id: other.id } });
+  assert.deepEqual(
+    [store.massing.shadow.edgeMeters, store.massing.shadow.edgeSet],
+    [20, false],
+  );
+  owner.destroy();
+});
+
+test('WINTER NOON seeks the world clock to solar noon on the winter solstice at the plot', async (t) => {
+  const { worldClock } = await import('../time/worldClock.js');
+  t.after(() => worldClock.goLive());
+  const { store, select, owner } = mount();
+  await select({ plot: { id: plot.id } });
+  assert.equal(store.massing.shadow.winter, false, 'a June scene');
+  store.massingControls.winterNoon();
+  assert.equal(worldClock.isLive(), false);
+  assert.equal(
+    new Date(worldClock.now()).toISOString().slice(0, 16),
+    '2026-12-21T20:07',
+  );
+  owner.destroy();
+});
+
+test('with the sun down the study draws nothing and FIT TO SUN does nothing', async () => {
+  const { store, win, ds, select, render, owner } = mount({ time: NIGHT });
+  await select({ plot: { id: plot.id } });
+  store.massingControls.study();
+  render();
+  assert.deepEqual(studyIds(ds), []);
+  const { plan } = store.massing.shadow;
+  assert.equal(plan.now.reachMeters, null, 'missing, never zero');
+  assert.equal(plan.fit, null);
+  assert.equal(plan.canFit, false);
+  store.massingControls.fit();
+  assert.equal(win.__gevCityMassing.snapshot().storeys, 6);
+  store.massingControls.pickEdge();
+  assert.equal(store.massingControls.click(north(43)), false);
+  assert.equal(win.__gevCityMassing.snapshot().study.drawn, false);
+  owner.destroy();
+});

@@ -12,6 +12,8 @@ import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from 'playwright-core';
 import sharp from 'sharp';
+import { shadowFit } from '../src/data/cityShadowFit.js';
+import { shadowTip } from '../src/ui/cityShadowTip.js';
 import { textLegibility } from '../src/ui/legibility.js';
 import {
   InvalidMeasurement,
@@ -37,6 +39,9 @@ const videoDir =
 // photoreal run cuts a real building. The camera looks north at it from 600 m.
 const PLOT = process.env.QA_PLOT || 'plot-n105201-126637';
 const SITE = siteForPlot(PLOT);
+// The shadow study looks south: at winter noon the shadow falls north, toward
+// the camera, where one looking north would hide it behind the block.
+const SITE_SOUTH = siteForPlot(PLOT, 600, 180);
 // A morning sun in the east (az 78°, el 23°): the block's shadow falls west,
 // through the free gap left of the play wheel.
 const SUN_TIME = '2026-06-21T15:00:00Z';
@@ -62,6 +67,14 @@ const S = {
   plus: '[data-city-massing-step="1"]',
   // On a phone HOMES and SHADOW REACH stand in their own strip.
   extra: '[data-city-massing-extra]',
+  // The shadow study beside the readout (PROTECT SIDEWALK).
+  study: '[data-city-shadow]',
+  studyToggle: '[data-city-shadow-toggle]',
+  winter: '[data-city-shadow-winter]',
+  farther: '[data-city-shadow-edge="1"]',
+  pick: '[data-city-shadow-pick]',
+  fit: '[data-city-shadow-fit]',
+  tip: '[data-city-shadow-tip]',
 };
 const report = {
   startedAt: new Date().toISOString(),
@@ -137,20 +150,20 @@ async function until(predicate, label, timeout = 60000, arg) {
     throw new Error(`${label}: ${error.message}`, { cause: error });
   }
 }
-function siteUrl(flag) {
+function siteUrl(flag, site) {
   const url = new URL(base);
   url.searchParams.set('welcome', '0');
   if (flag) url.searchParams.set('massing', '1');
   url.hash = new URLSearchParams({
     v: '2',
-    ...Object.fromEntries(Object.entries(SITE).map(([k, v]) => [k, `${v}`])),
+    ...Object.fromEntries(Object.entries(site).map(([k, v]) => [k, `${v}`])),
     roll: '0',
     style: 'normal',
   }).toString();
   return url.href;
 }
-async function startup(flag) {
-  await page.goto(siteUrl(flag), {
+async function startup(flag, site = SITE) {
+  await page.goto(siteUrl(flag, site), {
     waitUntil: 'domcontentloaded',
     timeout: 90000,
   });
@@ -173,7 +186,7 @@ async function startup(flag) {
     },
     'camera at site',
     60000,
-    SITE,
+    site,
   );
   await tilesLoaded();
 }
@@ -826,6 +839,99 @@ const shows = (s) => ({
   shadow: `${Math.round(shadowLength(s, s.massing.heightMeters))} m`,
 });
 const storage = () => page.evaluate(() => ({ ...localStorage }));
+// The shadow study as a user reads it: its rows, its FIT TO SUN button and the
+// tip labels on the globe, each with its box.
+async function study() {
+  return page.evaluate(() => {
+    const text = (el) => el?.textContent.replace(/\s+/g, ' ').trim() ?? null;
+    const row = (id) =>
+      document.querySelector(`[data-city-shadow-row="${id}"]`);
+    return {
+      rows: Object.fromEntries(
+        ['distance', 'sun', 'floors', 'edge'].map((id) => [
+          id,
+          text(row(id)?.querySelector('[data-city-shadow-value]')),
+        ]),
+      ),
+      edgeLabel: text(row('edge')?.querySelector('dt')),
+      assumed: Boolean(document.querySelector('[data-city-shadow-assumed]')),
+      fit: text(document.querySelector('[data-city-shadow-fit]')),
+      fitDisabled: document.querySelector('[data-city-shadow-fit]')?.disabled,
+      tips: Object.fromEntries(
+        [...document.querySelectorAll('[data-city-shadow-tip]')].map((el) => [
+          el.dataset.cityShadowTip,
+          text(el),
+        ]),
+      ),
+    };
+  });
+}
+// The M1 function's plan for the block that stands, against an edge 20 m away.
+const planOf = (s, wasStoreys = s.storeys) =>
+  shadowFit({
+    storeys: s.storeys,
+    wasStoreys,
+    storeyHeightMeters: s.massing.storeyHeightMeters,
+    sun: s.sun,
+    edgeMeters: 20,
+  });
+// The study on the globe is the plan: the same lines, each drawn entity as
+// long as the function says (within half a metre), the edge 20 m from the face.
+function assertDrawn(s, plan) {
+  assert.deepEqual(
+    s.study.plan.lines.map((line) => [line.kind, line.storeys]),
+    plan.lines.map((line) => [line.kind, line.storeys]),
+  );
+  for (const line of plan.lines)
+    assert.ok(
+      Math.abs(s.study.drawn[line.kind] - line.reachMeters) <= 0.5,
+      `the ${line.kind} line on the ground is ${s.study.drawn[line.kind]} m, the function says ${line.reachMeters} m`,
+    );
+  assert.ok(
+    Math.abs(s.study.drawn.edge - 20) <= 0.5,
+    `the edge on the ground is ${s.study.drawn.edge} m from the block face`,
+  );
+}
+// A free spot on the map `meters` beyond the block's face along the shadow,
+// on the ground as the map shows it there (a street is rarely level with the
+// block's base): the protected edge runs through it.
+async function edgePoint(meters) {
+  return page.evaluate(async (m) => {
+    const { shadowBand } = await import('/src/data/cityShadowFit.js');
+    const { viewer } = window.__godsEyeView;
+    const { scene } = viewer;
+    const s = window.__gevCityMassing.snapshot();
+    const [, , a, b] = shadowBand(s.massing.footprint, s.sun, m);
+    const rect = scene.canvas.getBoundingClientRect();
+    const exclude = ['gev-city-massing', 'gev-city-play'].flatMap(
+      (name) => viewer.dataSources.getByName(name)[0]?.entities.values ?? [],
+    );
+    // Along the edge: across the block's width first, then beyond its sides.
+    for (const f of [0.5, 0.25, 0.75, 0, 1, -0.25, 1.25, -0.5, 1.5, -1, 2]) {
+      const at = {
+        longitude: ((a[0] + (b[0] - a[0]) * f) * Math.PI) / 180,
+        latitude: ((a[1] + (b[1] - a[1]) * f) * Math.PI) / 180,
+        height: 0,
+      };
+      const sampled = scene.sampleHeightSupported
+        ? scene.sampleHeight(at, exclude)
+        : undefined;
+      at.height = Number.isFinite(sampled)
+        ? sampled
+        : (scene.globe.getHeight(at) ?? s.base);
+      const p = scene.cartesianToCanvasCoordinates(
+        scene.globe.ellipsoid.cartographicToCartesian(at),
+      );
+      if (!p) continue;
+      const x = Math.round(p.x + rect.left);
+      const y = Math.round(p.y + rect.top);
+      if (document.elementFromPoint(x, y) === scene.canvas)
+        return { x, y, f, height: at.height, base: s.base };
+    }
+    return null;
+  }, meters);
+}
+
 async function massingOn(plotId) {
   await locator(S.toggle).click();
   await massingShown(plotId);
@@ -1334,6 +1440,236 @@ try {
       await legibility('extra-mobile', S.extra);
       await screenshot('07-mobile-readout');
       await page.setViewportSize(DESKTOP);
+    },
+  );
+  await page.close();
+
+  // PROTECT SIDEWALK on its own page: the block at its default six storeys.
+  page = await openPage(context, 'shadow-fit');
+  const sinceOpen = () => (Date.now() - opened['shadow-fit']) / 1000;
+  const fitMarks = {};
+  await check(
+    'PROTECT SIDEWALK at winter noon: the edge is set 20 m across the street and six storeys reach 15 m onto the sidewalk',
+    async () => {
+      await startup(true, SITE_SOUTH);
+      // A June scene: not winter, so the study offers WINTER NOON.
+      await setSun(SUN_TIME);
+      await locator(S.pill).click();
+      await locator(S.play).waitFor({ state: 'visible' });
+      await selectPlot();
+      fitMarks.start = sinceOpen();
+      await massingOn(PLOT);
+      assert.equal(await locator(S.tip).count(), 0, 'no study until asked');
+      assert.equal(await locator(`${S.readout} button`).count(), 3);
+      await locator(S.studyToggle).click();
+      await locator(S.ring).waitFor({ state: 'hidden' });
+      await locator(S.winter).click();
+      await until(
+        () => {
+          const s = window.__gevCityMassing.snapshot();
+          return (
+            Math.abs(s.sun.azimuthDeg - 180) < 1 && s.drawn && s.study.drawn
+          );
+        },
+        'the scene at winter solar noon, the study drawn',
+        30000,
+      );
+      assert.equal(
+        await locator(S.winter).count(),
+        0,
+        'the scene is in winter',
+      );
+      let s = await massing();
+      // The sun is citySun's at 21 Dec solar noon (28.8° at San Francisco).
+      assert.ok(
+        Math.abs(s.sun.elevationDeg - 28.8) <= 1,
+        `sun altitude ${s.sun.elevationDeg}`,
+      );
+      assert.deepEqual(
+        [s.study.edgeMeters, s.study.edgeSet, (await study()).assumed],
+        [20, false, true],
+        'the edge is 20 m, labelled ASSUMED until the player sets it',
+      );
+      // The keyboard path: the distance stepper.
+      await locator(S.farther).focus();
+      for (let i = 0; i < 3; i++) await page.keyboard.press('Enter');
+      await until(
+        () => window.__gevCityMassing.snapshot().study.edgeMeters === 23,
+        'the stepper moved the edge to 23 m',
+        20000,
+      );
+      assert.equal((await study()).rows.distance, '23 m');
+      assert.equal((await study()).assumed, false, 'set by the player');
+      // The pointer path: SET ON MAP, then a click on the ground 20 m across.
+      const at = await edgePoint(20);
+      assert.ok(at, 'a free spot 20 m beyond the block face');
+      await locator(S.pick).click();
+      await page.mouse.move(at.x, at.y);
+      await page.mouse.click(at.x, at.y);
+      await until(
+        () => {
+          const s = window.__gevCityMassing.snapshot();
+          return (
+            s.study.edgeMeters === 20 &&
+            !s.study.picking &&
+            s.drawn &&
+            s.study.drawn
+          );
+        },
+        'the click set the edge 20 m from the block face',
+        30000,
+      );
+      assert.equal((await play()).plot.id, PLOT, 'the plot stays selected');
+      await page.waitForTimeout(1500);
+      s = await massing();
+      const plan = planOf(s);
+      assert.equal(s.storeys, 6);
+      assert.deepEqual(
+        plan.lines.map((line) => [line.kind, line.storeys]),
+        [
+          ['now', 6],
+          ['fit', 3],
+        ],
+      );
+      assertDrawn(s, plan);
+      const shown = await study();
+      report.measurements.shadowReaches = { study: s.study, shown, at };
+      assert.deepEqual(shown.tips, {
+        now: shadowTip(plan.now),
+        fit: shadowTip(plan.fit),
+      });
+      assert.deepEqual(shown.tips, {
+        now: 'SHADOW NOW 35 m · 15 m ONTO SIDEWALK EST',
+        fit: 'FIT TO SUN 17 m · CLEARS SIDEWALK BY 3 m EST',
+      });
+      assert.deepEqual(shown.rows, {
+        distance: '20 m',
+        sun: '29° EST',
+        floors: '6 EST',
+        edge: '15 m EST',
+      });
+      assert.equal(shown.edgeLabel, 'Onto sidewalk');
+      assert.equal(shown.fit, 'Fit to sun · Floors 6 → 3 EST');
+      assert.deepEqual(await readout(), shows(s));
+      await insideViewport(S.study, DESKTOP);
+      await insideViewport(S.tip, DESKTOP);
+      for (const other of [...HUD, S.readout, S.tip])
+        await noOverlap(S.study, other);
+      await noOverlap(
+        `${S.tip}[data-city-shadow-tip="now"]`,
+        `${S.tip}:not([data-city-shadow-tip="now"])`,
+      );
+      fitMarks.reaches = sinceOpen();
+      await screenshot('09-shadow-reaches');
+    },
+  );
+
+  await check(
+    'FIT TO SUN: three storeys, the shadow clears the sidewalk by 3 m; WAS dashed and NOW filled on the ground',
+    async () => {
+      const before = await massing();
+      await locator(S.fit).click();
+      await until(
+        () => {
+          const s = window.__gevCityMassing.snapshot();
+          return s.storeys === 3 && s.drawn && s.study.drawn;
+        },
+        'three storeys, the study drawn',
+        30000,
+      );
+      await page.waitForTimeout(1500);
+      const s = await massing();
+      const plan = planOf(s, 6);
+      assert.deepEqual(
+        plan.lines.map((line) => [line.kind, line.storeys]),
+        [
+          ['was', 6],
+          ['now', 3],
+        ],
+      );
+      assertDrawn(s, plan);
+      assert.ok(
+        Math.abs(s.study.drawn.was - before.study.drawn.now) < 1e-6,
+        'the dashed WAS line is the six-storey shadow',
+      );
+      assert.ok(
+        Math.abs(s.blockExtrudedHeight - s.base - 9.6) < 1e-6,
+        `the block itself re-extruded: ${s.blockExtrudedHeight - s.base} m`,
+      );
+      const shown = await study();
+      const entities = await page.evaluate(() =>
+        window.__godsEyeView.viewer.dataSources
+          .getByName('gev-city-massing')[0]
+          .entities.values.map((entity) => entity.id)
+          .filter((id) => id.includes('-shadow-'))
+          .sort(),
+      );
+      report.measurements.shadowFit = {
+        study: s.study,
+        shown,
+        entities,
+        // What a reader of either screenshot should answer (the M1 function).
+        expected: {
+          before_m: Math.round(plan.was.reachMeters),
+          after_m: Math.round(plan.now.reachMeters),
+          before_reaches: plan.was.overMeters > 0,
+          after_reaches: plan.now.overMeters > 0,
+          floors_before: plan.was.storeys,
+          floors_after: plan.now.storeys,
+        },
+        marks: { ...fitMarks, fitted: sinceOpen() },
+      };
+      assert.deepEqual(entities, [
+        'city-massing-shadow-edge',
+        'city-massing-shadow-now',
+        'city-massing-shadow-was',
+      ]);
+      assert.deepEqual(shown.tips, {
+        was: shadowTip(plan.was),
+        now: shadowTip(plan.now),
+      });
+      assert.deepEqual(shown.tips, {
+        was: 'SHADOW WAS 35 m · 15 m ONTO SIDEWALK EST',
+        now: 'SHADOW NOW 17 m · CLEARS SIDEWALK BY 3 m EST',
+      });
+      assert.deepEqual(shown.rows, {
+        distance: '20 m',
+        sun: '29° EST',
+        floors: '6 → 3 EST',
+        edge: '3 m EST',
+      });
+      assert.equal(shown.edgeLabel, 'Clears sidewalk by');
+      assert.equal(shown.fit, 'Fit to sun');
+      assert.equal(shown.fitDisabled, true, 'fitted: nothing more to cut');
+      // HOMES and FAR follow in the massing readout.
+      const values = await readout();
+      assert.deepEqual(values, shows(s));
+      assert.deepEqual(values, {
+        height: '9.6 m',
+        storeys: '3',
+        far: '1.92',
+        floor: '3,072 m²',
+        homes: '23',
+        shadow: '17 m',
+      });
+      await insideViewport(S.study, DESKTOP);
+      await insideViewport(S.tip, DESKTOP);
+      for (const other of [...HUD, S.readout, S.tip])
+        await noOverlap(S.study, other);
+      await noOverlap(
+        `${S.tip}[data-city-shadow-tip="now"]`,
+        `${S.tip}:not([data-city-shadow-tip="now"])`,
+      );
+      const saved = await storage();
+      assert.equal(saved[KEY], doc, 'the study never writes the city document');
+      assert.deepEqual(
+        Object.keys(saved).filter((k) => /massing|shadow/i.test(k)),
+        [],
+        'no massing or shadow key in storage',
+      );
+      await screenshot('10-fit-to-sun');
+      await page.waitForTimeout(1500);
+      report.measurements.shadowFit.marks.end = sinceOpen();
     },
   );
   await page.close();

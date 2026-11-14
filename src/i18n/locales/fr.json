@@ -3919,5 +3919,26 @@
   "Assumed": "Supposé",
   "Set on map": "Placer sur la carte",
   "Set the scene to solar noon on the winter solstice here": "Régler la scène sur le midi solaire du solstice d’hiver ici",
-  "Winter noon": "Midi d’hiver"
+  "Winter noon": "Midi d’hiver",
+  "{years} YR": "{years} ANS",
+  "timeline stage|NOW": "MAINTENANT",
+  "GROWTH FLOORS {floors}": "ÉTAGES DE CROISSANCE {floors}",
+  "LOWER THAN AN EARLIER STAGE": "PLUS BAS QU’UNE ÉTAPE PRÉCÉDENTE",
+  "HOMES {homes}": "LOGEMENTS {homes}",
+  "RESIDENTIAL FLOOR AREA {area}": "SURFACE RÉSIDENTIELLE {area}",
+  "HOME DELIVERIES {rate}": "LIVRAISONS À DOMICILE {rate}",
+  "per day|/d": "/j",
+  "ASSUMED: A DELIVERY A DAY FOR EVERY {homes} HOMES": "HYPOTHÈSE : UNE LIVRAISON PAR JOUR POUR {homes} LOGEMENTS",
+  "COST: NO WORKS YET": "COÛT : PAS ENCORE DE TRAVAUX",
+  "LOCKED PLOTS KEEP THEIR SUN FIT": "LES PARCELLES VERROUILLÉES GARDENT LEUR AJUSTEMENT AU SOLEIL",
+  "DISTRICT · {count} PLOTS · {area}": {
+    "one": "QUARTIER · {count} PARCELLE · {area}",
+    "many": "QUARTIER · {count} PARCELLES · {area}",
+    "other": "QUARTIER · {count} PARCELLES · {area}"
+  },
+  "COST: NEIGHBOURS LIVE BESIDE ROOF WORKS ON {count} PLOTS": {
+    "one": "COÛT : LES VOISINS VIVENT À CÔTÉ DE TRAVAUX EN TOITURE SUR {count} PARCELLE",
+    "many": "COÛT : LES VOISINS VIVENT À CÔTÉ DE TRAVAUX EN TOITURE SUR {count} PARCELLES",
+    "other": "COÛT : LES VOISINS VIVENT À CÔTÉ DE TRAVAUX EN TOITURE SUR {count} PARCELLES"
+  }
 }

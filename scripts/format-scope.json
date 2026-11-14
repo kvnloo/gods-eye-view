@@ -1458,5 +1458,7 @@
   "src/data/__fixtures__/score-golden.json",
   "src/data/cityShadowFit.test.mjs",
   "src/data/cityShadowBand.test.mjs",
-  "src/ui/views/cityShadowStudyView.test.mjs"
+  "src/ui/views/cityShadowStudyView.test.mjs",
+  "src/data/cityGrowth.test.mjs",
+  "src/data/cityPlotBlock.test.mjs"
 ]

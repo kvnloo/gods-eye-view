@@ -3919,5 +3919,26 @@
   "Assumed": "Supuesto",
   "Set on map": "Fijar en el mapa",
   "Set the scene to solar noon on the winter solstice here": "Poner la escena en el mediodía solar del solsticio de invierno aquí",
-  "Winter noon": "Mediodía de invierno"
+  "Winter noon": "Mediodía de invierno",
+  "{years} YR": "{years} AÑOS",
+  "timeline stage|NOW": "AHORA",
+  "GROWTH FLOORS {floors}": "PLANTAS DE CRECIMIENTO {floors}",
+  "LOWER THAN AN EARLIER STAGE": "MÁS BAJO QUE UNA ETAPA ANTERIOR",
+  "HOMES {homes}": "VIVIENDAS {homes}",
+  "RESIDENTIAL FLOOR AREA {area}": "SUPERFICIE RESIDENCIAL {area}",
+  "HOME DELIVERIES {rate}": "ENTREGAS A DOMICILIO {rate}",
+  "per day|/d": "/día",
+  "ASSUMED: A DELIVERY A DAY FOR EVERY {homes} HOMES": "SUPUESTO: UNA ENTREGA AL DÍA POR CADA {homes} VIVIENDAS",
+  "COST: NO WORKS YET": "COSTE: AÚN SIN OBRAS",
+  "LOCKED PLOTS KEEP THEIR SUN FIT": "LAS PARCELAS BLOQUEADAS CONSERVAN SU AJUSTE AL SOL",
+  "DISTRICT · {count} PLOTS · {area}": {
+    "one": "DISTRITO · {count} PARCELA · {area}",
+    "many": "DISTRITO · {count} PARCELAS · {area}",
+    "other": "DISTRITO · {count} PARCELAS · {area}"
+  },
+  "COST: NEIGHBOURS LIVE BESIDE ROOF WORKS ON {count} PLOTS": {
+    "one": "COSTE: LOS VECINOS VIVEN JUNTO A OBRAS EN CUBIERTA EN {count} PARCELA",
+    "many": "COSTE: LOS VECINOS VIVEN JUNTO A OBRAS EN CUBIERTA EN {count} PARCELAS",
+    "other": "COSTE: LOS VECINOS VIVEN JUNTO A OBRAS EN CUBIERTA EN {count} PARCELAS"
+  }
 }

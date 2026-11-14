@@ -4010,5 +4010,28 @@
   "Assumed": "Допущение",
   "Set on map": "Указать на карте",
   "Set the scene to solar noon on the winter solstice here": "Перевести сцену на солнечный полдень зимнего солнцестояния здесь",
-  "Winter noon": "Зимний полдень"
+  "Winter noon": "Зимний полдень",
+  "{years} YR": "{years} ЛЕТ",
+  "timeline stage|NOW": "СЕЙЧАС",
+  "GROWTH FLOORS {floors}": "ЭТАЖИ РОСТА {floors}",
+  "LOWER THAN AN EARLIER STAGE": "НИЖЕ, ЧЕМ НА РАННЕМ ЭТАПЕ",
+  "HOMES {homes}": "КВАРТИРЫ {homes}",
+  "RESIDENTIAL FLOOR AREA {area}": "ЖИЛАЯ ПЛОЩАДЬ {area}",
+  "HOME DELIVERIES {rate}": "ДОСТАВКИ НА ДОМ {rate}",
+  "per day|/d": "/сут",
+  "ASSUMED: A DELIVERY A DAY FOR EVERY {homes} HOMES": "ДОПУЩЕНИЕ: ОДНА ДОСТАВКА В ДЕНЬ НА КАЖДЫЕ {homes} КВАРТИР",
+  "COST: NO WORKS YET": "ЦЕНА: РАБОТ ПОКА НЕТ",
+  "LOCKED PLOTS KEEP THEIR SUN FIT": "ЗАКРЕПЛЁННЫЕ УЧАСТКИ СОХРАНЯЮТ ПОДГОНКУ ПО СОЛНЦУ",
+  "DISTRICT · {count} PLOTS · {area}": {
+    "one": "РАЙОН · {count} УЧАСТОК · {area}",
+    "few": "РАЙОН · {count} УЧАСТКА · {area}",
+    "many": "РАЙОН · {count} УЧАСТКОВ · {area}",
+    "other": "РАЙОН · {count} УЧАСТКА · {area}"
+  },
+  "COST: NEIGHBOURS LIVE BESIDE ROOF WORKS ON {count} PLOTS": {
+    "one": "ЦЕНА: СОСЕДИ ЖИВУТ РЯДОМ С НАДСТРОЙКОЙ НА {count} УЧАСТКЕ",
+    "few": "ЦЕНА: СОСЕДИ ЖИВУТ РЯДОМ С НАДСТРОЙКОЙ НА {count} УЧАСТКАХ",
+    "many": "ЦЕНА: СОСЕДИ ЖИВУТ РЯДОМ С НАДСТРОЙКОЙ НА {count} УЧАСТКАХ",
+    "other": "ЦЕНА: СОСЕДИ ЖИВУТ РЯДОМ С НАДСТРОЙКОЙ НА {count} УЧАСТКАХ"
+  }
 }

@@ -3919,5 +3919,26 @@
   "Assumed": "Presunto",
   "Set on map": "Imposta sulla mappa",
   "Set the scene to solar noon on the winter solstice here": "Imposta la scena sul mezzogiorno solare del solstizio d’inverno qui",
-  "Winter noon": "Mezzogiorno d’inverno"
+  "Winter noon": "Mezzogiorno d’inverno",
+  "{years} YR": "{years} ANNI",
+  "timeline stage|NOW": "ORA",
+  "GROWTH FLOORS {floors}": "PIANI DI CRESCITA {floors}",
+  "LOWER THAN AN EARLIER STAGE": "PIÙ BASSO DI UNA FASE PRECEDENTE",
+  "HOMES {homes}": "ABITAZIONI {homes}",
+  "RESIDENTIAL FLOOR AREA {area}": "SUPERFICIE RESIDENZIALE {area}",
+  "HOME DELIVERIES {rate}": "CONSEGNE A DOMICILIO {rate}",
+  "per day|/d": "/g",
+  "ASSUMED: A DELIVERY A DAY FOR EVERY {homes} HOMES": "IPOTESI: UNA CONSEGNA AL GIORNO OGNI {homes} ABITAZIONI",
+  "COST: NO WORKS YET": "COSTO: ANCORA NESSUN CANTIERE",
+  "LOCKED PLOTS KEEP THEIR SUN FIT": "I LOTTI BLOCCATI MANTENGONO L’ADATTAMENTO AL SOLE",
+  "DISTRICT · {count} PLOTS · {area}": {
+    "one": "QUARTIERE · {count} LOTTO · {area}",
+    "many": "QUARTIERE · {count} LOTTI · {area}",
+    "other": "QUARTIERE · {count} LOTTI · {area}"
+  },
+  "COST: NEIGHBOURS LIVE BESIDE ROOF WORKS ON {count} PLOTS": {
+    "one": "COSTO: I VICINI VIVONO ACCANTO A CANTIERI SUL TETTO IN {count} LOTTO",
+    "many": "COSTO: I VICINI VIVONO ACCANTO A CANTIERI SUL TETTO IN {count} LOTTI",
+    "other": "COSTO: I VICINI VIVONO ACCANTO A CANTIERI SUL TETTO IN {count} LOTTI"
+  }
 }

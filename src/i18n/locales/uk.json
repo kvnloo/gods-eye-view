@@ -4010,5 +4010,28 @@
   "Assumed": "Припущення",
   "Set on map": "Вказати на карті",
   "Set the scene to solar noon on the winter solstice here": "Перевести сцену на сонячний полудень зимового сонцестояння тут",
-  "Winter noon": "Зимовий полудень"
+  "Winter noon": "Зимовий полудень",
+  "{years} YR": "{years} Р.",
+  "timeline stage|NOW": "ЗАРАЗ",
+  "GROWTH FLOORS {floors}": "ПОВЕРХИ ЗРОСТАННЯ {floors}",
+  "LOWER THAN AN EARLIER STAGE": "НИЖЧЕ, НІЖ НА РАНІШОМУ ЕТАПІ",
+  "HOMES {homes}": "КВАРТИРИ {homes}",
+  "RESIDENTIAL FLOOR AREA {area}": "ЖИТЛОВА ПЛОЩА {area}",
+  "HOME DELIVERIES {rate}": "ДОСТАВКИ ДОДОМУ {rate}",
+  "per day|/d": "/добу",
+  "ASSUMED: A DELIVERY A DAY FOR EVERY {homes} HOMES": "ПРИПУЩЕННЯ: ОДНА ДОСТАВКА НА ДЕНЬ НА КОЖНІ {homes} КВАРТИР",
+  "COST: NO WORKS YET": "ЦІНА: РОБІТ ЩЕ НЕМАЄ",
+  "LOCKED PLOTS KEEP THEIR SUN FIT": "ЗАКРІПЛЕНІ ДІЛЯНКИ ЗБЕРІГАЮТЬ ПРИПАСУВАННЯ ДО СОНЦЯ",
+  "DISTRICT · {count} PLOTS · {area}": {
+    "one": "РАЙОН · {count} ДІЛЯНКА · {area}",
+    "few": "РАЙОН · {count} ДІЛЯНКИ · {area}",
+    "many": "РАЙОН · {count} ДІЛЯНОК · {area}",
+    "other": "РАЙОН · {count} ДІЛЯНКИ · {area}"
+  },
+  "COST: NEIGHBOURS LIVE BESIDE ROOF WORKS ON {count} PLOTS": {
+    "one": "ЦІНА: СУСІДИ ЖИВУТЬ ПОРУЧ ІЗ НАДБУДОВОЮ НА {count} ДІЛЯНЦІ",
+    "few": "ЦІНА: СУСІДИ ЖИВУТЬ ПОРУЧ ІЗ НАДБУДОВОЮ НА {count} ДІЛЯНКАХ",
+    "many": "ЦІНА: СУСІДИ ЖИВУТЬ ПОРУЧ ІЗ НАДБУДОВОЮ НА {count} ДІЛЯНКАХ",
+    "other": "ЦІНА: СУСІДИ ЖИВУТЬ ПОРУЧ ІЗ НАДБУДОВОЮ НА {count} ДІЛЯНКАХ"
+  }
 }

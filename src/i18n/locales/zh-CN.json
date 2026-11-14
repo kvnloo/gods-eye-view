@@ -3737,5 +3737,22 @@
   "Assumed": "假定",
   "Set on map": "在地图上设定",
   "Set the scene to solar noon on the winter solstice here": "将场景设为此地冬至日的太阳正午",
-  "Winter noon": "冬至正午"
+  "Winter noon": "冬至正午",
+  "{years} YR": "{years} 年后",
+  "timeline stage|NOW": "现在",
+  "GROWTH FLOORS {floors}": "增长地块层数 {floors}",
+  "LOWER THAN AN EARLIER STAGE": "低于较早阶段",
+  "HOMES {homes}": "住宅套数 {homes}",
+  "RESIDENTIAL FLOOR AREA {area}": "住宅建筑面积 {area}",
+  "HOME DELIVERIES {rate}": "送货上门 {rate}",
+  "per day|/d": "/天",
+  "ASSUMED: A DELIVERY A DAY FOR EVERY {homes} HOMES": "假定：每 {homes} 套住宅每天一次送货",
+  "COST: NO WORKS YET": "代价：尚无施工",
+  "LOCKED PLOTS KEEP THEIR SUN FIT": "锁定地块保持其日照适配",
+  "DISTRICT · {count} PLOTS · {area}": {
+    "other": "片区 · {count} 个地块 · {area}"
+  },
+  "COST: NEIGHBOURS LIVE BESIDE ROOF WORKS ON {count} PLOTS": {
+    "other": "代价：邻居住在 {count} 个地块的屋顶施工旁"
+  }
 }

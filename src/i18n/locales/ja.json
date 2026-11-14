@@ -3737,5 +3737,22 @@
   "Assumed": "仮定",
   "Set on map": "地図で設定",
   "Set the scene to solar noon on the winter solstice here": "シーンをこの場所の冬至の南中時刻にする",
-  "Winter noon": "冬至の正午"
+  "Winter noon": "冬至の正午",
+  "{years} YR": "{years}年後",
+  "timeline stage|NOW": "現在",
+  "GROWTH FLOORS {floors}": "成長区画の階数 {floors}",
+  "LOWER THAN AN EARLIER STAGE": "前の段階より低い",
+  "HOMES {homes}": "住戸数 {homes}",
+  "RESIDENTIAL FLOOR AREA {area}": "住宅床面積 {area}",
+  "HOME DELIVERIES {rate}": "宅配 {rate}",
+  "per day|/d": "/日",
+  "ASSUMED: A DELIVERY A DAY FOR EVERY {homes} HOMES": "仮定: {homes}戸につき1日1件の配達",
+  "COST: NO WORKS YET": "コスト: 工事はまだなし",
+  "LOCKED PLOTS KEEP THEIR SUN FIT": "ロックされた区画は日照調整を保つ",
+  "DISTRICT · {count} PLOTS · {area}": {
+    "other": "地区 · {count}区画 · {area}"
+  },
+  "COST: NEIGHBOURS LIVE BESIDE ROOF WORKS ON {count} PLOTS": {
+    "other": "コスト: {count}区画で屋上工事の隣に住民が暮らす"
+  }
 }

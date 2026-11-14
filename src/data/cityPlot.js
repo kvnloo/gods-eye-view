@@ -81,6 +81,41 @@ export function neighborPlots(plot, radius = 1) {
   return out;
 }
 
+/** A district is at most this many plots on a side (400 m). */
+export const MAX_BLOCK_SIDE = 10;
+
+/**
+ * The block of cells between two plots, both included: rows south to north,
+ * each row west to east. Rows are bricks, each shifted against the next, so
+ * every row holds as many cells as the two plots are apart, starting at a
+ * column that runs from the west plot's to the east plot's row by row. Null
+ * when either is missing or the block is larger than MAX_BLOCK_SIDE on a side.
+ */
+export function plotBlock(from, to) {
+  if (!from?.center || !to?.center) return null;
+  const [west, east] =
+    from.center.lon <= to.center.lon ? [from, to] : [to, from];
+  const width = east.corners[1][0] - east.corners[0][0];
+  const span = Math.round((east.center.lon - west.center.lon) / width);
+  const south = Math.min(from.row, to.row);
+  const north = Math.max(from.row, to.row);
+  if (span >= MAX_BLOCK_SIDE || north - south >= MAX_BLOCK_SIDE) return null;
+  // The centre of the block's west cell in the east plot's own row.
+  const start = east.center.lon - span * width;
+  const out = [];
+  for (let row = south; row <= north; row++) {
+    const k =
+      east.row === west.row ? 0 : (row - west.row) / (east.row - west.row);
+    const col = colOf(row, west.center.lon + (start - west.center.lon) * k);
+    for (let i = 0; i <= span; i++) {
+      const next = cell(row, col + i);
+      if (!next) return null;
+      out.push(next);
+    }
+  }
+  return out;
+}
+
 /** Validate stored plot data: it must equal the cell its own centre snaps to. */
 export function plotValue(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value))

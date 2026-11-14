@@ -39,13 +39,13 @@ export function createLifecycle({ state, parts, source, mapStackEventTarget }) {
             // requested for a fallback sweep: it only fires while the camera is
             // already moving, so frames are flowing by construction.
             if (!state._enabled || !state._loaded) return;
-            // Markers left over from the last sweep, a few per frame; line
-            // shows and rebuilt stems waiting for their geometry.
-            parts.rendering.revealLandingMarkers();
+            // A dirty sweep spends its own landing reveal budget, while
+            // the normal frame path drains only the pending marker batch.
+            const sweep = state._referenceSweepGate.shouldRun(viewer.camera);
+            if (!sweep) parts.rendering.revealLandingMarkers();
             parts.rendering.syncLineShow();
             parts.rendering.settleStems();
-            if (!state._referenceSweepGate.shouldRun(viewer.camera)) return;
-            parts.rendering.updateReferenceVisibility();
+            if (sweep) parts.rendering.updateReferenceVisibility();
           },
         );
       }

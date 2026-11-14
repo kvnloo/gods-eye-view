@@ -1909,6 +1909,8 @@ test('landing markers are put on the ground a few per frame, once each', async (
     assert.equal(shown(), CABLE_LANDING_REVEALS_PER_FRAME);
     assert.equal(heights.reads, CABLE_LANDING_REVEALS_PER_FRAME);
     assert.ok(renderRequests > 0, 'another frame is asked for');
+    // A dirty sweep must not spend a second reveal budget in this frame.
+    for (const listener of env.listeners.moveEnd) listener();
     env.raiseSweep();
     assert.equal(shown(), CABLE_LANDING_REVEALS_PER_FRAME * 2);
     assert.equal(heights.reads, CABLE_LANDING_REVEALS_PER_FRAME * 2);

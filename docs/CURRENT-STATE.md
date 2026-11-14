@@ -137,6 +137,10 @@ inner display landscape, and unfold transition mid-session with layers on — th
 camera (3D tiles + globe) survives the resize. The WebGL2 fallback is probed and
 tested but not yet wired into boot. Full details in `docs/MOBILE.md`.
  
+Direct Nominatim geocoding and FOSSGIS OSRM routing share a queued 1.1-second
+courtesy gate in `src/mobile/sourcePolicy.js`. Concurrent callers do not reuse
+one delay window, and cancelled callers do not issue late requests.
+
 On-device heavy adapters (`src/mobile/adapters/`): `transitDirect.js`
 (GTFS-RT protobuf via `pbf`), `windDirect.js` (GFS GRIB2 via `eccodes-wasm`),
 `cctvDirect.js` (TxDOT decode, same-host image guard, in-memory HLS leases

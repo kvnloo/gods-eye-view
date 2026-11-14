@@ -121,6 +121,27 @@ test('createPacer lets the first call through and spaces the next', async () => 
   assert.deepEqual(slept, [900]);
 });
 
+test('createPacer serializes concurrent callers instead of bursting', async () => {
+  let nowMs = 0;
+  let sleeping = 0;
+  let maxSleeping = 0;
+  const delays = [];
+  const pacer = createPacer(1_100, {
+    now: () => nowMs,
+    sleep: async (ms) => {
+      delays.push(ms);
+      sleeping += 1;
+      maxSleeping = Math.max(maxSleeping, sleeping);
+      await Promise.resolve();
+      nowMs += ms;
+      sleeping -= 1;
+    },
+  });
+  await Promise.all([pacer.wait(), pacer.wait(), pacer.wait()]);
+  assert.equal(maxSleeping, 1, 'courtesy delays must not overlap');
+  assert.deepEqual(delays, [1_100, 1_100]);
+});
+
 test('createPacer honors an already-aborted signal without sleeping', async () => {
   let slept = 0;
   const pacer = createPacer(1_100, {

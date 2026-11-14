@@ -169,6 +169,8 @@ export function createPacer(
   } = {},
 ) {
   let lastStartMs = null;
+  // Queued turns avoid concurrent callers sleeping for the same courtesy slot.
+  let gate = Promise.resolve();
   /**
    * Wait out the remainder of the courtesy gap, if any.
    * @param {{ signal?: AbortSignal }} options Caller signal.
@@ -176,15 +178,21 @@ export function createPacer(
    */
   async function wait({ signal } = {}) {
     signal?.throwIfAborted();
-    if (lastStartMs !== null) {
-      const delayMs = minIntervalMs - (now() - lastStartMs);
-      if (delayMs > 0) {
-        if (signal) await untilAborted(sleep(delayMs), signal);
-        else await sleep(delayMs);
+    const turn = gate.then(async () => {
+      signal?.throwIfAborted();
+      if (lastStartMs !== null) {
+        const delayMs = minIntervalMs - (now() - lastStartMs);
+        if (delayMs > 0) {
+          if (signal) await untilAborted(sleep(delayMs), signal);
+          else await sleep(delayMs);
+        }
       }
-    }
-    signal?.throwIfAborted();
-    lastStartMs = now();
+      signal?.throwIfAborted();
+      lastStartMs = now();
+    });
+    // An aborted turn must not poison the queue for later callers.
+    gate = turn.catch(() => {});
+    return signal ? untilAborted(turn, signal) : turn;
   }
   return { wait };
 }

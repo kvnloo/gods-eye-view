@@ -29,3 +29,6 @@
   confirm inline with a two-click arm/disarm control instead of the blocking
   `globalThis.confirm` dialog, so removal works the same on web and in the
   Capacitor shell (Razwerkz, #1127).
+- Serialize concurrent Nominatim and OSRM requests through the Android
+  direct-source courtesy gate so simultaneous lookups cannot burst through
+  the same rate-limit window (Razwerkz, follow-up by kvnloo, #1127).

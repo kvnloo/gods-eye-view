@@ -53,6 +53,16 @@ const DETECTION_ALLOCATION_STORAGE_KEY = 'gev:detection-allocation:v1';
 /** Own visual preferences, detection overrides and display-control state. */
 export class VisualSettings {
   async restoreShareState(state) {
+    this._localPreferencesRestoreDepth =
+      (this._localPreferencesRestoreDepth || 0) + 1;
+    try {
+      await this._applyShareState(state);
+    } finally {
+      this._localPreferencesRestoreDepth -= 1;
+    }
+  }
+
+  async _applyShareState(state) {
     const { setScopeTerminusOverride, clampScopeTerminusPct } = this.services;
     const {
       style,
@@ -293,7 +303,7 @@ export class VisualSettings {
   }
 
   persistLocalPreferences() {
-    if (!this._localPreferencesReady) return;
+    if (!this._localPreferencesReady || this._localPreferencesRestoreDepth) return;
     let storage;
     try {
       storage = globalThis.localStorage;

@@ -140,3 +140,67 @@ test('visual teardown restores owned fog and aircraft sensor state once', async 
   assert.equal(owner._irBoostActive, false);
   owner.destroy();
 });
+
+test('passive share restore does not overwrite the recipient Display preferences during map switch', async (t) => {
+  const { VisualSettings } = await import('./visualSettings.js');
+  const { DISPLAY_PREFERENCES_KEY } = await import('./displayPreferences.js');
+  const previousStorage = globalThis.localStorage;
+  const original = JSON.stringify({
+    version: 1,
+    hudVariant: 'tactical',
+    mapStack: 'esri-hybrid',
+    sonar: { enabled: false },
+  });
+  let stored = original;
+  let writes = 0;
+  globalThis.localStorage = {
+    getItem(key) {
+      assert.equal(key, DISPLAY_PREFERENCES_KEY);
+      return stored;
+    },
+    setItem(key, value) {
+      assert.equal(key, DISPLAY_PREFERENCES_KEY);
+      stored = value;
+      writes += 1;
+    },
+  };
+  t.after(() => {
+    if (previousStorage === undefined) delete globalThis.localStorage;
+    else globalThis.localStorage = previousStorage;
+  });
+
+  let completeMap;
+  const mapSwitch = new Promise((resolve) => {
+    completeMap = resolve;
+  });
+  const owner = Object.create(VisualSettings.prototype);
+  Object.assign(owner, {
+    services: {},
+    _localPreferencesReady: true,
+    activeStyle: 'normal',
+    stages: {},
+    _setDetectionFade() {},
+    _setScope() {},
+    _setMapStack: () => mapSwitch,
+    _readShareState: () => ({
+      bloomEnabled: false,
+      sharpenEnabled: false,
+      options: { hudVariant: 'cyber', mapStack: 'osm' },
+    }),
+    _syncShareState() {
+      this.persistLocalPreferences();
+    },
+  });
+
+  const restore = owner.restoreShareState({ mapStack: 'osm' });
+  assert.equal(writes, 0);
+  completeMap();
+  await restore;
+  assert.equal(writes, 0);
+  assert.equal(stored, original);
+
+  // Explicit changes after restoration may still replace the saved snapshot.
+  owner._syncShareState();
+  assert.equal(writes, 1);
+  assert.equal(JSON.parse(stored).mapStack, 'osm');
+});

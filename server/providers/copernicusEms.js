@@ -21,6 +21,7 @@
  */
 
 import { createOpenDataService } from '../../src/sources/openDataProxy.js';
+import { readResponseJsonCapped } from '../../src/sources/httpBody.js';
 
 /** The activation catalogue endpoint. */
 export const EMS_ACTIVATIONS_ENDPOINT =
@@ -34,6 +35,9 @@ export const EMS_TTL_MS = 30 * 60_000;
 
 /** Cap on how many activations one snapshot keeps. */
 export const EMS_MAX_ACTIVATIONS = 500;
+
+/** Hard byte cap on each upstream activation-catalogue page. */
+export const EMS_MAX_PAGE_BYTES = 4_000_000;
 
 /**
  * Parse a WKT POINT centroid into lon/lat.
@@ -225,7 +229,11 @@ export async function loadEmActivations(fetchImpl, signal, closed = false) {
       error.upstreamStatus = response.status;
       throw error;
     }
-    const payload = await response.json();
+    const payload = await readResponseJsonCapped(
+      response,
+      EMS_MAX_PAGE_BYTES,
+      signal,
+    );
     const page = normalizeEmActivationsPage(payload);
     for (const row of page.rows) {
       if (seen.has(row.id)) continue;
@@ -272,7 +280,7 @@ export function createCopernicusEmsService({ fetchImpl = fetch } = {}) {
       throw new Error(`unknown route ${route}`);
     },
     ttlMs: EMS_TTL_MS,
-    maxBytes: 4_000_000,
+    maxBytes: EMS_MAX_PAGE_BYTES,
     maxPerWindow: 4,
     globalMaxPerWindow: 12,
     timeoutMs: 30_000,

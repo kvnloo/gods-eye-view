@@ -52,3 +52,6 @@
   and the detail segment is reserved for a feed that is degraded, partial,
   stale or erroring (Fuulks, #1415).
 - Follow the operator's same-origin redirect on the VIGICRUES station catalogue instead of treating the 302 as a failure; the route answers 200 and the warning-zone route, which carries the row's legend counts, is unaffected (Fuulks, #1415).
+- Cap each Copernicus EMS activation page at 4,000,000 bytes before JSON
+  parsing, so an oversized operator response cannot bypass the shared
+  streaming safety limit (Fuulks, #1415; review follow-up).

@@ -1718,6 +1718,11 @@ permitted attempt out on a failure backoff ladder (30 s, 60 s, 120 s, then
 Redirects are followed manually and must stay on the registered upstream's
 own https origin, so an upstream cannot bounce the proxy at a third party.
 
+Copernicus EMS caps each paginated activation response at 4,000,000 bytes
+before JSON parsing, even if the upstream omits Content-Length. An oversized
+page follows the proxy's existing failure and stale-cache path instead of
+being buffered without a limit.
+
 The VIGICRUES station feed publishes its coordinates in Lambert-93 metres
 (EPSG:2154). `src/sources/lambert93.js` implements the inverse of that
 projection from the EPSG record (GRS80, two standard parallels, cone apex at

@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  EMS_MAX_PAGE_BYTES,
   createCopernicusEmsService,
   emsCategoryColor,
   emsPhaseLabel,
+  loadEmActivations,
   normalizeEmActivation,
   normalizeEmActivationsPage,
   parseEmCentroid,
@@ -95,4 +97,17 @@ test('the service answers the active activations from the upstream', async () =>
   );
   assert.ok(seen[0].includes('closed=false'));
   service.close();
+});
+
+test('Copernicus pagination rejects an oversized page before JSON parsing', async () => {
+  const oversizedPage = {
+    count: 0,
+    next: null,
+    results: [],
+    padding: 'x'.repeat(EMS_MAX_PAGE_BYTES),
+  };
+  await assert.rejects(
+    loadEmActivations(async () => jsonResponse(oversizedPage)),
+    { code: 'RESPONSE_TOO_LARGE' },
+  );
 });

@@ -82,6 +82,14 @@ and `longitude_of_projection_origin`. Note that
 works in radians — mixing them yields longitudes near −4300°. Disk corners
 resolve off-earth, as expected for a geostationary disk.
 
+## Day/night provenance
+
+FDCF provides one scene-wide `solar_zenith_angle` scalar, not an angle for
+each fire pixel. A single full-disk scan spans both day and night across the
+Americas, so the GOES proxy reports `daynight: null` rather than assigning
+the scene's angle to every detection. Keyed FIRMS still carries its native
+per-detection day/night flag.
+
 ## Confidence
 
 FDCF has no confidence category like FIRMS. `DQF` is mapped to the vocabulary

@@ -28,11 +28,17 @@ test('the ABI fixed grid inverts to geographic coordinates', () => {
   assert.equal(fixedGridToLatLon(0.2, 0.2, FIXTURE_PROJECTION), null);
 });
 
-test('FDCF granules decode detections with scaled telemetry and quality flags', async () => {
+test('FDCF scalar solar zenith stays unknown for individual fire pixels', async () => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'goes-fdcf-test-'));
   const granule = path.join(directory, 'granule.nc');
   try {
     await writeGoesFireGranule(granule);
+    const source = new h5wasm.File(granule, 'r');
+    try {
+      assert.deepEqual(source.get('solar_zenith_angle').shape, []);
+    } finally {
+      source.close();
+    }
     const grid = await decodeFireGrid(
       new Uint8Array(await fs.readFile(granule)),
     );
@@ -47,7 +53,7 @@ test('FDCF granules decode detections with scaled telemetry and quality flags', 
     assert.equal(first.frp, 10.5);
     assert.equal(first.mask, 30);
     assert.equal(first.dqf, 0);
-    assert.equal(first.night, true);
+    assert.equal(first.night, null); // scene-wide angle cannot label this pixel
     // Temp at that pixel is the fill value, so no temperature is reported.
     assert.equal(first.tempK, null);
     assert.ok(Number.isFinite(first.lat) && Number.isFinite(first.lon));
@@ -55,7 +61,7 @@ test('FDCF granules decode detections with scaled telemetry and quality flags', 
     assert.equal(second.frp, 3.25);
     assert.equal(second.mask, 33);
     assert.equal(second.dqf, 2);
-    assert.equal(second.night, false);
+    assert.equal(second.night, null);
     assert.ok(
       Math.abs(
         second.tempK - (800 * FIXTURE_TEMP_SCALE + FIXTURE_TEMP_OFFSET),

@@ -121,7 +121,6 @@ function decode(file) {
   const mask = optionalValues(file, 'Mask');
   if (!mask) throw new Error('FDCF granule has no Mask dataset');
   const dqf = optionalDataset(file, 'DQF');
-  const zenith = optionalDataset(file, 'solar_zenith_angle');
   if (mask && mask.length !== rows * cols)
     throw new Error('FDCF Mask dimensions mismatch');
   for (const dataset of [temp, area])
@@ -137,14 +136,6 @@ function decode(file) {
     (dqf.shape?.length !== 2 || dqf.shape[0] !== rows || dqf.shape[1] !== cols)
   )
     throw new Error('FDCF DQF dimensions mismatch');
-  if (
-    zenith &&
-    zenith.shape?.length > 1 &&
-    (zenith.shape.length !== 2 ||
-      zenith.shape[0] !== rows ||
-      zenith.shape[1] !== cols)
-  )
-    throw new Error('FDCF solar zenith dimensions mismatch');
 
   let x;
   let y;
@@ -227,11 +218,6 @@ function decode(file) {
       projection,
     );
     if (!point) continue;
-    const zenithScalar =
-      zenith && zenith.shape?.length === 0 ? zenith.value?.[0] : null;
-    const pixelZenith = zenith
-      ? (zenithScalar ?? readValue(zenith, index))
-      : null;
     detections.push({
       lat: point.lat,
       lon: point.lon,
@@ -240,10 +226,8 @@ function decode(file) {
       areaM2: scaled(area, index),
       mask: mask ? mask[index] : null,
       dqf: readValue(dqf, index),
-      night:
-        pixelZenith == null || !Number.isFinite(Number(pixelZenith))
-          ? null
-          : Number(pixelZenith) > 90,
+      // FDCF reports a scene-wide solar zenith, not each fire's local angle.
+      night: null,
     });
   }
 

@@ -1075,6 +1075,15 @@ Generated style sliders use the same name as their visible parameter label.
 The first-run suppression checkbox keeps its native wrapping label, so its
 accessible name remains "Don't show this again". Control behavior is unchanged.
 
+## Keyless GOES fire day/night provenance
+
+The NOAA GOES FDCF decoder does not turn the granule's one scene-wide
+`solar_zenith_angle` scalar into a day/night classification for every fire.
+The keyless proxy emits `daynight: null` per detection; keyed NASA FIRMS
+keeps its supplied day/night values. The HDF5 scalar fixture and endpoint
+assertions live in `src/data/goesFireGrid.test.mjs` and
+`src/data/goesFiresProxy.test.mjs`.
+
 ## FIRMS source status
 
 The FIRMS proxy records source success after appending its rows. If aggregation

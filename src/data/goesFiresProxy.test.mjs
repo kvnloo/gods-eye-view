@@ -147,7 +147,7 @@ test('the endpoint serves FIRMS-shaped rows decoded from a real granule', async 
     const [first, second] = res.body.fires;
     assert.equal(first.frp, 10.5);
     assert.equal(first.confidence, 'h');
-    assert.equal(first.daynight, 'N');
+    assert.equal(first.daynight, null);
     assert.equal(first.acqDate, '2026-09-14');
     assert.equal(first.acqTime, '0000');
     assert.equal(first.satellite, 'GOES-19');
@@ -155,7 +155,7 @@ test('the endpoint serves FIRMS-shaped rows decoded from a real granule', async 
     assert.ok(Number.isFinite(first.lat) && Number.isFinite(first.lon));
     // Mask 33 is nominal; DQF is diagnostic only.
     assert.equal(second.confidence, 'n');
-    assert.equal(second.daynight, 'D');
+    assert.equal(second.daynight, null);
 
     // Within the TTL the cached snapshot is served without touching the network.
     const before = requests.length;

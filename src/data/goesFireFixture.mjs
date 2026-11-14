@@ -63,10 +63,11 @@ export async function writeGoesFireGranule(filePath) {
     shape: [2, 2],
     dtype: '<B',
   });
+  // FDCF publishes a single scene-level zenith, not a per-pixel grid.
   file.create_dataset({
     name: 'solar_zenith_angle',
-    data: Float32Array.from([100, 0, 0, 20]),
-    shape: [2, 2],
+    data: Float32Array.from([100]),
+    shape: [],
     dtype: '<f',
   });
   // Raw scan angles near the sub-satellite point. The offset (~0.1518 rad) is

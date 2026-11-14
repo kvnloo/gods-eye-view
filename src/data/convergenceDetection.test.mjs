@@ -97,6 +97,25 @@ test('perpendicular fly-by is rejected (never holds)', () => {
   assert.equal(analyzePair(a, b), null);
 });
 
+test('two brief crossings cannot accumulate a false dwell', () => {
+  const a = {
+    layerKey: 'vessels',
+    id: 'A',
+    fixes: fixes(() => ({ x: 0, y: 0 })),
+  };
+  const b = {
+    layerKey: 'vessels',
+    id: 'B',
+    fixes: fixes((t) => ({
+      // Two 45-second fly-bys, with 20 minutes spent far apart.
+      x: t <= 900 ? 10 * (t - 300) : 10 * (1500 - t),
+      y: 0,
+    })),
+  };
+  assert.equal(analyzePair(a, b), null);
+  assert.deepEqual(detectConvergences([a, b]), []);
+});
+
 test('parallel far transit is rejected', () => {
   const a = {
     layerKey: 'vessels',

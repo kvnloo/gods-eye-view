@@ -33,8 +33,8 @@ not every `O(n²)` pair is scored):
 2. Build the separation series `d(t)`.
 3. Require **all three**:
    - `min(d) ≤ rNearM` — they actually got close;
-   - `dwell(d ≤ rNearM) ≥ tMinDwellS` — they _held_, so a crossing fly-by is
-     not a convergence;
+   - `dwell(d ≤ rNearM) ≥ tMinDwellS` for one **uninterrupted** in-range
+     run — separate brief crossings cannot add up to a hold;
    - approach → departure — separation fell to the minimum, then rose.
 4. Score = `0.5·closeness + 0.3·dwell + 0.2·approach/departure geometry`.
 

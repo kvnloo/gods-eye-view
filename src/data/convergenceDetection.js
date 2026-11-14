@@ -314,14 +314,29 @@ export function analyzePair(a, b, config = {}) {
   }
   if (nearIdx.length === 0) return null;
 
-  const dwellS =
-    (nearIdx[nearIdx.length - 1] - nearIdx[0]) * cfg.gridDtS + cfg.gridDtS;
+  // Dwell must be one continuous in-range run, not the time between
+  // unrelated fly-bys. A missing or out-of-range sample breaks the hold.
+  let runStart = 0;
+  let bestStart = 0;
+  let bestEnd = 0;
+  for (let i = 1; i <= nearIdx.length; i += 1) {
+    if (i < nearIdx.length && nearIdx[i] === nearIdx[i - 1] + 1) {
+      continue;
+    }
+    if (i - runStart > bestEnd - bestStart + 1) {
+      bestStart = runStart;
+      bestEnd = i - 1;
+    }
+    runStart = i;
+  }
+  const heldIdx = nearIdx.slice(bestStart, bestEnd + 1);
+  const dwellS = heldIdx.length * cfg.gridDtS;
   if (dwellS < cfg.tMinDwellS) return null;
 
-  // minimum separation
+  // The closest point and the signature must refer to the selected hold.
   let kMin = -1;
   let minSep = Infinity;
-  for (let i = 0; i < grid.length; i += 1) {
+  for (const i of heldIdx) {
     if (d[i] != null && d[i] < minSep) {
       minSep = d[i];
       kMin = i;
@@ -345,7 +360,7 @@ export function analyzePair(a, b, config = {}) {
   }
   if (cfg.requireApproachDepart && !(approached || departed)) return null;
 
-  const signature = rendezvousSignature(grid, pa, pb, d, kMin, nearIdx, cfg);
+  const signature = rendezvousSignature(grid, pa, pb, d, kMin, heldIdx, cfg);
 
   return {
     a: {
@@ -361,8 +376,8 @@ export function analyzePair(a, b, config = {}) {
       label: b.label ?? null,
     },
     tClosest: grid[kMin],
-    tStart: grid[nearIdx[0]],
-    tEnd: grid[nearIdx[nearIdx.length - 1]],
+    tStart: grid[heldIdx[0]],
+    tEnd: grid[heldIdx[heldIdx.length - 1]],
     minSeparationM: Math.round(minSep * 10) / 10,
     dwellS: Math.round(dwellS * 10) / 10,
     closest: {

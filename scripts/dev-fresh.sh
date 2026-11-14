@@ -82,6 +82,19 @@ read_dotenv_value() {
   node "$SOURCE_ROOT/scripts/read-dotenv-value.mjs" "${variable_name}"
 }
 
+# Match Vite's TLS setting, including values loaded from .env and explicit
+# empty shell overrides, before advertising a browser URL.
+TLS_CERT_PATH="${HTTPS_CERT_FILE-$(read_dotenv_value "HTTPS_CERT_FILE")}"
+TLS_KEY_PATH="${HTTPS_KEY_FILE-$(read_dotenv_value "HTTPS_KEY_FILE")}"
+if [[ -n "${TLS_CERT_PATH//[[:space:]]/}" && -n "${TLS_KEY_PATH//[[:space:]]/}" ]]; then
+  URL_SCHEME="https"
+elif [[ -z "${TLS_CERT_PATH//[[:space:]]/}" && -z "${TLS_KEY_PATH//[[:space:]]/}" ]]; then
+  URL_SCHEME="http"
+else
+  echo "error: Set both HTTPS_CERT_FILE and HTTPS_KEY_FILE, or neither" >&2
+  exit 1
+fi
+
 # Vite loads .env for browser build-time configuration, but this launcher needs
 # the Maps key before Vite starts. Preserve a shell-provided value; otherwise
 # read Vite's project-local dotenv ladder without executing it as shell code.
@@ -274,7 +287,7 @@ rm -rf node_modules/.vite
 echo "Starting fresh God's Eye View dev server..."
 case "${HOST}" in
   localhost|127.0.0.1|::1)
-    echo "Local-only mode: reachable at http://localhost:${PORT}/ (set HOST=0.0.0.0 for LAN)"
+    echo "Local-only mode: reachable at ${URL_SCHEME}://localhost:${PORT}/ (set HOST=0.0.0.0 for LAN)"
     ;;
   *)
     LAN_IP=""
@@ -298,13 +311,13 @@ case "${HOST}" in
     echo "!! and GEV_RATELIMIT_GOOGLE_PER_MIN (see .env.example) — and note"
     echo "!! they are NOT billing caps; set provider-side budget alerts too."
     if [[ -n "${LAN_IP}" ]]; then
-      echo "!! LAN URL: http://${LAN_IP}:${PORT}/"
+      echo "!! LAN URL: ${URL_SCHEME}://${LAN_IP}:${PORT}/"
     else
-      echo "!! LAN URL: http://<this-machine-ip>:${PORT}/"
+      echo "!! LAN URL: ${URL_SCHEME}://<this-machine-ip>:${PORT}/"
     fi
     echo "!! =============================================================="
     echo ""
-    echo "URL (this machine): http://localhost:${PORT}/"
+    echo "URL (this machine): ${URL_SCHEME}://localhost:${PORT}/"
     ;;
 esac
 echo "Google Maps key source: ${GOOGLE_MAPS_API_KEY_SOURCE}"

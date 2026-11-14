@@ -931,6 +931,10 @@ a local hostname. The purpose is voice control from another machine:
 `getUserMedia` requires a secure context, so `http://<lan-ip>:4173` cannot open
 the microphone while `https://<lan-ip>:4173` with a trusted certificate can.
 
+`scripts/dev-fresh.sh` now advertises `https://` local and LAN URLs when both
+TLS settings are configured via the shell or dotenv; its default remains
+`http://`. A lone certificate or key setting is rejected before server restart.
+
 ## Local build preview
 
 After `npm run build`, `npm run preview` serves the built app with the same data

@@ -1,9 +1,14 @@
 import { t } from '../i18n/index.js';
 
-const coordinate = (value, limit) =>
-  Number.isFinite(Number(value)) && Math.abs(Number(value)) <= limit
-    ? Number(value)
-    : null;
+const coordinate = (value, limit) => {
+  if (
+    typeof value !== 'number' &&
+    (typeof value !== 'string' || !value.trim())
+  )
+    return null;
+  const number = Number(value);
+  return Number.isFinite(number) && Math.abs(number) <= limit ? number : null;
+};
 
 export function selectClickablePlaces(places, { limit = 10 } = {}) {
   const seen = new Set();

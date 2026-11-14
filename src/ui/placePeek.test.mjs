@@ -134,6 +134,20 @@ test('selectClickablePlaces keeps unique valid nearby places in distance order',
   assert.deepEqual(places.map((place) => place.id), ['near', 'far']);
 });
 
+test('Place Peek rejects absent coordinates while preserving real zeroes', () => {
+  const places = selectClickablePlaces([
+    { id: 'missing-lat', name: 'Missing', longitude: 30, distanceM: 1 },
+    { id: 'null-lat', name: 'Null', latitude: null, longitude: 30, distanceM: 2 },
+    { id: 'blank-lon', name: 'Blank', latitude: 30, longitude: '  ', distanceM: 3 },
+    { id: 'boolean-lat', name: 'Boolean', latitude: false, longitude: 30, distanceM: 4 },
+    { id: 'real-zero', name: 'Zero', latitude: 0, longitude: '0', distanceM: 5 },
+  ]);
+
+  assert.deepEqual(places.map((place) => place.id), ['real-zero']);
+  assert.equal(spotTitle(null, null, null), 'This spot');
+  assert.equal(spotTitle(null, 0, 0), '0.00°N 0.00°E');
+});
+
 test('placePeekCandidates reuses reverse-geocode labels when nearby search is unavailable', () => {
   assert.deepEqual(
     placePeekCandidates({

@@ -122,8 +122,8 @@ export function saFireProxy({
       const more =
         payload.exceededTransferLimit === true ||
         payload.properties?.exceededTransferLimit === true;
-      if (!more || !payload.features.length)
-        return { type: 'FeatureCollection', features };
+      if (!more) return { type: 'FeatureCollection', features };
+      if (payload.features.length === 0) throw new Error('incomplete_layer');
     }
     throw new Error('incomplete_layer');
   }

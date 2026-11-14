@@ -7,3 +7,6 @@
   reported as unavailable rather than as none. The feed is CC BY-NC-ND, so
   commercial deployments must check its terms (see `DATA_SOURCES.md`)
   (bennypixel, #1089).
+- Reject an ArcGIS warning page that advertises more results but returns no
+  features as incomplete; keep the last-good warning snapshot instead of
+  treating a truncated response as complete (bennypixel, #1089).

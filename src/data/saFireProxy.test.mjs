@@ -539,6 +539,21 @@ test('warning layers follow exceededTransferLimit with resultOffset and stop at 
   );
 });
 
+test('an empty ArcGIS page marked incomplete does not masquerade as no warnings', async () => {
+  const up = router({
+    ...healthy(),
+    layer1: () => geojson([], { exceededTransferLimit: true }),
+  });
+  const res = await install({
+    now: () => NOW0,
+    fetchImpl: up.fetchImpl,
+  })();
+  assert.equal(up.count('layer1'), 1);
+  assert.equal(res.status, 200, 'incidents remain available');
+  assert.equal(res.body.warningsAvailable, false);
+  assert.deepEqual(res.body.warnings, []);
+});
+
 test('warnings that expire between refreshes are dropped when served', async () => {
   let clock = NOW0;
   const up = router({

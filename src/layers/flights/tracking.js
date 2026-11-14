@@ -481,13 +481,19 @@ export function createTracking({
     let path = null;
     let trackCredit = null;
     try {
+      const record = flightState.records.data.get(icao24);
       const track = await flightState.feed._source.getTrack?.(
-        flightState.records.data.get(icao24)?.sourceReference ?? icao24,
+        record?.sourceReference ?? icao24,
         {
           signal: AbortSignal.any([
             flightState.lifetime.signal,
             AbortSignal.timeout(12000),
           ]),
+          aircraft: {
+            callsign: record?.callsign,
+            registration: record?.registration,
+            lastContactEpochMs: record?.lastContactEpochMs,
+          },
         },
       );
       path = track?.records ?? null;

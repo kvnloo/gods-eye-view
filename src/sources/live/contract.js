@@ -97,9 +97,9 @@ export function admitRecords(rows, normalize, label, unpositionedId) {
  * Compose a primary source with an optional track-history fallback (issue
  * #446). The primary's methods are used unchanged; a fallback provides only
  * `getTrackByQuery(reference, { signal })` and is consulted when the primary's
- * `getTrack` throws or yields no records. The reference handed to the fallback
- * is the layer's shared-contract record (id/callsign/registration), so a
- * keyed historical provider can resolve an aircraft the primary keys by hex.
+ * `getTrack` throws or yields no records. The primary keeps its opaque
+ * reference; the fallback can additionally resolve the tracked record's
+ * callsign/registration from `options.aircraft`.
  * Falls back transparently; a failing fallback propagates only when the
  * primary also failed.
  * @param {object} primary - Source satisfying the live-source contract.
@@ -126,9 +126,12 @@ export function composeSource(primary, fallback) {
         const track = await fallback.getTrackByQuery(
           {
             id: typeof reference === 'string' ? reference : reference?.id,
-            callsign: reference?.callsign,
-            registration: reference?.registration,
-            lastContactEpochMs: reference?.lastContactEpochMs,
+            callsign: options.aircraft?.callsign ?? reference?.callsign,
+            registration:
+              options.aircraft?.registration ?? reference?.registration,
+            lastContactEpochMs:
+              options.aircraft?.lastContactEpochMs ??
+              reference?.lastContactEpochMs,
           },
           options,
         );

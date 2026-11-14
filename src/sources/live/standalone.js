@@ -1,4 +1,5 @@
 import {
+  composeSource,
   finite,
   httpError,
   LiveSourceError,
@@ -266,6 +267,20 @@ export function createAeroApiSource({ fetchImpl = defaultFetch } = {}) {
       return this.getTrackByQuery(resolved, options);
     },
   };
+}
+
+/**
+ * Preserve the civil live feed while adding optional, server-brokered
+ * FlightAware history when its primary track lookup has no records.
+ */
+export function createFlightHistorySource({
+  fetchImpl = defaultFetch,
+  now = () => Date.now(),
+} = {}) {
+  return composeSource(
+    createFlightSource({ fetchImpl, now }),
+    createAeroApiSource({ fetchImpl }),
+  );
 }
 
 export function createVesselSource({

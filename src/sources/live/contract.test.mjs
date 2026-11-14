@@ -1,10 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  createOpenSkySource,
-  createAdsbLolSource,
   createAeroApiSource,
-  createAisStreamSource,
+  createFlightHistorySource,
   createFlightSource,
   createMilitarySource,
   createVesselSource,
@@ -466,6 +464,60 @@ test('AeroAPI source resolves ident to flight id, then fetches and normalizes th
   assert.equal(requests.length, before);
 });
 
+test('civil FlightAware history uses a tracked ident without changing the primary hex lookup', async () => {
+  const requests = [];
+  const source = createFlightHistorySource({
+    fetchImpl: async (url) => {
+      requests.push(url);
+      if (url.startsWith('/api/flights/track?'))
+        return response({ path: [] });
+      if (url.startsWith('/api/aeroapi/flights/N123AB?'))
+        return response({
+          flights: [
+            {
+              fa_flight_id: 'F-1',
+              scheduled_out: new Date(Date.now() - 3600000).toISOString(),
+            },
+          ],
+        });
+      if (url.startsWith('/api/aeroapi/flights/TEST?'))
+        return response({ flights: [] });
+      if (url === '/api/aeroapi/flights/F-1/track')
+        return response({
+          positions: [
+            {
+              timestamp: '2026-09-16T12:00:00Z',
+              latitude: 30,
+              longitude: -97,
+              altitude: 100,
+            },
+          ],
+        });
+      return response({ error: 'Unexpected request' }, {}, 404);
+    },
+  });
+  assert.equal(source.label, 'Flights');
+  assert.deepEqual(requests, []);
+
+  const result = await source.getTrack('abc123', {
+    aircraft: {
+      callsign: 'TEST',
+      registration: 'N123AB',
+      lastContactEpochMs: Date.now(),
+    },
+  });
+
+  assert.equal(requests[0], '/api/flights/track?icao24=abc123');
+  assert.ok(
+    requests.some((url) => url.startsWith('/api/aeroapi/flights/N123AB?')),
+  );
+  assert.ok(requests.includes('/api/aeroapi/flights/F-1/track'));
+  assert.equal(result.records.length, 1);
+  assert.equal(result.records[0].baroAltitudeM, 3048);
+  assert.equal(result.historySource, 'FlightAware AeroAPI');
+  assert.equal(result.credit.key, 'flightaware-aeroapi');
+});
+
 test('composeSource prefers primary history and falls back with attribution tagging', async () => {
   const fallbackTrack = {
     records: [{ latitude: 30, longitude: -97 }],
@@ -559,6 +611,8 @@ test('composeSource propagates aborts from a pending fallback', async () => {
   });
   controller.abort();
   await assert.rejects(pending, { name: 'AbortError' });
+});
+
 test('squawks are validated and omitted OpenSky status differs from an explicit ADS-B clear', () => {
   const squawking = [...aircraft, '7700'];
   const civil = openSkySnapshot({ states: [squawking] }, { now }).records[0];

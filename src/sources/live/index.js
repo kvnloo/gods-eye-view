@@ -15,10 +15,8 @@ export {
   vesselSnapshot,
 } from './vessels.js';
 export {
-  createOpenSkySource,
-  createAdsbLolSource,
   createAeroApiSource,
-  createAisStreamSource,
+  createFlightHistorySource,
   createFlightSource,
   createMilitarySource,
   createVesselSource,

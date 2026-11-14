@@ -113,10 +113,11 @@ Status: Open (source limits, by design)
   and a detail window is capped at 192. Before that cap, one descent from
   3,000 km to 25 km used about 1,000 units per product. The free 15,000 a
   month are shared across every Xweather service on the account, and the card
-  counts only this app's units. Past the allowance the card warns but doesn't
-  block, so a paid Xweather plan keeps working — `XWEATHER_MONTHLY_FREE_UNITS`
-  only moves where the warning fires. Spend is bounded instead by a
-  cap of 600 source tiles (units) a minute per client and 3,000 overall. The
+  counts only this app's units. New billed tiles stop at the configured
+  allowance by default (429), with `XWEATHER_ALLOW_OVERAGE=1` required to
+  permit paid overage. Already cached imagery stays available. This guard
+  cannot account for other Xweather services or concurrent servers. Per-minute
+  limits remain 600 source tiles (units) per client and 3,000 overall. The
   cost of one history playthrough has not yet been measured against the live
   service.
 - **A free-plan account that exhausts its billing-period allowance gets

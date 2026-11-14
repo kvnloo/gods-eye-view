@@ -85,10 +85,13 @@ overlapping exactly can lose one delta (read-modify-write without a lock);
 units count toward the month they are flushed in, at most about a second
 after they are recorded. The card shows, for example, `Xweather · 4,210 /
 15,000 free this month` (muted) and, past the allowance, `Xweather · past
-the free 15,000 this month · requests may fail`. It warns but does not
-block, because a paid Xweather plan keeps working past the free 15,000 —
-`XWEATHER_MONTHLY_FREE_UNITS` only moves where this warning fires, not
-Xweather's behavior. A free-plan account is different: once its shared
+the free 15,000 this month · requests may fail`. The proxy now refuses new
+billed tiles at the app's allowance with 429 `xweather_budget_exhausted`;
+already cached tiles remain available. Only `XWEATHER_ALLOW_OVERAGE=1`
+explicitly opts into further paid requests; per-minute limits still apply.
+Reservations prevent concurrent requests inside one process from consuming
+the same remaining unit. The application budget does not include use from
+other Xweather services and is not an account-level billing guarantee. A free-plan account is different: once its shared
 allowance for the billing period runs out, Xweather refuses all requests
 with a 403 whose body reads "Maximum number of daily accesses reached"
 (seen on 2026-09-25; Xweather documents only per-minute and

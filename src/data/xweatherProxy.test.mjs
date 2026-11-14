@@ -249,6 +249,34 @@ test('the manifest lists up to 13 exact frames from free redirects and validates
   assert.equal(tileUrls(calls).length, 0);
 });
 
+test('the free allowance stops new billed alert tiles until overage is explicitly enabled', async () => {
+  const calls = [];
+  const env = {
+    XWEATHER_CLIENT_ID: ID,
+    XWEATHER_CLIENT_SECRET: SECRET,
+    XWEATHER_MONTHLY_FREE_UNITS: '64',
+  };
+  const { request } = install({ env, fetchImpl: fakeXweather({ calls }) });
+  const { times } = body(await request('/manifest?product=xweather-alerts'));
+  const image = (time) =>
+    `/image?product=xweather-alerts&time=${encodeURIComponent(time)}`;
+
+  assert.equal((await request(image(times.at(-1)))).statusCode, 200);
+  assert.equal(tileUrls(calls).length, 64);
+  assert.equal(body(await request('/status')).used, 64);
+  const denied = await request(image(times.at(-2)));
+  assert.equal(denied.statusCode, 429);
+  assert.deepEqual(body(denied), { error: 'xweather_budget_exhausted' });
+  assert.equal(tileUrls(calls).length, 64, 'no billed request after cutoff');
+
+  // Already composed imagery still works without spending more units.
+  assert.equal((await request(image(times.at(-1)))).statusCode, 200);
+  env.XWEATHER_ALLOW_OVERAGE = '1';
+  assert.equal((await request(image(times.at(-2)))).statusCode, 200);
+  assert.equal(tileUrls(calls).length, 128);
+  assert.equal(body(await request('/status')).used, 128);
+});
+
 test('an image stitches at most 192 source tiles and records their cost', async () => {
   const calls = [];
   const { request } = install({ fetchImpl: fakeXweather({ calls }) });

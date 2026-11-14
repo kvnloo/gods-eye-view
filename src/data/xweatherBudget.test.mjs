@@ -32,6 +32,28 @@ const OCT = () => Date.UTC(2026, 9, 1);
 // arbitrarily deep await chain without guessing a tick count.
 const drain = () => new Promise((resolve) => setImmediate(resolve));
 
+test('concurrent admissions reserve the last free unit once and release on abort', async () => {
+  const budget = createXweatherBudget({
+    file: '/b.json',
+    allowance: 1,
+    now: SEPT,
+    fs: memoryFs(),
+  });
+  const [first, denied] = await Promise.all([
+    budget.reserve(),
+    budget.reserve(),
+  ]);
+  assert.equal(typeof first, 'function');
+  assert.equal(denied, null, 'another in-flight fetch cannot reuse the unit');
+
+  first(); // A cancelled fetch cost nothing.
+  const retried = await budget.reserve();
+  assert.equal(typeof retried, 'function');
+  budget.record(response(1));
+  retried();
+  assert.equal(await budget.reserve(), null, 'the billed unit stays spent');
+});
+
 test('counts x-cost-tokens, and one per fetch when the header is missing', async () => {
   const budget = createXweatherBudget({
     file: '/b.json',

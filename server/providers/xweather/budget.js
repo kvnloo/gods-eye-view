@@ -7,9 +7,10 @@ export const XWEATHER_FREE_MONTHLY_UNITS = 15_000;
 
 /**
  * Monthly Xweather spend, counted from `x-cost-tokens` on each billed
- * response and persisted so restarts do not reset it. It never blocks: the
- * account has no hard stop at the free allowance, so over it the card warns
- * and requests continue.
+ * response and persisted so restarts do not reset it. A caller can reserve
+ * units before a billed tile fetch and release the reservation when the
+ * response is recorded or the fetch fails, preventing concurrent admissions
+ * from spending the same remaining free unit.
  *
  * Writes are debounced 1s after `record()`. Each flush re-reads the file and
  * merges in only this process's own unflushed delta (a read-modify-write),
@@ -45,6 +46,8 @@ export function createXweatherBudget({
   // Serializes flushes onto a single chain so at most one writeFile is ever
   // in flight; a flush queued behind a slow one starts only once it settles.
   let flushing = Promise.resolve();
+  let reserved = 0;
+  let reservationMonth = utcMonthKey(now());
 
   async function readFileState(month) {
     let raw = null;
@@ -84,7 +87,7 @@ export function createXweatherBudget({
     timer.unref?.();
   }
 
-  return {
+  const api = {
     record(response) {
       const raw = response.headers.get('x-cost-tokens');
       const cost = raw === null ? NaN : Number(raw);
@@ -111,5 +114,26 @@ export function createXweatherBudget({
       const used = normalizeBudget(lastKnownFileCount, month).count + pending;
       return { month, used, allowance, over: used > allowance };
     },
+    async reserve(units = 1) {
+      if (!Number.isSafeInteger(units) || units < 1)
+        throw new RangeError('reservation units must be a positive integer');
+      await api.snapshot();
+      const month = utcMonthKey(now());
+      if (reservationMonth !== month) {
+        reservationMonth = month;
+        reserved = 0;
+      }
+      const used =
+        normalizeBudget(lastKnownFileCount, month).count + pending + reserved;
+      if (used + units > allowance) return null;
+      reserved += units;
+      let released = false;
+      return () => {
+        if (released) return;
+        released = true;
+        if (reservationMonth === month) reserved -= units;
+      };
+    },
   };
+  return api;
 }

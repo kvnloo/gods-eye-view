@@ -45,10 +45,10 @@ import { decodePng, encodePng, encodePngAsync } from './xweather/png.js';
  *   or after it, so the walk steps back 1.5 x each product's `cadenceMs`
  *   (see `listFrames`). After a cold start, a refresh walks back only to the
  *   first frame already listed: about one or two lookups.
- * - Spend: each billed tile's `x-cost-tokens` is counted against the free
- *   month in `.gev-cache/xweather/budget.json`. Past the allowance the count
- *   warns and requests continue; spend is bounded instead by 600 source
- *   tiles a minute per client and 3,000 overall.
+ * - Spend: each billed tile's `x-cost-tokens` is counted in the persistent
+ *   monthly budget. New billed tiles stop at the allowance by default;
+ *   `XWEATHER_ALLOW_OVERAGE=1` explicitly permits further spend. Per-minute
+ *   limits remain 600 source tiles per client and 3,000 overall.
  * - Credentials: read from the environment on every request, so Provider
  *   Settings can add or remove them live. They appear only in upstream URL
  *   paths, never in a response, and any log line passes through `redact()`.
@@ -158,7 +158,8 @@ async function eachLimited(items, limit, work) {
  * @param {Record<string, string|undefined>} [options.env] - Read per request;
  *   `XWEATHER_MONTHLY_FREE_UNITS` overrides the free monthly allowance when it
  *   is a positive integer, read once at construction like the TomTom proxy's
- *   `TOMTOM_DAILY_TILE_BUDGET`.
+ *   `TOMTOM_DAILY_TILE_BUDGET`. `XWEATHER_ALLOW_OVERAGE=1` is the
+ *   explicit opt-in to continue billed tile fetches above that allowance.
  * @param {number} [options.timeoutMs] - Deadline per upstream request.
  * @param {typeof import('node:fs/promises')} [options.budgetFs] - For tests.
  * @param {string} [options.cacheDir] - Holds `budget.json`, the only file written.
@@ -357,44 +358,55 @@ export function xweatherProxy({
   }
   async function fetchTile(layer, frame, z, x, y, signal) {
     signal.throwIfAborted();
-    const response = await fetchImpl(
-      `${base()}/${layer}/${z}/${x}/${y}/${frame}.png`,
-      { signal, redirect: 'error', headers: { Accept: 'image/png' } },
-    );
-    const type = response.headers.get('content-type') || '';
-    if (!response.ok || !/^image\/png(?:;|$)/i.test(type)) {
-      await response.body?.cancel();
-      // Only a refusal (401/403, or a JSON 200) shows on the card; a 404,
-      // 429 or 5xx is Xweather being unavailable, not refusing the key.
-      const code = xweatherRefused(response);
-      if (code === 'xweather_upstream_error')
-        refused(layer, `HTTP ${response.status} ${type.slice(0, 64)}`);
-      throw failure(code);
-    }
-    // Recorded before the body is read: Xweather bills the response it
-    // sent, including one the size cap then refuses.
-    budget.record(response);
-    let bytes;
+    // The account's free allowance is shared; only this process's metered
+    // tiles can be bounded here. Cached source tiles never enter this path.
+    const overageEnabled = env.XWEATHER_ALLOW_OVERAGE === '1';
+    const release = overageEnabled ? null : await budget.reserve();
+    if (!overageEnabled && !release)
+      throw failure('xweather_budget_exhausted', 429);
     try {
-      bytes = await readResponseBytesCapped(response, MAX_TILE_BYTES);
-    } catch (error) {
-      if (!response.body?.locked) await response.body?.cancel();
-      throw error;
+      signal.throwIfAborted();
+      const response = await fetchImpl(
+        `${base()}/${layer}/${z}/${x}/${y}/${frame}.png`,
+        { signal, redirect: 'error', headers: { Accept: 'image/png' } },
+      );
+      const type = response.headers.get('content-type') || '';
+      if (!response.ok || !/^image\/png(?:;|$)/i.test(type)) {
+        await response.body?.cancel();
+        // Only a refusal (401/403, or a JSON 200) shows on the card; a 404,
+        // 429 or 5xx is Xweather being unavailable, not refusing the key.
+        const code = xweatherRefused(response);
+        if (code === 'xweather_upstream_error')
+          refused(layer, `HTTP ${response.status} ${type.slice(0, 64)}`);
+        throw failure(code);
+      }
+      // Recorded before the body is read: Xweather bills the response it
+      // sent, including one the size cap then refuses.
+      budget.record(response);
+      let bytes;
+      try {
+        bytes = await readResponseBytesCapped(response, MAX_TILE_BYTES);
+      } catch (error) {
+        if (!response.body?.locked) await response.body?.cancel();
+        throw error;
+      }
+      signal.throwIfAborted();
+      let image;
+      try {
+        image = decodePng(bytes);
+      } catch {
+        image = null;
+      }
+      if (image?.width !== 256 || image?.height !== 256)
+        throw failure('xweather_upstream_unavailable');
+      upstreamError = null;
+      // Transparent tiles (most lightning tiles) are remembered as null.
+      for (let i = 3; i < image.data.length; i += 4)
+        if (image.data[i]) return image.data;
+      return null;
+    } finally {
+      release?.();
     }
-    signal.throwIfAborted();
-    let image;
-    try {
-      image = decodePng(bytes);
-    } catch {
-      image = null;
-    }
-    if (image?.width !== 256 || image?.height !== 256)
-      throw failure('xweather_upstream_unavailable');
-    upstreamError = null;
-    // Transparent tiles (most lightning tiles) are remembered as null.
-    for (let i = 3; i < image.data.length; i += 4)
-      if (image.data[i]) return image.data;
-    return null;
   }
   /** Decoded RGBA for one canonical source tile, or null when it is empty. */
   async function sourceTile(layer, frame, z, x, y, signal) {

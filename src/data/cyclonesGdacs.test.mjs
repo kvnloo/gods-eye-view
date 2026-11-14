@@ -261,6 +261,24 @@ test('geometry dates labels across the new year and centres markers across the a
   );
 });
 
+test('geometry accepts valid leap-day track labels in a leap year', () => {
+  const issued = '2028-02-29T06:00:00';
+  const fixes = [
+    { label: '28/02 18:00 UTC', at: [82.6, 13.6] },
+    { label: '29/02 06:00 UTC', at: [80.9, 14.3] },
+    { label: '29/02 18:00 UTC', at: [80.2, 15.3] },
+  ];
+  const payload = geometry({ fixes, current: 1, cone: false });
+  for (const feature of payload.features)
+    if (feature.properties.polygondate) feature.properties.polygondate = issued;
+  const result = parseGdacsCycloneGeometry(payload, EVENT);
+  assert.equal(result.issuedAt, Date.parse(`${issued}Z`));
+  assert.deepEqual(
+    result.forecastPoints.map((point) => point.tauHours),
+    [0, 12],
+  );
+});
+
 test('geometry from another episode, a broken chain or mislabelled forecasts is rejected whole', () => {
   const changes = [
     (payload) => {

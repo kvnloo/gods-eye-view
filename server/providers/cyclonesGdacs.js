@@ -134,22 +134,20 @@ function labelTime(label, issuedAt) {
     /^(\d\d)\/(\d\d) (\d\d):(\d\d) UTC$/.exec(label);
   if (!match) throw invalid();
   const [day, month, hour, minute] = match.slice(1).map(Number);
+  if (hour > 23 || minute > 59) throw invalid();
   const year = new Date(issuedAt).getUTCFullYear();
   let best = null;
   for (const candidate of [year - 1, year, year + 1]) {
     const ms = Date.UTC(candidate, month - 1, day, hour, minute);
     const date = new Date(ms);
-    if (
-      date.getUTCMonth() !== month - 1 ||
-      date.getUTCDate() !== day ||
-      hour > 23 ||
-      minute > 59
-    )
-      throw invalid();
+    // An adjacent year may not be a leap year even when the label is valid.
+    if (date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day)
+      continue;
     if (best === null || Math.abs(ms - issuedAt) < Math.abs(best - issuedAt))
       best = ms;
   }
-  if (Math.abs(best - issuedAt) > 30 * DAY) throw invalid();
+  if (best === null || Math.abs(best - issuedAt) > 30 * DAY)
+    throw invalid();
   return best;
 }
 

@@ -519,8 +519,9 @@ Hemisphere (`SH`), split by the storm's current position. Each storm names its
 row then reads "Some cyclone sources unavailable". GDACS redraws JTWC
 advisories automatically: every GDACS storm is labelled a GDACS automatic
 estimate, not an official warning, names its GDACS episode instead of an
-advisory number, and links its GDACS report. A GDACS track may arrive without a
-cone, in which case the legend omits the cone. Winds come from the GDACS JTWC
+advisory number, and links its GDACS report. GDACS day/month forecast labels
+resolve to the nearest valid calendar year, including February 29 in leap years.
+A GDACS track may arrive without a cone, in which case the legend omits the cone. Winds come from the GDACS JTWC
 timeline, converted from metres per second to knots, only when its current fix
 matches the geometry's current position; otherwise the storm keeps its track
 without winds. A storm whose geometry fails, or belongs to another episode,

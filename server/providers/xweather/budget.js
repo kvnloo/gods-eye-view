@@ -7,9 +7,9 @@ export const XWEATHER_FREE_MONTHLY_UNITS = 15_000;
 
 /**
  * Monthly Xweather spend, counted from `x-cost-tokens` on each billed
- * response and persisted so restarts do not reset it. It never blocks: the
- * account has no hard stop at the free allowance, so over it the card warns
- * and requests continue.
+ * response and persisted so restarts do not reset it. Before uncached work,
+ * the proxy reserves estimated source-tile units against the local monthly
+ * allowance; explicit paid-overage opt-in bypasses this limit.
  *
  * Writes are debounced 1s after `record()`. Each flush re-reads the file and
  * merges in only this process's own unflushed delta (a read-modify-write),
@@ -27,7 +27,7 @@ export const XWEATHER_FREE_MONTHLY_UNITS = 15_000;
  * @param {number} [options.allowance] - Free monthly units before `over`.
  * @param {() => number} [options.now] - Clock, for tests.
  * @param {typeof import('node:fs/promises')} [options.fs] - Injected fs.
- * @returns {{record(response: Response): void, snapshot(): Promise<{month:string, used:number, allowance:number, over:boolean}>}}
+ * @returns {{record(response: Response): void, snapshot(): Promise<{month:string, used:number, allowance:number, over:boolean}>, reserve(units: number, options?: {allowOverage?: boolean}): Promise<(() => void)|null>}}
  */
 export function createXweatherBudget({
   file,
@@ -41,6 +41,8 @@ export function createXweatherBudget({
   // re-reads before merging.
   let lastKnownFileCount = null;
   let pending = 0;
+  // In-flight compositions must not independently spend the same allowance.
+  const reservations = new Map(); // UTC month -> reserved source-tile units
   let timer = null;
   // Serializes flushes onto a single chain so at most one writeFile is ever
   // in flight; a flush queued behind a slow one starts only once it settles.
@@ -110,6 +112,25 @@ export function createXweatherBudget({
       }
       const used = normalizeBudget(lastKnownFileCount, month).count + pending;
       return { month, used, allowance, over: used > allowance };
+    },
+    async reserve(units, { allowOverage = false } = {}) {
+      if (!Number.isSafeInteger(units) || units < 0)
+        throw new RangeError('invalid Xweather budget reservation');
+      if (allowOverage || units === 0) return () => {};
+      // After the asynchronous bootstrap, the check and hold are synchronous:
+      // two concurrent clients cannot both reserve the remaining units.
+      const { month, used, allowance } = await this.snapshot();
+      const held = reservations.get(month) ?? 0;
+      if (used + held + units > allowance) return null;
+      reservations.set(month, held + units);
+      let released = false;
+      return () => {
+        if (released) return;
+        released = true;
+        const remaining = (reservations.get(month) ?? 0) - units;
+        if (remaining > 0) reservations.set(month, remaining);
+        else reservations.delete(month);
+      };
     },
   };
 }

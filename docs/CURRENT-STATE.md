@@ -69,9 +69,10 @@ tiles in flight each. A composition that misses the output cache is charged
 the source tiles it would fetch that are not already decoded, against 600 per
 minute per client and 3,000 overall, which bounds spend at 600 map units a
 minute per client. A new frame walk counts as one request against 120 a
-minute per client and 1,200 overall. Cache hits never count. Refusals are 429
-`xweather_rate_limited` or `xweather_busy` with `Retry-After: 2`, before any
-upstream work. Compositions deflate their PNG on the thread pool, off the
+minute per client and 1,200 overall. Cache hits never count. Rate refusals are 429
+`xweather_rate_limited` or `xweather_busy` with `Retry-After: 2`;
+the monthly ceiling returns 429 `xweather_monthly_limit` without a retry hint,
+before any upstream work. Compositions deflate their PNG on the thread pool, off the
 event loop. Caches are memory only: 512 decoded source tiles (up to 128 MiB)
 and 128 composed outputs (up to 64 MiB, 24 hours each). Four compositions in
 flight hold up to about 160 MiB each (192 decoded tiles 48, mosaic 48, output
@@ -85,10 +86,11 @@ overlapping exactly can lose one delta (read-modify-write without a lock);
 units count toward the month they are flushed in, at most about a second
 after they are recorded. The card shows, for example, `Xweather · 4,210 /
 15,000 free this month` (muted) and, past the allowance, `Xweather · past
-the free 15,000 this month · requests may fail`. It warns but does not
-block, because a paid Xweather plan keeps working past the free 15,000 —
-`XWEATHER_MONTHLY_FREE_UNITS` only moves where this warning fires, not
-Xweather's behavior. A free-plan account is different: once its shared
+the free 15,000 this month · requests may fail`. New billable compositions instead stop at the local allowance by default;
+existing cached outputs and requests requiring no new source tiles still work.
+Set `XWEATHER_ALLOW_OVERAGE=1` to explicitly allow paid-plan usage beyond the
+limit (the per-minute caps still apply). This is a local guard, not an
+account-wide provider cap. A free-plan account is different: once its shared
 allowance for the billing period runs out, Xweather refuses all requests
 with a 403 whose body reads "Maximum number of daily accesses reached"
 (seen on 2026-09-25; Xweather documents only per-minute and

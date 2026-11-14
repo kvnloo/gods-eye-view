@@ -44,10 +44,10 @@ import { decodePng, encodePng, encodePngAsync } from './xweather/png.js';
  *   or after it, so the walk steps back 1.5 x each product's `cadenceMs`
  *   (see `listFrames`). After a cold start, a refresh walks back only to the
  *   first frame already listed: about one or two lookups.
- * - Spend: each billed tile's `x-cost-tokens` is counted against the free
- *   month in `.gev-cache/xweather/budget.json`. Past the allowance the count
- *   warns and requests continue; spend is bounded instead by 600 source
- *   tiles a minute per client and 3,000 overall.
+ * - Spend: billed tiles count against the local monthly allowance. New
+ *   source tiles reserve that budget before fetching; paid-plan overage
+ *   requires `XWEATHER_ALLOW_OVERAGE=1`. Per-minute limits remain 600 source
+ *   tiles per client and 3,000 overall.
  * - Credentials: read from the environment on every request, so Provider
  *   Settings can add or remove them live. They appear only in upstream URL
  *   paths, never in a response, and any log line passes through `redact()`.
@@ -184,6 +184,9 @@ export function xweatherProxy({
     return Number.isFinite(raw) && raw > 0 ? raw : XWEATHER_FREE_MONTHLY_UNITS;
   };
 
+  const paidOverage = () =>
+    String(env.XWEATHER_ALLOW_OVERAGE || '').trim() === '1';
+
   const budget = createXweatherBudget({
     file: path.join(cacheDir, 'budget.json'),
     allowance: monthlyAllowance(),
@@ -191,9 +194,8 @@ export function xweatherProxy({
     ...(budgetFs ? { fs: budgetFs } : {}),
   });
   // Frame walks are cheap (no map units), so they are admitted by request
-  // count. Compositions are charged the source tiles they would fetch,
-  // which bounds spend: at most 600 units a minute per client and 3,000
-  // for everyone.
+  // count. Compositions are reserved against the monthly budget first, then
+  // rate-limited to at most 600 units a minute per client and 3,000 overall.
   const allow = makeRateLimiter({
     windowMs: 60_000,
     max: 120,
@@ -504,7 +506,9 @@ export function xweatherProxy({
     res.writeHead(status, {
       'Content-Type': 'application/json',
       'Cache-Control': 'no-store',
-      ...(status === 429 ? { 'Retry-After': '2' } : {}),
+      ...(status === 429 && body.error !== 'xweather_monthly_limit'
+        ? { 'Retry-After': '2' }
+        : {}),
     });
     res.end(JSON.stringify(body));
   }
@@ -678,30 +682,39 @@ export function xweatherProxy({
           ([x, y]) =>
             !sources.has(`${spec.layer}:${frame}:${range.z}/${x}/${y}`),
         ).length;
-        if (!chargeTiles(clientKey(req), missing))
-          throw failure('xweather_rate_limited', 429);
+        const release = await budget.reserve(missing, {
+          allowOverage: paidOverage(),
+        });
+        if (!release) throw failure('xweather_monthly_limit', 429);
         try {
-          const bytes = await compose(
-            `output:${key}`,
-            (signal) => render(spec, frame, bbox, width, height, range, signal),
-            controller.signal,
-          );
-          rememberOutput(key, bytes);
-          cached = { bytes };
-        } catch (error) {
-          // A client that left, or a lookup cancelled under it, says nothing
-          // about Xweather; only real failures wait out the cooldown.
-          if (
-            !controller.signal.aborted &&
-            error.status !== 429 &&
-            error.code !== 'xweather_aborted'
-          ) {
-            outputFailures.delete(key);
-            outputFailures.set(key, now());
-            while (outputFailures.size > 128)
-              outputFailures.delete(outputFailures.keys().next().value);
+          controller.signal.throwIfAborted();
+          if (!chargeTiles(clientKey(req), missing))
+            throw failure('xweather_rate_limited', 429);
+          try {
+            const bytes = await compose(
+              `output:${key}`,
+              (signal) => render(spec, frame, bbox, width, height, range, signal),
+              controller.signal,
+            );
+            rememberOutput(key, bytes);
+            cached = { bytes };
+          } catch (error) {
+            // A client that left, or a lookup cancelled under it, says nothing
+            // about Xweather; only real failures wait out the cooldown.
+            if (
+              !controller.signal.aborted &&
+              error.status !== 429 &&
+              error.code !== 'xweather_aborted'
+            ) {
+              outputFailures.delete(key);
+              outputFailures.set(key, now());
+              while (outputFailures.size > 128)
+                outputFailures.delete(outputFailures.keys().next().value);
+            }
+            throw error;
           }
-          throw error;
+        } finally {
+          release();
         }
       }
       png(res, cached.bytes);

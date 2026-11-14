@@ -385,6 +385,42 @@ test('each client may spend 600 source tiles a minute; over it, 429 before any u
   assert.equal(tileUrls(calls).length, 4 * 187);
 });
 
+test('the monthly free allowance stops new billed tiles but not cached tiles; paid overage is opt-in', async () => {
+  const calls = [];
+  const env = {
+    XWEATHER_CLIENT_ID: ID,
+    XWEATHER_CLIENT_SECRET: SECRET,
+    XWEATHER_MONTHLY_FREE_UNITS: '1',
+  };
+  const { request } = install({
+    env,
+    fetchImpl: fakeXweather({ calls }),
+  });
+  const { times } = body(await request('/manifest?product=xweather-radar'));
+  const firstUrl = tile(times.at(-1), { z: 0, x: 0, y: 0 });
+  const secondUrl = tile(times.at(-2), { z: 0, x: 0, y: 0 });
+  assert.equal((await request(firstUrl, '10.0.0.2')).statusCode, 200);
+  assert.equal(body(await request('/status')).used, 1);
+  const billed = tileUrls(calls).length;
+  assert.equal(billed, 1, 'the geographic z0 tile needs one source tile');
+
+  const stopped = await request(secondUrl, '10.0.0.3');
+  assert.equal(stopped.statusCode, 429);
+  assert.deepEqual(body(stopped), { error: 'xweather_monthly_limit' });
+  assert.equal(stopped.headers['Retry-After'], undefined);
+  assert.equal(tileUrls(calls).length, billed, 'no new paid upstream request');
+
+  assert.equal((await request(firstUrl, '10.0.0.2')).statusCode, 200);
+  assert.equal(tileUrls(calls).length, billed, 'cached imagery remains available');
+
+  env.XWEATHER_ALLOW_OVERAGE = '1';
+  assert.equal((await request(secondUrl, '10.0.0.3')).statusCode, 200);
+  assert.equal(tileUrls(calls).length, billed + 1);
+  const status = body(await request('/status'));
+  assert.equal(status.used, 2);
+  assert.equal(status.over, true);
+});
+
 test('source tiles already decoded are not charged again', async () => {
   const calls = [];
   const { request } = install({ fetchImpl: fakeXweather({ calls }) });

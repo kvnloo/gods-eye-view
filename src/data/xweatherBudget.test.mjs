@@ -283,3 +283,32 @@ test('two instances sharing a file merge their flushed deltas instead of clobber
   await drain();
   assert.ok((await b.snapshot()).used >= 6);
 });
+
+test('monthly source-tile reservations exclude concurrent overspend and release capacity', async () => {
+  const fs = memoryFs(JSON.stringify({ date: '2026-09', count: 7 }));
+  const budget = createXweatherBudget({
+    file: '/b.json',
+    allowance: 10,
+    now: SEPT,
+    fs,
+  });
+  const [first, second] = await Promise.all([
+    budget.reserve(2),
+    budget.reserve(2),
+  ]);
+  assert.equal(typeof first, 'function');
+  assert.equal(second, null, 'the remaining 3 units cannot fund both reservations');
+  assert.equal((await budget.snapshot()).used, 7, 'reservations are not billed units');
+  assert.equal(await budget.reserve(3), null);
+  first();
+  first(); // Releasing twice must not over-credit the allowance.
+  const retry = await budget.reserve(3);
+  assert.equal(typeof retry, 'function');
+  budget.record(response(3));
+  retry();
+  assert.equal((await budget.snapshot()).used, 10);
+  assert.equal(await budget.reserve(1), null);
+  const paid = await budget.reserve(1, { allowOverage: true });
+  assert.equal(typeof paid, 'function');
+  paid();
+});

@@ -336,9 +336,10 @@ separately, so stepping or playing through history costs again for each frame
 not yet cached; what one playthrough costs has not yet been measured against
 the live service. Each client may spend at most 600 source tiles (units) a
 minute, and all clients together 3,000. The card shows this month's count
-against the allowance; past it, the card warns but doesn't block, so a paid
-Xweather plan keeps working (`XWEATHER_MONTHLY_FREE_UNITS` only moves where
-the warning fires). A free-plan account is different: once its shared
+against the allowance. By default the proxy refuses new billable tile/image
+compositions at this local threshold, before fetching upstream (429
+`xweather_monthly_limit`); cached imagery remains available. A paid account
+can explicitly opt into overage with `XWEATHER_ALLOW_OVERAGE=1`. A free-plan account is different: once its shared
 allowance for the billing period runs out, Xweather refuses every request
 with a 403 whose body reads "Maximum number of daily accesses reached"
 (Xweather's pricing page gives no number, and its rate-limiting docs describe

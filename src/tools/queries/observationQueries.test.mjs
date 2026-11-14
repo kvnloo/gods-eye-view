@@ -60,6 +60,20 @@ test('air quality filters by area and returns nearest readings with the provider
   assert.match(result.data.coverage, /Canada only/);
 });
 
+test('air quality limits by exact nearest distance before rounding display values', async () => {
+  const result = await withServices({
+    airQuality: {
+      getSnapshot: async () => [
+        station('a-far', 43.6502, -79.38),
+        station('z-near', 43.6501, -79.38),
+      ],
+    },
+  }).call('get_air_quality', { area: nearToronto, limit: 1 });
+  assert.equal(result.data.total, 2);
+  assert.deepEqual(result.data.rows.map((row) => row.id), ['eccc:z-near']);
+  assert.equal(result.data.rows[0].distance_km, 0);
+});
+
 test('air-quality scope and limit never imply nationwide zero when region is empty', async () => {
   const result = await withServices({
     airQuality: {

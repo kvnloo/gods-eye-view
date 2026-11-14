@@ -1,1 +1,2 @@
 - Add MCP read-only air-quality and GNSS navigation-integrity query tools over the existing layer sources, with coverage/freshness warnings and classifier provenance. Voice exposure remains gated pending prompt-budget work. (dvilrgamerz, #1550)
+- Keep AQHI nearest-first results accurate when reported station distances round to the same tenth of a kilometer (review add-on to dvilrgamerz's #1550).

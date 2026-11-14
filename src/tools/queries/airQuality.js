@@ -73,6 +73,11 @@ export const getAirQuality = defineTool({
     );
     const stale = readingsAreStale(matched, now);
     const rows = matched
+      .sort(
+        (a, b) =>
+          distanceKm(center, a) - distanceKm(center, b) ||
+          String(a.id).localeCompare(String(b.id)),
+      )
       .map((reading) => ({
         id: displayText(reading.id),
         station: displayText(reading.name),
@@ -85,12 +90,7 @@ export const getAirQuality = defineTool({
         lon: round(reading.lon, 5),
         observed_at: isoTime(reading.observedMs),
         distance_km: round(distanceKm(center, reading), 1),
-      }))
-      .sort(
-        (a, b) =>
-          a.distance_km - b.distance_km ||
-          String(a.id).localeCompare(String(b.id)),
-      );
+      }));
     const coverage = AIR_QUALITY_PROVIDERS.eccc.coverage;
     const summary = rows.length
       ? `${rows.length} recent air-quality station ${rows.length === 1 ? 'reading' : 'readings'} in ${area.label}${stale ? ' (feed may be stale)' : ''}.`

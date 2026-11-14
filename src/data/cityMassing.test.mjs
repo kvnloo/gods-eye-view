@@ -248,3 +248,24 @@ test('no footprint, no homes: missing, never zero', () => {
   assert.equal(m.homes, null);
   assert.equal(m.siteCoverage, null);
 });
+
+test('edgeRing walks the edge in steps, each corner once, with a point outside each', async () => {
+  const { edgeRing } = await import('./cityMassing.js');
+  const plot = snapPlot({ lat: 37.8006, lon: -122.4103 });
+  const ring = edgeRing(plot.corners, 4, 1);
+  // A 40 m cell: ten steps of 4 m on each of its four edges.
+  assert.equal(ring.length, 40);
+  plot.corners.forEach((corner, i) => assert.deepEqual(ring[i * 10].on, corner));
+  const metres = ([lon, lat], [lon2, lat2]) =>
+    Math.hypot(
+      (lon2 - lon) * 111_320 * Math.cos((lat * Math.PI) / 180),
+      (lat2 - lat) * 111_320,
+    );
+  for (const [i, at] of ring.entries()) {
+    assert.ok(Math.abs(metres(at.on, ring[(i + 1) % 40].on) - 4) < 1e-3);
+    assert.ok(Math.abs(metres(at.on, at.out) - 1) < 1e-3, 'one metre out');
+    // Outside: farther from the plot's middle than the point on the edge.
+    const middle = [plot.center.lon, plot.center.lat];
+    assert.ok(metres(at.out, middle) > metres(at.on, middle));
+  }
+});

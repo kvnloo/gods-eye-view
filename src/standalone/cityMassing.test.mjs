@@ -607,3 +607,71 @@ test('the study marks are thin ground lines: NOW solid, WAS dashed, no fill over
   assert.ok(was.polyline.material instanceof Cesium.PolylineDashMaterialProperty);
   owner.destroy();
 });
+
+test('on 3D tiles the cut shows the inside of the mesh and the study lines run level at the block base', async () => {
+  const tiles = tileset();
+  tiles.backFaceCulling = true;
+  const { store, win, ds, select, render, owner } = mount({
+    tiles: [tiles],
+    time: WINTER_NOON,
+  });
+  await select({ plot: { id: plot.id } });
+  // The mesh is a hollow shell: sliced by the cut, its inside is drawn.
+  assert.equal(tiles.backFaceCulling, false);
+  store.massingControls.study();
+  render();
+  for (const id of ['now', 'fit', 'edge']) {
+    const line = ds.entities.getById(`city-massing-shadow-${id}`).polyline;
+    // A ground line would smear down every wall of the mesh it meets.
+    assert.equal(line.clampToGround, undefined, `${id} is not draped`);
+    for (const at of line.positions.getValue())
+      within(
+        Cesium.Cartographic.fromCartesian(at).height,
+        -8.25 + 0.5,
+        1e-3,
+        `${id} runs half a metre over the base`,
+      );
+    assert.ok(
+      line.depthFailMaterial.color.getValue().alpha < 0.5,
+      `${id} is faint behind a building`,
+    );
+  }
+  const { drawn, plan } = win.__gevCityMassing.snapshot().study;
+  within(drawn.now, plan.now.reachMeters, 0.3, 'now, read off the level line');
+  within(drawn.edge, 20, 0.3, 'edge');
+  await select(null);
+  assert.equal(tiles.backFaceCulling, true, 'restored');
+  owner.destroy();
+});
+
+test('on 3D tiles a blank wall closes the cut where a neighbour stands at the plot edge, not where a tree does', async () => {
+  const tiles = tileset();
+  const { viewer, ds, select, owner } = mount({ tiles: [tiles] });
+  const north = Math.max(...plot.corners.map(([, lat]) => lat));
+  const east = Math.max(...plot.corners.map(([lon]) => lon));
+  // The mesh outside the plot: a building 12 m over the ground all along the
+  // north edge, one tree 9 m high beside the east edge, street elsewhere.
+  viewer.scene.sampleHeight = (at) => {
+    const [lon, lat] = [at.longitude, at.latitude].map(Cesium.Math.toDegrees);
+    if (lat > north) return 3.75;
+    if (lon > east && Math.abs(lat - plot.center.lat) < 0.00001) return 0.75;
+    return -8.25;
+  };
+  await select({ plot: { id: plot.id } });
+  const sides = ds.entities.getById('city-massing-sides').wall;
+  const tops = sides.maximumHeights.getValue();
+  const bottoms = sides.minimumHeights.getValue();
+  assert.equal(tops.length, 41, 'a closed ring of forty 4 m steps');
+  assert.ok(bottoms.every((height) => Math.abs(height - -8.15) < 1e-9));
+  const high = tops.filter((height) => height === 3.75).length;
+  assert.ok(high >= 9 && high <= 13, `the neighbour's wall: ${high} steps`);
+  assert.ok(!tops.includes(0.75), 'a lone tree raises no wall');
+  assert.equal(
+    sides.shadows.getValue(),
+    Cesium.ShadowMode.RECEIVE_ONLY,
+    'the wall takes the shadow',
+  );
+  await select(null);
+  assert.equal(ds.entities.getById('city-massing-sides'), undefined);
+  owner.destroy();
+});

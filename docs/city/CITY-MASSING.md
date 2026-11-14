@@ -47,6 +47,21 @@ the plate fills the cut at street height and the mesh takes the block's shadow
 without casting its own (its light is baked in). The cut joins any existing
 clipping and is removed when the block hides.
 
+The mesh is a hollow shell, and a 40 m grid cell is not a parcel: the cut can
+slice a neighbour in two and can leave the plate below the ground around it.
+So that the cut never shows the sky through the mesh, two things hold while
+the block stands (both restored when it hides):
+
+- the mesh is drawn with its inside too (`backFaceCulling` off);
+- a blank wall closes the cut along the plot's edge, from the plate up to the
+  mesh sampled every 4 m, 1 m outside the edge. A height counts only when the
+  samples on both sides reach it too, so a neighbour raises a party wall and
+  a lone tree or pole does not. The wall takes the block's shadow.
+
+A neighbour as tall as the block can stand between it and the street: the
+block's shadow then lies on that neighbour's walls, as it would, and the
+level-ground reach in the readout is not where it ends.
+
 The block hides in the district tier and while Reimagine captures and
 generates, so a concept is made from the plot as it is.
 
@@ -186,7 +201,10 @@ sidewalk.
   is nothing to fit.
 - **On the ground.** The shadow itself is the one the block casts (the scene
   shadow map), so it follows the ground and stops short where a street rises.
-  Over it lie thin lines, clamped to the ground: the protected edge in amber,
+  Over it lie thin lines, clamped to the ground on the globe. On 3D tiles a
+  ground line smears down every wall it meets, so there each line runs level,
+  half a metre over the block's base, and shows faintly where a building or
+  rising ground stands in front of it. The lines are: the protected edge in amber,
   reaching 6 m past the shadow's sides; a solid line where the shadow now ends
   on level ground (NOW); and a dashed one: before a change, where a fit would
   leave it (FIT TO SUN); after one, where the shadow of the storeys the study

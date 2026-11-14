@@ -47,3 +47,18 @@ test('disabled layers remain visible as OFF and malformed input is safe', () => 
   assert.equal(rows[0].label, 'OFF');
   assert.equal(rows[0].detail, 'never');
 });
+
+test('unknown and invalid record counts never masquerade as observed zero', () => {
+  const counts = [null, undefined, '', '  ', -1, 1.5, false, NaN, 0, '0', '12'];
+  const layers = counts.map((count, index) => ({
+    id: `layer-${index}`,
+    name: `Layer ${index}`,
+    enabled: true,
+    stats: { status: 'live', count },
+  }));
+  const rows = buildProviderHealthRows(layers, 100_000);
+  assert.deepEqual(
+    rows.map(({ count }) => count),
+    [null, null, null, null, null, null, null, null, 0, 0, 12],
+  );
+});

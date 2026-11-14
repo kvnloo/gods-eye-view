@@ -1,5 +1,10 @@
 # God's Eye View Current State
 
+The provider health popover uses the layer manager's existing snapshots. A
+provider-reported count that is null, blank, fractional, negative, or nonnumeric
+is unknown and shows `— records`, not `0 records`. An explicit nonnegative
+integer zero remains a valid `0 records` result.
+
 Analyst region queries resolve unique Natural Earth names offline without
 geocoding, so Gold Coast and Ivory Coast name the West African natural regions.
 Duplicate names require a geocoded containment anchor; when several entries for

@@ -11,6 +11,14 @@ const HEALTH_LABELS = Object.freeze({
   'key-required': 'KEY REQUIRED',
 });
 
+/** Keep unknown or invalid provider counts distinct from an observed zero. */
+function recordCount(value) {
+  if (typeof value !== 'number' && typeof value !== 'string') return null;
+  if (typeof value === 'string' && !value.trim()) return null;
+  const count = Number(value);
+  return Number.isSafeInteger(count) && count >= 0 ? count : null;
+}
+
 function formatAge(timestamp, now) {
   if (!Number.isFinite(timestamp)) return 'never';
   const seconds = Math.max(0, Math.floor((now - timestamp) / 1000));
@@ -46,9 +54,7 @@ export function buildProviderHealthRows(layers, now = Date.now()) {
           stats.loadingLabel ||
           formatAge(stats.lastUpdate, now),
         updated: formatAge(stats.lastUpdate, now),
-        count: Number.isFinite(Number(stats.count))
-          ? Number(stats.count)
-          : null,
+        count: recordCount(stats.count),
         retryInSec: Number.isFinite(Number(stats.retryInSec))
           ? Number(stats.retryInSec)
           : null,

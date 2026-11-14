@@ -157,7 +157,13 @@ export function normalizeOceanStationSnapshot(payload) {
       continue;
     }
 
-    const numOrNull = (v) => (Number.isFinite(Number(v)) ? Number(v) : null);
+    const numOrNull = (value) => {
+      if (value == null || (typeof value === 'string' && value.trim() === '')) {
+        return null;
+      }
+      const number = Number(value);
+      return Number.isFinite(number) ? number : null;
+    };
 
     seenIds.add(id);
     valid.push({

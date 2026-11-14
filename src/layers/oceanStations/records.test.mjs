@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseNdbcLatestObs, normalizeOceanStationSnapshot } from './records.js';
+import { buildOceanStationCard } from './cards.js';
 
 const SAMPLE_NDBC_TEXT = `#STN       LAT      LON  YYYY MM DD hh mm WDIR WSPD   GST WVHT  DPD APD MWD   PRES  PTDY  ATMP  WTMP  DEWP  VIS   TIDE
 #text      deg      deg   yr mo day hr mn degT  m/s   m/s   m   sec sec degT   hPa   hPa  degC  degC  degC  nmi     ft
@@ -69,4 +70,49 @@ test('normalizeOceanStationSnapshot validates parsed stations payload', () => {
   assert.equal(result[0].id, 'STN-1');
   assert.equal(result[0].waveHeightM, 1.5);
   assert.equal(result[0].waterTempC, 22.0);
+});
+
+test('NDBC missing readings stay null through the JSON snapshot and card', () => {
+  const proxyPayload = JSON.parse(
+    JSON.stringify({ stations: parseNdbcLatestObs(SAMPLE_NDBC_TEXT) }),
+  );
+  const stations = normalizeOceanStationSnapshot(proxyPayload);
+  const station = stations.find(({ id }) => id === '15009');
+  assert.ok(station);
+
+  for (const field of [
+    'windGustMps',
+    'waveHeightM',
+    'wavePeriodSec',
+    'avgWavePeriodSec',
+    'waveDirDeg',
+    'pressureTendencyHpa',
+    'dewpointC',
+    'visibilityNmi',
+    'tideFt',
+  ]) {
+    assert.equal(station[field], null, `${field} must remain missing`);
+  }
+
+  const cardText = buildOceanStationCard(station, Date.now()).details.join('\n');
+  assert.doesNotMatch(cardText, /Waves:|gusts|Pressure: 1013\.3 hPa \(/);
+  assert.match(cardText, /Pressure: 1013\.3 hPa/);
+
+  const actualZero = normalizeOceanStationSnapshot({
+    stations: [
+      {
+        id: 'ZERO',
+        lat: 0,
+        lon: 0,
+        windGustMps: 0,
+        waveHeightM: 0,
+        pressureTendencyHpa: 0,
+        timeMs: 0,
+      },
+    ],
+  })[0];
+  assert.equal(actualZero.windGustMps, 0);
+  assert.equal(actualZero.waveHeightM, 0);
+  assert.equal(actualZero.pressureTendencyHpa, 0);
+  assert.equal(actualZero.timeMs, 0);
 });

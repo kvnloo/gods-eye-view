@@ -1,5 +1,10 @@
 # God's Eye View Current State
 
+The NOAA NDBC Ocean Stations layer preserves missing (`MM`) measurements as
+`null` across the server snapshot and JSON client normalization. Cards and
+analyst records omit absent wave, wind-gust and pressure-tendency readings rather
+than reporting false zeros; genuine numeric zero observations remain valid.
+
 Vessel sources can report healthy empty coverage using a current, complete
 snapshot with zero raw rows, a healthy transport and a positive last-message
 time. This clears obsolete contacts and settles startup without manufacturing

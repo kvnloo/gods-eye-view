@@ -1,0 +1,1 @@
+- Area insights: do not cache a temporary busy or unavailable nearby search response, so a second location can be retried immediately after the active search finishes. Follow-up to #1001 by ckiikc; counterexample credited to quanticsoul4772.

@@ -460,14 +460,17 @@ export function areaAssessmentProxy() {
               ...observation,
               fetchedAt: new Date().toISOString(),
             };
-            if (cache.size >= 250) cache.delete(cache.keys().next().value);
-            const ttl =
-              observation.status !== 'available'
-                ? 30000
-                : metric === 'air' || metric === 'nearby'
-                  ? 15 * 60000
-                  : 6 * 3600000;
-            cache.set(key, { expires: Date.now() + ttl, body });
+            // A concurrent search's temporary busy response must not be cached.
+            if (metric !== 'nearby' || observation.status === 'available') {
+              if (cache.size >= 250) cache.delete(cache.keys().next().value);
+              const ttl =
+                observation.status !== 'available'
+                  ? 30000
+                  : metric === 'air' || metric === 'nearby'
+                    ? 15 * 60000
+                    : 6 * 3600000;
+              cache.set(key, { expires: Date.now() + ttl, body });
+            }
             return body;
           })
           .finally(() => pending.delete(key));

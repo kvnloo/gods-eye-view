@@ -96,6 +96,11 @@ No-data cells remain unavailable, not zero hazard. This is not an administrative
 seismic zone, building risk estimate or prediction of the next earthquake.
 Dataset files are never redistributed in the MIT code repository.
 
+A nearby search runs one provider sample at a time. If a second location is
+requested while the first search is active, the temporary busy response is not
+cached. Retrying that location after the active search ends starts a new sample;
+successful nearby samples retain their normal cache lifetime.
+
 The nearby search compares nine sampled locations within a selectable 500 m,
 1.5 km or 3 km radius. It acquires the selected positive-weight parameters,
 re-measuring actual POI sample distances from each candidate. Housing, air and

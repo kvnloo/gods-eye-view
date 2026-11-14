@@ -14,6 +14,7 @@ const AU_KM = 149_597_870.7;
 /** Clamp a number, or null when absent/NaN (NeoWs ships numbers as strings; null must not coerce to 0). */
 function finiteOrNull(value) {
   if (value === null || value === undefined || typeof value === 'boolean') return null;
+  if (typeof value === 'string' && value.trim() === '') return null;
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
 }
@@ -35,7 +36,8 @@ export function neoFeedWindow(nowMs, days = 7) {
  * Validate and normalize one NeoWs feed response into a flat, JSON-safe list
  * of close-approach rows. Mirrors normalizeEarthquakeSnapshot's contract:
  * a structurally malformed feed returns null (the caller keeps its last good
- * snapshot), while rows that merely miss optional fields are skipped.
+ * snapshot); rows missing required fields are skipped, and optional numbers
+ * remain null when absent.
  *
  * Row shape:
  *   { id, name, sizeM, missKm, missLunar, velocityKph, approachMs,

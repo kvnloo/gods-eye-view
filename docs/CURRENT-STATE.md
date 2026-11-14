@@ -1749,6 +1749,9 @@ its criteria cannot be silently ignored.
 | FIRMS Active Fires ▲ | NASA FIRMS live (VIIRS ×3 NRT, trailing 24h) | `src/data/firmsHeatmap.js` | `/api/firms` (`FIRMS_MAP_KEY`) | 10 min (proxy TTL 30 min) |
 | Near-Earth Asteroids ☄ | NASA NeoWs (JPL CNEOS close approaches, 7-day window) | `src/data/nearEarthObjects.js` | `/api/neo` (`NEO_API_KEY`) | on enable + manual refresh (proxy TTL 2 h) |
 
+For NeoWs records, missing or whitespace-only numeric fields remain unknown (`null`),
+not zero. A row without a valid miss distance or approach time is omitted.
+
 `src/data/militaryAwareness.js` remains registered internally as the Contacts
 coordinator, but it is not a user-visible Data Layers entry. Its visible entry
 point is the right-side `CONTEXT` chooser's `CONTACTS` mode.

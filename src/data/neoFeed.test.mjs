@@ -102,3 +102,46 @@ test('normalizeNeoFeed: optional fields degrade to null, hazardous defaults fals
   assert.ok(Number.isFinite(row.missKm));
   assert.ok(Number.isFinite(row.approachMs));
 });
+
+test('normalizeNeoFeed: blank numeric input is missing, not zero', () => {
+  const payload = {
+    near_earth_objects: {
+      d: [
+        neo({ id: 'missing-distance', missKm: '  ' }),
+        neo({ id: 'missing-time', approachMs: '\t' }),
+        neo({
+          id: 'blank-optionals',
+          missLunar: '  ',
+          velocityKph: '',
+          sizeMin: ' ',
+          sizeMax: 2,
+          absMag: '\t',
+        }),
+        neo({
+          id: 'valid-zeros',
+          missKm: '0',
+          missLunar: '0',
+          velocityKph: '0',
+          approachMs: '0',
+          sizeMin: '0',
+          sizeMax: '0',
+          absMag: '0',
+        }),
+      ],
+    },
+  };
+  const rows = normalizeNeoFeed(payload);
+  assert.deepEqual(rows.map((row) => row.id), ['valid-zeros', 'blank-optionals']);
+  const zero = rows[0];
+  assert.equal(zero.missKm, 0);
+  assert.equal(zero.missLunar, 0);
+  assert.equal(zero.velocityKph, 0);
+  assert.equal(zero.approachMs, 0);
+  assert.equal(zero.sizeM, 0);
+  assert.equal(zero.absMag, 0);
+  const unknown = rows[1];
+  assert.equal(unknown.missLunar, null);
+  assert.equal(unknown.velocityKph, null);
+  assert.equal(unknown.sizeM, null);
+  assert.equal(unknown.absMag, null);
+});

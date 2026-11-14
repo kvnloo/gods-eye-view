@@ -92,13 +92,32 @@ test('skips one malformed alert without rejecting the whole snapshot', () => {
     payload([
       alert({
         identifier: 'malformed',
-        info: [{ ...alert().info[0], description: 'Gusts >60 mph' }],
+        info: [{ ...alert().info[0], description: 'Gusts \u0001 mph' }],
       }),
       alert({ identifier: 'valid' }),
     ]),
     { now: Date.parse('2026-01-01T00:00:00Z') },
   );
   assert.deepEqual(snapshot.alerts.map((item) => item.id), ['valid']);
+});
+
+test('preserves comparison signs in active weather warning text', () => {
+  const description = 'Gusts >60 mph and rising water <2 ft';
+  const instruction = 'Avoid roads where water is >1 ft deep';
+  const headline = 'Wind >60 mph warning';
+  const snapshot = normalizeCapSnapshot(
+    payload([
+      alert({
+        identifier: 'comparison-signs',
+        info: [{ ...alert().info[0], headline, description, instruction }],
+      }),
+    ]),
+    { now: Date.parse('2026-01-01T00:00:00Z') },
+  );
+  assert.equal(snapshot.alerts.length, 1);
+  assert.equal(snapshot.alerts[0].headline, headline);
+  assert.equal(snapshot.alerts[0].description, description);
+  assert.equal(snapshot.alerts[0].instruction, instruction);
 });
 
 test('resolves forecast, county and fire zones with bounded concurrency and caches results', async () => {

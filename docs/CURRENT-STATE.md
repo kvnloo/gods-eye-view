@@ -183,6 +183,14 @@ messages use each product's eligibility gap (30 minutes, or three hours for the
 global mosaic). Wind shows forecast valid and issue times and does not follow
 history. Satellite clouds uses Clouds only / Full image configuration labels.
 
+The CAP weather-alert layer consumes lifecycle-normalized warnings from
+`/api/cap` and missing-zone geometry from the server-cached
+`/api/weather-zones/...` endpoint. Until those provider routes are implemented,
+the weather card reports an error rather than claiming there are no warnings.
+NWS event, headline, description and instruction fields remain plain text:
+valid comparison characters (`<`, `>`) are preserved, while control
+characters invalidate only the affected alert.
+
 Left weather rows retain only the toggle and one status line with a source
 tooltip. Configuration and the cyclone Storms list live in the cards, as do the
 cyclone advisory, position time, wind, pressure, geometry status and the

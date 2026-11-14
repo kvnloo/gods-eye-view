@@ -74,6 +74,8 @@ export function createSpeedCameraSource({
           return response
             .json()
             .then((payload) => {
+              // A reset can happen after headers but before the JSON body arrives.
+              if (epoch !== capabilityEpoch) return capability;
               if (typeof payload?.configured === 'boolean') {
                 capability = payload.configured;
                 if (!capability)

@@ -235,6 +235,52 @@ test('resetCapability forgets the answer so the next fetch re-probes', async () 
   );
 });
 
+test('a stale status body cannot undo a newer capability probe after reset', async () => {
+  let resolveFirstBody;
+  let bodyStarted;
+  const firstBodyStarted = new Promise((resolve) => {
+    bodyStarted = resolve;
+  });
+  let probes = 0;
+  let queries = 0;
+  const source = createSpeedCameraSource({
+    fetchImpl: async (url) => {
+      if (url === '/api/overpass/status') {
+        probes++;
+        if (probes === 1)
+          return {
+            ok: true,
+            json: () => {
+              const pending = new Promise((resolve) => {
+                resolveFirstBody = resolve;
+              });
+              bodyStarted();
+              return pending;
+            },
+          };
+        return { ok: true, json: async () => ({ configured: true }) };
+      }
+      assert.equal(url, '/api/overpass');
+      queries++;
+      return jsonResponse([]);
+    },
+  });
+
+  // The first probe has headers but its JSON has not arrived. A new enable()
+  // resets the source and verifies that the operator has configured Overpass.
+  const oldRequest = source.fetch(BOX);
+  await firstBodyStarted;
+  source.resetCapability();
+  assert.equal((await source.fetch(BOX)).records.length, 0);
+
+  // The old "not configured" response must not overwrite the newer result.
+  resolveFirstBody({ configured: false });
+  assert.equal((await oldRequest).records.length, 0);
+  assert.equal((await source.fetch(BOX)).records.length, 0);
+  assert.equal(probes, 2, 'only the old and new status probes were needed');
+  assert.equal(queries, 3, 'no query was suppressed by the stale miss');
+});
+
 test('a 503 OVERPASS_NOT_CONFIGURED POST latches the capability', async () => {
   let queries = 0;
   const source = createSpeedCameraSource({

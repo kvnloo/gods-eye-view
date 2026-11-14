@@ -98,15 +98,26 @@ function recordHistory(reference, lat, lon, tSec) {
   if (history.length > HISTORY_MAX_SAMPLES) history.shift();
 }
 
+// Refreshing a station moves it to the end, keeping the map in observation
+// order. Expiry and capacity eviction are then amortized constant-time.
+function pruneTelemetry(nowMs) {
+  const cutoff = nowMs - STALE;
+  for (const [reference, entry] of telemetry) {
+    if (entry.latest.observedAtMs >= cutoff) break;
+    telemetry.delete(reference);
+  }
+  while (telemetry.size > MAX) telemetry.delete(telemetry.keys().next().value);
+}
+
 function recordTelemetry(reference, sample) {
   let entry = telemetry.get(reference);
-  if (!entry) {
-    entry = { latest: null, samples: [] };
-    telemetry.set(reference, entry);
-  }
+  if (!entry) entry = { latest: null, samples: [] };
+  else telemetry.delete(reference);
   entry.latest = sample;
   entry.samples.push(sample);
   if (entry.samples.length > TELEMETRY_MAX_SAMPLES) entry.samples.shift();
+  telemetry.set(reference, entry);
+  pruneTelemetry(sample.observedAtMs);
 }
 
 /** Ingest one APRS-IS line into the bounded position, history and telemetry stores. */
@@ -161,6 +172,7 @@ export function aprsTelemetry(reference) {
 }
 
 function prune(nowMs = Date.now()) {
+  pruneTelemetry(nowMs);
   const cutoff = nowMs - STALE;
   for (const [key, row] of records)
     if (row._updatedAt < cutoff) {

@@ -164,3 +164,41 @@ test('aprsLiveHandler adopts a viewport filter and echoes it', () => {
     assert.equal(body.source, 'APRS-IS');
   });
 });
+
+test('telemetry-only stations expire on later feed intake', () => {
+  resetAprsStateForTest();
+  const start = 1_700_000_000_000;
+  ingestAprsLine('OLD>APRS:T#001,100,200,50,0,255,10101010', start);
+  assert.equal(aprsTelemetry('aprs:OLD').latest.sequence, 1);
+
+  ingestAprsLine(
+    'NEW>APRS:T#002,100,200,50,0,255,10101010',
+    start + 30 * 60_000 + 1,
+  );
+  assert.equal(aprsTelemetry('aprs:OLD'), null);
+  assert.equal(aprsTelemetry('aprs:NEW').latest.sequence, 2);
+});
+
+test('telemetry-only station cache evicts least recently observed reference', () => {
+  resetAprsStateForTest();
+  const start = 1_700_000_000_000;
+  for (let i = 0; i < 2000; i += 1) {
+    const callsign = `X${String(i).padStart(5, '0')}`;
+    ingestAprsLine(
+      `${callsign}>APRS:T#001,100,200,50,0,255,10101010`,
+      start + i,
+    );
+  }
+  ingestAprsLine(
+    'X00000>APRS:T#002,100,200,50,0,255,10101010',
+    start + 2000,
+  );
+  ingestAprsLine(
+    'X02000>APRS:T#003,100,200,50,0,255,10101010',
+    start + 2001,
+  );
+
+  assert.equal(aprsTelemetry('aprs:X00001'), null);
+  assert.equal(aprsTelemetry('aprs:X00000').latest.sequence, 2);
+  assert.equal(aprsTelemetry('aprs:X02000').latest.sequence, 3);
+});

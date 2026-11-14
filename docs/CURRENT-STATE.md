@@ -182,6 +182,12 @@ destroying the layer cancels pending work and ignores late results.
 rendering, selection, trails and cards in separate components. The standalone
 entry supplies its AISStream source, scene services and existing row limits.
 
+The optional `VITE_VESSEL_SOURCE=aprs-is` mode selects receive-only APRS-IS
+instead of AISStream; the two feeds are not yet composed simultaneously.
+APRS telemetry-only references, including stations without vessel positions,
+are limited to 2,000 callsigns. New packet intake expires telemetry older than
+30 minutes, and capacity eviction removes the least recently observed station.
+
 Incomplete observations retain missing keyed vessels for at most five minutes
 since their last accepted receipt, within the renderer's row budget (plus the
 existing selected-contact pin). Complete observations keep the existing removal

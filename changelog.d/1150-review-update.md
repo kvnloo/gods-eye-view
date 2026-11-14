@@ -6,4 +6,6 @@
 
 - Localize the INFONA presentation, identify WFIGS rows explicitly, and preserve WFIGS last-good snapshots and its 16 MiB response cap while keeping INFONA bounded. (radianx, #1150).
 
+- Distinguish mapped US incident perimeters from Paraguay fire estimates in mixed-area analyst summaries. (radianx, #1150).
+
 Includes Simplified Chinese UI copy and locale regressions, preserving source attribution, interpolation and locale-specific number/date formatting.

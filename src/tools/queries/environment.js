@@ -292,8 +292,22 @@ export const getFirePerimeters = defineTool({
         lon: round(point.lon, 5),
       }))
       .sort((a, b) => (b.acres ?? 0) - (a.acres ?? 0));
+    const estimateCount = rows.filter(
+      (row) => row.geometry_kind === 'estimated-active-fire-area',
+    ).length;
+    const perimeterCount = rows.length - estimateCount;
+    const summaryCount =
+      perimeterCount > 0 && estimateCount > 0
+        ? [
+            countNoun(perimeterCount, 'mapped wildfire perimeter'),
+            countNoun(estimateCount, 'estimated fire area'),
+          ].join(' and ')
+        : countNoun(
+            rows.length,
+            estimateCount ? 'mapped fire area' : 'mapped wildfire perimeter',
+          );
     return {
-      summary: `${countNoun(rows.length, rows.some((row) => row.geometry_kind === 'estimated-active-fire-area') ? 'mapped fire area' : 'mapped wildfire perimeter')} in ${area.label}${stale ? ' (data may be stale).' : '.'}`,
+      summary: `${summaryCount} in ${area.label}${stale ? ' (data may be stale).' : '.'}`,
       data: {
         view: suggestView(services, { area, layers: ['fire-perimeters'] }),
         sources: services.perimeters.getStatus?.() ?? null,

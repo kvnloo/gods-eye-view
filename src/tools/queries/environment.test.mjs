@@ -290,6 +290,51 @@ test('INFONA analyst results preserve estimate provenance and incomplete coverag
     assert.equal(estimate[key], null);
 });
 
+test('mixed US and Paraguay fire queries distinguish perimeters from estimates', async () => {
+  const ring = (lon, lat) => [
+    [
+      [lon, lat],
+      [lon + 0.1, lat],
+      [lon + 0.1, lat + 0.1],
+      [lon, lat],
+    ],
+  ];
+  const perimeters = {
+    getSnapshot: async () => [
+      {
+        stableId: 'us-incident',
+        name: 'US incident',
+        source: 'WFIGS',
+        acres: 120,
+        polygons: [ring(-105, 35)],
+      },
+      {
+        stableId: 'py-estimate',
+        name: 'Paraguay estimate',
+        source: 'INFONA',
+        geometryKind: 'estimated-active-fire-area',
+        acres: 12.35,
+        hectares: 5,
+        polygons: [ring(-57, -25)],
+      },
+    ],
+  };
+  const result = await catalogWith({ perimeters }).call('get_fire_perimeters', {
+    area: { bbox: [-110, -30, -50, 40] },
+  });
+  assert.equal(
+    result.summary,
+    '1 mapped wildfire perimeter and 1 estimated fire area in the requested box.',
+  );
+  assert.deepEqual(
+    result.data.rows.map((row) => [row.source, row.geometry_kind]),
+    [
+      ['WFIGS', 'incident-perimeter'],
+      ['INFONA', 'estimated-active-fire-area'],
+    ],
+  );
+});
+
 test('fire perimeter queries include dateline interiors and exclude the opposite meridian', async () => {
   const perimeters = {
     getSnapshot: async () => [

@@ -32,6 +32,17 @@ const number = (value, min, max) =>
 const measurement = (value, unit, min, max) =>
   value?.unidad_medida === unit ? number(value.valor, min, max) : null;
 
+const validCalendarDay = (stamp) => {
+  const date = /^(\d{4})-(\d{2})-(\d{2})T/.exec(stamp);
+  if (!date) return false;
+  const year = Number(date[1]);
+  const month = Number(date[2]);
+  const day = Number(date[3]);
+  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  return month >= 1 && month <= 12 && day >= 1 && day <= days[month - 1];
+};
+
 /** Normalize reported station values; portal update time never substitutes for observation time. */
 export function normalizeDmhStations(payload) {
   if (
@@ -52,9 +63,10 @@ export function normalizeDmhStations(payload) {
     const stationName = text(meta?.nombre);
     const stamp = text(observation?.fecha?.utc);
     // Only explicitly zoned UTC-feed dates are accepted; never assume local time.
-    const time = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(stamp)
-      ? Date.parse(stamp)
-      : NaN;
+    const time =
+      validCalendarDay(stamp) && /(?:Z|[+-]\d{2}:?\d{2})$/i.test(stamp)
+        ? Date.parse(stamp)
+        : NaN;
     if (
       meta?.estado !== 'activo' ||
       latitude === null ||

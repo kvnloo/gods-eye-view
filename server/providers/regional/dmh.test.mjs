@@ -59,6 +59,27 @@ test('DMH validates units, missing values and bounds while preserving real zero 
   );
 });
 
+test('DMH rejects impossible dates and accepts real leap days', async () => {
+  const invalid = station(6);
+  invalid.ultima_observacion.fecha.utc = '2026-02-30T12:00:00Z';
+  assert.deepEqual(normalizeDmhStations(feed(invalid)), []);
+  const source = createDmhObservationSource({
+    now: () => Date.UTC(2026, 2, 2, 12),
+    fetchJson: async () => feed(invalid),
+  });
+  assert.deepEqual(await source.getObservation(point), {
+    status: 'no-recent-station',
+    observation: null,
+  });
+
+  const leapDay = station(7);
+  leapDay.ultima_observacion.fecha.utc = '2024-02-29T12:00:00+00:00';
+  assert.equal(
+    normalizeDmhStations(feed(leapDay))[0].observedAt,
+    '2024-02-29T12:00:00.000Z',
+  );
+});
+
 test('nearest recent station wins; inactive, old, future and distant readings are excluded', async () => {
   const inactive = station(2);
   inactive.metadatos.estado = 'inactivo';

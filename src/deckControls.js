@@ -243,6 +243,16 @@ export function initDeckControls(viewer, styleManager) {
     },
   );
 
+  const releaseCameraInput = () => {
+    if (cameraActive) {
+      releaseContinuousRender('deck-controls');
+      cameraActive = false;
+    }
+    if (document.pointerLockElement === canvas) document.exitPointerLock?.();
+    lookMouseDX = 0;
+    lookMouseDY = 0;
+  };
+
   const syncHelpVisibility = () => {
     helpPanel.hidden = !enabled || !connected || !helpVisible;
     document.body.classList.toggle('deck-help-hidden', connected && enabled && !helpVisible);
@@ -271,11 +281,7 @@ export function initDeckControls(viewer, styleManager) {
       endPushToTalk();
       setConnected(false);
       prevButtons = [];
-      if (cameraActive) {
-        releaseContinuousRender('deck-controls');
-        cameraActive = false;
-      }
-      if (document.pointerLockElement === canvas) document.exitPointerLock?.();
+      releaseCameraInput();
     } else {
       const pads = navigator.getGamepads?.() || [];
       if (pads.some((pad) => pad?.connected)) {
@@ -421,6 +427,7 @@ export function initDeckControls(viewer, styleManager) {
         endPushToTalk();
         setConnected(false);
       }
+      releaseCameraInput();
       prevButtons = [];
       rafId = requestAnimationFrame(poll);
       return;
@@ -447,10 +454,7 @@ export function initDeckControls(viewer, styleManager) {
     if (!(navigator.getGamepads?.() || []).some((pad) => pad?.connected)) {
       endPushToTalk();
       setConnected(false);
-      if (cameraActive) {
-        releaseContinuousRender('deck-controls');
-        cameraActive = false;
-      }
+      releaseCameraInput();
     }
   };
 
@@ -475,8 +479,7 @@ export function initDeckControls(viewer, styleManager) {
     switchEl?.removeEventListener('change', onSwitchChange);
     endPushToTalk();
     releasePointerLook();
-    if (document.pointerLockElement === canvas) document.exitPointerLock?.();
-    releaseContinuousRender('deck-controls');
+    releaseCameraInput();
     reticle.remove();
     helpPanel.remove();
     document.body.classList.remove('deck-controls-active');

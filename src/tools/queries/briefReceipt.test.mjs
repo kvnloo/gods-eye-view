@@ -238,3 +238,34 @@ for (const field of ['sources', 'claims', 'sourceIds']) {
     assert.throws(() => exportHumanDecisionBrief(packet), TypeError);
   });
 }
+
+for (const location of ['source', 'handoff']) {
+  for (const key of [
+    'X-Amz-Signature',
+    'X-Goog-Signature',
+    'x-amz-signature',
+    'X-%47oog-Signature',
+    'X-Amz-Credential',
+    'X-Amz-Security-Token',
+    'X-Goog-Credential',
+  ]) {
+    test(`${location} rejects signed URL query key ${key}`, () => {
+      const packet = pinnedPacket();
+      const url = `https://reference.example/document?${key}=synthetic-not-a-secret`;
+      if (location === 'source') packet.sources[0].url = url;
+      else packet.handoff.url = url;
+      assert.throws(() => createHumanDecisionBrief(packet), /credential-free/);
+      assert.throws(() => exportHumanDecisionBrief(packet), /credential-free/);
+    });
+  }
+}
+
+test('ordinary public reference query parameters survive both exports', () => {
+  const packet = pinnedPacket();
+  const url = 'https://reference.example/document?page=2&revision=public-r1';
+  packet.sources[0].url = url;
+  packet.handoff.url = url;
+  const result = exportHumanDecisionBrief(packet);
+  assert.equal(JSON.parse(result.json).externalDecision.workflow.url, url);
+  assert.ok(result.markdown.includes('page=2'));
+});

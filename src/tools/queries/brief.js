@@ -414,7 +414,7 @@ function referenceUrl(value, label) {
     url.username ||
     url.password ||
     [...url.searchParams.keys()].some((key) =>
-      /^(?:token|access_token|api_?key|password|session|signature|sig)$/i.test(
+      /^(?:token|access_token|api_?key|password|session|signature|sig|x-(?:amz|goog)-(?:algorithm|credential|date|expires|signedheaders|signature|security-token))$/i.test(
         key,
       ),
     )

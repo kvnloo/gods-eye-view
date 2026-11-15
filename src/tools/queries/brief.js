@@ -483,7 +483,7 @@ function handoffClaim(input, knownSources) {
   ) {
     throw new TypeError('claim.sourceIds must be a bounded array');
   }
-  const sourceIds = row.sourceIds.map((id) =>
+  const sourceIds = Array.from(row.sourceIds, (id) =>
     referenceId(id, 'claim.sourceIds'),
   );
   if (
@@ -540,14 +540,14 @@ export function createHumanDecisionBrief(packet) {
   ) {
     throw new TypeError('packet sources/claims must be bounded arrays');
   }
-  const sources = input.sources.map(handoffSource).sort(sortById);
+  const sources = Array.from(input.sources, handoffSource).sort(sortById);
   const sourceIds = new Set(sources.map((source) => source.id));
   if (sourceIds.size !== sources.length) {
     throw new TypeError('duplicate source IDs');
   }
-  const claims = input.claims
-    .map((claim) => handoffClaim(claim, sourceIds))
-    .sort(sortById);
+  const claims = Array.from(input.claims, (claim) =>
+    handoffClaim(claim, sourceIds),
+  ).sort(sortById);
   if (new Set(claims.map((claim) => claim.id)).size !== claims.length) {
     throw new TypeError('duplicate claim IDs');
   }

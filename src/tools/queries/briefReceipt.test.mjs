@@ -227,3 +227,14 @@ test('Markdown escapes source-owned text rather than executing markup', () => {
     'Records <script> & Archive',
   );
 });
+
+for (const field of ['sources', 'claims', 'sourceIds']) {
+  test(`sparse ${field} cannot bypass receipt validation`, () => {
+    const packet = pinnedPacket();
+    if (field === 'sourceIds') packet.claims[0].sourceIds = new Array(1);
+    else packet[field] = new Array(1);
+    if (field === 'sources') packet.claims = [];
+    assert.throws(() => createHumanDecisionBrief(packet), TypeError);
+    assert.throws(() => exportHumanDecisionBrief(packet), TypeError);
+  });
+}

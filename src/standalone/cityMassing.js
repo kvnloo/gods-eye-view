@@ -116,6 +116,11 @@ const SPIKE_ARM = '/city-massing-spike/arm.json';
 // the tiles' own shadows (lanes/q15/tools/sun_fit.py). The study keeps its
 // own sun: its WAS/NOW lines and every number stay where they were.
 // The colours are read this far outside the plot's edge.
+// The floor under a plot cut at the footprint: the plot grown this much about
+// its centre, this far under its lowest ground, the paving's colour this dark.
+const UNDER_GROW = 1.5;
+const UNDER_DEPTH = 1;
+const UNDER_TONE = 0.3;
 const TONE_OUT_METERS = 5;
 const TONE_RISE_METERS = 1.5;
 const TONE_WALL = 0.8;
@@ -461,7 +466,14 @@ export function mountCityMassing({
   // the samples on both sides reach it too.
   function close(plot, top, seated) {
     if (!shownTilesets().length) return null;
-    const ring = edgeRing(plot.corners, SIDE_STEP_METERS, SIDE_OUT_METERS);
+    // SPIKE ("seat": {"under": true}): a cut at the footprint slices what
+    // stood on the plot into pieces narrower than a neighbour: sampled twice
+    // as close.
+    const ring = edgeRing(
+      plot.corners,
+      seated && arm.seat.under ? SIDE_STEP_METERS / 2 : SIDE_STEP_METERS,
+      SIDE_OUT_METERS,
+    );
     const n = ring.length;
     const beside = (list, pick) =>
       list.map((height, i) =>
@@ -696,6 +708,36 @@ export function mountCityMassing({
       globe: Boolean(scene.globe?.show),
       ready: false,
       hole,
+      // SPIKE ("under"): the tiles are a shell with no ground under a building. Cut at
+      // the footprint, what stood on the plot is open toward the block: a
+      // dark floor under the plot and around it shows there, not the void.
+      under:
+        hole !== plot &&
+        arm.seat.under &&
+        ds.entities.add({
+          id: `${OWNER}-under`,
+          polygon: {
+            hierarchy: Cesium.Cartesian3.fromDegreesArray(
+              plot.corners.flatMap(([lon, lat]) => [
+                plot.center.lon + (lon - plot.center.lon) * UNDER_GROW,
+                plot.center.lat + (lat - plot.center.lat) * UNDER_GROW,
+              ]),
+            ),
+            height: (ground?.floor ?? base) - UNDER_DEPTH,
+            material: Cesium.Color.multiplyByScalar(
+              seat.tones.ground
+                ? new Cesium.Color(
+                    seat.tones.ground.x,
+                    seat.tones.ground.y,
+                    seat.tones.ground.z,
+                  )
+                : SIDES,
+              UNDER_TONE,
+              new Cesium.Color(),
+            ).withAlpha(1),
+            shadows: Cesium.ShadowMode.DISABLED,
+          },
+        }),
       sides: close(hole, base + PLATE_RISE, seat),
       cuts: cut(hole, seat?.shader),
       plate: ds.entities.add({
@@ -866,6 +908,7 @@ export function mountCityMassing({
     site.sampled = true;
     marksKey = '0';
     site.plate.polygon.height = ground.floor - PLATE_DEPTH;
+    if (site.under) site.under.polygon.height = ground.floor - UNDER_DEPTH;
     site.plate.polygon.extrudedHeight = ground.base + PLATE_RISE;
     if (site.sides) ds.entities.remove(site.sides);
     site.sides = close(site.hole, ground.base + PLATE_RISE, site.seat);

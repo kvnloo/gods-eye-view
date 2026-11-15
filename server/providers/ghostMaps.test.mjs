@@ -247,6 +247,43 @@ test('an unchanged head clears an upstream outage and announces recovery once', 
     watcher.stop();
   }));
 
+test('a GhostMaps opt-out stops scheduled checks without another browser request', () =>
+  withCache(async (cacheDir) => {
+    const { repo, fetchImpl } = fakeGitHub();
+    let enabled = true;
+    const watcher = createGhostMapsWatcher({
+      cacheDir,
+      fetchImpl,
+      enabled: () => enabled,
+      pollMs: 60_000,
+      log: () => {},
+      warn: () => {},
+    });
+    try {
+      assert.equal(await watcher.start(), true);
+      await warmDefaults(watcher);
+      const requests = repo.calls.length;
+
+      enabled = false;
+      assert.equal(await watcher.checkNow(), false);
+      assert.equal(
+        repo.calls.length,
+        requests,
+        'a scheduled check must not contact GitHub after opt-out',
+      );
+
+      enabled = true;
+      assert.equal(await watcher.start(), false);
+      assert.equal(
+        repo.calls.length,
+        requests + 1,
+        'a later opt-in restarts the watcher and reads the ref once',
+      );
+    } finally {
+      watcher.stop();
+    }
+  }));
+
 test('poll interval is configurable with a 5 s floor', () => {
   assert.equal(ghostMapsPollMs(undefined), 15000);
   assert.equal(ghostMapsPollMs('30'), 30000);

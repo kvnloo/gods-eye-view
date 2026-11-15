@@ -67,6 +67,8 @@ export function createGhostMapsWatcher({
   token = () => String(process.env.GITHUB_TOKEN || '').trim(),
   log = (...args) => console.log(...args),
   warn = (...args) => console.warn(...args),
+  // The proxy supplies its source opt-in; direct watcher users stay enabled.
+  enabled = () => true,
 } = {}) {
   let state = {
     commit: null,
@@ -219,6 +221,11 @@ export function createGhostMapsWatcher({
 
   /** Run one check now, coalescing with one already in flight. */
   function checkNow() {
+    // The timer must honor a runtime opt-out even if no new HTTP request arrives.
+    if (!enabled()) {
+      stop();
+      return Promise.resolve(false);
+    }
     if (!checking)
       checking = check()
         .then(
@@ -369,8 +376,8 @@ export function createGhostMapsWatcher({
 
 /** Same-origin GhostMaps routes for dev and preview. */
 export function ghostMapsProxy({
-  watcher = createGhostMapsWatcher(),
   enabled = () => ghostMapsEnabled(),
+  watcher = createGhostMapsWatcher({ enabled }),
 } = {}) {
   const json = (res, status, value) => {
     if (res.destroyed) return;

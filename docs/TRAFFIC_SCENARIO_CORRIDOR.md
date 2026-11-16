@@ -17,8 +17,19 @@ python3 scripts/traffic-scenarios/run-sumo-corridor.py --output /tmp/gev-sumo-ev
 
 The output directory must not already exist. Simulator version, exact inputs,
 commands, logs, per-run metadata, source-hashed receipts, comparisons and
-summary JSON/Markdown are preserved. Do not commit local paths or live data
-into the main application.
+summary JSON/Markdown are preserved. The 30-second control also preserves
+`incomplete-control.meta.json`, so its receipt can be independently rebuilt:
+
+```sh
+python3 scripts/traffic-scenarios/sumo-statistics-receipt.py \
+  --metadata /tmp/gev-sumo-evidence/incomplete-control.meta.json \
+  --statistics /tmp/gev-sumo-evidence/incomplete-control.statistics.xml
+python3 scripts/traffic-scenarios/test-sumo-control-replay.py
+```
+
+The integration test requires the real pinned binaries and executes seven
+simulations; it is separate from the simulator-free unit suite.
+Do not commit local paths or live data into the main application.
 
 ## Fixed experiment (not optimized after observing results)
 

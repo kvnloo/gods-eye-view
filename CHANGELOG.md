@@ -1,5 +1,8 @@
 # Changelog
 
+- Preserve the SUMO corridor negative control metadata so its partial receipt
+  can be reproduced through the existing normalization CLI.
+
 - Fix the synthetic SUMO corridor runner rejecting supported Node 24 releases
   newer than 24.14.x, including 24.22.1. Keep unsupported versions refused.
 

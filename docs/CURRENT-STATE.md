@@ -1,5 +1,10 @@
 # God's Eye View Current State
 
+The synthetic SUMO corridor runner preserves `incomplete-control.meta.json`
+alongside the 30-second negative control's XML and receipt. Replaying those
+inputs through the receipt CLI yields the same partial receipt with no metrics;
+this does not turn the incomplete run into a comparable result.
+
 The synthetic SUMO corridor runner accepts stable Node 24.14.0 and later 24.x
 releases, plus stable 26.x, matching `package.json`. Earlier 24.x, other majors
 and prerelease strings remain refused before generating corridor inputs. This

@@ -261,6 +261,7 @@ def main(argv=None):
         metadata['runId'] = 'incomplete-control'
         metadata['planRevision'] = digest(plans['fixed'])
         metadata['context'] = {**context, 'windowEndMs': 30000}
+        write_json(f'{prefix}.meta.json', metadata)
         receipt = importer.build_receipt(metadata, Path(f'{prefix}.statistics.xml').read_bytes())
         write_json(f'{prefix}.receipt.json', receipt)
         if receipt['quality']['coverage'] != 'partial' or receipt['metrics']:

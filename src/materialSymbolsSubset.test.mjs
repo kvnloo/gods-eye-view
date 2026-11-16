@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assignedGlyphs } from '../scripts/iconGlyphs.mjs';
 
 const SRC_ROOT = fileURLToPath(new URL('.', import.meta.url));
 const REPO_ROOT = path.resolve(SRC_ROOT, '..');
@@ -11,10 +12,6 @@ const INDEX_HTML = path.join(REPO_ROOT, 'index.html');
 /** The glyph written as element text: `<span class="material-symbols-outlined">radar</span>`. */
 const SPAN_TEXT =
   /class="[^"]*material-symbols-outlined[^"]*"[^>]*>\s*([a-z0-9_]+)\s*</g;
-/** A whole `textContent =` statement, across lines, so a multi-line ternary is read once. */
-const TEXT_ASSIGNMENT = /(?:textContent|innerText)\s*=\s*([^;]{0,400})/gs;
-const STRING_LITERAL = /['"`]([a-z0-9_]{2,})['"`]/g;
-
 /**
  * Files that SHIP markup. Tests assert on markup, they do not render it.
  *
@@ -47,10 +44,10 @@ function sourceFiles(directory = SRC_ROOT) {
  * forms, so the element renders the literal word `right_panel_open` instead of
  * falling back to a visible box.
  *
- * A literal to the LEFT of a `?` is the condition being tested, not the text
- * being shown, so it is dropped: `status === 'loading' ? …` must not enrol
- * `loading`. Optional chaining is neutralised first — `payload?.newsStatus`
- * is not a ternary, and splitting on its `?` would keep the condition.
+ * JavaScript assignments are parsed as expressions: conditions are not output,
+ * and fixed-whitespace concatenations are prose, not single icon names.
+ * Unknown expressions still conservatively contribute candidate literals.
+ * This is a static single-ligature check, not a DOM/font rendering proof.
  * @returns {Map<string, string>} glyph -> the first file that names it.
  */
 function referencedGlyphs() {
@@ -62,13 +59,8 @@ function referencedGlyphs() {
       if (!found.has(glyph)) found.set(glyph, relative);
     };
     for (const match of source.matchAll(SPAN_TEXT)) add(match[1]);
-    for (const match of source.matchAll(TEXT_ASSIGNMENT)) {
-      const statement = match[1].replaceAll('?.', '.');
-      const assigned = statement.includes('?')
-        ? statement.slice(statement.indexOf('?') + 1)
-        : statement;
-      for (const literal of assigned.matchAll(STRING_LITERAL)) add(literal[1]);
-    }
+    if (!file.endsWith('.html'))
+      for (const glyph of assignedGlyphs(source)) add(glyph);
   }
   return found;
 }
@@ -108,4 +100,45 @@ test('the unused Material Icons Round family is not loaded', () => {
     /Material\+Icons\+Round/,
     'index.html loads an icon font nothing renders',
   );
+});
+
+test('assignment scanner distinguishes sentence fragments from real icon alternatives', () => {
+  const source = `
+    status.textContent = started ? 'Expedition complete.' : 'Scene did not start: ' + (reason || 'unavailable');
+    notice.textContent = started ? 'Complete.' : 'Playback ended: ' + (reason || 'cancelled');
+    icon.textContent = payload?.status === 'loading' ? 'progress_activity' : 'radar';
+    icon.innerText = enabled ? 'play_arrow' : nested ? 'pause' : 'stop';
+    icon['textContent'] = 'right_panel_open';
+    mixed.textContent = ok ? 'radar' : 'Failed: ' + (reason || 'cancelled');
+    icon.textContent = unknown || 'warning';
+  `;
+  assert.deepEqual([...assignedGlyphs(source)].sort(), [
+    'pause',
+    'play_arrow',
+    'progress_activity',
+    'radar',
+    'right_panel_open',
+    'stop',
+    'warning',
+  ]);
+});
+
+test('assignment scanner keeps literal icons, templates and unknown expressions conservative', () => {
+  assert.deepEqual(
+    [
+      ...assignedGlyphs(
+        "icon.textContent = `radar`; icon.innerText = choose('warning');",
+      ),
+    ].sort(),
+    ['radar', 'warning'],
+  );
+  assert.deepEqual(
+    [
+      ...assignedGlyphs(
+        "label.textContent = `Error: ${reason || 'cancelled'}`;",
+      ),
+    ],
+    [],
+  );
+  assert.throws(() => assignedGlyphs('icon.textContent = ('), SyntaxError);
 });

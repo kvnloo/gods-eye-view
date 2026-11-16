@@ -185,6 +185,14 @@ test("the Houston camera credit names TranStar's terms and the permission they r
   assert.match(credit.html, /TxDOT's written permission/);
 });
 
+test('Bucharest opt-in camera credit identifies its conditional source', () => {
+  const credit = DATA_CREDITS.find((entry) => entry.key === 'bucharest-cctv');
+  assert.ok(credit, 'Bucharest camera sources retain an attribution entry');
+  assert.match(credit.html, /Bucharest area, when enabled/);
+  assert.match(credit.html, /href="https:\/\/webcamromania\.ro\/"/);
+  assert.match(credit.html, /publisher terms apply/);
+});
+
 test('every Street Level imagery source is in the attribution lightbox', () => {
   for (const key of [
     'mapillary',

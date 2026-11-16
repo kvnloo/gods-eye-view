@@ -659,7 +659,7 @@ export const DATA_CREDITS = [
   {
     key: 'bucharest-cctv',
     html:
-      'Public webcams (Bucharest area): ' +
+      'Public webcams (Bucharest area, when enabled): ' +
       '<a href="https://webcamromania.ro/" target="_blank" rel="noopener">WebcamRomania</a> ' +
       '— Piața Romană, Magazinul Cocor and Elitte Inn &amp; Suites; publisher terms apply.',
   },

@@ -4,4 +4,5 @@
   Configure `CCTV_SOURCES_FILE=config/cctv_sources.bucharest.json`
   with `CCTV_FORCE_AUSTIN=1` to retain the worldwide feeds. Publisher
   attribution is retained; streams are fetched at runtime, with no bundled
-  frames (cosmin-cucu, #994).
+  frames. The global data credit identifies this local pack as "when enabled"
+  (cosmin-cucu, #994).

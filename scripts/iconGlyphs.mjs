@@ -14,26 +14,30 @@ function children(node) {
     .filter((value) => value && typeof value.type === 'string');
 }
 
-// A literal whitespace prefix/suffix cannot form a single icon ligature.
+// Fixed prose is not a single icon name; whitespace-only padding may surround one.
 // Keep unknown expressions conservative; do not guess their runtime values.
-function containsFixedWhitespace(node) {
+function containsFixedProse(node) {
   if (node.type === 'Literal')
-    return typeof node.value === 'string' && /\s/.test(node.value);
+    return (
+      typeof node.value === 'string' &&
+      /\s/.test(node.value) &&
+      /\S/.test(node.value)
+    );
   if (node.type === 'TemplateLiteral')
-    return node.quasis.some((part) =>
-      /\s/.test(part.value.cooked ?? part.value.raw),
+    return node.quasis.some(
+      (part) =>
+        /\s/.test(part.value.cooked ?? part.value.raw) &&
+        /\S/.test(part.value.cooked ?? part.value.raw),
     );
   if (node.type === 'BinaryExpression' && node.operator === '+')
-    return (
-      containsFixedWhitespace(node.left) || containsFixedWhitespace(node.right)
-    );
+    return containsFixedProse(node.left) || containsFixedProse(node.right);
   return false;
 }
 
 export function assignedGlyphs(source) {
   const found = new Set();
   function collect(node) {
-    if (containsFixedWhitespace(node)) return;
+    if (containsFixedProse(node)) return;
     if (node.type === 'ConditionalExpression') {
       collect(node.consequent);
       collect(node.alternate);

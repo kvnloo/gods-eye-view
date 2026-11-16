@@ -142,3 +142,22 @@ test('assignment scanner keeps literal icons, templates and unknown expressions 
   );
   assert.throws(() => assignedGlyphs('icon.textContent = ('), SyntaxError);
 });
+
+test('whitespace-only padding must not hide an icon candidate', () => {
+  assert.deepEqual(
+    [
+      ...assignedGlyphs(
+        "icon.textContent = ' ' + (active ? 'radar' : 'warning') + '\\n';",
+      ),
+    ].sort(),
+    ['radar', 'warning'],
+  );
+  assert.deepEqual(
+    [
+      ...assignedGlyphs(
+        "icon.textContent = ` ${active ? 'radar' : 'warning'} `;",
+      ),
+    ].sort(),
+    ['radar', 'warning'],
+  );
+});

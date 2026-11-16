@@ -1,5 +1,8 @@
 # Changelog
 
+- Fix the synthetic SUMO corridor runner rejecting supported Node 24 releases
+  newer than 24.14.x, including 24.22.1. Keep unsupported versions refused.
+
 - Treat explicitly current, complete empty vessel coverage as a successful update,
   clearing obsolete contacts while retaining stale or incomplete snapshots.
 

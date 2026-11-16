@@ -144,6 +144,29 @@ class CorridorTests(unittest.TestCase):
             self.assertEqual(result['completedSimulationRuns'], 0)
             self.assertIn('Completed SUMO executions: 0', (out / 'summary.md').read_text())
 
+    def test_node_gate_accepts_supported_releases_and_rejects_others(self):
+        # Exercise main's actual admission gate, without pretending to run SUMO.
+        from types import SimpleNamespace
+        import contextlib
+        import io
+        versions = {
+            'v24.14.0': True, 'v24.22.1': True, 'v24.100.0': True,
+            'v26.0.0': True, 'v26.10.1': True,
+            'v24.13.9': False, 'v22.20.0': False, 'v25.0.0': False,
+            'v27.0.0': False, 'v24.22.1-rc.1': False, 'not-a-version': False,
+        }
+        for version, supported in versions.items():
+            with self.subTest(version=version), tempfile.TemporaryDirectory() as directory:
+                with patch.object(module, 'check_binary', return_value='simulator'), \
+                     patch.object(module.shutil, 'which', return_value='node'), \
+                     patch.object(module, 'run_command', return_value=SimpleNamespace(stdout=version)), \
+                     patch.object(module, 'build_inputs', side_effect=RuntimeError('inputs reached')) as build, \
+                     contextlib.redirect_stdout(io.StringIO()):
+                    expected = 'inputs reached' if supported else 'GEV-supported Node'
+                    with self.assertRaisesRegex(RuntimeError, expected):
+                        module.main(['--output', str(Path(directory) / 'results')])
+                    self.assertEqual(build.call_count, int(supported))
+
     def test_zero_baseline_percentage_is_explicitly_undefined(self):
         self.assertEqual(module.format_change(None), 'n/a')
         self.assertEqual(module.format_change(0), '0.00%')

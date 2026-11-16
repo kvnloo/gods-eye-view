@@ -1,5 +1,10 @@
 # God's Eye View Current State
 
+The synthetic SUMO corridor runner accepts stable Node 24.14.0 and later 24.x
+releases, plus stable 26.x, matching `package.json`. Earlier 24.x, other majors
+and prerelease strings remain refused before generating corridor inputs. This
+version check is not simulator execution evidence.
+
 Vessel sources can report healthy empty coverage using a current, complete
 snapshot with zero raw rows, a healthy transport and a positive last-message
 time. This clears obsolete contacts and settles startup without manufacturing

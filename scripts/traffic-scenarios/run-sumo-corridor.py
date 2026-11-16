@@ -189,9 +189,11 @@ def main(argv=None):
         if not node:
             raise RuntimeError('Node.js required for the actual GEV comparator')
         node_version = run_command([node, '--version'], out / 'node-version.log').stdout.strip()
-        if not (re.fullmatch(r'v24\.14\.\d+', node_version) or
-                re.fullmatch(r'v26\.\d+\.\d+', node_version)):
-            raise RuntimeError('use GEV-supported Node 24.14.x or 26.x')
+        version = re.fullmatch(r'v(\d+)\.(\d+)\.(\d+)', node_version)
+        if not version or not (
+                (int(version[1]) == 24 and int(version[2]) >= 14) or
+                int(version[1]) == 26):
+            raise RuntimeError('use GEV-supported Node >=24.14.0 <25 or >=26 <27')
         report['nodeVersion'] = node_version
         spec = importlib.util.spec_from_file_location('sumo_receipt', HERE / 'sumo-statistics-receipt.py')
         importer = importlib.util.module_from_spec(spec)

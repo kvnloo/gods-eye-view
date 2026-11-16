@@ -7,7 +7,7 @@ It does **not** represent SR-90, a real city, validated demand or field results.
 ## Reproduce
 
 Install Eclipse SUMO **1.24.0** (`python3 -m pip install eclipse-sumo==1.24.0`)
-and GEV-supported Node **24.14.x** or **26.x**. Ensure both `sumo` and
+and GEV-supported Node **>=24.14.0 <25** or **>=26 <27** (stable releases). Ensure both `sumo` and
 `netconvert` are on PATH. From the repository root:
 
 ```sh

@@ -42,6 +42,7 @@ def stats(*, loaded=4, inserted=4, running=0, waiting=0, count=4,
             f'<vehicles loaded="{loaded}" inserted="{inserted}" '
             f'running="{running}" waiting="{waiting}" />'
             f'<teleports total="{teleports}" />'
+            '<safety collisions="0" emergencyStops="0" />'
             f'<vehicleTripStatistics count="{count}" timeLoss="{time_loss}" '
             'duration="120.0" totalTravelTime="480.0" '
             'totalDepartDelay="12.0" /></statistics>').encode()
@@ -76,6 +77,49 @@ class SumoReceiptTests(unittest.TestCase):
                 self.assertEqual(result['metrics'], {})
                 self.assertEqual(result['quality']['coverage'], 'partial')
                 self.assertIn(reason, result['quality']['reasonCodes'])
+
+    def test_safety_faults_never_create_complete_receipts(self):
+        safe = b'<safety collisions="0" emergencyStops="0" />'
+        cases = [
+            (b'<safety collisions="2" emergencyStops="0" />', 'simulator-collisions'),
+            (b'<safety collisions="0" emergencyStops="1" />', 'simulator-emergency-stops'),
+            (b'', 'missing-safety-evidence'),
+            (b'<safety collisions="-1" emergencyStops="0" />', 'invalid-safety-evidence'),
+            (b'<safety collisions="nan" emergencyStops="0" />', 'invalid-safety-evidence'),
+            (safe + safe, 'missing-safety-evidence'),
+        ]
+        for value, reason in cases:
+            with self.subTest(reason=reason, value=value):
+                receipt = mod.build_receipt(metadata(), stats().replace(safe, value))
+                self.assertEqual(receipt['quality']['coverage'], 'partial')
+                self.assertEqual(receipt['metrics'], {})
+                self.assertIn(reason, receipt['quality']['reasonCodes'])
+        good = mod.build_receipt(metadata(), stats())
+        self.assertEqual(good['quality']['safety'], {
+            'collisions': 0, 'emergencyStops': 0,
+        })
+
+    def test_cli_persists_redacted_safety_receipt(self):
+        with tempfile.TemporaryDirectory() as d:
+            directory = Path(d)
+            source = directory / 'stats.xml'
+            manifest = directory / 'metadata.json'
+            receipt_path = directory / 'receipt.json'
+            source.write_bytes(stats().replace(
+                b'<safety collisions="0" emergencyStops="0" />',
+                b'<safety collisions="1" emergencyStops="0" />',
+            ))
+            manifest.write_text(json.dumps(metadata()), encoding='utf-8')
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), '--metadata', str(manifest),
+                 '--statistics', str(source), '--output', str(receipt_path)],
+                capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            saved = json.loads(receipt_path.read_text())
+            self.assertEqual(saved['quality']['coverage'], 'partial')
+            self.assertEqual(saved['metrics'], {})
+            self.assertIn('simulator-collisions', saved['quality']['reasonCodes'])
 
     def test_context_time_mismatch_rejected(self):
         with self.assertRaisesRegex(ValueError, 'windowEndMs'):

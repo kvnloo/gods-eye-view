@@ -322,6 +322,27 @@ test('an old individual observation cannot be followed from a current snapshot',
   );
 });
 
+test('future-dated aircraft contact cannot authorize voice follow', async () => {
+  const f = fixture({
+    records: [
+      {
+        id: 'aaa111',
+        callsign: 'UAL123',
+        latitude: 30,
+        longitude: -97,
+        // The feed observed at 1_000ms, but this contact is one hour later.
+        contactTimeMs: 3_601_000,
+      },
+    ],
+  });
+  const out = await lookupVoiceAircraft({ query: 'UA123' }, f.dependencies);
+  assert.equal(out.ok, false);
+  assert.equal(out.tracking, false);
+  assert.match(out.error, /future-dated/);
+  // A seemingly current feed must not trigger any layer or camera mutation.
+  assert.deepEqual(f.events, [['feed', {}]]);
+});
+
 test('invalid long identity is rejected before querying a provider', async () => {
   const f = fixture();
   const out = await lookupVoiceAircraft(

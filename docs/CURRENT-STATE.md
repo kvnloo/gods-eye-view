@@ -7684,6 +7684,8 @@ and unreachable upstream (502/504) separately from road geometry.
   the map. Non-aircraft kinds fail closed with a refusal and redirect to
   `analyst_query` on loaded layers. Following enables/refreshes the required layer
   and verifies the exact ICAO twice: after refresh and immediately before tracking.
+  A contact timestamp more than two minutes before or after the feed observation
+  cannot authorize following.
 
 > **Reading `npm test` totals:** the count depends on the Node major. The two
 > GC-bracketed allocation microbenchmarks (`src/data/focusAllocations.test.mjs`

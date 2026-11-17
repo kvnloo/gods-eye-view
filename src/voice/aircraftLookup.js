@@ -74,10 +74,10 @@ export async function lookupVoiceAircraft(
     if (
       !Number.isFinite(contact) ||
       !Number.isFinite(observed) ||
-      observed - contact > 120_000
+      Math.abs(observed - contact) > 120_000
     )
       return fail(
-        'Aircraft position is stale or observation time is unknown',
+        'Aircraft position timestamp is stale, future-dated, or unknown',
         result,
       );
     const layerId = candidate[0].feed === 'military' ? 'military' : 'flights';

@@ -27,6 +27,7 @@ import {
 } from './queries/environment.js';
 import { getBhoteKoshiFlood } from './queries/events.js';
 import { getActiveFires, getEarthquakes } from './queries/hazards.js';
+import { getWildfireIntelligence } from './queries/wildfire.js';
 import { getRecentImagery } from './queries/imagery.js';
 import { findInfrastructure } from './queries/infrastructure.js';
 import {
@@ -86,6 +87,7 @@ export {
 export const coreTools = Object.freeze([
   getEarthquakes,
   getActiveFires,
+  getWildfireIntelligence,
   getRecentLaunches,
   aircraftInArea,
   findAircraft,

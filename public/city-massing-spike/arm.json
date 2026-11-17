@@ -1,0 +1,1 @@
+{"arm": "A", "models": {"3": "/city-massing-spike/a3w.glb", "6": "/city-massing-spike/a6w.glb"}, "shadows": "CAST_ONLY", "shade": [0.62, 0.75], "seat": {"level": 4, "cut": 1.0, "under": true}, "view": {"sun": [0.4777, -0.4301, 0.766], "light": [0.25, 1.0], "step": true, "seat": {"keeps": 0.28, "knee": [0.14, 0.3, 0.35], "tone": [0.5, 0.05, 0.714, 1.23]}}}

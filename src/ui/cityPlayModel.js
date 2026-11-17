@@ -370,6 +370,7 @@ export function placeBeside({
   keepOut = [],
   gap = 48,
   margin = 12,
+  prefer = null,
 }) {
   if (!target) return null;
   const clamp = (v, low, high) =>
@@ -409,7 +410,10 @@ export function placeBeside({
       [target, ...keepOut].reduce((sum, k) => sum + overlap(r, k), 0)
     );
   };
-  const best = spots.reduce((a, b) => (cost(b) < cost(a) ? b : a));
+  // SPIKE: `prefer` names the side that wins a tie (the right wins it otherwise).
+  const best = spots.reduce((a, b) =>
+    cost(b) < cost(a) || (b.side === prefer && cost(b) === cost(a)) ? b : a,
+  );
   const from = {
     right: { x: best.x, y: clamp(cy, best.y, best.y + size.height) },
     left: {

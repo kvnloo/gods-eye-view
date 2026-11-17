@@ -55,6 +55,14 @@ vec2 gevSeat(vec3 p, vec3 sun, float top, vec4 tone, vec4 w0, vec4 w1, vec4 w2, 
   float soft = tone.x + tone.y * d;
   return vec2(smoothstep(-0.5 * soft, 0.5 * soft, outside), sky);
 }
+// The line where a wall meets the ground: line = (its width in metres, what the
+// ground keeps of its light at the wall). Ground at the block's base within
+// that width of a wall's foot is that much darker, sun or no sun; zero = none.
+float gevSeatContact(vec3 p, vec3 line, vec4 w0, vec4 w1, vec4 w2, vec4 w3) {
+  if (line.x <= 0.0) return 1.0;
+  float d = max(gevSeatFoot(p.xy, w0, w1, w2, w3), 0.0) + max(abs(p.z) - 0.5, 0.0);
+  return mix(line.y, 1.0, smoothstep(0.0, line.x, d));
+}
 // What is left of a colour. how = (the sun's shadow shows, the sky's share of
 // the light: a shadow keeps that much, the hidden sky shows).
 vec3 gevSeatLight(vec2 seat, vec3 how, vec4 tone) {
@@ -100,6 +108,7 @@ czm_material czm_getMaterial(czm_materialInput materialInput) {
   }
   color *= gevSeatLight(gevSeat(p, sun, gevLevels.z, gevSeatTone, gevWall0, gevWall1, gevWall2, gevWall3),
     gevSeatOn, gevSeatTone);
+  color *= gevSeatContact(p, gevSeatLine, gevWall0, gevWall1, gevWall2, gevWall3);
   material.diffuse = vec3(0.0);
   material.specular = 0.0;
   material.emission = color;
@@ -126,6 +135,7 @@ const GROUND_UNIFORMS = {
   gevSeatTone: ZERO4,
   gevViewSun: ZERO3,
   gevSeatKnee: ZERO3,
+  gevSeatLine: ZERO3,
 };
 let registered = false;
 
@@ -188,6 +198,7 @@ export function seatShader() {
       u_seatTone: { type: VEC4, value: new Cesium.Cartesian4() },
       u_viewSun: { type: VEC3, value: new Cesium.Cartesian3() },
       u_seatKnee: { type: VEC3, value: new Cesium.Cartesian3() },
+      u_seatLine: { type: VEC3, value: new Cesium.Cartesian3() },
     },
     fragmentShaderText: `${SEAT_GLSL}
 void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
@@ -206,6 +217,7 @@ void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
     float seen = dot(pow(material.diffuse, vec3(1.0 / 2.2)), vec3(0.2126, 0.7152, 0.0722));
     light = mix(vec3(1.0), light, max(u_seatKnee.z, smoothstep(u_seatKnee.x, u_seatKnee.y, seen)));
   }
+  light *= gevSeatContact(p, u_seatLine, u_wall0, u_wall1, u_wall2, u_wall3);
   material.diffuse *= pow(light, vec3(2.2));
 }`,
   });
@@ -223,6 +235,7 @@ void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
       shader.setUniform('u_seatTone', look.gevSeatTone);
       shader.setUniform('u_viewSun', look.gevViewSun);
       shader.setUniform('u_seatKnee', look.gevSeatKnee);
+      shader.setUniform('u_seatLine', look.gevSeatLine);
     },
   };
 }

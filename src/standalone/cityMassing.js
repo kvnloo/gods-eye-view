@@ -109,12 +109,19 @@ const SPIKE_ARM = '/city-massing-spike/arm.json';
 // that strip. "keeps" is what the block's shadow keeps of the light (the
 // tiles' own shade keeps 0.27 and is bluer: "tone"), and "knee": [dark, lit,
 // least] has what the tiles already shade take only that least share of it
-// (cityMassingSeat.js).
+// (cityMassingSeat.js). "line": [w, k, h] draws the line where the block meets
+// the ground: the ground within w metres of a wall's foot keeps k of its light
+// at the wall, and the GLB's own lowest h metres darken to k the same way.
+// SPIKE: "panel": "left" | "above" | "below" has the readout stand on that side
+// of the block when it is as free as the right.
 // SPIKE: "view": {"sun": [east, north, up], "light": [a, s]} is the VIEW look:
 // the GLB is lit (a of its colour, s more where it faces that sun) and its
 // shadow is cast from the sun the tiles were photographed under, measured from
 // the tiles' own shadows (lanes/q15/tools/sun_fit.py). The study keeps its
-// own sun: its WAS/NOW lines and every number stay where they were.
+// own sun: its WAS/NOW lines and every number stay where they were. With
+// "step": true that look shows only while the study is off (a step before or
+// after it: the study itself looks as it did), "seat": {...} replaces the
+// seat's numbers in it, and the readout leaves the shadow reach out there.
 // The colours are read this far outside the plot's edge.
 // The floor under a plot cut at the footprint: the plot grown this much about
 // its centre, this far under its lowest ground, the paving's colour this dark.
@@ -255,6 +262,9 @@ export function mountCityMassing({
                 .join(', ')});
               float grey = dot(material.diffuse, vec3(0.2126, 0.7152, 0.0722));
               material.diffuse = mix(mix(vec3(grey), material.diffuse, ${Number(arm.grade?.[0] ?? 1).toFixed(3)}), grade.rgb, grade.a);
+              // "seat": {"line": [w, k, h]}: the wall's foot (the GLB's base is at 0, up +Y).
+              vec2 foot = vec2(${Number(arm.seat?.line?.[1] ?? 1).toFixed(3)}, ${Number(arm.seat?.line?.[2] ?? 0).toFixed(3)});
+              if (foot.y > 0.0) material.diffuse *= mix(foot.x, 1.0, smoothstep(0.0, foot.y, fsInput.attributes.positionMC.y));
             }`,
           });
         entry.primitive = scene.primitives.add(primitive);
@@ -324,9 +334,16 @@ export function mountCityMassing({
     rendered();
   }
 
+  // SPIKE ("view": {"step": true}): the VIEW look is a step of its own, shown
+  // while the shadow study is off; the study keeps the look it had.
+  const viewing = () => Boolean(arm?.view?.sun) && !(arm.view.step && study);
+  // The seat's numbers as that look has them ("view": {"seat": {...}}).
+  const seatOf = () =>
+    viewing() ? { ...arm.seat, ...arm.view.seat } : arm.seat;
+
   // SPIKE: the VIEW look's sun as a unit vector east, north, up, or zero.
   const viewSun = () =>
-    arm?.view?.sun
+    viewing()
       ? Cesium.Cartesian3.normalize(
           new Cesium.Cartesian3(...arm.view.sun),
           new Cesium.Cartesian3(),
@@ -792,6 +809,7 @@ export function mountCityMassing({
       site.base,
     );
     const { ground } = site.seat.tones;
+    const seat = seatOf();
     site.ground = {
       ...site.look,
       gevGround: ground ?? rgb(PLATE),
@@ -801,13 +819,12 @@ export function mountCityMassing({
       // The sun's shadow shows, the sky's share of the light, the sky hidden.
       gevSeatOn: new Cesium.Cartesian3(
         1,
-        arm.seat.keeps ?? SHADOW_DARKNESS,
+        seat.keeps ?? SHADOW_DARKNESS,
         site.seat.level >= 2 ? 1 : 0,
       ),
-      gevSeatKnee: new Cesium.Cartesian3(...(arm.seat.knee ?? [0, 0, 0])),
-      gevSeatTone: arm.seat.tone
-        ? new Cesium.Cartesian4(...arm.seat.tone)
-        : SEAT_TONE,
+      gevSeatKnee: new Cesium.Cartesian3(...(seat.knee ?? [0, 0, 0])),
+      gevSeatLine: new Cesium.Cartesian3(...(seat.line ?? [0, 0, 0])),
+      gevSeatTone: seat.tone ? new Cesium.Cartesian4(...seat.tone) : SEAT_TONE,
       gevViewSun: viewSun(),
     };
   }
@@ -1047,6 +1064,10 @@ export function mountCityMassing({
       on,
       // SPIKE: play mode's selection outline steps aside for a seated block.
       quiet: on && arm?.seat?.level >= 4,
+      side: arm?.panel ?? null,
+      // SPIKE: in the VIEW look the readout states no shadow reach: the
+      // study's sun is not the one that lights the picture.
+      view: on && viewing(),
       plotId: plot.id,
       storeys,
       maxStoreys: MAX_STOREYS,
@@ -1131,6 +1152,10 @@ export function mountCityMassing({
       study = !study;
       wasStoreys = storeys;
       picking = false;
+      if (site?.block && arm?.view?.step) {
+        dress();
+        stand();
+      }
       restudy();
     },
     stepEdge(delta) {

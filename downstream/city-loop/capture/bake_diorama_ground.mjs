@@ -34,8 +34,14 @@ await page.waitForTimeout(15000);
 const out = await page.evaluate(async () => {
   const fx = await (await fetch('/city-diorama/north-beach.osm.json')).json();
   const { bakeGround } = await import('/src/standalone/cityDiorama.js');
-  return bakeGround(window.__godsEyeView.viewer, fx);
+  try {
+    return await bakeGround(window.__godsEyeView.viewer, fx);
+  } catch (e) {
+    const Cesium = window.Cesium ?? (await import('cesium').catch(() => null));
+    return { error: String(e?.message ?? e), status: e?.statusCode ?? e?.target?.status ?? null, response: String(e?.response ?? '').slice(0, 200), hasDefaultToken: Boolean(Cesium?.Ion?.defaultAccessToken) };
+  }
 });
+if (out.error) { console.log(JSON.stringify(out)); process.exit(3); }
 await writeFile(args.out, JSON.stringify(out));
 console.log(JSON.stringify({ n: out.n, centre: out.centre, offset: out.offset, offsetSamples: out.offsetSamples, p: out.offsetP10P50P90, min: Math.min(...out.heights), max: Math.max(...out.heights) }));
 await browser.close();

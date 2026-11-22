@@ -376,7 +376,11 @@ export async function bakeGround(_viewer, fixture, { spacing = 16, half = 640 } 
   const carto = (x, y) => Cesium.Cartographic.fromDegrees(lon + x / kx, lat + y / M);
   const pts = [];
   for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) pts.push(carto(-half + i * spacing, -half + j * spacing));
-  const terrain = await Cesium.createWorldTerrainAsync();
+  // The app's own ion token (the one Google photoreal already uses), never logged.
+  const accessToken = String(import.meta.env?.CESIUM_ION_TOKEN ?? '').trim();
+  if (!accessToken) throw new Error('world terrain: no ion token in this build');
+  const resource = await Cesium.IonResource.fromAssetId(1, { accessToken });
+  const terrain = await Cesium.CesiumTerrainProvider.fromUrl(resource, { ellipsoid: Cesium.Ellipsoid.WGS84 });
   await Cesium.sampleTerrainMostDetailed(terrain, pts);
   const heights = pts.map((c) => Math.round(c.height * 100) / 100);
   // Never sample the Google photoreal mesh here: its policy forbids objects

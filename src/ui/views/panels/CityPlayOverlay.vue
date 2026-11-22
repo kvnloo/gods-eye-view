@@ -38,10 +38,12 @@ const showCarousel = computed(
 );
 
 const size = computed(() => wheelSize(viewport.value));
-// The desktop dock stands about 360 px above the bottom; the legend owns the left.
+// The desktop dock stands about 360 px above the bottom, one line more per
+// plan-score row on its tallest card; the legend owns the left.
+const moveRows = computed(() => Math.max(0, ...(view.value?.cards ?? []).map((c) => c.moves.length)));
 const inset = computed(() => ({
   top: mobile.value ? 196 : 128,
-  bottom: mobile.value ? 176 : showCarousel.value ? 372 : 120,
+  bottom: mobile.value ? 176 : showCarousel.value ? 372 + 30 * moveRows.value : 120,
   side: 12,
   ...(view.value?.legend && !mobile.value ? { left: 376 } : {}),
 }));
@@ -88,6 +90,9 @@ const chipLabels = computed(() => ({
   width: t('Width'),
   walk: t('Walk access'),
 }));
+// Plan-score goals a possible world moves, from the assumed baseline: on each
+// card, and in the bar for the focused one.
+const moveLabels = computed(() => ({ canopy_pct: t('Canopy'), bike_m: t('Bike lane') }));
 // Every number on this HUD is drawn by hudFigure; an unknown one is a plain dash.
 const figure = (f) => hudFigure(f) ?? '—';
 const estimate = true;
@@ -205,6 +210,10 @@ const bars = computed(() => {
       <span v-for="stat in view.stats" :key="stat.id" class="city-play-stat" :data-city-play-stat="stat.id">
         <span class="city-play-stat-label">{{ statLabels[stat.id] }}</span>
         <span class="city-play-stat-value" translate="no">{{ figure(stat) }}</span>
+      </span>
+      <span v-for="move in focusedCard?.moves ?? []" :key="move.id" class="city-play-stat city-play-move" :data-city-play-move="move.id">
+        <span class="city-play-stat-label">{{ moveLabels[move.id] }}</span>
+        <span class="city-play-stat-value" translate="no">{{ figure(move) }}</span>
       </span>
       <button type="button" class="city-play-bar-records" data-city-play-records="bar" :disabled="view.pending" :aria-label="t('Project records')" :title="t('Project records')" @click="controls?.openRecords()">
         <UiIcon name="folder_open" :size="16" />
@@ -347,6 +356,12 @@ const bars = computed(() => {
             <span v-for="chip in card.chips" :key="chip.id" class="city-play-chip" :data-city-play-chip="chip.id">
               <span>{{ chipLabels[chip.id] }}</span>
               <strong translate="no">{{ figure(chip) }}</strong>
+            </span>
+          </span>
+          <span v-if="card.moves.length" class="city-play-card-moves">
+            <span v-for="move in card.moves" :key="move.id" class="city-play-card-move" :data-city-play-card-move="move.id">
+              <span>{{ moveLabels[move.id] }}</span>
+              <strong translate="no">{{ figure(move) }}</strong>
             </span>
           </span>
         </button>

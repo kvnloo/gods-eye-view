@@ -212,6 +212,41 @@ test("the carousel lists this plot's worlds with chips, Build, Reroll and record
   assert.equal($('[data-city-play-records="bar"]').disabled, true);
 });
 
+test('each card states what its world changes, and a world that moves no goal states nothing', async (t) => {
+  const { store, settle, $$ } = await mount(t);
+  const still = {
+    ...alternatives[0],
+    id: 'world-2',
+    parameters: { ...alternatives[0].parameters, shadePercent: 18 },
+  };
+  store.publish(
+    playView({
+      cards: carouselCards([...alternatives, still], plot.id, {
+        focusId: 'world-2',
+      }),
+    }),
+  );
+  store.place({ plot: { x: 700, y: 460 }, callouts: {}, pins: {} });
+  await settle();
+  const moves = (id) =>
+    $$(`[data-city-play-card="${id}"] [data-city-play-card-move]`).map((m) => [
+      m.dataset.cityPlayCardMove,
+      m.querySelector('span').textContent,
+      m.querySelector('strong').textContent,
+    ]);
+  // The same figure the bar draws for the focused world, on every card.
+  assert.deepEqual(moves('world-1'), [
+    ['canopy_pct', 'Canopy', '18 → 45% EST'],
+  ]);
+  assert.deepEqual(moves('world-2'), []);
+  assert.equal(
+    $$('[data-city-play-card="world-2"] .city-play-card-moves').length,
+    0,
+    'no empty row on a card without moves',
+  );
+  assert.equal($$('[data-city-play-bar] [data-city-play-move]').length, 0);
+});
+
 test('zoom tiers swap the wheel for detail callouts or district pins', async (t) => {
   const { store, settle, $, $$ } = await mount(t);
   store.publish(

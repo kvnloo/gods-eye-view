@@ -260,6 +260,7 @@
       "src/ui/cityHudFigure.js",
       "src/data/cityLandUse.js",
       "src/data/cityMassing.js",
+      "src/data/cityScore.js",
       "src/ui/views/panels/RenderFailure.vue",
       "src/ui/views/panels/GlobeCompass.vue",
       "src/ui/stores/recording.js",

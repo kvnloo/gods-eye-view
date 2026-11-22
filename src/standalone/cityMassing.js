@@ -33,6 +33,7 @@ import {
 } from '../renderGovernor.js';
 import { worldClock } from '../time/worldClock.js';
 import { facadeMaterial, facadeUniforms } from './cityMassingLook.js';
+import { pageLookFlags } from '../data/cityLookFlags.js';
 import {
   SEAT_TONE,
   groundMaterial,
@@ -137,6 +138,32 @@ const paved = (c) =>
 const rgb = ({ red, green, blue }) => new Cesium.Cartesian3(red, green, blue);
 // A sun-locked block's badge sits this far above the block.
 const BADGE_RISE = 3;
+// FORK-ONLY (exp/city-loop-r1, ?cityR1=kit): the one block wears the warm
+// diorama palette and its plot's margin gets low-poly trees (faceted canopies
+// and pines, deterministic). The growth district's blocks keep the parent look.
+const R1 = pageLookFlags();
+const KIT_INSET_METERS = 2;
+const KIT_GREENS = ['#5f9e3c', '#78b04a', '#4e8a3a', '#8bbb4f'].map((c) =>
+  Cesium.Color.fromCssColorString(c),
+);
+const KIT_PINE = Cesium.Color.fromCssColorString('#3f7d4a');
+const KIT_TRUNK = Cesium.Color.fromCssColorString('#7a5236');
+// Tree spots in a plot's local metres: its corners pulled KIT_INSET_METERS in,
+// and two along each edge between them.
+export function kitSpots(points, inset = KIT_INSET_METERS) {
+  const pulled = points.map(([x, y]) => {
+    const d = Math.hypot(x, y) || 1;
+    const k = Math.max(0, d - inset * Math.SQRT2) / d;
+    return [x * k, y * k];
+  });
+  return pulled.flatMap((a, i) => {
+    const b = pulled[(i + 1) % pulled.length];
+    return [1 / 3, 2 / 3].reduce(
+      (list, t) => [...list, [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]],
+      [a],
+    );
+  });
+}
 
 /**
  * Massing v0 on the globe, mounted only behind ?massing=1: once MASSING is
@@ -819,7 +846,7 @@ export function mountCityMassing({
           material: seat
             ? groundMaterial(() => site?.ground)
             : massing.footprint
-              ? facadeMaterial(() => site?.look)
+              ? facadeMaterial(() => site?.look, { cozy: R1.kit })
               : PLATE,
           shadows: seat
             ? Cesium.ShadowMode.DISABLED
@@ -836,7 +863,7 @@ export function mountCityMassing({
             ),
             height: base,
             extrudedHeight: base + massing.heightMeters,
-            material: facadeMaterial(() => site?.look),
+            material: facadeMaterial(() => site?.look, { cozy: R1.kit }),
             // The block casts and receives nothing: its own shader shades
             // it, and a shadow map speckles a lit roof it falls back on.
             shadows: Cesium.ShadowMode.CAST_ONLY,
@@ -845,6 +872,7 @@ export function mountCityMassing({
     };
     dress();
     if (site.block) stand();
+    plantKit();
     removeFrame = scene.postRender.addEventListener(frame);
     mark();
     rendered();
@@ -988,7 +1016,63 @@ export function mountCityMassing({
     }
     dress();
     if (site.block) stand();
+    plantKit();
     rendered();
+  }
+
+  // FORK-ONLY (?cityR1=kit): low-poly trees in the block's plot margin.
+  function plantKit() {
+    if (!R1.kit || !site) return;
+    for (const e of site.kit ?? []) ds.entities.remove(e);
+    site.kit = [];
+    if (!site.massing.footprint || site.seat) return;
+    const frame = localFrame(site.plot.corners);
+    kitSpots(frame.points).forEach(([x, y], i) => {
+      const [lon, lat] = frame.toLonLat([x, y]);
+      const pine = i % 3 === 1;
+      const r = 1.5 + ((i * 37) % 7) * 0.12;
+      const h = 4.6 + ((i * 53) % 5) * 0.45;
+      const trunk = 1.3;
+      const at = (up) =>
+        Cesium.Cartesian3.fromDegrees(lon, lat, site.base + PLATE_RISE + up);
+      site.kit.push(
+        ds.entities.add({
+          position: at(trunk / 2),
+          cylinder: {
+            length: trunk,
+            topRadius: 0.2,
+            bottomRadius: 0.26,
+            slices: 6,
+            material: KIT_TRUNK,
+            shadows: Cesium.ShadowMode.CAST_ONLY,
+          },
+        }),
+        ds.entities.add(
+          pine
+            ? {
+                position: at(trunk + h / 2 - 0.4),
+                cylinder: {
+                  length: h,
+                  topRadius: 0,
+                  bottomRadius: r * 1.05,
+                  slices: 7,
+                  material: KIT_PINE,
+                  shadows: Cesium.ShadowMode.CAST_ONLY,
+                },
+              }
+            : {
+                position: at(trunk + h * 0.42),
+                ellipsoid: {
+                  radii: new Cesium.Cartesian3(r, r, h * 0.45),
+                  slicePartitions: 7,
+                  stackPartitions: 5,
+                  material: KIT_GREENS[i % KIT_GREENS.length],
+                  shadows: Cesium.ShadowMode.CAST_ONLY,
+                },
+              },
+        ),
+      );
+    });
   }
 
   // The stepper re-extrudes the standing block from the new storey count.

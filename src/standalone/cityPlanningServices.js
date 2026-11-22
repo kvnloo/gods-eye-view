@@ -3,6 +3,7 @@ import { createCityBuilder } from '../ui/cityBuilder.js';
 import { useCommunityPlanningStore } from '../ui/stores/communityPlanning.js';
 import { useCityPlayStore } from '../ui/stores/cityPlay.js';
 import { massingFlag } from '../data/cityMassing.js';
+import { CITY_R1_FEATURES, pageLookFlags } from '../data/cityLookFlags.js';
 import { useSceneSharingStore } from '../ui/stores/sceneSharing.js';
 import { applicationPinia } from '../ui/vueRuntime.js';
 import { renderFreshCesiumFrame } from '../voice/realtimeViewport.js';
@@ -325,6 +326,7 @@ export function mountCityBuilder(options = {}) {
   // code loads only for one: another renderer never requests Cesium, and
   // without a globe the records dialog still works.
   let massing = null;
+  let look = null;
   const viewer = cityEngineViewer(scene);
   if (viewer)
     void Promise.all([import('./cityPlay.js'), import('./cityMassing.js')])
@@ -341,6 +343,12 @@ export function mountCityBuilder(options = {}) {
         // Massing v0 follows the selected plot, only behind ?massing=1.
         if (massingFlag(globalThis.location?.search))
           massing = mountCityMassing({ viewer, store: playStore });
+        // FORK-ONLY (exp/city-loop-r1): ?look=cozy / ?cityR1=… switches.
+        const flags = pageLookFlags();
+        if (flags.look || CITY_R1_FEATURES.some((f) => flags[f]))
+          void import('./cityLookR1.js').then(({ mountCityLookR1 }) => {
+            if (!disposed) look = mountCityLookR1({ viewer, flags });
+          });
       })
       .catch(() => console.error('City builder play mode failed to load'));
   store.connect(controls);
@@ -350,6 +358,7 @@ export function mountCityBuilder(options = {}) {
     if (disposed) return;
     disposed = true;
     try {
+      look?.destroy();
       massing?.destroy();
       play?.destroy();
       owner.destroy();

@@ -33,6 +33,11 @@ const BASE = args.url || 'http://127.0.0.1:4187';
 const OUT = path.resolve(args.out || 'downstream/city-loop/runs/r0/capture');
 const LABEL = args.label || 'app';
 const VIDEO = Boolean(args.video);
+// Round 1: extra app URL params (e.g. --query cityR1=all) and --look-app, which
+// takes each beat's LOOK render from the app's own ?look=cozy chain
+// (src/standalone/cozyValleyLook.js) instead of the harness filter.
+const QUERY = typeof args.query === 'string' ? args.query : '';
+const LOOK_APP = Boolean(args['look-app']);
 const require = createRequire(path.join(APP, 'package.json'));
 const { chromium } = require('playwright-core');
 const { siteForPlot } = await import(
@@ -229,26 +234,29 @@ async function attribution() {
 }
 async function cozyVariants(beat) {
   // Arm (a): install the Cozy Valley chain, shoot full + 50 % wipe, remove.
-  const report = await page.evaluate(async () => {
-    const m = await import('/downstream/city-loop/filter/cozyValley.js');
+  const report = await page.evaluate(async (app) => {
     window.__gevCozyValley?.remove?.();
-    const look = m.installCozyValley(window.__godsEyeView.viewer, { wipe: 0 });
+    const look = app
+      ? (await import('/src/standalone/cozyValleyLook.js')).installCozyValleyLook(window.__godsEyeView.viewer, { wipe: 0 })
+      : (await import('/downstream/city-loop/filter/cozyValley.js')).installCozyValley(window.__godsEyeView.viewer, { wipe: 0 });
     window.__gevCozyValley = look;
-    return look.report;
-  });
+    return { ...look.report, source: app ? 'app:src/standalone/cozyValleyLook.js' : 'harness:filter/cozyValley.js' };
+  }, LOOK_APP);
   await render(1800);
   const full = await shot(`${beat}--cozy`);
   // Diagnostic: the grade stage alone (no bloom/AO) to attribute look changes per stage.
-  await page.evaluate(() => {
+  await page.evaluate((app) => {
     const v = window.__godsEyeView.viewer;
+    if (app) return window.__gevCozyValley.set({ bloom: 0 });
     window.__cozyBloomWas = v.scene.postProcessStages.bloom.enabled;
     v.scene.postProcessStages.bloom.enabled = false;
-  });
+  }, LOOK_APP);
   await render(1200);
   const gradeOnly = await shot(`${beat}--cozy-grade-only`);
-  await page.evaluate(() => {
+  await page.evaluate((app) => {
+    if (app) return window.__gevCozyValley.set({ bloom: 0.9 });
     window.__godsEyeView.viewer.scene.postProcessStages.bloom.enabled = window.__cozyBloomWas;
-  });
+  }, LOOK_APP);
   await page.evaluate(() => window.__gevCozyValley.set({ wipe: 0.5 }));
   await render(1200);
   const wipe = await shot(`${beat}--cozy-wipe`);
@@ -320,6 +328,9 @@ page.on('pageerror', (e) => manifest.pageErrors.push(e.message.slice(0, 300)));
 const url = new URL(BASE);
 url.searchParams.set('welcome', '0');
 url.searchParams.set('massing', '1');
+for (const [k, v] of new URLSearchParams(QUERY)) url.searchParams.set(k, v);
+manifest.query = QUERY;
+manifest.lookSource = LOOK_APP ? 'app' : 'harness';
 url.hash = new URLSearchParams({
   v: '2',
   ...Object.fromEntries(Object.entries(SITE).map(([k, v]) => [k, `${v}`])),

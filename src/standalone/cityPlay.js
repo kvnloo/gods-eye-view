@@ -34,6 +34,8 @@ import {
   zoneLegend,
   zoomTier,
 } from '../ui/cityPlayModel.js';
+import { pageLookFlags } from '../data/cityLookFlags.js';
+import { MASSING_ASSUMPTIONS, plotMassing } from '../data/cityMassing.js';
 
 const OWNER = 'city-play';
 const BODY_CLASS = 'gev-city-play';
@@ -42,6 +44,8 @@ const BOX_HEIGHT = 26;
 const HOLO_WIDTH = 48;
 const HOLO_HEIGHT = 32;
 const GROUND_LIFT = 0.3;
+// FORK-ONLY (?cityR1=flat): a concept laid flat rides this far over its plot.
+const FLAT_LIFT = 0.25;
 const SCAN_MS = 1400;
 const BEACON_HEIGHT = 160;
 // Narrow screens lead the framing so the plot sits above the bottom carousel.
@@ -66,6 +70,21 @@ const FRAMES = {
   // A district fills the view: its range is this many times its radius.
   district: { pitch: -32, fit: 4 },
 };
+
+// FORK-ONLY (exp/city-loop-r1, ?cityR1=ghost,flat): see src/data/cityLookFlags.js.
+const R1 = pageLookFlags();
+// The ghost of the assumed block's footprint inside the plot (the massing's
+// own setback), draped on the ground while the player chooses.
+function ghostFootprint(plot) {
+  try {
+    return plotMassing({
+      corners: plot.corners,
+      storeys: MASSING_ASSUMPTIONS.storeys,
+    }).footprint;
+  } catch {
+    return null;
+  }
+}
 
 function ring(plot, height) {
   const points = [...plot.corners, plot.corners[0]].flat();
@@ -244,7 +263,38 @@ export function mountCityPlay({
         },
       }),
     );
-    if (choosing)
+    if (choosing && R1.ghost) {
+      // A placement ghost lying on the ground: the block's footprint, tinted
+      // and outlined in dashes, instead of a 26 m cyan prism over the plot.
+      const foot = ghostFootprint(plot);
+      if (foot)
+        select.push(
+          ds.entities.add({
+            id: `${OWNER}-ghost`,
+            polygon: {
+              hierarchy: Cesium.Cartesian3.fromDegreesArray(foot.flat()),
+              material: ACCENT.withAlpha(0.3),
+              classificationType: CLASSIFY,
+            },
+          }),
+          ds.entities.add({
+            polyline: {
+              positions: Cesium.Cartesian3.fromDegreesArray(
+                [...foot, foot[0]].flat(),
+              ),
+              width: 3,
+              material: new Cesium.PolylineDashMaterialProperty({
+                color: Cesium.Color.WHITE.withAlpha(0.9),
+                gapColor: ACCENT.withAlpha(0.35),
+                dashLength: 14,
+              }),
+              clampToGround: true,
+              classificationType: CLASSIFY,
+            },
+          }),
+        );
+    }
+    if (choosing && !R1.ghost)
       select.push(
         ds.entities.add({
           wall: {
@@ -265,7 +315,7 @@ export function mountCityPlay({
           },
         }),
       );
-    if (choosing)
+    if (choosing && !R1.ghost)
       select.push(
         ...plot.corners.map(([lon, lat]) =>
           ds.entities.add({
@@ -347,9 +397,81 @@ export function mountCityPlay({
     }
   }
 
+  const shownTilesets = () =>
+    Array.from({ length: scene.primitives.length }, (_, i) =>
+      scene.primitives.get(i),
+    ).filter((p) => p instanceof Cesium.Cesium3DTileset && p.show);
+
+  // FORK-ONLY (?cityR1=flat): a flat concept cuts the photoreal mesh out of
+  // its plot while it shows (as massing does for a block), so it lies on the
+  // plot instead of under what stands there; the cut goes when it hides.
+  function setFlatCut(holo, want) {
+    const cuts = holo._cityCuts;
+    if (!cuts || want === cuts.length > 0) return;
+    if (!want) {
+      for (const c of cuts.splice(0)) {
+        c.tileset.clippingPolygons?.remove(c.polygon);
+        if (c.created && c.tileset.clippingPolygons?.length === 0)
+          c.tileset.clippingPolygons = undefined;
+      }
+      return;
+    }
+    if (!Cesium.ClippingPolygonCollection.isSupported(scene)) return;
+    const positions = Cesium.Cartesian3.fromDegreesArray(
+      holo._cityPlot.corners.flat(),
+    );
+    for (const tileset of shownTilesets()) {
+      const created = !tileset.clippingPolygons;
+      if (created)
+        tileset.clippingPolygons = new Cesium.ClippingPolygonCollection();
+      cuts.push({
+        tileset,
+        created,
+        polygon: tileset.clippingPolygons.add(
+          new Cesium.ClippingPolygon({ positions }),
+        ),
+      });
+    }
+  }
+
+  function flatConcept(a, key) {
+    const plot = a.site.plot;
+    const base = baseHeight(plot);
+    const heading = (a.site.reference ?? a.concept.sourceView).camera.heading;
+    const holo = ds.entities.add({
+      id: `${OWNER}-concept-${a.id}`,
+      polygon: {
+        hierarchy: ring(plot).slice(0, 4),
+        height: base + FLAT_LIFT,
+        material: new Cesium.ImageMaterialProperty({
+          image: a.concept.image,
+          transparent: false,
+        }),
+        stRotation: Cesium.Math.toRadians(heading),
+        shadows: Cesium.ShadowMode.RECEIVE_ONLY,
+      },
+    });
+    holo._cityKey = key;
+    holo._cityPlot = plot;
+    holo._cityAlternative = a.id;
+    holo._cityShadows = [];
+    holo._cityCuts = [];
+    holo._cityGround = {
+      sun: sunAt(plot),
+      baseGapMeters: FLAT_LIFT,
+      shadowMeters: 0,
+      shade: 1,
+      contact: true,
+      cast: false,
+      flat: true,
+    };
+    return holo;
+  }
+
   function removeHolo(plotId) {
     const holo = holos.get(plotId);
     if (!holo) return;
+    setFlatCut(holo, false);
     for (const shadow of holo._cityShadows) ds.entities.remove(shadow);
     ds.entities.remove(holo);
     holos.delete(plotId);
@@ -397,8 +519,9 @@ export function mountCityPlay({
       }
       tints.get(plotId)._cityBeacon._cityPlot = a.site.plot;
       // A proposed land use takes the plot's ground tint; the beacon stays.
-      tints.get(plotId).show = !useOf(plotId) && !capturing;
+      tints.get(plotId).show = !useOf(plotId) && !capturing && !R1.flat;
       tints.get(plotId)._cityBeacon.show = tier === 'district';
+      if (!holos.has(plotId) && R1.flat) holos.set(plotId, flatConcept(a, key));
       if (!holos.has(plotId)) {
         const g = holoGeometry(a);
         if (!appeared.has(key)) appeared.set(key, now());
@@ -487,8 +610,12 @@ export function mountCityPlay({
         }
       }
       const holo = holos.get(plotId);
-      holo.show = tier !== 'district' && !capturing;
+      holo.show =
+        tier !== 'district' &&
+        !capturing &&
+        !(R1.flat && store.massing?.on);
       for (const shadow of holo._cityShadows) shadow.show = holo.show;
+      setFlatCut(holo, holo.show && ds.show);
     }
   }
 

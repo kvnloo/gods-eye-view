@@ -17,9 +17,24 @@ const rgb = (css) => {
   return `vec3(${[red, green, blue].map((v) => v.toFixed(4)).join(', ')})`;
 };
 const number = (value) => value.toFixed(4);
-const { colors, shopfront, floor, fascia } = FACADE;
+const { shopfront, floor, fascia } = FACADE;
+// FORK-ONLY (exp/city-loop-r1, ?cityR1=kit): the same building in a warm
+// "diorama" palette (cream plaster, terracotta roof and coping, timber frames,
+// teal glass, a warm roofline light): a look, the block's numbers unchanged.
+export const FACADE_MATERIAL_COZY = 'GevCityMassingFacadeCozy';
+export const COZY_COLORS = Object.freeze({
+  body: '#f2dcb3',
+  frame: '#6b4430',
+  glass: '#2f5866',
+  blind: '#efd3a4',
+  fascia: '#c8603a',
+  coping: '#d9774a',
+  roof: '#c8693f',
+  paving: '#c9b58a',
+  glow: '#ffe3b5',
+});
 
-const SOURCE = `
+const source = (colors) => `
 float gevBox(float x, float lo, float hi, float aa) {
   return smoothstep(lo - aa, lo + aa, x) - smoothstep(hi - aa, hi + aa, x);
 }
@@ -228,15 +243,15 @@ const ZERO3 = new Cesium.Cartesian3();
 const ZERO4 = new Cesium.Cartesian4();
 // Constructing the material once registers its type for the entity pipeline:
 // done when Cesium first asks the block for its material type (a browser frame).
-let registered = false;
-function register() {
-  if (registered) return;
-  registered = true;
+const registered = new Set();
+function register(type = FACADE_MATERIAL) {
+  if (registered.has(type)) return;
+  registered.add(type);
   // The cached type is this instance: fromType copies its opacity from it.
   new Cesium.Material({
     translucent: false,
     fabric: {
-      type: FACADE_MATERIAL,
+      type,
       uniforms: {
         gevOriginHigh: ZERO3,
         gevOriginLow: ZERO3,
@@ -251,7 +266,7 @@ function register() {
         gevBays: ZERO4,
         gevLevels: ZERO4,
       },
-      source: SOURCE,
+      source: source(type === FACADE_MATERIAL_COZY ? COZY_COLORS : FACADE.colors),
     },
   }).translucent = false;
 }
@@ -302,14 +317,15 @@ export function facadeUniforms(facade, base) {
  * The block polygon's material: `read()` gives the uniforms as they now stand,
  * so a storey step or new ground shows on the next frame without a rebuild.
  */
-export function facadeMaterial(read) {
+export function facadeMaterial(read, { cozy = false } = {}) {
+  const type = cozy ? FACADE_MATERIAL_COZY : FACADE_MATERIAL;
   const property = {
-    type: FACADE_MATERIAL,
+    type,
     isConstant: false,
     definitionChanged: new Cesium.Event(),
     getType() {
-      register();
-      return FACADE_MATERIAL;
+      register(type);
+      return type;
     },
     getValue: (time, result = {}) => Object.assign(result, read()),
     equals: (other) => other === property,

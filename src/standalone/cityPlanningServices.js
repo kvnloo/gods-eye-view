@@ -4,6 +4,7 @@ import { useCommunityPlanningStore } from '../ui/stores/communityPlanning.js';
 import { useCityPlayStore } from '../ui/stores/cityPlay.js';
 import { massingFlag } from '../data/cityMassing.js';
 import { CITY_R1_FEATURES, pageLookFlags } from '../data/cityLookFlags.js';
+import { postcardFlag } from '../data/cityPostcard.js';
 import { useSceneSharingStore } from '../ui/stores/sceneSharing.js';
 import { applicationPinia } from '../ui/vueRuntime.js';
 import { renderFreshCesiumFrame } from '../voice/realtimeViewport.js';
@@ -327,6 +328,7 @@ export function mountCityBuilder(options = {}) {
   // without a globe the records dialog still works.
   let massing = null;
   let look = null;
+  let postcard = null;
   const viewer = cityEngineViewer(scene);
   if (viewer)
     void Promise.all([import('./cityPlay.js'), import('./cityMassing.js')])
@@ -349,6 +351,15 @@ export function mountCityBuilder(options = {}) {
           void import('./cityLookR1.js').then(({ mountCityLookR1 }) => {
             if (!disposed) look = mountCityLookR1({ viewer, flags });
           });
+        // FORK-ONLY (exp/city-postcard): ?postcard=1 Cozy postcard, through the
+        // dev-only local image bridge (#312) like concepts, so never in a build.
+        if (canLocal && postcardFlag(globalThis.location?.search))
+          void import('./cityPostcard.js').then(({ mountCityPostcard }) => {
+            if (!disposed)
+              postcard = mountCityPostcard({
+                capture: () => captureReference(),
+              });
+          });
       })
       .catch(() => console.error('City builder play mode failed to load'));
   store.connect(controls);
@@ -358,6 +369,7 @@ export function mountCityBuilder(options = {}) {
     if (disposed) return;
     disposed = true;
     try {
+      postcard?.destroy();
       look?.destroy();
       massing?.destroy();
       play?.destroy();

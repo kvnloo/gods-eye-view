@@ -428,6 +428,7 @@ const bars = computed(() => {
     >
       <span class="city-game-cell-head"><UiIcon name="layers" :size="13" />{{ cell.plots }} {{ t('Plots') }} · {{ cellHectares(cell) }}</span>
       <span class="city-game-cell-yield"><UiIcon name="location_city" :size="13" /><strong translate="no">{{ figure({ value: cell.homesLow }) }}–{{ figure({ value: cell.homesHigh }) }}</strong> {{ t('Homes') }} <span class="city-game-est">{{ t('EST', { context: 'estimated value' }) }}</span></span>
+      <span class="city-game-cell-verb">{{ t('Click a plot, shift-click a second: grow a district') }}</span>
     </span>
     <CityGameHud v-if="hud.bar" />
 

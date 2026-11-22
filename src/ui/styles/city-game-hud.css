@@ -347,6 +347,12 @@ body.gev-city-hud-bar .city-play-dock {
   gap: 5px;
   align-items: center;
 }
+.city-game-cell-verb {
+  margin-top: 2px;
+  color: var(--accent);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+}
 .city-game-cell .ui-icon {
   color: var(--accent);
 }

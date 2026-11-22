@@ -34,7 +34,13 @@ import {
 import { worldClock } from '../time/worldClock.js';
 import { facadeMaterial, facadeUniforms } from './cityMassingLook.js';
 import { pageLookFlags } from '../data/cityLookFlags.js';
-import { dustPuffs, pageHudFlags, riseShare, RISE_MS } from '../data/cityGameHud.js';
+import {
+  districtGround,
+  dustPuffs,
+  pageHudFlags,
+  riseShare,
+  RISE_MS,
+} from '../data/cityGameHud.js';
 import {
   SEAT_TONE,
   groundMaterial,
@@ -147,6 +153,21 @@ const R1 = pageLookFlags();
 const HUD = pageHudFlags();
 const DUST_MS = 1400;
 let dustCanvas = null;
+// The four outer corners of a district (rows south to north, each west to
+// east, as cityPlot.js plotBlock lists them).
+function districtOutline(plots) {
+  const rows = new Map();
+  for (const p of plots) rows.set(p.row, [...(rows.get(p.row) ?? []), p]);
+  const keys = [...rows.keys()].sort((a, b) => a - b);
+  const south = rows.get(keys[0]).sort((a, b) => a.col - b.col);
+  const north = rows.get(keys.at(-1)).sort((a, b) => a.col - b.col);
+  return [
+    south[0].corners[0],
+    south.at(-1).corners[1],
+    north.at(-1).corners[2],
+    north[0].corners[3],
+  ];
+}
 // A soft warm-dust sprite, drawn once.
 function dustSprite() {
   if (dustCanvas || typeof document === 'undefined') return dustCanvas;
@@ -1310,9 +1331,10 @@ export function mountCityMassing({
 
   function clearStands() {
     removeGrowthFrame();
-    for (const { plate, block, cuts } of stands) {
+    for (const { plate, block, cuts, skirt } of stands) {
       ds.entities.remove(plate);
       ds.entities.remove(block);
+      if (skirt) ds.entities.remove(skirt);
       uncut(cuts);
     }
     stands = [];
@@ -1325,7 +1347,8 @@ export function mountCityMassing({
   // and each sun-locked block's badge follows it on screen.
   function growthFrame() {
     const ready = tilesReady();
-    if (ready && !stands.ready)
+    // A fitted district ground (?cityHud=ground) is not re-sampled through its own cuts.
+    if (ready && !stands.ready && !stands[0]?.fitted)
       for (const s of stands) {
         const ground = measure(s.plot);
         if (!ground || Math.abs(ground.base - s.base) < REGROUND_METERS)
@@ -1371,6 +1394,51 @@ export function mountCityMassing({
     });
     if (!growth) return plan;
     const blocks = plan.stages[stage].blocks;
+    if (!stands.length && HUD.ground) {
+      // FORK-ONLY (?cityHud=ground): every plot is sampled BEFORE any is cut
+      // (a later plot's probes otherwise fall into its neighbours' holes or
+      // onto their roofs: round-1 plates stood 35 m apart), one ground is
+      // fitted to the district, and each plate reaches down to that ground's
+      // lowest point, so a slope steps like terraces instead of opening onto
+      // the void under the cut tiles. A skirt closes the district's edge.
+      const frame = localFrame(plots.map((p) => [p.center.lon, p.center.lat]));
+      const lows = plots.map((plot) => {
+        const heights = [
+          sample([plot.center.lon, plot.center.lat]),
+          ...edgeProbes(plot.corners, PROBE_METERS).map(sample),
+        ].filter(Number.isFinite);
+        const [x, y] = frame.toMeters([plot.center.lon, plot.center.lat]);
+        return { x, y, h: heights.length ? Math.min(...heights) : NaN };
+      });
+      const fitted = districtGround(lows);
+      const grounds = lows.map(({ x, y }) =>
+        fitted ? { base: fitted.at(x, y), floor: fitted.floor - 1 } : null,
+      );
+      stands = plots.map((plot, i) => {
+        const ground = grounds[i];
+        const massing = plotMassing({
+          corners: plot.corners,
+          storeys: blocks[i].storeys,
+        });
+        return {
+          plot,
+          base: ground?.base ?? 0,
+          fitted: true,
+          cuts: cut(plot),
+          ...standBlock(plot, massing, ground, `-${plot.id}`),
+        };
+      });
+      if (fitted) {
+        const outline = districtOutline(plots);
+        const skirt = close(
+          { corners: outline },
+          fitted.floor + PLATE_RISE,
+          false,
+        );
+        if (skirt) stands[0].skirt = skirt;
+      }
+      removeGrowthFrame = scene.postRender.addEventListener(growthFrame);
+    }
     if (!stands.length) {
       stands = plots.map((plot, i) => {
         const ground = measure(plot);

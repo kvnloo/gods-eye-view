@@ -8,6 +8,7 @@ import {
   cellYield,
   cityHudFlags,
   districtCells,
+  districtGround,
   dustPuffs,
   placementCheck,
   riseShare,
@@ -162,6 +163,39 @@ test('cell yield: plots, hectares and the growth homes range, estimated', () => 
   assert.ok(y.homesHigh > y.homesLow);
   assert.equal(y.estimate, true);
   assert.equal(cellYield(null), null);
+});
+
+test('district ground: a slope is fitted and roofs above it are ignored', () => {
+  // Ground rising 0.1 m per metre east; two roofs 12 m and 25 m up.
+  const samples = [];
+  for (let i = 0; i < 5; i++)
+    for (let j = 0; j < 5; j++)
+      samples.push({ x: j * 40, y: i * 40, h: 0.1 * j * 40 + 3 });
+  samples[7].h += 12;
+  samples[18].h += 25;
+  const g = districtGround(samples);
+  assert.ok(Math.abs(g.at(0, 0) - 3) < 1e-6);
+  assert.ok(Math.abs(g.at(160, 80) - 19) < 1e-6);
+  assert.equal(g.used, 23);
+  assert.ok(Math.abs(g.floor - 3) < 1e-6);
+});
+
+test('district ground: few or no samples', () => {
+  assert.equal(districtGround([]), null);
+  assert.equal(districtGround([{ x: 0, y: 0, h: NaN }]), null);
+  const two = districtGround([
+    { x: 0, y: 0, h: 5 },
+    { x: 40, y: 0, h: 2 },
+  ]);
+  assert.equal(two.at(100, 100), 2);
+  // Unsampled plots still get a floor from the plane.
+  const g = districtGround([
+    { x: 0, y: 0, h: 1 },
+    { x: 40, y: 0, h: 1 },
+    { x: 0, y: 40, h: 1 },
+    { x: 80, y: 80, h: NaN },
+  ]);
+  assert.ok(Math.abs(g.at(80, 80) - 1) < 1e-9);
 });
 
 test('placement: valid / invalid with a reason', () => {

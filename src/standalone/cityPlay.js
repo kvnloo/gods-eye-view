@@ -898,7 +898,20 @@ export function mountCityPlay({
     if (cellRings._key === cellsKey && cellRings.length) return;
     clearList(cellRings);
     cellRings._key = cellsKey;
+    const focus = cells[Math.floor(cells.length / 2)];
     for (const cell of cells) {
+      if (cell === focus)
+        cellRings.push(
+          ds.entities.add({
+            polygon: {
+              hierarchy: Cesium.Cartesian3.fromDegreesArray(
+                cell.corners.flat(),
+              ),
+              material: ACCENT.withAlpha(0.1),
+              classificationType: CLASSIFY,
+            },
+          }),
+        );
       for (const plot of cell.plots)
         cellRings.push(
           ds.entities.add({
@@ -913,19 +926,22 @@ export function mountCityPlay({
         ds.entities.add({
           polygon: {
             hierarchy: ringPolygon(cell.corners, CELL_LINE_METERS),
-            material: ACCENT.withAlpha(0.85),
+            material: ACCENT.withAlpha(cell === focus ? 0.95 : 0.5),
             classificationType: CLASSIFY,
           },
         }),
       );
     }
   }
+  // Only the district in the middle of the view carries its yield chip: the
+  // model gives every 25-plot district the same estimate, and nine equal
+  // chips read as noise (round-2 smoke).
   function cellsNow() {
     if (!(HUD.plots && state.tier === 'district')) return [];
-    return cells.map((cell) => {
-      if (!yields.has(cell.id)) yields.set(cell.id, cellYield(cell));
-      return { ...yields.get(cell.id), center: cell.center };
-    });
+    const cell = cells[Math.floor(cells.length / 2)];
+    if (!cell) return [];
+    if (!yields.has(cell.id)) yields.set(cell.id, cellYield(cell));
+    return [{ ...yields.get(cell.id), center: cell.center }];
   }
 
   function render() {
@@ -1145,7 +1161,7 @@ export function mountCityPlay({
         }
       }
       anchors.cells = {};
-      for (const cell of cells) {
+      for (const cell of cells.slice(Math.floor(cells.length / 2)).slice(0, 1)) {
         const h = baseHeight({ id: cell.id, center: cell.center });
         anchors.cells[cell.id] = project(cell.center.lon, cell.center.lat, h);
       }

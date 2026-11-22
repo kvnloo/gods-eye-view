@@ -333,6 +333,73 @@ export function cellYield(cell) {
   };
 }
 
+// --------------------------------------------- the district's ground (growth)
+/** A sample this far above the fitted ground is a roof or a tree, not ground. */
+export const ROOF_ABOVE_METERS = 2;
+
+/**
+ * One smooth ground under a growth district, fitted to height samples taken
+ * BEFORE the photoreal mesh is cut: `samples` are `{x, y, h}` in local metres
+ * (east, north) with h the lowest ground sampled at each plot. A plane is
+ * fitted by least squares, then samples more than ROOF_ABOVE_METERS above it
+ * (roofs, trees) are dropped and it is fitted again (3 passes). Fewer than
+ * three usable samples: a level ground at the lowest one. Returns `{at(x, y),
+ * floor, used}`, `floor` the lowest the plane reaches over the samples, or
+ * null when nothing was sampled. Every plate stands on `at` and reaches down
+ * to `floor`, so no gap opens between neighbours on a slope.
+ */
+export function districtGround(samples) {
+  let pts = (samples ?? []).filter(
+    (s) => s && [s.x, s.y, s.h].every(Number.isFinite),
+  );
+  if (!pts.length) return null;
+  const level = (h) => ({ a: h, b: 0, c: 0 });
+  let plane = level(Math.min(...pts.map((p) => p.h)));
+  for (let pass = 0; pass < 3 && pts.length >= 3; pass++) {
+    const fit = fitPlane(pts);
+    if (!fit) break;
+    plane = fit;
+    const kept = pts.filter(
+      (p) => p.h - (plane.a + plane.b * p.x + plane.c * p.y) <= ROOF_ABOVE_METERS,
+    );
+    if (kept.length === pts.length || kept.length < 3) break;
+    pts = kept;
+  }
+  const at = (x, y) => plane.a + plane.b * x + plane.c * y;
+  const all = (samples ?? []).filter((s) => s && [s.x, s.y].every(Number.isFinite));
+  return {
+    at,
+    floor: Math.min(...all.map((s) => at(s.x, s.y))),
+    used: pts.length,
+  };
+}
+
+// Least-squares plane h = a + b x + c y, or null when the points are collinear.
+function fitPlane(pts) {
+  const n = pts.length;
+  let sx = 0, sy = 0, sh = 0, sxx = 0, syy = 0, sxy = 0, sxh = 0, syh = 0;
+  for (const { x, y, h } of pts) {
+    sx += x; sy += y; sh += h;
+    sxx += x * x; syy += y * y; sxy += x * y;
+    sxh += x * h; syh += y * h;
+  }
+  // Normal equations, solved by Cramer's rule.
+  const m = [
+    [n, sx, sy],
+    [sx, sxx, sxy],
+    [sy, sxy, syy],
+  ];
+  const r = [sh, sxh, syh];
+  const det = (a) =>
+    a[0][0] * (a[1][1] * a[2][2] - a[1][2] * a[2][1]) -
+    a[0][1] * (a[1][0] * a[2][2] - a[1][2] * a[2][0]) +
+    a[0][2] * (a[1][0] * a[2][1] - a[1][1] * a[2][0]);
+  const d = det(m);
+  if (Math.abs(d) < 1e-9) return null;
+  const col = (i) => m.map((row, k) => row.map((v, j) => (j === i ? r[k] : v)));
+  return { a: det(col(0)) / d, b: det(col(1)) / d, c: det(col(2)) / d };
+}
+
 // ------------------------------------------------------ placement + juice
 /**
  * Whether the armed tool may be placed on a plot: `{valid, reason}`. A zone

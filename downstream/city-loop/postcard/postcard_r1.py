@@ -89,6 +89,26 @@ Do NOT draw any text, numbers, logos, watermarks or UI. Output one image."""
 STYLE_VARIANT = {
     "v1": "",
     "v2": "\nVariant emphasis: lean further into the stylised diorama look (cleaner flatter facets, fewer small details, richer greens).",
+    "v4": "",
+    "v3": "\nVariant emphasis: lean further into the stylised diorama look (cleaner flatter facets, fewer small details, richer greens).",
+}
+# v3: v1/v2 failed the fact-check (build drew 5 storeys, select drew no ghost): state the counts as
+# window rows, which is what the image model can count, and make the selection unmissable.
+STRICT = {
+    "select": ("STRICT: the selected plot is the square city block holding the twin-spired church directly above (north "
+               "of) the large park. Paint a clearly visible translucent bright cyan (#2EC8E8) square tint FLAT on the "
+               "ground over that whole plot with a thin glowing cyan outline along its edges; the church stays visible "
+               "through the tint. Nothing else is cyan."),
+    "build": (f"STRICT COUNT: the new building on the church plot (the church is gone) has a ground-floor shopfront row "
+              f"plus EXACTLY {BUILD_STOREYS - 1} rows of windows above it = {BUILD_STOREYS} storeys in total; count the "
+              f"window rows before finishing. Flat roof. It is the tallest building on its block."),
+    "shadow": (f"STRICT COUNT: the new building on the church plot (the church is gone) has a ground-floor shopfront row "
+               f"plus EXACTLY {SHADOW_STOREYS - 1} rows of windows above it = {SHADOW_STOREYS} storeys in total. Flat "
+               f"roof. Its shadow falls toward the top of the image."),
+    "growth": (f"STRICT COUNT: where image 1 shows the cluster of white blocks, draw a 5 x 5 grid of {GROWTH_PLOTS} square "
+               f"plots, one flat-roofed building per plot: the {GROWTH_COHORT} plots farthest from the camera-side corner "
+               f"have 5-storey buildings, the other {GROWTH_PLOTS - GROWTH_COHORT} have 3-storey buildings; warm "
+               f"terracotta and cream colours so the new district reads as one group."),
 }
 
 
@@ -117,6 +137,8 @@ def main():
             if dst.exists() or not src.exists():
                 return job, None
             prompt = PROMPT.format(note=BEAT_NOTE[beat]) + STYLE_VARIANT[var]
+            if var in ("v3", "v4") and beat in STRICT:
+                prompt += "\n" + STRICT[beat]
             t = time.time()
             try:
                 png, revised = gen(prompt, [jpeg(src, tmp)] + refs, model=a.model)

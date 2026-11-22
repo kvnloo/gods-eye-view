@@ -22,6 +22,7 @@ import { useGlobeActionsStore } from '../stores/globeActions.js';
 import Omnibar from './panels/Omnibar.vue';
 import RenderFailure from './panels/RenderFailure.vue';
 import CityPlayOverlay from './panels/CityPlayOverlay.vue';
+import CityMassingReadout from './panels/CityMassingReadout.vue';
 import WorldTimeline from './panels/WorldTimeline.vue';
 
 // The title's logo goes back to live at the start view, as the shell answers it.
@@ -94,6 +95,7 @@ const vToastText = {
   <GlobeActions />
   <Omnibar />
   <CityPlayOverlay />
+  <CityMassingReadout />
   <div id="global-loading-status" role="status" aria-live="polite" aria-atomic="true" :hidden="loading ? loading.hidden : true" :data-state="loading?.state ?? undefined">
     <SplitFlapText id="global-loading-label" :text="loading ? loading.label : t('LOADING LIVE DATA')" :stopped="!!loading?.stopped" />
     <span id="global-loading-detail">{{ loading ? loading.detail : '' }}</span>

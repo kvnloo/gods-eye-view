@@ -1,0 +1,151 @@
+/* Massing v0 readout beside the selected plot (CityMassingReadout.vue, behind
+   ?massing=1). The same HUD glass, accent and type as the play mode cards
+   (city-play.css): darkened theme glass keeps every label at 4.5:1 or better
+   over bright roofs (qa-city-massing audits), caps labels at 12 px. */
+.city-massing {
+  position: fixed;
+  z-index: 121;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font: 12px var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  background:
+    linear-gradient(rgba(4, 8, 12, 0.46), rgba(4, 8, 12, 0.46)), var(--glass-bg);
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  backdrop-filter: blur(16px) saturate(1.3);
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.45),
+    0 0 14px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.city-massing[data-city-massing-on='true'] {
+  width: 240px;
+}
+.city-massing-toggle {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--accent);
+  font: 600 12px var(--font-mono);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.city-massing-toggle[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg-dark);
+  box-shadow: 0 0 14px var(--accent-glow);
+}
+.city-massing-led {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.city-massing-rows {
+  margin: 8px 0 0;
+}
+.city-massing-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  min-height: 32px;
+}
+.city-massing-row dt {
+  color: color-mix(in srgb, var(--text-primary) 76%, transparent);
+}
+.city-massing-row dd {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.city-massing-value {
+  color: var(--accent);
+  text-shadow: 0 0 10px var(--accent-glow);
+}
+.city-massing-est {
+  padding: 1px 6px;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: 4px;
+  color: var(--text-primary);
+}
+.city-massing-step {
+  width: 30px;
+  height: 30px;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--accent);
+  font: 600 16px var(--font-mono);
+  cursor: pointer;
+}
+.city-massing-step:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.city-massing-leader {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.city-massing-leader line {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 4px var(--accent-glow));
+}
+
+/* A phone with the play wheel open leaves only a short band above or below it
+   (about 70 px): the toggle and the rows wrap into two 24 px lines. */
+@media (max-width: 599px) {
+  .city-massing {
+    padding: 4px 8px;
+    letter-spacing: 0.02em;
+  }
+  .city-massing[data-city-massing-on='true'] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 8px;
+    align-items: center;
+    width: min(366px, calc(100vw - 24px));
+  }
+  .city-massing-toggle {
+    min-height: 24px;
+    padding: 0 10px;
+    letter-spacing: 0.12em;
+  }
+  .city-massing-rows {
+    display: contents;
+  }
+  .city-massing-row {
+    display: inline-flex;
+    gap: 6px;
+    min-height: 24px;
+  }
+  .city-massing-row dd {
+    gap: 4px;
+  }
+  .city-massing-step {
+    width: 24px;
+    height: 24px;
+  }
+  /* HOMES and SHADOW REACH: one line above the plot tag. */
+  .city-massing-extra {
+    display: flex;
+    gap: 2px 8px;
+    align-items: center;
+  }
+}

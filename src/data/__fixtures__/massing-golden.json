@@ -1,0 +1,100 @@
+{
+  "schema": "gev-city-massing-golden/1",
+  "about": "Golden cases for City builder massing (GEV-CITY-1112). src/data/cityMassing.test.mjs and src/data/citySun.test.mjs hold the code to them; the dream loop's planspec validator reads the same file. res_share and site_coverage are separate quantities: the 3 m setback case tells them apart.",
+  "definitions": {
+    "plot_m2": "plot area in the play grid's metric (a grid plot is its 40 m x 40 m cell)",
+    "setback_m": "every plot edge moves inward by this; the footprint is what is left",
+    "footprint_m2": "area of the plot inset by setback_m",
+    "site_coverage": "footprint_m2 / plot_m2, dimensionless",
+    "storey_height_m": "floor to floor height, assumed",
+    "floor_area_m2": "footprint_m2 x storeys",
+    "far": "floor_area_m2 / plot_m2",
+    "height_m": "storeys x storey_height_m",
+    "res_share": "residential share of floor area, assumed, dimensionless",
+    "unit_m2": "floor area of one home, assumed",
+    "homes": "floor(floor_area_m2 x res_share / unit_m2), shown as HOMES n EST",
+    "shadow_reach_m": "height_m / tan(sun_altitude_deg) on level ground, shown as SHADOW REACH n m EST (rounded to whole metres)"
+  },
+  "constants": {
+    "storey_height_m": 3.2,
+    "setback_m": 4,
+    "res_share": 0.64,
+    "unit_m2": 85
+  },
+  "massing_cases": [
+    {
+      "name": "default: 6 storeys, 4 m setback",
+      "plot_m2": 1600,
+      "setback_m": 4,
+      "storeys": 6,
+      "footprint_m2": 1024,
+      "site_coverage": 0.64,
+      "res_share": 0.64,
+      "floor_area_m2": 6144,
+      "far": 3.84,
+      "height_m": 19.2,
+      "homes": 46
+    },
+    {
+      "name": "stepper +2: 8 storeys, 4 m setback",
+      "plot_m2": 1600,
+      "setback_m": 4,
+      "storeys": 8,
+      "footprint_m2": 1024,
+      "site_coverage": 0.64,
+      "res_share": 0.64,
+      "floor_area_m2": 8192,
+      "far": 5.12,
+      "height_m": 25.6,
+      "homes": 61
+    },
+    {
+      "name": "3 m setback: site coverage 0.7225 is not res_share 0.64 (swapped they give 58 homes)",
+      "plot_m2": 1600,
+      "setback_m": 3,
+      "storeys": 6,
+      "footprint_m2": 1156,
+      "site_coverage": 0.7225,
+      "res_share": 0.64,
+      "floor_area_m2": 6936,
+      "far": 4.335,
+      "height_m": 19.2,
+      "homes": 52
+    }
+  ],
+  "shadow_cases": [
+    {
+      "name": "journey sun, 6 storeys",
+      "utc": "2026-06-21T15:00:00Z",
+      "plot": "plot-n105201-126637",
+      "sun_altitude_deg": 23.33297,
+      "sun_azimuth_deg": 77.666852,
+      "sun_source": "NREL SPA via pvlib-python 0.13.1 spa_python (geometric topocentric elevation)",
+      "height_m": 19.2,
+      "shadow_reach_m": 44.5114,
+      "shown": "45 m"
+    },
+    {
+      "name": "journey sun, 8 storeys",
+      "utc": "2026-06-21T15:00:00Z",
+      "plot": "plot-n105201-126637",
+      "sun_altitude_deg": 23.33297,
+      "sun_azimuth_deg": 77.666852,
+      "sun_source": "NREL SPA via pvlib-python 0.13.1 spa_python (geometric topocentric elevation)",
+      "height_m": 25.6,
+      "shadow_reach_m": 59.3485,
+      "shown": "59 m"
+    },
+    {
+      "name": "near noon, 6 storeys",
+      "utc": "2026-06-21T20:00:00Z",
+      "plot": "plot-n105201-126637",
+      "sun_altitude_deg": 75.424707,
+      "sun_azimuth_deg": 169.434053,
+      "sun_source": "NREL SPA via pvlib-python 0.13.1 spa_python (geometric topocentric elevation)",
+      "height_m": 19.2,
+      "shadow_reach_m": 4.9924,
+      "shown": "5 m"
+    }
+  ]
+}

@@ -2,7 +2,8 @@
 // Rows are fixed 40 m bands of latitude; each row's columns are 40 m wide at its
 // centre latitude. Any point in a cell snaps to the identical frozen plot.
 export const PLOT_METERS = 40;
-const METERS_PER_DEGREE = 111_320;
+/** Metres per degree of latitude: the plot grid's local metric. */
+export const METERS_PER_DEGREE = 111_320;
 const MAX_LATITUDE = 85;
 
 function fail(message) {
@@ -97,4 +98,17 @@ export function plotValue(value) {
 export function plotPoint(plot, fx, fy) {
   const [[west, south], , [east, north]] = plot.corners;
   return { lat: south + (north - south) * fy, lon: west + (east - west) * fx };
+}
+
+/** The plot an id from snapPlot names (`plot-n105199-126638`), or null. */
+export function plotFromId(id) {
+  const match = /^plot-([ns])(\d+)-(\d+)$/.exec(
+    typeof id === 'string' ? id : '',
+  );
+  if (!match) return null;
+  const plot = cell(
+    (match[1] === 's' ? -1 : 1) * Number(match[2]),
+    Number(match[3]),
+  );
+  return plot?.id === id ? plot : null;
 }

@@ -15,6 +15,15 @@ export const useCityPlayStore = defineStore('gev-city-play', () => {
   /** `{enter, toggle, exit, act, focus, build, reroll, openRecords}` or null. */
   const controls = shallowRef(null);
 
+  /**
+   * Massing v0 (src/standalone/cityMassing.js, only behind ?massing=1): the
+   * selected plot's assumed block, the screen points of the block and its
+   * shadow, and `{toggle, step}`. All null with the flag off.
+   */
+  const massing = shallowRef(null);
+  const massingAnchors = shallowRef(null);
+  const massingControls = shallowRef(null);
+
   function publish(next) {
     view.value = next && markRaw(next);
   }
@@ -24,5 +33,27 @@ export const useCityPlayStore = defineStore('gev-city-play', () => {
   function connect(next) {
     controls.value = next && markRaw(next);
   }
-  return { view, anchors, controls, publish, place, connect };
+  function publishMassing(next) {
+    massing.value = next && markRaw(next);
+  }
+  function placeMassing(next) {
+    massingAnchors.value = next && markRaw(next);
+  }
+  function connectMassing(next) {
+    massingControls.value = next && markRaw(next);
+  }
+  return {
+    view,
+    anchors,
+    controls,
+    publish,
+    place,
+    connect,
+    massing,
+    massingAnchors,
+    massingControls,
+    publishMassing,
+    placeMassing,
+    connectMassing,
+  };
 });

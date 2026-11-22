@@ -8,11 +8,46 @@ import {
   serializeCityDocument,
   replayCityDocument,
   cityAlternatives,
+  cityZoning,
+  setCityZoning,
 } from '../data/cityPlanningDocument.js';
 import { presentCommunityPlanningPreview } from './communityPlanningPreview.js';
 import { presentCityWalkAccess } from './cityWalkAccess.js';
 
 const KEY = 'godsEyeView.cityBuilder.v1';
+// Play-mode starting proposals per kind. They are editable proposals, not predictions.
+const PLAY_DEFAULTS = {
+  park: { trees: 24, widthMeters: 3, shadePercent: 60 },
+  plaza: { trees: 12, widthMeters: 8, shadePercent: 45 },
+  'bike-lane': { trees: 10, widthMeters: 2.5, shadePercent: 30 },
+};
+function playEdit(kind) {
+  const text = {
+    park: [
+      t('Pocket park'),
+      t(
+        'Reimagine the 40 m grid cell outlined in cyan as a public pocket park with native trees, shaded seating and permeable paths.',
+      ),
+    ],
+    plaza: [
+      t('Public plaza'),
+      t(
+        'Reimagine the 40 m grid cell outlined in cyan as an accessible public plaza with level routes, movable seating and shade.',
+      ),
+    ],
+    'bike-lane': [
+      t('Protected bike lane'),
+      t(
+        'Reimagine the street through the 40 m grid cell outlined in cyan with a protected bike lane, accessible crossings and street trees.',
+      ),
+    ],
+  }[kind];
+  return {
+    title: text[0],
+    description: text[1],
+    parameters: { kind, ...PLAY_DEFAULTS[kind] },
+  };
+}
 const freshEditor = () => ({
   id: null,
   parentRevision: null,
@@ -28,7 +63,7 @@ const freshEditor = () => ({
   },
 });
 
-/** Own a local possible-world document. Only the explicit Imagine action calls a provider. */
+/** Own a local possible-world document. Only explicit Imagine, Reimagine and Reroll actions call a provider. */
 export function createCityBuilder({
   publish,
   offerLauncher,
@@ -39,6 +74,7 @@ export function createCityBuilder({
   sharingDialogOpen = () => false,
   uid = () => `city-${crypto.randomUUID()}`,
   canLocal = false,
+  publishPlay = () => {},
 }) {
   let document = null;
   let observed = null;
@@ -53,6 +89,7 @@ export function createCityBuilder({
   let mode = 'co-op';
   let focusedId = null;
   let provider = 'fixture';
+  let pendingId = null;
   try {
     observed = storage.getItem(KEY);
     if (observed !== null) {
@@ -65,8 +102,22 @@ export function createCityBuilder({
       'Saved City builder data is unreadable. Import a valid project to replace it.',
     );
   }
+  function presentPlay() {
+    publishPlay({
+      alternatives: document ? cityAlternatives(document) : null,
+      zoning: document ? cityZoning(document) : [],
+      pending: Boolean(pending),
+      pendingId,
+      full: (document?.alternatives.length ?? 0) >= 6,
+      status: status && t(status),
+      error: error && t(error),
+      provider,
+      persisted,
+    });
+  }
   function present() {
     if (disposed) return;
+    presentPlay();
     offerLauncher({ label: t('City builder') });
     if (!opened) {
       publish(null);
@@ -211,6 +262,40 @@ export function createCityBuilder({
     pending?.abort();
     pending = null;
   }
+  async function generateFor(id, request) {
+    const original = document;
+    const a = cityAlternatives(original).find((a) => a.id === id);
+    try {
+      // Use the immutable captured globe pixels. A later camera move cannot change the reference.
+      const concept = await generator({ provider }).generate(
+        {
+          description: a.description,
+          parameters: a.parameters,
+          sourceView: a.site?.reference ?? original.reference,
+        },
+        { signal: request.signal },
+      );
+      if (
+        disposed ||
+        request.signal.aborted ||
+        pending !== request ||
+        document !== original
+      )
+        return false;
+      commit(attachCityConcept(document, id, a.revision, concept));
+      focusedId = id;
+      status = msg(
+        'Concept ready. AI imagery does not establish feasibility or approval.',
+      );
+      return true;
+    } catch {
+      if (!request.signal.aborted)
+        error = msg(
+          'Concept generation failed. Check the local provider and try again explicitly.',
+        );
+      return false;
+    }
+  }
   const controls = {
     open() {
       if (disposed || opened || sharingDialogOpen()) return;
@@ -353,41 +438,171 @@ export function createCityBuilder({
       if (disposed || !opened || pending || !document) return;
       const a = cityAlternatives(document).find((a) => a.id === id);
       if (!a || a.concept) return;
-      const original = document;
       const request = new AbortController();
       pending = request;
       error = null;
       present();
       try {
-        // Use the immutable captured globe pixels. A later camera move cannot change the reference.
-        const concept = await generator({ provider }).generate(
-          {
-            description: a.description,
-            parameters: a.parameters,
-            sourceView: original.reference,
-          },
-          { signal: request.signal },
-        );
-        if (
-          disposed ||
-          request.signal.aborted ||
-          pending !== request ||
-          document !== original
-        )
-          return;
-        commit(attachCityConcept(document, id, a.revision, concept));
-        focusedId = id;
-        status = msg(
-          'Concept ready. AI imagery does not establish feasibility or approval.',
-        );
-      } catch {
-        if (!request.signal.aborted)
-          error = msg(
-            'Concept generation failed. Check the local provider and try again explicitly.',
-          );
+        await generateFor(id, request);
       } finally {
         if (pending === request) {
           pending = null;
+          present();
+        }
+      }
+    },
+    /** Play mode: capture the framed plot, save a sited proposal, then generate. */
+    async reimagine({ plot, kind }) {
+      if (disposed || pending || !plot || !PLAY_DEFAULTS[kind]) return null;
+      error = null;
+      status = null;
+      if (storageBlocked) {
+        error = msg(
+          'Saved City builder data is unreadable. Import a valid project to replace it.',
+        );
+        present();
+        return null;
+      }
+      if (document?.alternatives.length >= 6) {
+        error = msg(
+          'This project holds six possible worlds. Export it from Project records to start another.',
+        );
+        present();
+        return null;
+      }
+      const request = new AbortController();
+      pending = request;
+      present();
+      let id = null;
+      try {
+        let reference;
+        try {
+          reference = await captureReference();
+        } catch {
+          error = msg(
+            'Could not capture this view. Zoom to a place, stop moving, and try again.',
+          );
+          return null;
+        }
+        if (disposed || request.signal.aborted || pending !== request)
+          return null;
+        const first = !document;
+        if (first)
+          commit(
+            createCityDocument({
+              id: uid(),
+              title: t('Reimagined plots'),
+              reference,
+            }),
+          );
+        id = `world-${document.alternatives.length + 1}`;
+        commit(
+          addCityAlternative(document, {
+            id,
+            ...playEdit(kind),
+            site: { plot, reference: first ? null : reference },
+          }),
+        );
+        pendingId = id;
+        present();
+        return (await generateFor(id, request)) ? id : null;
+      } catch {
+        if (!request.signal.aborted && !error)
+          error = msg(
+            'Could not save this change. Check the fields and current revision.',
+          );
+        return null;
+      } finally {
+        if (pending === request) {
+          pending = null;
+          pendingId = null;
+          present();
+        }
+      }
+    },
+    /** Play mode: set or clear one plot's proposed land use; true once saved. */
+    async setZone({ plot, use }) {
+      if (disposed || pending || !plot) return false;
+      error = null;
+      status = null;
+      try {
+        if (storageBlocked) throw new Error('storage blocked');
+        if (!document && use !== null) {
+          const request = new AbortController();
+          pending = request;
+          present();
+          let reference;
+          try {
+            reference = await captureReference();
+          } catch {
+            error = msg(
+              'Could not capture this view. Zoom to a place, stop moving, and try again.',
+            );
+            return false;
+          } finally {
+            if (pending === request) pending = null;
+          }
+          if (disposed) return false;
+          commit(
+            createCityDocument({
+              id: uid(),
+              title: t('Reimagined plots'),
+              reference,
+            }),
+          );
+        }
+        if (!document) return false;
+        commit(setCityZoning(document, plot, use));
+        return true;
+      } catch {
+        error ??= msg(
+          'Could not save this change. Check the fields and current revision.',
+        );
+        return false;
+      } finally {
+        present();
+      }
+    },
+    /** Play mode: a new version of the same proposal with a new concept; true once it lands. */
+    async reroll(id) {
+      if (disposed || pending || !document) return false;
+      const a = cityAlternatives(document).find((a) => a.id === id);
+      if (!a) return false;
+      error = null;
+      status = null;
+      const request = new AbortController();
+      pending = request;
+      pendingId = id;
+      present();
+      try {
+        // A version that failed to generate is retried instead of copied.
+        if (a.concept) {
+          if (a.versionCount >= 20) {
+            error = msg(
+              'This possible world has twenty versions. Reimagine the plot to start another.',
+            );
+            return false;
+          }
+          commit(
+            reviseCityAlternative(document, id, a.revision, {
+              title: a.title,
+              description: a.description,
+              parameters: a.parameters,
+            }),
+          );
+          present();
+        }
+        return await generateFor(id, request);
+      } catch {
+        if (!request.signal.aborted && !error)
+          error = msg(
+            'Could not save this change. Check the fields and current revision.',
+          );
+        return false;
+      } finally {
+        if (pending === request) {
+          pending = null;
+          pendingId = null;
           present();
         }
       }

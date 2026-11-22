@@ -1,11 +1,20 @@
 /**
- * The one shared City builder persistence fixture: an unplaced possible world
- * and one placed on a walk-access site (with a second version and a labelled
- * concept) go through the real builder's create -> save -> reload path. Slices that add saved keys assert against it,
- * and `cityDocumentSavedKeys.txt` pins every saved key as a sorted `path: type`.
+ * The one shared City builder persistence fixture (#302, council c4b): an
+ * unplaced project plus placed alternatives (a walk-access site and a play-mode
+ * plot) run through the real create -> save -> reload -> reselect path. Lanes
+ * that add saved keys (zoning, access, co-op) assert against it, and
+ * `cityDocumentSavedKeys.txt` pins every saved key as a sorted `path: type`.
  */
 import { createCityBuilder } from '../ui/cityBuilder.js';
 import { createPlanningConceptGenerator } from '../data/planningConceptGenerator.js';
+import { snapPlot } from '../data/cityPlot.js';
+import {
+  carouselCards,
+  createPlayState,
+  playReducer,
+  plotAlternatives,
+  resumeAlternative,
+} from '../ui/cityPlayModel.js';
 
 const image =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jF1sAAAAASUVORK5CYII=';
@@ -32,6 +41,9 @@ export const PERSISTENCE_REFERENCE = Object.freeze({
   capturedAt: '2026-11-12T20:00:00.000Z',
   image,
 });
+export const PERSISTENCE_PLOT = snapPlot({ lat: 37.8007, lon: -122.4103 });
+/** The cell east of the placed plot, zoned without any possible world. */
+export const PERSISTENCE_NEIGHBOR = snapPlot({ lat: 37.8007, lon: -122.4098 });
 
 function memoryStorage() {
   let value = null;
@@ -49,6 +61,7 @@ function memoryStorage() {
 function builderOn(storage, sink) {
   return createCityBuilder({
     publish: (view) => (sink.view = view),
+    publishPlay: (view) => (sink.play = view),
     offerLauncher: () => {},
     captureReference: async () => PERSISTENCE_REFERENCE,
     storage,
@@ -70,7 +83,7 @@ function author(builder, title, site) {
   builder.saveAlternative();
 }
 
-/** Create, save and reload through the real builder. */
+/** Create, save, reload and reselect through the real builder and play reducer. */
 export async function runCityPersistenceRoundTrip() {
   const storage = memoryStorage();
   const first = {};
@@ -79,21 +92,47 @@ export async function runCityPersistenceRoundTrip() {
   await builder.start({ title: 'Persistence fixture' });
   author(builder, 'Unplaced pocket park', '');
   author(builder, 'Park on site A', 'site-a');
-  // Version 2 of the second world, with its own concept.
-  builder.editAlternative('world-2');
-  builder.editField('kind', 'plaza');
-  builder.saveAlternative();
-  await builder.imagine('world-2');
+  builder.close();
+  const placedId = await builder.reimagine({
+    plot: PERSISTENCE_PLOT,
+    kind: 'plaza',
+  });
+  // Version 2 of the placed world, with its own concept.
+  await builder.reroll(placedId);
+  // Proposed land use: the placed plot and a neighbour with no possible world.
+  await builder.setZone({ plot: PERSISTENCE_PLOT, use: 'open-space' });
+  await builder.setZone({ plot: PERSISTENCE_NEIGHBOR, use: 'housing' });
   const saved = storage.value;
-  const before = first.view.city;
   builder.destroy();
 
   const second = {};
   const reloaded = builderOn(storage, second);
-  reloaded.open();
-  const after = second.view.city;
+  const { alternatives } = second.play;
+  const { lat, lon, alt } = PERSISTENCE_REFERENCE.camera;
+  const resume = resumeAlternative(alternatives, { lat, lon, height: alt });
+  const entered = playReducer(createPlayState(), { type: 'enter' });
+  const state = playReducer(entered, {
+    type: 'resume',
+    plot: resume.site.plot,
+    id: resume.id,
+  });
+  const reselected = {
+    state,
+    alternatives: plotAlternatives(alternatives, state.plot.id),
+    cards: carouselCards(alternatives, state.plot.id, {
+      focusId: state.focusId,
+    }),
+    reopened: playReducer(state, { type: 'select', plot: state.plot }),
+  };
   reloaded.destroy();
-  return { saved, before, after, afterSaved: storage.value };
+  return {
+    saved,
+    placedId,
+    before: first.play,
+    after: second.play,
+    afterSaved: storage.value,
+    reselected,
+  };
 }
 
 /** Every saved key as a sorted, unique `path: type` line; array items as `[]`. */

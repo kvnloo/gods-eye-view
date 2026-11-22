@@ -9,7 +9,11 @@ import {
   serializeCityDocument,
   replayCityDocument,
   cityAlternatives,
+  cityZoning,
+  setCityZoning,
+  CITY_LAND_USES,
 } from './cityPlanningDocument.js';
+import { snapPlot } from './cityPlot.js';
 import {
   createPlanningAlternativeOperation,
   listPlanningAlternatives,
@@ -631,6 +635,103 @@ test('key order is irrelevant but omitted, inherited and extra keys are never re
   assert.throws(() => serializeCityDocument(inherited));
 });
 
+// Play mode: an alternative may carry the plot it reimagines and that plot's own captured view.
+function plotReference() {
+  return {
+    ...reference(),
+    camera: {
+      lat: 40.04,
+      lon: -88.16,
+      alt: 320,
+      heading: 15,
+      pitch: -35,
+      roll: 0,
+    },
+    bounds: [-88.17, 40.045, -88.14, 40.07],
+    capturedAt: '2026-11-12T12:00:00.000Z',
+  };
+}
+function sited(site, id = 'plot-world') {
+  return { ...alternative(id), site };
+}
+
+test('a sited alternative keeps its snapped plot and own captured view through history, export and import', async () => {
+  const { snapPlot } = await import('./cityPlot.js');
+  const plot = snapPlot({ lat: 40.05, lon: -88.155 });
+  const own = plotReference();
+  const doc = addCityAlternative(populated(), sited({ plot, reference: own }));
+  const [, latest] = cityAlternatives(doc);
+  assert.deepEqual(latest.site.plot, plot);
+  assert.deepEqual(latest.site.reference, own);
+  assert.equal(
+    cityAlternatives(doc)[0].site,
+    null,
+    'unsited alternatives stay unsited',
+  );
+  assert.equal(Object.hasOwn(doc.alternatives[0], 'site'), false);
+  // The concept's provenance must be the plot's own capture, not the project baseline.
+  assert.throws(() => attachCityConcept(doc, 'plot-world', 1, concept()));
+  const attached = attachCityConcept(doc, 'plot-world', 1, {
+    ...concept(),
+    sourceView: own,
+  });
+  assert.deepEqual(cityAlternatives(attached)[1].concept.sourceView, own);
+  // Reroll: a new version on the same plot keeps the site and accepts a new concept.
+  const { id: _ignored, ...edit } = alternative('x');
+  const rerolled = reviseCityAlternative(attached, 'plot-world', 1, edit);
+  assert.deepEqual(cityAlternatives(rerolled)[1].site, latest.site);
+  const second = attachCityConcept(rerolled, 'plot-world', 2, {
+    ...concept(),
+    sourceView: own,
+  });
+  assert.equal(cityAlternatives(second)[1].versionCount, 2);
+  const text = serializeCityDocument(second);
+  assert.deepEqual(parseCityDocument(text), second);
+  // A null site reference means the project baseline was captured for this plot.
+  const first = addCityAlternative(
+    document(),
+    sited({ plot: snapPlot({ lat: 40.05, lon: -88.15 }), reference: null }),
+  );
+  attachCityConcept(first, 'plot-world', 1, concept());
+});
+
+test('sites reject edited plots, plots outside their captured view and extra keys', async () => {
+  const { snapPlot } = await import('./cityPlot.js');
+  const plot = snapPlot({ lat: 40.05, lon: -88.155 });
+  const base = addCityAlternative(
+    populated(),
+    sited({ plot, reference: plotReference() }),
+  );
+  rejectImport((d) => {
+    d.alternatives[1].site.plot.corners[0][0] += 0.0001;
+  }, base);
+  rejectImport((d) => {
+    d.alternatives[1].site.extra = true;
+  }, base);
+  rejectImport((d) => {
+    d.alternatives[1].site = null;
+  }, base);
+  rejectImport((d) => {
+    d.alternatives[1].site.reference.image = 'data:image/png;base64,AAAA';
+  }, base);
+  const outside = snapPlot({ lat: 41, lon: -88.155 });
+  assert.throws(() =>
+    addCityAlternative(
+      populated(),
+      sited({ plot: outside, reference: plotReference() }),
+    ),
+  );
+  assert.throws(() =>
+    addCityAlternative(populated(), sited({ plot: outside, reference: null })),
+  );
+  assert.throws(() =>
+    addCityAlternative(
+      populated(),
+      sited({ plot, reference: plotReference(), x: 1 }),
+    ),
+  );
+});
+
 test('a park or plaza site is an optional proposal parameter; documents without it still import', () => {
   const placed = addCityAlternative(document(), {
     ...alternative(),
@@ -662,4 +763,61 @@ test('a park or plaza site is an optional proposal parameter; documents without 
   rejectImport((d) => {
     d.alternatives[0].versions[0].parameters.site = 'site-b';
   });
+});
+
+test('a proposed land use per plot is optional, validated, replaceable and removable', () => {
+  assert.deepEqual(CITY_LAND_USES, [
+    'housing',
+    'mixed-use',
+    'civic',
+    'open-space',
+  ]);
+  const doc = createCityDocument({
+    id: 'zoning',
+    title: 'Zoning',
+    reference: reference(),
+  });
+  assert.deepEqual(cityZoning(doc), []);
+  assert.equal(
+    Object.hasOwn(JSON.parse(serializeCityDocument(doc)), 'zoning'),
+    false,
+    'unzoned documents keep their v1 bytes',
+  );
+  const a = snapPlot({ lat: 40.05, lon: -88.15 });
+  const b = snapPlot({ lat: 40.0505, lon: -88.15 });
+  let next = setCityZoning(doc, a, 'housing');
+  next = setCityZoning(next, b, 'open-space');
+  assert.deepEqual(
+    cityZoning(next).map((z) => [z.plot.id, z.use]),
+    [
+      [a.id, 'housing'],
+      [b.id, 'open-space'],
+    ],
+  );
+  // Changing a plot's use replaces it; null clears it.
+  next = setCityZoning(next, a, 'civic');
+  assert.deepEqual(
+    cityZoning(next)
+      .map((z) => z.use)
+      .sort(),
+    ['civic', 'open-space'],
+  );
+  const round = parseCityDocument(serializeCityDocument(next));
+  assert.deepEqual(cityZoning(round), cityZoning(next));
+  const cleared = setCityZoning(setCityZoning(next, a, null), b, null);
+  assert.equal(
+    serializeCityDocument(cleared),
+    serializeCityDocument(doc),
+    'clearing every use restores the unzoned bytes',
+  );
+  assert.throws(() => setCityZoning(doc, a, 'industrial'), /land use/);
+  assert.throws(() => setCityZoning(doc, { ...a, row: a.row + 1 }, 'housing'));
+  const json = JSON.parse(serializeCityDocument(next));
+  for (const zoning of [
+    [],
+    [...json.zoning, json.zoning[0]],
+    [{ ...json.zoning[0], height: 12 }],
+    [{ ...json.zoning[0], use: 'industrial' }],
+  ])
+    assert.throws(() => parseCityDocument(JSON.stringify({ ...json, zoning })));
 });

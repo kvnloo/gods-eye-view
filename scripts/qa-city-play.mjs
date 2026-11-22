@@ -707,7 +707,7 @@ try {
         });
         assert.match(
           await locator('[data-city-play-holo-tag]').textContent(),
-          /^Plot · 1,600 m²\s*Reimagined$/,
+          /^Plot · 1,600 m²\s*Reimagined\s*Possible Earth$/,
           'the reimagined tag names the plot by its area, never by a grid code',
         );
         assert.equal(

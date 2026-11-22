@@ -1,5 +1,5 @@
 /* City builder play mode: a game layer over the globe in GEV's HUD language.
-   Tokens only (accent, glass, mono); the Cyber theme re-tints it for free. */
+   Tokens only (accent, glass, mono). */
 
 body.gev-city-play #left-panel-stack,
 body.gev-city-play #right-context-rail,
@@ -17,6 +17,11 @@ body.gev-city-play #left-panel-stack *,
 body.gev-city-play #right-context-rail *,
 body.gev-city-play #pp-toggles * {
   pointer-events: none !important;
+}
+/* The first-visit Stories announcement waits, unread, until play mode closes
+   (as it does for Cockpit): it would cover the play bar and take its clicks. */
+body.gev-city-play #gev-stories #hPop {
+  display: none;
 }
 body.gev-city-play #cesiumContainer {
   cursor: crosshair;

@@ -261,14 +261,14 @@ async function paintGround(fixture, built, o, R) {
     const xs = a.p.map((p) => p[0]);
     const ys = a.p.map((p) => p[1]);
     const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
-    const n = Math.min(400, Math.round(((x1 - x0) * (y1 - y0)) / 90));
+    const n = Math.min(250, Math.round(((x1 - x0) * (y1 - y0)) / 120));
     for (let i = 0; i < n; i++) {
       const cx = x0 + r() * (x1 - x0);
       const cy = y0 + r() * (y1 - y0);
       if (!inPolygon([cx, cy], a.p)) continue;
       const col = flowers[Math.floor(r() * flowers.length)];
       g.fillStyle = col;
-      for (let k = 0; k < 14; k++) {
+      for (let k = 0; k < 7; k++) {
         g.globalAlpha = 0.85;
         g.beginPath();
         g.arc(X(cx + (r() - 0.5) * 5), Y(cy + (r() - 0.5) * 5), (0.25 + r() * 0.35) * s, 0, Math.PI * 2);
@@ -318,31 +318,41 @@ async function paintGround(fixture, built, o, R) {
     path(h.corners, true);
     g.fill();
   }
-  // soft painted shadows (multiply), houses then tree discs
-  g.save();
-  g.globalCompositeOperation = 'multiply';
-  g.filter = `blur(${Math.max(1, 1.6 * s)}px)`;
-  g.fillStyle = `rgba(52, 72, 92, ${o.shade})`;
+  // soft painted shadows: drawn hard on their own layer, blurred once, multiplied in
+  const sh = new OffscreenCanvas(TEX, TEX);
+  const q = sh.getContext('2d');
+  q.fillStyle = '#ffffff';
+  q.fillRect(0, 0, TEX, TEX);
+  const qpath = (ps) => {
+    q.beginPath();
+    ps.forEach(([x, y], i) => (i ? q.lineTo(X(x), Y(y)) : q.moveTo(X(x), Y(y))));
+    q.closePath();
+  };
+  const tone = (a) => `rgb(${Math.round(255 - (255 - 52) * a)}, ${Math.round(255 - (255 - 72) * a)}, ${Math.round(255 - (255 - 92) * a)})`;
+  q.fillStyle = tone(o.shade);
   for (const h of built.houses) {
-    path(shadowOf(h.corners, h.height, o.sunAz, o.sunEl), true);
-    g.fill();
+    qpath(shadowOf(h.corners, h.height, o.sunAz, o.sunEl));
+    q.fill();
   }
   const az = (o.sunAz * Math.PI) / 180;
   const k = 1 / Math.tan((Math.max(8, o.sunEl) * Math.PI) / 180);
   for (const t of built.trees) {
     const d = t.h * 0.6 * k;
-    g.beginPath();
-    g.ellipse(X(t.x - Math.sin(az) * d), Y(t.y - Math.cos(az) * d), t.r * s * 1.05, t.r * s * 0.85, -az, 0, Math.PI * 2);
-    g.fill();
+    q.beginPath();
+    q.ellipse(X(t.x - Math.sin(az) * d), Y(t.y - Math.cos(az) * d), t.r * s * 1.05, t.r * s * 0.85, -az, 0, Math.PI * 2);
+    q.fill();
   }
   // contact darkening (cheap AO) right at house feet
-  g.filter = `blur(${Math.max(1, 0.8 * s)}px)`;
-  g.strokeStyle = `rgba(40, 50, 60, ${o.shade * 0.9})`;
-  g.lineWidth = 1.4 * s;
+  q.strokeStyle = tone(Math.min(1, o.shade * 1.6));
+  q.lineWidth = 1.4 * s;
   for (const h of built.houses) {
-    path(h.corners, true);
-    g.stroke();
+    qpath(h.corners);
+    q.stroke();
   }
+  g.save();
+  g.globalCompositeOperation = 'multiply';
+  g.filter = `blur(${Math.max(1, 1.4 * s).toFixed(1)}px)`;
+  g.drawImage(sh, 0, 0);
   g.restore();
   // edge feather toward the haze colour so the disc never ends hard
   const grad = g.createRadialGradient(TEX / 2, TEX / 2, TEX * 0.47, TEX / 2, TEX / 2, TEX * 0.5);

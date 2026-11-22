@@ -1,0 +1,495 @@
+// FORK-ONLY experiment (exp/city-look-diorama, city dream loop v3 arm 2):
+// the pure geometry of the low-poly "diorama" district (?look=diorama).
+// Input: an OSM footprint fixture in local east/north metres
+// (public/city-diorama/*.osm.json, (c) OpenStreetMap contributors, ODbL) and a
+// baked ground height grid. Output: flat-shaded triangle soup (positions,
+// normals, linear colours) in local ENU metres, z relative to the centre's
+// ground, plus the 2D shapes the ground painter needs (house rectangles, tree
+// discs, shadow polygons). Deterministic: one seeded PRNG, no Math.random.
+// No Cesium import, so it runs (and is tested) in node.
+
+export const DIORAMA_DEFAULTS = Object.freeze({
+  radius: 430, // the photoreal tiles are cut inside this disc
+  groundPad: 10, // the painted ground reaches this far past the cut
+  ringIn: 380, // post blend ring (diorama -> photoreal) starts here...
+  ringOut: 620, // ...and is fully photoreal-styled here
+  hScale: 0.72, // OSM height -> wall height
+  hMin: 3.4,
+  hMax: 15,
+  storey: 3.2, // building:levels -> metres
+  pitch: 38, // gable pitch, degrees
+  ridgeMax: 6.5,
+  split: 12, // houses longer than this are split into units
+  gap: 0.45, // inset of every house from its footprint rectangle
+  eave: 0.45,
+  chimney: 0.5, // share of houses with a chimney
+  trees: 1, // tree density multiplier
+  treeScale: 1.25,
+  forestRing: 0, // 1: a belt of pines along the cut
+  autumn: 0.06, // share of broadleaf crowns in autumn orange
+  sunAz: 245, // the key light (and painted shadows), degrees from north
+  sunEl: 40,
+  roads: 'cobble', // cobble | dirt
+  fog: 0.38,
+  shade: 0.36, // painted shadow strength
+  sat: 1, // palette saturation multiplier
+  ambient: 0.62,
+  key: 0.75,
+});
+
+const num = (v, d) => (Number.isFinite(Number(v)) ? Number(v) : d);
+
+/** Knobs from `?dio=key:value,key:value` over the defaults. */
+export function dioramaOptions(search = '') {
+  const q = new URLSearchParams(search ?? '');
+  const out = { ...DIORAMA_DEFAULTS };
+  for (const part of (q.get('dio') ?? '').split(',')) {
+    const [k, v] = part.split(':').map((s) => s?.trim());
+    if (!k || !(k in DIORAMA_DEFAULTS) || v === undefined) continue;
+    out[k] = typeof DIORAMA_DEFAULTS[k] === 'number' ? num(v, out[k]) : v;
+  }
+  return Object.freeze(out);
+}
+
+export function prng(seed = 1) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// ---------- palette (sRGB hex; converted to linear for glTF vertex colours)
+export const PALETTE = Object.freeze({
+  walls: ['#efe2c4', '#e9d4ac', '#f3ead8', '#dcc39a', '#8a5a3c', '#9c6b45', '#e6cfa6', '#7b4e33'],
+  roofs: ['#c0603a', '#b04f36', '#d07448', '#5d6875', '#4d5864', '#6e4a36', '#7a8a3e', '#a85a3a', '#c8683e'],
+  plinth: '#7d7466',
+  timber: '#5e3d29',
+  chimney: '#8c4c3a',
+  pine: ['#2f5e3b', '#386b42', '#28513a', '#3f7447'],
+  leaf: ['#5f9e3c', '#73ad45', '#4f8c38', '#86bb4c', '#679f3e'],
+  autumn: ['#d9822b', '#c9662a', '#e09a35'],
+  trunk: '#6e4a31',
+  rock: '#9a9a90',
+});
+
+export function hexRgb(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((c) => c / 255);
+}
+const toLinear = (c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+export function linear(hex, jitter = 0, r = Math.random, sat = 1) {
+  let [R, G, B] = hexRgb(hex);
+  if (sat !== 1) {
+    const l = 0.299 * R + 0.587 * G + 0.114 * B;
+    [R, G, B] = [R, G, B].map((c) => Math.min(1, Math.max(0, l + (c - l) * sat)));
+  }
+  const k = 1 + (r() - 0.5) * 2 * jitter;
+  return [R, G, B].map((c) => toLinear(Math.min(1, Math.max(0, c * k))));
+}
+
+// ---------- ground height (baked grid, bilinear)
+export function groundSampler(ground) {
+  if (!ground?.heights?.length) return () => 0;
+  const { n, spacing, half, heights } = ground;
+  const off = ground.offset ?? 0;
+  const h0 = ground.centre ?? 0;
+  return (x, y) => {
+    const fx = Math.min(n - 1.001, Math.max(0, (x + half) / spacing));
+    const fy = Math.min(n - 1.001, Math.max(0, (y + half) / spacing));
+    const i = Math.floor(fx);
+    const j = Math.floor(fy);
+    const tx = fx - i;
+    const ty = fy - j;
+    const at = (a, b) => heights[b * n + a];
+    const h =
+      at(i, j) * (1 - tx) * (1 - ty) +
+      at(i + 1, j) * tx * (1 - ty) +
+      at(i, j + 1) * (1 - tx) * ty +
+      at(i + 1, j + 1) * tx * ty;
+    return h + off - h0;
+  };
+}
+
+// ---------- 2D helpers
+function hull(points) {
+  const p = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lo = [];
+  for (const q of p) {
+    while (lo.length >= 2 && cross(lo[lo.length - 2], lo[lo.length - 1], q) <= 0) lo.pop();
+    lo.push(q);
+  }
+  const up = [];
+  for (const q of p.reverse()) {
+    while (up.length >= 2 && cross(up[up.length - 2], up[up.length - 1], q) <= 0) up.pop();
+    up.push(q);
+  }
+  return lo.slice(0, -1).concat(up.slice(0, -1));
+}
+
+/** Minimum-area rectangle: {c:[x,y], u:[ux,uy] (long axis), a (half long), b (half short)}. */
+export function orientedRect(points) {
+  const h = hull(points);
+  if (h.length < 3) return null;
+  let best = null;
+  for (let i = 0; i < h.length; i++) {
+    const [x0, y0] = h[i];
+    const [x1, y1] = h[(i + 1) % h.length];
+    const L = Math.hypot(x1 - x0, y1 - y0);
+    if (L < 1e-6) continue;
+    const ux = (x1 - x0) / L;
+    const uy = (y1 - y0) / L;
+    let a0 = Infinity, a1 = -Infinity, b0 = Infinity, b1 = -Infinity;
+    for (const [x, y] of h) {
+      const s = x * ux + y * uy;
+      const t = -x * uy + y * ux;
+      a0 = Math.min(a0, s); a1 = Math.max(a1, s);
+      b0 = Math.min(b0, t); b1 = Math.max(b1, t);
+    }
+    const area = (a1 - a0) * (b1 - b0);
+    if (!best || area < best.area) best = { area, ux, uy, a0, a1, b0, b1 };
+  }
+  const { ux, uy, a0, a1, b0, b1 } = best;
+  const sm = (a0 + a1) / 2;
+  const tm = (b0 + b1) / 2;
+  let rect = { c: [sm * ux - tm * uy, sm * uy + tm * ux], u: [ux, uy], a: (a1 - a0) / 2, b: (b1 - b0) / 2 };
+  if (rect.b > rect.a) rect = { c: rect.c, u: [-uy, ux], a: rect.b, b: rect.a };
+  return rect;
+}
+
+export function polygonArea(ps) {
+  let s = 0;
+  for (let i = 0; i < ps.length; i++) {
+    const [x0, y0] = ps[i];
+    const [x1, y1] = ps[(i + 1) % ps.length];
+    s += x0 * y1 - x1 * y0;
+  }
+  return Math.abs(s) / 2;
+}
+
+export function inPolygon([x, y], ps) {
+  let inside = false;
+  for (let i = 0, j = ps.length - 1; i < ps.length; j = i++) {
+    const [xi, yi] = ps[i];
+    const [xj, yj] = ps[j];
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+function segDist([px, py], [ax, ay], [bx, by]) {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const L = dx * dx + dy * dy || 1;
+  const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / L));
+  return Math.hypot(px - ax - t * dx, py - ay - t * dy);
+}
+
+class Grid {
+  constructor(cell = 24) { this.cell = cell; this.m = new Map(); }
+  key(x, y) { return `${Math.floor(x / this.cell)},${Math.floor(y / this.cell)}`; }
+  addBox(item, x0, y0, x1, y1) {
+    const c = this.cell;
+    for (let i = Math.floor(x0 / c); i <= Math.floor(x1 / c); i++)
+      for (let j = Math.floor(y0 / c); j <= Math.floor(y1 / c); j++) {
+        const k = `${i},${j}`;
+        if (!this.m.has(k)) this.m.set(k, []);
+        this.m.get(k).push(item);
+      }
+  }
+  near(x, y) { return this.m.get(this.key(x, y)) ?? []; }
+}
+
+export const ROAD_WIDTH = {
+  motorway: 14, trunk: 13, primary: 12, secondary: 11, tertiary: 10, residential: 8,
+  unclassified: 7, living_street: 6, service: 4.5, pedestrian: 5, footway: 2.4, path: 2,
+  steps: 2.2, cycleway: 2.4, track: 3,
+};
+export const roadWidth = (t) => ROAD_WIDTH[t] ?? 0;
+
+// ---------- mesh builder (non-indexed, flat normals)
+export class Soup {
+  constructor() { this.p = []; this.n = []; this.c = []; }
+  tri(a, b, c, col) {
+    const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2];
+    const vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
+    let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+    const L = Math.hypot(nx, ny, nz) || 1;
+    nx /= L; ny /= L; nz /= L;
+    this.p.push(...a, ...b, ...c);
+    for (let i = 0; i < 3; i++) { this.n.push(nx, ny, nz); this.c.push(col[0], col[1], col[2], 1); }
+  }
+  quad(a, b, c, d, col) { this.tri(a, b, c, col); this.tri(a, c, d, col); }
+  get triangles() { return this.p.length / 9; }
+}
+
+function prism(s, pts2, z0, z1, col, top = true) {
+  // pts2 counter-clockwise
+  const n = pts2.length;
+  for (let i = 0; i < n; i++) {
+    const [x0, y0] = pts2[i];
+    const [x1, y1] = pts2[(i + 1) % n];
+    s.quad([x0, y0, z0], [x1, y1, z0], [x1, y1, z1], [x0, y0, z1], col);
+  }
+  if (top) for (let i = 1; i < n - 1; i++) s.tri([...pts2[0], z1], [...pts2[i], z1], [...pts2[i + 1], z1], col);
+}
+
+function ring(cx, cy, r, sides, rot = 0) {
+  return Array.from({ length: sides }, (_, i) => {
+    const t = rot + (i / sides) * Math.PI * 2;
+    return [cx + Math.cos(t) * r, cy + Math.sin(t) * r];
+  });
+}
+
+function cone(s, cx, cy, z0, h, r, sides, col, rot) {
+  const base = ring(cx, cy, r, sides, rot);
+  const tip = [cx, cy, z0 + h];
+  for (let i = 0; i < sides; i++) {
+    const a = base[i];
+    const b = base[(i + 1) % sides];
+    s.tri([...a, z0], [...b, z0], tip, col);
+  }
+  for (let i = 1; i < sides - 1; i++) s.tri([...base[0], z0], [...base[i + 1], z0], [...base[i], z0], col);
+}
+
+const ICO = (() => {
+  const t = (1 + Math.sqrt(5)) / 2;
+  const v = [[-1, t, 0], [1, t, 0], [-1, -t, 0], [1, -t, 0], [0, -1, t], [0, 1, t], [0, -1, -t], [0, 1, -t], [t, 0, -1], [t, 0, 1], [-t, 0, -1], [-t, 0, 1]]
+    .map((p) => { const L = Math.hypot(...p); return p.map((c) => c / L); });
+  const f = [[0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11], [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8], [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9], [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]];
+  return { v, f };
+})();
+
+function blob(s, cx, cy, cz, rx, rz, col, r) {
+  const v = ICO.v.map(([x, y, z]) => {
+    const k = 0.85 + r() * 0.3;
+    return [cx + x * rx * k, cy + y * rx * k, cz + z * rz * k];
+  });
+  for (const [a, b, c] of ICO.f) s.tri(v[a], v[b], v[c], col);
+}
+
+// ---------- houses
+function house(s, rect, z0, wallH, o, r, sat) {
+  const { c, u, a, b } = rect;
+  const v = [-u[1], u[0]];
+  const P = (sa, tb) => [c[0] + u[0] * sa + v[0] * tb, c[1] + u[1] * sa + v[1] * tb];
+  const A = a - o.gap;
+  const B = b - o.gap;
+  if (A < 1.2 || B < 1.2) return null;
+  const wallHex = PALETTE.walls[Math.floor(r() * PALETTE.walls.length)];
+  const roofHex = PALETTE.roofs[Math.floor(r() * PALETTE.roofs.length)];
+  const wall = linear(wallHex, 0.05, r, sat);
+  const roof = linear(roofHex, 0.07, r, sat);
+  const plinth = linear(PALETTE.plinth, 0.05, r, sat);
+  const corners = [P(-A, -B), P(A, -B), P(A, B), P(-A, B)];
+  const zt = z0 + wallH;
+  prism(s, corners, z0, z0 + 0.8, plinth, false);
+  prism(s, corners, z0 + 0.8, zt, wall, false);
+  // gable roof along the long axis; wide houses get a hip roof
+  const e = o.eave;
+  const rh = Math.min(o.ridgeMax, (B + e) * Math.tan((o.pitch * Math.PI) / 180));
+  const hip = B > 7.5;
+  const ridgeA = hip ? Math.max(0.5, A - B * 0.8) : A + e;
+  const E = (sa, tb, z) => [...P(sa, tb), z];
+  const r0 = E(-ridgeA, 0, zt + rh);
+  const r1 = E(ridgeA, 0, zt + rh);
+  const q = [E(-A - e, -B - e, zt - 0.15), E(A + e, -B - e, zt - 0.15), E(A + e, B + e, zt - 0.15), E(-A - e, B + e, zt - 0.15)];
+  // the two long roof planes
+  s.quad(q[0], q[1], r1, r0, roof);
+  s.quad(q[2], q[3], r0, r1, roof);
+  if (hip) {
+    s.tri(q[1], q[2], r1, roof);
+    s.tri(q[3], q[0], r0, roof);
+  } else {
+    // gable ends: wall coloured triangles above the walls, roof caps under the eaves
+    const g0 = [E(-A, -B, zt), E(-A, B, zt), E(-A, 0, zt + rh - (e * rh) / (B + e))];
+    const g1 = [E(A, B, zt), E(A, -B, zt), E(A, 0, zt + rh - (e * rh) / (B + e))];
+    s.tri(g0[0], g0[2], g0[1], wall);
+    s.tri(g1[0], g1[2], g1[1], wall);
+    // roof undersides so the eave reads from below
+    s.tri(q[0], r0, q[3], roof);
+    s.tri(q[2], r1, q[1], roof);
+  }
+  if (r() < o.chimney) {
+    const sa = (r() - 0.5) * A;
+    const tb = (r() > 0.5 ? 1 : -1) * B * 0.35;
+    const [x, y] = P(sa, tb);
+    const k = 0.45;
+    const zc = zt + rh * (1 - 0.35) + 1.4;
+    prism(s, [[x - k, y - k], [x + k, y - k], [x + k, y + k], [x - k, y + k]], zt, zc, linear(PALETTE.chimney, 0.05, r, sat));
+  }
+  return { corners, top: zt + rh, wallTop: zt };
+}
+
+function wallHeight(b, o, r) {
+  let h = b.h ?? (b.lv ? b.lv * o.storey : null);
+  if (!h || h <= 0) h = 7 + r() * 5;
+  const named = b.n && h > 20;
+  const w = named ? Math.min(h * 0.8, 40) : Math.min(o.hMax, Math.max(o.hMin, h * o.hScale));
+  return w;
+}
+
+// ---------- trees
+function pine(s, x, y, z, k, r, sat) {
+  const h = (7 + r() * 5) * k;
+  const rad = (2.2 + r() * 0.9) * k;
+  const col = linear(PALETTE.pine[Math.floor(r() * PALETTE.pine.length)], 0.08, r, sat);
+  const trunk = linear(PALETTE.trunk, 0.05, r, sat);
+  const rot = r() * 6.28;
+  prism(s, ring(x, y, 0.28 * k, 5, rot), z - 0.3, z + h * 0.22, trunk, false);
+  const tiers = 3;
+  for (let i = 0; i < tiers; i++) {
+    const z0 = z + h * (0.15 + i * 0.24);
+    const rr = rad * (1 - i * 0.26);
+    cone(s, x, y, z0, h * (0.5 - i * 0.08), rr, 7, col, rot + i);
+  }
+  return { r: rad, h };
+}
+
+function broadleaf(s, x, y, z, k, r, o, sat) {
+  const rad = (2.6 + r() * 1.6) * k;
+  const h = (3.2 + r() * 1.5) * k;
+  const autumn = r() < o.autumn;
+  const pal = autumn ? PALETTE.autumn : PALETTE.leaf;
+  const col = linear(pal[Math.floor(r() * pal.length)], 0.08, r, sat);
+  const col2 = col.map((c) => c * 0.8);
+  const trunk = linear(PALETTE.trunk, 0.05, r, sat);
+  prism(s, ring(x, y, 0.3 * k, 5, r() * 6), z - 0.3, z + h, trunk, false);
+  blob(s, x, y, z + h + rad * 0.6, rad, rad * 0.85, col, r);
+  const n = 1 + Math.floor(r() * 2);
+  for (let i = 0; i < n; i++) {
+    const t = r() * 6.28;
+    blob(s, x + Math.cos(t) * rad * 0.6, y + Math.sin(t) * rad * 0.6, z + h + rad * 0.35, rad * 0.62, rad * 0.55, i ? col : col2, r);
+  }
+  return { r: rad * 1.25, h: h + rad * 1.5 };
+}
+
+/**
+ * Build the diorama. Returns { soup, houses, trees, stats } where houses and
+ * trees carry 2D shapes for the ground painter.
+ */
+export function buildDiorama(fixture, ground, o = DIORAMA_DEFAULTS) {
+  const r = prng(20261122);
+  const gz = groundSampler(ground);
+  const R = o.radius + o.groundPad;
+  const s = new Soup();
+  const occ = new Grid(24); // house rectangles and roads, for tree placement
+  const houses = [];
+  const sat = o.sat;
+
+  for (const b of fixture.buildings ?? []) {
+    const rect = orientedRect(b.p);
+    if (!rect) continue;
+    if (Math.hypot(...rect.c) > R - 2) continue;
+    if (polygonArea(b.p) < 6) continue;
+    const wallH = wallHeight(b, o, r);
+    // split long buildings into house units (rhythm of separate roofs)
+    const units = Math.max(1, Math.round((rect.a * 2) / o.split));
+    for (let k = 0; k < units; k++) {
+      const len = (rect.a * 2) / units;
+      const off = -rect.a + len * (k + 0.5);
+      const unit = {
+        c: [rect.c[0] + rect.u[0] * off, rect.c[1] + rect.u[1] * off],
+        u: rect.u,
+        a: len / 2,
+        b: rect.b,
+      };
+      // a deep narrow unit turns its ridge across
+      if (unit.b > unit.a) Object.assign(unit, { u: [-rect.u[1], rect.u[0]], a: rect.b, b: len / 2 });
+      const zs = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([i, j]) =>
+        gz(unit.c[0] + unit.u[0] * unit.a * i - unit.u[1] * unit.b * j, unit.c[1] + unit.u[1] * unit.a * i + unit.u[0] * unit.b * j),
+      );
+      const z0 = Math.min(...zs) - 0.6;
+      const zTop = Math.max(...zs);
+      const hJit = units > 1 ? (r() - 0.5) * 2.4 : 0;
+      const h = house(s, unit, z0, zTop - z0 + wallH + hJit, o, r, sat);
+      if (!h) continue;
+      const xs = h.corners.map((p) => p[0]);
+      const ys = h.corners.map((p) => p[1]);
+      const item = { kind: 'house', corners: h.corners, height: h.top - zTop };
+      occ.addBox(item, Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys));
+      houses.push(item);
+    }
+  }
+
+  const roads = [];
+  for (const rd of fixture.roads ?? []) {
+    const w = roadWidth(rd.t);
+    if (!w) continue;
+    for (let i = 0; i + 1 < rd.p.length; i++) {
+      const seg = { kind: 'road', a: rd.p[i], b: rd.p[i + 1], w };
+      const [ax, ay] = seg.a;
+      const [bx, by] = seg.b;
+      occ.addBox(seg, Math.min(ax, bx) - w, Math.min(ay, by) - w, Math.max(ax, bx) + w, Math.max(ay, by) + w);
+      roads.push(seg);
+    }
+  }
+
+  const green = (fixture.areas ?? []).filter((a) => a.k !== 'water');
+  const free = (x, y, pad) => {
+    if (Math.hypot(x, y) > R - 3) return false;
+    for (const it of occ.near(x, y)) {
+      if (it.kind === 'house') {
+        if (inPolygon([x, y], it.corners)) return false;
+        // keep crowns off walls
+        for (let i = 0; i < 4; i++) if (segDist([x, y], it.corners[i], it.corners[(i + 1) % 4]) < pad) return false;
+      } else if (segDist([x, y], it.a, it.b) < it.w / 2 + pad * 0.6) return false;
+    }
+    return true;
+  };
+  const trees = [];
+  const plant = (x, y, kind) => {
+    const z = gz(x, y);
+    const k = o.treeScale * (0.8 + r() * 0.45);
+    const t = kind === 'pine' ? pine(s, x, y, z, k, r, sat) : broadleaf(s, x, y, z, k, r, o, sat);
+    trees.push({ x, y, r: t.r, h: t.h });
+  };
+  const inGreen = (x, y) => green.some((g) => inPolygon([x, y], g.p));
+  // 1 mapped street trees
+  for (const [x, y] of fixture.trees ?? []) if (free(x, y, 0.5)) plant(x, y, r() < 0.3 ? 'pine' : 'leaf');
+  // 2 parks and yards on a jittered grid
+  const step = 7.5 / Math.sqrt(Math.max(0.05, o.trees));
+  for (let x = -R; x <= R; x += step)
+    for (let y = -R; y <= R; y += step) {
+      const px = x + (r() - 0.5) * step * 0.9;
+      const py = y + (r() - 0.5) * step * 0.9;
+      const g = inGreen(px, py);
+      const keep = g ? 0.5 : 0.45;
+      if (r() > keep) continue;
+      if (!free(px, py, g ? 2.0 : 1.6)) continue;
+      plant(px, py, r() < (g ? 0.4 : 0.3) ? 'pine' : 'leaf');
+    }
+  // 3 optional forest belt along the cut (hides the cut seam)
+  if (o.forestRing > 0) {
+    const n = Math.round(2 * Math.PI * o.radius / 5 * o.forestRing);
+    for (let i = 0; i < n; i++) {
+      const t = (i / n) * Math.PI * 2 + r() * 0.02;
+      const rr = o.radius - 4 - r() * 26;
+      const x = Math.cos(t) * rr;
+      const y = Math.sin(t) * rr;
+      if (!free(x, y, 1.2)) continue;
+      plant(x, y, r() < 0.75 ? 'pine' : 'leaf');
+    }
+  }
+  return {
+    soup: s,
+    houses,
+    trees,
+    roads,
+    stats: { houses: houses.length, trees: trees.length, triangles: s.triangles, roadSegments: roads.length },
+  };
+}
+
+/** Painted-shadow polygon of a house for a sun (az from north, el). */
+export function shadowOf(corners, height, sunAz, sunEl) {
+  const az = (sunAz * Math.PI) / 180;
+  const len = height / Math.tan((Math.max(8, sunEl) * Math.PI) / 180);
+  // shadows fall away from the sun
+  const dx = -Math.sin(az) * len;
+  const dy = -Math.cos(az) * len;
+  return hull([...corners, ...corners.map(([x, y]) => [x + dx, y + dy])]);
+}

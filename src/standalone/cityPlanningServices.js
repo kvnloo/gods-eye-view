@@ -5,6 +5,12 @@ import { useCityPlayStore } from '../ui/stores/cityPlay.js';
 import { massingFlag } from '../data/cityMassing.js';
 import { useSceneSharingStore } from '../ui/stores/sceneSharing.js';
 import { applicationPinia } from '../ui/vueRuntime.js';
+import {
+  canvasOf,
+  findCamera,
+  findDraw,
+  findQuery,
+} from '../render/rendererOf.js';
 import { renderFreshCesiumFrame } from '../voice/realtimeViewport.js';
 
 // Public product citations, never provider request URLs or credential-bearing resources.
@@ -38,43 +44,41 @@ function captureFailure() {
   return new Error('City reference capture unavailable');
 }
 
-function readView(viewer) {
-  const camera = viewer?.camera;
-  const position = camera?.positionCartographic;
+function readView(host) {
+  const camera = findCamera(host);
+  const pose = camera?.pose();
   if (
     ![
-      position?.latitude,
-      position?.longitude,
-      position?.height,
-      camera?.heading,
-      camera?.pitch,
-      camera?.roll,
+      pose?.lat,
+      pose?.lon,
+      pose?.height,
+      pose?.heading,
+      pose?.pitch,
+      pose?.roll,
     ].every(Number.isFinite)
   )
     throw captureFailure();
-  const pose = {
-    lat: degrees(position?.latitude),
-    lon: degrees(position?.longitude),
-    alt: position?.height,
-    heading: degrees(camera?.heading),
-    pitch: degrees(camera?.pitch),
-    roll: degrees(camera?.roll),
+  const view = {
+    lat: pose.lat,
+    lon: pose.lon,
+    alt: pose.height,
+    heading: degrees(pose.heading),
+    pitch: degrees(pose.pitch),
+    roll: degrees(pose.roll),
   };
-  const rectangle = camera?.computeViewRectangle?.(
-    viewer.scene.globe?.ellipsoid,
-  );
-  const extent = rectangle && [
+  // Degrees, as the camera port measures the rectangle in view.
+  const rectangle = camera.viewRectangle();
+  const bounds = rectangle && [
     rectangle.west,
     rectangle.south,
     rectangle.east,
     rectangle.north,
   ];
-  if (!extent || !extent.every(Number.isFinite)) throw captureFailure();
-  const bounds = extent.map(degrees);
+  if (!bounds || !bounds.every(Number.isFinite)) throw captureFailure();
   if (
-    !Object.values(pose).every(Number.isFinite) ||
-    Math.abs(pose.lat) > 90 ||
-    Math.abs(pose.lon) > 180 ||
+    !Object.values(view).every(Number.isFinite) ||
+    Math.abs(view.lat) > 90 ||
+    Math.abs(view.lon) > 180 ||
     bounds[0] < -180 ||
     bounds[2] > 180 ||
     bounds[1] < -90 ||
@@ -83,7 +87,7 @@ function readView(viewer) {
     bounds[1] >= bounds[3]
   )
     throw captureFailure();
-  return { camera: pose, bounds };
+  return { camera: view, bounds };
 }
 
 // The selected map's [id, url, name], or null when no cited map is established.
@@ -114,27 +118,31 @@ function readSources(mapStackController, capturedAt) {
   ];
 }
 
-/** Capture only the supplied viewer's current view. No camera move, freeze, or transfer. */
+/**
+ * Capture only the supplied scene's current view (`host`, the scene object
+ * the application holds), through its renderer's ports. No camera move,
+ * freeze, or transfer.
+ */
 export async function captureCityReference({
-  viewer,
+  host,
   mapStackController,
   now = () => new Date().toISOString(),
   renderFrame = renderFreshCesiumFrame,
   createCanvas = () => document.createElement('canvas'),
 }) {
   try {
-    const source = viewer?.scene?.canvas;
+    const source = host ? canvasOf(host) : null;
     if (!source) throw captureFailure();
     // A frame can miss the bounded fresh-render wait while photoreal tiles
     // stream in after a flight; try a few frames before refusing.
     let fresh = false;
     for (let attempt = 0; attempt < FRESH_FRAME_ATTEMPTS && !fresh; attempt++)
-      fresh = await renderFrame(viewer);
+      fresh = await renderFrame(host);
     if (!fresh) throw captureFailure();
     const { width, height } = source;
     if (![width, height].every(Number.isFinite) || width <= 0 || height <= 0)
       throw captureFailure();
-    const view = readView(viewer);
+    const view = readView(host);
     const capturedAt = now();
     const sources = readSources(mapStackController, capturedAt);
     const scale = Math.min(1, 960 / width, 640 / height);
@@ -244,22 +252,6 @@ function downloadDocument(text, filename) {
 }
 
 /** Connect the framework-free owner to this application's stores and browser services. */
-/**
- * The Cesium viewer the City builder draws with, or null.
- *
- * INTERIM (fork): upstream's renderer seam hands tools a scene host with
- * nothing of the engine, so `scene.viewer` is no longer a Cesium Viewer. Until
- * the City builder reaches the globe through the renderer's ports (camera,
- * query, draw, frame and input), it borrows the viewer the Cesium renderer
- * hands the application for QA (`scene.qaHandles.viewer`). Another renderer
- * hands none, and then there is no play mode and no capture.
- * @param {object|undefined} scene
- */
-export function cityEngineViewer(scene) {
-  const viewer = scene?.qaHandles?.viewer;
-  return viewer?.scene && viewer.camera ? viewer : null;
-}
-
 export function mountCityBuilder(options = {}) {
   const {
     scene,
@@ -269,7 +261,7 @@ export function mountCityBuilder(options = {}) {
     playStore = useCityPlayStore(pinia),
     captureReference = () =>
       captureCityReference({
-        viewer: cityEngineViewer(scene),
+        host: scene?.viewer,
         mapStackController: scene?.mapStackController,
       }),
     storage = createCityBrowserStorage(),
@@ -321,17 +313,17 @@ export function mountCityBuilder(options = {}) {
     },
   });
   controls = owner;
-  // Play mode needs a live Cesium globe (it draws with Cesium itself), so its
-  // code loads only for one: another renderer never requests Cesium, and
-  // without a globe the records dialog still works.
+  // Play mode draws on the globe through the renderer's ports, so its code
+  // loads only for a scene whose renderer draws, picks and moves the camera
+  // (`src/render/rendererOf.js`); without one the records dialog still works.
   let massing = null;
-  const viewer = cityEngineViewer(scene);
-  if (viewer)
+  const host = scene?.viewer;
+  if (host && findDraw(host) && findQuery(host) && findCamera(host))
     void Promise.all([import('./cityPlay.js'), import('./cityMassing.js')])
       .then(([{ mountCityPlay }, { mountCityMassing }]) => {
         if (disposed) return;
         play = mountCityPlay({
-          viewer,
+          host,
           builder: owner,
           store: playStore,
           mapSource: () =>
@@ -340,7 +332,7 @@ export function mountCityBuilder(options = {}) {
         play.receive(playView);
         // Massing v0 follows the selected plot, only behind ?massing=1.
         if (massingFlag(globalThis.location?.search))
-          massing = mountCityMassing({ viewer, store: playStore });
+          massing = mountCityMassing({ host, store: playStore });
       })
       .catch(() => console.error('City builder play mode failed to load'));
   store.connect(controls);

@@ -246,15 +246,9 @@ async function plotPoint(id) {
       latitude: (center.lat * Math.PI) / 180,
       height: 0,
     };
-    const exclude = ['gev-city-massing', 'gev-city-play'].flatMap(
-      (name) => viewer.dataSources.getByName(name)[0]?.entities.values ?? [],
-    );
-    const sampled = scene.sampleHeightSupported
-      ? scene.sampleHeight(at, exclude)
-      : undefined;
-    at.height = Number.isFinite(sampled)
-      ? sampled
-      : (scene.globe.getHeight(at) ?? 0);
+    // The surface through massing's and play mode's own draw sets.
+    const sampled = window.__gevCityPlay.surfaceAt(center.lon, center.lat);
+    at.height = Number.isFinite(sampled) ? sampled : 0;
     const p = scene.cartesianToCanvasCoordinates(
       scene.globe.ellipsoid.cartographicToCartesian(at),
     );
@@ -299,23 +293,13 @@ async function groundSamples() {
     const { viewer } = window.__godsEyeView;
     const { scene } = viewer;
     const { center } = window.__gevCityPlay.snapshot().plot;
-    const exclude = ['gev-city-massing', 'gev-city-play'].flatMap(
-      (name) => viewer.dataSources.getByName(name)[0]?.entities.values ?? [],
-    );
     const kx = 111_320 * Math.cos((center.lat * Math.PI) / 180);
-    const surface = (east, north) => {
-      const at = {
-        longitude: ((center.lon + east / kx) * Math.PI) / 180,
-        latitude: ((center.lat + north / 111_320) * Math.PI) / 180,
-        height: 0,
-      };
-      const sampled = scene.sampleHeight(at, exclude);
-      return Number.isFinite(sampled)
-        ? sampled
-        : scene.globe.show
-          ? scene.globe.getHeight(at)
-          : undefined;
-    };
+    // The surface through massing's and play mode's own draw sets.
+    const surface = (east, north) =>
+      window.__gevCityPlay.surfaceAt(
+        center.lon + east / kx,
+        center.lat + north / 111_320,
+      ) ?? undefined;
     const primitives = scene.primitives;
     return {
       centre: surface(0, 0) ?? null,
@@ -336,19 +320,8 @@ async function groundSamples() {
 // the mesh stands above the block's base. The keyless Esri globe has no tileset.
 async function cutEvidence(samples, s) {
   const inside = await page.evaluate(() => {
-    const { viewer } = window.__godsEyeView;
     const { center } = window.__gevCityPlay.snapshot().plot;
-    const exclude = ['gev-city-massing', 'gev-city-play'].flatMap(
-      (name) => viewer.dataSources.getByName(name)[0]?.entities.values ?? [],
-    );
-    const h = viewer.scene.sampleHeight(
-      {
-        longitude: (center.lon * Math.PI) / 180,
-        latitude: (center.lat * Math.PI) / 180,
-        height: 0,
-      },
-      exclude,
-    );
+    const h = window.__gevCityPlay.surfaceAt(center.lon, center.lat);
     return Number.isFinite(h) ? h : null;
   });
   const cut = { tilesets: samples.tilesets, cuts: s.cuts, inside };
@@ -385,11 +358,6 @@ async function groundPoints(offsets, { terrain = false } = {}) {
         const lat0 = fp.reduce((a, [, y]) => a + y, 0) / fp.length;
         const kx = 111_320 * Math.cos((lat0 * Math.PI) / 180);
         const canvas = scene.canvas.getBoundingClientRect();
-        const { viewer } = window.__godsEyeView;
-        const exclude = ['gev-city-massing', 'gev-city-play'].flatMap(
-          (name) =>
-            viewer.dataSources.getByName(name)[0]?.entities.values ?? [],
-        );
         return list.map(({ east, north, up = 0 }) => {
           const at = {
             longitude: ((lon0 + east / kx) * Math.PI) / 180,
@@ -398,12 +366,11 @@ async function groundPoints(offsets, { terrain = false } = {}) {
           };
           let ground = null;
           if (onTerrain) {
-            const h = scene.sampleHeight(at, exclude);
-            ground = Number.isFinite(h)
-              ? h
-              : scene.globe.show
-                ? (scene.globe.getHeight(at) ?? null)
-                : null;
+            const h = window.__gevCityPlay.surfaceAt(
+              lon0 + east / kx,
+              lat0 + north / 111_320,
+            );
+            ground = Number.isFinite(h) ? h : null;
             if (ground === null) return null;
             at.height = ground;
           }
@@ -911,22 +878,18 @@ async function edgePoint(meters) {
     const s = window.__gevCityMassing.snapshot();
     const [, , a, b] = shadowBand(s.massing.footprint, s.sun, m);
     const rect = scene.canvas.getBoundingClientRect();
-    const exclude = ['gev-city-massing', 'gev-city-play'].flatMap(
-      (name) => viewer.dataSources.getByName(name)[0]?.entities.values ?? [],
-    );
     // Along the edge: across the block's width first, then beyond its sides.
     for (const f of [0.5, 0.25, 0.75, 0, 1, -0.25, 1.25, -0.5, 1.5, -1, 2]) {
+      const lon = a[0] + (b[0] - a[0]) * f;
+      const lat = a[1] + (b[1] - a[1]) * f;
       const at = {
-        longitude: ((a[0] + (b[0] - a[0]) * f) * Math.PI) / 180,
-        latitude: ((a[1] + (b[1] - a[1]) * f) * Math.PI) / 180,
+        longitude: (lon * Math.PI) / 180,
+        latitude: (lat * Math.PI) / 180,
         height: 0,
       };
-      const sampled = scene.sampleHeightSupported
-        ? scene.sampleHeight(at, exclude)
-        : undefined;
-      at.height = Number.isFinite(sampled)
-        ? sampled
-        : (scene.globe.getHeight(at) ?? s.base);
+      // The surface through massing's and play mode's own draw sets.
+      const sampled = window.__gevCityPlay.surfaceAt(lon, lat);
+      at.height = Number.isFinite(sampled) ? sampled : s.base;
       const p = scene.cartesianToCanvasCoordinates(
         scene.globe.ellipsoid.cartographicToCartesian(at),
       );
@@ -1292,7 +1255,7 @@ try {
     'The block is drawn as a building: a band per storey, a shopfront at the ground, window bays on the wall; the selection prism steps aside',
     async () => {
       const s = await massing();
-      assert.equal(s.blockMaterial, 'GevCityMassingFacade');
+      assert.equal(s.blockFill, 'facade');
       assert.equal(s.facade.bands.length, s.storeys, 'a band per storey');
       assert.equal(s.facade.bands[0].kind, 'shopfront');
       assert.ok(
@@ -1321,12 +1284,7 @@ try {
         `the wall under the windows is plain: ${wall.contrast.toFixed(1)} against ${windows.contrast.toFixed(1)}`,
       );
       // Play mode's choosing prism (a translucent box) is not drawn with it.
-      const prism = await page.evaluate(
-        () =>
-          window.__godsEyeView.viewer.dataSources
-            .getByName('gev-city-play')[0]
-            .entities.values.filter((entity) => entity.wall).length,
-      );
+      const { prism } = await play();
       assert.equal(prism, 0, 'no selection prism around the building');
       assert.equal((await play()).footprint, true, 'the plot outline stays');
       await screenshot('02b-building');
@@ -1736,13 +1694,10 @@ try {
         `the block itself re-extruded: ${s.blockExtrudedHeight - s.base} m`,
       );
       const shown = await study();
-      const entities = await page.evaluate(() =>
-        window.__godsEyeView.viewer.dataSources
-          .getByName('gev-city-massing')[0]
-          .entities.values.map((entity) => entity.id)
-          .filter((id) => id.includes('-shadow-'))
-          .sort(),
-      );
+      // The study lines in massing's draw set, as the renderer holds them.
+      const entities = s.ids.lines
+        .filter((id) => id.includes('-shadow-'))
+        .sort();
       report.measurements.shadowFit = {
         study: s.study,
         shown,
@@ -1855,12 +1810,9 @@ try {
         beside.ratio >= 0.95,
         `the band beside it is not darkened (${beside.ratio.toFixed(2)})`,
       );
-      const patch = await page.evaluate(() =>
-        Boolean(
-          window.__godsEyeView.viewer.dataSources
-            .getByName('gev-city-massing')[0]
-            .entities.getById('city-massing-shadow-now').polygon,
-        ),
+      // NOW is a line: no shape of massing's covers the shadow.
+      const patch = (await massing()).ids.shapes.some((id) =>
+        id.includes('-shadow-'),
       );
       assert.equal(patch, false, 'NOW is an outline, not a filled patch');
       await screenshot('11-cast-shadow-study');
@@ -2165,9 +2117,19 @@ try {
       await page.waitForTimeout(1500);
       const off = await page.evaluate(() => ({
         probe: '__gevCityMassing' in window,
-        source:
-          window.__godsEyeView.viewer.dataSources.getByName('gev-city-massing')
-            .length,
+        // Shapes the scene draws in a facade material (massing's block and
+        // plate), found among the scene's primitives.
+        source: (function count(collection) {
+          let n = 0;
+          for (let i = 0; i < (collection?.length ?? 0); i++) {
+            const p = collection.get(i);
+            if (p?.length !== undefined && typeof p.get === 'function')
+              n += count(p);
+            else if (/^Facade/.test(p?.appearance?.material?.type ?? ''))
+              n += 1;
+          }
+          return n;
+        })(window.__godsEyeView.viewer.scene.primitives),
         shadows: window.__godsEyeView.viewer.shadows,
         readout: Boolean(document.querySelector('[data-city-massing]')),
       }));

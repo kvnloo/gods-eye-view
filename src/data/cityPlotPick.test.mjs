@@ -74,32 +74,36 @@ const CARD = clickAt({
   lon: A.center.lon,
 });
 
-// The play mode's own entities. Only a standing concept names its plot.
-const concept = { _cityPlot: A };
-const selectedPrism = {};
-const OWN = new Set([concept, selectedPrism]);
+// Picks of play mode's own draw sets. Only a standing concept names its plot.
+const concept = {
+  set: 'city-play-concepts',
+  id: 'city-play-concept-a',
+  meta: { plot: A },
+  surface: false,
+};
+const selectedPrism = {
+  set: 'city-play',
+  id: 'city-play-prism',
+  surface: false,
+};
+const plotOf = (hit) =>
+  hit.set === 'city-play-concepts' ? (hit.meta?.plot ?? null) : null;
 
+// A query port whose answers are the fixture's real geometry.
 function fake({ click, depth, ground = click.ground, top, ellipsoid = true }) {
   return {
-    position: new Cesium.Cartesian2(720, 480),
-    scene: {
-      pickPositionSupported: true,
-      pickPosition: () => depth && Cesium.Cartesian3.clone(depth),
-      pick: () => (top ? { id: top } : undefined),
-      globe: {
-        show: true,
-        // Only the click's own pick ray meets the ground.
-        pick: (ray) =>
-          ray === click.ray && ground
-            ? Cesium.Cartesian3.clone(ground)
-            : undefined,
-      },
+    position: { x: 720, y: 480 },
+    globeShown: true,
+    query: {
+      pickPosition: () => (depth ? Cesium.Cartesian3.clone(depth) : null),
+      pick: () => top ?? null,
+      pickRay: () => click.ray,
+      // Only the click's own pick ray meets the ground.
+      pickGlobe: (ray) =>
+        ray === click.ray && ground ? Cesium.Cartesian3.clone(ground) : null,
+      pickEllipsoid: () => (ellipsoid ? onEllipsoid(click.ray) : null),
     },
-    camera: {
-      getPickRay: () => click.ray,
-      pickEllipsoid: () => (ellipsoid ? onEllipsoid(click.ray) : undefined),
-    },
-    owns: (entity) => OWN.has(entity),
+    plotOf,
   };
 }
 
@@ -203,7 +207,7 @@ for (const [name, run] of CASES) test(`M1-${name}`, run);
 // Not part of the table: the surfaces the globe ray does not cover.
 test('photoreal tiles (globe hidden) keep the depth pick', () => {
   const input = fake({ click: NEAR, depth: NEAR.ground });
-  input.scene.globe.show = false;
+  input.globeShown = false;
   const hit = resolveClickedPlot(input);
   assert.equal(hit.plot.id, A.id);
   assert.ok(Math.abs(hit.height - GROUND) < 0.01, `height ${hit.height}`);

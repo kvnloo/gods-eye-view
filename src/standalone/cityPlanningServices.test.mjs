@@ -2,8 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createPinia } from 'pinia';
-import { bindRenderer } from '../render/rendererOf.js';
-import { fakeSceneFrame } from '../testSupport/fakeCesiumScene.mjs';
+import { bindFakeCesiumScene } from '../testSupport/fakeCesiumScene.mjs';
 import {
   captureCityReference,
   createCityBrowserStorage,
@@ -46,6 +45,8 @@ function captureFixture({
     },
     scene: { canvas: { width, height }, globe: { ellipsoid: {} } },
   };
+  // Capture reads the camera and canvas through the renderer's ports.
+  bindFakeCesiumScene(viewer);
   const calls = [];
   const context = {
     drawImage: (...args) => calls.push(args),
@@ -64,7 +65,7 @@ function captureFixture({
     url: 'https://private.invalid/?token=DO-NOT-EXPORT',
   };
   const options = {
-    viewer,
+    host: viewer,
     mapStackController: {
       getState: () => ({
         activeId: id,
@@ -139,8 +140,9 @@ test('capture reuses the bounded fresh-frame helper on the explicit viewer only'
     requests++;
     queueMicrotask(() => listener());
   };
-  // The fresh-frame helper reads the frame port of the viewer it is given.
-  bindRenderer(viewer, { frame: fakeSceneFrame(viewer) });
+  // The fresh-frame helper reads the frame port of the viewer it is given:
+  // the fixture's (`bindFakeCesiumScene`), which listens to the scene's own
+  // events as they are now.
   await captureCityReference(options);
   assert.equal(requests, 1);
   assert.equal(removals, 1);
@@ -152,13 +154,13 @@ test('fresh-frame failure and missing explicit canvas fail closed without drawin
       options.renderFrame = async () => false;
     },
     (options) => {
-      options.viewer.scene.canvas = null;
+      options.host.scene.canvas = null;
     },
     (options) => {
-      options.viewer.scene.canvas.width = 0;
+      options.host.scene.canvas.width = 0;
     },
     (options) => {
-      options.viewer.scene.canvas.height = Infinity;
+      options.host.scene.canvas.height = Infinity;
     },
   ]) {
     const { options, calls } = captureFixture();

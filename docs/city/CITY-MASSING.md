@@ -85,9 +85,11 @@ the massing's own numbers:
 - solid colours in the app's palette (stone, slate frames, an amber sign
   band). Cyan stays the plot outline.
 
-`src/standalone/cityMassingLook.js` draws it as a Cesium fabric material on
-the block's own polygon (the plate uses the same material and comes out as
-paving, darker where the walls stand). A polygon's texture coordinates carry
+The block is drawn through the renderer's draw port as a facade fill
+(`FacadeFill`, `src/render/contract/draw.d.ts`, capability `facadeFill`); the
+Cesium renderer draws it as a fabric material on the block's own polygon
+(`src/render/cesium/drawFacade.js`). The plate uses the same fill and comes
+out as paving, darker where the walls stand. A polygon's texture coordinates carry
 no height, so the shader places each fragment in metres east/north/up of the
 footprint's middle, relative to the eye. It is opaque and lit by the scene
 sun; faces turned from the sun keep half their colour as skylight. The block

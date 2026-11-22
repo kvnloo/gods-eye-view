@@ -1,28 +1,16 @@
 # downstream/city-loop (fork-only)
 
-Nothing in this folder, and nothing in the last commit of `city/consolidated`
-("spike(city): GLB stand-in and 3D-tile seating harness"), is meant for
-upstream bilawalsidhu/gods-eye-view. Every commit before it is.
+Nothing in this folder is meant for upstream bilawalsidhu/gods-eye-view.
 
 ## The spike harness
 
-`src/standalone/cityMassing.js` (the `SPIKE` blocks) and
-`src/standalone/cityMassingSeat.js` read an optional
-`public/city-massing-spike/arm.json`. No arm.json is committed; without one the
-massing block is drawn as the product commits draw it.
-
-Minimal arm, one GLB for the 6-storey block, its own shadows on:
-
-```json
-{ "models": { "6": "/city-massing-spike/block-6.glb" }, "shadows": "ENABLED" }
-```
-
-Keys the harness reads (see the comment block at `SPIKE_ARM` in
-`cityMassing.js` for each one's meaning): `models`, `shadows`, `options`,
-`sun`, `env`, `shade`, `tilesSun`, `grade`, `view` (`sun`, `light`) and
-`seat` (`level` 1-5, `tone`, `steps`, `cut`, `keeps`, `knee`, `under`,
-`self`). GLBs are in metres around the footprint centre, base at 0, Blender
-export axes (east +X, up +Y, north -Z).
+The GLB stand-in and 3D-tile seating harness (commit `21c792b8a`,
+`cityMassingSeat.js` and the `SPIKE` blocks in `cityMassing.js`, driven by an
+optional `public/city-massing-spike/arm.json`) is on `city/consolidated`
+only. It reached Cesium directly (including private fields), so
+`city/renderer-port`, which draws the City builder through the renderer's
+ports, does not carry it. Without an arm.json the harness drew the block as
+the product commits do, which is what `city/renderer-port` draws.
 
 ## Running the city builder for the loop
 

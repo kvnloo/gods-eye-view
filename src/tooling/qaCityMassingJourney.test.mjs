@@ -166,7 +166,7 @@ test('every run cuts its own 30 s demo from the journey page, splash and shadow-
 });
 
 test('the journey checks the building on the canvas and the cast shadow of the study', () => {
-  assert.match(source, /s\.blockMaterial, 'GevCityMassingFacade'/);
+  assert.match(source, /s\.blockFill, 'facade'/);
   assert.match(source, /s\.facade\.bands\.length, s\.storeys/);
   assert.match(source, /windows\.runs >= 0\.8 \* lines\.bays/);
   assert.match(source, /assert\.equal\(prism, 0/);
@@ -187,7 +187,10 @@ test('the growth page keeps its district, its three stops and the sun-locked cor
   assert.match(growth, /assert\.equal\(shown\.rails, 1, 'one rail'\)/);
   assert.match(growth, /assert\.equal\(shown\.homes\.length, 1,/);
   // Every drawn block is held to the plan, and the fitted corner to its fit.
-  assert.match(growth, /s\.growth\.blocks\[b\]\.heightMeters - block\.heightMeters/);
+  assert.match(
+    growth,
+    /s\.growth\.blocks\[b\]\.heightMeters - block\.heightMeters/,
+  );
   assert.match(growth, /\[9\.6, 12\.8, 16\],/);
   assert.match(growth, /Array\(3\)\.fill\(\[true, 9\.6\]\)/);
   for (const shot of [

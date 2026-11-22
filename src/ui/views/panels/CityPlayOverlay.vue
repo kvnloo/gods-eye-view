@@ -95,6 +95,8 @@ const chipLabels = computed(() => ({
 const moveLabels = computed(() => ({ canopy_pct: t('Canopy'), bike_m: t('Bike lane') }));
 // Every number on this HUD is drawn by hudFigure; an unknown one is a plain dash.
 const figure = (f) => hudFigure(f) ?? '—';
+// The bar states only what the app holds: a field with no figure is left off.
+const stats = computed(() => (view.value?.stats ?? []).map((stat) => ({ ...stat, text: hudFigure(stat) })).filter((stat) => stat.text));
 const estimate = true;
 function kindLabel(kind) {
   return kind === 'park' ? t('Park') : kind === 'plaza' ? t('Plaza') : t('Bike lane');
@@ -207,9 +209,9 @@ const bars = computed(() => {
 <template>
   <div v-if="active" class="city-play" data-city-play :data-city-play-tier="tier" :aria-label="t('City builder play mode')" role="region">
     <div class="city-play-bar" data-city-play-bar>
-      <span v-for="stat in view.stats" :key="stat.id" class="city-play-stat" :data-city-play-stat="stat.id">
+      <span v-for="stat in stats" :key="stat.id" class="city-play-stat" :data-city-play-stat="stat.id">
         <span class="city-play-stat-label">{{ statLabels[stat.id] }}</span>
-        <span class="city-play-stat-value" translate="no">{{ figure(stat) }}</span>
+        <span class="city-play-stat-value" translate="no">{{ stat.text }}</span>
       </span>
       <span v-for="move in focusedCard?.moves ?? []" :key="move.id" class="city-play-stat city-play-move" :data-city-play-move="move.id">
         <span class="city-play-stat-label">{{ moveLabels[move.id] }}</span>

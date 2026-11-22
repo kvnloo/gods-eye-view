@@ -109,6 +109,11 @@ body.gev-city-play #scope-mask {
   color: var(--accent);
   cursor: pointer;
 }
+/* Alone on a bar with nothing to state: no divider. */
+.city-play-bar-records:first-child {
+  margin-inline-start: 0;
+  border-inline-start: 0;
+}
 .city-play-bar-records:disabled {
   opacity: 0.4;
 }

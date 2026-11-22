@@ -165,7 +165,6 @@ test('the wheel follows the projected plot and sends honest actions', async (t) 
     concepts: '1',
     trees: '12 EST',
     shade: '45% EST',
-    walk: '—',
   });
 });
 
@@ -330,7 +329,7 @@ test('zoom tiers swap the wheel for detail callouts or district pins', async (t)
   assert.match(pin.textContent, /Kept/);
 });
 
-test('every estimated figure reads EST, an exact figure does not, and an unknown one stays a plain dash', async (t) => {
+test('every estimated figure reads EST, an exact figure does not, and an unknown one is left off the bar', async (t) => {
   const { store, settle, $, $$ } = await mount(t);
   const text = (selector) => $$(selector).map((el) => el.textContent.trim());
   store.publish(playView());
@@ -367,15 +366,14 @@ test('every estimated figure reads EST, an exact figure does not, and an unknown
     '3',
     '36 EST',
     '~43% EST',
-    '—',
   ]);
 
   store.publish(playView({ stats: resourceStats(null) }));
   await settle();
   assert.deepEqual(
     text('[data-city-play-stat] .city-play-stat-value'),
-    ['—', '—', '—', '—', '—', '—'],
-    'no project: unknown, never zero, never an estimate',
+    [],
+    'no project: unknown, never zero, never an estimate, never a dash',
   );
 
   const footprint = [

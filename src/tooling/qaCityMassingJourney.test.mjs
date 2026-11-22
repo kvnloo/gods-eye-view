@@ -174,3 +174,26 @@ test('the journey checks the building on the canvas and the cast shadow of the s
   assert.match(source, /beside\.ratio >= 0\.95/);
   assert.match(source, /assert\.equal\(patch, false/);
 });
+
+test('the growth page keeps its district, its three stops and the sun-locked corner', () => {
+  const growth = source.slice(
+    source.indexOf("'A shift-click on a second plot"),
+    source.indexOf("page = await openPage(context, 'flag-off')"),
+  );
+  assert.match(growth, /snapshot\(\)\.district\?\.length === 25/);
+  assert.match(growth, /inView\.every\(Boolean\)/);
+  assert.match(growth, /\[575, 659, 755\]/);
+  assert.match(growth, /growthLines\(plan, index\)\.map/);
+  assert.match(growth, /assert\.equal\(shown\.rails, 1, 'one rail'\)/);
+  assert.match(growth, /assert\.equal\(shown\.homes\.length, 1,/);
+  // Every drawn block is held to the plan, and the fitted corner to its fit.
+  assert.match(growth, /s\.growth\.blocks\[b\]\.heightMeters - block\.heightMeters/);
+  assert.match(growth, /\[9\.6, 12\.8, 16\],/);
+  assert.match(growth, /Array\(3\)\.fill\(\[true, 9\.6\]\)/);
+  for (const shot of [
+    "'11-district-selected'",
+    '`${12 + index}-growth-${stage.id}`',
+    "'15-growth-locked-corner'",
+  ])
+    assert.ok(growth.includes(`screenshot(${shot})`), shot);
+});

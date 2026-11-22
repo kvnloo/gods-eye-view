@@ -123,6 +123,64 @@ via pvlib-python 0.13.1, which reproduces the report's published example) and
 the NOAA Solar Calculator, each within 1°; and to Cesium's own scene sun
 (UniformState's Simon 1994 sun) within 1°.
 
+## Protect a sidewalk from the shadow
+
+With MASSING on, a second panel beside the readout holds one toggle, **PROTECT
+SIDEWALK**. It is off by default and draws nothing until it is on. On, it holds
+the block's shadow against a protected edge across the street: the far
+sidewalk.
+
+- **The edge.** Its distance is measured from the face of the block that the
+  shadow leaves, along the shadow. It starts at 20 m and reads **ASSUMED**
+  until the player sets it: **SET ON MAP** takes the next click on the ground
+  (play mode hands that one click over instead of selecting a plot), and the
+  − / + stepper moves it a metre at a time (the keyboard path). The distance is
+  kept in whole metres, 1 to 200. A click on the block or behind that face
+  sets nothing and leaves the tool armed.
+- **The sun.** The study uses the scene clock's sun, the same one that casts the
+  block's shadow. Outside winter (December to February north of the equator,
+  June to August south of it) it offers **WINTER NOON**, which moves the scene
+  clock to solar noon on the winter solstice of the scene's year at the plot:
+  the minute `citySun` puts the sun highest (28.8° at San Francisco). No sun
+  angle is typed in or assumed. With the sun down the reach is a dash and there
+  is nothing to fit.
+- **On the ground.** The protected edge is an amber line across the shadow,
+  reaching 6 m past its sides. The shadow
+  as it now falls is a filled band (NOW). Beside it is a dashed outline: before
+  a change, what a fit would leave (FIT TO SUN); after one, the shadow of the
+  storeys the study started from (WAS). Each band ends in a tip label, worded
+  by `src/ui/cityShadowTip.js` through `hudFigure`:
+  `SHADOW WAS 35 m · 15 m ONTO SIDEWALK EST`,
+  `SHADOW NOW 17 m · CLEARS SIDEWALK BY 3 m EST`.
+- **FIT TO SUN** sets the storeys to the most that still clear the edge. It
+  only ever cuts: a block that already clears keeps its storeys and the button
+  is disabled. It never goes below one storey; when even one storey reaches the
+  edge the panel says so. It changes the storey count, never the storey height
+  (floor-to-floor is held to 2.8 to 4.5 m; massing's own is 3.2 m).
+- **Readouts.** FLOORS `6 → 3 EST`, and ONTO SIDEWALK or CLEARS SIDEWALK BY in
+  metres EST. Once the storeys changed, one line states what that cost:
+  `HOMES 46 → 23 EST · FAR 3.84 → 1.92`, the massing readout's own HOMES and
+  FAR for the storeys the study started from and for the ones that stand. The
+  massing readout itself follows with HEIGHT, FAR, HOMES and SHADOW REACH.
+
+`src/data/cityShadowFit.js` is the one owner of the numbers (pure):
+`shadowFit({storeys, wasStoreys, storeyHeightMeters, sun, edgeMeters})` returns
+the `now`, `was` and `fit` lines (storeys, height, reach, and reach − edge), the
+two lines to draw, `canFit` and `cannotClear`; `shadowBand` and `edgeDistance`
+are the ground geometry; `winterNoon` and `inWinter` are the winter study
+moment. `src/data/cityShadowFit.test.mjs` is a fixed table: six storeys of
+3.0 m under a 29° sun against an edge 20 m away reach 32.5 m, 12.5 m onto it,
+and fit to three storeys, 16.2 m, clear by 3.8 m.
+
+While the study is on the play wheel steps aside (its ring is as wide as the
+shadow it would cover); PROTECT SIDEWALK off brings it back.
+
+These are estimates on level ground from the block's height and the sun: no
+neighbouring buildings, trees, slope or roof shape, and one moment, not a day
+or a season. The edge is where the player put it, not a surveyed kerb. The
+study is desktop only (a phone keeps the massing readout alone), and nothing
+of it is saved.
+
 ## Persistence
 
 None. Massing is computed on load from the plot and never written to the city
@@ -180,6 +238,18 @@ the plot selected, MASSING on with its shadow band, then +2 storeys with every
 row changing and the shadow lengthening. Its cut comes from marks on the
 journey page's video clock and leaves out every frame a capture drew with the
 shadow map off (`demoCut` in `scripts/qa-massing-measure.mjs`).
+
+On its own page, looking south so the north-falling shadow lies in front of
+the block, the journey then protects the sidewalk: MASSING on at six
+storeys, PROTECT SIDEWALK, WINTER NOON (the scene sun must come within 1° of
+28.8°), the edge moved to 23 m with the stepper from the keyboard, then set
+back to 20 m by SET ON MAP and a click on the ground across the street. It
+asserts the panel, the two tip labels and the entities on the ground against
+`shadowFit` (each line's length within half a metre), takes
+`09-shadow-reaches.png`, presses FIT TO SUN and asserts three storeys, the
+dashed WAS line, the filled NOW band, `FLOORS 6 → 3 EST`, the cost line
+(`HOMES 46 → 23 EST · FAR 3.84 → 1.92`), the massing readout (23 homes, FAR
+1.92) and that nothing was saved (`10-fit-to-sun.png`).
 
 `src/tooling/qaCityMassingJourney.test.mjs` fails if any of these steps drops
 out of the journey.

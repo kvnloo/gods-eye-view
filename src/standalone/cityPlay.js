@@ -749,6 +749,8 @@ export function mountCityPlay({
   }
   function onClick({ position }) {
     if (framing) return;
+    // An armed massing tool (the protected edge) takes the next ground click.
+    if (store.massingControls?.click?.(pickPoint(position))) return;
     // Clicking a concept card or the selected footprint selects that plot again.
     const mine = ownPlot(position);
     if (mine) {

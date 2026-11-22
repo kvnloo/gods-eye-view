@@ -58,6 +58,20 @@ test('QA_PLOT frames its plot: the camera 600 m south of the centre, looking nor
   assert.throws(() => siteForPlot('lot-7'), /QA_PLOT must be a plot id/);
 });
 
+test('with a heading the camera stands behind the plot and looks that way', () => {
+  const id = 'plot-n105201-126637';
+  const { center } = plotFromId(id);
+  // Looking east: 600 m west of the plot, on its latitude.
+  const site = siteForPlot(id, 600, 90);
+  assert.ok(Math.abs(site.lat - center.lat) < 1e-9);
+  const east = 111_320 * Math.cos((center.lat * Math.PI) / 180);
+  assert.ok(Math.abs((center.lon - site.lon) * east - 600) < 1e-6);
+  assert.deepEqual(
+    { alt: site.alt, heading: site.heading, pitch: site.pitch },
+    { alt: 600, heading: 90, pitch: -45 },
+  );
+});
+
 test('the reference ground is the plot centre, or the lowest street sample when a structure stands on the plot', () => {
   // Washington Square lawn (Esri globe): the centre is ground.
   assert.deepEqual(groundReference(-8.26, [-8.1, -8.5, -8.0, -8.4]), {

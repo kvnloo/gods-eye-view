@@ -17,8 +17,10 @@ export const useCityPlayStore = defineStore('gev-city-play', () => {
 
   /**
    * Massing v0 (src/standalone/cityMassing.js, only behind ?massing=1): the
-   * selected plot's assumed block, the screen points of the block and its
-   * shadow, and `{toggle, step}`. All null with the flag off.
+   * selected plot's assumed block with its shadow study, the screen points of
+   * the block, its shadow and the far side of each study line, and `{toggle, step,
+   * study, stepEdge, pickEdge, click, winterNoon, fit}`. All null with the
+   * flag off.
    */
   const massing = shallowRef(null);
   const massingAnchors = shallowRef(null);

@@ -1,8 +1,17 @@
 <script setup>
+import { ref } from 'vue';
 import { t } from '../../../i18n/index.js';
+import UiButton from '../../kit/UiButton.vue';
+import UiSelect from '../../kit/UiSelect.js';
 
 // Display only: rows come from src/ui/cityWalkAccess.js and change nothing.
-defineProps({ access: { type: Object, required: true } });
+// Suggest site asks the owner for one more row, a hypothetical option.
+defineProps({
+  access: { type: Object, required: true },
+  controls: { type: Object, default: null },
+});
+const objective = ref('average');
+const siteCount = ref(1);
 const cell = { padding: '4px 8px', borderBottom: '1px solid #26404b', textAlign: 'start', verticalAlign: 'top' };
 </script>
 
@@ -12,6 +21,18 @@ const cell = { padding: '4px 8px', borderBottom: '1px solid #26404b', textAlign:
     <p data-city-access-label style="margin: 0 0 6px; color: #d5b67b">{{ access.label }}</p>
     <p data-city-access-network style="color: #aad3db">{{ access.network }}</p>
     <p style="color: #aad3db">{{ access.method }}</p>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0">
+      <label for="city-access-objective">{{ t('Suggest a site for') }}</label>
+      <UiSelect id="city-access-objective" v-model="objective" class="scene-shot-rename city-builder-input" style="width: auto" data-city-access-objective>
+        <option value="average">{{ t('Lowest average walk') }}</option>
+        <option value="worst-served">{{ t('Shortest worst-served walk') }}</option>
+      </UiSelect>
+      <label for="city-access-site-count">{{ t('New sites') }}</label>
+      <UiSelect id="city-access-site-count" v-model="siteCount" class="scene-shot-rename city-builder-input" style="width: auto" data-city-access-site-count>
+        <option v-for="count in [1, 2]" :key="count" :value="count">{{ count }}</option>
+      </UiSelect>
+      <UiButton class="gev-action-button" data-city-access-suggest @click="controls?.suggestSite({ objective, siteCount: Number(siteCount) })">{{ t('Suggest site') }}</UiButton>
+    </div>
     <div style="overflow-x: auto">
       <table data-city-access-table style="width: 100%; border-collapse: collapse">
         <thead>
@@ -25,10 +46,10 @@ const cell = { padding: '4px 8px', borderBottom: '1px solid #26404b', textAlign:
           </tr>
         </thead>
         <tbody>
-          <tr v-for="row in access.rows" :key="row.id" :data-city-access-row="row.id" :data-city-access-state="row.state">
-            <th scope="row" :style="cell">{{ row.label }}</th>
+          <tr v-for="row in access.rows" :key="row.id" :data-city-access-row="row.id" :data-city-access-state="row.state" :data-city-access-suggested="row.suggested" :style="row.id === 'suggestion' ? { outline: '1px dashed #d5b67b' } : null">
+            <th scope="row" :style="cell">{{ row.label }}<span v-if="row.hypothetical" data-city-access-suggestion-label style="display: block; color: #d5b67b; font-weight: normal">{{ row.hypothetical }}</span></th>
             <template v-if="row.state === 'evaluated'">
-              <td :style="cell">{{ row.site }}</td>
+              <td :style="cell" data-city-access-site>{{ row.site }}</td>
               <td :style="cell"><strong data-city-access-mean>{{ row.mean }}</strong> ({{ row.meanRange }})</td>
               <td :style="cell"><strong data-city-access-worst>{{ row.worst }}</strong> ({{ row.worstRange }})</td>
               <td :style="cell">{{ row.known }}<template v-if="row.unknown"><br>{{ row.unknown }}</template></td>
@@ -39,6 +60,9 @@ const cell = { padding: '4px 8px', borderBottom: '1px solid #26404b', textAlign:
         </tbody>
       </table>
     </div>
+    <template v-for="row in access.rows" :key="row.id">
+      <p v-if="row.method" data-city-access-suggestion-note>{{ row.method }}<template v-if="row.tie"> {{ row.tie }}</template></p>
+    </template>
     <p data-city-access-legend>{{ t('Circles are demand zones labelled with metres to the nearest park. Green squares are existing parks; a gold square is the proposed site.') }}</p>
     <div style="display: flex; flex-wrap: wrap; gap: 8px">
       <template v-for="row in access.rows" :key="row.id">

@@ -966,12 +966,15 @@ export function mountCityPlay({
     },
     enter() {
       if (disposed || state.active) return;
-      lease = claimPointer(OWNER);
-      if (!lease) {
-        notice = msg('Finish the active map tool, then open City builder.');
-        present();
-        return;
-      }
+      // The newest claim takes over: a newer tool taking the pointer turns
+      // City builder off as if the person had.
+      const claimed = claimPointer(OWNER, {
+        onLost: () => {
+          if (lease === claimed) controls.exit();
+        },
+      });
+      if (!claimed) return;
+      lease = claimed;
       notice = null;
       handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
       handler.setInputAction(onClick, Cesium.ScreenSpaceEventType.LEFT_CLICK);

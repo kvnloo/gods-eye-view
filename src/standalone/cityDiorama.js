@@ -366,10 +366,9 @@ function tilesets(scene) {
 
 /**
  * Bake ground heights (Cesium World Terrain, ellipsoid heights) on a grid
- * around the centre, plus the photoreal-minus-terrain offset measured at
- * street nodes. Run once in the page; the result is the ground fixture.
+ * around the centre. Run once in the page; the result is the ground fixture.
  */
-export async function bakeGround(viewer, fixture, { spacing = 16, half = 640 } = {}) {
+export async function bakeGround(_viewer, fixture, { spacing = 16, half = 640 } = {}) {
   const { lat, lon } = fixture.centre;
   const M = 111_320;
   const kx = M * Math.cos((lat * Math.PI) / 180);
@@ -380,37 +379,18 @@ export async function bakeGround(viewer, fixture, { spacing = 16, half = 640 } =
   const terrain = await Cesium.createWorldTerrainAsync();
   await Cesium.sampleTerrainMostDetailed(terrain, pts);
   const heights = pts.map((c) => Math.round(c.height * 100) / 100);
-  // street nodes: photoreal surface vs terrain
-  const r = prng(3);
-  const nodes = [];
-  for (const rd of fixture.roads ?? []) {
-    if (roadWidth(rd.t) < 7) continue;
-    for (const p of rd.p) if (Math.hypot(...p) < half * 0.8 && r() < 0.15) nodes.push(p);
-  }
-  const sel = nodes.slice(0, 240);
-  const tc = sel.map(([x, y]) => carto(x, y));
-  await Cesium.sampleTerrainMostDetailed(terrain, tc);
-  const pc = sel.map(([x, y]) => carto(x, y));
-  let photo = [];
-  try {
-    const got = await viewer.scene.sampleHeightMostDetailed(pc);
-    photo = got.map((c, i) => (Number.isFinite(c?.height) ? c.height - tc[i].height : null)).filter((d) => d !== null);
-  } catch (e) {
-    photo = [];
-  }
-  photo.sort((a, b) => a - b);
-  const offset = photo.length ? photo[Math.floor(photo.length * 0.35)] : 0;
+  // Never sample the Google photoreal mesh here: its policy forbids objects
+  // derived from it, so the diorama stands on Cesium World Terrain only.
+  const offset = 0;
   const centre = (() => {
     const i = Math.floor(n / 2);
     return heights[i * n + i];
   })();
   return {
     schema: 'gev-city-diorama-ground@1',
-    source: 'Cesium World Terrain (ion asset 1) via sampleTerrainMostDetailed; offset = 35th percentile of (Google photoreal surface - terrain) at street nodes',
+    source: 'Cesium World Terrain (ion asset 1) via sampleTerrainMostDetailed (ellipsoid heights); nothing sampled from Google photoreal tiles',
     centreLatLon: fixture.centre,
     spacing, half, n, centre, offset,
-    offsetSamples: photo.length,
-    offsetP10P50P90: photo.length ? [0.1, 0.5, 0.9].map((q) => photo[Math.floor(q * (photo.length - 1))]) : null,
     heights,
   };
 }
@@ -534,7 +514,7 @@ export async function mountCityDiorama({ viewer, win = globalThis.window, search
     },
   });
   scene.postProcessStages.add(stage);
-  const credit = new Cesium.Credit('Diorama: footprints © OpenStreetMap contributors (ODbL)', true);
+  const credit = new Cesium.Credit('District stylised from OpenStreetMap (© OpenStreetMap contributors, ODbL) · context: Google', true);
   viewer.creditDisplay?.addStaticCredit?.(credit);
 
   Object.assign(state, {

@@ -55,6 +55,10 @@ export const CAPABILITIES = Object.freeze([
   'occlusionTest',
   'pointVisibility',
   'keepEarthFramed',
+  'sunShadows',
+  'shapeShadows',
+  'facadeFill',
+  'photorealCut',
 ]);
 
 /** @type {readonly import('./frame').FrameStep[]} */
@@ -154,6 +158,7 @@ export const PORTS = deepFreeze({
     ['isGlobeVisible', 'globeVisibility'],
     ['surfaceVersion', 'surfaceIdentity'],
     ['setSurfaceShading', 'surfaceShading'],
+    ['cutPhotoreal', 'photorealCut'],
     ['imagery.getSplit', 'splitSwipe'],
     ['imagery.setSplit', 'splitSwipe'],
     ['weather', 'weather'],
@@ -262,6 +267,7 @@ export const PORTS = deepFreeze({
       'on',
     ),
     ['screenModulation', 'screenModulation'],
+    ['sunShadows', 'sunShadows'],
   ]),
   credits: Object.fromEntries(required('addStatic', 'list', 'on')),
   quality: Object.fromEntries(

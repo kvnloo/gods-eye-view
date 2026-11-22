@@ -55,6 +55,8 @@ const GLOBE_CAPABILITIES = [
   'surfaceShading',
   // A MapLibre style's vector tiles, painted as imagery (`vectorBase.js`).
   'vectorBase',
+  // Clipping polygons cut the shown 3D tiles (`photorealCut.js`).
+  'photorealCut',
   'globeVisibility',
 ];
 
@@ -108,6 +110,12 @@ export function cesiumCapabilities(scene, only) {
     'sharpen',
     // The marker sweep's command swap is tested against one Cesium version.
     ...(screenModulationSupported() ? ['screenModulation'] : []),
+    // The scene's one sun shadow map (`sunShadows.js`), where it has one.
+    ...(scene?.shadowMap ? ['sunShadows'] : []),
+    // Shapes on primitives that cast and take that map's shadows, and
+    // extruded ones drawn as a facade in a material (`drawFacade.js`).
+    'shapeShadows',
+    'facadeFill',
     ...GLOBE_CAPABILITIES,
     ...queryCapabilities(scene),
     // Frame timing on the GPU, where the context has timer queries.

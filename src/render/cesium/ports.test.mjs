@@ -23,6 +23,8 @@ test('capabilities follow what the scene supports', () => {
     'bloom',
     'sharpen',
     'screenModulation',
+    'shapeShadows',
+    'facadeFill',
     'photoreal',
     'terrain',
     'imageryOnTiles',
@@ -33,6 +35,7 @@ test('capabilities follow what the scene supports', () => {
     'surfaceIdentity',
     'surfaceShading',
     'vectorBase',
+    'photorealCut',
   ];
   const globe = { show: true };
   const draw = [
@@ -52,6 +55,9 @@ test('capabilities follow what the scene supports', () => {
     ...effects,
     'globeVisibility',
   ]);
+  // A scene with a shadow map lends it to the sun's shadows.
+  assert.ok(cesiumCapabilities({ shadowMap: {} }).includes('sunShadows'));
+  assert.ok(!cesiumCapabilities({}).includes('sunShadows'));
   assert.deepEqual(cesiumCapabilities({ pickPositionSupported: true }), [
     ...draw,
     ...effects,

@@ -228,4 +228,12 @@ export type Capability =
   /** Reading the frame the eye is placed in (`camera.followFrame`). */
   | 'followFrame'
   /** A `threshold` per `changed` listener (`camera.on`). */
-  | 'cameraChangeThreshold';
+  | 'cameraChangeThreshold'
+  /** The sun casting shadows while the application asks (`effects.sunShadows`). */
+  | 'sunShadows'
+  /** Unclamped shapes that cast or take the sun's shadow (`ShapeItem.shadows`). */
+  | 'shapeShadows'
+  /** Extruded polygons drawn as a building's facade (`FacadeFill`). */
+  | 'facadeFill'
+  /** Polygons cut out of the photoreal tiles (`globe.cutPhotoreal`). */
+  | 'photorealCut';

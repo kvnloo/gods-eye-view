@@ -67,6 +67,24 @@ export interface ModulationSector {
   color: string;
 }
 
+/**
+ * `sunShadows`: how the sun's shadows draw while the application shows
+ * something that casts them (a proposed building). The shadow map draws
+ * when `cast` is true, or when the renderer's own settings already draw it
+ * (`QualitySettings.shadows`); the globe takes the shadows, edges are
+ * filtered when `softEdges`, and a shadow keeps `1 - darkness` of the light.
+ * `maxDistanceM` ends the shadow map nearer than the renderer's own end,
+ * never farther, so its texels stay small around what casts.
+ */
+export interface SunShadows {
+  cast: boolean;
+  /** 0..1: how much of the light a shadow takes. */
+  darkness: number;
+  softEdges: boolean;
+  /** Metres from the eye; omitted, the renderer's own. */
+  maxDistanceM?: number;
+}
+
 export interface EffectsDiagnostics {
   style: string | null;
   /** The passes that draw: `style:<id>` for each style, `bloom`, ... */
@@ -98,6 +116,14 @@ export interface EffectsPort {
   sharpen(settings: { enabled: boolean; amount?: number }): void;
   /** `screenModulation`. */
   screenModulation?(sector: ModulationSector | null): void;
+  /**
+   * `sunShadows`: set how the sun's shadows draw (`SunShadows`), from the
+   * next frame; null gives the renderer's own shadow settings back as they
+   * were before the first call. Each call replaces the last, so it can be
+   * sent every frame (a moving sun, a moving eye). `diagnostics().passes`
+   * lists `'sunShadows'` while the shadow map draws for it.
+   */
+  sunShadows?(settings: SunShadows | null): void;
   diagnostics(): EffectsDiagnostics;
   on(event: 'change', cb: (diagnostics: EffectsDiagnostics) => void): Off;
 }

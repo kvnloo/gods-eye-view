@@ -29,6 +29,7 @@ import {
   createCesiumScreenModulation,
   screenModulationSupported,
 } from './screenModulation.js';
+import { createCesiumSunShadows } from './sunShadows.js';
 
 /** Below this a style, bloom or sharpen draws nothing, so it runs no pass. */
 const OFF = 0.001;
@@ -154,6 +155,14 @@ export function createCesiumEffects(
         },
       })
     : null;
+  // `sunShadows`: the scene's shadow map, taken on the first call.
+  const sunShadows = capabilities.has('sunShadows')
+    ? createCesiumSunShadows(scene, {
+        requestRender: (reason) => frame.requestRender(reason),
+      })
+    : null;
+  /** Whether the shadow map drew for `sunShadows` when listeners last heard. */
+  let sunShadowsListed = false;
 
   // Disposed, or the scene went first and took its stages with it.
   const gone = () => disposed || scene.isDestroyed?.() === true;
@@ -353,6 +362,7 @@ export function createCesiumEffects(
           : []),
         ...(sharpenStage?.enabled ? ['sharpen'] : []),
         ...(modulation?.draws() ? ['screenModulation'] : []),
+        ...(sunShadows?.draws() ? ['sunShadows'] : []),
       ],
     }),
     on(event, cb) {
@@ -372,6 +382,16 @@ export function createCesiumEffects(
       listeners.fire(port.diagnostics());
     };
 
+  if (sunShadows)
+    port.sunShadows = (settings) => {
+      if (gone()) return;
+      // Its own render demand: a call that changes nothing asks for none.
+      sunShadows.set(settings ?? null);
+      if (sunShadows.draws() === sunShadowsListed) return;
+      sunShadowsListed = sunShadows.draws();
+      if (listeners.size) listeners.fire(port.diagnostics());
+    };
+
   function assignParams(record, params) {
     for (const [key, value] of Object.entries(params ?? {})) {
       if (!(key in record.values)) continue;
@@ -389,6 +409,7 @@ export function createCesiumEffects(
       stopClock();
       listeners.clear();
       modulation?.dispose();
+      sunShadows?.dispose();
       // A destroyed scene took its stages with it.
       if (scene.isDestroyed?.()) {
         styles.clear();

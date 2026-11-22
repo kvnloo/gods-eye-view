@@ -3,7 +3,7 @@
  * the sky, and what drapes onto them.
  */
 import type { Credit } from './credits';
-import type { GeoRect, Off } from './common';
+import type { GeoRect, LonLat, Off, Release } from './common';
 
 export interface PhotorealSpec {
   provider: 'google';
@@ -369,6 +369,17 @@ export interface GlobePort {
   surfaceVersion?(): number;
   /** `surfaceShading`. */
   setSurfaceShading?(shading: SurfaceShading | null): void;
+  /**
+   * `photorealCut`: cut the polygon `ring` (degrees, unclosed) out of the
+   * photoreal tiles shown now, so what the application stands there (a
+   * proposed building) does not meet the mesh. While a cut stands the tiles
+   * draw their inside faces (a cut through the hollow mesh shows its inside,
+   * not the sky) and take shadows without casting any (their light is baked
+   * in). Null, cutting nothing, when no photoreal tiles are shown or the
+   * renderer cannot cut them; the release puts back what the cut changed.
+   * Tiles shown later are not cut: whoever cut watches `surfaceVersion`.
+   */
+  cutPhotoreal?(ring: LonLat[]): Release | null;
   readonly imagery: {
     /**
      * Without `imageHooks`, a spec with `tileTransform`, `admit` or kind

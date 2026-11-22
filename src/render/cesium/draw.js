@@ -44,6 +44,7 @@ import { materialTexture } from './internals.js';
 import { createMeshSets } from './drawMeshes.js';
 import { createQuadSets } from './drawQuads.js';
 import { createCesiumFields } from './drawFields.js';
+import { facadeMaterial } from './drawFacade.js';
 
 /** The contract's colour as Cesium's. */
 export function toColor(color, alpha = 1) {
@@ -283,7 +284,7 @@ const IMAGE_ELLIPSE_GRANULARITY = Cesium.Math.toRadians(0.08);
  * the translucent pass whatever its colour, as the entities' image
  * materials did.
  */
-function imageMaterial(image, repeat = [1, 1]) {
+function imageMaterial(image, repeat = [1, 1], color = undefined) {
   // Typed first and given its uniforms after, as `Material.fromType` does:
   // the image loads when first drawn, not here.
   const material = new Cesium.Material({
@@ -292,8 +293,29 @@ function imageMaterial(image, repeat = [1, 1]) {
   });
   material.uniforms.image = image;
   material.uniforms.repeat = new Cesium.Cartesian2(...repeat);
+  // The fill's `color` multiplies the image, as Cesium's own image
+  // material's colour does; white leaves it as it is.
+  if (color !== undefined) material.uniforms.color = toColor(color);
   return material;
 }
+
+/** An image fill's colour as a Cesium colour, with `alpha` (a pulse's) in place of its own. */
+const imageTint = (fill, alpha = null) => {
+  const base =
+    fill && typeof fill === 'object' && fill.color !== undefined
+      ? toColor(fill.color)
+      : Cesium.Color.WHITE;
+  return alpha === null ? base.clone() : base.withAlpha(alpha);
+};
+
+/** Cesium's shadow mode for a shape's `shadows` (`shapeShadows`). */
+const SHADOW_MODES = {
+  cast: 'CAST_ONLY',
+  receive: 'RECEIVE_ONLY',
+  both: 'ENABLED',
+};
+const shadowModeOf = (shadows) =>
+  Cesium.ShadowMode[SHADOW_MODES[shadows] ?? 'DISABLED'];
 
 /**
  * A shape's `animate`, checked: the Cesium renderer pulses alpha, forever.
@@ -5088,7 +5110,11 @@ export function createCesiumDraw({
     const grounds = batches.map((batch) => {
       const material = batch.imageFill
         ? holdImage(
-            imageMaterial(batch.image, batch.imageFill.repeat),
+            imageMaterial(
+              batch.image,
+              batch.imageFill.repeat,
+              batch.imageFill.color,
+            ),
             batch.imageFill.image,
           )
         : null;
@@ -5335,6 +5361,8 @@ export function createCesiumDraw({
    */
   function solidPatchable(part, item) {
     if (part.image) return imagePatchable(part, item);
+    // A facade's numbers are its material: any change rebuilds it.
+    if (part.facade) return false;
     if (!colourOnly(part.look, item)) return false;
     if (part.fill?.isDestroyed?.() || part.outline?.isDestroyed?.())
       return false;
@@ -5368,7 +5396,8 @@ export function createCesiumDraw({
     const { fill: now, show, meta, ...next } = item;
     return (
       sameValues(look, next) &&
-      sameValues(was.repeat ?? null, fill.repeat ?? null)
+      sameValues(was.repeat ?? null, fill.repeat ?? null) &&
+      sameValues(was.color ?? null, fill.color ?? null)
     );
   }
 
@@ -5462,11 +5491,9 @@ export function createCesiumDraw({
       !part.fill.isDestroyed()
     )
       colourOn(part.fill, part.id, tint(look.fill, scratchColour));
-    // An image fill pulses through its material's colour, white at rest.
+    // An image fill pulses through its material's colour, its own at rest.
     if (part.image)
-      part.image.material.uniforms.color = Cesium.Color.WHITE.withAlpha(
-        alpha ?? 1,
-      );
+      part.image.material.uniforms.color = imageTint(look.fill, alpha);
     if (look.outline) {
       if (part.outline?.ready && !part.outline.isDestroyed())
         colourOn(part.outline, part.id, tint(look.outline, scratchColour));
@@ -5521,8 +5548,10 @@ export function createCesiumDraw({
             // An image fill, a ground primitive of its own, pulses through
             // its material's colour.
             pulsing = true;
-            ground.appearance.material.uniforms.color =
-              Cesium.Color.WHITE.withAlpha(pulseAlpha(part.pulse, now));
+            ground.appearance.material.uniforms.color = imageTint(
+              part.look.fill,
+              pulseAlpha(part.pulse, now),
+            );
           } else if (ground && !ground.isDestroyed()) {
             // One still building asks for frames, to pulse once it is ready.
             pulsing = true;
@@ -5759,11 +5788,17 @@ export function createCesiumDraw({
         continue;
       }
       if (item.show === false) continue;
-      const imageFill =
+      const objectFill =
         item.fill && typeof item.fill === 'object' && !Array.isArray(item.fill)
           ? item.fill
           : null;
-      if (imageFill && !imageFill.image)
+      // `facadeFill`: a building drawn in a material of its own.
+      const facadeFill =
+        objectFill?.facade && capabilities.has('facadeFill')
+          ? objectFill.facade
+          : null;
+      const imageFill = objectFill?.image ? objectFill : null;
+      if (objectFill && !imageFill && !facadeFill)
         throw new Error('the Cesium renderer fills shapes with colours only');
       // A colour fill's geometry carries what its appearance reads, as the
       // entities' do. With texture coordinates too, Cesium packs them with
@@ -5771,10 +5806,14 @@ export function createCesiumDraw({
       // fill shaded darker than the same entity.
       const shape = shapeGeometry(
         item,
-        imageFill
+        objectFill
           ? Cesium.MaterialAppearance.MaterialSupport.TEXTURED.vertexFormat
           : Cesium.PerInstanceColorAppearance.VERTEX_FORMAT,
       );
+      // `shapeShadows`: whether it casts or takes the sun's shadows.
+      const shadows = capabilities.has('shapeShadows')
+        ? shadowModeOf(item.shadows)
+        : Cesium.ShadowMode.DISABLED;
       const id = pickId(record, item);
       const pulse = pulseOf(item);
       const part = {
@@ -5792,10 +5831,36 @@ export function createCesiumDraw({
       const solid = item.extrudeHeight !== undefined;
       // `lit`: shaded by Cesium's light, or flat; by default solids are lit.
       const lit = item.lit ?? solid;
-      if (imageFill && !item.outlineOnly) {
+      if (facadeFill && !item.outlineOnly) {
+        // Opaque, shaded by its own material, closed when extruded, as the
+        // entities' extruded polygons with a material draw.
+        const material = ownMaterial(facadeMaterial(facadeFill));
+        part.fill = host.add(
+          new Cesium.Primitive({
+            geometryInstances: new Cesium.GeometryInstance({
+              geometry: shape.fill,
+              modelMatrix: shape.modelMatrix,
+              id,
+            }),
+            appearance: new Cesium.MaterialAppearance({
+              material,
+              translucent: false,
+              closed: solid,
+            }),
+            shadows,
+            asynchronous: false,
+          }),
+        );
+        // Its numbers are its look: any change to them rebuilds it.
+        part.facade = true;
+      } else if (imageFill && !item.outlineOnly) {
         const material = holdImage(
           ownMaterial(
-            imageMaterial(imageAt(imageFill.image), imageFill.repeat),
+            imageMaterial(
+              imageAt(imageFill.image),
+              imageFill.repeat,
+              imageFill.color,
+            ),
           ),
           imageFill.image,
         );
@@ -5818,6 +5883,7 @@ export function createCesiumDraw({
               closed: solid,
               flat: !lit,
             }),
+            shadows,
             asynchronous: false,
           }),
         );
@@ -5842,6 +5908,7 @@ export function createCesiumDraw({
               flat: !lit,
               faceForward: !solid,
             }),
+            shadows,
             asynchronous: false,
           }),
         );

@@ -15,6 +15,7 @@ import type {
   Ecef,
   GeoRect,
   Handle,
+  LonLatH,
   Meta,
   NearFar,
   Off,
@@ -395,11 +396,70 @@ export interface LineItem {
 }
 
 /**
- * A shape's fill: a colour, or an image stretched over the shape's extent
- * (`repeat` times across and up). A canvas image sent again with a new
- * `key` is new content.
+ * A shape's fill: a colour, an image stretched over the shape's extent
+ * (`repeat` times across and up, multiplied by `color`, white by default,
+ * its alpha too), or (`facadeFill`) a building's facade. A canvas image
+ * sent again with a new `key` is new content.
  */
-export type Fill = Color | { image: ImageRef; repeat?: [number, number] };
+export type Fill =
+  | Color
+  | { image: ImageRef; repeat?: [number, number]; color?: Color }
+  | FacadeFill;
+
+/**
+ * `facadeFill`: an extruded polygon drawn as a building from its numbers,
+ * with no texture: a band per storey of `storeyHeightM`, a shopfront on the
+ * ground storey, whole window bays along each wall, a parapet and a roof,
+ * lit by the scene's sun. Paving is drawn below `up` 0.2 m (a plate under
+ * the building takes the same fill). Positions are metres east, north and
+ * up of `origin` in its east-north-up frame. The look's shares and colours
+ * are the application's (`FacadeLook`), so a renderer draws its own palette
+ * nowhere.
+ */
+export interface FacadeFill {
+  facade: {
+    /** The footprint's middle at the building's base. */
+    origin: LonLatH;
+    storeys: number;
+    storeyHeightM: number;
+    /** Base to the top of the parapet. */
+    heightM: number;
+    parapetM: number;
+    /**
+     * Up to four walls, each by its outward unit normal (east, north), its
+     * offset from the origin along it, its length, its middle along its own
+     * tangent (the normal turned a quarter left) and its window bays.
+     */
+    walls: Array<{
+      normal: [east: number, north: number];
+      offsetM: number;
+      lengthM: number;
+      middleM: number;
+      bays: number;
+    }>;
+    look: FacadeLook;
+  };
+}
+
+/** How a facade is drawn: glass as shares of a storey and a bay, and colours. */
+export interface FacadeLook {
+  shopfront: { sill: number; head: number; share: number };
+  floor: { sill: number; head: number; share: number };
+  /** The sign band over the shopfront, as shares of the ground storey. */
+  fascia: { bottom: number; top: number };
+  colors: {
+    body: string;
+    frame: string;
+    glass: string;
+    blind: string;
+    fascia: string;
+    coping: string;
+    roof: string;
+    paving: string;
+    /** The thin light along the roofline and corners. */
+    glow: string;
+  };
+}
 
 /**
  * Declarative animation the renderer runs (no per-frame callbacks): the
@@ -457,6 +517,12 @@ export interface ShapeItem {
    * says.
    */
   lit?: boolean;
+  /**
+   * `shapeShadows`: how an unclamped shape takes part in the sun's shadows
+   * (`effects.sunShadows`): it casts them, takes them, or both. Omitted:
+   * neither. Clamped shapes never cast.
+   */
+  shadows?: 'cast' | 'receive' | 'both';
   animate?: Pulse;
   meta?: Meta;
   show?: boolean;

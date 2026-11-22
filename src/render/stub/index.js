@@ -1865,6 +1865,21 @@ export function createStubRenderer(options = {}) {
       log('globe', 'setSurfaceShading', [shading]);
       requestRender('base');
     };
+  if (capabilities.has('photorealCut'))
+    // The stub draws no tiles: it logs the cut and its release, and cuts
+    // nothing while no photoreal tiles are shown.
+    globe.cutPhotoreal = (ring) => {
+      if (photorealStatus.route === 'none') return null;
+      log('globe', 'cutPhotoreal', [ring.map((p) => ({ ...p }))]);
+      requestRender('base');
+      let released = false;
+      return () => {
+        if (released) return;
+        released = true;
+        log('globe', 'releasePhotorealCut', []);
+        requestRender('base');
+      };
+    };
   if (capabilities.has('splitSwipe')) {
     globe.imagery.getSplit = () => split;
     globe.imagery.setSplit = (x01) => {
@@ -1980,6 +1995,7 @@ export function createStubRenderer(options = {}) {
         ...(effectState.bloom?.enabled ? ['bloom'] : []),
         ...(effectState.sharpen?.enabled ? ['sharpen'] : []),
         ...(effectState.modulation ? ['screenModulation'] : []),
+        ...(effectState.sunShadows?.cast ? ['sunShadows'] : []),
       ],
     }),
     on(event, cb) {
@@ -1994,6 +2010,11 @@ export function createStubRenderer(options = {}) {
   if (capabilities.has('screenModulation'))
     effects.screenModulation = (sector) => {
       effectState.modulation = sector ? { ...sector } : null;
+      effectsChanged();
+    };
+  if (capabilities.has('sunShadows'))
+    effects.sunShadows = (settings) => {
+      effectState.sunShadows = settings ? { ...settings } : null;
       effectsChanged();
     };
 

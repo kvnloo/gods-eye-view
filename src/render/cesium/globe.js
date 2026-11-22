@@ -20,6 +20,7 @@ import { provideUnboundGlobe } from '../rendererOf.js';
 import { isBaseTileset, markBaseTileset } from '../baseTilesets.js';
 import { listenerList, uncaught } from './common.js';
 import { createCesiumImagery } from './imagery.js';
+import { createCesiumPhotorealCut } from './photorealCut.js';
 import { attributionText } from './vectorBase.js';
 import { loadVectorStyle } from '../vectorBase/index.js';
 import { createTerrainRetryPolicy } from '../../maps/terrainRetry.js';
@@ -676,6 +677,11 @@ export function createCesiumGlobe(
     port.isGlobeVisible = () => scene.globe?.show === true;
   if (can('surfaceIdentity')) port.surfaceVersion = readSurfaceVersion;
   if (can('surfaceShading')) port.setSurfaceShading = setSurfaceShading;
+  if (can('photorealCut'))
+    port.cutPhotoreal = createCesiumPhotorealCut(scene, {
+      tilesets: () => tilesets(),
+      requestRender,
+    });
   if (can('splitSwipe')) {
     // Cesium's split starts at the canvas's left edge, as the scene was
     // made: a `left` layer shows once the split moves.

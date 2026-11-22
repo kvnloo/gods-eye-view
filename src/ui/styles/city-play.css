@@ -26,9 +26,12 @@ body.gev-city-play #gev-stories #hPop {
 body.gev-city-play #cesiumContainer {
   cursor: crosshair;
 }
-/* The game view is full-bleed like a strategy map; the scope vignette returns on exit. */
+/* The game view is full-bleed like a strategy map; the scope vignette returns on exit.
+   src/scopeMask.js writes the mask's opacity inline (style="opacity: 1"), which
+   beats any stylesheet rule without !important: without it the dark circular
+   scope stayed over the whole game view (exp/city-game-hud round 0). */
 body.gev-city-play #scope-mask {
-  opacity: 0;
+  opacity: 0 !important;
   transition: opacity var(--transition-smooth);
 }
 

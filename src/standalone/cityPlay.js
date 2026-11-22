@@ -745,8 +745,7 @@ export function mountCityPlay({
 
   // --- input ---------------------------------------------------------------
   // The ground under the cursor, as the click resolver reads it.
-  const pickPoint = (position) =>
-    groundPoint(scene, viewer.camera, position);
+  const pickPoint = (position) => groundPoint(scene, viewer.camera, position);
   function onClick({ position }, extend = false) {
     if (framing) return;
     // An armed massing tool (the protected edge) takes the next ground click.

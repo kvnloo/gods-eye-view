@@ -1,6 +1,8 @@
 import { createPlanningConceptGenerator } from '../data/planningConceptGenerator.js';
 import { createCityBuilder } from '../ui/cityBuilder.js';
 import { useCommunityPlanningStore } from '../ui/stores/communityPlanning.js';
+import { useCityPlayStore } from '../ui/stores/cityPlay.js';
+import { mountCityPlay } from './cityPlay.js';
 import { useSceneSharingStore } from '../ui/stores/sceneSharing.js';
 import { applicationPinia } from '../ui/vueRuntime.js';
 import { renderFreshCesiumFrame } from '../voice/realtimeViewport.js';
@@ -23,6 +25,14 @@ const SOURCE_CITATIONS = Object.freeze({
   ],
 });
 const degrees = (radians) => radians * (180 / Math.PI);
+const FRESH_FRAME_ATTEMPTS = 4;
+// [JPEG quality, frame scale] attempts, best first.
+const CAPTURE_STEPS = [
+  [0.78, 1],
+  [0.62, 1],
+  [0.62, 0.75],
+  [0.5, 0.6],
+];
 
 function captureFailure() {
   return new Error('City reference capture unavailable');
@@ -107,7 +117,13 @@ export async function captureCityReference({
 }) {
   try {
     const source = viewer?.scene?.canvas;
-    if (!source || !(await renderFrame(viewer))) throw captureFailure();
+    if (!source) throw captureFailure();
+    // A frame can miss the bounded fresh-render wait while photoreal tiles
+    // stream in after a flight; try a few frames before refusing.
+    let fresh = false;
+    for (let attempt = 0; attempt < FRESH_FRAME_ATTEMPTS && !fresh; attempt++)
+      fresh = await renderFrame(viewer);
+    if (!fresh) throw captureFailure();
     const { width, height } = source;
     if (![width, height].every(Number.isFinite) || width <= 0 || height <= 0)
       throw captureFailure();
@@ -131,13 +147,25 @@ export async function captureCityReference({
         pixels[i] * 0.2126 + pixels[i + 1] * 0.7152 + pixels[i + 2] * 0.0722;
     }
     if (!visible || luminance / visible < 2) throw captureFailure();
-    const image = canvas.toDataURL('image/jpeg', 0.78);
-    if (
-      typeof image !== 'string' ||
-      !image.startsWith('data:image/jpeg;base64,') ||
-      image.length > 600_000
-    )
-      throw captureFailure();
+    // Detailed photoreal frames can exceed the stored-image limit at the first
+    // setting; step quality, then size, down before refusing the capture.
+    const base = [canvas.width, canvas.height];
+    let image = null;
+    for (const [quality, shrink] of CAPTURE_STEPS) {
+      if (shrink !== 1) {
+        canvas.width = Math.max(1, Math.floor(base[0] * shrink));
+        canvas.height = Math.max(1, Math.floor(base[1] * shrink));
+        context.drawImage(source, 0, 0, canvas.width, canvas.height);
+      }
+      image = canvas.toDataURL('image/jpeg', quality);
+      if (
+        typeof image !== 'string' ||
+        !image.startsWith('data:image/jpeg;base64,')
+      )
+        throw captureFailure();
+      if (image.length <= 600_000) break;
+    }
+    if (image.length > 600_000) throw captureFailure();
     return { ...view, sources, capturedAt, image };
   } catch {
     // The owner translates a fixed error key. Canvas/provider error text is not UI.
@@ -215,6 +243,7 @@ export function mountCityBuilder(options = {}) {
     pinia = applicationPinia(),
     store = useCommunityPlanningStore(pinia),
     sharing = useSceneSharingStore(pinia),
+    playStore = useCityPlayStore(pinia),
     captureReference = () =>
       captureCityReference({
         viewer: scene?.viewer,
@@ -231,6 +260,8 @@ export function mountCityBuilder(options = {}) {
   let disposed = false;
   let preview = null;
   let launcher = null;
+  let play = null;
+  let playView = null;
   const current = () => !disposed && (!controls || store.controls === controls);
   const owner = createCityBuilder({
     publish(next) {
@@ -261,8 +292,20 @@ export function mountCityBuilder(options = {}) {
     sharingDialogOpen: () => !current() || Boolean(sharing.dialog),
     uid,
     canLocal,
+    publishPlay(next) {
+      playView = next;
+      if (current()) play?.receive(next);
+    },
   });
   controls = owner;
+  // Play mode needs a live globe; without one the records dialog still works.
+  if (scene?.viewer)
+    play = mountCityPlay({
+      viewer: scene.viewer,
+      builder: owner,
+      store: playStore,
+    });
+  play?.receive(playView);
   store.connect(controls);
   store.publish(preview);
   store.offerLauncher(launcher);
@@ -270,6 +313,7 @@ export function mountCityBuilder(options = {}) {
     if (disposed) return;
     disposed = true;
     try {
+      play?.destroy();
       owner.destroy();
     } finally {
       if (ownsStorage) storage.destroy?.();

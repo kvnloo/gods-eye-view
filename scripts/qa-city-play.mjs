@@ -659,6 +659,11 @@ try {
           ['reimagine', 'park', 'plaza', 'bike-lane', 'zone', 'inspect'],
         );
         await locator('[data-city-play-tag]').waitFor({ state: 'visible' });
+        assert.match(
+          await locator('[data-city-play-tag] strong').textContent(),
+          /^Plot · 1,600 m²$/,
+          'the plot tag names the plot by its area, never by a grid code',
+        );
         await insideViewport('[data-city-play-action]', DESKTOP);
         await clearOfCredits(
           '[data-city-play-wheel] button, [data-city-play-tag]',
@@ -687,6 +692,11 @@ try {
         await locator('[data-city-play-holo-tag]').waitFor({
           state: 'visible',
         });
+        assert.match(
+          await locator('[data-city-play-holo-tag]').textContent(),
+          /^Plot · 1,600 m²\s*Reimagined$/,
+          'the reimagined tag names the plot by its area, never by a grid code',
+        );
         const doc = await persisted();
         assert.equal(doc.alternatives.length, 1);
         assert.equal(doc.alternatives[0].site.plot.id, plotId);

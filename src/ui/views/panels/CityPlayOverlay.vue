@@ -98,6 +98,8 @@ const figure = (f) => hudFigure(f) ?? '—';
 // The bar states only what the app holds: a field with no figure is left off.
 const stats = computed(() => (view.value?.stats ?? []).map((stat) => ({ ...stat, text: hudFigure(stat) })).filter((stat) => stat.text));
 const estimate = true;
+// A plot is named by what a player can see, the word and its area; the grid code stays in the data.
+const plotLabel = computed(() => [t('Plot'), hudFigure({ value: view.value?.plot?.area, unit: 'm²' })].filter(Boolean).join(' · '));
 function kindLabel(kind) {
   return kind === 'park' ? t('Park') : kind === 'plaza' ? t('Plaza') : t('Bike lane');
 }
@@ -240,9 +242,8 @@ const bars = computed(() => {
       </template>
     </svg>
 
-    <div v-if="tag" ref="tagEl" class="city-play-tag" data-city-play-tag :style="{ left: `${tag.x}px`, top: `${tag.y}px` }">
-      <strong translate="no">{{ t('Plot {code}', { code: view.plot.code }) }}</strong>
-      <span>{{ figure({ value: view.plot.area, unit: 'm²' }) }}</span>
+    <div v-if="tag" ref="tagEl" class="city-play-tag" data-city-play-tag :data-city-play-plot="view.plot.code" :style="{ left: `${tag.x}px`, top: `${tag.y}px` }">
+      <strong translate="no">{{ plotLabel }}</strong>
       <span v-if="view.plot.use" class="city-play-tag-use" :class="`city-play-use--${view.plot.use}`" data-city-play-tag-use>{{ useLabel(view.plot.use) }}</span>
       <span v-if="!mobile" class="city-play-tag-note">{{ t('40 m grid cell, not a surveyed parcel') }}</span>
     </div>
@@ -266,8 +267,8 @@ const bars = computed(() => {
       </button>
     </nav>
 
-    <div v-if="holoTag" class="city-play-holo-tag" data-city-play-holo-tag :style="{ left: `${holoTag.x}px`, top: `${holoTag.y}px` }">
-      <strong translate="no">{{ t('Plot {code}', { code: view.plot.code }) }}</strong>
+    <div v-if="holoTag" class="city-play-holo-tag" data-city-play-holo-tag :data-city-play-plot="view.plot.code" :style="{ left: `${holoTag.x}px`, top: `${holoTag.y}px` }">
+      <strong translate="no">{{ plotLabel }}</strong>
       <span class="city-play-accent">{{ t('Reimagined') }}</span>
     </div>
 

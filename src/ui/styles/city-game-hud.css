@@ -1,0 +1,384 @@
+/* FORK-ONLY (exp/city-game-hud): the game HUD of play mode behind
+   ?cityHud=game|bar (CityGameHud.vue). <body> wears gev-city-hud-bar while the
+   switch is on; nothing here applies without it. GEV glass: near-black
+   translucent, cyan accent with a soft glow, thin corner brackets, wide-tracked
+   caps, mono numerals; colour only for meaning. */
+
+/* The game HUD replaces the pill stats bar and the card dock. */
+body.gev-city-hud-bar .city-play-bar,
+body.gev-city-hud-bar .city-play-dock {
+  display: none !important;
+}
+
+.city-game-hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  --cg-glass: linear-gradient(rgba(3, 6, 9, 0.66), rgba(3, 6, 9, 0.66)), var(--glass-bg);
+  --cg-line: color-mix(in srgb, var(--accent) 42%, transparent);
+}
+.city-game-hud :is(header, section, button) {
+  pointer-events: auto;
+}
+
+/* ---- slim top resource bar ------------------------------------------- */
+.city-game-top {
+  position: absolute;
+  top: 66px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 30px;
+  padding: 0 14px;
+  white-space: nowrap;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  background: var(--cg-glass);
+  border: 1px solid var(--cg-line);
+  border-radius: 4px;
+  backdrop-filter: blur(14px) saturate(1.3);
+  box-shadow:
+    0 6px 22px rgba(0, 0, 0, 0.45),
+    0 0 12px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.city-game-place {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  color: var(--accent);
+  font-weight: 600;
+  letter-spacing: 0.22em;
+}
+.city-game-sep {
+  width: 1px;
+  height: 14px;
+  background: var(--cg-line);
+}
+.city-game-chip {
+  position: relative;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  color: color-mix(in srgb, var(--text-primary) 78%, transparent);
+}
+.city-game-chip .ui-icon {
+  color: var(--accent);
+  opacity: 0.9;
+}
+.city-game-chip strong {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+}
+.city-game-chip-label {
+  font-size: 10px;
+}
+.city-game-est {
+  padding: 0 4px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 3px;
+  color: var(--accent);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+}
+.city-game-chip.is-bumped strong {
+  color: var(--accent);
+  text-shadow: 0 0 10px var(--accent-glow);
+}
+/* The build's juice: the gain floats up off the chip and fades. */
+.city-game-bump {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  color: #5ee08a;
+  font-weight: 700;
+  font-size: 12px;
+  text-shadow: 0 0 8px rgba(94, 224, 138, 0.7);
+  animation: city-game-bump 1.6s ease-out forwards;
+  pointer-events: none;
+}
+@keyframes city-game-bump {
+  0% { transform: translateY(6px); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translateY(-22px); opacity: 0; }
+}
+.city-game-goal .ui-icon {
+  color: #5ee08a;
+}
+
+/* ---- bottom icon build tray ------------------------------------------ */
+.city-game-tray {
+  position: absolute;
+  bottom: 88px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  column-gap: 14px;
+  padding: 0 10px 8px;
+  background: var(--cg-glass);
+  border: 1px solid var(--cg-line);
+  border-radius: 4px;
+  backdrop-filter: blur(14px) saturate(1.3);
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.5),
+    0 0 14px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+/* GEV's thin corner brackets. */
+.city-game-corner {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 0 solid var(--accent);
+  pointer-events: none;
+}
+.city-game-corner--tl {
+  top: -4px;
+  left: -4px;
+  border-top-width: 2px;
+  border-left-width: 2px;
+}
+.city-game-corner--br {
+  right: -4px;
+  bottom: -4px;
+  border-right-width: 2px;
+  border-bottom-width: 2px;
+}
+.city-game-tabs {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 2px;
+  margin: 0 -10px 8px;
+  border-bottom: 1px solid var(--cg-line);
+}
+.city-game-tab {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: color-mix(in srgb, var(--text-primary) 70%, transparent);
+  font: 600 10px var(--font-mono);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.city-game-tab.is-open {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  text-shadow: 0 0 10px var(--accent-glow);
+}
+.city-game-hud kbd {
+  min-width: 14px;
+  padding: 0 3px;
+  border: 1px solid color-mix(in srgb, var(--text-primary) 30%, transparent);
+  border-radius: 3px;
+  color: color-mix(in srgb, var(--text-primary) 66%, transparent);
+  font: 9px var(--font-mono);
+  text-align: center;
+}
+.city-game-tools {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+}
+.city-game-tool {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 76px;
+  padding: 0 0 4px;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  border-radius: 4px;
+  background: rgba(6, 12, 18, 0.55);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    border-color 120ms ease;
+}
+.city-game-tool:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+.city-game-tool.is-active {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 1px var(--accent) inset,
+    0 0 14px var(--accent-glow);
+}
+.city-game-tool:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+.city-game-tool-art {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 50px;
+  overflow: hidden;
+  border-radius: 3px 3px 0 0;
+  color: var(--accent);
+  background: radial-gradient(
+    circle at 50% 70%,
+    color-mix(in srgb, var(--accent) 22%, transparent),
+    transparent 70%
+  );
+}
+.city-game-tool-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.city-game-tool-label {
+  max-width: 70px;
+  overflow: hidden;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.city-game-tool kbd {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  background: rgba(3, 6, 9, 0.8);
+}
+.city-game-world.is-kept::after {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  padding: 0 4px;
+  border-radius: 3px;
+  content: 'KEPT';
+  color: var(--bg-dark);
+  background: #5ee08a;
+  font: 700 8px var(--font-mono);
+  letter-spacing: 0.1em;
+}
+.city-game-divider {
+  width: 1px;
+  margin: 4px 2px;
+  background: var(--cg-line);
+}
+.city-game-verbs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  justify-content: center;
+  min-width: 150px;
+}
+.city-game-build,
+.city-game-reroll {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  font: 600 11px var(--font-mono);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.city-game-build {
+  color: var(--bg-dark);
+  background: var(--accent);
+  box-shadow: 0 0 16px var(--accent-glow);
+}
+.city-game-build kbd {
+  border-color: rgba(0, 0, 0, 0.4);
+  color: var(--bg-dark);
+}
+.city-game-reroll {
+  color: var(--accent);
+  background: transparent;
+}
+.city-game-build:disabled,
+.city-game-reroll:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.city-game-ai {
+  justify-content: center;
+  max-width: 170px;
+  white-space: normal;
+  text-align: center;
+  font-size: 8.5px;
+}
+
+/* ---- far zoom: a district cell's yield chip (?cityHud=plots) ---------- */
+.city-game-cell {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 8px;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  font: 10px var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--text-primary) 80%, transparent);
+  background: linear-gradient(rgba(3, 6, 9, 0.72), rgba(3, 6, 9, 0.72));
+  border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
+  border-radius: 3px;
+  pointer-events: none;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.city-game-cell-head,
+.city-game-cell-yield {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+}
+.city-game-cell .ui-icon {
+  color: var(--accent);
+}
+.city-game-cell strong {
+  color: var(--text-primary);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+/* ---- the other play panels, slimmed to the game HUD ------------------ */
+/* The growth timeline: a time slider by the tray, not a text panel. */
+body.gev-city-hud-bar .city-growth {
+  top: auto;
+  right: 24px;
+  bottom: 228px;
+}
+body.gev-city-hud-bar .city-growth[data-city-growth-on='true'] {
+  width: 300px;
+  padding: 8px 10px;
+}
+body.gev-city-hud-bar .city-growth [data-city-growth-line='district'],
+body.gev-city-hud-bar .city-growth-lines .city-growth-line:not(.city-growth-line--homes):not([data-city-growth-line='floors']) {
+  display: none;
+}
+body.gev-city-hud-bar .city-growth-stop {
+  min-width: 64px;
+  min-height: 26px;
+  padding: 0 8px;
+  font-size: 10px;
+}
+body.gev-city-hud-bar .city-growth-rail {
+  margin: 8px 0 4px;
+}
+/* The district stays legible: the play wheel and counters step aside there already. */

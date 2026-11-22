@@ -34,6 +34,7 @@ import {
 import { worldClock } from '../time/worldClock.js';
 import { facadeMaterial, facadeUniforms } from './cityMassingLook.js';
 import { pageLookFlags } from '../data/cityLookFlags.js';
+import { dustPuffs, pageHudFlags, riseShare, RISE_MS } from '../data/cityGameHud.js';
 import {
   SEAT_TONE,
   groundMaterial,
@@ -142,6 +143,24 @@ const BADGE_RISE = 3;
 // diorama palette and its plot's margin gets low-poly trees (faceted canopies
 // and pines, deterministic). The growth district's blocks keep the parent look.
 const R1 = pageLookFlags();
+// FORK-ONLY (exp/city-game-hud, ?cityHud=place,ground): see src/data/cityGameHud.js.
+const HUD = pageHudFlags();
+const DUST_MS = 1400;
+let dustCanvas = null;
+// A soft warm-dust sprite, drawn once.
+function dustSprite() {
+  if (dustCanvas || typeof document === 'undefined') return dustCanvas;
+  dustCanvas = document.createElement('canvas');
+  dustCanvas.width = dustCanvas.height = 64;
+  const g = dustCanvas.getContext('2d');
+  const r = g.createRadialGradient(32, 32, 2, 32, 32, 31);
+  r.addColorStop(0, 'rgba(236, 224, 200, 0.95)');
+  r.addColorStop(0.5, 'rgba(214, 200, 172, 0.55)');
+  r.addColorStop(1, 'rgba(200, 186, 160, 0)');
+  g.fillStyle = r;
+  g.fillRect(0, 0, 64, 64);
+  return dustCanvas;
+}
 const KIT_INSET_METERS = 2;
 const KIT_GREENS = ['#5f9e3c', '#78b04a', '#4e8a3a', '#8bbb4f'].map((c) =>
   Cesium.Color.fromCssColorString(c),
@@ -873,9 +892,63 @@ export function mountCityMassing({
     dress();
     if (site.block) stand();
     plantKit();
+    if (HUD.place && site.block) rise(site);
     removeFrame = scene.postRender.addEventListener(frame);
     mark();
     rendered();
+  }
+
+  // FORK-ONLY (exp/city-game-hud, ?cityHud=place): the build's juice. The
+  // block rises out of its plate with a small overshoot (riseShare) while a
+  // ring of dust puffs rolls out from its footprint and fades; then it stands
+  // as a plain constant-height block again, so nothing else changes.
+  function rise(s) {
+    const t0 = win.performance.now();
+    const top = () => s.base + s.massing.heightMeters;
+    const ms = () => win.performance.now() - t0;
+    s.block.polygon.extrudedHeight = new Cesium.CallbackProperty(
+      () => s.base + 0.3 + (top() - s.base - 0.3) * riseShare(ms()),
+      false,
+    );
+    const { points, toLonLat } = localFrame(s.massing.footprint);
+    const half =
+      Math.max(...points.map(([x, y]) => Math.max(Math.abs(x), Math.abs(y)))) ||
+      16;
+    const sprite = dustSprite();
+    const puffs = dustPuffs(0).map((_, i) =>
+      ds.entities.add({
+        id: `${OWNER}-dust-${i}`,
+        position: new Cesium.CallbackProperty(() => {
+          const p = dustPuffs(ms())[i];
+          const [lon, lat] = toLonLat(p ? [p.x * half, p.y * half] : [0, 0]);
+          return Cesium.Cartesian3.fromDegrees(lon, lat, s.base + 1.5);
+        }, false),
+        billboard: {
+          image: sprite,
+          sizeInMeters: true,
+          width: new Cesium.CallbackProperty(
+            () => (dustPuffs(ms())[i]?.size ?? 0) * half * 1.6,
+            false,
+          ),
+          height: new Cesium.CallbackProperty(
+            () => (dustPuffs(ms())[i]?.size ?? 0) * half * 1.1,
+            false,
+          ),
+          color: new Cesium.CallbackProperty(
+            () => Cesium.Color.WHITE.withAlpha(dustPuffs(ms())[i]?.alpha ?? 0),
+            false,
+          ),
+        },
+      }),
+    );
+    holdContinuousRender(`${OWNER}-rise`);
+    win.setTimeout(() => {
+      for (const puff of puffs) ds.entities.remove(puff);
+      if (site === s && s.block)
+        s.block.polygon.extrudedHeight = top();
+      releaseContinuousRender(`${OWNER}-rise`);
+      if (site === s) rendered();
+    }, Math.max(RISE_MS, DUST_MS) + 80);
   }
 
   // The building the block is drawn as, and what its shader reads, as the

@@ -2,9 +2,7 @@ import { createPlanningConceptGenerator } from '../data/planningConceptGenerator
 import { createCityBuilder } from '../ui/cityBuilder.js';
 import { useCommunityPlanningStore } from '../ui/stores/communityPlanning.js';
 import { useCityPlayStore } from '../ui/stores/cityPlay.js';
-import { mountCityPlay } from './cityPlay.js';
 import { massingFlag } from '../data/cityMassing.js';
-import { mountCityMassing } from './cityMassing.js';
 import { useSceneSharingStore } from '../ui/stores/sceneSharing.js';
 import { applicationPinia } from '../ui/vueRuntime.js';
 import { renderFreshCesiumFrame } from '../voice/realtimeViewport.js';
@@ -246,6 +244,22 @@ function downloadDocument(text, filename) {
 }
 
 /** Connect the framework-free owner to this application's stores and browser services. */
+/**
+ * The Cesium viewer the City builder draws with, or null.
+ *
+ * INTERIM (fork): upstream's renderer seam hands tools a scene host with
+ * nothing of the engine, so `scene.viewer` is no longer a Cesium Viewer. Until
+ * the City builder reaches the globe through the renderer's ports (camera,
+ * query, draw, frame and input), it borrows the viewer the Cesium renderer
+ * hands the application for QA (`scene.qaHandles.viewer`). Another renderer
+ * hands none, and then there is no play mode and no capture.
+ * @param {object|undefined} scene
+ */
+export function cityEngineViewer(scene) {
+  const viewer = scene?.qaHandles?.viewer;
+  return viewer?.scene && viewer.camera ? viewer : null;
+}
+
 export function mountCityBuilder(options = {}) {
   const {
     scene,
@@ -255,7 +269,7 @@ export function mountCityBuilder(options = {}) {
     playStore = useCityPlayStore(pinia),
     captureReference = () =>
       captureCityReference({
-        viewer: scene?.viewer,
+        viewer: cityEngineViewer(scene),
         mapStackController: scene?.mapStackController,
       }),
     storage = createCityBrowserStorage(),
@@ -307,20 +321,28 @@ export function mountCityBuilder(options = {}) {
     },
   });
   controls = owner;
-  // Play mode needs a live globe; without one the records dialog still works.
-  if (scene?.viewer)
-    play = mountCityPlay({
-      viewer: scene.viewer,
-      builder: owner,
-      store: playStore,
-      mapSource: () => activeCitation(scene.mapStackController)?.[2] ?? null,
-    });
-  play?.receive(playView);
-  // Massing v0 follows the selected plot, only behind ?massing=1 (default off).
-  const massing =
-    play && massingFlag(globalThis.location?.search)
-      ? mountCityMassing({ viewer: scene.viewer, store: playStore })
-      : null;
+  // Play mode needs a live Cesium globe (it draws with Cesium itself), so its
+  // code loads only for one: another renderer never requests Cesium, and
+  // without a globe the records dialog still works.
+  let massing = null;
+  const viewer = cityEngineViewer(scene);
+  if (viewer)
+    void Promise.all([import('./cityPlay.js'), import('./cityMassing.js')])
+      .then(([{ mountCityPlay }, { mountCityMassing }]) => {
+        if (disposed) return;
+        play = mountCityPlay({
+          viewer,
+          builder: owner,
+          store: playStore,
+          mapSource: () =>
+            activeCitation(scene.mapStackController)?.[2] ?? null,
+        });
+        play.receive(playView);
+        // Massing v0 follows the selected plot, only behind ?massing=1.
+        if (massingFlag(globalThis.location?.search))
+          massing = mountCityMassing({ viewer, store: playStore });
+      })
+      .catch(() => console.error('City builder play mode failed to load'));
   store.connect(controls);
   store.publish(preview);
   store.offerLauncher(launcher);

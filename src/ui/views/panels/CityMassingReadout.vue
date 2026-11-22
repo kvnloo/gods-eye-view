@@ -2,6 +2,7 @@
 import { storeToRefs } from 'pinia';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { formatNumber, t } from '../../../i18n/index.js';
+import UiButton from '../../kit/UiButton.vue';
 import { useCityPlayStore } from '../../stores/cityPlay.js';
 import { boundsOf, placeBeside } from '../../cityPlayModel.js';
 
@@ -153,17 +154,17 @@ onBeforeUnmount(() => {
     :aria-label="t('Massing estimate for this plot')"
     :style="place ? { left: `${place.x}px`, top: `${place.y}px` } : { visibility: 'hidden' }"
   >
-    <button type="button" class="city-massing-toggle" data-city-massing-toggle :aria-pressed="String(on)" @click="massingControls?.toggle()">
+    <UiButton class="city-massing-toggle" data-city-massing-toggle :pressed="Boolean(on)" @click="massingControls?.toggle()">
       <span class="city-massing-led" aria-hidden="true"></span>{{ t('Massing') }}
-    </button>
+    </UiButton>
     <dl v-if="on" class="city-massing-rows" data-city-massing-rows aria-live="polite">
       <div v-for="row in mainRows" :key="row.id" class="city-massing-row" :data-city-massing-row="row.id">
         <dt :title="row.title">{{ row.label }}</dt>
         <dd>
-          <button v-if="row.stepper" type="button" class="city-massing-step" data-city-massing-step="-1" :aria-label="t('Remove a storey')" :disabled="massing.storeys <= 1" @click="massingControls?.step(-1)">−</button>
+          <UiButton v-if="row.stepper" class="city-massing-step" data-city-massing-step="-1" :aria-label="t('Remove a storey')" :disabled="massing.storeys <= 1" @click="massingControls?.step(-1)">−</UiButton>
           <span class="city-massing-value" data-city-massing-value>{{ row.value }}</span>
           <span v-if="row.est" class="city-massing-est" data-city-massing-est :title="row.assumed ?? assumed">{{ t('EST', { context: 'estimated value' }) }}</span>
-          <button v-if="row.stepper" type="button" class="city-massing-step" data-city-massing-step="1" :aria-label="t('Add a storey')" :disabled="massing.storeys >= massing.maxStoreys" @click="massingControls?.step(1)">+</button>
+          <UiButton v-if="row.stepper" class="city-massing-step" data-city-massing-step="1" :aria-label="t('Add a storey')" :disabled="massing.storeys >= massing.maxStoreys" @click="massingControls?.step(1)">+</UiButton>
         </dd>
       </div>
     </dl>

@@ -1,8 +1,9 @@
 <script setup>
 import { storeToRefs } from 'pinia';
-import { nextTick, onBeforeUnmount, useTemplateRef, watch } from 'vue';
+import { nextTick, useTemplateRef, watch } from 'vue';
 import { t } from '../../../i18n/index.js';
 import UiButton from '../../kit/UiButton.vue';
+import UiDialog from '../../kit/UiDialog.vue';
 import { useCommunityPlanningStore } from '../../stores/communityPlanning.js';
 import CityBuilderEditor from './CityBuilderEditor.vue';
 import CityWalkAccess from './CityWalkAccess.vue';
@@ -13,7 +14,6 @@ import CityWalkAccess from './CityWalkAccess.vue';
 // presentation only and never changes proposal data.
 const { launcher, preview, controls } = storeToRefs(useCommunityPlanningStore());
 
-const root = useTemplateRef('root');
 const heading = useTemplateRef('heading');
 const launcherButton = useTemplateRef('launcherButton');
 const inspectNav = useTemplateRef('inspectNav');
@@ -27,7 +27,7 @@ watch(
     if (open && !wasOpen) returnFocus = document.activeElement?.closest?.('[data-city-builder-open], [data-community-planning-preview-open], [data-city-play-records]');
     await nextTick();
     if (open && !wasOpen) {
-      root.value?.showModal?.();
+      // UiDialog opens itself modally once mounted.
       heading.value?.focus({ preventScroll: true });
     } else if (!open && wasOpen && launcher.value) {
       const target = returnFocus?.isConnected ? returnFocus : launcherButton.value?.$el;
@@ -36,9 +36,6 @@ watch(
     }
   },
 );
-onBeforeUnmount(() => {
-  if (root.value?.open) root.value.close();
-});
 
 async function setMode(mode, event) {
   // Rehome focus before Inspect is hidden, rather than dropping to <body>.
@@ -65,7 +62,7 @@ const cardStyle = { flex: '1 1 245px', minWidth: '0', padding: '12px', backgroun
     <UiButton ref="launcherButton" type="button" class="gev-action-button scene-btn" data-community-planning-preview-open @click="controls?.open()">{{ launcher.label }}</UiButton>
   </div>
   <Teleport to="body">
-    <dialog v-if="preview" ref="root" data-community-planning-preview :aria-label="preview.title" :style="[dialogStyle, preview.city ? { width: 'min(1200px,calc(100vw - 32px))' } : null]" @cancel.prevent="controls?.close()">
+    <UiDialog v-if="preview" :open="true" data-community-planning-preview :aria-label="preview.title" :style="[dialogStyle, preview.city ? { width: 'min(1200px,calc(100vw - 32px))' } : null]" @dismiss="controls?.close()">
       <h2 ref="heading" tabindex="-1" style="margin-bottom: 12px">{{ preview.title }}</h2>
       <p style="color: #aad3db">{{ preview.intro }}</p>
       <p data-planning-local-only style="color: #aad3db">{{ preview.localOnly }}</p>
@@ -130,6 +127,6 @@ const cardStyle = { flex: '1 1 245px', minWidth: '0', padding: '12px', backgroun
         <UiButton ref="coopButton" :style="buttonStyle" data-planning-mode="co-op" :pressed="preview.mode === 'co-op'" @click="setMode('co-op', $event)">{{ t('Co-op view') }}</UiButton>
         <UiButton :style="buttonStyle" data-planning-mode="game" :pressed="preview.mode === 'game'" :disabled="preview.gameDisabled" :title="preview.gameDisabled ? preview.gameDisabledReason : undefined" @click="setMode('game', $event)">{{ t('Game view') }}</UiButton>
       </div>
-    </dialog>
+    </UiDialog>
   </Teleport>
 </template>

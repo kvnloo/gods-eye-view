@@ -145,7 +145,7 @@ test('root config retains existing named exports and standalone provider order',
     assert.equal(compatibility[name], value, name);
   const config = standaloneConfig({ mode: 'test' }, { nominatimStorageDir });
   const standaloneProviders = config.plugins
-    .slice(4, -7)
+    .slice(4, -8)
     .map((plugin) => plugin.name);
   assert.equal(
     standaloneProviders.filter((name) => name === 'gemini-live-proxy').length,

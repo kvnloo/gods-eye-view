@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createPinia } from 'pinia';
+import { bindRenderer } from '../render/rendererOf.js';
+import { fakeSceneFrame } from '../testSupport/fakeCesiumScene.mjs';
 import {
   captureCityReference,
   createCityBrowserStorage,
@@ -137,6 +139,8 @@ test('capture reuses the bounded fresh-frame helper on the explicit viewer only'
     requests++;
     queueMicrotask(() => listener());
   };
+  // The fresh-frame helper reads the frame port of the viewer it is given.
+  bindRenderer(viewer, { frame: fakeSceneFrame(viewer) });
   await captureCityReference(options);
   assert.equal(requests, 1);
   assert.equal(removals, 1);

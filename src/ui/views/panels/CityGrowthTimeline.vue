@@ -2,6 +2,7 @@
 import { storeToRefs } from 'pinia';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { t } from '../../../i18n/index.js';
+import UiButton from '../../kit/UiButton.vue';
 import { useCityPlayStore } from '../../stores/cityPlay.js';
 import { growthLines, growthStageLabel } from '../../cityGrowthLines.js';
 
@@ -33,30 +34,29 @@ const locks = computed(() => (timeline.value?.on ? (growthAnchors.value?.locks ?
 
 <template>
   <section v-if="timeline" class="city-massing city-growth" data-city-growth :data-city-growth-on="timeline.on" :aria-label="t('Growth timeline for this district')">
-    <button type="button" class="city-massing-toggle" data-city-growth-toggle :aria-pressed="String(timeline.on)" @click="massingControls?.growth()">
+    <UiButton class="city-massing-toggle" data-city-growth-toggle :pressed="Boolean(timeline.on)" @click="massingControls?.growth()">
       <span class="city-massing-led" aria-hidden="true"></span>{{ t('Growth timeline') }}
-    </button>
+    </UiButton>
     <p class="city-growth-line" data-city-growth-line="district">{{ lines[0].text }}</p>
     <template v-if="timeline.on">
       <div class="city-growth-rail" data-city-growth-rail role="group" :aria-label="t('Timeline stage')">
-        <button
+        <UiButton
           v-for="stop in stops"
           :key="stop.id"
-          type="button"
           class="city-growth-stop"
           :data-city-growth-stop="stop.id"
-          :aria-pressed="String(stop.index === timeline.stage)"
+          :pressed="Boolean(stop.index === timeline.stage)"
           @click="massingControls?.stage(stop.index)"
         >
           {{ stop.label }}
-        </button>
+        </UiButton>
       </div>
       <div class="city-growth-lines" data-city-growth-lines aria-live="polite">
         <p v-for="line in lines.slice(1)" :key="line.id" class="city-growth-line" :class="`city-growth-line--${line.id}`" :data-city-growth-line="line.id">
           <span data-city-growth-text>{{ line.text }}</span>
           <span v-if="line.id === 'floors'" class="city-growth-steps">
-            <button type="button" class="city-massing-step" data-city-growth-step="-1" :aria-label="t('Remove a storey')" :disabled="storeys <= 1" @click="massingControls?.stepStage(-1)">−</button>
-            <button type="button" class="city-massing-step" data-city-growth-step="1" :aria-label="t('Add a storey')" :disabled="storeys >= timeline.maxStoreys" @click="massingControls?.stepStage(1)">+</button>
+            <UiButton class="city-massing-step" data-city-growth-step="-1" :aria-label="t('Remove a storey')" :disabled="storeys <= 1" @click="massingControls?.stepStage(-1)">−</UiButton>
+            <UiButton class="city-massing-step" data-city-growth-step="1" :aria-label="t('Add a storey')" :disabled="storeys >= timeline.maxStoreys" @click="massingControls?.stepStage(1)">+</UiButton>
           </span>
         </p>
       </div>

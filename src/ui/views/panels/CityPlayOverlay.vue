@@ -2,6 +2,7 @@
 import { storeToRefs } from 'pinia';
 import { computed, onBeforeUnmount, onMounted, onUpdated, ref } from 'vue';
 import { t } from '../../../i18n/index.js';
+import UiButton from '../../kit/UiButton.vue';
 import UiBadge from '../../kit/UiBadge.vue';
 import UiIcon from '../../kit/UiIcon.vue';
 import { useCityPlayStore } from '../../stores/cityPlay.js';
@@ -222,9 +223,9 @@ const bars = computed(() => {
         <span class="city-play-stat-label">{{ moveLabels[move.id] }}</span>
         <span class="city-play-stat-value" translate="no">{{ figure(move) }}</span>
       </span>
-      <button type="button" class="city-play-bar-records" data-city-play-records="bar" :disabled="view.pending" :aria-label="t('Project records')" :title="t('Project records')" @click="controls?.openRecords()">
+      <UiButton class="city-play-bar-records" data-city-play-records="bar" :disabled="view.pending" :aria-label="t('Project records')" :title="t('Project records')" @click="controls?.openRecords()">
         <UiIcon name="folder_open" :size="16" />
-      </button>
+      </UiButton>
     </div>
     <p v-if="!view.plot" class="city-play-hint" data-city-play-hint>
       <span>{{ t('Click a plot of land to reimagine it') }}</span>
@@ -255,21 +256,20 @@ const bars = computed(() => {
 
     <nav v-if="wheel" class="city-play-wheel" data-city-play-wheel :aria-label="t('City builder actions for this plot')" :style="{ left: `${wheel.x}px`, top: `${wheel.y}px`, '--wheel-radius': `${size.radius}px`, '--wheel-button': `${size.button}px` }">
       <span class="city-play-wheel-ring" aria-hidden="true"></span>
-      <button
+      <UiButton
         v-for="(action, index) in view.actions"
         :key="action.id"
-        type="button"
         class="city-play-wheel-button"
         :class="{ 'is-selected': action.selected }"
         :data-city-play-action="action.id"
-        :aria-pressed="action.selected === undefined ? undefined : String(action.selected)"
+        :pressed="action.selected"
         :disabled="action.disabled"
         :style="{ transform: `translate(${offsets[index].x}px, ${offsets[index].y}px)` }"
         @click="controls?.act(action.id)"
       >
         <UiIcon :name="action.icon" :size="mobile ? 22 : 28" />
         <span>{{ actionLabels[action.id] }}</span>
-      </button>
+      </UiButton>
     </nav>
 
     <div v-if="holoTag" class="city-play-holo-tag" data-city-play-holo-tag :data-city-play-plot="view.plot.code" :style="{ left: `${holoTag.x}px`, top: `${holoTag.y}px` }">
@@ -300,10 +300,9 @@ const bars = computed(() => {
       <p class="city-play-stats-note">{{ t('Version') }} {{ view.focused.revision }} · {{ t('AI concept, not a plan or an approval') }}</p>
     </aside>
 
-    <button
+    <UiButton
       v-for="pin in pins"
       :key="pin.plotId"
-      type="button"
       class="city-play-pin"
       :class="pin.kind ? `city-play-pin--${pin.kind}` : `city-play-use--${pin.use}`"
       :data-city-play-pin="pin.plotId"
@@ -320,7 +319,7 @@ const bars = computed(() => {
           <span v-if="pin.built" class="city-play-pin-kept">{{ t('Kept') }}</span>
         </span>
       </span>
-    </button>
+    </UiButton>
 
     <aside v-if="view.legend && !(mobile && wheel)" class="city-play-legend" data-city-play-legend :aria-label="t('Proposed land use')">
       <h3>{{ t('Proposed land use') }}</h3>
@@ -344,14 +343,13 @@ const bars = computed(() => {
 
     <section v-if="showCarousel" class="city-play-dock" data-city-play-carousel :aria-label="t('Possible worlds for this plot')">
       <div class="city-play-cards">
-        <button
+        <UiButton
           v-for="card in view.cards"
           :key="card.id"
-          type="button"
           class="city-play-card"
           :class="{ 'is-focused': card.focused, 'is-built': card.built, 'is-pending': card.pending }"
           :data-city-play-card="card.id"
-          :aria-pressed="String(card.focused)"
+          :pressed="Boolean(card.focused)"
           @click="controls?.focus(card.id)"
         >
           <span class="city-play-card-image">
@@ -374,11 +372,10 @@ const bars = computed(() => {
               <strong translate="no">{{ figure(move) }}</strong>
             </span>
           </span>
-        </button>
-        <button
+        </UiButton>
+        <UiButton
           v-for="ghost in view.framing ? [] : ghosts"
           :key="ghost.kind"
-          type="button"
           class="city-play-card city-play-card--ghost"
           :data-city-play-ghost="ghost.kind"
           :disabled="view.pending"
@@ -387,24 +384,24 @@ const bars = computed(() => {
           <span class="city-play-card-image"><span class="city-play-card-empty"><UiIcon :name="ghost.icon" :size="30" /><span>+ {{ kindLabel(ghost.kind) }}</span></span></span>
           <span class="city-play-card-title">{{ t('Reimagine') }}</span>
           <span class="city-play-card-meta">{{ kindLabel(ghost.kind) }}</span>
-        </button>
+        </UiButton>
         <div v-if="view.framing" class="city-play-card is-pending city-play-card--framing" data-city-play-framing>
           <span class="city-play-card-image"><span class="city-play-card-empty"><UiIcon name="auto_awesome" :size="30" /><span>{{ t('Framing plot…') }}</span></span></span>
         </div>
       </div>
       <div class="city-play-actions">
-        <button type="button" class="city-play-action city-play-action--primary" data-city-play-build :disabled="!focusedCard || !focusedCard.image || view.pending" @click="controls?.build(focusedCard.id)">
+        <UiButton class="city-play-action city-play-action--primary" data-city-play-build :disabled="!focusedCard || !focusedCard.image || view.pending" @click="controls?.build(focusedCard.id)">
           <UiIcon name="location_city" :size="20" />
           <span>{{ t('Build') }}</span>
-        </button>
-        <button type="button" class="city-play-action" data-city-play-reroll :disabled="!focusedCard || view.pending" @click="controls?.reroll(focusedCard.id)">
+        </UiButton>
+        <UiButton class="city-play-action" data-city-play-reroll :disabled="!focusedCard || view.pending" @click="controls?.reroll(focusedCard.id)">
           <UiIcon name="casino" :size="20" />
           <span>{{ t('Reroll') }}</span>
-        </button>
-        <button type="button" class="city-play-action city-play-action--quiet" data-city-play-records="carousel" :disabled="view.pending" @click="controls?.openRecords()">
+        </UiButton>
+        <UiButton class="city-play-action city-play-action--quiet" data-city-play-records="carousel" :disabled="view.pending" @click="controls?.openRecords()">
           <UiIcon name="folder_open" :size="18" />
           <span>{{ t('Project records') }}</span>
-        </button>
+        </UiButton>
         <span class="city-play-ai-chip" data-city-play-ai-label>{{ t('AI concept, not a plan or an approval') }}</span>
       </div>
     </section>

@@ -2,6 +2,7 @@
 import { storeToRefs } from 'pinia';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { formatNumber, t } from '../../../i18n/index.js';
+import UiButton from '../../kit/UiButton.vue';
 import { useCityPlayStore } from '../../stores/cityPlay.js';
 import { boundsOf, placeBeside } from '../../cityPlayModel.js';
 import { hudFigure } from '../../cityHudFigure.js';
@@ -159,16 +160,16 @@ onBeforeUnmount(() => {
     :aria-label="t('Shadow on the sidewalk across the street')"
     :style="place ? { left: `${place.x}px`, top: `${place.y}px` } : { visibility: 'hidden' }"
   >
-    <button type="button" class="city-massing-toggle" data-city-shadow-toggle :aria-pressed="String(study.on)" @click="massingControls?.study()">
+    <UiButton class="city-massing-toggle" data-city-shadow-toggle :pressed="Boolean(study.on)" @click="massingControls?.study()">
       <span class="city-massing-led" aria-hidden="true"></span>{{ t('Protect sidewalk') }}
-    </button>
+    </UiButton>
     <dl v-if="study.on" class="city-massing-rows" data-city-shadow-rows aria-live="polite">
       <div class="city-massing-row" data-city-shadow-row="distance">
         <dt>{{ t('Far sidewalk') }}</dt>
         <dd>
-          <button type="button" class="city-massing-step" data-city-shadow-edge="-1" :aria-label="t('Sidewalk 1 m nearer')" :disabled="study.edgeMeters <= 1" @click="massingControls?.stepEdge(-1)">−</button>
+          <UiButton class="city-massing-step" data-city-shadow-edge="-1" :aria-label="t('Sidewalk 1 m nearer')" :disabled="study.edgeMeters <= 1" @click="massingControls?.stepEdge(-1)">−</UiButton>
           <span class="city-massing-value" data-city-shadow-value>{{ hudFigure({ value: study.edgeMeters, unit: 'm' }) }}</span>
-          <button type="button" class="city-massing-step" data-city-shadow-edge="1" :aria-label="t('Sidewalk 1 m farther')" @click="massingControls?.stepEdge(1)">+</button>
+          <UiButton class="city-massing-step" data-city-shadow-edge="1" :aria-label="t('Sidewalk 1 m farther')" @click="massingControls?.stepEdge(1)">+</UiButton>
         </dd>
       </div>
       <div class="city-massing-row city-shadow-set">
@@ -176,7 +177,7 @@ onBeforeUnmount(() => {
           <span v-if="!study.edgeSet" class="city-massing-est" data-city-shadow-assumed :title="t('Assumed until you set it: metres from the block face, along the shadow')">{{ t('Assumed') }}</span>
         </dt>
         <dd>
-          <button type="button" class="city-shadow-button" data-city-shadow-pick :aria-pressed="String(study.picking)" @click="massingControls?.pickEdge()">{{ t('Set on map') }}</button>
+          <UiButton class="city-shadow-button" data-city-shadow-pick :pressed="Boolean(study.picking)" @click="massingControls?.pickEdge()">{{ t('Set on map') }}</UiButton>
         </dd>
       </div>
       <template v-for="row in rows" :key="row.id">
@@ -189,14 +190,14 @@ onBeforeUnmount(() => {
         <div v-if="row.id === 'sun' && !study.winter" class="city-massing-row city-shadow-set">
           <dt></dt>
           <dd>
-            <button type="button" class="city-shadow-button" data-city-shadow-winter :title="t('Set the scene to solar noon on the winter solstice here')" @click="massingControls?.winterNoon()">{{ t('Winter noon') }}</button>
+            <UiButton class="city-shadow-button" data-city-shadow-winter :title="t('Set the scene to solar noon on the winter solstice here')" @click="massingControls?.winterNoon()">{{ t('Winter noon') }}</UiButton>
           </dd>
         </div>
       </template>
       <p v-if="cost" class="city-shadow-note city-shadow-cost" data-city-shadow-cost>{{ cost }}</p>
-      <button type="button" class="city-shadow-button city-shadow-fit" data-city-shadow-fit :disabled="!fitFloors" @click="massingControls?.fit()">
+      <UiButton class="city-shadow-button city-shadow-fit" data-city-shadow-fit :disabled="!fitFloors" @click="massingControls?.fit()">
         {{ t('Fit to sun') }}<template v-if="fitFloors"> · {{ t('Floors') }} {{ fitFloors }}</template>
-      </button>
+      </UiButton>
       <p v-if="note" class="city-shadow-note" data-city-shadow-note>{{ note }}</p>
     </dl>
   </section>

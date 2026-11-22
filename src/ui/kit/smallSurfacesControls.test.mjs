@@ -28,8 +28,9 @@ const SURFACES = {
   'views/panels/LocalePicker.vue': [1, 0, 0],
   'views/panels/PhoneTabBar.vue': [1, 0, 1],
   'views/panels/GlobeCompass.vue': [1, 0, 1],
-  // Clear, share, tilt and reset; the clear, tilt and reset glyphs.
-  'views/panels/GlobeActions.vue': [4, 0, 3],
+  // Clear, share, tilt, reset and the City builder launcher; the clear, tilt
+  // and reset glyphs.
+  'views/panels/GlobeActions.vue': [5, 0, 3],
   'views/panels/ImagerySplitView.vue': [1, 0, 0],
   // The body's buttons and the footer's.
   'views/panels/SceneDialog.vue': [2, 0, 0],

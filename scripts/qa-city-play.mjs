@@ -793,6 +793,15 @@ try {
           await locator('[data-city-play-card="world-1"]').innerText(),
           /2/,
         );
+        // The card's figures are proposal estimates and say so.
+        const chips = await locator(
+          '[data-city-play-card="world-1"] [data-city-play-chip] strong',
+        ).allInnerTexts();
+        assert.equal(chips.length, 3);
+        assert.ok(
+          chips.every((text) => / EST$/.test(text)),
+          `every card figure is labelled EST: ${chips.join(' | ')}`,
+        );
         await until(
           () => !document.querySelector('[data-city-play-wheel]'),
           'the wheel closes once the reroll lands',
@@ -1148,6 +1157,13 @@ try {
           ),
         );
         assert.equal(stats.walk, '—');
+        // Proposal sums and means are estimates and say so; counts are exact.
+        assert.match(stats.trees, /^\d+ EST$/);
+        assert.match(stats.shade, /^~?\d+% EST$/);
+        assert.doesNotMatch(
+          `${stats.plots} ${stats.worlds} ${stats.concepts}`,
+          /EST|~/,
+        );
         assert.equal(
           (await probe()).zoning.length,
           (before.zoning ?? []).length,

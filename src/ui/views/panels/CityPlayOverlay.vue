@@ -1,9 +1,10 @@
 <script setup>
 import { storeToRefs } from 'pinia';
 import { computed, onBeforeUnmount, onMounted, onUpdated, ref } from 'vue';
-import { formatNumber, t } from '../../../i18n/index.js';
+import { t } from '../../../i18n/index.js';
 import UiIcon from '../../kit/UiIcon.vue';
 import { useCityPlayStore } from '../../stores/cityPlay.js';
+import { hudFigure } from '../../cityHudFigure.js';
 import { boundsOf, placeBeside, placeWheel, stackPins, wheelBounds, wheelLayout, wheelSize } from '../../cityPlayModel.js';
 
 // City builder play mode on the globe: the resource bar, the plot's radial
@@ -87,11 +88,9 @@ const chipLabels = computed(() => ({
   width: t('Width'),
   walk: t('Walk access'),
 }));
-function chipValue(chip) {
-  if (chip.unit === 'm') return t('{value} m', { value: formatNumber(chip.value) });
-  if (chip.unit === '%') return `${formatNumber(chip.value)}%`;
-  return formatNumber(chip.value);
-}
+// Every number on this HUD is drawn by hudFigure; an unknown one is a plain dash.
+const figure = (f) => hudFigure(f) ?? '—';
+const estimate = true;
 function kindLabel(kind) {
   return kind === 'park' ? t('Park') : kind === 'plaza' ? t('Plaza') : t('Bike lane');
 }
@@ -106,20 +105,27 @@ const callouts = computed(() =>
       return { ...c, end: { x: c.at.x + dx, y: c.at.y - 44 }, side: c.fx < 0.5 ? 'start' : 'end' };
     }),
 );
+// A pin's yields are the kept proposal's estimates; walk access is the existing estimate in metres.
+const pinYields = (p) => ({
+  trees: hudFigure({ value: p.trees, estimate }),
+  shade: hudFigure({ value: p.shade, unit: '%', estimate }),
+  walk: figure({ value: p.walk, unit: 'm', estimate }),
+});
 // Pins do not wrap: estimate each width from its longest line (12 px mono).
-const pinWidth = (p) =>
+const pinWidth = (p, yields) =>
   70 +
   7.8 *
     Math.max(
       (p.title ?? useLabel(p.use)).length,
-      [p.trees !== null && `${t('Trees')} +${p.trees}`, p.shade !== null && `${t('Shade')} ${p.shade}%`, p.title && p.use && useLabel(p.use), `${t('Walk access')} ${p.walk ?? '—'}`, p.built && t('Kept')]
+      [yields.trees && `${t('Trees')} ${yields.trees}`, yields.shade && `${t('Shade')} ${yields.shade}`, p.title && p.use && useLabel(p.use), `${t('Walk access')} ${yields.walk}`, p.built && t('Kept')]
         .filter(Boolean)
         .join('  ').length,
     );
 const pins = computed(() =>
   stackPins(
     (view.value?.pins ?? [])
-      .map((p) => ({ ...p, at: anchors.value?.pins?.[p.plotId], width: pinWidth(p) }))
+      .map((p) => ({ ...p, yields: pinYields(p), at: anchors.value?.pins?.[p.plotId] }))
+      .map((p) => ({ ...p, width: pinWidth(p, p.yields) }))
       .filter((p) => p.at),
   ),
 );
@@ -186,9 +192,9 @@ const bars = computed(() => {
   const p = view.value?.focused?.parameters;
   if (!p) return [];
   return [
-    { id: 'trees', label: t('Trees'), value: formatNumber(p.trees), fill: p.trees / 200 },
-    { id: 'shade', label: t('Shade'), value: `${formatNumber(p.shadePercent)}%`, fill: p.shadePercent / 100 },
-    { id: 'width', label: t('Width'), value: t('{value} m', { value: formatNumber(p.widthMeters) }), fill: p.widthMeters / 20 },
+    { id: 'trees', label: t('Trees'), value: figure({ value: p.trees, estimate }), fill: p.trees / 200 },
+    { id: 'shade', label: t('Shade'), value: figure({ value: p.shadePercent, unit: '%', estimate }), fill: p.shadePercent / 100 },
+    { id: 'width', label: t('Width'), value: figure({ value: p.widthMeters, unit: 'm', estimate }), fill: p.widthMeters / 20 },
   ];
 });
 </script>
@@ -198,7 +204,7 @@ const bars = computed(() => {
     <div class="city-play-bar" data-city-play-bar>
       <span v-for="stat in view.stats" :key="stat.id" class="city-play-stat" :data-city-play-stat="stat.id">
         <span class="city-play-stat-label">{{ statLabels[stat.id] }}</span>
-        <span class="city-play-stat-value" translate="no">{{ stat.value }}</span>
+        <span class="city-play-stat-value" translate="no">{{ figure(stat) }}</span>
       </span>
       <button type="button" class="city-play-bar-records" data-city-play-records="bar" :disabled="view.pending" :aria-label="t('Project records')" :title="t('Project records')" @click="controls?.openRecords()">
         <UiIcon name="folder_open" :size="16" />
@@ -225,7 +231,7 @@ const bars = computed(() => {
 
     <div v-if="tag" ref="tagEl" class="city-play-tag" data-city-play-tag :style="{ left: `${tag.x}px`, top: `${tag.y}px` }">
       <strong translate="no">{{ t('Plot {code}', { code: view.plot.code }) }}</strong>
-      <span>{{ t('{area} m²', { area: formatNumber(view.plot.area) }) }}</span>
+      <span>{{ figure({ value: view.plot.area, unit: 'm²' }) }}</span>
       <span v-if="view.plot.use" class="city-play-tag-use" :class="`city-play-use--${view.plot.use}`" data-city-play-tag-use>{{ useLabel(view.plot.use) }}</span>
       <span v-if="!mobile" class="city-play-tag-note">{{ t('40 m grid cell, not a surveyed parcel') }}</span>
     </div>
@@ -258,7 +264,7 @@ const bars = computed(() => {
       <span class="city-play-callout-dot" aria-hidden="true"></span>
       <span class="city-play-callout-label" :class="`city-play-callout-label--${callout.side}`">
         <template v-if="callout.id === 'kind'">{{ kindLabel(callout.kind) }}</template>
-        <template v-else>{{ chipLabels[callout.id] }} · {{ chipValue(callout) }}</template>
+        <template v-else>{{ chipLabels[callout.id] }} · {{ figure(callout) }}</template>
       </span>
     </div>
 
@@ -289,10 +295,10 @@ const bars = computed(() => {
       <span class="city-play-pin-text">
         <span>{{ pin.title ?? useLabel(pin.use) }}</span>
         <span class="city-play-pin-yields">
-          <span v-if="pin.trees !== null">{{ t('Trees') }} +{{ formatNumber(pin.trees) }}</span>
-          <span v-if="pin.shade !== null">{{ t('Shade') }} {{ formatNumber(pin.shade) }}%</span>
+          <span v-if="pin.yields.trees">{{ t('Trees') }} {{ pin.yields.trees }}</span>
+          <span v-if="pin.yields.shade">{{ t('Shade') }} {{ pin.yields.shade }}</span>
           <span v-if="pin.use && pin.title" class="city-play-pin-use" :class="`city-play-use--${pin.use}`" data-city-play-pin-use>{{ useLabel(pin.use) }}</span>
-          <span data-city-play-pin-walk>{{ t('Walk access') }} {{ pin.walk ?? '—' }}</span>
+          <span data-city-play-pin-walk>{{ t('Walk access') }} {{ pin.yields.walk }}</span>
           <span v-if="pin.built" class="city-play-pin-kept">{{ t('Kept') }}</span>
         </span>
       </span>
@@ -310,9 +316,9 @@ const bars = computed(() => {
       <div v-for="row in view.legend.rows" :key="row.use" class="city-play-legend-row" :data-city-play-legend-row="row.use">
         <span class="city-play-swatch" :class="`city-play-use--${row.use}`" aria-hidden="true"></span>
         <span>{{ useLabel(row.use) }}</span>
-        <span translate="no" data-legend-plots>{{ formatNumber(row.plots) }}</span>
-        <span translate="no" data-legend-area>{{ t('{area} m²', { area: formatNumber(row.areaSquareMeters) }) }}</span>
-        <span translate="no" data-legend-share>{{ row.sharePercent === null ? '—' : `${formatNumber(row.sharePercent)}%` }}</span>
+        <span translate="no" data-legend-plots>{{ figure({ value: row.plots }) }}</span>
+        <span translate="no" data-legend-area>{{ figure({ value: row.areaSquareMeters, unit: 'm²' }) }}</span>
+        <span translate="no" data-legend-share>{{ figure({ value: row.sharePercent, unit: '%' }) }}</span>
       </div>
       <p class="city-play-legend-note">{{ t('Hypothetical land use for 40 m grid cells, not the city’s zoning.') }}</p>
       <p class="city-play-legend-note">{{ t('Walk access shows the existing estimate; land use does not recompute it.') }}</p>
@@ -340,7 +346,7 @@ const bars = computed(() => {
           <span class="city-play-chips">
             <span v-for="chip in card.chips" :key="chip.id" class="city-play-chip" :data-city-play-chip="chip.id">
               <span>{{ chipLabels[chip.id] }}</span>
-              <strong translate="no">{{ chipValue(chip) }}</strong>
+              <strong translate="no">{{ figure(chip) }}</strong>
             </span>
           </span>
         </button>

@@ -151,11 +151,14 @@ export function nextKind(tried) {
   );
 }
 
+// A proposal's parameters are estimates: presets or typed-in targets for a
+// world that does not exist, never measurements. Values stay raw; the HUD
+// formatter (cityHudFigure.js) rounds and labels them.
 function chips(parameters) {
   return [
-    { id: 'trees', value: parameters.trees, unit: '' },
-    { id: 'shade', value: parameters.shadePercent, unit: '%' },
-    { id: 'width', value: parameters.widthMeters, unit: 'm' },
+    { id: 'trees', value: parameters.trees, unit: '', estimate: true },
+    { id: 'shade', value: parameters.shadePercent, unit: '%', estimate: true },
+    { id: 'width', value: parameters.widthMeters, unit: 'm', estimate: true },
   ];
 }
 
@@ -173,7 +176,7 @@ export function carouselCards(
     const list = chips(a.parameters);
     const delta = access?.[a.id]?.delta;
     if (Number.isFinite(delta))
-      list.push({ id: 'walk', value: delta, unit: '' });
+      list.push({ id: 'walk', value: delta, unit: '', estimate: true });
     return {
       id: a.id,
       title: a.title,
@@ -191,12 +194,15 @@ export function carouselCards(
   });
 }
 
-/** Top resource bar. Without a project every value is unknown, never zero. */
+/**
+ * Top resource bar as raw figures. Without a project every value is unknown
+ * (null), never zero. Counts are exact; the proposals' sum and mean are
+ * estimates.
+ */
 export function resourceStats(alternatives) {
-  const dash = '—';
   if (!alternatives) {
     return ['plots', 'worlds', 'concepts', 'trees', 'shade', 'walk'].map(
-      (id) => ({ id, value: dash }),
+      (id) => ({ id, value: null }),
     );
   }
   const count = alternatives.length;
@@ -208,16 +214,13 @@ export function resourceStats(alternatives) {
     alternatives.reduce((sum, a) => sum + a.parameters.shadePercent, 0) /
     (count || 1);
   return [
-    { id: 'plots', value: String(plots.size) },
-    { id: 'worlds', value: String(count) },
-    {
-      id: 'concepts',
-      value: String(alternatives.filter((a) => a.concept).length),
-    },
-    { id: 'trees', value: count ? `+${trees}` : dash },
-    { id: 'shade', value: count ? `${Math.round(shade)}%` : dash },
+    { id: 'plots', value: plots.size },
+    { id: 'worlds', value: count },
+    { id: 'concepts', value: alternatives.filter((a) => a.concept).length },
+    { id: 'trees', value: count ? trees : null, estimate: true },
+    { id: 'shade', value: count ? shade : null, unit: '%', estimate: true },
     // Walk access belongs to a separate validated module; absent here.
-    { id: 'walk', value: dash },
+    { id: 'walk', value: null, estimate: true },
   ];
 }
 
@@ -225,11 +228,10 @@ export function resourceStats(alternatives) {
 export function detailCallouts(alternative) {
   if (!alternative?.concept) return [];
   const p = alternative.parameters;
+  const at = { trees: [0.18, 0.7], shade: [0.78, 0.22], width: [0.3, 0.12] };
   return [
     { id: 'kind', fx: 0.82, fy: 0.78, kind: p.kind },
-    { id: 'trees', fx: 0.18, fy: 0.7, value: p.trees, unit: '' },
-    { id: 'shade', fx: 0.78, fy: 0.22, value: p.shadePercent, unit: '%' },
-    { id: 'width', fx: 0.3, fy: 0.12, value: p.widthMeters, unit: 'm' },
+    ...chips(p).map((c) => ({ ...c, fx: at[c.id][0], fy: at[c.id][1] })),
   ];
 }
 

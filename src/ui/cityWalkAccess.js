@@ -62,6 +62,7 @@ function row(id, label, result, site, baseline) {
     state: 'evaluated',
     site: site ? siteLabel(site) : t('Existing park only'),
     mean: metres(result.meanMeters),
+    meanMeters: result.meanMeters,
     meanRange: span(result.meanRange),
     worst: metres(result.worstMeters),
     worstRange: span(result.worstRange),

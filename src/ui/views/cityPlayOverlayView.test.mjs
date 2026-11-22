@@ -10,9 +10,11 @@ import GlobeActions from './panels/GlobeActions.vue';
 import { snapPlot } from '../../data/cityPlot.js';
 import {
   carouselCards,
+  detailCallouts,
   plotCode,
   resourceStats,
   wheelActions,
+  zoneLegend,
 } from '../cityPlayModel.js';
 
 const plot = snapPlot({ lat: 37.8007, lon: -122.4103 });
@@ -161,8 +163,8 @@ test('the wheel follows the projected plot and sends honest actions', async (t) 
     plots: '1',
     worlds: '1',
     concepts: '1',
-    trees: '+12',
-    shade: '45%',
+    trees: '12 EST',
+    shade: '45% EST',
     walk: '—',
   });
 });
@@ -291,4 +293,149 @@ test('zoom tiers swap the wheel for detail callouts or district pins', async (t)
   const pin = $(`[data-city-play-pin="${plot.id}"]`);
   assert.match(pin.textContent, /Public plaza/);
   assert.match(pin.textContent, /Kept/);
+});
+
+test('every estimated figure reads EST, an exact figure does not, and an unknown one stays a plain dash', async (t) => {
+  const { store, settle, $, $$ } = await mount(t);
+  const text = (selector) => $$(selector).map((el) => el.textContent.trim());
+  store.publish(playView());
+  store.place({ plot: { x: 700, y: 400 }, callouts: {}, pins: {} });
+  await settle();
+  assert.deepEqual(
+    text('[data-city-play-chip] strong'),
+    ['12 EST', '45% EST', '8 m EST'],
+    'card chips are proposal estimates',
+  );
+  assert.match($('[data-city-play-tag]').textContent, /1,600 m²/);
+  assert.doesNotMatch(
+    $('[data-city-play-tag]').textContent,
+    /EST|~/,
+    'the grid area is exact',
+  );
+  assert.deepEqual(
+    text('[data-city-play-stat] .city-play-stat-value').slice(0, 3),
+    ['1', '1', '1'],
+    'counts are exact',
+  );
+
+  // The mean of 45, 45 and 40 % is 43.33…: two significant figures behind ~.
+  const three = [0, 0, 5].map((less, i) => ({
+    ...alternatives[0],
+    id: `world-${i + 1}`,
+    parameters: { ...alternatives[0].parameters, shadePercent: 45 - less },
+  }));
+  store.publish(playView({ stats: resourceStats(three) }));
+  await settle();
+  assert.deepEqual(text('[data-city-play-stat] .city-play-stat-value'), [
+    '1',
+    '3',
+    '3',
+    '36 EST',
+    '~43% EST',
+    '—',
+  ]);
+
+  store.publish(playView({ stats: resourceStats(null) }));
+  await settle();
+  assert.deepEqual(
+    text('[data-city-play-stat] .city-play-stat-value'),
+    ['—', '—', '—', '—', '—', '—'],
+    'no project: unknown, never zero, never an estimate',
+  );
+
+  const footprint = [
+    { x: 640, y: 420 },
+    { x: 760, y: 420 },
+    { x: 760, y: 500 },
+    { x: 640, y: 500 },
+  ];
+  store.publish(
+    playView({ tier: 'detail', callouts: detailCallouts(alternatives[0]) }),
+  );
+  store.place({
+    plot: { x: 700, y: 460 },
+    footprint,
+    callouts: {
+      kind: { x: 760, y: 480 },
+      trees: { x: 650, y: 470 },
+      shade: { x: 750, y: 430 },
+      width: { x: 680, y: 425 },
+    },
+    pins: {},
+  });
+  await settle();
+  assert.deepEqual(text('.city-play-callout-label'), [
+    'Plaza',
+    'Trees · 12 EST',
+    'Shade · 45% EST',
+    'Width · 8 m EST',
+  ]);
+  assert.deepEqual(
+    text('.city-play-stats-row > span:last-child'),
+    ['12 EST', '45% EST', '8 m EST'],
+    'the stats card shows the same estimates',
+  );
+
+  const pin = {
+    alternativeId: 'world-1',
+    center: plot.center,
+    kind: 'plaza',
+    icon: 'deck',
+    title: 'Public plaza',
+    trees: 12,
+    shade: 45,
+    built: false,
+    use: null,
+  };
+  store.publish(
+    playView({
+      tier: 'district',
+      pins: [
+        { ...pin, plotId: 'with-walk', walk: 212.37 },
+        { ...pin, plotId: 'no-walk', walk: null },
+      ],
+      legend: zoneLegend([{ plot, use: 'housing' }]),
+    }),
+  );
+  store.place({
+    plot: null,
+    callouts: {},
+    pins: { 'with-walk': { x: 400, y: 300 }, 'no-walk': { x: 900, y: 300 } },
+  });
+  await settle();
+  const yields = (id) =>
+    [
+      ...$(`[data-city-play-pin="${id}"]`).querySelectorAll(
+        '.city-play-pin-yields > span',
+      ),
+    ].map((el) => el.textContent.trim());
+  assert.deepEqual(yields('with-walk'), [
+    'Trees 12 EST',
+    'Shade 45% EST',
+    'Walk access ~210 m EST',
+  ]);
+  assert.deepEqual(yields('no-walk'), [
+    'Trees 12 EST',
+    'Shade 45% EST',
+    'Walk access —',
+  ]);
+  const legend = (use) =>
+    [
+      ...$(`[data-city-play-legend-row="${use}"]`).querySelectorAll(
+        '[translate="no"]',
+      ),
+    ].map((el) => el.textContent.trim());
+  assert.deepEqual(legend('housing'), ['1', '1,600 m²', '100%']);
+  assert.deepEqual(
+    legend('civic'),
+    ['0', '0 m²', '0%'],
+    'zoned land is counted, not estimated',
+  );
+  store.publish(playView({ tier: 'district', legend: zoneLegend([]) }));
+  await settle();
+  assert.deepEqual(
+    legend('housing'),
+    ['0', '0 m²', '—'],
+    'nothing zoned: the share is unknown',
+  );
 });

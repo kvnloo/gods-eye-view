@@ -518,7 +518,7 @@ export function mountCityPlay({
         map: Object.fromEntries(
           presentCityWalkAccess(list)
             .rows.filter((r) => r.id !== 'baseline' && r.state === 'evaluated')
-            .map((r) => [r.id, r.mean]),
+            .map((r) => [r.id, r.meanMeters]),
         ),
       };
     return walkCache.map;

@@ -933,6 +933,60 @@ async function edgePoint(meters) {
   }, meters);
 }
 
+// The block's wall that faces the camera, as two lines of screen points along
+// it: one through a floor's windows (low in the glass, under any blind) and
+// one through the wall beneath them.
+async function wallLines() {
+  return page.evaluate(() => {
+    const { viewer } = window.__godsEyeView;
+    const { scene } = viewer;
+    const s = window.__gevCityMassing.snapshot();
+    const [lon0, lat0] = s.facade.origin;
+    const eye = viewer.camera.positionCartographic;
+    const toEye = [
+      ((eye.longitude * 180) / Math.PI - lon0) *
+        Math.cos((lat0 * Math.PI) / 180),
+      (eye.latitude * 180) / Math.PI - lat0,
+    ];
+    const facing = ({ normal }) => normal[0] * toEye[0] + normal[1] * toEye[1];
+    const wall = [...s.facade.walls].sort((a, b) => facing(b) - facing(a))[0];
+    const band = s.facade.bands[Math.min(2, s.facade.bands.length - 1)];
+    const rect = scene.canvas.getBoundingClientRect();
+    const line = (height) =>
+      Array.from({ length: 240 }, (_, i) => {
+        const t = 0.02 + (0.96 * i) / 239;
+        const p = scene.cartesianToCanvasCoordinates(
+          scene.globe.ellipsoid.cartographicToCartesian({
+            longitude:
+              ((wall.from[0] + (wall.to[0] - wall.from[0]) * t) * Math.PI) /
+              180,
+            latitude:
+              ((wall.from[1] + (wall.to[1] - wall.from[1]) * t) * Math.PI) /
+              180,
+            height: s.blockBase + height,
+          }),
+        );
+        return { x: p.x + rect.left, y: p.y + rect.top };
+      });
+    const { sillMeters, headMeters } = band.glass;
+    return {
+      bays: wall.bays,
+      windows: line(sillMeters + 0.15 * (headMeters - sillMeters)),
+      wall: line((band.bottomMeters + sillMeters) / 2),
+    };
+  });
+}
+// Runs of samples darker than the middle of a line's range, and that range.
+function darkRuns(values) {
+  const low = Math.min(...values);
+  const high = Math.max(...values);
+  const dark = values.map((v) => v < (low + high) / 2);
+  return {
+    contrast: high - low,
+    runs: dark.filter((d, i) => d && !dark[i - 1]).length,
+  };
+}
+
 async function massingOn(plotId) {
   await locator(S.toggle).click();
   await massingShown(plotId);
@@ -1193,6 +1247,51 @@ try {
       assert.ok(Math.abs(s.massing.plotAreaSquareMeters - 1600) < 1e-6);
       await cutEvidence(samples, s);
       await screenshot('02-massing-block');
+    },
+  );
+
+  await check(
+    'The block is drawn as a building: a band per storey, a shopfront at the ground, window bays on the wall; the selection prism steps aside',
+    async () => {
+      const s = await massing();
+      assert.equal(s.blockMaterial, 'GevCityMassingFacade');
+      assert.equal(s.facade.bands.length, s.storeys, 'a band per storey');
+      assert.equal(s.facade.bands[0].kind, 'shopfront');
+      assert.ok(
+        Math.abs(
+          s.facade.heightMeters - (s.blockExtrudedHeight - s.blockBase),
+        ) <= 0.01,
+        'the building top is the drawn block top',
+      );
+      // On the canvas: windows along the wall facing the camera, plain wall
+      // under them. A flat box has neither.
+      const lines = await wallLines();
+      const frame = await appFrame('building');
+      const windows = darkRuns(await pixels(frame, lines.windows, 0));
+      const wall = darkRuns(await pixels(frame, lines.wall, 0));
+      report.measurements.building = { bays: lines.bays, windows, wall };
+      assert.ok(
+        windows.contrast >= 25,
+        `glass and wall differ along the window line: ${windows.contrast.toFixed(1)}`,
+      );
+      assert.ok(
+        windows.runs >= 0.8 * lines.bays && windows.runs <= 2.2 * lines.bays,
+        `${windows.runs} dark runs along a wall of ${lines.bays} window bays`,
+      );
+      assert.ok(
+        wall.contrast < 0.5 * windows.contrast,
+        `the wall under the windows is plain: ${wall.contrast.toFixed(1)} against ${windows.contrast.toFixed(1)}`,
+      );
+      // Play mode's choosing prism (a translucent box) is not drawn with it.
+      const prism = await page.evaluate(
+        () =>
+          window.__godsEyeView.viewer.dataSources
+            .getByName('gev-city-play')[0]
+            .entities.values.filter((entity) => entity.wall).length,
+      );
+      assert.equal(prism, 0, 'no selection prism around the building');
+      assert.equal((await play()).footprint, true, 'the plot outline stays');
+      await screenshot('02b-building');
     },
   );
 
@@ -1674,6 +1773,59 @@ try {
       await screenshot('10-fit-to-sun');
       await page.waitForTimeout(1500);
       report.measurements.shadowFit.marks.end = sinceOpen();
+    },
+  );
+
+  await check(
+    'The shadow on the ground is the one the block casts: the NOW band is darker with the shadow map on, a band beside it is not, and no patch is drawn over it',
+    async () => {
+      const s = await massing();
+      const plan = planOf(s, 6);
+      const az = (s.sun.azimuthDeg * Math.PI) / 180;
+      const away = [-Math.sin(az), -Math.cos(az)];
+      const across = [Math.cos(az), -Math.sin(az)];
+      const exit = edgeExit(s);
+      const half = halfWidth(s);
+      // Inside the band, clear of its sides and of its far end (a street
+      // that rises ends the real shadow before the level-ground estimate).
+      const band = (shift) => {
+        const offsets = [];
+        for (let d = 2; d <= plan.now.reachMeters - 5; d += 1.5)
+          for (let x = 3 - half; x <= half - 3; x += 3)
+            offsets.push({
+              east: away[0] * (exit + d) + across[0] * (x + shift),
+              north: away[1] * (exit + d) + across[1] * (x + shift),
+            });
+        return groundPoints(offsets, { terrain: true });
+      };
+      const shade = await luminance(await band(0), 'study shade');
+      const beside = await luminance(await band(2 * half + 8), 'study beside');
+      report.measurements.studyShadow = {
+        shadeRatio: shade.ratio,
+        besideRatio: beside.ratio,
+        points: [shade.points.length, beside.points.length],
+      };
+      assert.ok(
+        shade.points.length >= 12 && beside.points.length >= 12,
+        'both bands are on screen',
+      );
+      assert.ok(
+        shade.ratio <= 0.75,
+        `the NOW band is at least 25% darker with the shadow map on (${shade.ratio.toFixed(2)})`,
+      );
+      assert.ok(
+        beside.ratio >= 0.95,
+        `the band beside it is not darkened (${beside.ratio.toFixed(2)})`,
+      );
+      const patch = await page.evaluate(() =>
+        Boolean(
+          window.__godsEyeView.viewer.dataSources
+            .getByName('gev-city-massing')[0]
+            .entities.getById('city-massing-shadow-now').polygon,
+        ),
+      );
+      assert.equal(patch, false, 'NOW is an outline, not a filled patch');
+      await screenshot('11-cast-shadow-study');
     },
   );
   await page.close();

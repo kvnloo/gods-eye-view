@@ -1647,6 +1647,7 @@
   "src/data/cityShadowFit.test.mjs",
   "src/data/cityShadowBand.test.mjs",
   "src/ui/views/cityShadowStudyView.test.mjs",
+  "src/data/cityMassingFacade.test.mjs",
   "src/render/applicationHooks.js",
   "src/maps/globeEngine.js",
   "src/maps/globeEngine.test.mjs",

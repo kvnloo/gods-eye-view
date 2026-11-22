@@ -164,3 +164,13 @@ test('every run cuts its own 30 s demo from the journey page, splash and shadow-
   assert.match(source, /demoCut\(report\.marks\)/);
   assert.match(source, /'demo\.mp4'/);
 });
+
+test('the journey checks the building on the canvas and the cast shadow of the study', () => {
+  assert.match(source, /s\.blockMaterial, 'GevCityMassingFacade'/);
+  assert.match(source, /s\.facade\.bands\.length, s\.storeys/);
+  assert.match(source, /windows\.runs >= 0\.8 \* lines\.bays/);
+  assert.match(source, /assert\.equal\(prism, 0/);
+  assert.match(source, /shade\.ratio <= 0\.75/);
+  assert.match(source, /beside\.ratio >= 0\.95/);
+  assert.match(source, /assert\.equal\(patch, false/);
+});

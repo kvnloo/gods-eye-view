@@ -163,6 +163,29 @@ export function edgeProbes(corners, meters) {
   });
 }
 
+/**
+ * Points along the polygon's edge about `stepMeters` apart, in edge order
+ * (each corner once), each with the point `outMeters` outside it.
+ */
+export function edgeRing(corners, stepMeters, outMeters) {
+  const frame = localFrame(corners);
+  const turn = Math.sign(signedArea(frame.points));
+  return frame.points.flatMap((p, i) => {
+    const q = frame.points[(i + 1) % frame.points.length];
+    const d = [q[0] - p[0], q[1] - p[1]];
+    const length = Math.hypot(...d);
+    const steps = Math.max(1, Math.round(length / stepMeters));
+    const k = (turn * outMeters) / length;
+    return Array.from({ length: steps }, (_, s) => {
+      const at = [p[0] + (d[0] * s) / steps, p[1] + (d[1] * s) / steps];
+      return {
+        on: frame.toLonLat(at),
+        out: frame.toLonLat([at[0] + d[1] * k, at[1] - d[0] * k]),
+      };
+    });
+  });
+}
+
 // A centre sample this far above the mean of the street around the plot is a
 // roof or a tree, not ground; on a slope the street averages out to the centre.
 const ROOF_METERS = 2.5;

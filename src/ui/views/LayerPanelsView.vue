@@ -8,6 +8,7 @@ import { useSceneStore } from '../stores/scenes.js';
 import { STORY_TAG_LIMIT, STORY_TAGS } from '../../scenes/storyTags.js';
 import { vClassToggle } from '../rail/classToggle.js';
 import SceneDialog from './panels/SceneDialog.vue';
+import CommunityPlanningPreview from './panels/CommunityPlanningPreview.vue';
 import SceneOptions from './SceneOptions.vue';
 import SceneShotList from './SceneShotList.vue';
 import CctvPanel from './panels/CctvPanel.vue';
@@ -115,6 +116,7 @@ async function importChosen(event) {
         <UiButton type="button" class="gev-action-button scene-btn" :disabled="off('details')" :title="t('Edit anchors, data packs and shot details')" @click="toolbar.edit()">{{ t('EDIT DETAILS') }}</UiButton>
         <UiButton type="button" class="gev-action-button scene-btn" :disabled="off('share')" :title="t('Download this scene as JSON or an asset bundle')" @click="toolbar.share()">{{ t('SHARE SCENE') }}</UiButton>
       </div>
+      <CommunityPlanningPreview />
       <div class="scene-progress">
         <div id="scene-progress-fill" :style="scene ? { width: `${scene.progress}%` } : undefined">{{ scene?.progress ?? 0 }}%</div>
       </div>

@@ -11,6 +11,13 @@ body.gev-city-play #pp-toggles {
     opacity var(--transition-smooth),
     visibility 0s linear 300ms;
 }
+/* Rail panels and buttons set pointer-events themselves: while the rail fades,
+   none of them may take a click meant for the map. */
+body.gev-city-play #left-panel-stack *,
+body.gev-city-play #right-context-rail *,
+body.gev-city-play #pp-toggles * {
+  pointer-events: none !important;
+}
 body.gev-city-play #cesiumContainer {
   cursor: crosshair;
 }

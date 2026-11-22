@@ -8,6 +8,9 @@ const props = defineProps({
   controls: { type: Object, default: null },
 });
 
+const siteName = (id) =>
+  props.city.access?.sites.find((site) => site.id === id)?.label ?? t('Not placed on the map');
+
 function importFile(event) {
   const file = event.target.files?.[0];
   event.target.value = '';
@@ -50,6 +53,11 @@ function importFile(event) {
           <option value="bike-lane">{{ t('Bike lane') }}</option>
           <option value="plaza">{{ t('Plaza') }}</option>
         </UiSelect>
+        <label for="city-builder-site">{{ t('Site') }}</label>
+        <UiSelect id="city-builder-site" class="scene-shot-rename city-builder-input" :model-value="city.editor.parameters.site ?? ''" :disabled="city.pending" @update:model-value="controls?.editField('site', $event)">
+          <option value="">{{ t('Not placed on the map') }}</option>
+          <option v-for="site in city.access?.sites ?? []" :key="site.id" :value="site.id">{{ site.label }}</option>
+        </UiSelect>
         <label for="city-builder-trees">{{ t('Trees') }}</label>
         <input id="city-builder-trees" class="scene-shot-rename city-builder-input" type="number" min="0" max="200" step="1" :value="city.editor.parameters.trees" @input="controls?.editField('trees', $event.target.value)">
         <label for="city-builder-width">{{ t('Width (meters)') }}</label>
@@ -88,6 +96,7 @@ function importFile(event) {
                 <dt>{{ t('Trees') }}</dt><dd>{{ version.parameters.trees }}</dd>
                 <dt>{{ t('Width (meters)') }}</dt><dd>{{ version.parameters.widthMeters }}</dd>
                 <dt>{{ t('Shade (%)') }}</dt><dd>{{ version.parameters.shadePercent }}</dd>
+                <dt>{{ t('Site') }}</dt><dd>{{ siteName(version.parameters.site) }}</dd>
               </dl>
               <UiButton class="gev-action-button" data-city-builder-restore :disabled="city.pending" @click="controls?.restoreRevision(alternative.id, version.revision)">{{ t('Restore as new version') }}</UiButton>
             </li>

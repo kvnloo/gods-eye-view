@@ -1,7 +1,7 @@
 /**
- * The one shared City builder persistence fixture: two possible worlds, a
- * second version and a labelled concept go through the real builder's
- * create -> save -> reload path. Slices that add saved keys assert against it,
+ * The one shared City builder persistence fixture: an unplaced possible world
+ * and one placed on a walk-access site (with a second version and a labelled
+ * concept) go through the real builder's create -> save -> reload path. Slices that add saved keys assert against it,
  * and `cityDocumentSavedKeys.txt` pins every saved key as a sorted `path: type`.
  */
 import { createCityBuilder } from '../ui/cityBuilder.js';
@@ -62,10 +62,11 @@ function builderOn(storage, sink) {
   });
 }
 
-function author(builder, title) {
+function author(builder, title, site) {
   builder.newAlternative();
   builder.editField('title', title);
   builder.editField('description', `${title} for the persistence fixture.`);
+  builder.editField('site', site);
   builder.saveAlternative();
 }
 
@@ -76,8 +77,8 @@ export async function runCityPersistenceRoundTrip() {
   const builder = builderOn(storage, first);
   builder.open();
   await builder.start({ title: 'Persistence fixture' });
-  author(builder, 'Unplaced pocket park');
-  author(builder, 'Plaza on the corner');
+  author(builder, 'Unplaced pocket park', '');
+  author(builder, 'Park on site A', 'site-a');
   // Version 2 of the second world, with its own concept.
   builder.editAlternative('world-2');
   builder.editField('kind', 'plaza');

@@ -243,8 +243,15 @@ async function fillAlternative(value) {
 }
 function assertEdit(actual, expected) {
   assert.ok(actual, 'Saved version exists');
+  // Since walk access, an unplaced alternative persists `site: null`
+  // (cityPlanningDocument parameterValue); fixtures author unplaced edits.
   for (const field of ['title', 'description', 'parameters'])
-    assert.deepEqual(actual[field], expected[field]);
+    assert.deepEqual(
+      actual[field],
+      field === 'parameters'
+        ? { site: null, ...expected.parameters }
+        : expected[field],
+    );
 }
 async function pixelEvidence(bytes, name) {
   const { data, info } = await sharp(bytes)

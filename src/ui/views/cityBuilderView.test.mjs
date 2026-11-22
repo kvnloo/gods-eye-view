@@ -8,6 +8,7 @@ import { useCommunityPlanningStore } from '../stores/communityPlanning.js';
 import { useGlobeActionsStore } from '../stores/globeActions.js';
 import CommunityPlanningPreview from './panels/CommunityPlanningPreview.vue';
 import GlobeActions from './panels/GlobeActions.vue';
+import { presentCityWalkAccess } from '../cityWalkAccess.js';
 
 const conceptLabel = 'AI concept, not a plan or an approval';
 const parameters = {
@@ -462,4 +463,66 @@ test('native dialog cancellation and Cancel preserve the existing focus behavior
   await settle();
   assert.equal($('dialog'), null);
   assert.deepEqual(calls, [['open'], ['close'], ['open'], ['close']]);
+});
+
+test('the comparison shows walk access for the baseline and each alternative; Site forwards to the owner', async (t) => {
+  const city = cityState(true);
+  city.alternatives[0].parameters = { ...parameters, site: 'site-b' };
+  city.alternatives[1].parameters = { ...parameters, site: null };
+  city.access = presentCityWalkAccess(city.alternatives);
+  const { calls, $, $$, open, input, fetch } = await mount(t, city);
+  await open();
+  assert.deepEqual(
+    $$('[data-city-access-row]').map((row) => [
+      row.dataset.cityAccessRow,
+      row.dataset.cityAccessState,
+    ]),
+    [
+      ['baseline', 'evaluated'],
+      ['park-a', 'evaluated'],
+      ['park-b', 'unknown'],
+    ],
+  );
+  assert.match($('[data-city-access-label]').textContent, /HYPOTHETICAL/);
+  assert.match($('[data-city-access-network]').textContent, /synthetic/);
+  const cell = (id, name) =>
+    $(`[data-city-access-row="${id}"] [data-city-access-${name}]`).textContent;
+  assert.equal(cell('baseline', 'mean'), '432 m');
+  assert.equal(cell('park-a', 'worst'), '480 m');
+  assert.match(cell('park-a', 'delta'), /−201 m/);
+  assert.match(cell('park-b', 'note'), /choose a site/);
+  assert.deepEqual(
+    $$('[data-city-access-map]').map((map) => map.dataset.cityAccessMap),
+    ['baseline', 'park-a'],
+  );
+  assert.equal(
+    $$('[data-city-access-map="park-a"] rect[fill="#d5b67b"]').length,
+    1,
+  );
+  // The access comparison comes before the cards, beside the baseline.
+  assert.ok(
+    $('[data-city-access]').compareDocumentPosition(
+      $('[data-planning-alternatives]'),
+    ) & Node.DOCUMENT_POSITION_FOLLOWING,
+  );
+  assert.deepEqual(
+    Array.from($('#city-builder-site').options, (o) => [
+      o.value,
+      o.textContent,
+    ]),
+    [
+      ['', 'Not placed on the map'],
+      ['site-a', 'Site A'],
+      ['site-b', 'Site B'],
+      ['site-c', 'Site C'],
+      ['site-d', 'Site D'],
+    ],
+  );
+  input('#city-builder-site', 'site-c', 'change');
+  assert.deepEqual(calls.at(-1), ['editField', 'site', 'site-c']);
+  assert.match(
+    $('[data-city-builder-alternative="park-a"]').textContent,
+    /Not placed on the map/,
+  );
+  assert.equal(fetch.mock.callCount(), 0);
 });

@@ -1628,6 +1628,7 @@
   "src/ui/views/cityBuilderView.test.mjs",
   "scripts/qa-city-builder.mjs",
   "server/standalone/city-concept.test.mjs",
+  "src/data/walkAccess.test.mjs",
   "src/render/applicationHooks.js",
   "src/maps/globeEngine.js",
   "src/maps/globeEngine.test.mjs",

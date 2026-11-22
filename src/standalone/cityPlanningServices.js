@@ -224,8 +224,7 @@ export function mountCityBuilder(options = {}) {
     generator = createPlanningConceptGenerator,
     download = downloadDocument,
     uid,
-    // The local bridge endpoint arrives with the dev-only concept server.
-    canLocal = false,
+    canLocal = import.meta.env?.DEV === true,
   } = options;
   const ownsStorage = options.storage === undefined;
   let controls = null;

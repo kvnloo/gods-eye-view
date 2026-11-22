@@ -121,12 +121,13 @@ def main():
         f",drawtext=fontfile='{FONT}':text='{t}':x={k * W + 8}:y=10:fontsize=15:fontcolor=0x2EC8E8" for k, t in enumerate(HEADS))
     fc += "".join(f",drawtext=fontfile='{FONT}':text='{bb.upper()}':x=8:y={36 + r * H + H - 28}:fontsize=16:fontcolor=white:box=1:boxcolor=0x000000AA:boxborderw=4" for r, bb in enumerate(BEATS))
     if c_tiles != "google-photoreal-3d-tiles":
-        fc += f",drawtext=fontfile='{FONT}':text='R1 COLUMNS 3-5 = DIAGNOSTIC (keyless {c_tiles}) - NOT SCORED':x={2 * W + 8}:y=ih-24:fontsize=15:fontcolor=0xffb454:box=1:boxcolor=0x000000CC:boxborderw=4"
+        safe = c_tiles.replace(":", " ")
+        fc += f",drawtext=fontfile='{FONT}':text='R1 COLUMNS 3-5 = DIAGNOSTIC (keyless {safe}) - NOT PROMOTION EVIDENCE':x={2 * W + 8}:y=h-24:fontsize=15:fontcolor=0xffb454:box=1:boxcolor=0x000000CC:boxborderw=4"
     fc += "[o]"
     r = subprocess.run(["ffmpeg", "-y", "-loglevel", "error", *inputs, "-filter_complex", fc, "-map", "[o]", "-frames:v", "1", "-q:v", "4", str(sheet)],
                        capture_output=True, text=True)
     if r.returncode:
-        print("contact sheet failed:", r.stderr[-600:])
+        print("contact sheet failed:", r.stderr[-1500:])
     vids = []
     for v in a.video:
         p = Path(v)

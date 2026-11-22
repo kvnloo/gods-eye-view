@@ -1,0 +1,89 @@
+{
+ "kind": "AI LOOK - NOT EVIDENCE (target only)",
+ "round": "r1",
+ "status": "locked by agent, owner may override",
+ "source_captures": "loop-v2/work-r0/growth (app 9a1e7362b, Google photoreal; same plot/camera contract as 23206e62)",
+ "route": "chatgpt-subscription/gpt-6.2-sol/image_generation via downstream/city-loop/postcard/postcard_r1.py",
+ "spec": {
+  "plot_m": 40,
+  "footprint_m": 32,
+  "storey_m": 3.2,
+  "build": {
+   "storeys_incl_ground": 6,
+   "height_m": 19.2,
+   "roof": "flat"
+  },
+  "shadow": {
+   "storeys_incl_ground": 3,
+   "height_m": 9.6,
+   "roof": "flat"
+  },
+  "growth_15yr": {
+   "plots": 25,
+   "at_5_storeys": 12,
+   "at_3_storeys": 13
+  }
+ },
+ "targets": {
+  "district": {
+   "file": "district--target.png",
+   "variant": "v1",
+   "sha256": "e6e0ed2107752478cbecb67c7f7e32ec9a5a7bf3443c6ad9c2948e159438f0e8",
+   "prompt": "Edit image 1 (a real screenshot of a 3D map of San Francisco) into a stylised cozy city-builder video game frame.\nImages 2 and 3 are the STYLE reference only (never a source of geography or objects). Match THEIR look, not a photo:\n- painterly LOW-POLY forms: buildings simplified to chunky clean blocks and gabled/flat roofs with flat-shaded facets and\n  crisp edges, no photographic texture or noise; trees as rounded clumped low-poly canopies (pines and round trees);\n- palette: saturated fresh greens and teal-cyan water, warm cream/terracotta/orange roofs and walls, soft lilac shadows;\n  a colour-graded, slightly stylised look like a game LUT, never sepia or brown;\n- light: soft warm key sun, soft global illumination and contact ambient occlusion, gentle bloom on bright surfaces;\n- optics: tilt-shift depth of field (sharp middle band, softly blurred top and bottom), light haze far away.\nKeep image 1's camera, framing, horizon, perspective and real city layout exactly (streets, blocks, parks, shoreline,\nbuilding positions and relative heights): the same place from the same viewpoint, only re-rendered in the game style.\nScene note: a wide district view; keep the whole street grid, the bay, the piers and the downtown cluster where they are.\nRemove ALL user-interface overlays, panels, labels, icons, attribution and text; output only the stylised world.\nDo NOT draw any text, numbers, logos, watermarks or UI. Output one image."
+  },
+  "select": {
+   "file": "select--target.png",
+   "variant": "v3",
+   "sha256": "f364f86e7a9be1de407149a8519e825ebc9a5cb1d1774e77359e347a96c4f685",
+   "prompt": "Edit image 1 (a real screenshot of a 3D map of San Francisco) into a stylised cozy city-builder video game frame.\nImages 2 and 3 are the STYLE reference only (never a source of geography or objects). Match THEIR look, not a photo:\n- painterly LOW-POLY forms: buildings simplified to chunky clean blocks and gabled/flat roofs with flat-shaded facets and\n  crisp edges, no photographic texture or noise; trees as rounded clumped low-poly canopies (pines and round trees);\n- palette: saturated fresh greens and teal-cyan water, warm cream/terracotta/orange roofs and walls, soft lilac shadows;\n  a colour-graded, slightly stylised look like a game LUT, never sepia or brown;\n- light: soft warm key sun, soft global illumination and contact ambient occlusion, gentle bloom on bright surfaces;\n- optics: tilt-shift depth of field (sharp middle band, softly blurred top and bottom), light haze far away.\nKeep image 1's camera, framing, horizon, perspective and real city layout exactly (streets, blocks, parks, shoreline,\nbuilding positions and relative heights): the same place from the same viewpoint, only re-rendered in the game style.\nScene note: one city plot just right of the large central park is selected: mark it ONLY with a soft glowing cyan outline and a faint cyan tint draped flat on the ground of that square plot (a placement ghost lying on the ground, no box, no prism, no ring menu).\nRemove ALL user-interface overlays, panels, labels, icons, attribution and text; output only the stylised world.\nDo NOT draw any text, numbers, logos, watermarks or UI. Output one image.\nVariant emphasis: lean further into the stylised diorama look (cleaner flatter facets, fewer small details, richer greens).\nSTRICT: the selected plot is the square city block holding the twin-spired church directly above (north of) the large park. Paint a clearly visible translucent bright cyan (#2EC8E8) square tint FLAT on the ground over that whole plot with a thin glowing cyan outline along its edges; the church stays visible through the tint. Nothing else is cyan."
+  },
+  "reimagine": {
+   "file": "reimagine--target.png",
+   "variant": "v1",
+   "sha256": "d1e93cee5580977cd11d33a0e3cde3f8dd2c30d7bdd327e578c8d4aacedd80c2",
+   "prompt": "Edit image 1 (a real screenshot of a 3D map of San Francisco) into a stylised cozy city-builder video game frame.\nImages 2 and 3 are the STYLE reference only (never a source of geography or objects). Match THEIR look, not a photo:\n- painterly LOW-POLY forms: buildings simplified to chunky clean blocks and gabled/flat roofs with flat-shaded facets and\n  crisp edges, no photographic texture or noise; trees as rounded clumped low-poly canopies (pines and round trees);\n- palette: saturated fresh greens and teal-cyan water, warm cream/terracotta/orange roofs and walls, soft lilac shadows;\n  a colour-graded, slightly stylised look like a game LUT, never sepia or brown;\n- light: soft warm key sun, soft global illumination and contact ambient occlusion, gentle bloom on bright surfaces;\n- optics: tilt-shift depth of field (sharp middle band, softly blurred top and bottom), light haze far away.\nKeep image 1's camera, framing, horizon, perspective and real city layout exactly (streets, blocks, parks, shoreline,\nbuilding positions and relative heights): the same place from the same viewpoint, only re-rendered in the game style.\nScene note: a proposed pocket park is laid FLAT on the selected square plot: low clipped lawn, a few rounded low-poly trees, paths and benches at ground level, natural colours (no green tint, no hologram, nothing standing up like a card).\nRemove ALL user-interface overlays, panels, labels, icons, attribution and text; output only the stylised world.\nDo NOT draw any text, numbers, logos, watermarks or UI. Output one image."
+  },
+  "build": {
+   "file": "build--target.png",
+   "variant": "v3",
+   "sha256": "c09d0963d22aaee5eb625bd2a5aa3ab3d3be2ac91846cdcd8743a1a2ac9c1fe4",
+   "prompt": "Edit image 1 (a real screenshot of a 3D map of San Francisco) into a stylised cozy city-builder video game frame.\nImages 2 and 3 are the STYLE reference only (never a source of geography or objects). Match THEIR look, not a photo:\n- painterly LOW-POLY forms: buildings simplified to chunky clean blocks and gabled/flat roofs with flat-shaded facets and\n  crisp edges, no photographic texture or noise; trees as rounded clumped low-poly canopies (pines and round trees);\n- palette: saturated fresh greens and teal-cyan water, warm cream/terracotta/orange roofs and walls, soft lilac shadows;\n  a colour-graded, slightly stylised look like a game LUT, never sepia or brown;\n- light: soft warm key sun, soft global illumination and contact ambient occlusion, gentle bloom on bright surfaces;\n- optics: tilt-shift depth of field (sharp middle band, softly blurred top and bottom), light haze far away.\nKeep image 1's camera, framing, horizon, perspective and real city layout exactly (streets, blocks, parks, shoreline,\nbuilding positions and relative heights): the same place from the same viewpoint, only re-rendered in the game style.\nScene note: a proposed new building stands on the selected plot: a cozy low-poly diorama building, exactly 6 storeys counting the ground floor (ground floor + 5 upper floors), about 19.2 m tall, flat roof, a square footprint of 32 m x 32 m centred on the 40 m x 40 m plot with a 4 m margin of ground all round; warm plaster walls, simple window rows per storey, a few small trees in the margin; it must look like it belongs to the same game world as the restyled city.\nRemove ALL user-interface overlays, panels, labels, icons, attribution and text; output only the stylised world.\nDo NOT draw any text, numbers, logos, watermarks or UI. Output one image.\nVariant emphasis: lean further into the stylised diorama look (cleaner flatter facets, fewer small details, richer greens).\nSTRICT COUNT: the new building on the church plot (the church is gone) has a ground-floor shopfront row plus EXACTLY 5 rows of windows above it = 6 storeys in total; count the window rows before finishing. Flat roof. It is the tallest building on its block."
+  },
+  "shadow": {
+   "file": "shadow--target.png",
+   "variant": "v3",
+   "sha256": "bca8d54ca7a5aece3236b2b703cb30f7392c783539e14bb6920ddb60a00b558a",
+   "prompt": "Edit image 1 (a real screenshot of a 3D map of San Francisco) into a stylised cozy city-builder video game frame.\nImages 2 and 3 are the STYLE reference only (never a source of geography or objects). Match THEIR look, not a photo:\n- painterly LOW-POLY forms: buildings simplified to chunky clean blocks and gabled/flat roofs with flat-shaded facets and\n  crisp edges, no photographic texture or noise; trees as rounded clumped low-poly canopies (pines and round trees);\n- palette: saturated fresh greens and teal-cyan water, warm cream/terracotta/orange roofs and walls, soft lilac shadows;\n  a colour-graded, slightly stylised look like a game LUT, never sepia or brown;\n- light: soft warm key sun, soft global illumination and contact ambient occlusion, gentle bloom on bright surfaces;\n- optics: tilt-shift depth of field (sharp middle band, softly blurred top and bottom), light haze far away.\nKeep image 1's camera, framing, horizon, perspective and real city layout exactly (streets, blocks, parks, shoreline,\nbuilding positions and relative heights): the same place from the same viewpoint, only re-rendered in the game style.\nScene note: the proposed building on the selected plot is exactly 3 storeys counting the ground floor (ground floor + 2 upper floors), about 9.6 m tall, flat roof, a square footprint of 32 m x 32 m centred on the 40 m x 40 m plot with a 4 m margin of ground all round; it casts a soft shadow to the north (toward the top of the frame) on the ground and neighbours; same cozy low-poly style.\nRemove ALL user-interface overlays, panels, labels, icons, attribution and text; output only the stylised world.\nDo NOT draw any text, numbers, logos, watermarks or UI. Output one image.\nVariant emphasis: lean further into the stylised diorama look (cleaner flatter facets, fewer small details, richer greens).\nSTRICT COUNT: the new building on the church plot (the church is gone) has a ground-floor shopfront row plus EXACTLY 2 rows of windows above it = 3 storeys in total. Flat roof. Its shadow falls toward the top of the image."
+  },
+  "growth": {
+   "file": "growth--target.png",
+   "variant": "v3",
+   "sha256": "5a1b03b7e2e0fd5057d765e0ff12c05f16be7fb0ee52988bf9cd1701fda01e2f",
+   "prompt": "Edit image 1 (a real screenshot of a 3D map of San Francisco) into a stylised cozy city-builder video game frame.\nImages 2 and 3 are the STYLE reference only (never a source of geography or objects). Match THEIR look, not a photo:\n- painterly LOW-POLY forms: buildings simplified to chunky clean blocks and gabled/flat roofs with flat-shaded facets and\n  crisp edges, no photographic texture or noise; trees as rounded clumped low-poly canopies (pines and round trees);\n- palette: saturated fresh greens and teal-cyan water, warm cream/terracotta/orange roofs and walls, soft lilac shadows;\n  a colour-graded, slightly stylised look like a game LUT, never sepia or brown;\n- light: soft warm key sun, soft global illumination and contact ambient occlusion, gentle bloom on bright surfaces;\n- optics: tilt-shift depth of field (sharp middle band, softly blurred top and bottom), light haze far away.\nKeep image 1's camera, framing, horizon, perspective and real city layout exactly (streets, blocks, parks, shoreline,\nbuilding positions and relative heights): the same place from the same viewpoint, only re-rendered in the game style.\nScene note: a district of 25 square plots (5 x 5) has grown proposed blocks: 12 of them are 5 storeys and 13 are 3 storeys, all flat roofed, rendered as cozy low-poly diorama buildings with warm roofs and small trees, sitting on their own plots within the real city.\nRemove ALL user-interface overlays, panels, labels, icons, attribution and text; output only the stylised world.\nDo NOT draw any text, numbers, logos, watermarks or UI. Output one image.\nVariant emphasis: lean further into the stylised diorama look (cleaner flatter facets, fewer small details, richer greens).\nSTRICT COUNT: where image 1 shows the cluster of white blocks, draw a 5 x 5 grid of 25 square plots, one flat-roofed building per plot: the 12 plots farthest from the camera-side corner have 5-storey buildings, the other 13 have 3-storey buildings; warm terracotta and cream colours so the new district reads as one group."
+  }
+ },
+ "rejected": {
+  "select--v1": "fact-check: no cyan ground ghost on the selected plot",
+  "select--v2": "fact-check: no cyan ground ghost on the selected plot",
+  "select--v4": "cyan tint spills beyond the 40 m plot onto the neighbouring block",
+  "reimagine--v2": "fact-check: the church still stands; the concept is not laid on the plot",
+  "build--v1": "fact-check: 5 storeys drawn (4 window rows + shopfront); spec 6 incl. ground",
+  "build--v2": "fact-check: 5 storeys drawn; spec 6",
+  "shadow--v1": "superseded by strict v3 (storey count not verifiable in v1)",
+  "shadow--v2": "superseded by strict v3 (storey count not verifiable)",
+  "growth--v1": "proposed 5x5 district not identifiable",
+  "growth--v2": "superseded by strict v3 (grid not countable)",
+  "build--v4": "passes (6 storeys) but less stylised than v3; alternate",
+  "shadow--v4": "passes (3 storeys); alternate",
+  "growth--v4": "alternate; per-row tall/low split differs from spec",
+  "district--v2": "alternate; fewer greens than v1"
+ },
+ "fact_check": {
+  "district": "layout preserved (bay, piers, grid, downtown); no text",
+  "select": "cyan tint + outline flat on the church plot north of the park; church kept; no prism/menu/text",
+  "reimagine": "church replaced by a flat pocket park on the plot; no tint; no text",
+  "build": "6 storeys (shopfront + 5 window rows), flat roof, margin trees",
+  "shadow": "3 storeys (shopfront + 2 window rows), flat roof, shadow toward top of frame",
+  "growth": "grid of flat-roof blocks where the white massing stood; counted ~23-25 visible, tall/low split approx (12 tall far side) - countables only approximately verified"
+ }
+}

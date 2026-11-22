@@ -21,6 +21,15 @@ const PLAY_DEFAULTS = {
   plaza: { trees: 12, widthMeters: 8, shadePercent: 45 },
   'bike-lane': { trees: 10, widthMeters: 2.5, shadePercent: 30 },
 };
+// The next generated world id the project does not already hold: an imported
+// project can carry nonsequential ids, `world-<count + 1>` among them.
+function nextWorldId(document) {
+  const taken = new Set(document.alternatives.map((a) => a.id));
+  let ordinal = document.alternatives.length + 1;
+  while (taken.has(`world-${ordinal}`)) ordinal++;
+  return `world-${ordinal}`;
+}
+
 function playEdit(kind) {
   const text = {
     park: [
@@ -370,7 +379,7 @@ export function createCityBuilder({
           description: editor.description,
           parameters: editor.parameters,
         };
-        const id = editor.id ?? `world-${document.alternatives.length + 1}`;
+        const id = editor.id ?? nextWorldId(document);
         commit(
           editor.id
             ? reviseCityAlternative(document, id, editor.parentRevision, edit)
@@ -509,7 +518,7 @@ export function createCityBuilder({
               reference,
             }),
           );
-        id = `world-${document.alternatives.length + 1}`;
+        id = nextWorldId(document);
         commit(
           addCityAlternative(document, {
             id,

@@ -2,6 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createCityBuilder } from './cityBuilder.js';
 import { createPlanningConceptGenerator } from '../data/planningConceptGenerator.js';
+import {
+  addCityAlternative,
+  createCityDocument,
+  serializeCityDocument,
+} from '../data/cityPlanningDocument.js';
 
 const image =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jF1sAAAAASUVORK5CYII=';
@@ -425,4 +430,40 @@ test('play mode: a proposed land use per plot saves through the same document', 
   assert.equal(await h.controls.setZone({ plot, use: 'industrial' }), false);
   assert.ok(play.error, 'an invalid use is refused visibly');
   assert.equal(await h.controls.setZone({ plot: null, use: 'civic' }), false);
+});
+
+test('imported nonsequential world IDs cannot block a new alternative', async () => {
+  const imported = addCityAlternative(
+    createCityDocument({
+      id: 'test-project',
+      title: 'Shared block',
+      reference,
+    }),
+    {
+      id: 'world-2',
+      title: 'Existing park',
+      description: 'An already-authored proposal.',
+      parameters: { kind: 'park', trees: 10, widthMeters: 2, shadePercent: 20 },
+    },
+  );
+  const serialized = serializeCityDocument(imported);
+  const h = harness();
+  h.controls.open();
+  await h.controls.importFile({
+    size: serialized.length,
+    text: async () => serialized,
+  });
+
+  assert.equal(h.view.city.error, null);
+  author(h, 'Second park');
+  assert.equal(h.view.city.error, null);
+  assert.deepEqual(
+    h.view.city.alternatives.map((a) => a.id),
+    ['world-2', 'world-3'],
+  );
+  assert.deepEqual(
+    JSON.parse(h.saved).alternatives.map((a) => a.id),
+    ['world-2', 'world-3'],
+  );
+  assert.equal(h.calls, 0);
 });

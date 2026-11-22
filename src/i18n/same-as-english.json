@@ -1472,6 +1472,8 @@
     "ICAO: {id}",
     "NORAD: {id}",
     "MMSI: {id}",
+    "Park",
+    "Version",
     "Status",
     "Region",
     "Japan",

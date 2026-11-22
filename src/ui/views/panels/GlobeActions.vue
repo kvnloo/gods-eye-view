@@ -2,9 +2,10 @@
 import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 import { t } from '../../../i18n/index.js';
+import UiButton from '../../kit/UiButton.vue';
+import { useCommunityPlanningStore } from '../../stores/communityPlanning.js';
 import { useGlobeActionsStore } from '../../stores/globeActions.js';
 import GlobeCompass from './GlobeCompass.vue';
-import UiButton from '../../kit/UiButton.vue';
 import UiIcon from '../../kit/UiIcon.vue';
 
 // The top-center camera and share actions. The shell answers the buttons
@@ -12,6 +13,7 @@ import UiIcon from '../../kit/UiIcon.vue';
 // focusable and marks it busy, and the camera's tilt and heading. The heading
 // changes on every frame a rotating camera draws, so only the compass reads
 // it; the bar renders again only when the tilt changes.
+const planning = useCommunityPlanningStore();
 const globe = useGlobeActionsStore();
 const { clearBusy, resetBusy, camera } = storeToRefs(globe);
 const { act } = globe;
@@ -20,6 +22,7 @@ const tilted = computed(() => Boolean(camera.value?.tilted));
 
 <template>
 <nav id="top-center-actions" :aria-label="t('Globe actions')">
+  <UiButton v-if="planning.launcher" style="width: auto; min-width: 96px; padding: 0 12px; border-radius: 20px; white-space: nowrap; font-size: 12px" data-city-builder-open @click="planning.controls?.open()">{{ t('City builder') }}</UiButton>
   <UiButton id="clear-selected-layers" :aria-label="clearBusy ? t('Clearing selected data layers') : t('Clear selected data layers')" :aria-disabled="clearBusy == null ? undefined : String(clearBusy)" :aria-busy="clearBusy == null ? undefined : String(clearBusy)" :title="t('Turn off all selected data layers')" @click="act('clear')">
     <UiIcon name="layers_clear" :size="null" />
   </UiButton>

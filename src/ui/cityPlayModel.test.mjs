@@ -10,6 +10,7 @@ import {
   wheelActions,
   nextKind,
   carouselCards,
+  plotLane,
   resourceStats,
   detailCallouts,
   districtPins,
@@ -179,6 +180,11 @@ test('carouselCards lists one card per alternative of the selected plot with par
   assert.equal(cards[1].focused, true);
   assert.equal(cards[1].pending, true);
   assert.equal(cards[1].revision, 2);
+  // Every card is a possible world (Earth lanes, #145).
+  assert.deepEqual(
+    cards.map((c) => c.lane),
+    ['possible', 'possible'],
+  );
   // Walk access appears only when that module supplies a value.
   assert.ok(!cards.some((c) => c.chips.some((chip) => chip.id === 'walk')));
   const withAccess = carouselCards(list, plotA.id, {
@@ -236,6 +242,18 @@ test('a card states plan figures: canopy moves by the plot’s share of the plan
     ).value,
     3,
   );
+});
+
+test('plotLane: authored content is Possible, a cited map is Observed, an uncited map is neither', () => {
+  const source = 'Esri World Imagery';
+  assert.equal(plotLane({ source }), 'observed');
+  assert.equal(plotLane({ concept: true, source }), 'possible');
+  assert.equal(plotLane({ use: 'housing', source }), 'possible');
+  assert.equal(plotLane({ concept: true }), 'possible');
+  // No established source: the lane is unknown, never assumed Observed.
+  assert.equal(plotLane({}), null);
+  assert.equal(plotLane({ source: null }), null);
+  assert.equal(plotLane(), null);
 });
 
 test('resourceStats derives raw figures from the project: missing is unknown, never zero, and proposal figures are estimates', () => {

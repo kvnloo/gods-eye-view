@@ -26,6 +26,7 @@ import {
   playReducer,
   plotAlternatives,
   plotCode,
+  plotLane,
   resourceStats,
   resumeAlternative,
   wheelActions,
@@ -88,6 +89,8 @@ export function mountCityPlay({
   viewer,
   builder,
   store,
+  // The selected map's public citation name, or null while none is established.
+  mapSource = () => null,
   doc = globalThis.document,
   win = globalThis.window,
   now = () => performance.now(),
@@ -570,6 +573,7 @@ export function mountCityPlay({
     const plot = state.plot;
     const alternatives = data.alternatives ?? [];
     const focused = selectedAlternative();
+    const source = plot && mapSource();
     store.publish({
       active: state.active,
       tier: state.tier,
@@ -589,6 +593,12 @@ export function mountCityPlay({
         area: plot.areaSquareMeters,
         size: plot.sizeMeters,
         use: useOf(plot.id),
+        source,
+        lane: plotLane({
+          concept: shownByPlot().has(plot.id),
+          use: useOf(plot.id),
+          source,
+        }),
       },
       // The plots of the selected district; the selected plot is its anchor.
       district: state.district?.map((cell) => cell.id) ?? null,

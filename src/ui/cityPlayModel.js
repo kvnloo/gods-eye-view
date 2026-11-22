@@ -2,6 +2,7 @@
 // the globe adapter supplies ranges and screen points, the view supplies text.
 import { CITY_LAND_USES } from '../data/cityLandUse.js';
 import { conceptMoves, replayMoves, resourceChips } from '../data/cityScore.js';
+import { laneOfType } from '../data/earthLanes.js';
 
 export const ZOOM_TIERS = Object.freeze({ near: 260, far: 1500 });
 const HYSTERESIS = 0.15;
@@ -152,6 +153,17 @@ export function nextKind(tried) {
   );
 }
 
+/**
+ * The Earth lane (kvnloo#145) of what a plot shows. A standing concept or a
+ * proposed land use is authored: Possible. Otherwise the plot shows the map
+ * alone, which is Observed only while that map names its source; with no
+ * established source the lane is unknown (null), never assumed.
+ */
+export function plotLane({ concept = false, use = null, source = null } = {}) {
+  if (concept || use) return laneOfType('proposal');
+  return source ? laneOfType('evidence') : null;
+}
+
 // A proposal's parameters are estimates: presets or typed-in targets for a
 // world that does not exist, never measurements. Values stay raw; the HUD
 // formatter (cityHudFigure.js) rounds and labels them.
@@ -219,6 +231,8 @@ export function carouselCards(
       id: a.id,
       title: a.title,
       kind: a.parameters.kind,
+      // A possible world: its figures are the proposal's own, not measurements.
+      lane: laneOfType('proposal'),
       icon: KIND_ICONS[a.parameters.kind],
       revision: a.revision,
       versionCount: a.versionCount,

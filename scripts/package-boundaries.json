@@ -263,6 +263,7 @@
       "src/ui/cityPlayModel.js",
       "src/ui/cityHudFigure.js",
       "src/data/cityLandUse.js",
+      "src/data/earthLanes.js",
       "src/data/cityMassing.js",
       "src/data/cityScore.js",
       "src/ui/views/panels/RenderFailure.vue",

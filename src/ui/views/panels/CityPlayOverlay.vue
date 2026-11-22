@@ -2,6 +2,7 @@
 import { storeToRefs } from 'pinia';
 import { computed, onBeforeUnmount, onMounted, onUpdated, ref } from 'vue';
 import { t } from '../../../i18n/index.js';
+import UiBadge from '../../kit/UiBadge.vue';
 import UiIcon from '../../kit/UiIcon.vue';
 import { useCityPlayStore } from '../../stores/cityPlay.js';
 import { hudFigure } from '../../cityHudFigure.js';
@@ -84,6 +85,8 @@ const actionLabels = computed(() => ({
   back: t('Back'),
 }));
 const useLabel = (use) => actionLabels.value[use] ?? use;
+// Earth lanes (kvnloo#145): the sourced map is Observed, every authored world is Possible.
+const laneLabels = computed(() => ({ observed: t('Observed Earth'), possible: t('Possible Earth') }));
 const chipLabels = computed(() => ({
   trees: t('Trees'),
   shade: t('Shade'),
@@ -243,8 +246,10 @@ const bars = computed(() => {
     </svg>
 
     <div v-if="tag" ref="tagEl" class="city-play-tag" data-city-play-tag :data-city-play-plot="view.plot.code" :style="{ left: `${tag.x}px`, top: `${tag.y}px` }">
+      <UiBadge v-if="view.plot.lane" class="city-play-lane" :class="`city-play-lane--${view.plot.lane}`" :data-city-play-lane="view.plot.lane">{{ laneLabels[view.plot.lane] }}</UiBadge>
       <strong translate="no">{{ plotLabel }}</strong>
       <span v-if="view.plot.use" class="city-play-tag-use" :class="`city-play-use--${view.plot.use}`" data-city-play-tag-use>{{ useLabel(view.plot.use) }}</span>
+      <span v-if="view.plot.lane === 'observed'" class="city-play-tag-note" data-city-play-source>{{ t('Map imagery: {source}', { source: view.plot.source }) }}</span>
       <span v-if="!mobile" class="city-play-tag-note">{{ t('40 m grid cell, not a surveyed parcel') }}</span>
     </div>
 
@@ -270,6 +275,7 @@ const bars = computed(() => {
     <div v-if="holoTag" class="city-play-holo-tag" data-city-play-holo-tag :data-city-play-plot="view.plot.code" :style="{ left: `${holoTag.x}px`, top: `${holoTag.y}px` }">
       <strong translate="no">{{ plotLabel }}</strong>
       <span class="city-play-accent">{{ t('Reimagined') }}</span>
+      <UiBadge v-if="view.plot.lane" class="city-play-lane" :class="`city-play-lane--${view.plot.lane}`" :data-city-play-lane="view.plot.lane">{{ laneLabels[view.plot.lane] }}</UiBadge>
     </div>
 
     <div v-for="callout in callouts" :key="callout.id" class="city-play-callout" :data-city-play-callout="callout.id" :style="{ left: `${callout.at.x}px`, top: `${callout.at.y}px` }">
@@ -352,6 +358,7 @@ const bars = computed(() => {
             <img v-if="card.image" :src="card.image" :alt="t('AI concept, not a plan or an approval')">
             <span v-else class="city-play-card-empty"><UiIcon :name="card.icon" :size="30" /><span>{{ card.pending ? t('Imagining…') : t('No concept yet') }}</span></span>
             <span v-if="card.built" class="city-play-card-kept">{{ t('Kept') }}</span>
+            <UiBadge class="city-play-lane city-play-card-lane" :class="`city-play-lane--${card.lane}`" :data-city-play-lane="card.lane">{{ laneLabels[card.lane] }}</UiBadge>
           </span>
           <span class="city-play-card-title">{{ card.title }}</span>
           <span class="city-play-card-meta">{{ kindLabel(card.kind) }} · {{ t('Version') }} {{ card.revision }}</span>

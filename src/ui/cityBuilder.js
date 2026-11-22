@@ -90,6 +90,7 @@ export function createCityBuilder({
   let focusedId = null;
   let provider = 'fixture';
   let pendingId = null;
+  let suggest = null;
   try {
     observed = storage.getItem(KEY);
     if (observed !== null) {
@@ -216,7 +217,7 @@ export function createCityBuilder({
       provider,
       canLocal,
       persisted,
-      access: document ? presentCityWalkAccess(alternatives) : null,
+      access: document ? presentCityWalkAccess(alternatives, suggest) : null,
     };
     publish(view);
   }
@@ -427,6 +428,19 @@ export function createCityBuilder({
         focusedId = id;
         present();
       }
+    },
+    /** Show one exact site suggestion in the walk-access comparison. Display only: nothing is saved. */
+    suggestSite({ objective, siteCount }) {
+      if (
+        disposed ||
+        !opened ||
+        !document ||
+        !['average', 'worst-served'].includes(objective) ||
+        ![1, 2].includes(siteCount)
+      )
+        return;
+      suggest = { objective, siteCount };
+      present();
     },
     setProvider(next) {
       if (!pending && (next === 'fixture' || (next === 'local' && canLocal))) {

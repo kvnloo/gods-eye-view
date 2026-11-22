@@ -121,6 +121,7 @@ async function mount(t, city = cityState()) {
       'imagine',
       'setMode',
       'inspect',
+      'suggestSite',
     ].map((name) => [name, (...args) => calls.push([name, ...args])]),
   );
   controls.open = () => {
@@ -523,6 +524,72 @@ test('the comparison shows walk access for the baseline and each alternative; Si
   assert.match(
     $('[data-city-builder-alternative="park-a"]').textContent,
     /Not placed on the map/,
+  );
+  assert.equal(fetch.mock.callCount(), 0);
+});
+
+test('Suggest site forwards the goal and count; the option is one more row, labelled hypothetical', async (t) => {
+  const city = cityState(true);
+  city.alternatives[0].parameters = { ...parameters, site: 'site-a' };
+  city.alternatives[1].parameters = { ...parameters, site: null };
+  city.access = presentCityWalkAccess(city.alternatives, {
+    objective: 'worst-served',
+    siteCount: 2,
+  });
+  const { calls, $, $$, open, input, settle, fetch } = await mount(t, city);
+  await open();
+  $('[data-city-access-suggest]').click();
+  assert.deepEqual(calls.at(-1), [
+    'suggestSite',
+    { objective: 'average', siteCount: 1 },
+  ]);
+  input('[data-city-access-objective]', 'worst-served', 'change');
+  input('[data-city-access-site-count]', '2', 'change');
+  await settle();
+  $('[data-city-access-suggest]').click();
+  assert.deepEqual(calls.at(-1), [
+    'suggestSite',
+    { objective: 'worst-served', siteCount: 2 },
+  ]);
+  // The plan's rows stay; the option follows them in the same table.
+  assert.deepEqual(
+    $$('[data-city-access-table] [data-city-access-row]').map((row) => [
+      row.dataset.cityAccessRow,
+      row.dataset.cityAccessState,
+    ]),
+    [
+      ['baseline', 'evaluated'],
+      ['park-a', 'evaluated'],
+      ['park-b', 'unknown'],
+      ['suggestion', 'evaluated'],
+    ],
+  );
+  const cell = (id, name) =>
+    $(`[data-city-access-row="${id}"] [data-city-access-${name}]`).textContent;
+  assert.deepEqual(
+    ['site', 'mean', 'worst'].map((name) => cell('park-a', name)),
+    ['Site A', '298 m', '450 m'],
+  );
+  assert.deepEqual(
+    ['site', 'mean', 'worst'].map((name) => cell('suggestion', name)),
+    ['Site B + Site C', '169 m', '320 m'],
+  );
+  assert.equal(
+    $('[data-city-access-row="suggestion"]').dataset.cityAccessSuggested,
+    'worst-served:2',
+  );
+  assert.match(
+    $('[data-city-access-suggestion-label]').textContent,
+    /HYPOTHETICAL OPTION · NOT ZONING, AN APPROVAL OR AN OBSERVED FACT/,
+  );
+  assert.match(
+    $('[data-city-access-suggestion-note]').textContent,
+    /6 possible choices of 2 from 4 candidate sites.*Tie on worst-served walk between 2 choices/,
+  );
+  // Both suggested sites are drawn on the sample network as proposed, not existing.
+  assert.equal(
+    $$('[data-city-access-map="suggestion"] rect[fill="#d5b67b"]').length,
+    2,
   );
   assert.equal(fetch.mock.callCount(), 0);
 });

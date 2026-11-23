@@ -3688,7 +3688,7 @@
   "Esc exits": "按 Esc 退出",
   "Plot": "地塊",
   "{area} m²": "{area} m²",
-  "40 m grid cell, not a surveyed parcel": "40 m 網格單元，並非測繪地塊",
+  "{size} m grid cell, not a surveyed parcel": "{size} m 網格單元，並非測繪地塊",
   "City builder actions for this plot": "此地塊的城市構建器操作",
   "Reimagined": "已重新構想",
   "Proposed parameters": "建議參數",

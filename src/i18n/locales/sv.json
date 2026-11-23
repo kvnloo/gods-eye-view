@@ -3789,7 +3789,7 @@
   "Esc exits": "Esc avslutar",
   "Plot": "Tomt",
   "{area} m²": "{area} m²",
-  "40 m grid cell, not a surveyed parcel": "40 m-ruta, inte en lantmäteriavgränsad fastighet",
+  "{size} m grid cell, not a surveyed parcel": "{size} m-ruta, inte en lantmäteriavgränsad fastighet",
   "City builder actions for this plot": "Stadsbyggaråtgärder för den här tomten",
   "Reimagined": "Omgestaltad",
   "Proposed parameters": "Föreslagna parametrar",

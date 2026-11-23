@@ -3890,7 +3890,7 @@
   "Esc exits": "Esc per uscire",
   "Plot": "Lotto",
   "{area} m²": "{area} m²",
-  "40 m grid cell, not a surveyed parcel": "Cella della griglia da 40 m, non una particella catastale",
+  "{size} m grid cell, not a surveyed parcel": "Cella della griglia da {size} m, non una particella catastale",
   "City builder actions for this plot": "Azioni dell'Editor urbano per questo lotto",
   "Reimagined": "Reimmaginato",
   "Proposed parameters": "Parametri proposti",

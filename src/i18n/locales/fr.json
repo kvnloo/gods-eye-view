@@ -3890,7 +3890,7 @@
   "Esc exits": "Échap pour quitter",
   "Plot": "Parcelle",
   "{area} m²": "{area} m²",
-  "40 m grid cell, not a surveyed parcel": "Cellule de grille de 40 m, pas une parcelle cadastrale",
+  "{size} m grid cell, not a surveyed parcel": "Cellule de grille de {size} m, pas une parcelle cadastrale",
   "City builder actions for this plot": "Actions de l'Atelier d'urbanisme pour cette parcelle",
   "Reimagined": "Réimaginée",
   "Proposed parameters": "Paramètres proposés",

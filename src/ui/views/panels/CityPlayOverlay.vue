@@ -1,7 +1,7 @@
 <script setup>
 import { storeToRefs } from 'pinia';
 import { computed, onBeforeUnmount, onMounted, onUpdated, ref } from 'vue';
-import { t } from '../../../i18n/index.js';
+import { formatNumber, t } from '../../../i18n/index.js';
 import UiButton from '../../kit/UiButton.vue';
 import UiBadge from '../../kit/UiBadge.vue';
 import UiIcon from '../../kit/UiIcon.vue';
@@ -107,6 +107,10 @@ const figure = (f) => hudFigure(f) ?? '—';
 // The bar states only what the app holds: a field with no figure is left off.
 const stats = computed(() => (view.value?.stats ?? []).map((stat) => ({ ...stat, text: hudFigure(stat) })).filter((stat) => stat.text));
 const estimate = true;
+const plotSize = computed(() => {
+  const meters = view.value?.plot?.size;
+  return Number.isFinite(meters) ? formatNumber(meters) : '—';
+});
 // A plot is named by what a player can see, the word and its area; the grid code stays in the data.
 const plotLabel = computed(() => [t('Plot'), hudFigure({ value: view.value?.plot?.area, unit: 'm²' })].filter(Boolean).join(' · '));
 function kindLabel(kind) {
@@ -263,7 +267,7 @@ const bars = computed(() => {
       <strong translate="no">{{ plotLabel }}</strong>
       <span v-if="view.plot.use" class="city-play-tag-use" :class="`city-play-use--${view.plot.use}`" data-city-play-tag-use>{{ useLabel(view.plot.use) }}</span>
       <span v-if="view.plot.lane === 'observed'" class="city-play-tag-note" data-city-play-source>{{ t('Map imagery: {source}', { source: view.plot.source }) }}</span>
-      <span v-if="!mobile" class="city-play-tag-note">{{ t('40 m grid cell, not a surveyed parcel') }}</span>
+      <span v-if="!mobile" class="city-play-tag-note">{{ t('{size} m grid cell, not a surveyed parcel', { size: plotSize }) }}</span>
     </div>
 
     <nav v-if="wheel" class="city-play-wheel" data-city-play-wheel :aria-label="t('City builder actions for this plot')" :style="{ left: `${wheel.x}px`, top: `${wheel.y}px`, '--wheel-radius': `${size.radius}px`, '--wheel-button': `${size.button}px` }">

@@ -3789,7 +3789,7 @@
   "Esc exits": "Esc beendet",
   "Plot": "Fläche",
   "{area} m²": "{area} m²",
-  "40 m grid cell, not a surveyed parcel": "40-m-Rasterzelle, kein vermessenes Grundstück",
+  "{size} m grid cell, not a surveyed parcel": "{size}-m-Rasterzelle, kein vermessenes Grundstück",
   "City builder actions for this plot": "Stadtplanungsaktionen für diese Fläche",
   "Reimagined": "Neu gedacht",
   "Proposed parameters": "Vorgeschlagene Parameter",

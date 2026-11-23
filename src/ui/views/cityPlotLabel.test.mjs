@@ -3,6 +3,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createApp, h, nextTick } from 'vue';
 import { createPinia } from 'pinia';
+import { cityGrid } from '../../data/cityGrid.js';
+import { CITY_LOCATIONS } from '../../data/cityLocations.js';
 import {
   addCityAlternative,
   attachCityConcept,
@@ -11,6 +13,7 @@ import {
   createCityDocument,
   setCityZoning,
 } from '../../data/cityPlanningDocument.js';
+import { plotFromId } from '../../data/cityPlot.js';
 import { setLocale, t as tr } from '../../i18n/index.js';
 import {
   PERSISTENCE_NEIGHBOR as neighbor,
@@ -325,6 +328,31 @@ for (const c of CASES) {
           'the area is formatted for the locale',
         );
       }
+    }
+  });
+}
+
+for (const key of ['sausalito', 'northbeach', 'presidio']) {
+  test(`I2:plot-callout-size:${key}`, async (t) => {
+    setLocale('en');
+    const hero = plotFromId(CITY_LOCATIONS[key].gridPlot);
+    const neighbors = cityGrid(key).plots().filter((p) => p.id !== hero.id);
+    const plots = [hero, ...neighbors.slice(0, 2)];
+    for (const selected of plots) {
+      const { label } = await screen(
+        t,
+        playView(project(), { selected, wheelOpen: true }),
+      );
+      const text = label(TAG);
+      assert.ok(
+        text?.includes(`Plot · ${selected.areaSquareMeters} m²`),
+        `${selected.id}: ${text}`,
+      );
+      assert.match(
+        text,
+        new RegExp(`\\b${selected.sizeMeters} m\\b(?!²)`),
+        selected.id,
+      );
     }
   });
 }

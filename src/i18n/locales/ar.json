@@ -4193,7 +4193,7 @@
   "Esc exits": "Esc للخروج",
   "Plot": "القطعة",
   "{area} m²": "{area} م²",
-  "40 m grid cell, not a surveyed parcel": "خلية شبكة بمقاس 40 م، وليست قطعة مساحية",
+  "{size} m grid cell, not a surveyed parcel": "خلية شبكة بمقاس {size} م، وليست قطعة مساحية",
   "City builder actions for this plot": "إجراءات أداة بناء المدن لهذه القطعة",
   "Reimagined": "أُعيد تصوّرها",
   "Proposed parameters": "المعاملات المقترحة",

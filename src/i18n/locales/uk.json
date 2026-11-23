@@ -3991,7 +3991,7 @@
   "Esc exits": "Esc — вихід",
   "Plot": "Ділянка",
   "{area} m²": "{area} м²",
-  "40 m grid cell, not a surveyed parcel": "Комірка сітки 40 м, а не межова ділянка",
+  "{size} m grid cell, not a surveyed parcel": "Комірка сітки {size} м, а не межова ділянка",
   "City builder actions for this plot": "Дії Редактора міста для цієї ділянки",
   "Reimagined": "Переосмислено",
   "Proposed parameters": "Запропоновані параметри",

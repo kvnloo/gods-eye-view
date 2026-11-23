@@ -3991,7 +3991,7 @@
   "Esc exits": "Esc — выход",
   "Plot": "Участок",
   "{area} m²": "{area} м²",
-  "40 m grid cell, not a surveyed parcel": "Ячейка сетки 40 м, а не межевой участок",
+  "{size} m grid cell, not a surveyed parcel": "Ячейка сетки {size} м, а не межевой участок",
   "City builder actions for this plot": "Действия Редактора города для этого участка",
   "Reimagined": "Переосмыслено",
   "Proposed parameters": "Предлагаемые параметры",

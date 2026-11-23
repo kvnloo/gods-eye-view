@@ -3890,7 +3890,7 @@
   "Esc exits": "Esc ליציאה",
   "Plot": "חלקה",
   "{area} m²": "{area} מ\"ר",
-  "40 m grid cell, not a surveyed parcel": "תא רשת בגודל 40 מ', לא חלקה מנוכה",
+  "{size} m grid cell, not a surveyed parcel": "תא רשת בגודל {size} מ', לא חלקה מנוכה",
   "City builder actions for this plot": "פעולות בונה הערים לחלקה זו",
   "Reimagined": "דומיינה מחדש",
   "Proposed parameters": "פרמטרים מוצעים",

@@ -3688,7 +3688,7 @@
   "Esc exits": "Escで終了",
   "Plot": "区画",
   "{area} m²": "{area} m²",
-  "40 m grid cell, not a surveyed parcel": "40 mグリッドセルであり、測量された区画ではありません",
+  "{size} m grid cell, not a surveyed parcel": "{size} mグリッドセルであり、測量された区画ではありません",
   "City builder actions for this plot": "この区画の都市づくり操作",
   "Reimagined": "再構想済み",
   "Proposed parameters": "提案パラメータ",

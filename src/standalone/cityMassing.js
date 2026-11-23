@@ -1,6 +1,6 @@
 import * as Cesium from 'cesium';
 import { watch } from 'vue';
-import { plotFromId } from '../data/cityPlot.js';
+import { isSausalitoPlot, plotFromId } from '../data/cityPlot.js';
 import { shadowReach, shadowTip, sunPosition } from '../data/citySun.js';
 import {
   MASSING_ASSUMPTIONS,
@@ -444,6 +444,14 @@ export function mountCityMassing({
 
   // The ground for a plot from the centre and the street around it.
   function measure(plot) {
+    const diorama = win?.__gevDiorama;
+    if (isSausalitoPlot(plot) && diorama?.state.ready) {
+      const { footprint } = plotMassing({ corners: plot.corners });
+      const heights = [...footprint, [plot.center.lon, plot.center.lat]]
+        .map((point) => diorama.groundAt(point));
+      const floor = Math.min(...heights);
+      return { floor, base: (floor + Math.max(...heights)) / 2 };
+    }
     return groundBase(
       sample([plot.center.lon, plot.center.lat]),
       edgeProbes(plot.corners, PROBE_METERS).map(sample),
@@ -1437,7 +1445,7 @@ export function mountCityMassing({
     });
     if (!growth) return plan;
     const blocks = plan.stages[stage].blocks;
-    if (!stands.length && HUD.ground) {
+    if (!stands.length && HUD.ground && !isSausalitoPlot(plots[0])) {
       // FORK-ONLY (?cityHud=ground): every plot is sampled BEFORE any is cut
       // (a later plot's probes otherwise fall into its neighbours' holes or
       // onto their roofs: round-1 plates stood 35 m apart), one ground is

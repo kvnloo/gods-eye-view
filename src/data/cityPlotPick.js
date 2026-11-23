@@ -56,10 +56,33 @@ function conceptPlot(scene, position, owns) {
  * `owns(entity)` says whether a picked entity is play mode's own. Null when
  * the click meets no plot.
  */
-export function resolveClickedPlot({ scene, camera, position, owns }) {
+export function resolveClickedPlot({
+  scene, camera, position, owns, snap = snapPlot,
+  pointAt = (at) => groundPoint(scene, camera, at),
+}) {
   const named = conceptPlot(scene, position, owns);
   if (named) return { plot: named, height: undefined };
-  const point = groundPoint(scene, camera, position);
-  const plot = point && snapPlot(point);
+  const point = pointAt(position);
+  const plot = point && snap(point);
   return plot ? { plot, height: point.height } : null;
+}
+
+/** Intersect the pick ray with the diorama's live sampled surface. */
+export function dioramaGroundPoint(camera, position, diorama) {
+  const ray = camera.getPickRay(position);
+  let world = camera.pickEllipsoid(position, Cesium.Ellipsoid.WGS84);
+  if (!ray || !world) return null;
+  for (let step = 0; step < 3; step++) {
+    const at = Cesium.Cartographic.fromCartesian(world);
+    const lon = Cesium.Math.toDegrees(at.longitude);
+    const lat = Cesium.Math.toDegrees(at.latitude);
+    if (!diorama.covers([lon, lat])) return null;
+    const height = diorama.groundAt([lon, lat]);
+    if (Math.abs(at.height - height) < 0.1) return { lon, lat, height };
+    const ground = Cesium.Cartesian3.fromRadians(at.longitude, at.latitude, height);
+    const normal = Cesium.Ellipsoid.WGS84.geodeticSurfaceNormalCartographic(at);
+    world = Cesium.IntersectionTests.rayPlane(ray, Cesium.Plane.fromPointNormal(ground, normal));
+    if (!world) return null;
+  }
+  return null;
 }

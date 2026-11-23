@@ -57,7 +57,7 @@ const { CITY_LOCATIONS, HERO_CITY_LOCATION } = QP.get('cityLoc') || HERO
   : { CITY_LOCATIONS: {} };
 const LOC = QP.get('cityLoc') ?? (HERO ? HERO_CITY_LOCATION : null);
 if (LOC && !CITY_LOCATIONS[LOC]) throw new Error(`unknown cityLoc ${LOC}`);
-const PLOT = process.env.CAPTURE_PLOT || CITY_LOCATIONS[LOC]?.plot || 'plot-n105201-126637'; // QA default: Washington Sq, SF
+const PLOT = process.env.CAPTURE_PLOT || CITY_LOCATIONS[LOC]?.gridPlot || CITY_LOCATIONS[LOC]?.plot || 'plot-n105201-126637'; // QA default: Washington Sq, SF
 // exp/city-loop-v4 (licence lane; Google Map Tiles policies and GMP ToS 3.2.3):
 // a frame that shows Google photoreal tiles never goes to a judge, the proxy, a
 // report, a gallery or git. In-context frames (and the recorded video) are
@@ -231,16 +231,20 @@ async function settle() {
 }
 async function plotPoint(id) {
   return page.evaluate(async (plotId) => {
-    const { plotFromId } = await import('/src/data/cityPlot.js');
+    const { isSausalitoPlot, plotFromId } = await import('/src/data/cityPlot.js');
     const { viewer } = window.__godsEyeView;
     const { scene } = viewer;
-    const { center } = plotFromId(plotId);
+    const plot = plotFromId(plotId);
+    const { center } = plot;
     const at = { longitude: (center.lon * Math.PI) / 180, latitude: (center.lat * Math.PI) / 180, height: 0 };
     const exclude = ['gev-city-massing', 'gev-city-play'].flatMap(
       (n) => viewer.dataSources.getByName(n)[0]?.entities.values ?? [],
     );
     const s = scene.sampleHeightSupported ? scene.sampleHeight(at, exclude) : undefined;
-    at.height = Number.isFinite(s) ? s : (scene.globe.getHeight(at) ?? 0);
+    const diorama = window.__gevDiorama;
+    at.height = isSausalitoPlot(plot) && diorama?.state.ready
+      ? diorama.groundAt([center.lon, center.lat])
+      : Number.isFinite(s) ? s : (scene.globe.getHeight(at) ?? 0);
     const p = scene.cartesianToCanvasCoordinates(scene.globe.ellipsoid.cartographicToCartesian(at));
     if (!p) return null;
     const r = scene.canvas.getBoundingClientRect();
@@ -648,7 +652,8 @@ try {
       }
     });
     if (!has) throw new Error('ABSENT: this app SHA has no growth timeline (src/data/cityGrowth.js)');
-    const { far } = await page.evaluate(async (plotId) => {
+    const opposite = CITY_LOCATIONS[LOC]?.gridOppositePlot;
+    const { far } = opposite ? { far: [opposite] } : await page.evaluate(async (plotId) => {
       const { PLOT_METERS, plotFromId, snapPlot } = await import('/src/data/cityPlot.js');
       const p = plotFromId(plotId);
       const list = [[4, 4], [4, -4], [-4, 4], [-4, -4]].map(([r, c]) =>

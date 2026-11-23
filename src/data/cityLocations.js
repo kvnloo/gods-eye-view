@@ -33,6 +33,8 @@ export const CITY_LOCATIONS = Object.freeze({
     // i18n-ignore: QA location name for the fork-only harness (manifests, logs), not UI text.
     label: 'Sausalito waterfront (Dunphy Park)',
     plot: 'plot-n105367-126364',
+    gridPlot: 'plot-sausalito-0-0',
+    gridOppositePlot: 'plot-sausalito-3-3',
     fixture: '/city-diorama/sausalito.osm.json',
   }),
 });

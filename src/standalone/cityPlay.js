@@ -3,12 +3,16 @@ import { watch } from 'vue';
 import { msg, t } from '../i18n/index.js';
 import { claimPointer, releasePointer } from '../data/inputOwnership.js';
 import {
+  isSausalitoPlot,
   neighborPlots,
   plotBlock,
+  plotFromId,
   plotPoint,
   snapPlot,
+  snapSausalitoPlot,
 } from '../data/cityPlot.js';
-import { groundPoint, resolveClickedPlot } from '../data/cityPlotPick.js';
+import { cityLocation } from '../data/cityLocations.js';
+import { dioramaGroundPoint, groundPoint, resolveClickedPlot } from '../data/cityPlotPick.js';
 import { observerSolarPosition } from '../data/satellitePass.js';
 import { CITY_LAND_USES, MAX_ZONED_PLOTS } from '../data/cityLandUse.js';
 import { presentCityWalkAccess } from '../ui/cityWalkAccess.js';
@@ -153,6 +157,20 @@ export function mountCityPlay({
 }) {
   const scene = viewer?.scene;
   if (!scene || !doc) return { receive() {}, destroy() {} };
+  const location = cityLocation(win?.location?.search);
+  const parkPlots = location?.gridPlot
+    ? plotBlock(plotFromId(location.gridPlot), plotFromId(location.gridOppositePlot))
+    : null;
+  const snap = parkPlots ? snapSausalitoPlot : snapPlot;
+  const parkDistrict = parkPlots && [{
+    id: 'd-sausalito',
+    plots: parkPlots,
+    center: plotPoint(parkPlots[0], 2, 2),
+    corners: [
+      parkPlots[0].corners[0], parkPlots[3].corners[1],
+      parkPlots.at(-1).corners[2], parkPlots.at(-4).corners[3],
+    ],
+  }];
   let state = createPlayState();
   let data = {
     alternatives: null,
@@ -195,6 +213,9 @@ export function mountCityPlay({
   const drape = HUD.drape ? mountConceptDrape({ viewer }) : null;
 
   function baseHeight(plot, pickedHeight) {
+    const diorama = win?.__gevDiorama;
+    if ((isSausalitoPlot(plot) || plot.id === parkDistrict?.[0].id) && diorama?.state.ready)
+      return diorama.groundAt([plot.center.lon, plot.center.lat]);
     // The first pick on a plot fixes its ground; later picks may hit our own holo.
     if (Number.isFinite(pickedHeight) && !heights.has(plot.id)) {
       heights.set(plot.id, pickedHeight);
@@ -1144,7 +1165,7 @@ export function mountCityPlay({
       );
       if (mid) {
         const c = Cesium.Cartographic.fromCartesian(mid);
-        const near = districtCells(
+        const near = parkDistrict ?? districtCells(
           {
             lat: Cesium.Math.toDegrees(c.latitude),
             lon: Cesium.Math.toDegrees(c.longitude),
@@ -1175,7 +1196,12 @@ export function mountCityPlay({
 
   // --- input ---------------------------------------------------------------
   // The ground under the cursor, as the click resolver reads it.
-  const pickPoint = (position) => groundPoint(scene, viewer.camera, position);
+  const pickPoint = (position) => {
+    const diorama = win?.__gevDiorama;
+    if (parkPlots && diorama?.state.ready)
+      return dioramaGroundPoint(viewer.camera, position, diorama);
+    return groundPoint(scene, viewer.camera, position);
+  };
   function onClick({ position }, extend = false) {
     if (framing) return;
     // An armed massing tool (the protected edge) takes the next ground click.
@@ -1184,7 +1210,7 @@ export function mountCityPlay({
     // becomes a district, framed whole.
     if (extend && state.plot) {
       const point = pickPoint(position);
-      const block = plotBlock(state.plot, point && snapPlot(point));
+      const block = plotBlock(state.plot, point && snap(point));
       if (block) {
         dispatch({ type: 'district', plots: block });
         frameDistrict(block);
@@ -1195,6 +1221,8 @@ export function mountCityPlay({
       scene,
       camera: viewer.camera,
       position,
+      snap,
+      pointAt: pickPoint,
       owns: (entity) => ds.entities.contains(entity),
     });
     if (!hit) {
@@ -1220,6 +1248,13 @@ export function mountCityPlay({
     hoverQueued = endPosition;
     win.requestAnimationFrame?.(() => {
       if (!hoverQueued || !state.active) return;
+      if (parkPlots) {
+        const point = pickPoint(hoverQueued);
+        hoverQueued = null;
+        const plot = snap(point);
+        if (plot?.id !== state.hover?.id) dispatch({ type: 'hover', plot });
+        return;
+      }
       const world = viewer.camera.pickEllipsoid(
         hoverQueued,
         Cesium.Ellipsoid.WGS84,
@@ -1227,7 +1262,7 @@ export function mountCityPlay({
       hoverQueued = null;
       if (!world) return dispatch({ type: 'hover', plot: null });
       const c = Cesium.Cartographic.fromCartesian(world);
-      const plot = snapPlot({
+      const plot = snap({
         lat: Cesium.Math.toDegrees(c.latitude),
         lon: Cesium.Math.toDegrees(c.longitude),
       });

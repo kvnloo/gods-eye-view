@@ -488,8 +488,8 @@ try {
     return m;
   });
   await beat('shadow', async () => {
-    await page.locator(S.studyToggle).click({ timeout: 20000 });
-    await page.locator(S.winter).click();
+    await page.locator(S.studyToggle).click({ timeout: 90000 });
+    await page.locator(S.winter).click({ timeout: 90000 });
     await until(
       () => {
         const s = window.__gevCityMassing.snapshot();
@@ -498,7 +498,7 @@ try {
       'winter solar noon',
       30000,
     );
-    await page.locator(S.fit).click();
+    await page.locator(S.fit).click({ timeout: 90000 });
     await until(() => window.__gevCityMassing.snapshot().locks?.[window.__gevCityPlay.snapshot().plot.id], 'sun fit lock', 30000).catch(() => {});
     await sleep(1200);
     return { storeys: await page.evaluate(() => window.__gevCityMassing.snapshot().storeys) };
@@ -534,7 +534,7 @@ try {
     await page.keyboard.down('Shift');
     await page.mouse.click(hit.x, hit.y);
     await page.keyboard.up('Shift');
-    await until(() => window.__gevCityPlay.snapshot().district?.length === 25, 'district of 25', 20000);
+    await until(() => window.__gevCityPlay.snapshot().district?.length === 25, 'district of 25', 90000);
     await noFlight();
     await page.locator(S.growthToggle).click({ timeout: 90000 });
     await page.locator('[data-city-growth-rail]').waitFor({ state: 'visible' });

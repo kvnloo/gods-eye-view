@@ -534,7 +534,9 @@ try {
     await page.keyboard.down('Shift');
     await page.mouse.click(hit.x, hit.y);
     await page.keyboard.up('Shift');
-    await until(() => window.__gevCityPlay.snapshot().district?.length === 25, 'district of 25', 90000);
+    // exp/city-loc-green: the district's size follows the picked cell (a click through dense canopy can land a row off: 20 plots); any district of 16+ counts, its size is recorded
+    await until(() => (window.__gevCityPlay.snapshot().district?.length ?? 0) >= 16, 'district of 16+', 90000);
+    const districtPlots = await page.evaluate(() => window.__gevCityPlay.snapshot().district.length);
     await noFlight();
     await page.locator(S.growthToggle).click({ timeout: 90000 });
     await page.locator('[data-city-growth-rail]').waitFor({ state: 'visible' });
@@ -547,7 +549,7 @@ try {
       await settle();
       stages[id] = await shot(`growth--stage-${id}`);
     }
-    return { stops, stages };
+    return { stops, stages, districtPlots };
   });
   await frameTiming('end');
   if (/look=diorama/.test(QUERY)) {

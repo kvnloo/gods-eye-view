@@ -24,3 +24,10 @@ Lessons from the run (see loop-v3/arm-shader/REPORT.md in the workspace):
   pick with eyes and the VLM panel.
 - Classify hue in sRGB, not linear: linear ratios made shaded asphalt "water" and painted streets neon cyan.
 - Google's bay is a dark teal with excess green: vegetation also needs green over blue.
+
+Finalists (`finalists.json`) open with their `url_query` appended to the app URL. Result of this round: the
+VLM panel (codex gpt-6.2-sol + claude sonnet + claude opus, both orders) found no candidate that raises
+wintercats_fidelity over the round-1 `?look=cozy` LOOK without losing scene_integration. The proxy pushed the
+search toward full de-lighting and neon greens, which is exactly what the judges penalise ("lost street
+shadows", "smeared green blobs"). Next mechanism, not more tuning: keep photo luminance (hue-only remap), fade
+the vegetation class with distance / low-LOD, and drop haze on the district view.

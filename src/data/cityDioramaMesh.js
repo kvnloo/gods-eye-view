@@ -8,6 +8,8 @@
 // discs, shadow polygons). Deterministic: one seeded PRNG, no Math.random.
 // No Cesium import, so it runs (and is tested) in node.
 
+import { SHORE, appendBoulder } from './cityShoreRocks.js';
+
 export const DIORAMA_DEFAULTS = Object.freeze({
   // Defaults = the loop's best (rounds 1-6, loop-v3/arm-diorama/REPORT.md); every knob stays a ?dio= override.
   radius: 720, // the photoreal tiles are cut inside this disc (r5: 430 -> 720)
@@ -61,6 +63,13 @@ export const DIORAMA_DEFAULTS = Object.freeze({
   // (c) a painterly palette match: the photoreal context takes the diorama's palette
   match: 0, // strength 0..1 (0 = off)
   matchCell: 16, // metres per roof-colour cell of the match
+  // exp/city-loop-v5 look pass A (toward the locked in-camera target A); each piece is a knob, so it can be ablated
+  rocks: 1, // mossy boulders along the shore (0 = off)
+  foam: 1, // painted shore foam, foam rings at the boulders, sparse wave highlights on the water
+  grass: 1, // olive meadow ground with grass strokes and wildflower flecks, a grassy shore verge
+  waterTone: 1, // deeper teal water
+  grade: 1, // warm late-afternoon key over a cooler ambient
+  tex: 1, // surface texture in the light shader: roof tile rows, rock speckle, water ripples
 });
 
 const num = (v, d) => (Number.isFinite(Number(v)) ? Number(v) : d);
@@ -256,7 +265,8 @@ export class Soup {
     const L = Math.hypot(nx, ny, nz) || 1;
     nx /= L; ny /= L; nz /= L;
     this.p.push(...a, ...b, ...c);
-    for (let i = 0; i < 3; i++) { this.n.push(nx, ny, nz); this.c.push(col[0], col[1], col[2], 1); }
+    // col[3], when given, is a vertex tag for the light shader (colour alpha; the ground is < 0.75)
+    for (let i = 0; i < 3; i++) { this.n.push(nx, ny, nz); this.c.push(col[0], col[1], col[2], col[3] ?? 1); }
   }
   quad(a, b, c, d, col) { this.tri(a, b, c, col); this.tri(a, c, d, col); }
   get triangles() { return this.p.length / 9; }
@@ -319,7 +329,7 @@ function house(s, rect, z0, wallH, o, r, sat) {
   const wallHex = kit.walls[Math.floor(r() * kit.walls.length)];
   const roofHex = kit.roofs[Math.floor(r() * kit.roofs.length)];
   const wall = linear(wallHex, 0.05, r, sat);
-  const roof = linear(roofHex, 0.07, r, sat);
+  const roof = [...linear(roofHex, 0.07, r, sat), o.tex > 0 ? 0.85 : 1]; // 0.85: roof tiles in the light shader
   const plinth = linear(PALETTE.plinth, 0.05, r, sat);
   const corners = [P(-A, -B), P(A, -B), P(A, B), P(-A, B)];
   const zt = z0 + wallH;
@@ -403,6 +413,15 @@ function broadleaf(s, x, y, z, k, r, o, sat, pick) {
     blob(s, x + Math.cos(t) * rad * 0.6, y + Math.sin(t) * rad * 0.6, z + h + rad * 0.35, rad * 0.62, rad * 0.55, i ? col : col2, r);
   }
   return { r: rad * 1.25, h: h + rad * 1.5 };
+}
+
+// look pass A: a boulder prototype (unit radius); three of four colours get a moss cap.
+// tag 0.8 = rock speckle in the light shader.
+function rockProto(s, r, col, sat, tag) {
+  const stone = linear(SHORE.rock[col % SHORE.rock.length], 0.06, r, sat);
+  const moss = col % 4 !== 3 ? linear(SHORE.moss[col % SHORE.moss.length], 0.06, r, sat) : null;
+  appendBoulder(s, ICO, 0, 0, 0, 1, [...stone, tag], moss && [...moss, tag], r);
+  return { r: 1, h: 1 };
 }
 
 // ---------- water (fixture@2, exp/city-loc-green): a run-length raster of water bodies
@@ -671,9 +690,11 @@ export function buildDiorama(fixture, ground, o = DIORAMA_DEFAULTS, waterLevels 
       const [kind, shape, col, autumn] = key.split(':');
       const ps = new Soup();
       const pr = prng(1000 + Number(shape) * 97 + Number(col) * 13 + (autumn === '1' ? 7 : 0) + (kind === 'pine' ? 3 : 0));
-      const dims = kind === 'pine'
-        ? pine(ps, 0, 0, 0, 1, pr, sat, { col: Number(col), lod: o.lod })
-        : broadleaf(ps, 0, 0, 0, 1, pr, o, sat, { col: Number(col), autumn: autumn === '1', lod: o.lod });
+      const dims = kind === 'rock'
+        ? rockProto(ps, pr, Number(col), sat, o.tex > 0 ? 0.8 : 1)
+        : kind === 'pine'
+          ? pine(ps, 0, 0, 0, 1, pr, sat, { col: Number(col), lod: o.lod })
+          : broadleaf(ps, 0, 0, 0, 1, pr, o, sat, { col: Number(col), autumn: autumn === '1', lod: o.lod });
       protos.set(key, { soup: ps, ...dims, instances: [] });
     }
     return protos.get(key);
@@ -740,6 +761,50 @@ export function buildDiorama(fixture, ground, o = DIORAMA_DEFAULTS, waterLevels 
       plant(x, y, r() < 0.75 ? 'pine' : 'leaf');
     }
   }
+  // 5 look pass A: mossy boulders along every shore edge of the water raster, mostly on the water side.
+  // Own PRNG, so the houses and trees above keep exactly their placements; none on a house or a road.
+  let rocks = 0;
+  const shore = []; // boulder discs, for the ground painter's foam rings
+  if (o.rocks > 0 && water && o.instanced) {
+    const rr = prng(4242);
+    const { n, cell, half, ids, dist } = water;
+    const nearBuilt = (x, y, pad) => {
+      for (const it of occ.near(x, y)) {
+        if (it.kind === 'house') {
+          if (inPolygon([x, y], it.corners)) return true;
+          for (let i = 0; i < 4; i++) if (segDist([x, y], it.corners[i], it.corners[(i + 1) % 4]) < pad) return true;
+        } else if (segDist([x, y], it.a, it.b) < it.w / 2 + pad) return true;
+      }
+      return false;
+    };
+    for (let j = 1; j < n - 1; j++)
+      for (let i = 1; i < n - 1; i++) {
+        const k = j * n + i;
+        if (!ids[k] || dist[k] !== 1) continue;
+        const cx = -half + (i + 0.5) * cell;
+        const cy = half - (j + 0.5) * cell;
+        for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          if (ids[k + dj * n + di]) continue; // that neighbour is water too
+          const ex = cx + di * cell * 0.5;
+          const ey = cy - dj * cell * 0.5;
+          const m = rr() < 0.55 * o.rocks ? 2 : 1;
+          for (let q = 0; q < m; q++) {
+            const along = (rr() - 0.5) * cell;
+            const off = (rr() - 0.3) * cell * 0.5;
+            const x = ex + dj * along - di * off;
+            const y = ey + di * along + dj * off;
+            if (Math.hypot(x, y) > R - 4) continue;
+            const big = rr();
+            const rad = big > 0.8 ? 2.8 + rr() * 1.6 : big > 0.4 ? 1.7 + rr() * 0.9 : 0.9 + rr() * 0.6;
+            if (nearBuilt(x, y, rad + 0.4)) continue;
+            const key = `rock:${Math.floor(rr() * 3)}:${Math.floor(rr() * SHORE.rock.length)}:0`;
+            proto(key).instances.push([x, y, gz(x, y) - rad * 0.12, rad, rr() * Math.PI * 2]);
+            shore.push({ x, y, r: rad });
+            rocks++;
+          }
+        }
+      }
+  }
   const instTris = [...protos.values()].reduce((a, p) => a + p.soup.triangles * p.instances.length, 0);
   return {
     soup: s,
@@ -747,9 +812,11 @@ export function buildDiorama(fixture, ground, o = DIORAMA_DEFAULTS, waterLevels 
     houses,
     trees,
     roads,
+    rocks: shore,
     stats: {
       houses: houses.length,
       trees: trees.length,
+      rocks,
       triangles: s.triangles + instTris,
       storedTriangles: s.triangles + [...protos.values()].reduce((a, p) => a + p.soup.triangles, 0),
       prototypes: protos.size,

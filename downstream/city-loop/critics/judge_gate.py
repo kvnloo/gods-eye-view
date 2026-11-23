@@ -70,6 +70,8 @@ def require(path, _depth=0):
         raise Refused(f'{p}: tagged googleTiles={rec.get("googleTiles")!r}')
     if rec.get('sha256') != _sha(p):
         raise Refused(f'{p}: sha256 differs from the tag')
+    if 'sanity' in rec and rec['sanity'].get('pass') is not True:
+        raise Refused(f'{p}: physical sanity veto')
     return rec
 
 

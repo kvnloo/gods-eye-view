@@ -18,7 +18,7 @@ import { mkdir, readFile, readdir, writeFile, rename } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const args = Object.fromEntries(
   process.argv.slice(2).reduce((acc, a, i, all) => {
@@ -67,6 +67,8 @@ const PLOT = process.env.CAPTURE_PLOT || CITY_LOCATIONS[LOC]?.plot || 'plot-n105
 // are written, and are tagged in manifest.frames, which critics/judge_gate.py
 // requires before any critic reads an image.
 const JUDGE_ONLY = Boolean(args['judge-only']);
+const SANITY = fileURLToPath(new URL('../critics/sanity_gate.py', import.meta.url));
+const PLACE = LOC === 'sausalito' ? 'Sausalito' : 'San Francisco';
 // --own: after each beat shot, one more with every 3D tileset hidden (no Google pixels) for judging
 const OWN = Boolean(args.own) || JUDGE_ONLY;
 const COZY = !args['no-cozy'] && !JUDGE_ONLY;
@@ -383,6 +385,7 @@ async function ownShot(beat) {
   let f;
   let credits;
   let massing;
+  let sanity;
   try {
     await render(2500);
     await until(() => {
@@ -393,7 +396,39 @@ async function ownShot(beat) {
       const m = window.__gevCityMassing?.snapshot?.();
       return m ? { shown: m.shown, drawn: m.drawn, plotId: m.plotId ?? null } : null;
     });
+    const evidence = await page.evaluate(() => {
+      const diorama = window.__gevDiorama;
+      return {
+        fixture: diorama?.state.fixture,
+        hud: document.querySelector('[data-city-game-place] [translate="no"]')?.innerText?.trim() ?? '',
+        placements: window.__gevCityPlacements?.()?.map((p) => {
+          const centre = [0, 1].map((i) =>
+            p.footprint.reduce((sum, point) => sum + point[i], 0) / p.footprint.length,
+          );
+          return {
+            ...p,
+            terrain: [...p.footprint, centre].map((point) =>
+              diorama?.covers(point) ? diorama.groundAt(point) : null,
+            ),
+          };
+        }),
+      };
+    });
+    // Keep live terrain samples in memory. The written manifest holds the verdict
+    // and measured offsets so the terrain grid and raw heights stay ephemeral.
+    const input = { ...evidence, beat, expectedPlace: PLACE };
+    if (evidence.fixture?.startsWith('/city-diorama/') && evidence.placements) {
+      const fixture = path.join(APP, 'public', evidence.fixture);
+      const osm = args['sanity-osm'] ? [path.resolve(args['sanity-osm'])] : [];
+      const checked = spawnSync('python3', [SANITY, fixture, ...osm], {
+        input: JSON.stringify(input),
+        encoding: 'utf8',
+      });
+      if (checked.stdout && [0, 2].includes(checked.status)) sanity = JSON.parse(checked.stdout);
+    }
+    sanity ??= { pass: false, failures: [{ check: 'missing-sanity-evidence' }] };
     f = await shot(`${beat}--own`, 'judge');
+    Object.assign(manifest.frames[f.file], { sanity });
     credits = await attribution().catch((e) => ({ error: e.message.split('\n')[0] }));
   } finally {
     await page.evaluate(() => {
@@ -410,7 +445,7 @@ async function ownShot(beat) {
     });
   }
   await render(1500);
-  manifest.own[beat] = { ...f, hiddenTilesets: hidden, googleTiles: false, massing, credits };
+  manifest.own[beat] = { ...f, hiddenTilesets: hidden, googleTiles: false, massing, credits, sanity };
 }
 async function beat(name, run) {
   const started = Date.now();
@@ -718,7 +753,9 @@ if (OWN && judged.length) {
   spawnSync('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', '-movflags', '+faststart', out]);
   try {
     const rec = { file: path.basename(out), sha256: await sha256(out) };
-    manifest.frames[rec.file] = { ...rec, kind: 'judge-video', googleTiles: false, from: judged.map((b) => manifest.own[b].file) };
+    manifest.frames[rec.file] = { ...rec, kind: 'judge-video', googleTiles: false, sanity: {
+      pass: judged.every((b) => manifest.own[b].sanity?.pass === true),
+    }, from: judged.map((b) => manifest.own[b].file) };
     manifest.judgeVideo = rec;
   } catch {
     manifest.judgeVideo = { error: 'missing' };

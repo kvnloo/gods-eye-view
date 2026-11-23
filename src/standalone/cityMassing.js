@@ -1719,7 +1719,24 @@ export function mountCityMassing({
         },
       }),
   });
-  if (win) win.__gevCityMassing = probe;
+  function judgePlacements() {
+    if (!win?.__gevJudgeFrame) return null;
+    const placement = (kind, entry, footprint) => ({
+      kind,
+      id: entry.plot.id,
+      footprint,
+      base: entry.block.polygon.height.getValue(),
+    });
+    const placements = stands.map((s) =>
+      placement('growth', s, plotMassing({ corners: s.plot.corners, storeys: s.storeys }).footprint),
+    );
+    if (site?.block) placements.push(placement('massing', site, site.massing.footprint));
+    return placements;
+  }
+  if (win) {
+    win.__gevCityMassing = probe;
+    win.__gevCityPlacements = judgePlacements;
+  }
   sync();
 
   return {
@@ -1734,6 +1751,7 @@ export function mountCityMassing({
       if (stands.length) clearStands();
       built();
       if (win?.__gevCityMassing === probe) delete win.__gevCityMassing;
+      if (win?.__gevCityPlacements === judgePlacements) delete win.__gevCityPlacements;
       if (store.massingControls === controls) {
         store.connectMassing(null);
         store.publishMassing(null);

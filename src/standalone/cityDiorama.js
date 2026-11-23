@@ -39,6 +39,8 @@ void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
   vec3 p = fsInput.attributes.positionMC;
   bool isGround = fsInput.attributes.color_0.a < 0.75;
   if (!isGround && p.x > u_hole.x && p.x < u_hole.z && p.y > u_hole.y && p.y < u_hole.w) discard;
+  // exp/city-loop-v3: the concept drape's plot is cleared too (the drape lies on this ground)
+  if (!isGround && p.x > u_hole2.x && p.x < u_hole2.z && p.y > u_hole2.y && p.y < u_hole2.w) discard;
   vec3 n = normalize(fsInput.attributes.normalEC);
   if (!gl_FrontFacing) n = -n;
   vec3 L = normalize((czm_view * vec4(u_keyWC, 0.0)).xyz);
@@ -620,6 +622,7 @@ export async function mountCityDiorama({ viewer, win = globalThis.window, search
       u_ambient: { type: Cesium.UniformType.FLOAT, value: o.ambient },
       u_key: { type: Cesium.UniformType.FLOAT, value: o.key },
       u_hole: { type: Cesium.UniformType.VEC4, value: new Cesium.Cartesian4(1e9, 1e9, -1e9, -1e9) },
+      u_hole2: { type: Cesium.UniformType.VEC4, value: new Cesium.Cartesian4(1e9, 1e9, -1e9, -1e9) },
     },
     fragmentShaderText: LIGHT_FS,
   });
@@ -797,6 +800,27 @@ export async function mountCityDiorama({ viewer, win = globalThis.window, search
     state,
     model,
     stage,
+    // exp/city-loop-v3: the concept drape (src/standalone/cityConceptDrape.js)
+    // cannot classify onto the cut photoreal tiles inside the disc, so it lies
+    // on this ground instead and the plot's houses and trees step aside.
+    covers([lon2, lat2]) {
+      const [x, y] = local([lon2, lat2]);
+      return Math.hypot(x, y) < o.radius;
+    },
+    groundAt([lon2, lat2]) {
+      const [x, y] = local([lon2, lat2]);
+      return h0 + gz(x, y) + Math.max(0, state.lift ?? 0);
+    },
+    setDrapeHole(corners) {
+      let b = [1e9, 1e9, -1e9, -1e9];
+      if (corners?.length) {
+        const pts = corners.map(local);
+        b = [Math.min(...pts.map((q) => q[0])) - 1, Math.min(...pts.map((q) => q[1])) - 1, Math.max(...pts.map((q) => q[0])) + 1, Math.max(...pts.map((q) => q[1])) + 1];
+      }
+      shader.setUniform('u_hole2', new Cesium.Cartesian4(...b));
+      state.drapeHole = corners?.length ? b.map((v) => Math.round(v)) : null;
+      scene.requestRender();
+    },
     remove() {
       offPre();
       offLift();

@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import '../ui/styles/city-postcard.css';
 import {
   POSTCARD_LABEL,
@@ -24,6 +25,9 @@ function el(doc, tag, attrs = {}, text = '') {
   if (text) node.textContent = text;
   return node;
 }
+
+// The error code of a failed capture (a constant, not a glyph name: src/materialSymbolsSubset.test.mjs).
+const CAPTURE_FAILED = 'capture';
 
 export function mountCityPostcard({
   capture,
@@ -115,12 +119,12 @@ export function mountCityPostcard({
     root.hidden = false;
     after.hidden = true;
     after.removeAttribute('src');
-    status.textContent = 'Capturing this view…';
+    status.textContent = t('Capturing this view…');
     let shot;
     try {
       shot = await capture();
     } catch {
-      if (job === controller) status.textContent = postcardError('capture');
+      if (job === controller) status.textContent = postcardError(CAPTURE_FAILED);
       button.disabled = false;
       return;
     }
@@ -132,7 +136,7 @@ export function mountCityPostcard({
     } catch {
       prompt = postcardPrompt(null); // an inconsistent model is left out, never described
     }
-    status.textContent = 'Painting the postcard (about a minute)…';
+    status.textContent = t('Painting the postcard (about a minute)…');
     try {
       const res = await fetch(POSTCARD_ROUTE, {
         method: 'POST',
@@ -150,7 +154,7 @@ export function mountCityPostcard({
       after.src = image;
       after.hidden = false;
       setWipe(wipe.value);
-      status.textContent = `${POSTCARD_LABEL}: a look of this view, not a plan, a measurement or an approval.`;
+      status.textContent = t('{label}: a look of this view, not a plan, a measurement or an approval.', { label: POSTCARD_LABEL });
     } catch (error) {
       if (controller.signal.aborted || job !== controller) return;
       status.textContent = postcardError(error?.status);

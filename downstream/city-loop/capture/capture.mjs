@@ -38,6 +38,8 @@ const VIDEO = Boolean(args.video);
 // (src/standalone/cozyValleyLook.js) instead of the harness filter.
 const QUERY = typeof args.query === 'string' ? args.query : '';
 const LOOK_APP = Boolean(args['look-app']);
+// exp/city-loop-v3: --no-cozy skips the per-beat Cozy Valley variants (the look is the app's own).
+const NO_COZY = Boolean(args['no-cozy']);
 const require = createRequire(path.join(APP, 'package.json'));
 const { chromium } = require('playwright-core');
 const { siteForPlot } = await import(
@@ -276,7 +278,7 @@ async function beat(name, run) {
     await settle();
     mark(name);
     Object.assign(rec, await shot(name), extra || {}, { status: 'ok' });
-    await cozyVariants(name).catch((e) => (manifest.cozy[name] = { error: e.message.split('\n')[0] }));
+    if (!NO_COZY) await cozyVariants(name).catch((e) => (manifest.cozy[name] = { error: e.message.split('\n')[0] }));
   } catch (e) {
     rec.status = 'failed';
     rec.error = e.message.split('\n')[0];

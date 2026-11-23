@@ -72,6 +72,31 @@ uniform float mistW;
 uniform float cutR;
 uniform float warm;
 uniform vec3 mistColor;
+uniform vec3 eastEC;
+uniform vec3 northEC;
+uniform float bank;
+uniform float bankW;
+uniform float bankFar;
+uniform float match;
+
+// exp/city-loop-v3 seam trials: value noise on the district's ground plane (metres)
+float hash12(vec2 p) {
+  vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
+float vnoise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash12(i), hash12(i + vec2(1.0, 0.0)), u.x), mix(hash12(i + vec2(0.0, 1.0)), hash12(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+float fbm(vec2 p) {
+  float s = 0.0;
+  float a = 0.5;
+  for (int k = 0; k < 4; k++) { s += a * vnoise(p); p = p * 2.03 + vec2(17.1, 9.7); a *= 0.5; }
+  return s;
+}
 
 vec3 softened(vec2 uv, float k) {
   vec3 s = vec3(0.0);
@@ -87,6 +112,7 @@ void main() {
   float raw = texture(depthTexture, uv).r;
   float t = 1.0;
   float dist = -1.0;
+  vec2 gp = vec2(0.0);
   if (raw < 1.0) {
     // as Cesium's DepthOfField stage: depth -> eye space, compared in eye space
     float depth = czm_readDepth(depthTexture, uv);
@@ -95,6 +121,7 @@ void main() {
     vec3 v = eye.xyz - centreEC;
     v -= dot(v, upEC) * upEC;
     dist = length(v);
+    gp = vec2(dot(v, eastEC), dot(v, northEC));
     t = smoothstep(r0, r1, dist);
   }
   if (debug > 0.5) {
@@ -106,7 +133,7 @@ void main() {
   if (lens > 0.001) src.rgb = mix(src.rgb, softened(uv, 1.0 + 3.0 * lens), clamp(lens * 1.4, 0.0, 1.0));
   // a mist bank hugging the cut: the sliced photoreal walls fade into haze
   float m = dist >= 0.0 ? mist * exp(-pow(max(dist - cutR + 8.0, 0.0) / max(mistW, 1.0), 2.0)) * step(cutR - 8.0, dist) : 0.0;
-  if (t <= 0.001 && m <= 0.001) { out_FragColor = src; return; }
+  if (t <= 0.001 && m <= 0.001 && (bank <= 0.001 || dist < 0.0)) { out_FragColor = src; return; }
   vec3 b = softened(uv, 1.0 + 2.5 * t);
   float l = dot(b, vec3(0.299, 0.587, 0.114));
   // warm = 0: grey haze (desaturate + fog). warm = 1: the context takes the
@@ -116,7 +143,34 @@ void main() {
   g = mix(g, g * vec3(0.86, 1.0, 0.96) + vec3(0.0, 0.025, 0.02), warm * (1.0 - smoothstep(0.2, 0.6, l)));
   g = mix(g, fogColor, fog * t);
   vec3 outc = mix(src.rgb, g, t);
+  // (c) painterly palette match: the context's surfaces take the diorama's
+  // palette by class (vegetation, water, built), keeping the photo's light.
+  if (match > 0.001 && t > 0.001) {
+    float bl = dot(b, vec3(0.299, 0.587, 0.114));
+    float pl = floor(bl * 5.0 + 0.5) / 5.0;
+    float lum = mix(bl, pl, 0.5);
+    float veg = smoothstep(0.0, 0.05, b.g - max(b.r, b.b));
+    float wat = smoothstep(0.015, 0.07, b.b - b.r) * (1.0 - smoothstep(0.45, 0.7, bl)) * (1.0 - veg);
+    float blt = max(0.0, 1.0 - veg - wat);
+    vec3 vegC = mix(vec3(0.08, 0.26, 0.04), vec3(0.24, 0.52, 0.08), smoothstep(0.1, 0.6, lum));
+    vec3 watC = vec3(0.05, 0.46, 0.43) * (0.7 + 0.6 * lum);
+    float h = hash12(floor(gp / 16.0));
+    vec3 roof = h < 0.38 ? vec3(0.43, 0.10, 0.05) : h < 0.62 ? vec3(0.07, 0.10, 0.13) : h < 0.82 ? vec3(0.78, 0.68, 0.48) : vec3(0.21, 0.27, 0.06);
+    vec3 bltC = roof * (0.45 + 1.1 * lum);
+    vec3 pal = veg * vegC + wat * watC + blt * bltC;
+    outc = mix(outc, pal, clamp(match * t, 0.0, 1.0));
+  }
   outc = mix(outc, mistColor, clamp(m, 0.0, 1.0));
+  // (b) map edge: a cloud bank rings the raised district and hides where it ends
+  if (bank > 0.001 && dist >= 0.0) {
+    float edge = dist - cutR;
+    float ring = smoothstep(-25.0, 45.0, edge) * (bankFar + (1.0 - bankFar) * exp(-pow(max(edge - 45.0, 0.0) / max(bankW, 1.0), 2.0)));
+    float n = fbm(gp / 140.0);
+    float n2 = fbm(gp / 55.0 + 3.7);
+    float dens = clamp(ring * (0.62 + 0.75 * (n - 0.5) + 0.25 * (n2 - 0.5)) * 1.15, 0.0, 1.0);
+    vec3 cloud = mix(vec3(0.62, 0.70, 0.78), vec3(1.0, 0.97, 0.90), smoothstep(0.3, 0.75, n2));
+    outc = mix(outc, cloud, clamp(dens * bank, 0.0, 1.0));
+  }
   out_FragColor = vec4(outc, src.a);
 }
 `;
@@ -275,6 +329,49 @@ function groundMesh(gz, R, step = 6) {
     nr[q] /= L; nr[q + 1] /= L; nr[q + 2] /= L;
   }
   return { p: new Float32Array(p), n: nr, uv: new Float32Array(uv), c: new Float32Array(c), idx: new Uint32Array(idx) };
+}
+
+// ---------- (exp/city-loop-v3, seam trial b) earth skirt wall around the disc
+const SKIRT_BANDS = [
+  // [depth from the top as a share of the wall, sRGB colour]
+  [0.0, '#6aa53d'],
+  [0.04, '#5d8f35'],
+  [0.08, '#8a6440'],
+  [0.45, '#6e4a30'],
+  [1.0, '#3f2c1f'],
+];
+function addSkirt(soup, gz, R, depth, sides = 180) {
+  const lin = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+  let tris = 0;
+  for (let i = 0; i < sides; i++) {
+    const a0 = (i / sides) * Math.PI * 2;
+    const a1 = ((i + 1) / sides) * Math.PI * 2;
+    const [x0, y0, x1, y1] = [Math.cos(a0) * R, Math.sin(a0) * R, Math.cos(a1) * R, Math.sin(a1) * R];
+    const am = (a0 + a1) / 2;
+    const nx = Math.cos(am);
+    const ny = Math.sin(am);
+    const top0 = gz(x0, y0) + 0.3;
+    const top1 = gz(x1, y1) + 0.3;
+    for (let b = 0; b + 1 < SKIRT_BANDS.length; b++) {
+      const [s0, c0] = SKIRT_BANDS[b];
+      const [s1, c1] = SKIRT_BANDS[b + 1];
+      // a slightly ragged lower edge per band, so the wall reads as earth, not a pipe
+      const j = (k) => (b ? 0.6 * Math.sin(k * 7.3 + b * 1.9) : 0);
+      const qa = [x0, y0, top0 - depth * s0 + j(i)];
+      const qb = [x1, y1, top1 - depth * s0 + j(i + 1)];
+      const qc = [x1, y1, top1 - depth * s1 + j(i + 1)];
+      const qd = [x0, y0, top0 - depth * s1 + j(i)];
+      const ca = lin(c0);
+      const cb = lin(c1);
+      for (const [p, c] of [[qa, ca], [qb, ca], [qc, cb], [qa, ca], [qc, cb], [qd, cb]]) {
+        soup.p.push(...p);
+        soup.n.push(nx, ny, 0);
+        soup.c.push(...c, 1);
+      }
+      tris += 2;
+    }
+  }
+  soup.triangles = (soup.triangles ?? 0) + tris;
 }
 
 // ---------- painted ground texture
@@ -488,12 +585,15 @@ export async function mountCityDiorama({ viewer, win = globalThis.window, search
   const gm = groundMesh(gz, Rg);
   const png = await paintGround(fixture, built, o, Rg);
   state.timing.paintMs = Math.round(performance.now() - t0 - state.timing.buildMs);
+  if (o.skirt > 0) addSkirt(built.soup, gz, Rg + 2, o.skirt + o.lift);
   const bytes = glb({ ground: gm, objects: built.soup, png, protos: built.protos });
   const { lat, lon } = fixture.centre;
   const h0 = (ground?.centre ?? 0) + (ground?.offset ?? 0);
   const centreWC = Cesium.Cartesian3.fromDegrees(lon, lat, h0);
   const upWC = Cesium.Ellipsoid.WGS84.geodeticSurfaceNormal(centreWC, new Cesium.Cartesian3());
   const enu = Cesium.Transforms.eastNorthUpToFixedFrame(centreWC);
+  const eastWC = Cesium.Cartesian3.normalize(Cesium.Matrix4.multiplyByPointAsVector(enu, Cesium.Cartesian3.UNIT_X, new Cesium.Cartesian3()), new Cesium.Cartesian3());
+  const northWC = Cesium.Cartesian3.normalize(Cesium.Matrix4.multiplyByPointAsVector(enu, Cesium.Cartesian3.UNIT_Y, new Cesium.Cartesian3()), new Cesium.Cartesian3());
   const az = (o.sunAz * Math.PI) / 180;
   const el = (o.sunEl * Math.PI) / 180;
   const keyENU = new Cesium.Cartesian3(Math.sin(az) * Math.cos(el), Math.cos(az) * Math.cos(el), Math.sin(el));
@@ -622,6 +722,22 @@ export async function mountCityDiorama({ viewer, win = globalThis.window, search
     state.mark = { plots: plots.length, box: [x0, y0, x1, y1].map((v) => Math.round(v)) };
     scene.requestRender();
   }
+  let liftNow = -1;
+  const liftM = new Cesium.Matrix4();
+  function syncLift() {
+    if (!(o.lift > 0)) return;
+    const hc = (scene.camera.positionCartographic?.height ?? 0) - h0;
+    const s = Math.min(1, Math.max(0, (hc - o.liftFrom) / Math.max(1, o.liftTo - o.liftFrom)));
+    const lift = Math.round(o.lift * s * s * (3 - 2 * s) * 10) / 10;
+    if (lift === liftNow) return;
+    liftNow = lift;
+    Cesium.Matrix4.multiply(enu, Cesium.Matrix4.fromTranslation(new Cesium.Cartesian3(0, 0, lift), liftM), liftM);
+    model.modelMatrix = liftM;
+    state.lift = lift;
+    scene.requestRender();
+  }
+  const offLift = scene.preRender.addEventListener(syncLift);
+  syncLift();
   let last = 0;
   const offPre = scene.preUpdate.addEventListener(() => {
     const now = performance.now();
@@ -651,6 +767,12 @@ export async function mountCityDiorama({ viewer, win = globalThis.window, search
       cutR: o.radius,
       warm: o.warm,
       mistColor: lin(o.warm > 0.5 ? '#dfe8c6' : '#cfe3dc'),
+      eastEC: () => Cesium.Cartesian3.normalize(Cesium.Matrix4.multiplyByPointAsVector(scene.camera.viewMatrix, eastWC, new Cesium.Cartesian3()), new Cesium.Cartesian3()),
+      northEC: () => Cesium.Cartesian3.normalize(Cesium.Matrix4.multiplyByPointAsVector(scene.camera.viewMatrix, northWC, new Cesium.Cartesian3()), new Cesium.Cartesian3()),
+      bank: o.bank,
+      bankW: o.bankW,
+      bankFar: o.bankFar,
+      match: o.match,
     },
   });
   scene.postProcessStages.add(stage);
@@ -669,6 +791,7 @@ export async function mountCityDiorama({ viewer, win = globalThis.window, search
     stage,
     remove() {
       offPre();
+      offLift();
       for (const [ts, { polygon, created }] of cuts) {
         if (ts.isDestroyed()) continue;
         ts.clippingPolygons?.remove(polygon);

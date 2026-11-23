@@ -4930,5 +4930,8 @@
   "Homes × 2.3 people (assumed)": "Квартиры × 2,3 человека (допущение)",
   "Build tray": "Панель строительства",
   "{area} ha": "{area} га",
-  "Click a plot, shift-click a second: grow a district": "Щёлкните участок, затем Shift+щелчок по второму: вырастить квартал"
+  "Click a plot, shift-click a second: grow a district": "Щёлкните участок, затем Shift+щелчок по второму: вырастить квартал",
+  "Capturing this view…": "Снимаем этот вид…",
+  "Painting the postcard (about a minute)…": "Рисуем открытку (около минуты)…",
+  "{label}: a look of this view, not a plan, a measurement or an approval.": "{label}: облик этого вида, а не план, измерение или одобрение."
 }

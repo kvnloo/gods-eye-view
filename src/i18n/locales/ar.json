@@ -5154,5 +5154,8 @@
   "Homes × 2.3 people (assumed)": "المساكن × 2.3 شخص (مفترض)",
   "Build tray": "درج البناء",
   "{area} ha": "{area} هكتار",
-  "Click a plot, shift-click a second: grow a district": "انقر قطعة، ثم Shift+نقر قطعة ثانية: لتنمية حي"
+  "Click a plot, shift-click a second: grow a district": "انقر قطعة، ثم Shift+نقر قطعة ثانية: لتنمية حي",
+  "Capturing this view…": "جارٍ التقاط هذا المشهد…",
+  "Painting the postcard (about a minute)…": "جارٍ رسم البطاقة البريدية (نحو دقيقة)…",
+  "{label}: a look of this view, not a plan, a measurement or an approval.": "{label}: مظهر لهذا المشهد، وليس خطة أو قياسًا أو موافقة."
 }

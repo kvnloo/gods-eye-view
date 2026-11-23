@@ -4706,5 +4706,8 @@
   "Homes × 2.3 people (assumed)": "Bostäder × 2,3 personer (antaget)",
   "Build tray": "Byggfält",
   "{area} ha": "{area} ha",
-  "Click a plot, shift-click a second: grow a district": "Klicka på en tomt, skift-klicka på en andra: låt ett kvarter växa"
+  "Click a plot, shift-click a second: grow a district": "Klicka på en tomt, skift-klicka på en andra: låt ett kvarter växa",
+  "Capturing this view…": "Fångar den här vyn…",
+  "Painting the postcard (about a minute)…": "Målar vykortet (ungefär en minut)…",
+  "{label}: a look of this view, not a plan, a measurement or an approval.": "{label}: ett utseende för den här vyn, inte en plan, en mätning eller ett godkännande."
 }

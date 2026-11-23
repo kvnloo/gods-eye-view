@@ -4818,5 +4818,8 @@
   "Homes × 2.3 people (assumed)": "Logements × 2,3 personnes (hypothèse)",
   "Build tray": "Barre de construction",
   "{area} ha": "{area} ha",
-  "Click a plot, shift-click a second: grow a district": "Cliquez une parcelle, Maj+clic une seconde : faites croître un quartier"
+  "Click a plot, shift-click a second: grow a district": "Cliquez une parcelle, Maj+clic une seconde : faites croître un quartier",
+  "Capturing this view…": "Capture de cette vue…",
+  "Painting the postcard (about a minute)…": "Peinture de la carte postale (environ une minute)…",
+  "{label}: a look of this view, not a plan, a measurement or an approval.": "{label} : un rendu de cette vue, pas un plan, une mesure ni une approbation."
 }

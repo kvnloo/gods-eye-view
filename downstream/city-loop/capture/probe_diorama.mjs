@@ -49,7 +49,7 @@ await page.evaluate(async () => {
   worldClock.seek(Date.parse('2026-06-21T15:00:00Z'));
 });
 await page.locator('#top-center-actions [data-city-builder-open]').click();
-if (/look=diorama/.test(args.query || ''))
+if (/look=diorama|city=v3/.test(args.query || ''))
   await page.waitForFunction(() => window.__gevDiorama?.state?.ready || window.__gevDioramaError, null, { timeout: 120000, polling: 500 }).catch(() => {});
 log.diorama = await page.evaluate(() => ({ state: window.__gevDiorama?.state ?? null, error: window.__gevDioramaError ?? null }));
 for (const name of (args.views || 'site,district').split(',')) {

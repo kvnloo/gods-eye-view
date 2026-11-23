@@ -4706,5 +4706,8 @@
   "Homes × 2.3 people (assumed)": "Wohnungen × 2,3 Personen (angenommen)",
   "Build tray": "Bauleiste",
   "{area} ha": "{area} ha",
-  "Click a plot, shift-click a second: grow a district": "Fläche anklicken, mit Umschalt eine zweite: Viertel wachsen lassen"
+  "Click a plot, shift-click a second: grow a district": "Fläche anklicken, mit Umschalt eine zweite: Viertel wachsen lassen",
+  "Capturing this view…": "Diese Ansicht wird erfasst…",
+  "Painting the postcard (about a minute)…": "Die Postkarte wird gemalt (etwa eine Minute)…",
+  "{label}: a look of this view, not a plan, a measurement or an approval.": "{label}: ein Look dieser Ansicht, kein Plan, keine Messung und keine Genehmigung."
 }

@@ -48,6 +48,17 @@ export const DIORAMA_DEFAULTS = Object.freeze({
   lod: 1, // (r6) 1: lighter tree prototypes (2-tier pines, 1-2 crown blobs) for software renderers
   instanced: 1, // trees as EXT_mesh_gpu_instancing prototypes (0: merged into one mesh)
   street: 0.8, // (r2) probability of a street tree every 9 m along each side of wide streets
+  // exp/city-loop-v3 seam trials (D1, after 4 blend trials): new mechanism classes
+  // (b) map edge: a raised plinth with earth skirt walls and a cloud bank around it
+  lift: 0, // metres the diorama rises at far zoom (0 = off)
+  liftFrom: 900, // camera height over the district where the lift starts...
+  liftTo: 1400, // ...and is full
+  skirt: 0, // depth of the earth skirt wall around the disc, metres (0 = off)
+  bank: 0, // cloud bank opacity at the disc edge (0 = off)
+  bankW: 260, // cloud bank falloff width, metres
+  bankFar: 0.55, // cloud bank opacity that stays over the far context
+  // (c) a painterly palette match: the photoreal context takes the diorama's palette
+  match: 0, // strength 0..1 (0 = off)
 });
 
 const num = (v, d) => (Number.isFinite(Number(v)) ? Number(v) : d);

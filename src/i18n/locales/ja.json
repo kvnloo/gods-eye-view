@@ -4594,5 +4594,8 @@
   "Homes × 2.3 people (assumed)": "住戸数 × 2.3 人（仮定）",
   "Build tray": "建設トレイ",
   "{area} ha": "{area} ヘクタール",
-  "Click a plot, shift-click a second: grow a district": "区画をクリックし、Shift+クリックで2つ目を選ぶと地区が育ちます"
+  "Click a plot, shift-click a second: grow a district": "区画をクリックし、Shift+クリックで2つ目を選ぶと地区が育ちます",
+  "Capturing this view…": "このビューをキャプチャしています…",
+  "Painting the postcard (about a minute)…": "ポストカードを描いています（約1分）…",
+  "{label}: a look of this view, not a plan, a measurement or an approval.": "{label}：このビューの見た目であり、計画・測定・承認ではありません。"
 }

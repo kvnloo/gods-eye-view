@@ -4594,5 +4594,8 @@
   "Homes × 2.3 people (assumed)": "住宅套数 × 2.3 人（假设）",
   "Build tray": "建造栏",
   "{area} ha": "{area} 公顷",
-  "Click a plot, shift-click a second: grow a district": "点击一个地块，再按住 Shift 点击第二个：生成街区"
+  "Click a plot, shift-click a second: grow a district": "点击一个地块，再按住 Shift 点击第二个：生成街区",
+  "Capturing this view…": "正在截取此视图…",
+  "Painting the postcard (about a minute)…": "正在绘制明信片（约一分钟）…",
+  "{label}: a look of this view, not a plan, a measurement or an approval.": "{label}：此视图的观感，并非规划、测量或批准。"
 }

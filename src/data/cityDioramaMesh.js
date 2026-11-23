@@ -40,6 +40,8 @@ export const DIORAMA_DEFAULTS = Object.freeze({
   roadW: 1, // street width multiplier on the painted ground
   tilt: 0, // screen-space tilt-shift strength in the blend stage (0 = off)
   tiltY: 0.55, // focus band centre, fraction of the frame height from the top
+  mist: 0, // strength of the mist bank on the photoreal just outside the cut
+  mistW: 60, // its width, metres
   street: 0, // probability of a street tree every 9 m along each side of wide streets
 });
 

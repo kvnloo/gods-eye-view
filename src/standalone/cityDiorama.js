@@ -63,6 +63,9 @@ uniform vec2 texel;
 uniform float debug;
 uniform float tilt;
 uniform float tiltY;
+uniform float mist;
+uniform float mistW;
+uniform float cutR;
 
 vec3 softened(vec2 uv, float k) {
   vec3 s = vec3(0.0);
@@ -95,14 +98,18 @@ void main() {
   // miniature lens: soften away from a horizontal focus band (all depths)
   float lens = tilt * smoothstep(0.12, 0.5, abs((1.0 - uv.y) - tiltY));
   if (lens > 0.001) src.rgb = mix(src.rgb, softened(uv, 1.0 + 3.0 * lens), clamp(lens * 1.4, 0.0, 1.0));
-  if (t <= 0.001) { out_FragColor = src; return; }
+  // a mist bank hugging the cut: the sliced photoreal walls fade into haze
+  float m = dist >= 0.0 ? mist * exp(-pow(max(dist - cutR + 8.0, 0.0) / max(mistW, 1.0), 2.0)) * step(cutR - 8.0, dist) : 0.0;
+  if (t <= 0.001 && m <= 0.001) { out_FragColor = src; return; }
   vec3 b = softened(uv, 1.0 + 2.5 * t);
   float l = dot(b, vec3(0.299, 0.587, 0.114));
   vec3 g = mix(b, vec3(l), 0.35 * t);
   // pull the photo toward the diorama key: lift greens, warm built surfaces
   g *= vec3(1.02, 1.04, 0.98);
   g = mix(g, fogColor, fog * t);
-  out_FragColor = vec4(mix(src.rgb, g, t), src.a);
+  vec3 outc = mix(src.rgb, g, t);
+  outc = mix(outc, fogColor, clamp(m, 0.0, 1.0));
+  out_FragColor = vec4(outc, src.a);
 }
 `;
 
@@ -541,6 +548,9 @@ export async function mountCityDiorama({ viewer, win = globalThis.window, search
       debug: o.debug,
       tilt: o.tilt,
       tiltY: o.tiltY,
+      mist: o.mist,
+      mistW: o.mistW,
+      cutR: o.radius,
     },
   });
   scene.postProcessStages.add(stage);

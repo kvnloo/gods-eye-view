@@ -22,3 +22,10 @@ test('all turns every round-1 feature on; other looks are ignored', () => {
   assert.equal(f.look, null);
   for (const k of CITY_R1_FEATURES) assert.equal(f[k], true);
 });
+
+test('city=v3 preset: the diorama look; an explicit look wins', () => {
+  assert.equal(cityLookFlags('?city=v3').look, 'diorama');
+  assert.equal(cityLookFlags('?city=v3&look=cozy').look, 'cozy');
+  assert.equal(cityLookFlags('?city=v2').look, null);
+  assert.equal(cityLookFlags('?look=diorama').look, 'diorama');
+});

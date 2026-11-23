@@ -36,7 +36,9 @@ export function cityHudFlags(search = '') {
       .map((s) => s.trim().toLowerCase())
       .filter(Boolean),
   );
-  const all = asked.has('game');
+  // exp/city-loop-v3: ?city=v3 is the integrated preset (look=diorama +
+  // cityHud=game); an explicit ?cityHud= still wins.
+  const all = asked.has('game') || (!q.has('cityHud') && q.get('city') === 'v3');
   const flags = {};
   for (const p of CITY_HUD_PARTS) flags[p] = all || asked.has(p);
   flags.any = CITY_HUD_PARTS.some((p) => flags[p]);
@@ -73,9 +75,14 @@ export const TRAY_CATEGORIES = Object.freeze([
     id: 'build',
     icon: 'view_in_ar',
     key: '2',
-    // The plot's wheel already holds Reimagine and Inspect: the tray does not
-    // repeat them (round-1 panel: repeated verbs read as clutter).
-    tools: Object.freeze([{ id: 'massing', icon: 'view_in_ar', verb: 'massing' }]),
+    // exp/city-loop-v3: the three build verbs are back in the tray. The r7
+    // declutter (one verb) cost game_feel 2/2; its placement fix (tray clear of
+    // the search dock) and known-figures-only bar are kept.
+    tools: Object.freeze([
+      { id: 'massing', icon: 'view_in_ar', verb: 'massing' },
+      { id: 'reimagine', icon: 'auto_awesome', verb: 'act' },
+      { id: 'inspect', icon: 'search', verb: 'act' },
+    ]),
   }),
   Object.freeze({
     id: 'park',

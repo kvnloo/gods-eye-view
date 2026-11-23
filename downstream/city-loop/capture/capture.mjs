@@ -379,7 +379,7 @@ try {
     }, { lat: SITE.lat, lon: SITE.lon, alt: DISTRICT_ALT });
     await sleep(8000);
     // FORK-ONLY (exp/city-look-diorama): ?look=diorama builds its district in the page; wait for it.
-    if (/look=diorama/.test(QUERY)) {
+    if (/look=diorama|city=v3/.test(QUERY)) {
       await until(() => window.__gevDiorama?.state?.ready || window.__gevDioramaError, 'diorama ready', 120000).catch((e) => manifest.console.push({ type: 'capture-warn', text: e.message }));
       manifest.diorama = await page.evaluate(() => ({ state: window.__gevDiorama?.state ?? null, error: window.__gevDioramaError ?? null }));
       await sleep(3000);
@@ -503,7 +503,7 @@ try {
     return { stops, stages };
   });
   await frameTiming('end');
-  if (/look=diorama/.test(QUERY)) {
+  if (/look=diorama|city=v3/.test(QUERY)) {
     // fps with the diorama vs. without it, same camera (the growth beat's), same browser
     await page.evaluate(() => { const d = window.__gevDiorama; if (d) { d.model.show = false; d.stage.enabled = false; } });
     await frameTiming('end-diorama-hidden');

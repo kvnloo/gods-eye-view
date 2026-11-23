@@ -48,10 +48,14 @@ test('tray: five categories with unique shortcuts, build open by default', () =>
   assert.equal(new Set(keys).size, keys.length);
   const m = trayModel({ plot: true });
   assert.equal(m.open, 'build');
-  // The wheel holds Reimagine and Inspect; the tray does not repeat them.
+  // exp/city-loop-v3: the tray keeps its three build verbs (r7 cost game_feel).
   assert.deepEqual(
     m.tools.map((t) => [t.id, t.key]),
-    [['massing', 'q']],
+    [
+      ['massing', 'q'],
+      ['reimagine', 'w'],
+      ['inspect', 'e'],
+    ],
   );
   assert.ok(m.tools.every((t) => !t.disabled));
 });
@@ -77,7 +81,10 @@ test('tray: the zoning budget blocks a new use but not the plot’s own', () => 
 
 test('tray: a pending concept blocks concept tools; massing stays', () => {
   const build = trayModel({ category: 'build', plot: true, pending: true });
-  assert.equal(build.tools[0].disabled, false);
+  const by = Object.fromEntries(build.tools.map((t) => [t.id, t]));
+  assert.equal(by.reimagine.reason, 'pending');
+  assert.equal(by.massing.disabled, false);
+  assert.equal(by.inspect.disabled, false);
   const park = trayModel({ category: 'park', plot: true, pending: true });
   assert.ok(park.tools.every((t) => t.reason === 'pending'));
   const full = trayModel({ category: 'transit', plot: true, full: true });
@@ -243,4 +250,14 @@ test('dust: puffs round the footprint grow out and fade to nothing', () => {
   assert.ok(Math.hypot(late[0].x, late[0].y) > Math.hypot(early[0].x, early[0].y));
   assert.deepEqual(dustPuffs(1400), []);
   assert.deepEqual(dustPuffs(100), dustPuffs(100));
+});
+
+test('city=v3 preset turns every HUD part on; an explicit cityHud wins', () => {
+  const v3 = cityHudFlags('?city=v3');
+  for (const p of CITY_HUD_PARTS) assert.equal(v3[p], true);
+  assert.equal(v3.any, true);
+  const only = cityHudFlags('?city=v3&cityHud=bar');
+  assert.equal(only.bar, true);
+  assert.equal(only.plots, false);
+  assert.equal(cityHudFlags('?city=v2').any, false);
 });

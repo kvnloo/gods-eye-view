@@ -31,7 +31,10 @@ body.gev-city-play #cesiumContainer {
    beats any stylesheet rule without !important: without it the dark circular
    scope stayed over the whole game view (exp/city-game-hud round 0). */
 body.gev-city-play #scope-mask {
-  opacity: 0 !important;
+  /* exp/city-loop-v3 (HUD arm r0c): the scope frame stays, dimmed to 0.45. The
+     panel read the dark frame as GEV branding and as contrast for the wordmark
+     and attribution; fully hidden (r0) lost gev_brand and legibility. */
+  opacity: 0.45 !important;
   transition: opacity var(--transition-smooth);
 }
 
@@ -72,11 +75,8 @@ body.gev-city-play #scope-mask {
   pointer-events: none;
   background:
     linear-gradient(180deg, rgba(4, 8, 12, 0.62) 0, transparent 150px),
-    linear-gradient(0deg, rgba(4, 8, 12, 0.55) 0, transparent 190px),
-    /* A soft corner fall-off keeps GEV's framing and the attribution legible
-       without the opaque scope circle (exp/city-game-hud r0b: the panel read
-       full-bleed as better integrated but less on-brand and less legible). */
-    radial-gradient(ellipse 78% 74% at 50% 50%, transparent 62%, rgba(4, 8, 12, 0.5) 100%);
+    linear-gradient(0deg, rgba(4, 8, 12, 0.55) 0, transparent 190px);
+  /* The r0b corner fall-off is dropped: the dimmed scope mask (r0c) frames the view. */
 }
 .city-play :is(button, nav, aside, section, .city-play-bar) {
   pointer-events: auto;

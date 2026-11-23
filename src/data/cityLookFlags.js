@@ -4,6 +4,8 @@
 // parent build.
 //
 //   ?look=cozy            the Cozy Valley post chain (src/standalone/cozyValleyLook.js)
+//   ?look=diorama         the low-poly OSM district (src/standalone/cityDiorama.js)
+//   ?city=v3              preset: look=diorama + cityHud=game (exp/city-loop-v3)
 //   ?cityR1=ghost,flat,kit,chip,tray | all
 //     ghost  select: a footprint ghost draped on the ground, no cyan prism
 //     flat   reimagine: the concept laid flat on its plot, no kind tint
@@ -28,7 +30,9 @@ export function cityLookFlags(search = '') {
       .filter(Boolean),
   );
   const all = asked.has('all');
-  const look = q.get('look');
+  // exp/city-loop-v3: ?city=v3 is the integrated preset (look=diorama +
+  // cityHud=game, src/data/cityGameHud.js); an explicit ?look= still wins.
+  const look = q.get('look') ?? (q.get('city') === 'v3' ? 'diorama' : null);
   const flags = { look: look === 'cozy' || look === 'diorama' ? look : null };
   for (const f of CITY_R1_FEATURES) flags[f] = all || asked.has(f);
   return Object.freeze(flags);

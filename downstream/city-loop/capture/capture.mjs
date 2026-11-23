@@ -12,6 +12,7 @@
 // <app checkout>/.env must hold CESIUM_ION_TOKEN (never printed here).
 // This file must be served by the same vite root so the page can import
 // /downstream/city-loop/filter/cozyValley.js (copy or symlink downstream/ in).
+import { captureTargets } from './capture-targets.mjs';
 import { captureJudgeFrame, frameProvenance } from './judge-frame.mjs';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -49,16 +50,7 @@ const { siteForPlot } = await import(
 
 // Frozen capture contract (changing any of these starts a new baseline).
 const VIEWPORT = { width: 1600, height: 1000 };
-// exp/city-loc-green: ?cityLoc=<key> in --query also picks the QA plot (src/data/cityLocations.js);
-// exp/city-loop-v4: so does ?city=hero (its hero location) when no cityLoc is given
-const QP = new URLSearchParams(QUERY);
-const HERO = QP.get('city') === 'hero';
-const { CITY_LOCATIONS, HERO_CITY_LOCATION } = QP.get('cityLoc') || HERO
-  ? await import(pathToFileURL(path.join(APP, 'src/data/cityLocations.js')).href)
-  : { CITY_LOCATIONS: {} };
-const LOC = QP.get('cityLoc') ?? (HERO ? HERO_CITY_LOCATION : null);
-if (LOC && !CITY_LOCATIONS[LOC]) throw new Error(`unknown cityLoc ${LOC}`);
-const PLOT = process.env.CAPTURE_PLOT || CITY_LOCATIONS[LOC]?.gridPlot || CITY_LOCATIONS[LOC]?.plot || 'plot-n105201-126637'; // QA default: Washington Sq, SF
+const { location, plot: PLOT, oppositePlot } = await captureTargets(APP, QUERY, process.env.CAPTURE_PLOT);
 // exp/city-loop-v4 (licence lane; Google Map Tiles policies and GMP ToS 3.2.3):
 // a frame that shows Google photoreal tiles never goes to a judge, the proxy, a
 // report, a gallery or git. In-context frames (and the recorded video) are
@@ -69,7 +61,7 @@ const PLOT = process.env.CAPTURE_PLOT || CITY_LOCATIONS[LOC]?.gridPlot || CITY_L
 // requires before any critic reads an image.
 const JUDGE_ONLY = Boolean(args['judge-only']);
 const SANITY = fileURLToPath(new URL('../critics/sanity_gate.py', import.meta.url));
-const PLACE = CITY_LOCATIONS[LOC]?.place ?? 'San Francisco'; // q03: the location's own place name
+const PLACE = location?.place ?? 'San Francisco'; // q03: the location's own place name
 // --own: after each beat shot, one more with every 3D tileset hidden (no Google pixels) for judging
 const OWN = Boolean(args.own) || JUDGE_ONLY;
 const COZY = !args['no-cozy'] && !JUDGE_ONLY;
@@ -125,7 +117,7 @@ const manifest = {
   ephemeral: [],
   ephemeralDir: EPHEMERAL,
   judgeOnly: JUDGE_ONLY,
-  location: LOC ?? 'northbeach(default)',
+  location: location?.key ?? 'northbeach(default)',
   console: [],
   pageErrors: [],
   marks: {},
@@ -665,8 +657,7 @@ try {
       }
     });
     if (!has) throw new Error('ABSENT: this app SHA has no growth timeline (src/data/cityGrowth.js)');
-    const opposite = CITY_LOCATIONS[LOC]?.gridOppositePlot;
-    const { far } = opposite ? { far: [opposite] } : await page.evaluate(async (plotId) => {
+    const { far } = oppositePlot ? { far: [oppositePlot] } : await page.evaluate(async (plotId) => {
       const { PLOT_METERS, plotFromId, snapPlot } = await import('/src/data/cityPlot.js');
       const p = plotFromId(plotId);
       const list = [[4, 4], [4, -4], [-4, 4], [-4, -4]].map(([r, c]) =>

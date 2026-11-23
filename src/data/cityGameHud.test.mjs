@@ -260,4 +260,6 @@ test('city=v3 preset turns every HUD part on; an explicit cityHud wins', () => {
   assert.equal(only.bar, true);
   assert.equal(only.plots, false);
   assert.equal(cityHudFlags('?city=v2').any, false);
+  const hero = cityHudFlags('?city=hero');
+  for (const p of CITY_HUD_PARTS) assert.equal(hero[p], true, `hero ${p}`);
 });

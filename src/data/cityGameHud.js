@@ -38,7 +38,7 @@ export function cityHudFlags(search = '') {
   );
   // exp/city-loop-v3: ?city=v3 is the integrated preset (look=diorama +
   // cityHud=game); an explicit ?cityHud= still wins.
-  const all = asked.has('game') || (!q.has('cityHud') && q.get('city') === 'v3');
+  const all = asked.has('game') || (!q.has('cityHud') && ['v3', 'hero'].includes(q.get('city')));
   const flags = {};
   for (const p of CITY_HUD_PARTS) flags[p] = all || asked.has(p);
   flags.any = CITY_HUD_PARTS.some((p) => flags[p]);

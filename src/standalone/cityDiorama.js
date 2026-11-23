@@ -601,19 +601,22 @@ export async function mountCityDiorama({ viewer, win = globalThis.window, search
       for (let i = 0; i < n; i++) ring.push([ax + ((bx - ax) * i) / n, ay + ((by - ay) * i) / n]);
     };
     edge(x0, y0, x1, y0); edge(x1, y0, x1, y1); edge(x1, y1, x0, y1); edge(x0, y1, x0, y0);
+    const cyan = Cesium.Color.fromCssColorString('#2ec8e8');
     const line = [...ring, ring[0]].map(([x, y]) => at(x, y, 0.9));
     marks.entities.add({
       polyline: {
         positions: line,
-        width: 6,
-        material: new Cesium.PolylineGlowMaterialProperty({ glowPower: 0.25, color: Cesium.Color.fromCssColorString('#2ec8e8') }),
+        width: 9,
+        material: new Cesium.PolylineGlowMaterialProperty({ glowPower: 0.3, color: cyan }),
+        // where diorama houses stand in front, the outline still shows, fainter
+        depthFailMaterial: new Cesium.ColorMaterialProperty(cyan.withAlpha(0.55)),
       },
     });
     marks.entities.add({
       polygon: {
         hierarchy: new Cesium.PolygonHierarchy(ring.map(([x, y]) => at(x, y, 0.6))),
         perPositionHeight: true,
-        material: Cesium.Color.fromCssColorString('#2ec8e8').withAlpha(0.16),
+        material: cyan.withAlpha(0.22),
       },
     });
     state.mark = { plots: plots.length, box: [x0, y0, x1, y1].map((v) => Math.round(v)) };

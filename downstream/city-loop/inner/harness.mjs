@@ -20,6 +20,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { performance } from 'node:perf_hooks';
 import { labelFailures, placementFailures } from './invariants.mjs';
+import { waterSupportFailures } from './water-support.mjs';
 import { EXPECTED_PLACE, LOCATION_KEYS, loadLocation } from './locations.mjs';
 
 const t0 = performance.now();
@@ -37,6 +38,7 @@ const PICK_RADIUS = Number(arg('radius', 299));
 const QUIET = argv.includes('--quiet');
 
 const app = async (rel) => import(pathToFileURL(join(ROOT, 'src/data', rel)).href);
+const mesh = await app('cityDioramaMesh.js');
 const plotMod = await app('cityPlot.js');
 const massingMod = await app('cityMassing.js');
 const hudMod = await app('cityGameHud.js');
@@ -227,8 +229,36 @@ function runLocation(key) {
   const failing = placements.filter((p) => p.failures.length);
   const byCheck = {};
   for (const p of failing) for (const f of p.failures) byCheck[f.check] = (byCheck[f.check] ?? 0) + 1;
+  const localSample = (x, y) => sample(loc.fixture.lonlat(x, y));
+  const supports = waterSupportFailures(
+    mesh, { ...loc.json, key }, loc.waterRaster,
+    localSample,
+  );
+  // Add a small pool in a separate test fixture at each terrain origin, so
+  // a location without actual waterfront buildings still exercises I1b.
+  const poolRaster = {
+    n: 3, cell: 16, half: 24,
+    rle: [[[0, 3]], [[0, 1], [1, 1], [0, 1]], [[0, 3]]],
+  };
+  const controls = waterSupportFailures(mesh, {
+    key: `${key}:control`,
+    buildings: [
+      { k: 'houseboat', p: [[-5, -5], [5, -5], [5, 5], [-5, 5]] },
+      { k: 'commercial', p: [[5, -5], [15, -5], [15, 5], [5, 5]] },
+      { k: 'yes', p: [[-12, -12], [12, -12], [12, 12], [-12, 12]] },
+    ],
+  }, poolRaster, localSample);
+  supports.checked += controls.checked;
+  supports.failures.push(...controls.failures);
+  if (controls.checked !== 3) throw new Error(`missing water-support controls at ${key}`);
   return {
     key,
+    supports,
+    failureIds: [
+      ...failing.flatMap((p) => p.failures.map((f) => `I1:${f.check}:${key}:${p.kind}:${p.id}`)),
+      ...labels.map((f) => `I2:${f.check}:${key}:${f.where}`),
+      ...supports.failures.map((f) => `I1:${f}`),
+    ],
     water: loc.waterSource,
     shore: Boolean(loc.shoreSource),
     terrain: loc.dem.meta.source,
@@ -266,19 +296,21 @@ const totals = {
   failureItems: results.reduce((s, r) => s + r.failureItems, 0),
   labelFailures: results.reduce((s, r) => s + r.labelFailures, 0) + dash.length,
 };
-totals.invariantFailures = totals.failingPlacements + totals.labelFailures;
+totals.supportFailures = results.reduce((s, r) => s + r.supports.failures.length, 0);
+totals.invariantFailures = totals.failingPlacements + totals.labelFailures + totals.supportFailures;
 const coverage = results.every((r) => r.journey.plot && r.journey.district >= 16 && r.reachablePlots >= 16);
-const report = { root: ROOT, seed: SEED, seconds: +seconds.toFixed(2), coverage, totals, dash, locations: results };
+const report = { failureIds: [...new Set([...results.flatMap((r) => r.failureIds), ...dash.map((f) => `I2:${f.check}:${f.where}`)])], root: ROOT, seed: SEED, seconds: +seconds.toFixed(2), coverage, totals, dash, locations: results };
 if (arg('json')) writeFileSync(arg('json'), JSON.stringify(report, null, 1));
 if (!QUIET)
   for (const r of results)
     console.log(
       `${r.key.padEnd(10)} hero=${r.journey.plot} district=${r.journey.district} picks ${r.resolvedPicks}/${r.picks} ` +
         `reachable=${r.reachablePlots} districts=${r.randomDistricts} placements=${r.placements} ` +
-        `failing=${r.failingPlacements} labels=${r.labelFailures} ${JSON.stringify(r.byCheck)}`,
+        `failing=${r.failingPlacements} labels=${r.labelFailures} I1b=${r.supports.failures.length}/${r.supports.checked} ${JSON.stringify(r.byCheck)}`,
     );
+for (const r of results) for (const id of new Set(r.failureIds)) console.log(id);
 console.log(
   `inner-loop: ${totals.invariantFailures} invariant failures (${totals.failingPlacements}/${totals.placements} placements, ` +
-    `${totals.labelFailures} labels), coverage=${coverage ? 'ok' : 'LOW'}, ${seconds.toFixed(2)} s`,
+    `${totals.labelFailures} labels, ${totals.supportFailures} water supports), coverage=${coverage ? 'ok' : 'LOW'}, ${seconds.toFixed(2)} s`,
 );
 process.exit(totals.invariantFailures === 0 && coverage ? 0 : 1);

@@ -47,6 +47,7 @@ export function loadLocation(root, key, location) {
     key,
     json,
     fixture,
+    waterRaster: json.water ?? water,
     waterSource: json.water ? 'fixture' : water ? rebuilt : null,
     shoreSource: fixture.waterLines.length ? xml : null,
     dem: loadDem(key),

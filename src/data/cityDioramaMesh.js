@@ -481,11 +481,100 @@ export function levelWater(ground, water) {
   return levels;
 }
 
+// Clip the footprint to each wet cell. Checking only the footprint vertices
+// misses a water cell enclosed by the footprint or crossed by a long edge.
+function clipEdge(polygon, axis, edge, sign) {
+  const clipped = [];
+  for (let i = 0; i < polygon.length; i++) {
+    const a = polygon[i], b = polygon[(i + 1) % polygon.length];
+    const da = (a[axis] - edge) * sign, db = (b[axis] - edge) * sign;
+    if (da >= 0) clipped.push(a);
+    if ((da > 0 && db < 0) || (da < 0 && db > 0)) {
+      const t = da / (da - db);
+      clipped.push([a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])]);
+    }
+  }
+  return clipped;
+}
+
+function footprintWater(polygon, water) {
+  if (!water) return null;
+  const { n, half, cell, ids } = water;
+  const xs = polygon.map(([x]) => x), ys = polygon.map(([, y]) => y);
+  const col = (x) => Math.floor((x + half) / cell);
+  const row = (y) => Math.floor((half - y) / cell);
+  const iMin = Math.max(0, col(Math.min(...xs)));
+  const iMax = Math.min(n - 1, col(Math.max(...xs)));
+  const bodies = new Map();
+  for (let j = Math.max(0, row(Math.max(...ys))); j <= Math.min(n - 1, row(Math.min(...ys))); j++) {
+    const y = half - j * cell;
+    for (let i = iMin; i <= iMax; i++) {
+      const id = ids[j * n + i];
+      if (!id) continue;
+      const x = i * cell - half;
+      let overlap = clipEdge(polygon, 0, x, 1);
+      overlap = clipEdge(overlap, 0, x + cell, -1);
+      overlap = clipEdge(overlap, 1, y - cell, 1);
+      overlap = clipEdge(overlap, 1, y, -1);
+      const area = polygonArea(overlap);
+      if (area <= 1e-8) continue;
+      const body = bodies.get(id) ?? { id, area: 0, largestCell: 0 };
+      if (area > body.largestCell) {
+        const [sx, sy] = overlap.reduce(([sx, sy], [px, py]) => [sx + px, sy + py], [0, 0]);
+        body.point = [sx / overlap.length, sy / overlap.length];
+        body.largestCell = area;
+      }
+      body.area += area;
+      bodies.set(id, body);
+    }
+  }
+  return [...bodies.values()].sort((a, b) => b.area - a.area)[0] ?? null;
+}
+
+function buildingSupport(s, rect, kind, plane, base, water, body) {
+  const { c, u, a, b } = rect;
+  const point = (x, y) => [c[0] + u[0] * x - u[1] * y, c[1] + u[1] * x + u[0] * y];
+  const outline = (length, width) => [
+    point(-length, -width), point(length, -width),
+    point(length, width), point(-length, width),
+  ];
+  const rim = outline(a + 0.5, b + 0.5);
+  const start = s.triangles;
+  if (kind === 'hull') {
+    const bottom = outline(a * 0.88, b * 0.76);
+    const hullColor = linear('#394951');
+    for (let i = 0; i < 4; i++) {
+      const j = (i + 1) % 4;
+      s.quad([...bottom[i], plane - 0.45], [...bottom[j], plane - 0.45],
+        [...rim[j], base - 0.18], [...rim[i], base - 0.18], hullColor);
+    }
+    prism(s, rim, base - 0.18, base, linear('#786454'));
+  } else {
+    const deckBottom = base - 0.35;
+    prism(s, rim, deckBottom, base, linear('#8b735a'));
+    const postColor = linear('#514338');
+    const post = ([x, y]) => prism(s, ring(x, y, 0.32, 6), plane - 0.6, deckBottom, postColor, false);
+    let hasWetPost = false;
+    const bays = Math.max(1, Math.ceil((a * 2 - 1.6) / 8));
+    for (let i = 0; i <= bays; i++) {
+      const x = Math.max(0, a - 0.8) * (2 * i / bays - 1);
+      for (const side of [-1, 1]) {
+        const position = point(x, side * Math.max(0, b - 0.65));
+        post(position);
+        hasWetPost ||= water.at(...position) === body.id;
+
+      }
+    }
+    if (!hasWetPost) post(body.point);
+  }
+  return { kind, start, end: s.triangles };
+}
+
 /**
  * Build the diorama. Returns { soup, houses, trees, stats } where houses and
  * trees carry 2D shapes for the ground painter.
  */
-export function buildDiorama(fixture, ground, o = DIORAMA_DEFAULTS) {
+export function buildDiorama(fixture, ground, o = DIORAMA_DEFAULTS, waterLevels = {}) {
   const r = prng(20261122);
   const gz = groundSampler(ground);
   const R = o.radius + o.groundPad;
@@ -493,12 +582,23 @@ export function buildDiorama(fixture, ground, o = DIORAMA_DEFAULTS) {
   const occ = new Grid(24); // house rectangles and roads, for tree placement
   const houses = [];
   const sat = o.sat;
+  const water = waterField(fixture);
 
   for (const b of fixture.buildings ?? []) {
     const rect = orientedRect(b.p);
     if (!rect) continue;
     if (Math.hypot(...rect.c) > R - 2) continue;
     if (polygonArea(b.p) < 6) continue;
+    const body = footprintWater(b.p, water);
+    const kind = b.k === 'barge' || b.k === 'houseboat' ? 'hull' : 'pier';
+    let plane, supportBase, support;
+    if (body) {
+      const level = waterLevels[body.id];
+      plane = level == null
+        ? gz(...body.point)
+        : level + (ground?.offset ?? 0) - (ground?.centre ?? 0);
+      supportBase = plane + (kind === 'hull' ? 1.15 : 2.4);
+    }
     const wallH = wallHeight(b, o, r);
     // split long buildings into house units (rhythm of separate roofs)
     const units = Math.max(1, Math.round((rect.a * 2) / o.split));
@@ -516,14 +616,15 @@ export function buildDiorama(fixture, ground, o = DIORAMA_DEFAULTS) {
       const zs = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([i, j]) =>
         gz(unit.c[0] + unit.u[0] * unit.a * i - unit.u[1] * unit.b * j, unit.c[1] + unit.u[1] * unit.a * i + unit.u[0] * unit.b * j),
       );
-      const z0 = Math.min(...zs) - 0.6;
-      const zTop = Math.max(...zs);
+      const z0 = supportBase ?? Math.min(...zs) - 0.6;
+      const zTop = supportBase ?? Math.max(...zs);
       const hJit = units > 1 ? (r() - 0.5) * 2.4 : 0;
       const h = house(s, unit, z0, zTop - z0 + wallH + hJit, o, r, sat);
       if (!h) continue;
       const xs = h.corners.map((p) => p[0]);
       const ys = h.corners.map((p) => p[1]);
-      const item = { kind: 'house', corners: h.corners, height: h.top - zTop };
+      if (body) support ??= buildingSupport(s, rect, kind, plane, supportBase, water, body);
+      const item = { kind: 'house', corners: h.corners, height: h.top - zTop, support };
       occ.addBox(item, Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys));
       houses.push(item);
     }
@@ -543,7 +644,6 @@ export function buildDiorama(fixture, ground, o = DIORAMA_DEFAULTS) {
   }
 
   const green = (fixture.areas ?? []).filter((a) => a.k !== 'water' && a.k !== 'wetland');
-  const water = waterField(fixture);
   const free = (x, y, pad) => {
     if (Math.hypot(x, y) > R - 3) return false;
     if (water && (water.at(x, y) || water.at(x + pad, y) || water.at(x - pad, y) || water.at(x, y + pad) || water.at(x, y - pad))) return false;

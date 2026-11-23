@@ -28,6 +28,8 @@ const SOURCE_CITATIONS = Object.freeze({
 });
 const degrees = (radians) => radians * (180 / Math.PI);
 const FRESH_FRAME_ATTEMPTS = 4;
+// A software-rendered frame after a close flight can take seconds to draw.
+const FRESH_FRAME_TIMEOUT_MS = 2500;
 // [JPEG quality, frame scale] attempts, best first.
 const CAPTURE_STEPS = [
   [0.78, 1],
@@ -131,7 +133,7 @@ export async function captureCityReference({
     // stream in after a flight; try a few frames before refusing.
     let fresh = false;
     for (let attempt = 0; attempt < FRESH_FRAME_ATTEMPTS && !fresh; attempt++)
-      fresh = await renderFrame(viewer);
+      fresh = await renderFrame(viewer, undefined, FRESH_FRAME_TIMEOUT_MS);
     if (!fresh) throw captureFailure();
     const { width, height } = source;
     if (![width, height].every(Number.isFinite) || width <= 0 || height <= 0)

@@ -803,3 +803,39 @@ test('a frame that misses the fresh-render bound while tiles stream is retried b
   );
   assert.ok(tries > 1 && tries <= 4, `bounded retries (${tries})`);
 });
+
+test('Reimagine lands the fixture concept when a software-rendered frame takes 1900 ms', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const { options, viewer } = captureFixture();
+  delete options.renderFrame;
+  let listener;
+  viewer.scene.postRender = {
+    addEventListener(fn) {
+      listener = fn;
+      return () => {
+        if (listener === fn) listener = null;
+      };
+    },
+  };
+  let scheduled = false;
+  viewer.scene.requestRender = () => {
+    if (scheduled) return;
+    scheduled = true;
+    setTimeout(() => listener?.(), 1900);
+  };
+  bindRenderer(viewer, { frame: fakeSceneFrame(viewer) });
+  const fixture = await mountFixture(t, {
+    captureReference: () => captureCityReference(options),
+  });
+  const { snapPlot } = await import('../data/cityPlot.js');
+  const plot = snapPlot({ lat: 40, lon: -74 });
+  const pending = fixture.controls.reimagine({ plot, kind: 'park' });
+  for (const ms of [400, 400, 400, 400, 300]) {
+    t.mock.timers.tick(ms);
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+  const landed = await pending;
+  fixture.store.controls.open();
+  assert.equal(landed, 'world-1', fixture.store.preview?.city?.error);
+  assert.equal(fixture.store.preview.city.alternatives[0].concept.provider, 'fixture');
+});

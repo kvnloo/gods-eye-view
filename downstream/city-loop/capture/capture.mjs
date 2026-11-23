@@ -12,6 +12,7 @@
 // <app checkout>/.env must hold CESIUM_ION_TOKEN (never printed here).
 // This file must be served by the same vite root so the page can import
 // /downstream/city-loop/filter/cozyValley.js (copy or symlink downstream/ in).
+import { captureJudgeFrame, frameProvenance } from './judge-frame.mjs';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, readdir, writeFile, rename } from 'node:fs/promises';
@@ -154,45 +155,21 @@ const sha256 = async (f) =>
 // may come through ion, so any tileset counts), the globe, if shown, has no
 // Google imagery, and no Google logo is in the credits. Unknown counts as Google.
 async function tilesNow() {
-  return page.evaluate(() => {
-    const v = window.__godsEyeView.viewer;
-    const s = v.scene;
-    const p = s.primitives;
-    let shownTilesets = 0;
-    for (let i = 0; i < p.length; i++) {
-      const x = p.get(i);
-      if ('tilesLoaded' in x && typeof x.root !== 'undefined' && x.show) shownTilesets++;
-    }
-    const layers = [];
-    const il = v.imageryLayers;
-    for (let i = 0; i < (il?.length ?? 0); i++) {
-      const l = il.get(i);
-      if (l.show) layers.push(String(l.imageryProvider?.url ?? l.imageryProvider?._resource?.url ?? l.imageryProvider?.constructor?.name ?? ''));
-    }
-    const googleLogos = [...document.querySelectorAll('#cesium-credits img, .cesium-credit-lightbox img')].filter((i) => /google/i.test(i.src)).length;
-    const globe = Boolean(s.globe?.show);
-    const globeGoogle = globe && layers.some((u) => /google/i.test(u));
-    return {
-      shownTilesets,
-      globe,
-      imagery: globe ? layers.map((u) => u.replace(/([?&](key|access_token|token)=)[^&]+/g, '$1REDACTED').slice(0, 120)) : [],
-      googleLogos,
-      googleTiles: shownTilesets > 0 || globeGoogle || googleLogos > 0,
-    };
-  });
+  return page.evaluate(frameProvenance);
 }
+
 // kind 'judge': refused unless Google-free, written to --out and tagged.
 // kind 'context' (default): may show Google tiles; written only to EPHEMERAL, or not at all with --judge-only.
 async function shot(name, kind = 'context') {
-  const tiles = await tilesNow().catch((e) => ({ error: e.message.split('\n')[0], googleTiles: true }));
   if (kind === 'judge') {
-    if (tiles.googleTiles !== false) throw new Error(`judge frame ${name} refused: Google tiles may be on screen ${JSON.stringify(tiles)}`);
+    const { tiles, png } = await captureJudgeFrame(page, name);
     const file = path.join(OUT, `${name}.png`);
-    await page.screenshot({ path: file, timeout: 60000 });
+    await writeFile(file, png);
     const rec = { file: path.basename(file), sha256: await sha256(file) };
     manifest.frames[rec.file] = { ...rec, kind: 'judge', googleTiles: false, tilesSource: 'none: every 3D tileset hidden', tiles };
     return rec;
   }
+  const tiles = await tilesNow().catch((e) => ({ error: e.message.split('\n')[0], googleTiles: true }));
   if (JUDGE_ONLY) return { file: null, skipped: 'judge-only: in-context frame not written', googleTiles: tiles.googleTiles };
   await mkdir(EPHEMERAL, { recursive: true });
   const file = path.join(EPHEMERAL, `${LABEL}--${name}.png`);
@@ -398,7 +375,20 @@ async function ownShot(beat) {
   let massing;
   let sanity;
   try {
-    await render(2500);
+    // Require a rendered frame after hiding the tilesets before taking a PNG.
+    await page.evaluate(() => new Promise((resolve, reject) => {
+      const scene = window.__godsEyeView.viewer.scene;
+      const off = scene.postRender.addEventListener(() => {
+        clearTimeout(timeout);
+        off();
+        resolve();
+      });
+      const timeout = setTimeout(() => {
+        off();
+        reject(new Error('judge surface did not render'));
+      }, 20000);
+      scene.requestRender();
+    }));
     await until(() => {
       const m = window.__gevCityMassing?.snapshot?.();
       return !m?.shown || m.drawn;
@@ -609,19 +599,26 @@ try {
   });
   await beat('reimagine', async () => {
     await reopenWheel();
+    const started = Date.now();
     await page.locator('[data-city-play-action="reimagine"]').click();
-    await until(
-      () => {
-        const s = window.__gevCityPlay.snapshot();
-        return !s.framing && !s.pending && s.concepts.length > 0;
-      },
-      'concept stands on the plot',
-      300000,
-    );
+    const ready = await page.waitForFunction(() => {
+      const s = window.__gevCityPlay.snapshot();
+      if (s.framing || s.pending) return false;
+      const error = document.querySelector('[data-city-play-error]')?.textContent?.trim();
+      if (error) return { error };
+      const label = document.querySelector('[data-city-play-ai-label]')?.textContent?.trim();
+      if (!s.concepts.length || !label) return false;
+      const project = JSON.parse(localStorage.getItem('godsEyeView.cityBuilder.v1'));
+      const alternative = project?.alternatives.find((a) => s.concepts.includes(a.id));
+      const provider = alternative?.versions.at(-1)?.concept?.provider;
+      if (provider !== 'fixture') return { error: 'Expected a saved fixture concept' };
+      return { aiLabel: label, conceptIds: s.concepts, provider };
+    }, null, { polling: 250, timeout: 60000 }).then((handle) => handle.jsonValue());
+    if (ready.error) throw new Error(`Reimagine failed: ${ready.error}`);
+    const readyMs = Date.now() - started;
     // The concept texture uploads slowly under SwiftShader; give it time.
     await sleep(5000);
-    const label = await page.locator('[data-city-play-ai-label]').innerText().catch(() => null);
-    return { aiLabel: label };
+    return { ...ready, readyMs };
   });
   await beat('build', async () => {
     if (!(await page.locator(S.toggle).isVisible().catch(() => false))) await reopenWheel();

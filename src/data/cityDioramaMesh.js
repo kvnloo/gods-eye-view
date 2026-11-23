@@ -546,20 +546,23 @@ function buildingSupport(s, rect, kind, plane, base, water, body) {
     for (let i = 0; i < 4; i++) {
       const j = (i + 1) % 4;
       s.quad([...bottom[i], plane - 0.45], [...bottom[j], plane - 0.45],
-        [...rim[j], base - 0.18], [...rim[i], base - 0.18], hullColor);
+        [...rim[j], plane], [...rim[i], plane], hullColor);
     }
+    // Keep the flared part below water so the freeboard presents a vertical face.
+    prism(s, rim, plane, base - 0.18, hullColor, false);
     prism(s, rim, base - 0.18, base, linear('#786454'));
   } else {
     const deckBottom = base - 0.35;
     prism(s, rim, deckBottom, base, linear('#8b735a'));
     const postColor = linear('#514338');
-    const post = ([x, y]) => prism(s, ring(x, y, 0.32, 6), plane - 0.6, deckBottom, postColor, false);
+    const post = ([x, y]) => prism(s, ring(x, y, 0.5, 6), plane - 0.6, deckBottom, postColor, false);
     let hasWetPost = false;
     const bays = Math.max(1, Math.ceil((a * 2 - 1.6) / 8));
     for (let i = 0; i <= bays; i++) {
       const x = Math.max(0, a - 0.8) * (2 * i / bays - 1);
       for (const side of [-1, 1]) {
-        const position = point(x, side * Math.max(0, b - 0.65));
+        // Align the outside of the post with the deck edge.
+        const position = point(x, side * b);
         post(position);
         hasWetPost ||= water.at(...position) === body.id;
 
@@ -597,7 +600,10 @@ export function buildDiorama(fixture, ground, o = DIORAMA_DEFAULTS, waterLevels 
       plane = level == null
         ? gz(...body.point)
         : level + (ground?.offset ?? 0) - (ground?.centre ?? 0);
-      supportBase = plane + (kind === 'hull' ? 1.15 : 2.4);
+      supportBase = kind === 'hull'
+        ? plane + 1.65
+        // Bilinear terrain near shore can sit above the leveled water.
+        : Math.max(plane, gz(...body.point)) + 2.4;
     }
     const wallH = wallHeight(b, o, r);
     // split long buildings into house units (rhythm of separate roofs)

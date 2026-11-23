@@ -11,22 +11,26 @@
 // sampled heights in the repo (loop-v3/licence/REPORT.md, item 1).
 export const CITY_LOCATIONS = Object.freeze({
   northbeach: Object.freeze({
+    // i18n-ignore: QA location name for the fork-only harness (manifests, logs), not UI text.
     label: 'North Beach, San Francisco (Washington Square)',
     plot: 'plot-n105201-126637',
     fixture: '/city-diorama/north-beach-r700.osm.json',
   }),
   // kept as an alias from exp/city-loc-green, where only this key sampled live
   'northbeach-live': Object.freeze({
+    // i18n-ignore: QA location name for the fork-only harness (manifests, logs), not UI text.
     label: 'North Beach, San Francisco (Washington Square)',
     plot: 'plot-n105201-126637',
     fixture: '/city-diorama/north-beach-r700.osm.json',
   }),
   presidio: Object.freeze({
+    // i18n-ignore: QA location name for the fork-only harness (manifests, logs), not UI text.
     label: 'Presidio Main Post / Crissy Marsh, San Francisco',
     plot: 'plot-n105200-126533',
     fixture: '/city-diorama/presidio.osm.json',
   }),
   sausalito: Object.freeze({
+    // i18n-ignore: QA location name for the fork-only harness (manifests, logs), not UI text.
     label: 'Sausalito waterfront (Dunphy Park)',
     plot: 'plot-n105367-126364',
     fixture: '/city-diorama/sausalito.osm.json',

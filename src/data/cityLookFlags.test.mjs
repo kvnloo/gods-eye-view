@@ -22,3 +22,8 @@ test('all turns every round-1 feature on; other looks are ignored', () => {
   assert.equal(f.look, null);
   for (const k of CITY_R1_FEATURES) assert.equal(f[k], true);
 });
+
+test('look=cozy2 (shader look) is its own switch', () => {
+  assert.equal(cityLookFlags('?look=cozy2&lk=%7B%7D').look, 'cozy2');
+  assert.equal(cityLookFlags('?look=cozy').look, 'cozy');
+});

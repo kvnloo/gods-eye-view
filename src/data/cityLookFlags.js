@@ -4,6 +4,7 @@
 // parent build.
 //
 //   ?look=cozy            the Cozy Valley post chain (src/standalone/cozyValleyLook.js)
+//   ?look=cozy2[&lk=JSON] tile CustomShader + depth-aware post (src/standalone/cozyShaderLook.js)
 //   ?cityR1=ghost,flat,kit,chip,tray | all
 //     ghost  select: a footprint ghost draped on the ground, no cyan prism
 //     flat   reimagine: the concept laid flat on its plot, no kind tint
@@ -28,7 +29,8 @@ export function cityLookFlags(search = '') {
       .filter(Boolean),
   );
   const all = asked.has('all');
-  const flags = { look: q.get('look') === 'cozy' ? 'cozy' : null };
+  const look = q.get('look');
+  const flags = { look: look === 'cozy' || look === 'cozy2' ? look : null };
   for (const f of CITY_R1_FEATURES) flags[f] = all || asked.has(f);
   return Object.freeze(flags);
 }

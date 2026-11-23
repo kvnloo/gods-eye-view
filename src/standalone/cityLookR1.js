@@ -23,6 +23,18 @@ export function mountCityLookR1({
     undo.push(() => doc.body.classList.remove(cls));
   }
   let look = null;
+  if (flags.look === 'cozy2' && viewer?.scene)
+    import('./cozyShaderLook.js')
+      .then(({ installCozyShaderLook, parseLookParams }) => {
+        if (undo.disposed) return;
+        const q = new URLSearchParams(win?.location?.search ?? '');
+        look = installCozyShaderLook(viewer, {
+          ...parseLookParams(q.get('lk')),
+          wipe: Number(q.get('lookWipe') ?? 0) || 0,
+        });
+        if (win) win.__gevCozy2 = look;
+      })
+      .catch((e) => console.error('Cozy2 look failed to load', e?.message));
   if (flags.look === 'cozy' && viewer?.scene)
     import('./cozyValleyLook.js')
       .then(({ installCozyValleyLook }) => {
@@ -40,6 +52,7 @@ export function mountCityLookR1({
       undo.disposed = true;
       look?.remove();
       if (win?.__gevCozyValley === look) delete win.__gevCozyValley;
+      if (win?.__gevCozy2 === look) delete win.__gevCozy2;
       for (const f of undo.splice(0)) f();
     },
   };

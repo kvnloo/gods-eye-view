@@ -174,7 +174,7 @@ async function reopenWheel() {
   const at = await page.evaluate(() => window.__gevCityPlay.snapshot().anchors?.plot);
   if (!at) throw new Error('selected plot not projected');
   await page.mouse.click(at.x, at.y);
-  await page.locator(S.ring).waitFor({ state: 'visible', timeout: 20000 });
+  await page.locator(S.ring).waitFor({ state: 'visible', timeout: 90000 });
 }
 async function frameTiming(name, ms = 3000) {
   // rAF cadence while the scene renders continuously (forced requestRender).
@@ -320,7 +320,7 @@ const context = await browser.newContext({
 // The fixture concept provider only: any network concept request is blocked.
 await context.route('**/api/city-concept*', (r) => r.abort('blockedbyclient'));
 page = await context.newPage();
-page.setDefaultTimeout(20000);
+page.setDefaultTimeout(60000); // v3: SwiftShader + video recording is slower than the 20 s default
 page.on('console', (m) => {
   if (['error', 'warning'].includes(m.type()) || /\[Init\]/.test(m.text()))
     manifest.console.push({ type: m.type(), text: m.text().replace(/(key|token|access_token)=[^&\s"]+/gi, '$1=REDACTED').slice(0, 300) });
@@ -416,7 +416,7 @@ try {
         return !s.framing && !s.pending && s.concepts.length > 0;
       },
       'concept stands on the plot',
-      90000,
+      300000,
     );
     // The concept texture uploads slowly under SwiftShader; give it time.
     await sleep(5000);
@@ -425,7 +425,7 @@ try {
   });
   await beat('build', async () => {
     if (!(await page.locator(S.toggle).isVisible().catch(() => false))) await reopenWheel();
-    await page.locator(S.toggle).click({ timeout: 20000 });
+    await page.locator(S.toggle).click({ timeout: 120000 });
     await until(
       (id) => {
         const s = window.__gevCityMassing?.snapshot();
@@ -443,7 +443,7 @@ try {
     return m;
   });
   await beat('shadow', async () => {
-    await page.locator(S.studyToggle).click({ timeout: 20000 });
+    await page.locator(S.studyToggle).click({ timeout: 120000 });
     await page.locator(S.winter).click();
     await until(
       () => {

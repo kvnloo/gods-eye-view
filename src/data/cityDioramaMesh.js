@@ -57,8 +57,10 @@ export const DIORAMA_DEFAULTS = Object.freeze({
   bank: 0, // cloud bank opacity at the disc edge (0 = off)
   bankW: 260, // cloud bank falloff width, metres
   bankFar: 0.55, // cloud bank opacity that stays over the far context
+  bankIn: -25, // metres past the cut where the bank starts (> the skirt keeps the wall in view)
   // (c) a painterly palette match: the photoreal context takes the diorama's palette
   match: 0, // strength 0..1 (0 = off)
+  matchCell: 16, // metres per roof-colour cell of the match
 });
 
 const num = (v, d) => (Number.isFinite(Number(v)) ? Number(v) : d);

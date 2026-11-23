@@ -78,6 +78,8 @@ uniform float bank;
 uniform float bankW;
 uniform float bankFar;
 uniform float match;
+uniform float bankIn;
+uniform float matchCell;
 
 // exp/city-loop-v3 seam trials: value noise on the district's ground plane (metres)
 float hash12(vec2 p) {
@@ -154,9 +156,12 @@ void main() {
     float blt = max(0.0, 1.0 - veg - wat);
     vec3 vegC = mix(vec3(0.08, 0.26, 0.04), vec3(0.24, 0.52, 0.08), smoothstep(0.1, 0.6, lum));
     vec3 watC = vec3(0.05, 0.46, 0.43) * (0.7 + 0.6 * lum);
-    float h = hash12(floor(gp / 16.0));
-    vec3 roof = h < 0.38 ? vec3(0.43, 0.10, 0.05) : h < 0.62 ? vec3(0.07, 0.10, 0.13) : h < 0.82 ? vec3(0.78, 0.68, 0.48) : vec3(0.21, 0.27, 0.06);
-    vec3 bltC = roof * (0.45 + 1.1 * lum);
+    float h = hash12(floor(gp / max(matchCell, 1.0)));
+    // the diorama's 'mix' share: cream walls and pale streets, slate, terracotta, moss
+    vec3 roof = h < 0.30 ? vec3(0.43, 0.10, 0.05) : h < 0.55 ? vec3(0.16, 0.20, 0.25) : h < 0.85 ? vec3(0.78, 0.68, 0.48) : vec3(0.21, 0.27, 0.06);
+    // bright, flat surfaces (streets, plazas) take the diorama's dirt-cream ground
+    roof = mix(roof, vec3(0.70, 0.55, 0.33), smoothstep(0.55, 0.8, bl));
+    vec3 bltC = roof * (0.55 + 0.9 * lum);
     vec3 pal = veg * vegC + wat * watC + blt * bltC;
     outc = mix(outc, pal, clamp(match * t, 0.0, 1.0));
   }
@@ -164,11 +169,13 @@ void main() {
   // (b) map edge: a cloud bank rings the raised district and hides where it ends
   if (bank > 0.001 && dist >= 0.0) {
     float edge = dist - cutR;
-    float ring = smoothstep(-25.0, 45.0, edge) * (bankFar + (1.0 - bankFar) * exp(-pow(max(edge - 45.0, 0.0) / max(bankW, 1.0), 2.0)));
+    float ring = smoothstep(bankIn, bankIn + 70.0, edge) * (bankFar + (1.0 - bankFar) * exp(-pow(max(edge - bankIn - 70.0, 0.0) / max(bankW, 1.0), 2.0)));
     float n = fbm(gp / 140.0);
     float n2 = fbm(gp / 55.0 + 3.7);
-    float dens = clamp(ring * (0.62 + 0.75 * (n - 0.5) + 0.25 * (n2 - 0.5)) * 1.15, 0.0, 1.0);
-    vec3 cloud = mix(vec3(0.62, 0.70, 0.78), vec3(1.0, 0.97, 0.90), smoothstep(0.3, 0.75, n2));
+    // puffy: a soft threshold on the noise gives cloud tops with gaps, not an even haze
+    float puff = smoothstep(0.28, 0.62, n + 0.3 * (n2 - 0.5));
+    float dens = clamp(ring * mix(0.35, 1.0, puff) * 1.25, 0.0, 1.0);
+    vec3 cloud = mix(vec3(0.74, 0.80, 0.88), vec3(1.0, 0.98, 0.94), smoothstep(0.35, 0.8, n2 * 0.6 + puff * 0.5));
     outc = mix(outc, cloud, clamp(dens * bank, 0.0, 1.0));
   }
   out_FragColor = vec4(outc, src.a);
@@ -371,7 +378,6 @@ function addSkirt(soup, gz, R, depth, sides = 180) {
       tris += 2;
     }
   }
-  soup.triangles = (soup.triangles ?? 0) + tris;
 }
 
 // ---------- painted ground texture
@@ -773,6 +779,8 @@ export async function mountCityDiorama({ viewer, win = globalThis.window, search
       bankW: o.bankW,
       bankFar: o.bankFar,
       match: o.match,
+      bankIn: o.bankIn,
+      matchCell: o.matchCell,
     },
   });
   scene.postProcessStages.add(stage);

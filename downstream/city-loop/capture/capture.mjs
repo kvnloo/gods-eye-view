@@ -82,6 +82,13 @@ const SITE = siteForPlot(PLOT); // 600 m, looking north
 const SUN_TIME = '2026-06-21T15:00:00Z'; // QA morning sun (az 78, el 23)
 const DISTRICT_ALT = 1500;
 const BEATS = ['district', 'select', 'reimagine', 'build', 'shadow', 'growth'];
+// --beats <a,b>: shoot only these beats (loop-v5 warm box: one beat per arm). Beats
+// before the last requested one still RUN, unshot, because each beat builds on the
+// app state of the previous one; beats after it are skipped. Default: all six.
+const WANT = typeof args.beats === 'string' ? args.beats.split(',').map((b) => b.trim()).filter(Boolean) : BEATS;
+for (const b of WANT) if (!BEATS.includes(b)) throw new Error(`--beats: unknown beat ${b} (one of ${BEATS.join(',')})`);
+const LAST = Math.max(...WANT.map((b) => BEATS.indexOf(b)));
+const SUBSET = WANT.length < BEATS.length;
 const S = {
   pill: '#top-center-actions [data-city-builder-open]',
   play: '[data-city-play]',
@@ -452,11 +459,19 @@ async function ownShot(beat) {
   manifest.own[beat] = { ...f, hiddenTilesets: hidden, googleTiles: false, massing, credits, sanity };
 }
 async function beat(name, run) {
+  if (BEATS.indexOf(name) > LAST) return;
   const started = Date.now();
   const rec = { status: 'pending' };
   manifest.beats[name] = rec;
   try {
     const extra = await run();
+    if (!WANT.includes(name)) {
+      // prerequisite of a requested beat: run, no frames
+      Object.assign(rec, extra || {}, { status: 'ok', shot: false, prerequisite: true });
+      rec.seconds = (Date.now() - started) / 1000;
+      console.log(`BEAT ${name} ok (prerequisite, not shot)`);
+      return;
+    }
     await settle();
     mark(name);
     Object.assign(rec, await shot(name), extra || {}, { status: 'ok' });
@@ -516,6 +531,7 @@ url.searchParams.set('welcome', '0');
 url.searchParams.set('massing', '1');
 for (const [k, v] of new URLSearchParams(QUERY)) url.searchParams.set(k, v);
 manifest.query = QUERY;
+manifest.beatsRequested = WANT;
 manifest.lookSource = LOOK_APP ? 'app' : 'harness';
 url.hash = new URLSearchParams({
   v: '2',
@@ -691,8 +707,8 @@ try {
     }
     return { stops, stages, districtPlots };
   });
-  await frameTiming('end');
-  if (/look=diorama|city=(v3|hero)/.test(QUERY)) {
+  if (!SUBSET) await frameTiming('end');
+  if (!SUBSET && /look=diorama|city=(v3|hero)/.test(QUERY)) {
     // fps with the diorama vs. without it, same camera (the growth beat's), same browser
     await page.evaluate(() => { const d = window.__gevDiorama; if (d) { d.model.show = false; d.stage.enabled = false; } });
     await frameTiming('end-diorama-hidden');

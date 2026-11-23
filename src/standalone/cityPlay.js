@@ -36,6 +36,13 @@ import {
 } from '../ui/cityPlayModel.js';
 import { pageLookFlags } from '../data/cityLookFlags.js';
 import { MASSING_ASSUMPTIONS, plotMassing } from '../data/cityMassing.js';
+import {
+  cellYield,
+  districtCells,
+  pageHudFlags,
+  placementCheck,
+} from '../data/cityGameHud.js';
+import { mountConceptDrape } from './cityConceptDrape.js';
 
 const OWNER = 'city-play';
 const BODY_CLASS = 'gev-city-play';
@@ -73,6 +80,35 @@ const FRAMES = {
 
 // FORK-ONLY (exp/city-loop-r1, ?cityR1=ghost,flat): see src/data/cityLookFlags.js.
 const R1 = pageLookFlags();
+// FORK-ONLY (exp/city-game-hud, ?cityHud=…): see src/data/cityGameHud.js.
+const HUD = pageHudFlags();
+const VALID = Cesium.Color.fromCssColorString('#5ee08a');
+const INVALID = Cesium.Color.fromCssColorString('#ff5c6e');
+// Far-zoom grid: plot lines and 200 m district lines, as thin ground rings (m).
+const PLOT_LINE_METERS = 1.4;
+const CELL_LINE_METERS = 4;
+// A ring polygon: the corners and the same corners pulled `meters` inward.
+function ringPolygon(corners, meters) {
+  const lon0 = corners.reduce((s, [lon]) => s + lon, 0) / corners.length;
+  const lat0 = corners.reduce((s, [, lat]) => s + lat, 0) / corners.length;
+  const ky = 111_320;
+  const kx = ky * Math.cos((lat0 * Math.PI) / 180);
+  const inner = corners.map(([lon, lat]) => {
+    const x = (lon - lon0) * kx;
+    const y = (lat - lat0) * ky;
+    const d = Math.hypot(x, y) || 1;
+    const k = Math.max(0, d - meters * Math.SQRT2) / d;
+    return [lon0 + (x * k) / kx, lat0 + (y * k) / ky];
+  });
+  return new Cesium.PolygonHierarchy(
+    Cesium.Cartesian3.fromDegreesArray(corners.flat()),
+    [
+      new Cesium.PolygonHierarchy(
+        Cesium.Cartesian3.fromDegreesArray(inner.flat()),
+      ),
+    ],
+  );
+}
 // The ghost of the assumed block's footprint inside the plot (the massing's
 // own setback), draped on the ground while the player chooses.
 function ghostFootprint(plot) {
@@ -149,6 +185,14 @@ export function mountCityPlay({
   const select = [];
   const hover = [];
   const grid = [];
+  // FORK-ONLY (?cityHud=plots): the far-zoom district cells, their yields
+  // and ground rings; (?cityHud=place) the tray tool the ghost previews.
+  let cells = [];
+  let cellsKey = '';
+  const cellRings = [];
+  const yields = new Map();
+  let armed = 'massing';
+  const drape = HUD.drape ? mountConceptDrape({ viewer }) : null;
 
   function baseHeight(plot, pickedHeight) {
     // The first pick on a plot fixes its ground; later picks may hit our own holo.
@@ -183,10 +227,57 @@ export function mountCityPlay({
     for (const entity of list.splice(0)) ds.entities.remove(entity);
   }
 
+  // FORK-ONLY (?cityHud=place): may the armed tool go on this plot?
+  function placement(plot) {
+    return placementCheck({
+      tool: armed,
+      plot,
+      pending: data.pending || framing,
+      full: data.full,
+      zoneFull:
+        zoning().length >= MAX_ZONED_PLOTS && !(plot && useOf(plot.id)),
+      use: plot && useOf(plot.id),
+    });
+  }
+
   function drawHover() {
     clearList(hover);
     const plot = state.hover;
     if (!plot || plot.id === state.plot?.id) return;
+    if (HUD.place && state.tier !== 'district') {
+      // The placement ghost snaps to the plot under the cursor: its outline
+      // and the assumed block's footprint, green where the tool can go, red
+      // where it cannot (no budget, no concept slot, busy).
+      const tint = placement(plot).valid ? VALID : INVALID;
+      const foot = ghostFootprint(plot);
+      hover.push(
+        ds.entities.add({
+          polygon: {
+            hierarchy: ring(plot).slice(0, 4),
+            material: tint.withAlpha(0.16),
+            classificationType: CLASSIFY,
+          },
+        }),
+        ds.entities.add({
+          polygon: {
+            hierarchy: ringPolygon(plot.corners, 1.6),
+            material: tint.withAlpha(0.85),
+            classificationType: CLASSIFY,
+          },
+        }),
+      );
+      if (foot)
+        hover.push(
+          ds.entities.add({
+            polygon: {
+              hierarchy: Cesium.Cartesian3.fromDegreesArray(foot.flat()),
+              material: tint.withAlpha(0.3),
+              classificationType: CLASSIFY,
+            },
+          }),
+        );
+      return;
+    }
     hover.push(
       ds.entities.add({
         polygon: {
@@ -294,7 +385,72 @@ export function mountCityPlay({
           }),
         );
     }
-    if (choosing && !R1.ghost)
+    if (choosing && HUD.place && !capturing) {
+      // The placement ghost on the chosen plot: the assumed block it would
+      // build, standing translucent on its footprint (valid green, invalid
+      // red), the plot's snapped outline under it, in place of the 26 m prism.
+      const tint = placement(plot).valid ? VALID : INVALID;
+      const foot = ghostFootprint(plot);
+      const tall =
+        MASSING_ASSUMPTIONS.storeys * MASSING_ASSUMPTIONS.storeyHeightMeters;
+      select.push(
+        ds.entities.add({
+          polygon: {
+            hierarchy: ringPolygon(plot.corners, 1.8),
+            material: tint.withAlpha(0.9),
+            classificationType: CLASSIFY,
+          },
+        }),
+      );
+      if (foot)
+        select.push(
+          ds.entities.add({
+            id: `${OWNER}-ghost`,
+            polygon: {
+              hierarchy: Cesium.Cartesian3.fromDegreesArray(foot.flat()),
+              height: base + GROUND_LIFT,
+              extrudedHeight: base + tall,
+              material: tint.withAlpha(0.22),
+              outline: true,
+              outlineColor: tint.withAlpha(0.95),
+              shadows: Cesium.ShadowMode.DISABLED,
+            },
+          }),
+          ds.entities.add({
+            polyline: {
+              positions: Cesium.Cartesian3.fromDegreesArrayHeights(
+                [...foot, foot[0]].flatMap(([lon, lat]) => [
+                  lon,
+                  lat,
+                  base + tall,
+                ]),
+              ),
+              width: 5,
+              material: new Cesium.PolylineGlowMaterialProperty({
+                glowPower: 0.3,
+                color: tint,
+              }),
+            },
+          }),
+          ...foot.map(([lon, lat]) =>
+            ds.entities.add({
+              polyline: {
+                positions: Cesium.Cartesian3.fromDegreesArrayHeights([
+                  lon,
+                  lat,
+                  base,
+                  lon,
+                  lat,
+                  base + tall,
+                ]),
+                width: 3,
+                material: tint.withAlpha(0.9),
+              },
+            }),
+          ),
+        );
+    }
+    if (choosing && !R1.ghost && !HUD.place)
       select.push(
         ds.entities.add({
           wall: {
@@ -315,7 +471,7 @@ export function mountCityPlay({
           },
         }),
       );
-    if (choosing && !R1.ghost)
+    if (choosing && !R1.ghost && !HUD.place)
       select.push(
         ...plot.corners.map(([lon, lat]) =>
           ds.entities.add({
@@ -472,6 +628,7 @@ export function mountCityPlay({
     const holo = holos.get(plotId);
     if (!holo) return;
     setFlatCut(holo, false);
+    if (holo._cityDrape) drape?.clear(plotId);
     for (const shadow of holo._cityShadows) ds.entities.remove(shadow);
     ds.entities.remove(holo);
     holos.delete(plotId);
@@ -519,9 +676,11 @@ export function mountCityPlay({
       }
       tints.get(plotId)._cityBeacon._cityPlot = a.site.plot;
       // A proposed land use takes the plot's ground tint; the beacon stays.
-      tints.get(plotId).show = !useOf(plotId) && !capturing && !R1.flat;
+      tints.get(plotId).show =
+        !useOf(plotId) && !capturing && !R1.flat && !HUD.drape;
       tints.get(plotId)._cityBeacon.show = tier === 'district';
       if (!holos.has(plotId) && R1.flat) holos.set(plotId, flatConcept(a, key));
+      if (!holos.has(plotId) && drape) holos.set(plotId, drapeConcept(a, key));
       if (!holos.has(plotId)) {
         const g = holoGeometry(a);
         if (!appeared.has(key)) appeared.set(key, now());
@@ -617,6 +776,51 @@ export function mountCityPlay({
       for (const shadow of holo._cityShadows) shadow.show = holo.show;
       setFlatCut(holo, holo.show && ds.show);
     }
+    // FORK-ONLY (?cityHud=drape): the concept of the selected plot (else the
+    // newest shown) lies projected on the ground; the rest wait.
+    if (drape) {
+      const want =
+        (state.plot && holos.get(state.plot.id)) ||
+        [...holos.values()].filter((h) => h.show !== false).at(-1);
+      if (!want || !ds.show || want.show === false || !state.active)
+        drape.show(false);
+      else {
+        drape.set(want._cityDrape);
+        drape.show(true);
+      }
+    }
+  }
+
+  // FORK-ONLY (?cityHud=drape): a concept stands for its drape (src/standalone/
+  // cityConceptDrape.js) as an empty marker entity, so the snapshot and the
+  // tier logic treat it like any concept; the picture is on the ground.
+  function drapeConcept(a, key) {
+    const plot = a.site.plot;
+    const base = baseHeight(plot);
+    const heading = (a.site.reference ?? a.concept.sourceView).camera.heading;
+    const holo = ds.entities.add({
+      id: `${OWNER}-concept-${a.id}`,
+      position: Cesium.Cartesian3.fromDegrees(
+        plot.center.lon,
+        plot.center.lat,
+        base,
+      ),
+    });
+    holo._cityKey = key;
+    holo._cityPlot = plot;
+    holo._cityAlternative = a.id;
+    holo._cityShadows = [];
+    holo._cityDrape = { plot, image: a.concept.image, heading, base };
+    holo._cityGround = {
+      sun: sunAt(plot),
+      baseGapMeters: 0,
+      shadowMeters: 0,
+      shade: 1,
+      contact: true,
+      cast: false,
+      draped: true,
+    };
+    return holo;
   }
 
   const zoning = () => data.zoning ?? [];
@@ -682,12 +886,71 @@ export function mountCityPlay({
     });
   }
 
+  // FORK-ONLY (?cityHud=plots): at far zoom the 40 m plot grid and the 200 m
+  // districts lie on the ground as thin rings (one batched classification
+  // primitive per colour), each district with a yield chip (the overlay).
+  function drawCells() {
+    const want = HUD.plots && state.active && state.tier === 'district';
+    if (!want) {
+      clearList(cellRings);
+      return;
+    }
+    if (cellRings._key === cellsKey && cellRings.length) return;
+    clearList(cellRings);
+    cellRings._key = cellsKey;
+    const focus = cells[Math.floor(cells.length / 2)];
+    for (const cell of cells) {
+      if (cell === focus)
+        cellRings.push(
+          ds.entities.add({
+            polygon: {
+              hierarchy: Cesium.Cartesian3.fromDegreesArray(
+                cell.corners.flat(),
+              ),
+              material: ACCENT.withAlpha(0.1),
+              classificationType: CLASSIFY,
+            },
+          }),
+        );
+      for (const plot of cell.plots)
+        cellRings.push(
+          ds.entities.add({
+            polygon: {
+              hierarchy: ringPolygon(plot.corners, PLOT_LINE_METERS),
+              material: ACCENT.withAlpha(0.38),
+              classificationType: CLASSIFY,
+            },
+          }),
+        );
+      cellRings.push(
+        ds.entities.add({
+          polygon: {
+            hierarchy: ringPolygon(cell.corners, CELL_LINE_METERS),
+            material: ACCENT.withAlpha(cell === focus ? 0.95 : 0.5),
+            classificationType: CLASSIFY,
+          },
+        }),
+      );
+    }
+  }
+  // Only the district in the middle of the view carries its yield chip: the
+  // model gives every 25-plot district the same estimate, and nine equal
+  // chips read as noise (round-2 smoke).
+  function cellsNow() {
+    if (!(HUD.plots && state.tier === 'district')) return [];
+    const cell = cells[Math.floor(cells.length / 2)];
+    if (!cell) return [];
+    if (!yields.has(cell.id)) yields.set(cell.id, cellYield(cell));
+    return [{ ...yields.get(cell.id), center: cell.center }];
+  }
+
   function render() {
     ds.show = state.active;
     drawHover();
     drawSelection();
     drawConcepts();
     drawZones();
+    drawCells();
     scene.requestRender();
   }
 
@@ -765,6 +1028,11 @@ export function mountCityPlay({
       },
       callouts: state.tier === 'detail' ? detailCallouts(focused) : [],
       pins: state.tier === 'district' ? pinsNow() : [],
+      // FORK-ONLY (exp/city-game-hud): the zoning budget spent, the far-zoom
+      // district cells and the armed tray tool.
+      zoned: zoning().length,
+      cells: cellsNow(),
+      armed,
     });
   }
 
@@ -780,6 +1048,8 @@ export function mountCityPlay({
     state = next;
     if (tierOnly) {
       drawConcepts();
+      drawCells();
+      drawHover();
       present();
       scene.requestRender();
     } else sync();
@@ -861,6 +1131,39 @@ export function mountCityPlay({
       for (const pin of pinsNow()) {
         const h = baseHeight({ id: pin.plotId, center: pin.center });
         anchors.pins[pin.plotId] = project(pin.center.lon, pin.center.lat, h);
+      }
+    }
+    // FORK-ONLY (?cityHud=plots): the district cells around the view's centre.
+    if (HUD.plots && state.tier === 'district') {
+      const mid = viewer.camera.pickEllipsoid(
+        new Cesium.Cartesian2(
+          scene.canvas.clientWidth / 2,
+          scene.canvas.clientHeight * 0.55,
+        ),
+        Cesium.Ellipsoid.WGS84,
+      );
+      if (mid) {
+        const c = Cesium.Cartographic.fromCartesian(mid);
+        const near = districtCells(
+          {
+            lat: Cesium.Math.toDegrees(c.latitude),
+            lon: Cesium.Math.toDegrees(c.longitude),
+          },
+          1,
+        );
+        const key = near.map((cell) => cell.id).join();
+        if (key !== cellsKey) {
+          cells = near;
+          cellsKey = key;
+          drawCells();
+          present();
+          scene.requestRender();
+        }
+      }
+      anchors.cells = {};
+      for (const cell of cells.slice(Math.floor(cells.length / 2)).slice(0, 1)) {
+        const h = baseHeight({ id: cell.id, center: cell.center });
+        anchors.cells[cell.id] = project(cell.center.lon, cell.center.lat, h);
       }
     }
     const key = JSON.stringify(anchors);
@@ -1200,6 +1503,13 @@ export function mountCityPlay({
     openRecords() {
       builder.open();
     },
+    // FORK-ONLY (?cityHud=place): the tray tool the placement ghost previews.
+    arm(id) {
+      if (armed === id) return;
+      armed = id;
+      render();
+      present();
+    },
   };
 
   const probe = Object.freeze({
@@ -1250,6 +1560,7 @@ export function mountCityPlay({
       stopMassing();
       disposed = true;
       if (win?.__gevCityPlay === probe) delete win.__gevCityPlay;
+      drape?.destroy();
       Promise.resolve(added).then(() => viewer.dataSources?.remove(ds, true));
       if (store.controls === controls) {
         store.connect(null);

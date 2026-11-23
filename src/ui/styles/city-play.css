@@ -26,9 +26,12 @@ body.gev-city-play #gev-stories #hPop {
 body.gev-city-play #cesiumContainer {
   cursor: crosshair;
 }
-/* The game view is full-bleed like a strategy map; the scope vignette returns on exit. */
+/* The game view is full-bleed like a strategy map; the scope vignette returns on exit.
+   src/scopeMask.js writes the mask's opacity inline (style="opacity: 1"), which
+   beats any stylesheet rule without !important: without it the dark circular
+   scope stayed over the whole game view (exp/city-game-hud round 0). */
 body.gev-city-play #scope-mask {
-  opacity: 0;
+  opacity: 0 !important;
   transition: opacity var(--transition-smooth);
 }
 
@@ -69,7 +72,11 @@ body.gev-city-play #scope-mask {
   pointer-events: none;
   background:
     linear-gradient(180deg, rgba(4, 8, 12, 0.62) 0, transparent 150px),
-    linear-gradient(0deg, rgba(4, 8, 12, 0.55) 0, transparent 190px);
+    linear-gradient(0deg, rgba(4, 8, 12, 0.55) 0, transparent 190px),
+    /* A soft corner fall-off keeps GEV's framing and the attribution legible
+       without the opaque scope circle (exp/city-game-hud r0b: the panel read
+       full-bleed as better integrated but less on-brand and less legible). */
+    radial-gradient(ellipse 78% 74% at 50% 50%, transparent 62%, rgba(4, 8, 12, 0.5) 100%);
 }
 .city-play :is(button, nav, aside, section, .city-play-bar) {
   pointer-events: auto;

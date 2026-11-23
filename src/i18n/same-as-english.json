@@ -302,7 +302,8 @@
     "ON AIR",
     "Stream",
     "{seconds} s",
-    "Mode"
+    "Mode",
+    "{area} ha"
   ],
   "es": [
     "1 min/s",
@@ -501,7 +502,8 @@
     "3D",
     "KT",
     "Manual",
-    "{seconds} s"
+    "{seconds} s",
+    "{area} ha"
   ],
   "fr": [
     "1 min/s",
@@ -763,7 +765,8 @@
     "{n} mm",
     "3D",
     "KT",
-    "{seconds} s"
+    "{seconds} s",
+    "{area} ha"
   ],
   "it": [
     "1 min/s",
@@ -1000,7 +1003,8 @@
     "{n} mm",
     "3D",
     "KT",
-    "{seconds} s"
+    "{seconds} s",
+    "{area} ha"
   ],
   "ja": [
     "1090 MHz",
@@ -1286,7 +1290,8 @@
     "3D",
     "KT",
     "Manual",
-    "{seconds} s"
+    "{seconds} s",
+    "{area} ha"
   ],
   "ru": [
     "1900–1945",
@@ -1529,7 +1534,8 @@
     "{n} mm",
     "3D",
     "KT",
-    "{seconds} s"
+    "{seconds} s",
+    "{area} ha"
   ],
   "uk": [
     "1900–1945",

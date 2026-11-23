@@ -35,6 +35,13 @@ import { worldClock } from '../time/worldClock.js';
 import { facadeMaterial, facadeUniforms } from './cityMassingLook.js';
 import { pageLookFlags } from '../data/cityLookFlags.js';
 import {
+  districtGround,
+  dustPuffs,
+  pageHudFlags,
+  riseShare,
+  RISE_MS,
+} from '../data/cityGameHud.js';
+import {
   SEAT_TONE,
   groundMaterial,
   medianColour,
@@ -142,6 +149,39 @@ const BADGE_RISE = 3;
 // diorama palette and its plot's margin gets low-poly trees (faceted canopies
 // and pines, deterministic). The growth district's blocks keep the parent look.
 const R1 = pageLookFlags();
+// FORK-ONLY (exp/city-game-hud, ?cityHud=place,ground): see src/data/cityGameHud.js.
+const HUD = pageHudFlags();
+const DUST_MS = 1400;
+let dustCanvas = null;
+// The four outer corners of a district (rows south to north, each west to
+// east, as cityPlot.js plotBlock lists them).
+function districtOutline(plots) {
+  const rows = new Map();
+  for (const p of plots) rows.set(p.row, [...(rows.get(p.row) ?? []), p]);
+  const keys = [...rows.keys()].sort((a, b) => a - b);
+  const south = rows.get(keys[0]).sort((a, b) => a.col - b.col);
+  const north = rows.get(keys.at(-1)).sort((a, b) => a.col - b.col);
+  return [
+    south[0].corners[0],
+    south.at(-1).corners[1],
+    north.at(-1).corners[2],
+    north[0].corners[3],
+  ];
+}
+// A soft warm-dust sprite, drawn once.
+function dustSprite() {
+  if (dustCanvas || typeof document === 'undefined') return dustCanvas;
+  dustCanvas = document.createElement('canvas');
+  dustCanvas.width = dustCanvas.height = 64;
+  const g = dustCanvas.getContext('2d');
+  const r = g.createRadialGradient(32, 32, 2, 32, 32, 31);
+  r.addColorStop(0, 'rgba(236, 224, 200, 0.95)');
+  r.addColorStop(0.5, 'rgba(214, 200, 172, 0.55)');
+  r.addColorStop(1, 'rgba(200, 186, 160, 0)');
+  g.fillStyle = r;
+  g.fillRect(0, 0, 64, 64);
+  return dustCanvas;
+}
 const KIT_INSET_METERS = 2;
 const KIT_GREENS = ['#5f9e3c', '#78b04a', '#4e8a3a', '#8bbb4f'].map((c) =>
   Cesium.Color.fromCssColorString(c),
@@ -346,7 +386,8 @@ export function mountCityMassing({
     if (site.model && site.model !== entry && site.model.primitive)
       site.model.primitive.show = false;
     site.model = entry;
-    site.block.show = !entry;
+    // While the build juice's riser stands in, the block stays hidden.
+    site.block.show = !entry && !site.rising;
     if (!entry) return rendered();
     const { footprint } = site.massing;
     const mean = (k) =>
@@ -873,9 +914,100 @@ export function mountCityMassing({
     dress();
     if (site.block) stand();
     plantKit();
+    if (HUD.place && site.block) rise(site);
     removeFrame = scene.postRender.addEventListener(frame);
     mark();
     rendered();
+  }
+
+  // FORK-ONLY (exp/city-game-hud, ?cityHud=place): the build's juice. A
+  // riser (a copy of the block whose height is a callback, so Cesium draws it
+  // at once, every frame) rises out of the plate with a small overshoot
+  // (riseShare) while a ring of dust puffs rolls out from its footprint and
+  // fades. The block itself is never touched: it stays a constant-height
+  // entity, hidden while the riser stands in, and the riser goes only once
+  // the block's own geometry is drawn. (Swapping the block's height back to a
+  // constant rebuilt it asynchronously and left the cut open, a black hole,
+  // for about a second: the r7 juice recording.)
+  function rise(s) {
+    const t0 = win.performance.now();
+    const top = () => s.base + s.massing.heightMeters;
+    const ms = () => win.performance.now() - t0;
+    s.rising = true;
+    s.block.show = false;
+    const riser = ds.entities.add({
+      id: `${OWNER}-riser`,
+      polygon: {
+        hierarchy: s.block.polygon.hierarchy,
+        height: s.block.polygon.height,
+        material: s.block.polygon.material,
+        outline: s.block.polygon.outline,
+        outlineColor: s.block.polygon.outlineColor,
+        shadows: s.block.polygon.shadows,
+        extrudedHeight: new Cesium.CallbackProperty(
+          () => s.base + 0.3 + (top() - s.base - 0.3) * riseShare(ms()),
+          false,
+        ),
+      },
+    });
+    const { points, toLonLat } = localFrame(s.massing.footprint);
+    const half =
+      Math.max(...points.map(([x, y]) => Math.max(Math.abs(x), Math.abs(y)))) ||
+      16;
+    const sprite = dustSprite();
+    const puffs = dustPuffs(0).map((_, i) =>
+      ds.entities.add({
+        id: `${OWNER}-dust-${i}`,
+        position: new Cesium.CallbackProperty(() => {
+          const p = dustPuffs(ms())[i];
+          const [lon, lat] = toLonLat(p ? [p.x * half, p.y * half] : [0, 0]);
+          return Cesium.Cartesian3.fromDegrees(lon, lat, s.base + 1.5);
+        }, false),
+        billboard: {
+          image: sprite,
+          sizeInMeters: true,
+          width: new Cesium.CallbackProperty(
+            () => (dustPuffs(ms())[i]?.size ?? 0) * half * 1.6,
+            false,
+          ),
+          height: new Cesium.CallbackProperty(
+            () => (dustPuffs(ms())[i]?.size ?? 0) * half * 1.1,
+            false,
+          ),
+          color: new Cesium.CallbackProperty(
+            () => Cesium.Color.WHITE.withAlpha(dustPuffs(ms())[i]?.alpha ?? 0),
+            false,
+          ),
+        },
+      }),
+    );
+    holdContinuousRender(`${OWNER}-rise`);
+    win.setTimeout(() => {
+      for (const puff of puffs) ds.entities.remove(puff);
+      s.rising = false;
+      const live = site === s && s.block;
+      if (live) s.block.show = !s.model;
+      // Keep the riser over the block until the block's geometry is drawn
+      // (its bounding sphere is DONE), at most 6 s.
+      const scratch = new Cesium.BoundingSphere();
+      const t1 = win.performance.now();
+      const done = () =>
+        !live ||
+        !s.block.show ||
+        viewer.dataSourceDisplay.getBoundingSphere(s.block, false, scratch) ===
+          Cesium.BoundingSphereState.DONE ||
+        win.performance.now() - t1 > 6000;
+      const off = scene.postRender.addEventListener(() => {
+        if (!done()) return;
+        off();
+        // One more frame so the block is on screen before the riser goes.
+        win.requestAnimationFrame(() => {
+          ds.entities.remove(riser);
+          releaseContinuousRender(`${OWNER}-rise`);
+          if (site === s) rendered();
+        });
+      });
+    }, Math.max(RISE_MS, DUST_MS) + 80);
   }
 
   // The building the block is drawn as, and what its shader reads, as the
@@ -1237,9 +1369,10 @@ export function mountCityMassing({
 
   function clearStands() {
     removeGrowthFrame();
-    for (const { plate, block, cuts } of stands) {
+    for (const { plate, block, cuts, skirt } of stands) {
       ds.entities.remove(plate);
       ds.entities.remove(block);
+      if (skirt) ds.entities.remove(skirt);
       uncut(cuts);
     }
     stands = [];
@@ -1252,7 +1385,8 @@ export function mountCityMassing({
   // and each sun-locked block's badge follows it on screen.
   function growthFrame() {
     const ready = tilesReady();
-    if (ready && !stands.ready)
+    // A fitted district ground (?cityHud=ground) is not re-sampled through its own cuts.
+    if (ready && !stands.ready && !stands[0]?.fitted)
       for (const s of stands) {
         const ground = measure(s.plot);
         if (!ground || Math.abs(ground.base - s.base) < REGROUND_METERS)
@@ -1298,6 +1432,51 @@ export function mountCityMassing({
     });
     if (!growth) return plan;
     const blocks = plan.stages[stage].blocks;
+    if (!stands.length && HUD.ground) {
+      // FORK-ONLY (?cityHud=ground): every plot is sampled BEFORE any is cut
+      // (a later plot's probes otherwise fall into its neighbours' holes or
+      // onto their roofs: round-1 plates stood 35 m apart), one ground is
+      // fitted to the district, and each plate reaches down to that ground's
+      // lowest point, so a slope steps like terraces instead of opening onto
+      // the void under the cut tiles. A skirt closes the district's edge.
+      const frame = localFrame(plots.map((p) => [p.center.lon, p.center.lat]));
+      const lows = plots.map((plot) => {
+        const heights = [
+          sample([plot.center.lon, plot.center.lat]),
+          ...edgeProbes(plot.corners, PROBE_METERS).map(sample),
+        ].filter(Number.isFinite);
+        const [x, y] = frame.toMeters([plot.center.lon, plot.center.lat]);
+        return { x, y, h: heights.length ? Math.min(...heights) : NaN };
+      });
+      const fitted = districtGround(lows);
+      const grounds = lows.map(({ x, y }) =>
+        fitted ? { base: fitted.at(x, y), floor: fitted.floor - 1 } : null,
+      );
+      stands = plots.map((plot, i) => {
+        const ground = grounds[i];
+        const massing = plotMassing({
+          corners: plot.corners,
+          storeys: blocks[i].storeys,
+        });
+        return {
+          plot,
+          base: ground?.base ?? 0,
+          fitted: true,
+          cuts: cut(plot),
+          ...standBlock(plot, massing, ground, `-${plot.id}`),
+        };
+      });
+      if (fitted) {
+        const outline = districtOutline(plots);
+        const skirt = close(
+          { corners: outline },
+          fitted.floor + PLATE_RISE,
+          false,
+        );
+        if (skirt) stands[0].skirt = skirt;
+      }
+      removeGrowthFrame = scene.postRender.addEventListener(growthFrame);
+    }
     if (!stands.length) {
       stands = plots.map((plot, i) => {
         const ground = measure(plot);

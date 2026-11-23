@@ -8,6 +8,10 @@ import UiIcon from '../../kit/UiIcon.vue';
 import { useCityPlayStore } from '../../stores/cityPlay.js';
 import { hudFigure } from '../../cityHudFigure.js';
 import { boundsOf, placeBeside, placeWheel, stackPins, wheelBounds, wheelLayout, wheelSize } from '../../cityPlayModel.js';
+// FORK-ONLY (exp/city-game-hud, ?cityHud=…): the game HUD and the district layer's chips.
+import CityGameHud from './CityGameHud.vue';
+import { pageHudFlags } from '../../../data/cityGameHud.js';
+const hud = pageHudFlags();
 
 // City builder play mode on the globe: the resource bar, the plot's radial
 // wheel and tag, in-world callouts and pins, and the concept carousel. The
@@ -45,7 +49,8 @@ const size = computed(() => wheelSize(viewport.value));
 const moveRows = computed(() => Math.max(0, ...(view.value?.cards ?? []).map((c) => c.moves.length)));
 const inset = computed(() => ({
   top: mobile.value ? 196 : 128,
-  bottom: mobile.value ? 176 : showCarousel.value ? 372 + 30 * moveRows.value : 120,
+  // The game HUD's tray (?cityHud=bar) stands in for the carousel: ~230 px.
+  bottom: mobile.value ? 176 : hud.bar ? 294 : showCarousel.value ? 372 + 30 * moveRows.value : 120,
   side: 12,
   ...(view.value?.legend && !mobile.value ? { left: 376 } : {}),
 }));
@@ -201,6 +206,13 @@ const statsPlace = computed(() => {
   const footprint = anchors.value?.footprint;
   return placeBeside({ target: footprint?.every(Boolean) ? boundsOf(footprint) : null, size: statsSize.value, viewport: viewport.value, keepOut });
 });
+// FORK-ONLY (?cityHud=plots): the district cells' yield chips on their projected centres.
+const districtChips = computed(() =>
+  hud.plots && tier.value === 'district'
+    ? (view.value?.cells ?? []).map((c) => ({ ...c, at: anchors.value?.cells?.[c.id] })).filter((c) => c.at)
+    : [],
+);
+const cellHectares = (cell) => t('{area} ha', { area: hudFigure({ value: cell.hectares }) });
 const bars = computed(() => {
   const p = view.value?.focused?.parameters;
   if (!p) return [];
@@ -405,6 +417,20 @@ const bars = computed(() => {
         <span class="city-play-ai-chip" data-city-play-ai-label>{{ t('AI concept, not a plan or an approval') }}</span>
       </div>
     </section>
+
+    <!-- FORK-ONLY (?cityHud=plots): far zoom, a yield chip on each 200 m district of the grid. -->
+    <span
+      v-for="cell in districtChips"
+      :key="cell.id"
+      class="city-game-cell"
+      :data-city-game-cell="cell.id"
+      :style="{ left: `${cell.at.x}px`, top: `${cell.at.y}px` }"
+    >
+      <span class="city-game-cell-head"><UiIcon name="layers" :size="13" />{{ cell.plots }} {{ t('Plots') }} · {{ cellHectares(cell) }}</span>
+      <span class="city-game-cell-yield"><UiIcon name="location_city" :size="13" /><strong translate="no">{{ figure({ value: cell.homesLow }) }}–{{ figure({ value: cell.homesHigh }) }}</strong> {{ t('Homes') }} <span class="city-game-est">{{ t('EST', { context: 'estimated value' }) }}</span></span>
+      <span class="city-game-cell-verb">{{ t('Click a plot, shift-click a second: grow a district') }}</span>
+    </span>
+    <CityGameHud v-if="hud.bar" />
 
     <p v-if="view.error" class="city-play-status city-play-status--error" role="alert" data-city-play-error>{{ view.error }}</p>
     <p v-else-if="view.pending" class="city-play-status" role="status" data-city-play-pending>{{ view.framing ? t('Framing plot…') : t('Imagining…') }}</p>

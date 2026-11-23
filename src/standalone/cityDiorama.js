@@ -53,8 +53,8 @@ const BLEND_FS = /* glsl */ `
 uniform sampler2D colorTexture;
 uniform sampler2D depthTexture;
 in vec2 v_textureCoordinates;
-uniform vec3 centreWC;
-uniform vec3 upWC;
+uniform vec3 centreEC;
+uniform vec3 upEC;
 uniform float r0;
 uniform float r1;
 uniform float fog;
@@ -77,11 +77,12 @@ void main() {
   float t = 1.0;
   float dist = -1.0;
   if (raw < 1.0) {
+    // as Cesium's DepthOfField stage: depth -> eye space, compared in eye space
     float depth = czm_readDepth(depthTexture, uv);
-    vec4 eye = czm_windowToEyeCoordinates(gl_FragCoord.xy, depth);
-    vec3 wc = (czm_inverseView * vec4(eye.xyz / eye.w, 1.0)).xyz;
-    vec3 v = wc - centreWC;
-    v -= dot(v, upWC) * upWC;
+    vec4 eye = czm_inverseProjection * vec4(uv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+    eye /= eye.w;
+    vec3 v = eye.xyz - centreEC;
+    v -= dot(v, upEC) * upEC;
     dist = length(v);
     t = smoothstep(r0, r1, dist);
   }
@@ -525,8 +526,8 @@ export async function mountCityDiorama({ viewer, win = globalThis.window, search
     name: 'gev_diorama_blend',
     fragmentShader: BLEND_FS,
     uniforms: {
-      centreWC,
-      upWC,
+      centreEC: () => Cesium.Matrix4.multiplyByPoint(scene.camera.viewMatrix, centreWC, new Cesium.Cartesian3()),
+      upEC: () => Cesium.Cartesian3.normalize(Cesium.Matrix4.multiplyByPointAsVector(scene.camera.viewMatrix, upWC, new Cesium.Cartesian3()), new Cesium.Cartesian3()),
       r0: o.ringIn,
       r1: o.ringOut,
       fog: o.fog,

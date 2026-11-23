@@ -42,6 +42,8 @@ export const DIORAMA_DEFAULTS = Object.freeze({
   tiltY: 0.55, // focus band centre, fraction of the frame height from the top
   mist: 0, // strength of the mist bank on the photoreal just outside the cut
   mistW: 60, // its width, metres
+  fx: 'r520', // r520 | r700 (wider OSM fixture; needed for radius > 500)
+  instanced: 1, // trees as EXT_mesh_gpu_instancing prototypes (0: merged into one mesh)
   street: 0, // probability of a street tree every 9 m along each side of wide streets
 });
 
@@ -352,10 +354,11 @@ function wallHeight(b, o, r) {
 }
 
 // ---------- trees
-function pine(s, x, y, z, k, r, sat) {
+function pine(s, x, y, z, k, r, sat, pick) {
   const h = (7 + r() * 5) * k;
   const rad = (2.2 + r() * 0.9) * k;
-  const col = linear(PALETTE.pine[Math.floor(r() * PALETTE.pine.length)], 0.08, r, sat);
+  const ci = pick?.col ?? Math.floor(r() * PALETTE.pine.length);
+  const col = linear(PALETTE.pine[ci % PALETTE.pine.length], 0.08, r, sat);
   const trunk = linear(PALETTE.trunk, 0.05, r, sat);
   const rot = r() * 6.28;
   prism(s, ring(x, y, 0.28 * k, 5, rot), z - 0.3, z + h * 0.22, trunk, false);
@@ -368,12 +371,12 @@ function pine(s, x, y, z, k, r, sat) {
   return { r: rad, h };
 }
 
-function broadleaf(s, x, y, z, k, r, o, sat) {
+function broadleaf(s, x, y, z, k, r, o, sat, pick) {
   const rad = (2.6 + r() * 1.6) * k;
   const h = (3.2 + r() * 1.5) * k;
-  const autumn = r() < o.autumn;
+  const autumn = pick ? pick.autumn : r() < o.autumn;
   const pal = autumn ? PALETTE.autumn : PALETTE.leaf;
-  const col = linear(pal[Math.floor(r() * pal.length)], 0.08, r, sat);
+  const col = linear(pal[(pick?.col ?? Math.floor(r() * pal.length)) % pal.length], 0.08, r, sat);
   const col2 = col.map((c) => c * 0.8);
   const trunk = linear(PALETTE.trunk, 0.05, r, sat);
   prism(s, ring(x, y, 0.3 * k, 5, r() * 6), z - 0.3, z + h, trunk, false);
@@ -460,9 +463,33 @@ export function buildDiorama(fixture, ground, o = DIORAMA_DEFAULTS) {
     return true;
   };
   const trees = [];
+  // o.instanced: every tree is an instance of one of a few prototypes
+  // (EXT_mesh_gpu_instancing), so the model carries each shape once.
+  const protos = new Map();
+  const proto = (key) => {
+    if (!protos.has(key)) {
+      const [kind, shape, col, autumn] = key.split(':');
+      const ps = new Soup();
+      const pr = prng(1000 + Number(shape) * 97 + Number(col) * 13 + (autumn === '1' ? 7 : 0) + (kind === 'pine' ? 3 : 0));
+      const dims = kind === 'pine'
+        ? pine(ps, 0, 0, 0, 1, pr, sat, { col: Number(col) })
+        : broadleaf(ps, 0, 0, 0, 1, pr, o, sat, { col: Number(col), autumn: autumn === '1' });
+      protos.set(key, { soup: ps, ...dims, instances: [] });
+    }
+    return protos.get(key);
+  };
   const plant = (x, y, kind) => {
     const z = gz(x, y);
     const k = o.treeScale * (0.8 + r() * 0.45);
+    if (o.instanced) {
+      const autumn = kind !== 'pine' && r() < o.autumn;
+      const ncol = kind === 'pine' ? PALETTE.pine.length : autumn ? PALETTE.autumn.length : PALETTE.leaf.length;
+      const key = `${kind}:${Math.floor(r() * 3)}:${Math.floor(r() * ncol)}:${autumn ? 1 : 0}`;
+      const p = proto(key);
+      p.instances.push([x, y, z, k, r() * Math.PI * 2]);
+      trees.push({ x, y, r: p.r * k, h: p.h * k });
+      return;
+    }
     const t = kind === 'pine' ? pine(s, x, y, z, k, r, sat) : broadleaf(s, x, y, z, k, r, o, sat);
     trees.push({ x, y, r: t.r, h: t.h });
   };
@@ -513,12 +540,21 @@ export function buildDiorama(fixture, ground, o = DIORAMA_DEFAULTS) {
       plant(x, y, r() < 0.75 ? 'pine' : 'leaf');
     }
   }
+  const instTris = [...protos.values()].reduce((a, p) => a + p.soup.triangles * p.instances.length, 0);
   return {
     soup: s,
+    protos,
     houses,
     trees,
     roads,
-    stats: { houses: houses.length, trees: trees.length, triangles: s.triangles, roadSegments: roads.length },
+    stats: {
+      houses: houses.length,
+      trees: trees.length,
+      triangles: s.triangles + instTris,
+      storedTriangles: s.triangles + [...protos.values()].reduce((a, p) => a + p.soup.triangles, 0),
+      prototypes: protos.size,
+      roadSegments: roads.length,
+    },
   };
 }
 

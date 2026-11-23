@@ -31,16 +31,18 @@ url.hash = new URLSearchParams({ v: '2', ...Object.fromEntries(Object.entries(SI
 await page.goto(url.href, { waitUntil: 'domcontentloaded', timeout: 120000 });
 await page.waitForFunction(() => window.__godsEyeView?.viewer && window.__godsEyeView.mapStackController?.getState?.().status === 'ready', null, { timeout: 180000, polling: 500 });
 await page.waitForTimeout(15000);
-const out = await page.evaluate(async () => {
-  const fx = await (await fetch('/city-diorama/north-beach.osm.json')).json();
+const FX = args.fixture || '/city-diorama/north-beach.osm.json';
+const HALF = Number(args.half || 640);
+const out = await page.evaluate(async ({ FX, HALF }) => {
+  const fx = await (await fetch(FX)).json();
   const { bakeGround } = await import('/src/standalone/cityDiorama.js');
   try {
-    return await bakeGround(window.__godsEyeView.viewer, fx);
+    return await bakeGround(window.__godsEyeView.viewer, fx, { half: HALF });
   } catch (e) {
     const Cesium = window.Cesium ?? (await import('cesium').catch(() => null));
     return { error: String(e?.message ?? e), status: e?.statusCode ?? e?.target?.status ?? null, response: String(e?.response ?? '').slice(0, 200), hasDefaultToken: Boolean(Cesium?.Ion?.defaultAccessToken) };
   }
-});
+}, { FX, HALF });
 if (out.error) { console.log(JSON.stringify(out)); process.exit(3); }
 await writeFile(args.out, JSON.stringify(out));
 console.log(JSON.stringify({ n: out.n, centre: out.centre, offset: out.offset, offsetSamples: out.offsetSamples, p: out.offsetP10P50P90, min: Math.min(...out.heights), max: Math.max(...out.heights) }));

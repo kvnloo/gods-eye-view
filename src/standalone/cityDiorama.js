@@ -25,8 +25,11 @@ import {
 // contributors, ODbL 1.0 (credited on screen); ground heights baked from
 // Cesium World Terrain (public/city-diorama/north-beach.ground.json).
 
-const FIXTURE = '/city-diorama/north-beach.osm.json';
-const GROUND = '/city-diorama/north-beach.ground.json';
+// dio=fx:r700 picks the wider fixture (OSM within 760 m, ground baked to 900 m)
+const FIXTURES = {
+  r520: ['/city-diorama/north-beach.osm.json', '/city-diorama/north-beach.ground.json'],
+  r700: ['/city-diorama/north-beach-r700.osm.json', '/city-diorama/north-beach-r700.ground.json'],
+};
 const TEX = 2048;
 const CUT_SIDES = 72;
 
@@ -116,7 +119,7 @@ void main() {
 // ---------- glTF assembly
 function pad4(n) { return (n + 3) & ~3; }
 
-function glb({ ground, objects, png }) {
+function glb({ ground, objects, png, protos }) {
   const views = [];
   const accessors = [];
   const chunks = [];
@@ -132,7 +135,7 @@ function glb({ ground, objects, png }) {
     return views.length - 1;
   };
   const acc = (typed, type, comp, count, extra = {}) => {
-    accessors.push({ bufferView: push(typed, extra.index ? 34963 : 34962), componentType: comp, count, type, ...extra.acc });
+    accessors.push({ bufferView: push(typed, extra.instance ? undefined : extra.index ? 34963 : 34962), componentType: comp, count, type, ...extra.acc });
     return accessors.length - 1;
   };
   const minmax = (p) => {
@@ -159,13 +162,45 @@ function glb({ ground, objects, png }) {
     const C = acc(new Float32Array(objects.c), 'VEC4', 5126, objects.c.length / 4);
     prims.push({ attributes: { POSITION: P, NORMAL: N, COLOR_0: C }, material: 1 });
   }
+  const meshes = [{ primitives: prims }];
+  const nodes = [{ mesh: 0 }];
+  for (const p of protos?.values?.() ?? []) {
+    if (!p.instances.length) continue;
+    const pp = new Float32Array(p.soup.p);
+    const P = acc(pp, 'VEC3', 5126, pp.length / 3, { acc: minmax(pp) });
+    const N = acc(new Float32Array(p.soup.n), 'VEC3', 5126, p.soup.n.length / 3);
+    const C = acc(new Float32Array(p.soup.c), 'VEC4', 5126, p.soup.c.length / 4);
+    meshes.push({ primitives: [{ attributes: { POSITION: P, NORMAL: N, COLOR_0: C }, material: 1 }] });
+    const n = p.instances.length;
+    const tr = new Float32Array(n * 3);
+    const ro = new Float32Array(n * 4);
+    const sc = new Float32Array(n * 3);
+    p.instances.forEach(([x, y, z, k, a], i) => {
+      tr.set([x, y, z], i * 3);
+      ro.set([0, 0, Math.sin(a / 2), Math.cos(a / 2)], i * 4);
+      sc.set([k, k, k], i * 3);
+    });
+    nodes.push({
+      mesh: meshes.length - 1,
+      extensions: {
+        EXT_mesh_gpu_instancing: {
+          attributes: {
+            TRANSLATION: acc(tr, 'VEC3', 5126, n, { instance: true }),
+            ROTATION: acc(ro, 'VEC4', 5126, n, { instance: true }),
+            SCALE: acc(sc, 'VEC3', 5126, n, { instance: true }),
+          },
+        },
+      },
+    });
+  }
   const imgView = push(png);
   const json = {
     asset: { version: '2.0', generator: 'gev city diorama (fork-only)' },
+    ...(nodes.length > 1 && { extensionsUsed: ['EXT_mesh_gpu_instancing'], extensionsRequired: ['EXT_mesh_gpu_instancing'] }),
     scene: 0,
-    scenes: [{ nodes: [0] }],
-    nodes: [{ mesh: 0 }],
-    meshes: [{ primitives: prims }],
+    scenes: [{ nodes: nodes.map((_, i) => i) }],
+    nodes,
+    meshes,
     materials: [
       { pbrMetallicRoughness: { baseColorTexture: { index: 0 }, metallicFactor: 0, roughnessFactor: 1 }, doubleSided: false },
       { pbrMetallicRoughness: { baseColorFactor: [1, 1, 1, 1], metallicFactor: 0, roughnessFactor: 1 }, doubleSided: true },
@@ -435,10 +470,12 @@ export async function mountCityDiorama({ viewer, win = globalThis.window, search
   const o = dioramaOptions(search);
   const state = { options: o, ready: false, error: null, stats: null, timing: {} };
   const t0 = performance.now();
+  const [FIXTURE, GROUND] = FIXTURES[o.fx] ?? FIXTURES.r520;
   const [fixture, ground] = await Promise.all([
     fetch(FIXTURE).then((r) => r.json()),
     fetch(GROUND).then((r) => (r.ok ? r.json() : null)).catch(() => null),
   ]);
+  state.fixture = FIXTURE;
   const gz = groundSampler(ground);
   const built = buildDiorama(fixture, ground, o);
   state.timing.buildMs = Math.round(performance.now() - t0);
@@ -446,7 +483,7 @@ export async function mountCityDiorama({ viewer, win = globalThis.window, search
   const gm = groundMesh(gz, Rg);
   const png = await paintGround(fixture, built, o, Rg);
   state.timing.paintMs = Math.round(performance.now() - t0 - state.timing.buildMs);
-  const bytes = glb({ ground: gm, objects: built.soup, png });
+  const bytes = glb({ ground: gm, objects: built.soup, png, protos: built.protos });
   const { lat, lon } = fixture.centre;
   const h0 = (ground?.centre ?? 0) + (ground?.offset ?? 0);
   const centreWC = Cesium.Cartesian3.fromDegrees(lon, lat, h0);

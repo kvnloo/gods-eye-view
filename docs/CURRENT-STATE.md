@@ -4352,8 +4352,9 @@ policy, fallback behavior, response shapes and rendering remain unchanged.
 
 ### ADSBDB enrichment bounds
 
-`/api/adsbdb` admits 720 requests/minute per client address
-(`GEV_RATELIMIT_ADSBDB_PER_MIN`; `0` disables), with a global backstop of three
+`/api/adsbdb` admits 720 requests/minute per client address, an IPv6 client
+counted by its /64 (`GEV_RATELIMIT_ADSBDB_PER_MIN`; `0` disables), with a
+global backstop of three
 times that; a refused request answers 429 with `Retry-After` and reaches
 neither the cache nor api.adsbdb.com. Each browser enrichment queue drips at
 most 300/minute and one tab runs two (Flights and Local ADS-B), so an ordinary

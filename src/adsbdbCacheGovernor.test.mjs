@@ -208,6 +208,44 @@ test('a different client keeps its own budget', async (t) => {
   assert.equal(quiet.statusCode, 200, 'a quiet client is not collateral');
 });
 
+test('one IPv6 /64 rotating addresses cannot lock other clients out', async (t) => {
+  stubUpstream(t);
+  const routes = install(adsbdbProxy({ cachePath: scratchCachePath() }));
+  const handler = routes.get('/api/adsbdb');
+
+  // Three privacy addresses of one host: by full address that is three full
+  // per-client budgets, enough to fill the shared global backstop (3 x 720).
+  for (let a = 1; a <= 3; a += 1)
+    for (let i = 0; i < 720; i += 1)
+      await request(handler, {
+        url: `/type/${hex(a * 1000 + i)}`,
+        remoteAddress: `2001:db8:1:2::${a}`,
+      });
+
+  const other = await request(handler, {
+    url: '/type/ffffff',
+    remoteAddress: '192.0.2.7',
+  });
+  assert.equal(other.statusCode, 200, 'an unrelated client is still served');
+});
+
+test('the IPv4-mapped and plain forms of one address share a budget', async (t) => {
+  stubUpstream(t);
+  const routes = install(adsbdbProxy({ cachePath: scratchCachePath() }));
+  const handler = routes.get('/api/adsbdb');
+
+  let served = 0;
+  for (let i = 0; i < 1440; i += 1) {
+    const remoteAddress = i % 2 ? '::ffff:192.0.2.9' : '192.0.2.9';
+    const res = await request(handler, {
+      url: `/type/${hex(i)}`,
+      remoteAddress,
+    });
+    if (res.statusCode === 200) served += 1;
+  }
+  assert.equal(served, 720);
+});
+
 test('GEV_RATELIMIT_ADSBDB_PER_MIN sets the cap, and 0 turns it off', async (t) => {
   stubUpstream(t);
   const original = process.env.GEV_RATELIMIT_ADSBDB_PER_MIN;

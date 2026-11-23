@@ -2,7 +2,7 @@ import path from 'node:path';
 import { promises as fsp } from 'node:fs';
 import {
   makeRateLimiter,
-  clientKey,
+  clientNetworkKey,
   resolvePerMinuteCap,
 } from '../common/rate-limit.js';
 import { readResponseJsonCapped } from '../common/http.js';
@@ -229,8 +229,10 @@ export function adsbdbProxy(options = {}) {
         res.end(JSON.stringify(obj));
       };
       // Before any work: a refused request must not touch the cache, the disk,
-      // or api.adsbdb.com.
-      if (!allow(clientKey(req)))
+      // or api.adsbdb.com. Keyed by IPv4 address or IPv6 /64: the global
+      // backstop is shared, so one host rotating privacy addresses must not
+      // mint per-address quota and lock every other client out.
+      if (!allow(clientNetworkKey(req)))
         return send(
           429,
           { error: 'Rate limit exceeded' },

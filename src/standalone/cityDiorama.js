@@ -60,6 +60,7 @@ uniform float r1;
 uniform float fog;
 uniform vec3 fogColor;
 uniform vec2 texel;
+uniform float debug;
 
 vec3 softened(vec2 uv, float k) {
   vec3 s = vec3(0.0);
@@ -74,13 +75,19 @@ void main() {
   vec4 src = texture(colorTexture, uv);
   float raw = texture(depthTexture, uv).r;
   float t = 1.0;
+  float dist = -1.0;
   if (raw < 1.0) {
     float depth = czm_readDepth(depthTexture, uv);
     vec4 eye = czm_windowToEyeCoordinates(gl_FragCoord.xy, depth);
     vec3 wc = (czm_inverseView * vec4(eye.xyz / eye.w, 1.0)).xyz;
     vec3 v = wc - centreWC;
     v -= dot(v, upWC) * upWC;
-    t = smoothstep(r0, r1, length(v));
+    dist = length(v);
+    t = smoothstep(r0, r1, dist);
+  }
+  if (debug > 0.5) {
+    out_FragColor = vec4(t, fract(max(dist, 0.0) / 100.0), raw >= 1.0 ? 1.0 : 0.0, 1.0);
+    return;
   }
   if (t <= 0.001) { out_FragColor = src; return; }
   vec3 b = softened(uv, 1.0 + 2.5 * t);
@@ -525,6 +532,7 @@ export async function mountCityDiorama({ viewer, win = globalThis.window, search
       fog: o.fog,
       fogColor: lin('#cfe3dc'),
       texel: () => new Cesium.Cartesian2(1 / scene.drawingBufferWidth, 1 / scene.drawingBufferHeight),
+      debug: o.debug,
     },
   });
   scene.postProcessStages.add(stage);

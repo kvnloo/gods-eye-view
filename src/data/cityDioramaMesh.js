@@ -35,6 +35,7 @@ export const DIORAMA_DEFAULTS = Object.freeze({
   sat: 1, // palette saturation multiplier
   ambient: 0.62,
   key: 0.75,
+  debug: 0, // 1: the blend stage paints its ring factor (red) and 100 m distance bands (green)
 });
 
 const num = (v, d) => (Number.isFinite(Number(v)) ? Number(v) : d);

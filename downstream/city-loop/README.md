@@ -47,3 +47,25 @@ Calibration: `critics/panel.py absolute|pairwise` on the anchor set, then `criti
 
 The Cozy Valley filter can also be opened by hand in a dev server where `downstream/` is linked into the app root:
 `await (await import('/downstream/city-loop/filter/cozyValley.js')).installFromUrl()` with `?look=cozy&lookWipe=0.5`.
+
+## Hero build water render check
+
+In `src/standalone/cityDiorama.js`, `paintGround()` composites the Sausalito
+`waterField(fixture)` raster onto the ground texture. The row-run layers at depths
+`-1`, `0`, and `6` cells supply the shore halo, water fill, and deep-water overlay.
+`mountCityDiorama()` passes the PNG to `glb()` as the ground base-color texture.
+The model's `LIGHT_FS` shades it, and `gev_diorama_blend` grades the rendered scene.
+
+On a fresh capture server, take the `city=hero` build beat with
+`--beats build --judge-only`. Temporarily change the three raster layer colors
+to pure red, start Vite from that checkout, and capture the same beat. Keep each
+PNG with its original manifest. Run this check with Pillow installed.
+
+```sh
+python3 downstream/city-loop/capture/water-path.check.py \
+  control/build--own.png diagnostic/build--own.png
+```
+
+The check validates both frames with the judge gate, then requires a red shift
+at a quarter or more of the water-colored control pixels in the fixed build
+water crop. Running it with two unmodified captures should fail.

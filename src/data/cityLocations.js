@@ -5,42 +5,45 @@
 //
 // Fixtures: public/city-diorama/<key>.osm.json, (c) OpenStreetMap
 // contributors, ODbL 1.0 (see public/city-diorama/README.md).
-// Ground: `ground: null` means the page samples Cesium World Terrain at run
-// time (streamed from ion, never stored); the ion terms do not allow storing
+// Ground: no location carries terrain heights. Every one, North Beach
+// included, samples Cesium World Terrain in the page at run time (streamed
+// from ion, kept in memory, never stored); the ion terms do not allow storing
 // sampled heights in the repo (loop-v3/licence/REPORT.md, item 1).
 export const CITY_LOCATIONS = Object.freeze({
   northbeach: Object.freeze({
     label: 'North Beach, San Francisco (Washington Square)',
     plot: 'plot-n105201-126637',
     fixture: '/city-diorama/north-beach-r700.osm.json',
-    // legacy baked file from exp/city-look-diorama; ?cityLoc=northbeach-live samples at run time instead
-    ground: '/city-diorama/north-beach-r700.ground.json',
   }),
+  // kept as an alias from exp/city-loc-green, where only this key sampled live
   'northbeach-live': Object.freeze({
-    label: 'North Beach, San Francisco (Washington Square), terrain sampled live',
+    label: 'North Beach, San Francisco (Washington Square)',
     plot: 'plot-n105201-126637',
     fixture: '/city-diorama/north-beach-r700.osm.json',
-    ground: null,
   }),
   presidio: Object.freeze({
     label: 'Presidio Main Post / Crissy Marsh, San Francisco',
     plot: 'plot-n105200-126533',
     fixture: '/city-diorama/presidio.osm.json',
-    ground: null,
   }),
   sausalito: Object.freeze({
     label: 'Sausalito waterfront (Dunphy Park)',
     plot: 'plot-n105367-126364',
     fixture: '/city-diorama/sausalito.osm.json',
-    ground: null,
   }),
 });
 
 export const DEFAULT_CITY_LOCATION = 'northbeach';
+// exp/city-loop-v4: ?city=hero is the v3 preset at this location, for the
+// "build a park for my neighborhood" journey (Dunphy Park lawn on Bridgeway).
+export const HERO_CITY_LOCATION = 'sausalito';
 
-/** The location named by `?cityLoc=` (default North Beach); null for an unknown key. */
+/** The location named by `?cityLoc=` (default North Beach, Sausalito under `?city=hero`); null for an unknown key. */
 export function cityLocation(search = '') {
-  const key = new URLSearchParams(search ?? '').get('cityLoc') ?? DEFAULT_CITY_LOCATION;
+  const q = new URLSearchParams(search ?? '');
+  const key =
+    q.get('cityLoc') ??
+    (q.get('city') === 'hero' ? HERO_CITY_LOCATION : DEFAULT_CITY_LOCATION);
   const loc = CITY_LOCATIONS[key];
   return loc ? { key, ...loc } : null;
 }

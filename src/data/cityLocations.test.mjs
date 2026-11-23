@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import test from 'node:test';
-import { CITY_LOCATIONS, cityLocation } from './cityLocations.js';
+import { CITY_LOCATIONS, HERO_CITY_LOCATION, cityLocation } from './cityLocations.js';
 import { plotFromId } from './cityPlot.js';
 import { DIORAMA_DEFAULTS, buildDiorama, levelWater, waterField } from './cityDioramaMesh.js';
 
@@ -11,6 +11,26 @@ test('cityLoc picks a location, defaults to North Beach, refuses unknown keys', 
   assert.equal(cityLocation('').key, 'northbeach');
   assert.equal(cityLocation('?cityLoc=presidio').plot, 'plot-n105200-126533');
   assert.equal(cityLocation('?cityLoc=nowhere'), null);
+});
+
+test('city=hero picks Sausalito (Dunphy Park) unless cityLoc says otherwise', () => {
+  assert.equal(HERO_CITY_LOCATION, 'sausalito');
+  assert.equal(cityLocation('?city=hero').key, 'sausalito');
+  assert.equal(cityLocation('?city=hero').plot, 'plot-n105367-126364');
+  assert.equal(cityLocation('?city=hero&cityLoc=presidio').key, 'presidio');
+  assert.equal(cityLocation('?city=v3').key, 'northbeach');
+});
+
+test('licence: no stored terrain heights anywhere, OSM notices next to the fixtures', () => {
+  const dir = new URL('../../public/city-diorama/', import.meta.url);
+  const files = readdirSync(dir);
+  assert.deepEqual(files.filter((f) => /ground|height|terrain/i.test(f)), [], 'Cesium World Terrain heights must not be stored (ion ToS 2.2.2)');
+  for (const [key, loc] of Object.entries(CITY_LOCATIONS)) assert.ok(!('ground' in loc), `${key}: terrain is sampled live`);
+  const readme = readFileSync(new URL('README.md', dir), 'utf8');
+  for (const s of ['OpenStreetMap contributors', 'https://opendatacommons.org/licenses/odbl/1-0/', 'https://www.openstreetmap.org/copyright', 'MIT'])
+    assert.ok(readme.includes(s), `README names ${s}`);
+  const notices = readFileSync(new URL('../../THIRD_PARTY_NOTICES.md', import.meta.url), 'utf8');
+  assert.ok(notices.includes('public/city-diorama') && notices.includes('ODbL'), 'THIRD_PARTY_NOTICES lists the OSM fixtures');
 });
 
 test('every location fixture is ODbL-tagged and centred on its plot', () => {

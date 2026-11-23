@@ -25,14 +25,17 @@ import { cityLocation } from '../data/cityLocations.js';
 // Cesium Model with a custom soft key + hemisphere ambient light. A depth-aware
 // post stage blends the photoreal context outside the disc (haze, softening,
 // palette pull) so the diorama reads as a miniature set in its city.
-// Data: public/city-diorama/north-beach.osm.json (c) OpenStreetMap
-// contributors, ODbL 1.0 (credited on screen); ground heights baked from
-// Cesium World Terrain (public/city-diorama/north-beach.ground.json).
+// Data: public/city-diorama/*.osm.json (c) OpenStreetMap contributors, ODbL
+// 1.0 (credited on screen, linked to openstreetmap.org/copyright; see
+// public/city-diorama/README.md). Ground heights: Cesium World Terrain,
+// sampled from ion when the diorama mounts and kept in memory only. The ion
+// terms do not allow storing sampled heights (Cesium ion ToS 2.2.2), so the
+// repo ships none, and terrain and OSM data never share a file.
 
-// dio=fx:r700 picks the wider fixture (OSM within 760 m, ground baked to 900 m)
+// dio=fx:r700 picks the wider fixture (OSM within 760 m); terrain is live for both
 const FIXTURES = {
-  r520: ['/city-diorama/north-beach.osm.json', '/city-diorama/north-beach.ground.json'],
-  r700: ['/city-diorama/north-beach-r700.osm.json', '/city-diorama/north-beach-r700.ground.json'],
+  r520: '/city-diorama/north-beach.osm.json',
+  r700: '/city-diorama/north-beach-r700.osm.json',
 };
 const TEX = 2048;
 const CUT_SIDES = 72;
@@ -581,10 +584,13 @@ function tilesets(scene) {
 }
 
 /**
- * Bake ground heights (Cesium World Terrain, ellipsoid heights) on a grid
- * around the centre. Run once in the page; the result is the ground fixture.
+ * Sample ground heights (Cesium World Terrain, ellipsoid heights) on a grid
+ * around the centre, streamed from ion in the page. The result lives in memory
+ * only: never write it to disk, a fixture or the repo (Cesium ion ToS 2.2.2).
+ * `credits` are the terrain's ion attributions (Cesium, USGS, ...), which the
+ * caller must show, since this provider is not attached to the globe.
  */
-export async function bakeGround(_viewer, fixture, { spacing = 16, half = 640 } = {}) {
+export async function sampleGround(_viewer, fixture, { spacing = 16, half = 640 } = {}) {
   const { lat, lon } = fixture.centre;
   const M = 111_320;
   const kx = M * Math.cos((lat * Math.PI) / 180);
@@ -608,6 +614,12 @@ export async function bakeGround(_viewer, fixture, { spacing = 16, half = 640 } 
     bad.forEach((c) => (c.height = 0));
     await Cesium.sampleTerrainMostDetailed(terrain, bad, true).catch(() => bad.forEach((c) => (c.height = NaN)));
   }
+  let credits = [];
+  try {
+    credits = [...(resource.credits ?? [])];
+  } catch {
+    credits = [];
+  }
   const heights = pts.map((c) => (Number.isFinite(c.height) ? Math.round(c.height * 100) / 100 : NaN));
   for (let pass = 0; pass < 2 * n && heights.some((h) => !Number.isFinite(h)); pass++)
     for (let k = 0; k < heights.length; k++) {
@@ -624,14 +636,17 @@ export async function bakeGround(_viewer, fixture, { spacing = 16, half = 640 } 
     const i = Math.floor(n / 2);
     return heights[i * n + i];
   })();
-  return {
+  const ground = {
     schema: 'gev-city-diorama-ground@1',
-    source: 'Cesium World Terrain (ion asset 1) via sampleTerrainMostDetailed (ellipsoid heights); nothing sampled from Google photoreal tiles',
+    source: 'Cesium World Terrain (ion asset 1) via sampleTerrainMostDetailed (ellipsoid heights), live, in memory only; nothing sampled from Google photoreal tiles',
     centreLatLon: fixture.centre,
     spacing, half, n, centre, offset,
     unsampledAfterRetries: holes,
     heights,
   };
+  // not enumerable: the Credit objects stay out of any JSON view of the state
+  Object.defineProperty(ground, 'credits', { value: credits, enumerable: false });
+  return ground;
 }
 
 export async function mountCityDiorama({ viewer, win = globalThis.window, search = globalThis.location?.search }) {
@@ -640,25 +655,21 @@ export async function mountCityDiorama({ viewer, win = globalThis.window, search
   const o = dioramaOptions(search);
   const state = { options: o, ready: false, error: null, stats: null, timing: {} };
   const t0 = performance.now();
-  // exp/city-loc-green: ?cityLoc=<key> picks the location's fixture (src/data/cityLocations.js)
-  const asked = new URLSearchParams(search ?? '').has('cityLoc');
+  // exp/city-loc-green: ?cityLoc=<key> picks the location's fixture (src/data/cityLocations.js);
+  // exp/city-loop-v4: ?city=hero picks the hero location (Sausalito) unless cityLoc says otherwise
+  const params = new URLSearchParams(search ?? '');
+  const asked = params.has('cityLoc') || params.get('city') === 'hero';
   const loc = asked ? cityLocation(search) : null;
-  if (asked && !loc) throw new Error(`unknown cityLoc: ${new URLSearchParams(search).get('cityLoc')}`);
-  const [FIXTURE, GROUND] = loc ? [loc.fixture, loc.ground] : FIXTURES[o.fx] ?? FIXTURES.r520;
-  const [fixture, baked] = await Promise.all([
-    fetch(FIXTURE).then((r) => r.json()),
-    GROUND ? fetch(GROUND).then((r) => (r.ok ? r.json() : null)).catch(() => null) : null,
-  ]);
+  if (asked && !loc) throw new Error(`unknown cityLoc: ${params.get('cityLoc')}`);
+  const FIXTURE = loc ? loc.fixture : FIXTURES[o.fx] ?? FIXTURES.r520;
+  const fixture = await fetch(FIXTURE).then((r) => r.json());
   state.fixture = FIXTURE;
   state.location = loc?.key ?? null;
-  let ground = baked;
-  if (!ground) {
-    // Cesium World Terrain streamed from ion now, kept in memory only (never stored)
-    const tb = performance.now();
-    ground = await bakeGround(viewer, fixture, { half: 900 });
-    state.timing.terrainMs = Math.round(performance.now() - tb);
-  }
-  state.ground = baked ? `file:${GROUND}` : 'live:cesium-world-terrain';
+  // Every location: Cesium World Terrain streamed from ion now, kept in memory only (never stored)
+  const tb = performance.now();
+  const ground = await sampleGround(viewer, fixture, { half: 900 });
+  state.timing.terrainMs = Math.round(performance.now() - tb);
+  state.ground = 'live:cesium-world-terrain';
   const water = waterField(fixture);
   if (water) state.water = levelWater(ground, water);
   const gz = groundSampler(ground);
@@ -864,10 +875,18 @@ export async function mountCityDiorama({ viewer, win = globalThis.window, search
   scene.postProcessStages.add(stage);
   const credit = new Cesium.Credit('District stylised from <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (© OpenStreetMap contributors, ODbL) · context: Google', true);
   viewer.creditDisplay?.addStaticCredit?.(credit);
+  // The sampled terrain's own attributions (Cesium ion logo, USGS and the other
+  // sources ion lists): the provider is not on the globe, so CesiumJS would not
+  // show them by itself. They stay in Cesium's default credit display.
+  const terrainCredits = ground.credits?.length
+    ? ground.credits
+    : [new Cesium.Credit('Terrain: <a href="https://cesium.com/platform/cesium-ion/content/cesium-world-terrain/" target="_blank" rel="noopener">Cesium World Terrain</a> (Cesium ion)', true)];
+  for (const c of terrainCredits) viewer.creditDisplay?.addStaticCredit?.(c);
+  state.terrainCredits = terrainCredits.map((c) => c.html);
 
   Object.assign(state, {
     ready: true,
-    stats: { ...built.stats, groundTriangles: gm.idx.length / 3, glbBytes: bytes.byteLength, groundBaked: Boolean(ground?.heights) },
+    stats: { ...built.stats, groundTriangles: gm.idx.length / 3, glbBytes: bytes.byteLength, groundSource: state.ground },
   });
   state.timing.totalMs = Math.round(performance.now() - t0);
   scene.requestRender();
@@ -909,6 +928,7 @@ export async function mountCityDiorama({ viewer, win = globalThis.window, search
       scene.primitives.remove(model);
       scene.postProcessStages.remove(stage);
       viewer.creditDisplay?.removeStaticCredit?.(credit);
+      for (const c of terrainCredits) viewer.creditDisplay?.removeStaticCredit?.(c);
       scene.requestRender();
     },
   };

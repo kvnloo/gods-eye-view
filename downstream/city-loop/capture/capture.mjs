@@ -489,12 +489,13 @@ try {
     await page.keyboard.up('Shift');
     await until(() => window.__gevCityPlay.snapshot().district?.length === 25, 'district of 25', 20000);
     await noFlight();
-    await page.locator(S.growthToggle).click();
+    await page.locator(S.growthToggle).click({ timeout: 90000 });
     await page.locator('[data-city-growth-rail]').waitFor({ state: 'visible' });
     const stages = {};
     const stops = await page.locator('[data-city-growth-stop]').evaluateAll((els) => els.map((e) => e.dataset.cityGrowthStop));
     for (const id of stops) {
-      await page.locator(`[data-city-growth-stop="${id}"]`).click();
+      // SwiftShader at ~1 fps needs longer than the 20 s default to settle a click (capture env, not app).
+      await page.locator(`[data-city-growth-stop="${id}"]`).click({ timeout: 90000 });
       await sleep(1500);
       await settle();
       stages[id] = await shot(`growth--stage-${id}`);

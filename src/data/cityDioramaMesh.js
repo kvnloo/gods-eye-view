@@ -43,6 +43,7 @@ export const DIORAMA_DEFAULTS = Object.freeze({
   mist: 0, // strength of the mist bank on the photoreal just outside the cut
   mistW: 60, // its width, metres
   fx: 'r520', // r520 | r700 (wider OSM fixture; needed for radius > 500)
+  lod: 0, // 1: lighter tree prototypes (2-tier pines, 1-2 crown blobs) for software renderers
   instanced: 1, // trees as EXT_mesh_gpu_instancing prototypes (0: merged into one mesh)
   street: 0, // probability of a street tree every 9 m along each side of wide streets
 });
@@ -362,11 +363,11 @@ function pine(s, x, y, z, k, r, sat, pick) {
   const trunk = linear(PALETTE.trunk, 0.05, r, sat);
   const rot = r() * 6.28;
   prism(s, ring(x, y, 0.28 * k, 5, rot), z - 0.3, z + h * 0.22, trunk, false);
-  const tiers = 3;
+  const tiers = pick?.lod ? 2 : 3;
   for (let i = 0; i < tiers; i++) {
-    const z0 = z + h * (0.15 + i * 0.24);
-    const rr = rad * (1 - i * 0.26);
-    cone(s, x, y, z0, h * (0.5 - i * 0.08), rr, 7, col, rot + i);
+    const z0 = z + h * (0.15 + i * (tiers === 2 ? 0.34 : 0.24));
+    const rr = rad * (1 - i * (tiers === 2 ? 0.38 : 0.26));
+    cone(s, x, y, z0, h * (tiers === 2 ? 0.6 - i * 0.12 : 0.5 - i * 0.08), rr, pick?.lod ? 6 : 7, col, rot + i);
   }
   return { r: rad, h };
 }
@@ -381,7 +382,7 @@ function broadleaf(s, x, y, z, k, r, o, sat, pick) {
   const trunk = linear(PALETTE.trunk, 0.05, r, sat);
   prism(s, ring(x, y, 0.3 * k, 5, r() * 6), z - 0.3, z + h, trunk, false);
   blob(s, x, y, z + h + rad * 0.6, rad, rad * 0.85, col, r);
-  const n = 1 + Math.floor(r() * 2);
+  const n = pick?.lod ? Math.floor(r() * 2) : 1 + Math.floor(r() * 2);
   for (let i = 0; i < n; i++) {
     const t = r() * 6.28;
     blob(s, x + Math.cos(t) * rad * 0.6, y + Math.sin(t) * rad * 0.6, z + h + rad * 0.35, rad * 0.62, rad * 0.55, i ? col : col2, r);
@@ -472,8 +473,8 @@ export function buildDiorama(fixture, ground, o = DIORAMA_DEFAULTS) {
       const ps = new Soup();
       const pr = prng(1000 + Number(shape) * 97 + Number(col) * 13 + (autumn === '1' ? 7 : 0) + (kind === 'pine' ? 3 : 0));
       const dims = kind === 'pine'
-        ? pine(ps, 0, 0, 0, 1, pr, sat, { col: Number(col) })
-        : broadleaf(ps, 0, 0, 0, 1, pr, o, sat, { col: Number(col), autumn: autumn === '1' });
+        ? pine(ps, 0, 0, 0, 1, pr, sat, { col: Number(col), lod: o.lod })
+        : broadleaf(ps, 0, 0, 0, 1, pr, o, sat, { col: Number(col), autumn: autumn === '1', lod: o.lod });
       protos.set(key, { soup: ps, ...dims, instances: [] });
     }
     return protos.get(key);

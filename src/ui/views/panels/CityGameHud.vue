@@ -10,7 +10,6 @@ import { hudFigure } from '../../cityHudFigure.js';
 import { MAX_ZONED_PLOTS } from '../../../data/cityLandUse.js';
 import { nearestCity } from '../../../data/wikidataCities.js';
 import { pageHudFlags, tickFigure, topBarModel, trayModel, trayShortcut } from '../../../data/cityGameHud.js';
-import '../../styles/city-game-hud.css';
 
 // FORK-ONLY (exp/city-game-hud, ?cityHud=game|bar): the game HUD of play
 // mode, after the owner's wintercats references: one slim top resource bar and
@@ -251,6 +250,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
         >
           <span class="city-game-tool-art"><img v-if="card.image" :src="card.image" :alt="t('AI concept, not a plan or an approval')" /><UiIcon v-else :name="card.icon" :size="26" /></span>
           <span class="city-game-tool-label">{{ card.title }}</span>
+          <span v-if="card.built" class="city-game-kept">{{ t('Kept') }}</span>
         </UiButton>
       </div>
       <div class="city-game-verbs">

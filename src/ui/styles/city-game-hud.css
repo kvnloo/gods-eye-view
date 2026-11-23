@@ -259,13 +259,14 @@ body.gev-city-hud-bar .city-play-dock {
   right: 3px;
   background: rgba(3, 6, 9, 0.8);
 }
-.city-game-world.is-kept::after {
+/* The kept badge is marked-up text (t('Kept')), not CSS content. */
+.city-game-kept {
   position: absolute;
   top: 3px;
   left: 3px;
   padding: 0 4px;
   border-radius: 3px;
-  content: 'KEPT';
+  text-transform: uppercase;
   color: var(--bg-dark);
   background: #5ee08a;
   font: 700 8px var(--font-mono);

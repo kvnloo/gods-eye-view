@@ -117,7 +117,7 @@ body.gev-city-hud-bar .city-play-dock {
   position: absolute;
   /* Clear of the command dock's search field (round-1 panel: the tray
      overlapped it). */
-  bottom: 112px;
+  bottom: 146px;
   left: 50%;
   transform: translateX(-50%);
   display: grid;
@@ -370,7 +370,7 @@ body.gev-city-hud-bar .city-play-dock {
 body.gev-city-hud-bar .city-growth {
   top: auto;
   right: 24px;
-  bottom: 252px;
+  bottom: 286px;
 }
 body.gev-city-hud-bar .city-growth[data-city-growth-on='true'] {
   width: 300px;

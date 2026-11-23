@@ -36,7 +36,7 @@ export const DIORAMA_DEFAULTS = Object.freeze({
   ambient: 0.62,
   key: 0.75,
   debug: 0, // 1: the blend stage paints its ring factor (red) and 100 m distance bands (green)
-  pal: 'town', // town | norse (dark timber walls, turf and slate roofs: the Thveit kit)
+  pal: 'town', // town | mix | norse (dark timber walls, turf and slate roofs: the Thveit kit)
   roadW: 1, // street width multiplier on the painted ground
   tilt: 0, // screen-space tilt-shift strength in the blend stage (0 = off)
   tiltY: 0.55, // focus band centre, fraction of the frame height from the top
@@ -74,6 +74,11 @@ export function prng(seed = 1) {
 export const NORSE = Object.freeze({
   walls: ['#5b3c28', '#6e4a30', '#7d5636', '#4f3524', '#e6d3ad', '#8a6440', '#5f4330'],
   roofs: ['#6f8f3a', '#7d9a42', '#617f34', '#4d5864', '#5d6875', '#8a9a48', '#b0563a', '#6f8f3a'],
+});
+// between town and norse: cream and timber walls, fewer orange roofs, slate, brown and moss
+export const MIX = Object.freeze({
+  walls: ['#efe2c4', '#e9d4ac', '#f3ead8', '#6e4a30', '#8a5a3c', '#7d5636', '#e6cfa6', '#5b3c28'],
+  roofs: ['#b8573a', '#c8683e', '#4d5864', '#5d6875', '#6e4a36', '#5a3d2e', '#6f8f3a', '#7d9a42', '#a14d35'],
 });
 export const PALETTE = Object.freeze({
   walls: ['#efe2c4', '#e9d4ac', '#f3ead8', '#dcc39a', '#8a5a3c', '#9c6b45', '#e6cfa6', '#7b4e33'],
@@ -292,7 +297,7 @@ function house(s, rect, z0, wallH, o, r, sat) {
   const A = a - o.gap;
   const B = b - o.gap;
   if (A < 1.2 || B < 1.2) return null;
-  const kit = o.pal === 'norse' ? NORSE : PALETTE;
+  const kit = o.pal === 'norse' ? NORSE : o.pal === 'mix' ? MIX : PALETTE;
   const wallHex = kit.walls[Math.floor(r() * kit.walls.length)];
   const roofHex = kit.roofs[Math.floor(r() * kit.roofs.length)];
   const wall = linear(wallHex, 0.05, r, sat);

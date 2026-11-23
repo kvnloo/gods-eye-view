@@ -39,7 +39,6 @@ const VIDEO = Boolean(args.video);
 const QUERY = typeof args.query === 'string' ? args.query : '';
 const LOOK_APP = Boolean(args['look-app']);
 // exp/city-loop-v3: --no-cozy skips the per-beat Cozy Valley variants (the look is the app's own).
-const NO_COZY = Boolean(args['no-cozy']);
 const require = createRequire(path.join(APP, 'package.json'));
 const { chromium } = require('playwright-core');
 const { siteForPlot } = await import(
@@ -48,7 +47,16 @@ const { siteForPlot } = await import(
 
 // Frozen capture contract (changing any of these starts a new baseline).
 const VIEWPORT = { width: 1600, height: 1000 };
-const PLOT = process.env.CAPTURE_PLOT || 'plot-n105201-126637'; // QA default: Washington Sq, SF
+// exp/city-loc-green: ?cityLoc=<key> in --query also picks the QA plot (src/data/cityLocations.js)
+const LOC = new URLSearchParams(QUERY).get('cityLoc');
+const { CITY_LOCATIONS } = LOC
+  ? await import(pathToFileURL(path.join(APP, 'src/data/cityLocations.js')).href)
+  : { CITY_LOCATIONS: {} };
+if (LOC && !CITY_LOCATIONS[LOC]) throw new Error(`unknown cityLoc ${LOC}`);
+const PLOT = process.env.CAPTURE_PLOT || CITY_LOCATIONS[LOC]?.plot || 'plot-n105201-126637'; // QA default: Washington Sq, SF
+// --own: after each beat shot, one more with every 3D tileset hidden (no Google pixels) for judging
+const OWN = Boolean(args.own);
+const COZY = !args['no-cozy'];
 const SITE = siteForPlot(PLOT); // 600 m, looking north
 const SUN_TIME = '2026-06-21T15:00:00Z'; // QA morning sun (az 78, el 23)
 const DISTRICT_ALT = 1500;
@@ -81,6 +89,8 @@ const manifest = {
   frameTiming: {},
   beats: {},
   cozy: {},
+  own: {},
+  location: LOC ?? 'northbeach(default)',
   console: [],
   pageErrors: [],
   marks: {},
@@ -269,6 +279,41 @@ async function cozyVariants(beat) {
   await render(600);
   manifest.cozy[beat] = { report, full, gradeOnly, wipe };
 }
+async function ownShot(beat) {
+  // Judge frame: every shown 3D tileset (Google photoreal) hidden, a plain
+  // backdrop behind; the diorama, HUD and massing stay. Restored right after.
+  const hidden = await page.evaluate(() => {
+    const v = window.__godsEyeView.viewer;
+    const s = v.scene;
+    const p = s.primitives;
+    const out = [];
+    for (let i = 0; i < p.length; i++) {
+      const x = p.get(i);
+      if ('tilesLoaded' in x && x.show && typeof x.root !== 'undefined') {
+        x.show = false;
+        out.push(i);
+      }
+    }
+    window.__ownWas = { idx: out, bg: s.backgroundColor.clone(), sky: s.skyAtmosphere?.show, box: s.skyBox?.show };
+    s.backgroundColor = window.Cesium?.Color?.fromCssColorString?.('#e6e8d6') ?? s.backgroundColor.constructor.fromCssColorString('#e6e8d6');
+    if (s.skyAtmosphere) s.skyAtmosphere.show = false;
+    if (s.skyBox) s.skyBox.show = false;
+    return out.length;
+  });
+  await render(2500);
+  const f = await shot(`${beat}--own`);
+  await page.evaluate(() => {
+    const s = window.__godsEyeView.viewer.scene;
+    const w = window.__ownWas;
+    for (const i of w.idx) s.primitives.get(i).show = true;
+    s.backgroundColor = w.bg;
+    if (s.skyAtmosphere) s.skyAtmosphere.show = w.sky;
+    if (s.skyBox) s.skyBox.show = w.box;
+    delete window.__ownWas;
+  });
+  await render(1500);
+  manifest.own[beat] = { ...f, hiddenTilesets: hidden, googleTiles: hidden === 0 ? 'unknown' : false };
+}
 async function beat(name, run) {
   const started = Date.now();
   const rec = { status: 'pending' };
@@ -278,7 +323,8 @@ async function beat(name, run) {
     await settle();
     mark(name);
     Object.assign(rec, await shot(name), extra || {}, { status: 'ok' });
-    if (!NO_COZY) await cozyVariants(name).catch((e) => (manifest.cozy[name] = { error: e.message.split('\n')[0] }));
+    if (OWN) await ownShot(name).catch((e) => (manifest.own[name] = { error: e.message.split('\n')[0] }));
+    if (COZY) await cozyVariants(name).catch((e) => (manifest.cozy[name] = { error: e.message.split('\n')[0] }));
   } catch (e) {
     rec.status = 'failed';
     rec.error = e.message.split('\n')[0];
@@ -381,8 +427,8 @@ try {
     }, { lat: SITE.lat, lon: SITE.lon, alt: DISTRICT_ALT });
     await sleep(8000);
     // FORK-ONLY (exp/city-look-diorama): ?look=diorama builds its district in the page; wait for it.
-    if (/look=diorama|city=v3/.test(QUERY)) {
-      await until(() => window.__gevDiorama?.state?.ready || window.__gevDioramaError, 'diorama ready', 120000).catch((e) => manifest.console.push({ type: 'capture-warn', text: e.message }));
+    if (/look=diorama|city=(v3|hero)/.test(QUERY)) {
+      await until(() => window.__gevDiorama?.state?.ready || window.__gevDioramaError, 'diorama ready', 300000).catch((e) => manifest.console.push({ type: 'capture-warn', text: e.message }));
       manifest.diorama = await page.evaluate(() => ({ state: window.__gevDiorama?.state ?? null, error: window.__gevDioramaError ?? null }));
       await sleep(3000);
     }
@@ -444,7 +490,7 @@ try {
   });
   await beat('shadow', async () => {
     await page.locator(S.studyToggle).click({ timeout: 120000 });
-    await page.locator(S.winter).click();
+    await page.locator(S.winter).click({ timeout: 120000 });
     await until(
       () => {
         const s = window.__gevCityMassing.snapshot();
@@ -453,7 +499,7 @@ try {
       'winter solar noon',
       30000,
     );
-    await page.locator(S.fit).click();
+    await page.locator(S.fit).click({ timeout: 90000 });
     await until(() => window.__gevCityMassing.snapshot().locks?.[window.__gevCityPlay.snapshot().plot.id], 'sun fit lock', 30000).catch(() => {});
     await sleep(1200);
     return { storeys: await page.evaluate(() => window.__gevCityMassing.snapshot().storeys) };
@@ -489,7 +535,9 @@ try {
     await page.keyboard.down('Shift');
     await page.mouse.click(hit.x, hit.y);
     await page.keyboard.up('Shift');
-    await until(() => window.__gevCityPlay.snapshot().district?.length === 25, 'district of 25', 20000);
+    // exp/city-loc-green: the district's size follows the picked cell (a click through dense canopy can land a row off: 20 plots); any district of 16+ counts, its size is recorded
+    await until(() => (window.__gevCityPlay.snapshot().district?.length ?? 0) >= 16, 'district of 16+', 90000);
+    const districtPlots = await page.evaluate(() => window.__gevCityPlay.snapshot().district.length);
     await noFlight();
     await page.locator(S.growthToggle).click({ timeout: 90000 });
     await page.locator('[data-city-growth-rail]').waitFor({ state: 'visible' });
@@ -502,7 +550,7 @@ try {
       await settle();
       stages[id] = await shot(`growth--stage-${id}`);
     }
-    return { stops, stages };
+    return { stops, stages, districtPlots };
   });
   await frameTiming('end');
   if (/look=diorama|city=v3/.test(QUERY)) {

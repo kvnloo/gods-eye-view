@@ -9,8 +9,11 @@ import {
   prng,
   roadWidth,
   shadowOf,
+  waterField,
+  levelWater,
 } from '../data/cityDioramaMesh.js';
 import { plotFromId } from '../data/cityPlot.js';
+import { cityLocation } from '../data/cityLocations.js';
 
 // FORK-ONLY experiment (exp/city-look-diorama, city dream loop v3 arm 2):
 // ?look=diorama. Inside a disc around the capture district the Google
@@ -442,6 +445,44 @@ async function paintGround(fixture, built, o, R) {
     }
   }
   g.globalAlpha = 1;
+  // exp/city-loc-green: water from the fixture raster (sea rebuilt from the coastline, lakes,
+  // rivers): a pale shore halo, then soft-edged turquoise, then a deeper middle
+  const wf = waterField(fixture);
+  if (wf) {
+    // cells at least `depth` cells from the shore (negative: grown onto the shore), as merged row runs
+    const layer = (color, depth) => {
+      const m = new OffscreenCanvas(TEX, TEX);
+      const q = m.getContext('2d');
+      q.fillStyle = color;
+      const grow = Math.max(0, -depth) * wf.cell * s;
+      for (let row = 0; row < wf.n; row++) {
+        const yTop = wf.half - row * wf.cell;
+        let start = -1;
+        for (let col = 0; col <= wf.n; col++) {
+          const k = row * wf.n + col;
+          const on = col < wf.n && wf.ids[k] > 0 && wf.dist[k] >= Math.max(0, depth);
+          if (on && start < 0) start = col;
+          if (!on && start >= 0) {
+            const x0 = -wf.half + start * wf.cell;
+            q.fillRect(X(x0) - grow, Y(yTop) - grow, (col - start) * wf.cell * s + 2 * grow, wf.cell * s + 2 * grow);
+            start = -1;
+          }
+        }
+      }
+      return m;
+    };
+    g.save();
+    g.filter = `blur(${(3 * s).toFixed(1)}px)`;
+    g.globalAlpha = 0.75;
+    g.drawImage(layer('#d8e6b8', -1), 0, 0);
+    g.globalAlpha = 1;
+    g.filter = `blur(${(1.2 * s).toFixed(1)}px)`;
+    g.drawImage(layer('#4cc3c0', 0), 0, 0);
+    g.filter = `blur(${(10 * s).toFixed(1)}px)`;
+    g.globalAlpha = 0.55;
+    g.drawImage(layer('#2f9fb0', 6), 0, 0);
+    g.restore();
+  }
   // streets
   const cob = o.roads === 'dirt'
     ? { edge: '#a8834f', mid: '#cfab72', fleck: '#e2c48e' }
@@ -557,7 +598,25 @@ export async function bakeGround(_viewer, fixture, { spacing = 16, half = 640 } 
   const resource = await Cesium.IonResource.fromAssetId(1, { accessToken });
   const terrain = await Cesium.CesiumTerrainProvider.fromUrl(resource, { ellipsoid: Cesium.Ellipsoid.WGS84 });
   await Cesium.sampleTerrainMostDetailed(terrain, pts);
-  const heights = pts.map((c) => Math.round(c.height * 100) / 100);
+  // exp/city-loc-green: tiles that fail to load leave holes (NaN); resample those,
+  // then fill any left from finite neighbours so the centre is never NaN
+  let holes = 0;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const bad = pts.filter((c) => !Number.isFinite(c.height));
+    holes = bad.length;
+    if (!bad.length) break;
+    bad.forEach((c) => (c.height = 0));
+    await Cesium.sampleTerrainMostDetailed(terrain, bad, true).catch(() => bad.forEach((c) => (c.height = NaN)));
+  }
+  const heights = pts.map((c) => (Number.isFinite(c.height) ? Math.round(c.height * 100) / 100 : NaN));
+  for (let pass = 0; pass < 2 * n && heights.some((h) => !Number.isFinite(h)); pass++)
+    for (let k = 0; k < heights.length; k++) {
+      if (Number.isFinite(heights[k])) continue;
+      // west/east neighbours only within the same row; north/south anywhere in range
+      const nb = [k - 1, k + 1, k - n, k + n].filter((q, m) => q >= 0 && q < heights.length && (m > 1 || Math.floor(q / n) === Math.floor(k / n)) && Number.isFinite(heights[q]));
+      if (nb.length) heights[k] = nb.reduce((a, q) => a + heights[q], 0) / nb.length;
+    }
+  if (heights.some((h) => !Number.isFinite(h))) throw new Error('world terrain: no heights sampled');
   // Never sample the Google photoreal mesh here: its policy forbids objects
   // derived from it, so the diorama stands on Cesium World Terrain only.
   const offset = 0;
@@ -570,6 +629,7 @@ export async function bakeGround(_viewer, fixture, { spacing = 16, half = 640 } 
     source: 'Cesium World Terrain (ion asset 1) via sampleTerrainMostDetailed (ellipsoid heights); nothing sampled from Google photoreal tiles',
     centreLatLon: fixture.centre,
     spacing, half, n, centre, offset,
+    unsampledAfterRetries: holes,
     heights,
   };
 }
@@ -580,12 +640,27 @@ export async function mountCityDiorama({ viewer, win = globalThis.window, search
   const o = dioramaOptions(search);
   const state = { options: o, ready: false, error: null, stats: null, timing: {} };
   const t0 = performance.now();
-  const [FIXTURE, GROUND] = FIXTURES[o.fx] ?? FIXTURES.r520;
-  const [fixture, ground] = await Promise.all([
+  // exp/city-loc-green: ?cityLoc=<key> picks the location's fixture (src/data/cityLocations.js)
+  const asked = new URLSearchParams(search ?? '').has('cityLoc');
+  const loc = asked ? cityLocation(search) : null;
+  if (asked && !loc) throw new Error(`unknown cityLoc: ${new URLSearchParams(search).get('cityLoc')}`);
+  const [FIXTURE, GROUND] = loc ? [loc.fixture, loc.ground] : FIXTURES[o.fx] ?? FIXTURES.r520;
+  const [fixture, baked] = await Promise.all([
     fetch(FIXTURE).then((r) => r.json()),
-    fetch(GROUND).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    GROUND ? fetch(GROUND).then((r) => (r.ok ? r.json() : null)).catch(() => null) : null,
   ]);
   state.fixture = FIXTURE;
+  state.location = loc?.key ?? null;
+  let ground = baked;
+  if (!ground) {
+    // Cesium World Terrain streamed from ion now, kept in memory only (never stored)
+    const tb = performance.now();
+    ground = await bakeGround(viewer, fixture, { half: 900 });
+    state.timing.terrainMs = Math.round(performance.now() - tb);
+  }
+  state.ground = baked ? `file:${GROUND}` : 'live:cesium-world-terrain';
+  const water = waterField(fixture);
+  if (water) state.water = levelWater(ground, water);
   const gz = groundSampler(ground);
   const built = buildDiorama(fixture, ground, o);
   state.timing.buildMs = Math.round(performance.now() - t0);
@@ -787,7 +862,7 @@ export async function mountCityDiorama({ viewer, win = globalThis.window, search
     },
   });
   scene.postProcessStages.add(stage);
-  const credit = new Cesium.Credit('District stylised from OpenStreetMap (© OpenStreetMap contributors, ODbL) · context: Google', true);
+  const credit = new Cesium.Credit('District stylised from <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (© OpenStreetMap contributors, ODbL) · context: Google', true);
   viewer.creditDisplay?.addStaticCredit?.(credit);
 
   Object.assign(state, {

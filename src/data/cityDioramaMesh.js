@@ -405,6 +405,82 @@ function broadleaf(s, x, y, z, k, r, o, sat, pick) {
   return { r: rad * 1.25, h: h + rad * 1.5 };
 }
 
+// ---------- water (fixture@2, exp/city-loc-green): a run-length raster of water bodies
+const WATER_CACHE = new WeakMap();
+/**
+ * The fixture's water raster, decoded: `ids` (body id per cell, 0 = land, row 0 = north),
+ * `dist` (cells to the nearest land cell, chamfer), `at(x, y)` -> body id. Null without water.
+ */
+export function waterField(fixture) {
+  const w = fixture?.water;
+  if (!w?.rle?.length) return null;
+  if (WATER_CACHE.has(fixture)) return WATER_CACHE.get(fixture);
+  const { n, cell, half } = w;
+  const ids = new Uint8Array(n * n);
+  w.rle.forEach((row, j) => {
+    let i = 0;
+    for (const [id, run] of row) {
+      if (id) ids.fill(id, j * n + i, j * n + i + run);
+      i += run;
+    }
+  });
+  if (!ids.some((v) => v)) {
+    WATER_CACHE.set(fixture, null);
+    return null;
+  }
+  const BIG = 65535;
+  const dist = new Uint16Array(n * n);
+  for (let k = 0; k < n * n; k++) dist[k] = ids[k] ? BIG : 0;
+  for (let j = 0; j < n; j++)
+    for (let i = 0; i < n; i++) {
+      const k = j * n + i;
+      if (!dist[k]) continue;
+      if (i > 0) dist[k] = Math.min(dist[k], dist[k - 1] + 1);
+      if (j > 0) dist[k] = Math.min(dist[k], dist[k - n] + 1);
+    }
+  for (let j = n - 1; j >= 0; j--)
+    for (let i = n - 1; i >= 0; i--) {
+      const k = j * n + i;
+      if (!dist[k]) continue;
+      if (i < n - 1) dist[k] = Math.min(dist[k], dist[k + 1] + 1);
+      if (j < n - 1) dist[k] = Math.min(dist[k], dist[k + n] + 1);
+    }
+  const at = (x, y) => {
+    const i = Math.floor((x + half) / cell);
+    const j = Math.floor((half - y) / cell);
+    return i >= 0 && j >= 0 && i < n && j < n ? ids[j * n + i] : 0;
+  };
+  const field = Object.freeze({ n, cell, half, ids, dist, at });
+  WATER_CACHE.set(fixture, field);
+  return field;
+}
+
+/**
+ * Level each water body in a ground grid (in place): every grid point on water
+ * takes its body's 75th-percentile height minus 0.3 m, so bays and lakes read
+ * flat whatever bathymetry the terrain carries. Returns { bodyId: level }.
+ */
+export function levelWater(ground, water) {
+  if (!ground?.heights?.length || !water) return {};
+  const { n, spacing, half, heights } = ground;
+  const by = new Map();
+  for (let j = 0; j < n; j++)
+    for (let i = 0; i < n; i++) {
+      const id = water.at(-half + i * spacing, -half + j * spacing);
+      if (!id) continue;
+      if (!by.has(id)) by.set(id, []);
+      by.get(id).push(j * n + i);
+    }
+  const levels = {};
+  for (const [id, ks] of by) {
+    const hs = ks.map((k) => heights[k]).sort((a, b) => a - b);
+    const level = hs[Math.min(hs.length - 1, Math.floor(hs.length * 0.75))] - 0.3;
+    for (const k of ks) heights[k] = level;
+    levels[id] = Math.round(level * 100) / 100;
+  }
+  return levels;
+}
+
 /**
  * Build the diorama. Returns { soup, houses, trees, stats } where houses and
  * trees carry 2D shapes for the ground painter.
@@ -466,9 +542,11 @@ export function buildDiorama(fixture, ground, o = DIORAMA_DEFAULTS) {
     }
   }
 
-  const green = (fixture.areas ?? []).filter((a) => a.k !== 'water');
+  const green = (fixture.areas ?? []).filter((a) => a.k !== 'water' && a.k !== 'wetland');
+  const water = waterField(fixture);
   const free = (x, y, pad) => {
     if (Math.hypot(x, y) > R - 3) return false;
+    if (water && (water.at(x, y) || water.at(x + pad, y) || water.at(x - pad, y) || water.at(x, y + pad) || water.at(x, y - pad))) return false;
     for (const it of occ.near(x, y)) {
       if (it.kind === 'house') {
         if (inPolygon([x, y], it.corners)) return false;

@@ -9,10 +9,11 @@
 // No Cesium import, so it runs (and is tested) in node.
 
 export const DIORAMA_DEFAULTS = Object.freeze({
-  radius: 430, // the photoreal tiles are cut inside this disc
+  // Defaults = the loop's best (rounds 1-6, loop-v3/arm-diorama/REPORT.md); every knob stays a ?dio= override.
+  radius: 720, // the photoreal tiles are cut inside this disc (r5: 430 -> 720)
   groundPad: 10, // the painted ground reaches this far past the cut
-  ringIn: 380, // post blend ring (diorama -> photoreal) starts here...
-  ringOut: 620, // ...and is fully photoreal-styled here
+  ringIn: 670, // post blend ring (diorama -> photoreal) starts here...
+  ringOut: 900, // ...and is fully photoreal-styled here
   hScale: 0.72, // OSM height -> wall height
   hMin: 3.4,
   hMax: 15,
@@ -23,29 +24,29 @@ export const DIORAMA_DEFAULTS = Object.freeze({
   gap: 0.45, // inset of every house from its footprint rectangle
   eave: 0.45,
   chimney: 0.5, // share of houses with a chimney
-  trees: 1, // tree density multiplier
+  trees: 2.5, // tree density multiplier (r2: 1 -> 2.5)
   treeScale: 1.25,
-  forestRing: 0, // 1: a belt of pines along the cut
+  forestRing: 1, // 1: a belt of pines along the cut (r2)
   autumn: 0.06, // share of broadleaf crowns in autumn orange
   sunAz: 245, // the key light (and painted shadows), degrees from north
   sunEl: 40,
-  roads: 'cobble', // cobble | dirt
+  roads: 'dirt', // cobble | dirt (r3)
   fog: 0.38,
   shade: 0.36, // painted shadow strength
   sat: 1, // palette saturation multiplier
   ambient: 0.62,
   key: 0.75,
   debug: 0, // 1: the blend stage paints its ring factor (red) and 100 m distance bands (green)
-  pal: 'town', // town | mix | norse (dark timber walls, turf and slate roofs: the Thveit kit)
-  roadW: 1, // street width multiplier on the painted ground
+  pal: 'mix', // town | mix | norse (r3: town -> mix) (dark timber walls, turf and slate roofs: the Thveit kit)
+  roadW: 0.65, // street width multiplier on the painted ground (r3)
   tilt: 0, // screen-space tilt-shift strength in the blend stage (0 = off)
   tiltY: 0.55, // focus band centre, fraction of the frame height from the top
-  mist: 0, // strength of the mist bank on the photoreal just outside the cut
-  mistW: 60, // its width, metres
-  fx: 'r520', // r520 | r700 (wider OSM fixture; needed for radius > 500)
-  lod: 0, // 1: lighter tree prototypes (2-tier pines, 1-2 crown blobs) for software renderers
+  mist: 0.85, // strength of the mist bank on the photoreal just outside the cut (r4)
+  mistW: 70, // its width, metres
+  fx: 'r700', // r520 | r700 (wider OSM fixture; needed for radius > 500)
+  lod: 1, // (r6) 1: lighter tree prototypes (2-tier pines, 1-2 crown blobs) for software renderers
   instanced: 1, // trees as EXT_mesh_gpu_instancing prototypes (0: merged into one mesh)
-  street: 0, // probability of a street tree every 9 m along each side of wide streets
+  street: 0.8, // (r2) probability of a street tree every 9 m along each side of wide streets
 });
 
 const num = (v, d) => (Number.isFinite(Number(v)) ? Number(v) : d);

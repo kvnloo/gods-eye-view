@@ -10,6 +10,7 @@ import {
   roadWidth,
   shadowOf,
 } from '../data/cityDioramaMesh.js';
+import { plotFromId } from '../data/cityPlot.js';
 
 // FORK-ONLY experiment (exp/city-look-diorama, city dream loop v3 arm 2):
 // ?look=diorama. Inside a disc around the capture district the Google
@@ -562,12 +563,65 @@ export async function mountCityDiorama({ viewer, win = globalThis.window, search
       state.hole = hole;
     }
   }
+  // Play mode drapes its selection ghost on terrain / 3D tiles, never on a
+  // model, so on the diorama the selected plot (or district) gets its own
+  // cyan outline and soft fill, standing on the diorama's ground.
+  const marks = new Cesium.CustomDataSource('gev-city-diorama-marks');
+  viewer.dataSources.add(marks);
+  const M = 111_320;
+  const kx = M * Math.cos((lat * Math.PI) / 180);
+  const local = ([lo, la]) => [(lo - lon) * kx, (la - lat) * M];
+  const at = (x, y, up) => Cesium.Cartesian3.fromDegrees(lon + x / kx, lat + y / M, h0 + gz(x, y) + up);
+  let markKey = '';
+  function syncMark() {
+    let snap = null;
+    try {
+      snap = win?.__gevCityPlay?.snapshot?.() ?? null;
+    } catch {
+      snap = null;
+    }
+    const ids = snap?.district?.length ? snap.district.map((d) => d?.id ?? d) : snap?.plot?.id ? [snap.plot.id] : [];
+    const key = ids.join(',');
+    if (key === markKey) return;
+    markKey = key;
+    marks.entities.removeAll();
+    const plots = ids.map((id) => (typeof id === 'string' ? plotFromId(id) : null)).filter(Boolean);
+    if (!plots.length) return scene.requestRender();
+    const pts = plots.flatMap((pl) => pl.corners.map(local));
+    const xs = pts.map((q) => q[0]);
+    const ys = pts.map((q) => q[1]);
+    const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+    const ring = [];
+    const edge = (ax, ay, bx, by) => {
+      const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay) / 4));
+      for (let i = 0; i < n; i++) ring.push([ax + ((bx - ax) * i) / n, ay + ((by - ay) * i) / n]);
+    };
+    edge(x0, y0, x1, y0); edge(x1, y0, x1, y1); edge(x1, y1, x0, y1); edge(x0, y1, x0, y0);
+    const line = [...ring, ring[0]].map(([x, y]) => at(x, y, 0.9));
+    marks.entities.add({
+      polyline: {
+        positions: line,
+        width: 6,
+        material: new Cesium.PolylineGlowMaterialProperty({ glowPower: 0.25, color: Cesium.Color.fromCssColorString('#2ec8e8') }),
+      },
+    });
+    marks.entities.add({
+      polygon: {
+        hierarchy: new Cesium.PolygonHierarchy(ring.map(([x, y]) => at(x, y, 0.6))),
+        perPositionHeight: true,
+        material: Cesium.Color.fromCssColorString('#2ec8e8').withAlpha(0.16),
+      },
+    });
+    state.mark = { plots: plots.length, box: [x0, y0, x1, y1].map((v) => Math.round(v)) };
+    scene.requestRender();
+  }
   let last = 0;
   const offPre = scene.preUpdate.addEventListener(() => {
     const now = performance.now();
     if (now - last < 500) return;
     last = now;
     syncCut();
+    syncMark();
   });
   syncCut();
 
@@ -612,6 +666,7 @@ export async function mountCityDiorama({ viewer, win = globalThis.window, search
         if (created && ts.clippingPolygons?.length === 0) ts.clippingPolygons = undefined;
       }
       cuts.clear();
+      viewer.dataSources.remove(marks, true);
       scene.primitives.remove(model);
       scene.postProcessStages.remove(stage);
       viewer.creditDisplay?.removeStaticCredit?.(credit);

@@ -386,7 +386,8 @@ export function mountCityMassing({
     if (site.model && site.model !== entry && site.model.primitive)
       site.model.primitive.show = false;
     site.model = entry;
-    site.block.show = !entry;
+    // While the build juice's riser stands in, the block stays hidden.
+    site.block.show = !entry && !site.rising;
     if (!entry) return rendered();
     const { footprint } = site.massing;
     const mean = (k) =>
@@ -919,18 +920,36 @@ export function mountCityMassing({
     rendered();
   }
 
-  // FORK-ONLY (exp/city-game-hud, ?cityHud=place): the build's juice. The
-  // block rises out of its plate with a small overshoot (riseShare) while a
-  // ring of dust puffs rolls out from its footprint and fades; then it stands
-  // as a plain constant-height block again, so nothing else changes.
+  // FORK-ONLY (exp/city-game-hud, ?cityHud=place): the build's juice. A
+  // riser (a copy of the block whose height is a callback, so Cesium draws it
+  // at once, every frame) rises out of the plate with a small overshoot
+  // (riseShare) while a ring of dust puffs rolls out from its footprint and
+  // fades. The block itself is never touched: it stays a constant-height
+  // entity, hidden while the riser stands in, and the riser goes only once
+  // the block's own geometry is drawn. (Swapping the block's height back to a
+  // constant rebuilt it asynchronously and left the cut open, a black hole,
+  // for about a second: the r7 juice recording.)
   function rise(s) {
     const t0 = win.performance.now();
     const top = () => s.base + s.massing.heightMeters;
     const ms = () => win.performance.now() - t0;
-    s.block.polygon.extrudedHeight = new Cesium.CallbackProperty(
-      () => s.base + 0.3 + (top() - s.base - 0.3) * riseShare(ms()),
-      false,
-    );
+    s.rising = true;
+    s.block.show = false;
+    const riser = ds.entities.add({
+      id: `${OWNER}-riser`,
+      polygon: {
+        hierarchy: s.block.polygon.hierarchy,
+        height: s.block.polygon.height,
+        material: s.block.polygon.material,
+        outline: s.block.polygon.outline,
+        outlineColor: s.block.polygon.outlineColor,
+        shadows: s.block.polygon.shadows,
+        extrudedHeight: new Cesium.CallbackProperty(
+          () => s.base + 0.3 + (top() - s.base - 0.3) * riseShare(ms()),
+          false,
+        ),
+      },
+    });
     const { points, toLonLat } = localFrame(s.massing.footprint);
     const half =
       Math.max(...points.map(([x, y]) => Math.max(Math.abs(x), Math.abs(y)))) ||
@@ -965,10 +984,29 @@ export function mountCityMassing({
     holdContinuousRender(`${OWNER}-rise`);
     win.setTimeout(() => {
       for (const puff of puffs) ds.entities.remove(puff);
-      if (site === s && s.block)
-        s.block.polygon.extrudedHeight = top();
-      releaseContinuousRender(`${OWNER}-rise`);
-      if (site === s) rendered();
+      s.rising = false;
+      const live = site === s && s.block;
+      if (live) s.block.show = !s.model;
+      // Keep the riser over the block until the block's geometry is drawn
+      // (its bounding sphere is DONE), at most 6 s.
+      const scratch = new Cesium.BoundingSphere();
+      const t1 = win.performance.now();
+      const done = () =>
+        !live ||
+        !s.block.show ||
+        viewer.dataSourceDisplay.getBoundingSphere(s.block, false, scratch) ===
+          Cesium.BoundingSphereState.DONE ||
+        win.performance.now() - t1 > 6000;
+      const off = scene.postRender.addEventListener(() => {
+        if (!done()) return;
+        off();
+        // One more frame so the block is on screen before the riser goes.
+        win.requestAnimationFrame(() => {
+          ds.entities.remove(riser);
+          releaseContinuousRender(`${OWNER}-rise`);
+          if (site === s) rendered();
+        });
+      });
     }, Math.max(RISE_MS, DUST_MS) + 80);
   }
 

@@ -41,6 +41,17 @@ const TEX = 2048;
 const CUT_SIDES = 72;
 
 const LIGHT_FS = /* glsl */ `
+float lookHash(vec2 p) {
+  vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
+float lookNoise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(lookHash(i), lookHash(i + vec2(1.0, 0.0)), u.x), mix(lookHash(i + vec2(0.0, 1.0)), lookHash(i + vec2(1.0, 1.0)), u.x), u.y);
+}
 void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
   vec3 p = fsInput.attributes.positionMC;
   bool isGround = fsInput.attributes.color_0.a < 0.75;
@@ -56,8 +67,29 @@ void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
   float key = smoothstep(-0.05, 0.6, ndl);
   float hemi = dot(n, U) * 0.5 + 0.5;
   vec3 amb = mix(u_groundAmb, u_skyAmb, hemi) * u_ambient;
+  // look pass A (u_tex): surface texture by vertex tag (colour alpha): 0.85 roofs, 0.8 rocks; ground water
+  if (u_tex > 0.5) {
+    float tag = fsInput.attributes.color_0.a;
+    vec3 d = material.diffuse;
+    if (tag > 0.825 && tag <= 0.875) {
+      // roof tiles: rows along the slope, per-tile tone
+      float row = fract(p.z * 1.5);
+      float tile = lookHash(floor(vec2((p.x + p.y) * 1.1 + floor(p.z * 1.5) * 0.5, p.z * 1.5)));
+      material.diffuse = d * (0.72 + 0.28 * smoothstep(0.0, 0.25, row)) * (0.9 + 0.2 * tile);
+    } else if (tag > 0.775 && tag <= 0.825) {
+      material.diffuse = d * (0.82 + 0.3 * lookNoise(p.xy * 4.0 + p.z * 3.0));
+    } else if (isGround && d.g > d.r * 1.5 && d.b > d.r * 1.5) {
+      // water: fine ripples, stretched along the bay
+      float w = lookNoise(vec2(p.x * 0.35 + p.y * 0.15, p.y * 1.4 - p.x * 0.3));
+      float w2 = lookNoise(vec2(p.x * 0.9, p.y * 2.6) + 7.0);
+      material.diffuse = d * (0.9 + 0.16 * w + 0.12 * smoothstep(0.72, 0.95, w2));
+    }
+  }
   vec3 c = material.diffuse * (amb + u_keyColor * key * u_key);
-  material.diffuse = c;
+  // look pass A grade: warm highs, slightly cooler deep shadows
+  float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
+  vec3 graded = mix(c * vec3(0.96, 1.0, 1.06), c * vec3(1.06, 1.0, 0.96), smoothstep(0.02, 0.25, lum));
+  material.diffuse = mix(c, graded, u_grade);
 }
 `;
 
@@ -401,10 +433,13 @@ async function paintGround(fixture, built, o, R) {
     ps.forEach(([x, y], i) => (i ? g.lineTo(X(x), Y(y)) : g.moveTo(X(x), Y(y))));
     if (close) g.closePath();
   };
-  // base grass with painted noise
-  g.fillStyle = '#6aa53d';
+  // base grass with painted noise (look pass A: warmer olive meadow greens)
+  const lush = o.grass > 0;
+  g.fillStyle = lush ? '#7a9c3a' : '#6aa53d';
   g.fillRect(0, 0, TEX, TEX);
-  const greens = ['#78b446', '#5d9937', '#86bf4e', '#9cc659', '#4f8c34', '#70ab40'];
+  const greens = lush
+    ? ['#86a640', '#6a8c32', '#94b04a', '#a8b652', '#5c7e2e', '#7f9a38']
+    : ['#78b446', '#5d9937', '#86bf4e', '#9cc659', '#4f8c34', '#70ab40'];
   for (let i = 0; i < 9000; i++) {
     g.globalAlpha = 0.08 + r() * 0.12;
     g.fillStyle = greens[Math.floor(r() * greens.length)];
@@ -417,12 +452,12 @@ async function paintGround(fixture, built, o, R) {
   // parks: lusher, with flower beds
   for (const a of fixture.areas ?? []) {
     if (a.k === 'water') {
-      g.fillStyle = '#3fb7b0';
+      g.fillStyle = o.waterTone > 0 ? '#44a4ac' : '#3fb7b0';
       path(a.p, true);
       g.fill();
       continue;
     }
-    g.fillStyle = '#7dbd47';
+    g.fillStyle = lush ? '#86a83e' : '#7dbd47';
     path(a.p, true);
     g.fill();
   }
@@ -448,6 +483,38 @@ async function paintGround(fixture, built, o, R) {
     }
   }
   g.globalAlpha = 1;
+  // look pass A: painterly grass strokes and wildflower flecks over all open ground
+  if (lush) {
+    const rg = prng(11); // own stream: the ground marks after this keep their places
+    const blades = ['#5a7a2a', '#9fb84e', '#6f9032', '#b5c060', '#4e6e26'];
+    for (let i = 0; i < 60000; i++) {
+      const x = rg() * TEX;
+      const y = rg() * TEX;
+      const L = (0.6 + rg() * 1.4) * s;
+      const a = -1.2 + rg() * 0.5;
+      g.globalAlpha = 0.18 + rg() * 0.22;
+      g.strokeStyle = blades[Math.floor(rg() * blades.length)];
+      g.lineWidth = Math.max(1, 0.35 * s);
+      g.beginPath();
+      g.moveTo(x, y);
+      g.lineTo(x + Math.cos(a) * L, y + Math.sin(a) * L);
+      g.stroke();
+    }
+    const wild = ['#f6f0dc', '#f2d35a', '#e9a3c4', '#b79ad9', '#f4a25a', '#ffffff'];
+    for (let i = 0; i < 9000; i++) {
+      const cx = rg() * TEX;
+      const cy = rg() * TEX;
+      g.fillStyle = wild[Math.floor(rg() * wild.length)];
+      const nk = 2 + Math.floor(rg() * 5);
+      for (let k = 0; k < nk; k++) {
+        g.globalAlpha = 0.7 + rg() * 0.3;
+        g.beginPath();
+        g.arc(cx + (rg() - 0.5) * 4 * s, cy + (rg() - 0.5) * 4 * s, (0.22 + rg() * 0.25) * s, 0, Math.PI * 2);
+        g.fill();
+      }
+    }
+    g.globalAlpha = 1;
+  }
   // exp/city-loc-green: water from the fixture raster (sea rebuilt from the coastline, lakes,
   // rivers): a pale shore halo, then soft-edged turquoise, then a deeper middle
   const wf = waterField(fixture);
@@ -474,17 +541,73 @@ async function paintGround(fixture, built, o, R) {
       }
       return m;
     };
+    const deep = o.waterTone > 0;
     g.save();
     g.filter = `blur(${(3 * s).toFixed(1)}px)`;
     g.globalAlpha = 0.75;
-    g.drawImage(layer('#d8e6b8', -1), 0, 0);
+    // look pass A: a grassy verge, not a pale halo, where land meets the water
+    g.drawImage(layer(lush ? '#6f8e34' : '#d8e6b8', -1), 0, 0);
     g.globalAlpha = 1;
     g.filter = `blur(${(1.2 * s).toFixed(1)}px)`;
-    g.drawImage(layer('#4cc3c0', 0), 0, 0);
+    g.drawImage(layer(deep ? '#48a8b2' : '#4cc3c0', 0), 0, 0);
     g.filter = `blur(${(10 * s).toFixed(1)}px)`;
-    g.globalAlpha = 0.55;
-    g.drawImage(layer('#2f9fb0', 6), 0, 0);
+    g.globalAlpha = deep ? 0.7 : 0.55;
+    g.drawImage(layer(deep ? '#3590a2' : '#2f9fb0', 6), 0, 0);
+    if (deep) {
+      g.filter = `blur(${(18 * s).toFixed(1)}px)`;
+      g.globalAlpha = 0.3;
+      g.drawImage(layer('#2a7a8e', 16), 0, 0);
+    }
     g.restore();
+    if (o.foam > 0) {
+      // soft white foam hugging the shore (water cells next to land), then sparse curled wave highlights
+      const rf = prng(23);
+      g.save();
+      g.lineCap = 'round';
+      for (let row = 1; row < wf.n - 1; row++)
+        for (let col = 1; col < wf.n - 1; col++) {
+          const k = row * wf.n + col;
+          if (!wf.ids[k] || wf.dist[k] > 2) continue;
+          const x = -wf.half + (col + rf()) * wf.cell;
+          const y = wf.half - (row + rf()) * wf.cell;
+          g.globalAlpha = wf.dist[k] === 1 ? 0.55 + rf() * 0.3 : 0.22 + rf() * 0.2;
+          g.strokeStyle = '#eef7f2';
+          g.lineWidth = Math.max(1, (0.35 + rf() * 0.45) * s);
+          const a = rf() * Math.PI;
+          const L = (1.2 + rf() * 2.2) * s;
+          g.beginPath();
+          g.arc(X(x), Y(y), L, a, a + 1.4 + rf());
+          g.stroke();
+        }
+      for (let row = 0; row < wf.n; row++)
+        for (let col = 0; col < wf.n; col++) {
+          const k = row * wf.n + col;
+          if (!wf.ids[k] || wf.dist[k] < 3 || rf() > 0.16) continue;
+          const x = -wf.half + (col + rf()) * wf.cell;
+          const y = wf.half - (row + rf()) * wf.cell;
+          g.globalAlpha = 0.35 + rf() * 0.35;
+          g.strokeStyle = rf() < 0.7 ? '#e6f4ef' : '#9fd6cf';
+          g.lineWidth = Math.max(1, (0.3 + rf() * 0.3) * s);
+          const L = (1.5 + rf() * 2.5) * s;
+          const a = Math.PI * (1.05 + rf() * 0.3);
+          g.beginPath();
+          g.arc(X(x), Y(y), L, a, a + 0.9 + rf() * 0.6);
+          g.stroke();
+        }
+      // foam rings where the boulders meet the water
+      for (const b of built.rocks ?? []) {
+        for (let q = 0; q < 2; q++) {
+          g.globalAlpha = 0.5 + rf() * 0.35;
+          g.strokeStyle = '#f2faf6';
+          g.lineWidth = Math.max(1, (0.4 + rf() * 0.4) * s);
+          const a = rf() * Math.PI * 2;
+          g.beginPath();
+          g.arc(X(b.x), Y(b.y), (b.r * (1.15 + 0.35 * q) + 0.3) * s, a, a + 2.2 + rf() * 2.5);
+          g.stroke();
+        }
+      }
+      g.restore();
+    }
   }
   // streets
   const cob = o.roads === 'dirt'
@@ -702,11 +825,14 @@ export async function mountCityDiorama({ viewer, win = globalThis.window, search
     uniforms: {
       u_keyWC: { type: Cesium.UniformType.VEC3, value: keyWC },
       u_upWC: { type: Cesium.UniformType.VEC3, value: upWC },
-      u_keyColor: { type: Cesium.UniformType.VEC3, value: lin('#fff1d6') },
-      u_skyAmb: { type: Cesium.UniformType.VEC3, value: lin('#d9ecff') },
-      u_groundAmb: { type: Cesium.UniformType.VEC3, value: lin('#9d9478') },
-      u_ambient: { type: Cesium.UniformType.FLOAT, value: o.ambient },
-      u_key: { type: Cesium.UniformType.FLOAT, value: o.key },
+      // look pass A (o.grade): a warm late-afternoon key over cooler, lower ambient
+      u_keyColor: { type: Cesium.UniformType.VEC3, value: lin(o.grade > 0 ? '#ffd9a6' : '#fff1d6') },
+      u_skyAmb: { type: Cesium.UniformType.VEC3, value: lin(o.grade > 0 ? '#c4d8e8' : '#d9ecff') },
+      u_groundAmb: { type: Cesium.UniformType.VEC3, value: lin(o.grade > 0 ? '#8a7a5c' : '#9d9478') },
+      u_ambient: { type: Cesium.UniformType.FLOAT, value: o.grade > 0 ? o.ambient * 1.22 : o.ambient },
+      u_key: { type: Cesium.UniformType.FLOAT, value: o.grade > 0 ? o.key * 1.25 : o.key },
+      u_grade: { type: Cesium.UniformType.FLOAT, value: o.grade > 0 ? 1 : 0 },
+      u_tex: { type: Cesium.UniformType.FLOAT, value: o.tex > 0 ? 1 : 0 },
       u_hole: { type: Cesium.UniformType.VEC4, value: new Cesium.Cartesian4(1e9, 1e9, -1e9, -1e9) },
       u_hole2: { type: Cesium.UniformType.VEC4, value: new Cesium.Cartesian4(1e9, 1e9, -1e9, -1e9) },
     },

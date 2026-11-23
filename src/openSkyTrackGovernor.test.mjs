@@ -330,6 +330,83 @@ test('an error cached before the cooldown is not replayed as stale', async (t) =
   assert.ok(Number(later.headers['retry-after']) > 60);
 });
 
+test('simultaneous misses for one icao24 share a single upstream call and charge', async (t) => {
+  let upstreamCalls = 0;
+  stubFetch(t, async () => {
+    upstreamCalls += 1;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    return trackOk();
+  });
+  const track = install(trackBackfillProxies()).get('/api/flights/track');
+
+  const answers = await Promise.all(
+    Array.from({ length: 10 }, () =>
+      request(track, { url: '/?icao24=76f001' }),
+    ),
+  );
+  assert.ok(answers.every((r) => r.statusCode === 200));
+  assert.equal(upstreamCalls, 1, 'the cache key is shared before it is filled');
+
+  // Only the one live call was charged: 29 more distinct lookups still fit.
+  for (let i = 0; i < 29; i += 1) {
+    const icao24 = (0x76f100 + i).toString(16);
+    const live = await request(track, { url: `/?icao24=${icao24}` });
+    assert.equal(live.statusCode, 200, `live lookup ${i + 2} of 30 is allowed`);
+  }
+  assert.equal(
+    (await request(track, { url: '/?icao24=76ffff' })).statusCode,
+    429,
+  );
+});
+
+test('requests joined to a call that hits a 429 carry the cooldown too', async (t) => {
+  let upstreamCalls = 0;
+  stubFetch(t, async () => {
+    upstreamCalls += 1;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    return new Response('{}', {
+      status: 429,
+      headers: { 'x-rate-limit-retry-after-seconds': '120' },
+    });
+  });
+  const track = install(trackBackfillProxies()).get('/api/flights/track');
+
+  const answers = await Promise.all(
+    Array.from({ length: 3 }, () => request(track, { url: '/?icao24=77a001' })),
+  );
+  assert.equal(upstreamCalls, 1);
+  for (const refused of answers) {
+    assert.equal(refused.statusCode, 429);
+    assert.ok(Number(refused.headers['retry-after']) > 60);
+  }
+});
+
+test('one IPv6 /64 rotating addresses gets one quota, not the whole backstop', async (t) => {
+  stubFetch(t, async () => trackOk());
+  const track = install(trackBackfillProxies()).get('/api/flights/track');
+
+  const answers = [];
+  for (let i = 0; i < 90; i += 1) {
+    answers.push(
+      await request(track, {
+        url: `/?icao24=${(0x78a000 + i).toString(16)}`,
+        // A fresh privacy address inside the same /64 every time.
+        remoteAddress: `2001:db8:1:2::${(i + 1).toString(16)}`,
+      }),
+    );
+  }
+  assert.equal(
+    answers.filter((r) => r.statusCode === 200).length,
+    30,
+    'the /64 is one client',
+  );
+  const other = await request(track, {
+    url: '/?icao24=78afff',
+    remoteAddress: '10.0.0.5',
+  });
+  assert.equal(other.statusCode, 200, 'another client is still served');
+});
+
 test('a /states/all 429 does not block track backfill: separate OpenSky buckets', async (t) => {
   let trackUpstreamCalls = 0;
   stubFetch(t, async (url) => {

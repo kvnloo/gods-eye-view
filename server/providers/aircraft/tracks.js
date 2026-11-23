@@ -1,6 +1,9 @@
 import { getOpenSkyToken, openSkyRateLimitCooldownMs } from './opensky.js';
-import { readCappedResponseText } from '../common/http.js';
-import { makeRateLimiter, clientKey } from '../common/rate-limit.js';
+import {
+  coalesceProxyRequest,
+  readCappedResponseText,
+} from '../common/http.js';
+import { makeRateLimiter, clientNetworkKey } from '../common/rate-limit.js';
 /**
  * Vite plugin: aircraft track-history backfill proxies (PRD WS-F F1/F2).
  *
@@ -58,6 +61,13 @@ export function trackBackfillProxies() {
   };
   /** @type {Map<string, {at:number,status:number,body:string}>} */
   const cache = new Map();
+  /**
+   * Live upstream calls by cache key. Simultaneous misses for one `icao24`
+   * share a single call (and a single limiter charge) instead of each
+   * spending 4 credits before the first answer reaches the cache.
+   * @type {Map<string, Promise<{status:number,body:string}|{cooling:true}>>}
+   */
+  const inFlight = new Map();
 
   /** Shared refusal shape, matching the other rate-limited proxies. */
   function refuse(res, retryAfterSeconds) {
@@ -87,6 +97,44 @@ export function trackBackfillProxies() {
    * @param {() => boolean} [options.admit] Asked once, immediately before an
    *   upstream call; false refuses the request with a 429.
    */
+  /** One live upstream call; caches and returns the answer to send. */
+  async function fetchUpstream(key, upstreamUrl, headers, governor) {
+    const upstream = await fetch(upstreamUrl, {
+      headers: await headers(),
+      signal: AbortSignal.timeout(12000),
+    });
+    if (upstream.status === 429 && governor) {
+      // The cooldown now answers for every key, with the time left; caching
+      // this 429 would replay it for the key without one.
+      governor.arm(upstream);
+      try {
+        await upstream.body?.cancel();
+      } catch {
+        /* nothing left to release */
+      }
+      return { cooling: true };
+    }
+    const { tooLarge, text } = await readCappedResponseText(
+      upstream,
+      RESPONSE_CAP_BYTES,
+    );
+    let body;
+    let status = upstream.status;
+    if (tooLarge) {
+      status = 502;
+      body = JSON.stringify({ error: 'Upstream track response too large' });
+    } else if (!upstream.ok) {
+      // Sanitize upstream error surface; status code is signal enough
+      body = JSON.stringify({ error: `Track source HTTP ${upstream.status}` });
+    } else {
+      body = text;
+    }
+    // Cache the 502 like any upstream error: /tracks/all costs OpenSky
+    // credits, so a retry inside the window must not re-download the body.
+    cachePut(key, { at: Date.now(), status, body });
+    return { status, body };
+  }
+
   async function proxyJson(
     res,
     key,
@@ -109,48 +157,26 @@ export function trackBackfillProxies() {
       res.end(cached.body);
       return;
     }
-    if (blockedMs > 0) {
-      refuse(res, blockedMs / 1000);
-      return;
-    }
-    if (admit && !admit()) {
-      refuse(res, TRACK_RATE_WINDOW_MS / 1000);
-      return;
-    }
-    const upstream = await fetch(upstreamUrl, {
-      headers: await headers(),
-      signal: AbortSignal.timeout(12000),
-    });
-    if (upstream.status === 429 && governor) {
-      // The cooldown now answers for every key, with the time left; caching
-      // this 429 would replay it for the key without one.
-      governor.arm(upstream);
-      try {
-        await upstream.body?.cancel();
-      } catch {
-        /* nothing left to release */
+    let pending = inFlight.get(key);
+    if (!pending) {
+      if (blockedMs > 0) {
+        refuse(res, blockedMs / 1000);
+        return;
       }
+      if (admit && !admit()) {
+        refuse(res, TRACK_RATE_WINDOW_MS / 1000);
+        return;
+      }
+      ({ promise: pending } = coalesceProxyRequest(inFlight, key, () =>
+        fetchUpstream(key, upstreamUrl, headers, governor),
+      ));
+    }
+    const entry = await pending;
+    if (entry.cooling) {
       refuse(res, governor.remainingMs() / 1000);
       return;
     }
-    const { tooLarge, text } = await readCappedResponseText(
-      upstream,
-      RESPONSE_CAP_BYTES,
-    );
-    let body;
-    let status = upstream.status;
-    if (tooLarge) {
-      status = 502;
-      body = JSON.stringify({ error: 'Upstream track response too large' });
-    } else if (!upstream.ok) {
-      // Sanitize upstream error surface; status code is signal enough
-      body = JSON.stringify({ error: `Track source HTTP ${upstream.status}` });
-    } else {
-      body = text;
-    }
-    // Cache the 502 like any upstream error: /tracks/all costs OpenSky
-    // credits, so a retry inside the window must not re-download the body.
-    cachePut(key, { at: Date.now(), status, body });
+    const { status, body } = entry;
     res.statusCode = status;
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.setHeader('Cache-Control', 'no-store');
@@ -184,7 +210,9 @@ export function trackBackfillProxies() {
               return token ? { Authorization: `Bearer ${token}` } : {};
             },
             governor: openSkyTracksGovernor,
-            admit: () => allowOpenSky(clientKey(req)),
+            // Keyed by /64 for IPv6: the 90/min backstop is shared, and one
+            // host rotating privacy addresses must not drain it alone.
+            admit: () => allowOpenSky(clientNetworkKey(req)),
           },
         );
       } catch (error) {

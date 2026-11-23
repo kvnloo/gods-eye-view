@@ -61,6 +61,8 @@ uniform float fog;
 uniform vec3 fogColor;
 uniform vec2 texel;
 uniform float debug;
+uniform float tilt;
+uniform float tiltY;
 
 vec3 softened(vec2 uv, float k) {
   vec3 s = vec3(0.0);
@@ -90,6 +92,9 @@ void main() {
     out_FragColor = vec4(t, fract(max(dist, 0.0) / 100.0), raw >= 1.0 ? 1.0 : 0.0, 1.0);
     return;
   }
+  // miniature lens: soften away from a horizontal focus band (all depths)
+  float lens = tilt * smoothstep(0.12, 0.5, abs((1.0 - uv.y) - tiltY));
+  if (lens > 0.001) src.rgb = mix(src.rgb, softened(uv, 1.0 + 3.0 * lens), clamp(lens * 1.4, 0.0, 1.0));
   if (t <= 0.001) { out_FragColor = src; return; }
   vec3 b = softened(uv, 1.0 + 2.5 * t);
   float l = dot(b, vec3(0.299, 0.587, 0.114));
@@ -297,7 +302,7 @@ async function paintGround(fixture, built, o, R) {
       const w = roadWidth(rd.t);
       const narrow = w < 3;
       g.strokeStyle = narrow ? (pass === 'edge' ? '#b48d58' : '#d8b67c') : cob[pass];
-      g.lineWidth = (pass === 'edge' ? w + 1.2 : w) * s;
+      g.lineWidth = (pass === 'edge' ? w * o.roadW + 1.2 : w * o.roadW) * s;
       path(rd.p, false);
       g.stroke();
     }
@@ -306,11 +311,11 @@ async function paintGround(fixture, built, o, R) {
   for (const seg of built.roads) {
     if (seg.w < 4) continue;
     const L = Math.hypot(seg.b[0] - seg.a[0], seg.b[1] - seg.a[1]);
-    const n = Math.round(L * seg.w * 0.12);
+    const n = Math.round(L * seg.w * o.roadW * 0.12);
     g.fillStyle = cob.fleck;
     for (let i = 0; i < n; i++) {
       const t = r();
-      const off = (r() - 0.5) * seg.w * 0.85;
+      const off = (r() - 0.5) * seg.w * o.roadW * 0.85;
       const dx = (seg.b[0] - seg.a[0]) / (L || 1);
       const dy = (seg.b[1] - seg.a[1]) / (L || 1);
       const x = seg.a[0] + (seg.b[0] - seg.a[0]) * t - dy * off;
@@ -534,6 +539,8 @@ export async function mountCityDiorama({ viewer, win = globalThis.window, search
       fogColor: lin('#cfe3dc'),
       texel: () => new Cesium.Cartesian2(1 / scene.drawingBufferWidth, 1 / scene.drawingBufferHeight),
       debug: o.debug,
+      tilt: o.tilt,
+      tiltY: o.tiltY,
     },
   });
   scene.postProcessStages.add(stage);

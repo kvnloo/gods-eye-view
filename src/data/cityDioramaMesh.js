@@ -36,6 +36,11 @@ export const DIORAMA_DEFAULTS = Object.freeze({
   ambient: 0.62,
   key: 0.75,
   debug: 0, // 1: the blend stage paints its ring factor (red) and 100 m distance bands (green)
+  pal: 'town', // town | norse (dark timber walls, turf and slate roofs: the Thveit kit)
+  roadW: 1, // street width multiplier on the painted ground
+  tilt: 0, // screen-space tilt-shift strength in the blend stage (0 = off)
+  tiltY: 0.55, // focus band centre, fraction of the frame height from the top
+  street: 0, // probability of a street tree every 9 m along each side of wide streets
 });
 
 const num = (v, d) => (Number.isFinite(Number(v)) ? Number(v) : d);
@@ -64,6 +69,10 @@ export function prng(seed = 1) {
 }
 
 // ---------- palette (sRGB hex; converted to linear for glTF vertex colours)
+export const NORSE = Object.freeze({
+  walls: ['#5b3c28', '#6e4a30', '#7d5636', '#4f3524', '#e6d3ad', '#8a6440', '#5f4330'],
+  roofs: ['#6f8f3a', '#7d9a42', '#617f34', '#4d5864', '#5d6875', '#8a9a48', '#b0563a', '#6f8f3a'],
+});
 export const PALETTE = Object.freeze({
   walls: ['#efe2c4', '#e9d4ac', '#f3ead8', '#dcc39a', '#8a5a3c', '#9c6b45', '#e6cfa6', '#7b4e33'],
   roofs: ['#c0603a', '#b04f36', '#d07448', '#5d6875', '#4d5864', '#6e4a36', '#7a8a3e', '#a85a3a', '#c8683e'],
@@ -281,8 +290,9 @@ function house(s, rect, z0, wallH, o, r, sat) {
   const A = a - o.gap;
   const B = b - o.gap;
   if (A < 1.2 || B < 1.2) return null;
-  const wallHex = PALETTE.walls[Math.floor(r() * PALETTE.walls.length)];
-  const roofHex = PALETTE.roofs[Math.floor(r() * PALETTE.roofs.length)];
+  const kit = o.pal === 'norse' ? NORSE : PALETTE;
+  const wallHex = kit.walls[Math.floor(r() * kit.walls.length)];
+  const roofHex = kit.roofs[Math.floor(r() * kit.roofs.length)];
   const wall = linear(wallHex, 0.05, r, sat);
   const roof = linear(roofHex, 0.07, r, sat);
   const plinth = linear(PALETTE.plinth, 0.05, r, sat);
@@ -419,7 +429,7 @@ export function buildDiorama(fixture, ground, o = DIORAMA_DEFAULTS) {
 
   const roads = [];
   for (const rd of fixture.roads ?? []) {
-    const w = roadWidth(rd.t);
+    const w = roadWidth(rd.t) * o.roadW;
     if (!w) continue;
     for (let i = 0; i + 1 < rd.p.length; i++) {
       const seg = { kind: 'road', a: rd.p[i], b: rd.p[i + 1], w };
@@ -464,7 +474,27 @@ export function buildDiorama(fixture, ground, o = DIORAMA_DEFAULTS) {
       if (!free(px, py, g ? 2.0 : 1.6)) continue;
       plant(px, py, r() < (g ? 0.4 : 0.3) ? 'pine' : 'leaf');
     }
-  // 3 optional forest belt along the cut (hides the cut seam)
+  // 3 optional street-tree rows along wide streets
+  if (o.street > 0)
+    for (const seg of roads) {
+      if (seg.w < 5) continue;
+      const [ax, ay] = seg.a;
+      const [bx, by] = seg.b;
+      const L = Math.hypot(bx - ax, by - ay);
+      if (L < 4) continue;
+      const nx = -(by - ay) / L;
+      const ny = (bx - ax) / L;
+      const off = seg.w / 2 + 1.3;
+      for (let d = 4; d < L - 3; d += 9)
+        for (const side of [-1, 1]) {
+          if (r() > o.street) continue;
+          const x = ax + ((bx - ax) * d) / L + nx * off * side;
+          const y = ay + ((by - ay) * d) / L + ny * off * side;
+          if (!free(x, y, 0.6)) continue;
+          plant(x, y, r() < 0.2 ? 'pine' : 'leaf');
+        }
+    }
+  // 4 optional forest belt along the cut (hides the cut seam)
   if (o.forestRing > 0) {
     const n = Math.round(2 * Math.PI * o.radius / 5 * o.forestRing);
     for (let i = 0; i < n; i++) {

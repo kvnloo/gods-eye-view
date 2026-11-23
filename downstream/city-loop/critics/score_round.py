@@ -36,7 +36,9 @@ def main():
     items, pairs = [], []
     for b in BEATS:
         d = Path(src.get(b) or src["*"])
-        cap, cozy = d / f"{b}.png", d / f"{b}--cozy.png"
+        # exp/city-loop-v4: judge frames only (no Google tiles; panel.py gates every image).
+        # The in-context and cozy frames live in the ephemeral dir and are never scored.
+        cap, cozy = d / f"{b}--own.png", Path("/nonexistent")
         if cap.exists():
             items.append({"id": f"{b}--capture", "image": str(cap.resolve()), "context": CTX[b]})
             pairs.append({"id": f"{b}--capture_vs_anchor", "a": str(cap.resolve()), "b": str(Path(a.anchor).resolve()),

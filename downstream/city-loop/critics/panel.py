@@ -37,6 +37,9 @@ ADVISOR_ENV = {
         "ADVISOR_SLOT_ROOT", os.path.expanduser("~/.advisor-slots")),
     "ADVISOR_SEATS": os.environ.get("ADVISOR_SEATS", "claude2 claude3"),
 }
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from judge_gate import require as _gate  # noqa: E402
+
 JUDGES = {
     "codex-gpt-6.2-sol": {"kind": "codex", "model": "gpt-6.2-sol", "family": "openai"},
     "claude-sonnet": {"kind": "claude", "model": "sonnet", "family": "anthropic"},
@@ -47,6 +50,8 @@ CONCURRENCY = {"codex": 3, "claude": 2}
 
 def prep_image(path, tmpdir):
     """Downscale to <=1600 px long edge JPEG with sips (macOS) so every judge sees the same pixels."""
+    # exp/city-loop-v4: no judge sees a frame that may show Google tiles (judge_gate.py)
+    _gate(path)
     src = Path(path)
     out = Path(tmpdir).resolve() / (hashlib.sha256(src.read_bytes()).hexdigest()[:16] + ".jpg")
     if not out.exists():

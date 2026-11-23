@@ -1244,6 +1244,11 @@ export function mountCityMassing({
   // screen, so the readout never covers them.
   function frame() {
     if (!site?.block) return;
+    // FORK-ONLY (downstream/city-loop harness): a judge frame hides every 3D
+    // tileset for one still so no Google pixels are captured. That is not a map
+    // switch: the block, its cut and its ground stay as they are until the
+    // harness clears window.__gevJudgeFrame and shows the tilesets again.
+    if (globalThis.__gevJudgeFrame) return;
     const tilesets = shownTilesets();
     if (
       tilesets.length !== site.tilesets.length ||

@@ -16,6 +16,7 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, readdir, writeFile, rename } from 'node:fs/promises';
 import { createRequire } from 'node:module';
+import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -47,16 +48,34 @@ const { siteForPlot } = await import(
 
 // Frozen capture contract (changing any of these starts a new baseline).
 const VIEWPORT = { width: 1600, height: 1000 };
-// exp/city-loc-green: ?cityLoc=<key> in --query also picks the QA plot (src/data/cityLocations.js)
-const LOC = new URLSearchParams(QUERY).get('cityLoc');
-const { CITY_LOCATIONS } = LOC
+// exp/city-loc-green: ?cityLoc=<key> in --query also picks the QA plot (src/data/cityLocations.js);
+// exp/city-loop-v4: so does ?city=hero (its hero location) when no cityLoc is given
+const QP = new URLSearchParams(QUERY);
+const HERO = QP.get('city') === 'hero';
+const { CITY_LOCATIONS, HERO_CITY_LOCATION } = QP.get('cityLoc') || HERO
   ? await import(pathToFileURL(path.join(APP, 'src/data/cityLocations.js')).href)
   : { CITY_LOCATIONS: {} };
+const LOC = QP.get('cityLoc') ?? (HERO ? HERO_CITY_LOCATION : null);
 if (LOC && !CITY_LOCATIONS[LOC]) throw new Error(`unknown cityLoc ${LOC}`);
 const PLOT = process.env.CAPTURE_PLOT || CITY_LOCATIONS[LOC]?.plot || 'plot-n105201-126637'; // QA default: Washington Sq, SF
+// exp/city-loop-v4 (licence lane; Google Map Tiles policies and GMP ToS 3.2.3):
+// a frame that shows Google photoreal tiles never goes to a judge, the proxy, a
+// report, a gallery or git. In-context frames (and the recorded video) are
+// written only to ONE ephemeral dir, clearly named and outside --out, to be
+// deleted after a human looks; --judge-only writes none at all. Judge frames
+// (--own) hide every 3D tileset, are checked Google-free on screen before they
+// are written, and are tagged in manifest.frames, which critics/judge_gate.py
+// requires before any critic reads an image.
+const JUDGE_ONLY = Boolean(args['judge-only']);
 // --own: after each beat shot, one more with every 3D tileset hidden (no Google pixels) for judging
-const OWN = Boolean(args.own);
-const COZY = !args['no-cozy'];
+const OWN = Boolean(args.own) || JUDGE_ONLY;
+const COZY = !args['no-cozy'] && !JUDGE_ONLY;
+const EPHEMERAL = path.resolve(
+  typeof args['ephemeral-dir'] === 'string' ? args['ephemeral-dir'] : path.join(os.tmpdir(), 'gev-EPHEMERAL-google-tiles-do-not-copy'),
+);
+if (!EPHEMERAL.includes('gev-EPHEMERAL-google-tiles')) throw new Error('--ephemeral-dir must keep "gev-EPHEMERAL-google-tiles" in its name');
+if (EPHEMERAL === OUT || EPHEMERAL.startsWith(OUT + path.sep) || OUT.startsWith(EPHEMERAL + path.sep))
+  throw new Error('--ephemeral-dir and --out must not contain each other');
 const SITE = siteForPlot(PLOT); // 600 m, looking north
 const SUN_TIME = '2026-06-21T15:00:00Z'; // QA morning sun (az 78, el 23)
 const DISTRICT_ALT = 1500;
@@ -75,7 +94,7 @@ const S = {
 };
 
 const manifest = {
-  schema: 'city-loop-v2/capture@1',
+  schema: 'city-loop-v2/capture@2',
   label: LABEL,
   startedAt: new Date().toISOString(),
   app: {},
@@ -90,6 +109,12 @@ const manifest = {
   beats: {},
   cozy: {},
   own: {},
+  // every file in --out with its tiles tag (critics/judge_gate.py reads this)
+  frames: {},
+  // in-context files (may show Google tiles): names only; the files live in ephemeralDir
+  ephemeral: [],
+  ephemeralDir: EPHEMERAL,
+  judgeOnly: JUDGE_ONLY,
   location: LOC ?? 'northbeach(default)',
   console: [],
   pageErrors: [],
@@ -116,10 +141,56 @@ async function until(fn, label, timeout = 60000, arg) {
 }
 const sha256 = async (f) =>
   createHash('sha256').update(await readFile(f)).digest('hex');
-async function shot(name) {
-  const file = path.join(OUT, `${name}.png`);
+// What is on screen now. Google-free only when no 3D tileset is shown (photoreal
+// may come through ion, so any tileset counts), the globe, if shown, has no
+// Google imagery, and no Google logo is in the credits. Unknown counts as Google.
+async function tilesNow() {
+  return page.evaluate(() => {
+    const v = window.__godsEyeView.viewer;
+    const s = v.scene;
+    const p = s.primitives;
+    let shownTilesets = 0;
+    for (let i = 0; i < p.length; i++) {
+      const x = p.get(i);
+      if ('tilesLoaded' in x && typeof x.root !== 'undefined' && x.show) shownTilesets++;
+    }
+    const layers = [];
+    const il = v.imageryLayers;
+    for (let i = 0; i < (il?.length ?? 0); i++) {
+      const l = il.get(i);
+      if (l.show) layers.push(String(l.imageryProvider?.url ?? l.imageryProvider?._resource?.url ?? l.imageryProvider?.constructor?.name ?? ''));
+    }
+    const googleLogos = [...document.querySelectorAll('#cesium-credits img, .cesium-credit-lightbox img')].filter((i) => /google/i.test(i.src)).length;
+    const globe = Boolean(s.globe?.show);
+    const globeGoogle = globe && layers.some((u) => /google/i.test(u));
+    return {
+      shownTilesets,
+      globe,
+      imagery: globe ? layers.map((u) => u.replace(/([?&](key|access_token|token)=)[^&]+/g, '$1REDACTED').slice(0, 120)) : [],
+      googleLogos,
+      googleTiles: shownTilesets > 0 || globeGoogle || googleLogos > 0,
+    };
+  });
+}
+// kind 'judge': refused unless Google-free, written to --out and tagged.
+// kind 'context' (default): may show Google tiles; written only to EPHEMERAL, or not at all with --judge-only.
+async function shot(name, kind = 'context') {
+  const tiles = await tilesNow().catch((e) => ({ error: e.message.split('\n')[0], googleTiles: true }));
+  if (kind === 'judge') {
+    if (tiles.googleTiles !== false) throw new Error(`judge frame ${name} refused: Google tiles may be on screen ${JSON.stringify(tiles)}`);
+    const file = path.join(OUT, `${name}.png`);
+    await page.screenshot({ path: file, timeout: 60000 });
+    const rec = { file: path.basename(file), sha256: await sha256(file) };
+    manifest.frames[rec.file] = { ...rec, kind: 'judge', googleTiles: false, tilesSource: 'none: every 3D tileset hidden', tiles };
+    return rec;
+  }
+  if (JUDGE_ONLY) return { file: null, skipped: 'judge-only: in-context frame not written', googleTiles: tiles.googleTiles };
+  await mkdir(EPHEMERAL, { recursive: true });
+  const file = path.join(EPHEMERAL, `${LABEL}--${name}.png`);
   await page.screenshot({ path: file, timeout: 60000 });
-  return { file: path.basename(file), sha256: await sha256(file) };
+  const rec = { file: path.basename(file), dir: 'ephemeral', sha256: await sha256(file), googleTiles: tiles.googleTiles };
+  manifest.ephemeral.push({ ...rec, tiles });
+  return rec;
 }
 async function render(ms = 1200) {
   await page.evaluate(() => {
@@ -218,7 +289,13 @@ async function attribution() {
     ];
     for (const c of all) out.push(c.credit?.html ?? c.html ?? '');
     const imgs = [...document.querySelectorAll('#cesium-credits img')].map((i) => i.src.slice(0, 120));
-    return { credits: out.slice(0, 20), imgs };
+    // static credits (the diorama's OSM credit, the live terrain's ion attributions) and their on-screen box
+    const statics = (cd?._staticCredits ?? []).map((c) => String(c?.html ?? '').slice(0, 240));
+    const el = document.querySelector('#cesium-credits');
+    const cs = el && getComputedStyle(el);
+    const r = el?.getBoundingClientRect();
+    const box = el ? { display: cs.display, visibility: cs.visibility, opacity: cs.opacity, rect: [r.x, r.y, r.width, r.height].map(Math.round) } : null;
+    return { credits: out.slice(0, 20), imgs, statics, box };
   });
   const prim = await page.evaluate(() => {
     const v = window.__godsEyeView.viewer;
@@ -282,7 +359,10 @@ async function cozyVariants(beat) {
 async function ownShot(beat) {
   // Judge frame: every shown 3D tileset (Google photoreal) hidden, a plain
   // backdrop behind; the diorama, HUD and massing stay. Restored right after.
+  // window.__gevJudgeFrame tells massing this is not a map switch (exp/city-loop-v4:
+  // without it massing rebuilt the block, which was missing from Presidio's frames).
   const hidden = await page.evaluate(() => {
+    window.__gevJudgeFrame = true;
     const v = window.__godsEyeView.viewer;
     const s = v.scene;
     const p = s.primitives;
@@ -300,19 +380,37 @@ async function ownShot(beat) {
     if (s.skyBox) s.skyBox.show = false;
     return out.length;
   });
-  await render(2500);
-  const f = await shot(`${beat}--own`);
-  await page.evaluate(() => {
-    const s = window.__godsEyeView.viewer.scene;
-    const w = window.__ownWas;
-    for (const i of w.idx) s.primitives.get(i).show = true;
-    s.backgroundColor = w.bg;
-    if (s.skyAtmosphere) s.skyAtmosphere.show = w.sky;
-    if (s.skyBox) s.skyBox.show = w.box;
-    delete window.__ownWas;
-  });
+  let f;
+  let credits;
+  let massing;
+  try {
+    await render(2500);
+    await until(() => {
+      const m = window.__gevCityMassing?.snapshot?.();
+      return !m?.shown || m.drawn;
+    }, 'massing drawn in the judge frame', 20000).catch((e) => manifest.console.push({ type: 'capture-warn', text: e.message }));
+    massing = await page.evaluate(() => {
+      const m = window.__gevCityMassing?.snapshot?.();
+      return m ? { shown: m.shown, drawn: m.drawn, plotId: m.plotId ?? null } : null;
+    });
+    f = await shot(`${beat}--own`, 'judge');
+    credits = await attribution().catch((e) => ({ error: e.message.split('\n')[0] }));
+  } finally {
+    await page.evaluate(() => {
+      const s = window.__godsEyeView.viewer.scene;
+      const w = window.__ownWas;
+      if (w) {
+        for (const i of w.idx) s.primitives.get(i).show = true;
+        s.backgroundColor = w.bg;
+        if (s.skyAtmosphere) s.skyAtmosphere.show = w.sky;
+        if (s.skyBox) s.skyBox.show = w.box;
+      }
+      delete window.__ownWas;
+      delete window.__gevJudgeFrame;
+    });
+  }
   await render(1500);
-  manifest.own[beat] = { ...f, hiddenTilesets: hidden, googleTiles: hidden === 0 ? 'unknown' : false };
+  manifest.own[beat] = { ...f, hiddenTilesets: hidden, googleTiles: false, massing, credits };
 }
 async function beat(name, run) {
   const started = Date.now();
@@ -361,7 +459,8 @@ const context = await browser.newContext({
   locale: 'en-US',
   timezoneId: 'UTC',
   serviceWorkers: 'block',
-  ...(VIDEO && { recordVideo: { dir: path.join(OUT, 'video-raw'), size: VIEWPORT } }),
+  // the recorded video shows Google tiles: ephemeral dir only, never with --judge-only
+  ...(VIDEO && !JUDGE_ONLY && { recordVideo: { dir: path.join(EPHEMERAL, `${LABEL}-video-raw`), size: VIEWPORT } }),
 });
 // The fixture concept provider only: any network concept request is blocked.
 await context.route('**/api/city-concept*', (r) => r.abort('blockedbyclient'));
@@ -553,7 +652,7 @@ try {
     return { stops, stages, districtPlots };
   });
   await frameTiming('end');
-  if (/look=diorama|city=v3/.test(QUERY)) {
+  if (/look=diorama|city=(v3|hero)/.test(QUERY)) {
     // fps with the diorama vs. without it, same camera (the growth beat's), same browser
     await page.evaluate(() => { const d = window.__gevDiorama; if (d) { d.model.show = false; d.stage.enabled = false; } });
     await frameTiming('end-diorama-hidden');
@@ -569,12 +668,13 @@ await page.close();
 await context.close();
 await browser.close();
 
-if (VIDEO) {
-  const raw = path.join(OUT, 'video-raw');
+if (VIDEO && !JUDGE_ONLY) {
+  // in-context journey video (Google tiles): stays in the ephemeral dir
+  const raw = path.join(EPHEMERAL, `${LABEL}-video-raw`);
   const webm = (await readdir(raw).catch(() => [])).find((f) => f.endsWith('.webm'));
   if (webm) {
     const src = path.join(raw, webm);
-    const full = path.join(OUT, `journey-full-${LABEL}.mp4`);
+    const full = path.join(EPHEMERAL, `${LABEL}--journey-full.mp4`);
     spawnSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', src, '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '26', '-movflags', '+faststart', full]);
     // ~28 s cut: 4.5 s ending at each beat mark (click -> wheel -> reimagine -> build -> shadow -> growth).
     const parts = [];
@@ -590,14 +690,39 @@ if (VIDEO) {
     }
     const list = path.join(raw, 'parts.txt');
     await writeFile(list, parts.map((p) => `file '${p}'`).join('\n'));
-    const cut = path.join(OUT, `journey-${LABEL}.mp4`);
+    const cut = path.join(EPHEMERAL, `${LABEL}--journey.mp4`);
     spawnSync('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', '-movflags', '+faststart', cut]);
-    manifest.video = { full: path.basename(full), cut: path.basename(cut), beatsInCut: order };
+    manifest.video = { full: path.basename(full), cut: path.basename(cut), beatsInCut: order, dir: 'ephemeral', googleTiles: true };
     for (const k of ['full', 'cut']) {
-      const f = path.join(OUT, manifest.video[k]);
+      const f = path.join(EPHEMERAL, manifest.video[k]);
       try { manifest.video[`${k}Sha256`] = await sha256(f); } catch { manifest.video[`${k}Error`] = 'missing'; }
     }
   }
 }
+// exp/city-loop-v4: the 20 s journey of judge frames (Google-free): 6 beats x 3.33 s
+const judged = BEATS.filter((b) => manifest.own[b]?.file);
+if (OWN && judged.length) {
+  const dir = path.join(OUT, 'judge-parts');
+  await mkdir(dir, { recursive: true });
+  const parts = [];
+  for (const [i, b] of judged.entries()) {
+    const part = path.join(dir, `part-${i}.mp4`);
+    spawnSync('ffmpeg', ['-y', '-loglevel', 'error', '-loop', '1', '-framerate', '25', '-t', '3.333', '-i', path.join(OUT, manifest.own[b].file),
+      '-vf', `drawtext=text='${b.toUpperCase()} · judge frame (no Google tiles)':x=24:y=h-48:fontsize=22:fontcolor=0x2EC8E8:box=1:boxcolor=0x000000AA:boxborderw=8`,
+      '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '24', '-r', '25', part]);
+    parts.push(part);
+  }
+  const list = path.join(dir, 'parts.txt');
+  await writeFile(list, parts.map((p) => `file '${p}'`).join('\n'));
+  const out = path.join(OUT, `judge20-${LABEL}.mp4`);
+  spawnSync('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', '-movflags', '+faststart', out]);
+  try {
+    const rec = { file: path.basename(out), sha256: await sha256(out) };
+    manifest.frames[rec.file] = { ...rec, kind: 'judge-video', googleTiles: false, from: judged.map((b) => manifest.own[b].file) };
+    manifest.judgeVideo = rec;
+  } catch {
+    manifest.judgeVideo = { error: 'missing' };
+  }
+}
 await writeFile(path.join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
-console.log(JSON.stringify({ app: manifest.app.sha, tiles: manifest.tiles.rendering, beats: Object.fromEntries(Object.entries(manifest.beats).map(([k, v]) => [k, v.status])), fatal: manifest.fatal ?? null }));
+console.log(JSON.stringify({ app: manifest.app.sha, tiles: manifest.tiles.rendering, beats: Object.fromEntries(Object.entries(manifest.beats).map(([k, v]) => [k, v.status])), judgeFrames: Object.keys(manifest.frames).length, ephemeral: manifest.ephemeral.length, fatal: manifest.fatal ?? null }));

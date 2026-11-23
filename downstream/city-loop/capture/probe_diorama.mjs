@@ -6,6 +6,7 @@
 // the diorama state, page errors and console errors.
 import { mkdir, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
+import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -21,10 +22,15 @@ await mkdir(OUT, { recursive: true });
 const require = createRequire(path.join(APP, 'package.json'));
 const { chromium } = require('playwright-core');
 const { siteForPlot } = await import(pathToFileURL(path.join(APP, 'scripts/qa-massing-measure.mjs')).href);
-// exp/city-loc-green: the plot follows ?cityLoc= in --query
-const LOC = new URLSearchParams(args.query || '').get('cityLoc');
-const { CITY_LOCATIONS } = await import(pathToFileURL(path.join(APP, 'src/data/cityLocations.js')).href);
+// exp/city-loc-green: the plot follows ?cityLoc= in --query (exp/city-loop-v4: and ?city=hero)
+const QP = new URLSearchParams(args.query || '');
+const { CITY_LOCATIONS, HERO_CITY_LOCATION } = await import(pathToFileURL(path.join(APP, 'src/data/cityLocations.js')).href);
+const LOC = QP.get('cityLoc') ?? (QP.get('city') === 'hero' ? HERO_CITY_LOCATION : null);
 const SITE = siteForPlot(LOC ? CITY_LOCATIONS[LOC].plot : 'plot-n105201-126637');
+// exp/city-loop-v4: in-context views may show Google tiles: ephemeral dir only
+// (capture.mjs explains); --judge-only 1 skips them; --own frames are tagged.
+const JUDGE_ONLY = Boolean(args['judge-only']);
+const EPHEMERAL = path.join(os.tmpdir(), 'gev-EPHEMERAL-google-tiles-do-not-copy');
 const VIEWS = {
   site: { lat: SITE.lat, lon: SITE.lon, alt: SITE.alt, heading: 0, pitch: -45 },
   district: { lat: SITE.lat - 0.0135, lon: SITE.lon, alt: 1500, heading: 0, pitch: -42 },
@@ -36,7 +42,7 @@ const browser = await chromium.launch({
   args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ozone-platform=headless', '--ignore-gpu-blocklist'],
 });
 const page = await (await browser.newContext({ viewport: { width: 1600, height: 1000 }, deviceScaleFactor: 1, timezoneId: 'UTC' })).newPage();
-const log = { console: [], pageErrors: [] };
+const log = { console: [], pageErrors: [], frames: {}, ephemeral: [], ephemeralDir: EPHEMERAL };
 page.on('console', (m) => ['error', 'warning'].includes(m.type()) && log.console.push(m.text().replace(/(key|token|access_token)=[^&\s"]+/gi, '$1=REDACTED').slice(0, 400)));
 page.on('pageerror', (e) => log.pageErrors.push(e.message.slice(0, 400)));
 const url = new URL(args.url);
@@ -75,10 +81,15 @@ for (const name of (args.views || 'site,district').split(',')) {
   }
   await page.evaluate(() => window.__godsEyeView.viewer.scene.requestRender());
   await page.waitForTimeout(2500);
-  await page.screenshot({ path: path.join(OUT, `${name}.png`) });
-  if (args.own) {
+  if (!JUDGE_ONLY) {
+    await mkdir(EPHEMERAL, { recursive: true });
+    await page.screenshot({ path: path.join(EPHEMERAL, `probe--${name}.png`) });
+    log.ephemeral.push(`probe--${name}.png`);
+  }
+  if (args.own || JUDGE_ONLY) {
     // judge frame: every 3D tileset hidden (no Google pixels), plain backdrop
     await page.evaluate(() => {
+      window.__gevJudgeFrame = true;
       const s = window.__godsEyeView.viewer.scene;
       for (let i = 0; i < s.primitives.length; i++) {
         const x = s.primitives.get(i);
@@ -90,16 +101,33 @@ for (const name of (args.views || 'site,district').split(',')) {
       s.requestRender();
     });
     await page.waitForTimeout(2500);
-    await page.screenshot({ path: path.join(OUT, `${name}--own.png`) });
+    const shown = await page.evaluate(() => {
+      const s = window.__godsEyeView.viewer.scene;
+      let n = 0;
+      for (let i = 0; i < s.primitives.length; i++) {
+        const x = s.primitives.get(i);
+        if ('tilesLoaded' in x && typeof x.root !== 'undefined' && x.show) n++;
+      }
+      return n + (s.globe?.show ? 1 : 0);
+    });
+    if (shown) throw new Error(`judge frame ${name} refused: ${shown} tileset/globe still shown`);
+    const file = path.join(OUT, `${name}--own.png`);
+    await page.screenshot({ path: file });
+    const { createHash } = await import('node:crypto');
+    const { readFile } = await import('node:fs/promises');
+    log.frames[path.basename(file)] = { file: path.basename(file), sha256: createHash('sha256').update(await readFile(file)).digest('hex'), kind: 'judge', googleTiles: false };
     await page.evaluate(() => {
       const s = window.__godsEyeView.viewer.scene;
       for (let i = 0; i < s.primitives.length; i++) {
         const x = s.primitives.get(i);
         if ('tilesLoaded' in x && typeof x.root !== 'undefined') x.show = true;
       }
+      delete window.__gevJudgeFrame;
     });
   }
 }
 await writeFile(path.join(OUT, 'probe.json'), JSON.stringify(log, null, 2));
+// the gate reads frames from manifest.json next to the image
+await writeFile(path.join(OUT, 'manifest.json'), JSON.stringify({ schema: 'city-loop-v2/probe@1', frames: log.frames, ephemeral: log.ephemeral, ephemeralDir: EPHEMERAL }, null, 2));
 console.log(JSON.stringify({ ready: log.diorama?.state?.ready ?? false, error: log.diorama?.error?.slice(0, 300) ?? null, stats: log.diorama?.state?.stats, timing: log.diorama?.state?.timing, pageErrors: log.pageErrors.slice(0, 3) }));
 await browser.close();

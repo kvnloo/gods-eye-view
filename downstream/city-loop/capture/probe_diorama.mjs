@@ -21,7 +21,10 @@ await mkdir(OUT, { recursive: true });
 const require = createRequire(path.join(APP, 'package.json'));
 const { chromium } = require('playwright-core');
 const { siteForPlot } = await import(pathToFileURL(path.join(APP, 'scripts/qa-massing-measure.mjs')).href);
-const SITE = siteForPlot('plot-n105201-126637');
+// exp/city-loc-green: the plot follows ?cityLoc= in --query
+const LOC = new URLSearchParams(args.query || '').get('cityLoc');
+const { CITY_LOCATIONS } = await import(pathToFileURL(path.join(APP, 'src/data/cityLocations.js')).href);
+const SITE = siteForPlot(LOC ? CITY_LOCATIONS[LOC].plot : 'plot-n105201-126637');
 const VIEWS = {
   site: { lat: SITE.lat, lon: SITE.lon, alt: SITE.alt, heading: 0, pitch: -45 },
   district: { lat: SITE.lat - 0.0135, lon: SITE.lon, alt: 1500, heading: 0, pitch: -42 },
@@ -50,7 +53,7 @@ await page.evaluate(async () => {
 });
 await page.locator('#top-center-actions [data-city-builder-open]').click();
 if (/look=diorama/.test(args.query || ''))
-  await page.waitForFunction(() => window.__gevDiorama?.state?.ready || window.__gevDioramaError, null, { timeout: 120000, polling: 500 }).catch(() => {});
+  await page.waitForFunction(() => window.__gevDiorama?.state?.ready || window.__gevDioramaError, null, { timeout: 300000, polling: 500 }).catch(() => {});
 log.diorama = await page.evaluate(() => ({ state: window.__gevDiorama?.state ?? null, error: window.__gevDioramaError ?? null }));
 for (const name of (args.views || 'site,district').split(',')) {
   const v = VIEWS[name];
@@ -73,6 +76,29 @@ for (const name of (args.views || 'site,district').split(',')) {
   await page.evaluate(() => window.__godsEyeView.viewer.scene.requestRender());
   await page.waitForTimeout(2500);
   await page.screenshot({ path: path.join(OUT, `${name}.png`) });
+  if (args.own) {
+    // judge frame: every 3D tileset hidden (no Google pixels), plain backdrop
+    await page.evaluate(() => {
+      const s = window.__godsEyeView.viewer.scene;
+      for (let i = 0; i < s.primitives.length; i++) {
+        const x = s.primitives.get(i);
+        if ('tilesLoaded' in x && typeof x.root !== 'undefined') x.show = false;
+      }
+      s.backgroundColor = s.backgroundColor.constructor.fromCssColorString('#e6e8d6');
+      if (s.skyAtmosphere) s.skyAtmosphere.show = false;
+      if (s.skyBox) s.skyBox.show = false;
+      s.requestRender();
+    });
+    await page.waitForTimeout(2500);
+    await page.screenshot({ path: path.join(OUT, `${name}--own.png`) });
+    await page.evaluate(() => {
+      const s = window.__godsEyeView.viewer.scene;
+      for (let i = 0; i < s.primitives.length; i++) {
+        const x = s.primitives.get(i);
+        if ('tilesLoaded' in x && typeof x.root !== 'undefined') x.show = true;
+      }
+    });
+  }
 }
 await writeFile(path.join(OUT, 'probe.json'), JSON.stringify(log, null, 2));
 console.log(JSON.stringify({ ready: log.diorama?.state?.ready ?? false, error: log.diorama?.error?.slice(0, 300) ?? null, stats: log.diorama?.state?.stats, timing: log.diorama?.state?.timing, pageErrors: log.pageErrors.slice(0, 3) }));

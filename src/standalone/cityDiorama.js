@@ -70,6 +70,8 @@ uniform float tiltY;
 uniform float mist;
 uniform float mistW;
 uniform float cutR;
+uniform float warm;
+uniform vec3 mistColor;
 
 vec3 softened(vec2 uv, float k) {
   vec3 s = vec3(0.0);
@@ -107,12 +109,14 @@ void main() {
   if (t <= 0.001 && m <= 0.001) { out_FragColor = src; return; }
   vec3 b = softened(uv, 1.0 + 2.5 * t);
   float l = dot(b, vec3(0.299, 0.587, 0.114));
-  vec3 g = mix(b, vec3(l), 0.35 * t);
-  // pull the photo toward the diorama key: lift greens, warm built surfaces
-  g *= vec3(1.02, 1.04, 0.98);
+  // warm = 0: grey haze (desaturate + fog). warm = 1: the context takes the
+  // diorama's key instead: a little more chroma, warm highs, teal-green lows.
+  vec3 g = mix(b, vec3(l), mix(0.35, -0.25, warm) * t);
+  g *= mix(vec3(1.02, 1.04, 0.98), vec3(1.06, 1.03, 0.9), warm);
+  g = mix(g, g * vec3(0.86, 1.0, 0.96) + vec3(0.0, 0.025, 0.02), warm * (1.0 - smoothstep(0.2, 0.6, l)));
   g = mix(g, fogColor, fog * t);
   vec3 outc = mix(src.rgb, g, t);
-  outc = mix(outc, fogColor, clamp(m, 0.0, 1.0));
+  outc = mix(outc, mistColor, clamp(m, 0.0, 1.0));
   out_FragColor = vec4(outc, src.a);
 }
 `;
@@ -634,7 +638,7 @@ export async function mountCityDiorama({ viewer, win = globalThis.window, search
       r0: o.ringIn,
       r1: o.ringOut,
       fog: o.fog,
-      fogColor: lin('#cfe3dc'),
+      fogColor: lin(o.warm > 0.5 ? '#e6e2c8' : '#cfe3dc'),
       texel: () => new Cesium.Cartesian2(1 / scene.drawingBufferWidth, 1 / scene.drawingBufferHeight),
       debug: o.debug,
       tilt: o.tilt,
@@ -642,6 +646,8 @@ export async function mountCityDiorama({ viewer, win = globalThis.window, search
       mist: o.mist,
       mistW: o.mistW,
       cutR: o.radius,
+      warm: o.warm,
+      mistColor: lin(o.warm > 0.5 ? '#dfe8c6' : '#cfe3dc'),
     },
   });
   scene.postProcessStages.add(stage);

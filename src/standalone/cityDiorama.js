@@ -67,11 +67,15 @@ void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
   float key = smoothstep(-0.05, 0.6, ndl);
   float hemi = dot(n, U) * 0.5 + 0.5;
   vec3 amb = mix(u_groundAmb, u_skyAmb, hemi) * u_ambient;
-  // look pass A (u_tex): surface texture by vertex tag (colour alpha): 0.85 roofs, 0.8 rocks; ground water
+  // look pass A (u_tex): surface texture by vertex tag (colour alpha): 0.9 crowns, 0.85 roofs, 0.8 rocks; ground water
   if (u_tex > 0.5) {
     float tag = fsInput.attributes.color_0.a;
     vec3 d = material.diffuse;
-    if (tag > 0.825 && tag <= 0.875) {
+    if (tag > 0.875 && tag < 0.95) {
+      // leaf clumps: two octaves of noise, brighter where the key hits
+      float nl = 0.65 * lookNoise(p.xy * 1.7 + p.z * 1.3) + 0.35 * lookNoise(p.yz * 3.9 + p.x * 2.1);
+      material.diffuse = d * mix(0.74, 1.2, nl) * (1.0 + 0.18 * smoothstep(0.35, 0.9, ndl) * step(0.62, nl));
+    } else if (tag > 0.825 && tag <= 0.875) {
       // roof tiles: rows along the slope, per-tile tone
       float row = fract(p.z * 1.5);
       float tile = lookHash(floor(vec2((p.x + p.y) * 1.1 + floor(p.z * 1.5) * 0.5, p.z * 1.5)));
@@ -86,7 +90,7 @@ void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
     }
   }
   vec3 c = material.diffuse * (amb + u_keyColor * key * u_key);
-  // look pass A grade: warm highs, slightly cooler deep shadows
+  // look pass A grade: warm highs, slightly cooler deep shadows, a touch more contrast
   float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
   vec3 graded = mix(c * vec3(0.96, 1.0, 1.06), c * vec3(1.06, 1.0, 0.96), smoothstep(0.02, 0.25, lum));
   material.diffuse = mix(c, graded, u_grade);

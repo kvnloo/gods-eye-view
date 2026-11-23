@@ -8,7 +8,7 @@
 // discs, shadow polygons). Deterministic: one seeded PRNG, no Math.random.
 // No Cesium import, so it runs (and is tested) in node.
 
-import { SHORE, appendBoulder } from './cityShoreRocks.js';
+import { appendBoulder, appendClusteredCanopy } from './cityCanopyGeometry.js';
 
 export const DIORAMA_DEFAULTS = Object.freeze({
   // Defaults = the loop's best (rounds 1-6, loop-v3/arm-diorama/REPORT.md); every knob stays a ?dio= override.
@@ -47,7 +47,7 @@ export const DIORAMA_DEFAULTS = Object.freeze({
   mistW: 70, // its width, metres
   warm: 1, // (r7) 1: the photoreal context takes a warm palette pull instead of grey haze
   fx: 'r700', // r520 | r700 (wider OSM fixture; needed for radius > 500)
-  lod: 1, // (r6) 1: lighter tree prototypes (2-tier pines, 1-2 crown blobs) for software renderers
+  lod: 1, // (r6) 1: lighter tree prototypes (2-tier pines, 4 crown lobes) for software renderers
   instanced: 1, // trees as EXT_mesh_gpu_instancing prototypes (0: merged into one mesh)
   street: 0.8, // (r2) probability of a street tree every 9 m along each side of wide streets
   // exp/city-loop-v3 seam trials (D1, after 4 blend trials): new mechanism classes
@@ -63,13 +63,15 @@ export const DIORAMA_DEFAULTS = Object.freeze({
   // (c) a painterly palette match: the photoreal context takes the diorama's palette
   match: 0, // strength 0..1 (0 = off)
   matchCell: 16, // metres per roof-colour cell of the match
-  // exp/city-loop-v5 look pass A (toward the locked in-camera target A); each piece is a knob, so it can be ablated
+  // exp/city-loop-v5 look pass A (toward the locked in-camera target A); each piece is a knob so it can be ablated
   rocks: 1, // mossy boulders along the shore (0 = off)
-  foam: 1, // painted shore foam, foam rings at the boulders, sparse wave highlights on the water
-  grass: 1, // olive meadow ground with grass strokes and wildflower flecks, a grassy shore verge
+  foam: 1, // painted shore foam and sparse wave highlights on the water
+  grass: 1, // painted grass strokes and wildflower flecks on all open ground, grassy shore verge
+  canopy: 1, // clustered multi-lobe broadleaf crowns, smooth-shaded
+  treePal: 'gold', // gold (warm olive/golden greens, more autumn) | base
   waterTone: 1, // deeper teal water
-  grade: 1, // warm late-afternoon key over a cooler ambient
-  tex: 1, // surface texture in the light shader: roof tile rows, rock speckle, water ripples
+  grade: 1, // warm late-afternoon key, cooler soft shadows, gentle contrast
+  tex: 1, // surface texture in the light shader: leaf dapple on crowns, tile rows on roofs, speckle on rocks, ripples on water
 });
 
 const num = (v, d) => (Number.isFinite(Number(v)) ? Number(v) : d);
@@ -118,6 +120,19 @@ export const PALETTE = Object.freeze({
   autumn: ['#d9822b', '#c9662a', '#e09a35'],
   trunk: '#6e4a31',
   rock: '#9a9a90',
+});
+// look pass A: warm golden-olive broadleaf greens, deep conifers, a richer autumn share
+export const GOLD = Object.freeze({
+  pine: ['#2a4a2c', '#335a34', '#22402a', '#3b6236'],
+  leaf: ['#8ea640', '#a2ad48', '#5f8a34', '#b2b452', '#4f7a30', '#98b04a', '#6e9436'],
+  autumn: ['#d8823a', '#c86a34', '#e0a040', '#c99a3a'],
+  autumnShare: 0.16,
+  rock: ['#b4b0a6', '#a6a39a', '#bdb8ac', '#9c998f'],
+  moss: ['#a2bb4a', '#8eaa40', '#b3c457'],
+  // brick, terracotta and slate roofs (no turf roofs in target A)
+  roofs: ['#c25a38', '#b54c32', '#d0703f', '#5a6474', '#4c5564', '#687282', '#9a5a3e', '#7e5844', '#c8663c'],
+  // mostly cream plaster, some dark timber
+  walls: ['#efe2c4', '#e9d4ac', '#f3ead8', '#e6cfa6', '#d9c29a', '#8a5a3c', '#6e4a30'],
 });
 
 export function hexRgb(hex) {
@@ -265,7 +280,6 @@ export class Soup {
     const L = Math.hypot(nx, ny, nz) || 1;
     nx /= L; ny /= L; nz /= L;
     this.p.push(...a, ...b, ...c);
-    // col[3], when given, is a vertex tag for the light shader (colour alpha; the ground is < 0.75)
     for (let i = 0; i < 3; i++) { this.n.push(nx, ny, nz); this.c.push(col[0], col[1], col[2], col[3] ?? 1); }
   }
   quad(a, b, c, d, col) { this.tri(a, b, c, col); this.tri(a, c, d, col); }
@@ -326,10 +340,12 @@ function house(s, rect, z0, wallH, o, r, sat) {
   const B = b - o.gap;
   if (A < 1.2 || B < 1.2) return null;
   const kit = o.pal === 'norse' ? NORSE : o.pal === 'mix' ? MIX : PALETTE;
-  const wallHex = kit.walls[Math.floor(r() * kit.walls.length)];
-  const roofHex = kit.roofs[Math.floor(r() * kit.roofs.length)];
+  const walls = o.treePal === 'gold' ? GOLD.walls : kit.walls;
+  const wallHex = walls[Math.floor(r() * walls.length)];
+  const roofs = o.treePal === 'gold' ? GOLD.roofs : kit.roofs;
+  const roofHex = roofs[Math.floor(r() * roofs.length)];
   const wall = linear(wallHex, 0.05, r, sat);
-  const roof = [...linear(roofHex, 0.07, r, sat), o.tex > 0 ? 0.85 : 1]; // 0.85: roof tiles in the light shader
+  const roof = [...linear(roofHex, 0.07, r, sat), o.tex > 0 ? 0.85 : 1];
   const plinth = linear(PALETTE.plinth, 0.05, r, sat);
   const corners = [P(-A, -B), P(A, -B), P(A, B), P(-A, B)];
   const zt = z0 + wallH;
@@ -381,31 +397,39 @@ function wallHeight(b, o, r) {
 
 // ---------- trees
 function pine(s, x, y, z, k, r, sat, pick) {
+  const kit = pick?.kit ?? PALETTE;
   const h = (7 + r() * 5) * k;
   const rad = (2.2 + r() * 0.9) * k;
-  const ci = pick?.col ?? Math.floor(r() * PALETTE.pine.length);
-  const col = linear(PALETTE.pine[ci % PALETTE.pine.length], 0.08, r, sat);
+  const ci = pick?.col ?? Math.floor(r() * kit.pine.length);
+  const col = linear(kit.pine[ci % kit.pine.length], 0.08, r, sat);
   const trunk = linear(PALETTE.trunk, 0.05, r, sat);
   const rot = r() * 6.28;
   prism(s, ring(x, y, 0.28 * k, 5, rot), z - 0.3, z + h * 0.22, trunk, false);
-  const tiers = pick?.lod ? 2 : 3;
+  // look pass A: layered conifers keep three tiers, each a shade lighter toward the lit top
+  const tiers = pick?.lod && !pick?.layered ? 2 : 3;
   for (let i = 0; i < tiers; i++) {
     const z0 = z + h * (0.15 + i * (tiers === 2 ? 0.34 : 0.24));
     const rr = rad * (1 - i * (tiers === 2 ? 0.38 : 0.26));
-    cone(s, x, y, z0, h * (tiers === 2 ? 0.6 - i * 0.12 : 0.5 - i * 0.08), rr, pick?.lod ? 6 : 7, col, rot + i);
+    const ct = pick?.layered ? [...col.map((c) => c * (0.82 + 0.16 * i)), pick.tex ? 0.9 : 1] : col;
+    cone(s, x, y, z0, h * (tiers === 2 ? 0.6 - i * 0.12 : 0.5 - i * 0.08), rr, pick?.lod ? 6 : 7, ct, rot + i);
   }
   return { r: rad, h };
 }
 
 function broadleaf(s, x, y, z, k, r, o, sat, pick) {
-  const rad = (2.6 + r() * 1.6) * k;
+  const kit = pick?.kit ?? PALETTE;
+  const rad = (2.6 + r() * 1.6) * k * (pick?.canopy ? 1.12 : 1);
   const h = (3.2 + r() * 1.5) * k;
   const autumn = pick ? pick.autumn : r() < o.autumn;
-  const pal = autumn ? PALETTE.autumn : PALETTE.leaf;
+  const pal = autumn ? kit.autumn : kit.leaf;
   const col = linear(pal[(pick?.col ?? Math.floor(r() * pal.length)) % pal.length], 0.08, r, sat);
   const col2 = col.map((c) => c * 0.8);
   const trunk = linear(PALETTE.trunk, 0.05, r, sat);
   prism(s, ring(x, y, 0.3 * k, 5, r() * 6), z - 0.3, z + h, trunk, false);
+  if (pick?.canopy) {
+    appendClusteredCanopy(s, ICO, x, y, z + h, rad, col, r, pick.lod, pick.tex ? 0.9 : 1);
+    return { r: rad * 1.25, h: h + rad * 1.5 };
+  }
   blob(s, x, y, z + h + rad * 0.6, rad, rad * 0.85, col, r);
   const n = pick?.lod ? Math.floor(r() * 2) : 1 + Math.floor(r() * 2);
   for (let i = 0; i < n; i++) {
@@ -415,11 +439,10 @@ function broadleaf(s, x, y, z, k, r, o, sat, pick) {
   return { r: rad * 1.25, h: h + rad * 1.5 };
 }
 
-// look pass A: a boulder prototype (unit radius); three of four colours get a moss cap.
-// tag 0.8 = rock speckle in the light shader.
-function rockProto(s, r, col, sat, tag) {
-  const stone = linear(SHORE.rock[col % SHORE.rock.length], 0.06, r, sat);
-  const moss = col % 4 !== 3 ? linear(SHORE.moss[col % SHORE.moss.length], 0.06, r, sat) : null;
+// look pass A: a boulder prototype (unit radius); most get a moss cap
+function rockProto(s, r, col, sat, tag = 1) {
+  const stone = linear(GOLD.rock[col % GOLD.rock.length], 0.06, r, sat);
+  const moss = col % 4 !== 3 ? linear(GOLD.moss[col % GOLD.moss.length], 0.06, r, sat) : null;
   appendBoulder(s, ICO, 0, 0, 0, 1, [...stone, tag], moss && [...moss, tag], r);
   return { r: 1, h: 1 };
 }
@@ -685,6 +708,10 @@ export function buildDiorama(fixture, ground, o = DIORAMA_DEFAULTS, waterLevels 
   // o.instanced: every tree is an instance of one of a few prototypes
   // (EXT_mesh_gpu_instancing), so the model carries each shape once.
   const protos = new Map();
+  const gold = o.treePal === 'gold';
+  const kit = gold ? GOLD : PALETTE;
+  const autumnShare = gold ? Math.max(o.autumn, GOLD.autumnShare) : o.autumn;
+  const look = { kit, canopy: o.canopy > 0, layered: gold, tex: o.tex > 0 };
   const proto = (key) => {
     if (!protos.has(key)) {
       const [kind, shape, col, autumn] = key.split(':');
@@ -693,18 +720,22 @@ export function buildDiorama(fixture, ground, o = DIORAMA_DEFAULTS, waterLevels 
       const dims = kind === 'rock'
         ? rockProto(ps, pr, Number(col), sat, o.tex > 0 ? 0.8 : 1)
         : kind === 'pine'
-          ? pine(ps, 0, 0, 0, 1, pr, sat, { col: Number(col), lod: o.lod })
-          : broadleaf(ps, 0, 0, 0, 1, pr, o, sat, { col: Number(col), autumn: autumn === '1', lod: o.lod });
+          ? pine(ps, 0, 0, 0, 1, pr, sat, { col: Number(col), lod: o.lod, ...look })
+          : broadleaf(ps, 0, 0, 0, 1, pr, o, sat, { col: Number(col), autumn: autumn === '1', lod: o.lod, ...look });
       protos.set(key, { soup: ps, ...dims, instances: [] });
     }
     return protos.get(key);
   };
+  const rp = prng(99); // look pass A: its own stream, so the main draws (and every placement) stay as they were
   const plant = (x, y, kind) => {
     const z = gz(x, y);
     const k = o.treeScale * (0.8 + r() * 0.45);
     if (o.instanced) {
-      const autumn = kind !== 'pine' && r() < o.autumn;
-      const ncol = kind === 'pine' ? PALETTE.pine.length : autumn ? PALETTE.autumn.length : PALETTE.leaf.length;
+      const drawn = kind !== 'pine' ? r() : 1;
+      // more conifers in the mix (target A), picked without touching the main stream
+      if (gold && kind !== 'pine' && rp() < 0.16) kind = 'pine';
+      const autumn = kind !== 'pine' && drawn < autumnShare;
+      const ncol = kind === 'pine' ? kit.pine.length : autumn ? kit.autumn.length : kit.leaf.length;
       const key = `${kind}:${Math.floor(r() * 3)}:${Math.floor(r() * ncol)}:${autumn ? 1 : 0}`;
       const p = proto(key);
       p.instances.push([x, y, z, k, r() * Math.PI * 2]);
@@ -761,8 +792,8 @@ export function buildDiorama(fixture, ground, o = DIORAMA_DEFAULTS, waterLevels 
       plant(x, y, r() < 0.75 ? 'pine' : 'leaf');
     }
   }
-  // 5 look pass A: mossy boulders along every shore edge of the water raster, mostly on the water side.
-  // Own PRNG, so the houses and trees above keep exactly their placements; none on a house or a road.
+  // 5 look pass A: mossy boulders along every shore edge of the water raster (own PRNG, so the
+  // houses and trees above keep exactly their placements)
   let rocks = 0;
   const shore = []; // boulder discs, for the ground painter's foam rings
   if (o.rocks > 0 && water && o.instanced) {
@@ -784,20 +815,20 @@ export function buildDiorama(fixture, ground, o = DIORAMA_DEFAULTS, waterLevels 
         const cx = -half + (i + 0.5) * cell;
         const cy = half - (j + 0.5) * cell;
         for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-          if (ids[k + dj * n + di]) continue; // that neighbour is water too
+          if (ids[k + dj * n + di]) continue;
           const ex = cx + di * cell * 0.5;
           const ey = cy - dj * cell * 0.5;
           const m = rr() < 0.55 * o.rocks ? 2 : 1;
           for (let q = 0; q < m; q++) {
             const along = (rr() - 0.5) * cell;
-            const off = (rr() - 0.3) * cell * 0.5;
+            const off = (rr() - 0.3) * cell * 0.5; // mostly on the water side of the edge
             const x = ex + dj * along - di * off;
             const y = ey + di * along + dj * off;
             if (Math.hypot(x, y) > R - 4) continue;
             const big = rr();
             const rad = big > 0.8 ? 2.8 + rr() * 1.6 : big > 0.4 ? 1.7 + rr() * 0.9 : 0.9 + rr() * 0.6;
             if (nearBuilt(x, y, rad + 0.4)) continue;
-            const key = `rock:${Math.floor(rr() * 3)}:${Math.floor(rr() * SHORE.rock.length)}:0`;
+            const key = `rock:${Math.floor(rr() * 3)}:${Math.floor(rr() * GOLD.rock.length)}:0`;
             proto(key).instances.push([x, y, gz(x, y) - rad * 0.12, rad, rr() * Math.PI * 2]);
             shore.push({ x, y, r: rad });
             rocks++;

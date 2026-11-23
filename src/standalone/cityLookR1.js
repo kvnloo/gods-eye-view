@@ -34,10 +34,24 @@ export function mountCityLookR1({
         if (win) win.__gevCozyValley = look;
       })
       .catch(() => console.error('Cozy Valley look failed to load'));
+  // FORK-ONLY (exp/city-look-diorama): ?look=diorama, the low-poly district.
+  let diorama = null;
+  if (flags.look === 'diorama' && viewer?.scene)
+    import('./cityDiorama.js')
+      .then(({ mountCityDiorama }) => mountCityDiorama({ viewer, win }))
+      .then((d) => {
+        diorama = d;
+        if (undo.disposed) d.remove();
+      })
+      .catch((e) => {
+        if (win) win.__gevDioramaError = String(e?.stack ?? e);
+        console.error('Diorama look failed to load', e);
+      });
   return {
     flags,
     destroy() {
       undo.disposed = true;
+      diorama?.remove();
       look?.remove();
       if (win?.__gevCozyValley === look) delete win.__gevCozyValley;
       for (const f of undo.splice(0)) f();

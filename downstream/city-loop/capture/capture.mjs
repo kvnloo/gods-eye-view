@@ -378,6 +378,12 @@ try {
       });
     }, { lat: SITE.lat, lon: SITE.lon, alt: DISTRICT_ALT });
     await sleep(8000);
+    // FORK-ONLY (exp/city-look-diorama): ?look=diorama builds its district in the page; wait for it.
+    if (/look=diorama/.test(QUERY)) {
+      await until(() => window.__gevDiorama?.state?.ready || window.__gevDioramaError, 'diorama ready', 120000).catch((e) => manifest.console.push({ type: 'capture-warn', text: e.message }));
+      manifest.diorama = await page.evaluate(() => ({ state: window.__gevDiorama?.state ?? null, error: window.__gevDioramaError ?? null }));
+      await sleep(3000);
+    }
     return { tier: await page.evaluate(() => window.__gevCityPlay?.snapshot()?.tier ?? null), cameraAlt: DISTRICT_ALT };
   });
   await beat('select', async () => {
@@ -483,12 +489,13 @@ try {
     await page.keyboard.up('Shift');
     await until(() => window.__gevCityPlay.snapshot().district?.length === 25, 'district of 25', 20000);
     await noFlight();
-    await page.locator(S.growthToggle).click();
+    await page.locator(S.growthToggle).click({ timeout: 90000 });
     await page.locator('[data-city-growth-rail]').waitFor({ state: 'visible' });
     const stages = {};
     const stops = await page.locator('[data-city-growth-stop]').evaluateAll((els) => els.map((e) => e.dataset.cityGrowthStop));
     for (const id of stops) {
-      await page.locator(`[data-city-growth-stop="${id}"]`).click();
+      // SwiftShader at ~1 fps needs longer than the 20 s default to settle a click (capture env, not app).
+      await page.locator(`[data-city-growth-stop="${id}"]`).click({ timeout: 90000 });
       await sleep(1500);
       await settle();
       stages[id] = await shot(`growth--stage-${id}`);
@@ -496,6 +503,13 @@ try {
     return { stops, stages };
   });
   await frameTiming('end');
+  if (/look=diorama/.test(QUERY)) {
+    // fps with the diorama vs. without it, same camera (the growth beat's), same browser
+    await page.evaluate(() => { const d = window.__gevDiorama; if (d) { d.model.show = false; d.stage.enabled = false; } });
+    await frameTiming('end-diorama-hidden');
+    await page.evaluate(() => { const d = window.__gevDiorama; if (d) { d.model.show = true; d.stage.enabled = true; } });
+    manifest.dioramaEnd = await page.evaluate(() => window.__gevDiorama?.state ?? null);
+  }
 } catch (e) {
   manifest.fatal = e.message.split('\n')[0];
   try { await shot('fatal'); } catch {}

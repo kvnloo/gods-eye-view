@@ -493,7 +493,25 @@ export async function bakeGround(_viewer, fixture, { spacing = 16, half = 640 } 
   const resource = await Cesium.IonResource.fromAssetId(1, { accessToken });
   const terrain = await Cesium.CesiumTerrainProvider.fromUrl(resource, { ellipsoid: Cesium.Ellipsoid.WGS84 });
   await Cesium.sampleTerrainMostDetailed(terrain, pts);
-  const heights = pts.map((c) => Math.round(c.height * 100) / 100);
+  // exp/city-loc-green: tiles that fail to load leave holes (NaN); resample those,
+  // then fill any left from finite neighbours so the centre is never NaN
+  let holes = 0;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const bad = pts.filter((c) => !Number.isFinite(c.height));
+    holes = bad.length;
+    if (!bad.length) break;
+    bad.forEach((c) => (c.height = 0));
+    await Cesium.sampleTerrainMostDetailed(terrain, bad, true).catch(() => bad.forEach((c) => (c.height = NaN)));
+  }
+  const heights = pts.map((c) => (Number.isFinite(c.height) ? Math.round(c.height * 100) / 100 : NaN));
+  for (let pass = 0; pass < 2 * n && heights.some((h) => !Number.isFinite(h)); pass++)
+    for (let k = 0; k < heights.length; k++) {
+      if (Number.isFinite(heights[k])) continue;
+      // west/east neighbours only within the same row; north/south anywhere in range
+      const nb = [k - 1, k + 1, k - n, k + n].filter((q, m) => q >= 0 && q < heights.length && (m > 1 || Math.floor(q / n) === Math.floor(k / n)) && Number.isFinite(heights[q]));
+      if (nb.length) heights[k] = nb.reduce((a, q) => a + heights[q], 0) / nb.length;
+    }
+  if (heights.some((h) => !Number.isFinite(h))) throw new Error('world terrain: no heights sampled');
   // Never sample the Google photoreal mesh here: its policy forbids objects
   // derived from it, so the diorama stands on Cesium World Terrain only.
   const offset = 0;
@@ -506,6 +524,7 @@ export async function bakeGround(_viewer, fixture, { spacing = 16, half = 640 } 
     source: 'Cesium World Terrain (ion asset 1) via sampleTerrainMostDetailed (ellipsoid heights); nothing sampled from Google photoreal tiles',
     centreLatLon: fixture.centre,
     spacing, half, n, centre, offset,
+    unsampledAfterRetries: holes,
     heights,
   };
 }

@@ -3,15 +3,14 @@ import { watch } from 'vue';
 import { msg, t } from '../i18n/index.js';
 import { claimPointer, releasePointer } from '../data/inputOwnership.js';
 import {
-  isSausalitoPlot,
+  isGridPlot,
   neighborPlots,
   plotBlock,
-  plotFromId,
   plotPoint,
-  snapPlot,
-  snapSausalitoPlot,
+  snapCityPlot,
 } from '../data/cityPlot.js';
 import { cityLocation } from '../data/cityLocations.js';
+import { cityGrid } from '../data/cityGrid.js';
 import { dioramaGroundPoint, groundPoint, resolveClickedPlot } from '../data/cityPlotPick.js';
 import { observerSolarPosition } from '../data/satellitePass.js';
 import { CITY_LAND_USES, MAX_ZONED_PLOTS } from '../data/cityLandUse.js';
@@ -158,19 +157,13 @@ export function mountCityPlay({
   const scene = viewer?.scene;
   if (!scene || !doc) return { receive() {}, destroy() {} };
   const location = cityLocation(win?.location?.search);
-  const parkPlots = location?.gridPlot
-    ? plotBlock(plotFromId(location.gridPlot), plotFromId(location.gridOppositePlot))
-    : null;
-  const snap = parkPlots ? snapSausalitoPlot : snapPlot;
-  const parkDistrict = parkPlots && [{
-    id: 'd-sausalito',
-    plots: parkPlots,
-    center: plotPoint(parkPlots[0], 2, 2),
-    corners: [
-      parkPlots[0].corners[0], parkPlots[3].corners[1],
-      parkPlots.at(-1).corners[2], parkPlots.at(-4).corners[3],
-    ],
-  }];
+  // FORK-ONLY (exp/city-loop-v5): every pick snaps with snapCityPlot: inside
+  // a fitted grid's claim (cityGrid.js) only its street-aligned land cells are
+  // plots; the global grid answers elsewhere. On the diorama of a location
+  // with a grid, picks read the diorama's own surface.
+  const snap = snapCityPlot;
+  const onDiorama = () =>
+    Boolean(cityGrid(location?.key) && win?.__gevDiorama?.state.ready);
   let state = createPlayState();
   let data = {
     alternatives: null,
@@ -214,7 +207,7 @@ export function mountCityPlay({
 
   function baseHeight(plot, pickedHeight) {
     const diorama = win?.__gevDiorama;
-    if ((isSausalitoPlot(plot) || plot.id === parkDistrict?.[0].id) && diorama?.state.ready)
+    if ((isGridPlot(plot) || /^d-[a-z]+$/.test(plot.id)) && diorama?.state.ready)
       return diorama.groundAt([plot.center.lon, plot.center.lat]);
     // The first pick on a plot fixes its ground; later picks may hit our own holo.
     if (Number.isFinite(pickedHeight) && !heights.has(plot.id)) {
@@ -1165,7 +1158,7 @@ export function mountCityPlay({
       );
       if (mid) {
         const c = Cesium.Cartographic.fromCartesian(mid);
-        const near = parkDistrict ?? districtCells(
+        const near = districtCells(
           {
             lat: Cesium.Math.toDegrees(c.latitude),
             lon: Cesium.Math.toDegrees(c.longitude),
@@ -1197,9 +1190,8 @@ export function mountCityPlay({
   // --- input ---------------------------------------------------------------
   // The ground under the cursor, as the click resolver reads it.
   const pickPoint = (position) => {
-    const diorama = win?.__gevDiorama;
-    if (parkPlots && diorama?.state.ready)
-      return dioramaGroundPoint(viewer.camera, position, diorama);
+    if (onDiorama())
+      return dioramaGroundPoint(viewer.camera, position, win.__gevDiorama);
     return groundPoint(scene, viewer.camera, position);
   };
   function onClick({ position }, extend = false) {
@@ -1248,10 +1240,10 @@ export function mountCityPlay({
     hoverQueued = endPosition;
     win.requestAnimationFrame?.(() => {
       if (!hoverQueued || !state.active) return;
-      if (parkPlots) {
+      if (onDiorama()) {
         const point = pickPoint(hoverQueued);
         hoverQueued = null;
-        const plot = snap(point);
+        const plot = point && snap(point);
         if (plot?.id !== state.hover?.id) dispatch({ type: 'hover', plot });
         return;
       }

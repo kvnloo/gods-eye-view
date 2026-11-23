@@ -68,7 +68,7 @@ const PLOT = process.env.CAPTURE_PLOT || CITY_LOCATIONS[LOC]?.gridPlot || CITY_L
 // requires before any critic reads an image.
 const JUDGE_ONLY = Boolean(args['judge-only']);
 const SANITY = fileURLToPath(new URL('../critics/sanity_gate.py', import.meta.url));
-const PLACE = LOC === 'sausalito' ? 'Sausalito' : 'San Francisco';
+const PLACE = CITY_LOCATIONS[LOC]?.place ?? 'San Francisco'; // q03: the location's own place name
 // --own: after each beat shot, one more with every 3D tileset hidden (no Google pixels) for judging
 const OWN = Boolean(args.own) || JUDGE_ONLY;
 const COZY = !args['no-cozy'] && !JUDGE_ONLY;
@@ -231,7 +231,7 @@ async function settle() {
 }
 async function plotPoint(id) {
   return page.evaluate(async (plotId) => {
-    const { isSausalitoPlot, plotFromId } = await import('/src/data/cityPlot.js');
+    const { isGridPlot, plotFromId } = await import('/src/data/cityPlot.js');
     const { viewer } = window.__godsEyeView;
     const { scene } = viewer;
     const plot = plotFromId(plotId);
@@ -242,7 +242,7 @@ async function plotPoint(id) {
     );
     const s = scene.sampleHeightSupported ? scene.sampleHeight(at, exclude) : undefined;
     const diorama = window.__gevDiorama;
-    at.height = isSausalitoPlot(plot) && diorama?.state.ready
+    at.height = isGridPlot(plot) && diorama?.state.ready
       ? diorama.groundAt([center.lon, center.lat])
       : Number.isFinite(s) ? s : (scene.globe.getHeight(at) ?? 0);
     const p = scene.cartesianToCanvasCoordinates(scene.globe.ellipsoid.cartographicToCartesian(at));

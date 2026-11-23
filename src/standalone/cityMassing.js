@@ -1,13 +1,12 @@
 import * as Cesium from 'cesium';
 import { watch } from 'vue';
-import { isSausalitoPlot, plotFromId } from '../data/cityPlot.js';
+import { isGridPlot, plotFromId } from '../data/cityPlot.js';
+import { districtGrounds, plotGround } from '../data/cityGround.js';
 import { shadowReach, shadowTip, sunPosition } from '../data/citySun.js';
 import {
   MASSING_ASSUMPTIONS,
   MAX_STOREYS,
-  edgeProbes,
   edgeRing,
-  groundBase,
   localFrame,
   plotMassing,
   stepStoreys,
@@ -35,7 +34,6 @@ import { worldClock } from '../time/worldClock.js';
 import { facadeMaterial, facadeUniforms } from './cityMassingLook.js';
 import { pageLookFlags } from '../data/cityLookFlags.js';
 import {
-  districtGround,
   dustPuffs,
   pageHudFlags,
   riseShare,
@@ -53,8 +51,6 @@ const OWNER = 'city-massing';
 // never z-fights its top, and a cut photoreal mesh never shows a void.
 const PLATE_DEPTH = 0.5;
 const PLATE_RISE = 0.1;
-// The street is sampled this far outside each plot edge.
-const PROBE_METERS = 6;
 // Entity geometry builds over several frames and the app renders on demand:
 // frames keep coming until the block and plate are drawn as they now stand,
 // never longer than this.
@@ -442,20 +438,19 @@ export function mountCityMassing({
     }
   }
 
-  // The ground for a plot from the centre and the street around it.
-  function measure(plot) {
+  // The terrain a plot is stood on: the diorama's sampled surface where it is
+  // shown under a fitted-grid plot, else what the map shows (sample).
+  function terrainFor(plot) {
     const diorama = win?.__gevDiorama;
-    if (isSausalitoPlot(plot) && diorama?.state.ready) {
-      const { footprint } = plotMassing({ corners: plot.corners });
-      const heights = [...footprint, [plot.center.lon, plot.center.lat]]
-        .map((point) => diorama.groundAt(point));
-      const floor = Math.min(...heights);
-      return { floor, base: (floor + Math.max(...heights)) / 2 };
-    }
-    return groundBase(
-      sample([plot.center.lon, plot.center.lat]),
-      edgeProbes(plot.corners, PROBE_METERS).map(sample),
-    );
+    if (!isGridPlot(plot) || !diorama?.state.ready) return sample;
+    return (point) =>
+      diorama.covers?.(point) === false ? sample(point) : diorama.groundAt(point);
+  }
+
+  // The ground for a plot (src/data/cityGround.js plotGround; the inner-loop
+  // harness runs the same function on USGS terrain).
+  function measure(plot) {
+    return plotGround(plot, terrainFor(plot));
   }
 
   const shownTilesets = () =>
@@ -1445,26 +1440,15 @@ export function mountCityMassing({
     });
     if (!growth) return plan;
     const blocks = plan.stages[stage].blocks;
-    if (!stands.length && HUD.ground && !isSausalitoPlot(plots[0])) {
+    if (!stands.length && HUD.ground && !plots.some(isGridPlot)) {
       // FORK-ONLY (?cityHud=ground): every plot is sampled BEFORE any is cut
       // (a later plot's probes otherwise fall into its neighbours' holes or
       // onto their roofs: round-1 plates stood 35 m apart), one ground is
       // fitted to the district, and each plate reaches down to that ground's
       // lowest point, so a slope steps like terraces instead of opening onto
       // the void under the cut tiles. A skirt closes the district's edge.
-      const frame = localFrame(plots.map((p) => [p.center.lon, p.center.lat]));
-      const lows = plots.map((plot) => {
-        const heights = [
-          sample([plot.center.lon, plot.center.lat]),
-          ...edgeProbes(plot.corners, PROBE_METERS).map(sample),
-        ].filter(Number.isFinite);
-        const [x, y] = frame.toMeters([plot.center.lon, plot.center.lat]);
-        return { x, y, h: heights.length ? Math.min(...heights) : NaN };
-      });
-      const fitted = districtGround(lows);
-      const grounds = lows.map(({ x, y }) =>
-        fitted ? { base: fitted.at(x, y), floor: fitted.floor - 1 } : null,
-      );
+      // Fitted-grid plots skip this: each stands on its own footprint.
+      const { grounds, fitted } = districtGrounds(plots, sample, { fit: true });
       stands = plots.map((plot, i) => {
         const ground = grounds[i];
         const massing = plotMassing({

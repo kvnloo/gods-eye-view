@@ -13,6 +13,7 @@
 //             tint) and the rise-from-ground build with a dust puff
 //     drape   a concept is projected onto the photoreal ground of its plot
 import { growthPlan } from './cityGrowth.js';
+import { gridAt, gridDistrict } from './cityGrid.js';
 import {
   METERS_PER_DEGREE,
   PLOT_METERS,
@@ -191,6 +192,14 @@ export const PERSONS_PER_HOME = 2.3;
  * `growth` is the published timeline `{stage, plan}` or null; `massing` the
  * one block's `{homes}` or null; `turn` counts kept worlds.
  */
+/** What the HUD shows for an unknown place (I2: never a guessed city). */
+export const UNKNOWN_PLACE = '—';
+
+/** The place text for the top bar: the name, or a dash when unknown. */
+export function placeText(name) {
+  return typeof name === 'string' && name.trim() ? name : UNKNOWN_PLACE;
+}
+
 export function topBarModel({
   place = null,
   growth = null,
@@ -275,6 +284,9 @@ export const DISTRICT_SIDE = 5;
  * district's are).
  */
 export function districtCells(point, radius = 1, side = DISTRICT_SIDE) {
+  // A fitted grid's claim is one district: its own street-aligned plots.
+  const grid = gridAt(point);
+  if (grid) return grid.plots().length ? [gridDistrict(grid)] : [];
   if (!snapPlot(point)) return [];
   const step = side * PLOT_METERS;
   const ky = METERS_PER_DEGREE;

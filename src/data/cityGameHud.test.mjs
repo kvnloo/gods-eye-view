@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   CITY_HUD_PARTS,
+  UNKNOWN_PLACE,
+  placeText,
   PERSONS_PER_HOME,
   RISE_MS,
   TRAY_CATEGORIES,
@@ -159,10 +161,26 @@ test('district cells: 3 x 3 cells of 25 grid plots each, no plot twice', () => {
   assert.ok(cells.every((c) => c.plots.length === 25));
   assert.equal(new Set(ids).size, ids.length);
   for (const id of ids.slice(0, 30)) assert.ok(plotFromId(id));
-  // The middle cell holds the plot under the point it was asked about.
-  const plot = plotFromId('plot-n105201-126637');
+  // The middle cell holds the plot under the point it was asked about (here
+  // outside every fitted grid's claim: the global grid answers).
+  const plot = plotFromId('plot-n105185-126637');
   const middle = districtCells(plot.center, 1)[4];
   assert.ok(middle.plots.some((p) => p.id === plot.id));
+});
+
+test('district cells: inside a fitted grid claim, one district of its own street-aligned plots', () => {
+  const cells = districtCells({ lat: 37.8611, lon: -122.4879 }, 1);
+  assert.equal(cells.length, 1);
+  assert.equal(cells[0].id, 'd-sausalito');
+  assert.equal(cells[0].plots.length, 16);
+  assert.ok(cells[0].plots.every((p) => p.id.startsWith('plot-sausalito-')));
+});
+
+test('place text: a name, or a dash when unknown (never a guessed city)', () => {
+  assert.equal(placeText('Sausalito'), 'Sausalito');
+  assert.equal(placeText(null), '—');
+  assert.equal(placeText('  '), '—');
+  assert.equal(UNKNOWN_PLACE, '—');
 });
 
 test('cell yield: plots, hectares and the growth homes range, estimated', () => {

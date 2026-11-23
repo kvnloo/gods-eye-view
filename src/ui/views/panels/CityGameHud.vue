@@ -9,7 +9,8 @@ import { useCityPlayStore } from '../../stores/cityPlay.js';
 import { hudFigure } from '../../cityHudFigure.js';
 import { MAX_ZONED_PLOTS } from '../../../data/cityLandUse.js';
 import { nearestCity } from '../../../data/wikidataCities.js';
-import { pageHudFlags, tickFigure, topBarModel, trayModel, trayShortcut } from '../../../data/cityGameHud.js';
+import { pageHudFlags, placeText, tickFigure, topBarModel, trayModel, trayShortcut } from '../../../data/cityGameHud.js';
+import { cityPlaceName } from '../../../data/cityLocations.js';
 
 // FORK-ONLY (exp/city-game-hud, ?cityHud=game|bar): the game HUD of play
 // mode, after the owner's wintercats references: one slim top resource bar and
@@ -24,24 +25,38 @@ const BODY_CLASS = 'gev-city-hud-bar';
 onMounted(() => flags.bar && document.body.classList.add(BODY_CLASS));
 onBeforeUnmount(() => document.body.classList.remove(BODY_CLASS));
 
-// --- the place: the nearest city in GEV's own Wikidata city table ---------
+// --- the place (q03): named from where the player is building -------------
+// The selected plot's centre (else the camera), then cityPlaceName: a QA location's own place, else the
+// city GEV's Wikidata table finds nearest that point within 5 km (never the
+// most populous city in 12 km of the camera: that named Sausalito "San
+// Francisco"). Unknown stays a dash (placeText).
 const place = ref(null);
 let placeFor = '';
 watch(
   () => view.value?.active && (view.value?.plot?.id ?? 'none'),
   async () => {
-    const at = window.__godsEyeView?.viewer?.camera?.positionCartographic;
-    if (!at) return;
-    const lat = (at.latitude * 180) / Math.PI;
-    const lon = (at.longitude * 180) / Math.PI;
-    const key = `${lat.toFixed(2)},${lon.toFixed(2)}`;
+    const plot = view.value?.plot;
+    let lat = plot?.center?.lat;
+    let lon = plot?.center?.lon;
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+      const at = window.__godsEyeView?.viewer?.camera?.positionCartographic;
+      if (!at) return;
+      lat = (at.latitude * 180) / Math.PI;
+      lon = (at.longitude * 180) / Math.PI;
+    }
+    const key = `${lat.toFixed(3)},${lon.toFixed(3)}`;
     if (key === placeFor) return;
     placeFor = key;
+    const own = cityPlaceName({ lat, lon });
+    if (own) {
+      place.value = own;
+      return;
+    }
     try {
-      const city = await nearestCity(lat, lon);
-      place.value = city?.name ?? null;
+      const city = await nearestCity(lat, lon, { radiusKm: 5, nearKm: 0 });
+      if (placeFor === key) place.value = cityPlaceName({ lat, lon }, { nearest: city });
     } catch {
-      place.value = null;
+      if (placeFor === key) place.value = null;
     }
   },
   { immediate: true },
@@ -177,7 +192,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
     <header class="city-game-top" data-city-game-top :aria-label="t('City resources')">
       <span class="city-game-place" data-city-game-place>
         <UiIcon name="location_city" :size="15" />
-        <span translate="no">{{ bar.place ?? t('City') }}</span>
+        <span translate="no">{{ placeText(bar.place) }}</span>
       </span>
       <span class="city-game-sep" aria-hidden="true"></span>
       <span v-for="chip in bar.chips.filter((c) => c.shown)" :key="chip.id" class="city-game-chip" :class="{ 'is-bumped': bump[chip.id] }" :data-city-game-chip="chip.id" :title="chip.id === 'residents' ? t('Homes × 2.3 people (assumed)') : undefined">

@@ -73,11 +73,9 @@ export const TRAY_CATEGORIES = Object.freeze([
     id: 'build',
     icon: 'view_in_ar',
     key: '2',
-    tools: Object.freeze([
-      { id: 'massing', icon: 'view_in_ar', verb: 'massing' },
-      { id: 'reimagine', icon: 'auto_awesome', verb: 'act' },
-      { id: 'inspect', icon: 'search', verb: 'act' },
-    ]),
+    // The plot's wheel already holds Reimagine and Inspect: the tray does not
+    // repeat them (round-1 panel: repeated verbs read as clutter).
+    tools: Object.freeze([{ id: 'massing', icon: 'view_in_ar', verb: 'massing' }]),
   }),
   Object.freeze({
     id: 'park',
@@ -218,9 +216,9 @@ export function topBarModel({
           estimate: true,
         }
       : { value: null, estimate: true };
-  return {
-    place,
-    chips: [
+  // A chip with no figure is left off the bar (`shown` false), as the
+  // parent's stats bar does: a row of dashes read as clutter (round-1 panel).
+  const chips = [
       { id: 'residents', ...residents },
       {
         id: 'homes',
@@ -236,7 +234,10 @@ export function topBarModel({
       },
       { id: 'concepts', value: stat('concepts') },
       { id: 'trees', value: stat('trees'), estimate: true },
-    ],
+  ].map((c) => ({ ...c, shown: Number.isFinite(c.value) }));
+  return {
+    place,
+    chips,
     goals: goals.slice(0, 2),
     turn: {
       kept,

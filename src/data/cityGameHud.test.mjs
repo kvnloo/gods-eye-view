@@ -48,13 +48,10 @@ test('tray: five categories with unique shortcuts, build open by default', () =>
   assert.equal(new Set(keys).size, keys.length);
   const m = trayModel({ plot: true });
   assert.equal(m.open, 'build');
+  // The wheel holds Reimagine and Inspect; the tray does not repeat them.
   assert.deepEqual(
     m.tools.map((t) => [t.id, t.key]),
-    [
-      ['massing', 'q'],
-      ['reimagine', 'w'],
-      ['inspect', 'e'],
-    ],
+    [['massing', 'q']],
   );
   assert.ok(m.tools.every((t) => !t.disabled));
 });
@@ -79,11 +76,20 @@ test('tray: the zoning budget blocks a new use but not the plot’s own', () => 
 });
 
 test('tray: a pending concept blocks concept tools; massing stays', () => {
-  const m = trayModel({ category: 'build', plot: true, pending: true });
-  const by = Object.fromEntries(m.tools.map((t) => [t.id, t]));
-  assert.equal(by.reimagine.reason, 'pending');
-  assert.equal(by.massing.disabled, false);
-  assert.equal(by.inspect.disabled, false);
+  const build = trayModel({ category: 'build', plot: true, pending: true });
+  assert.equal(build.tools[0].disabled, false);
+  const park = trayModel({ category: 'park', plot: true, pending: true });
+  assert.ok(park.tools.every((t) => t.reason === 'pending'));
+  const full = trayModel({ category: 'transit', plot: true, full: true });
+  assert.equal(full.tools[0].reason, 'full');
+});
+
+test('top bar: only known figures are drawn (no row of dashes)', () => {
+  const m = topBarModel({ zoned: 0, zoneCap: 60 });
+  assert.deepEqual(
+    m.chips.filter((c) => c.shown).map((c) => c.id),
+    ['zoning'],
+  );
 });
 
 test('shortcuts: digits open categories, letters pick tools, modifiers never', () => {

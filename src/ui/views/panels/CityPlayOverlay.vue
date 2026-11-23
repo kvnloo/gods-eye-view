@@ -50,7 +50,7 @@ const moveRows = computed(() => Math.max(0, ...(view.value?.cards ?? []).map((c)
 const inset = computed(() => ({
   top: mobile.value ? 196 : 128,
   // The game HUD's tray (?cityHud=bar) stands in for the carousel: ~230 px.
-  bottom: mobile.value ? 176 : hud.bar ? 236 : showCarousel.value ? 372 + 30 * moveRows.value : 120,
+  bottom: mobile.value ? 176 : hud.bar ? 260 : showCarousel.value ? 372 + 30 * moveRows.value : 120,
   side: 12,
   ...(view.value?.legend && !mobile.value ? { left: 376 } : {}),
 }));

@@ -181,7 +181,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
         <span translate="no">{{ bar.place ?? t('City') }}</span>
       </span>
       <span class="city-game-sep" aria-hidden="true"></span>
-      <span v-for="chip in bar.chips" :key="chip.id" class="city-game-chip" :class="{ 'is-bumped': bump[chip.id] }" :data-city-game-chip="chip.id" :title="chip.id === 'residents' ? t('Homes × 2.3 people (assumed)') : undefined">
+      <span v-for="chip in bar.chips.filter((c) => c.shown)" :key="chip.id" class="city-game-chip" :class="{ 'is-bumped': bump[chip.id] }" :data-city-game-chip="chip.id" :title="chip.id === 'residents' ? t('Homes × 2.3 people (assumed)') : undefined">
         <UiIcon :name="chipIcon[chip.id]" :size="15" />
         <span class="city-game-chip-label">{{ chipLabel[chip.id] }}</span>
         <strong translate="no">{{ chipText(chip) }}</strong>

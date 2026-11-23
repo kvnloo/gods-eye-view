@@ -43,7 +43,7 @@ export const DIORAMA_DEFAULTS = Object.freeze({
   tiltY: 0.55, // focus band centre, fraction of the frame height from the top
   mist: 0.85, // strength of the mist bank on the photoreal just outside the cut (r4)
   mistW: 70, // its width, metres
-  warm: 0, // 1: the photoreal context takes a warm palette pull instead of grey haze
+  warm: 1, // (r7) 1: the photoreal context takes a warm palette pull instead of grey haze
   fx: 'r700', // r520 | r700 (wider OSM fixture; needed for radius > 500)
   lod: 1, // (r6) 1: lighter tree prototypes (2-tier pines, 1-2 crown blobs) for software renderers
   instanced: 1, // trees as EXT_mesh_gpu_instancing prototypes (0: merged into one mesh)

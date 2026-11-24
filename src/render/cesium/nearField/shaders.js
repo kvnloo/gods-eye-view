@@ -65,7 +65,9 @@ void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
   vec3 p = (u_nfEyeToLocal * vec4(pEC, 1.0)).xyz;
   float d = length(p.xy - u_nfCentre);
   float R = u_nfBubble.x;
-  float a = (1.0 - smoothstep(R * (1.0 - u_nfBubble.y), R, d)) * u_nfBubble.w;
+  // a long, gentle fade for big flat water (a short one reads as a ring); the tile part
+  // still hides the map only where this is fully opaque (d < R * (1 - edge))
+  float a = (1.0 - smoothstep(R * 0.35, R, d)) * u_nfBubble.w;
   vec4 c = fsInput.attributes.color_0;
   vec3 v = normalize(-pEC);
   vec3 upEC = normalize(czm_normal * vec3(0.0, 0.0, 1.0));
@@ -107,8 +109,10 @@ void nfClip(FragmentInput fsInput, inout czm_modelMaterial material) {
     return;
   }
   if (m.r <= 0.5) {
-    // our water is translucent where it fades: hide the tile only under fully opaque water
-    if (a >= 0.999) discard;
+    // our water is translucent where it fades (WATER_FS: 0.35 R .. R): hide the tile only
+    // under fully opaque water
+    float aw = (1.0 - smoothstep(R * 0.35, R, d)) * u_nfcBubble.z;
+    if (aw >= 0.999) discard;
     return;
   }
   if (nfIgn(gl_FragCoord.xy) < a) discard;

@@ -9,6 +9,11 @@ const generator = createCellGenerator();
 self.onmessage = async (event) => {
   const { id, job } = event.data ?? {};
   try {
+    if (job.phase === 'prepare') {
+      const out = await generator.prepare(job);
+      self.postMessage({ id, ok: true, out, data: { ...generator.stats } }, [out.points.buffer]);
+      return;
+    }
     const out = await generator.generate(job);
     const transfer = [out.main?.buffer, out.trees?.buffer].filter(Boolean);
     self.postMessage({ id, ok: true, out, data: { ...generator.stats } }, transfer);

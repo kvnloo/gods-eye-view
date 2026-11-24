@@ -57,16 +57,44 @@ export function createCellGenerator({
     p.catch(() => tiles.delete(key));
     return p;
   }
+  const fixtures = createLru(48);
+  async function fixtureOf(cell) {
+    const key = tileKey(cell);
+    if (fixtures.has(key)) return fixtures.get(key);
+    const fx = cellFixture(await dataTile(cell), cell);
+    fixtures.set(key, fx);
+    return fx;
+  }
   return {
     stats,
     /**
-     * @param {{cell:{z:number,x:number,y:number}, ground:object, kit?:string, kitOverrides?:object, trees?:number}} job
+     * Phase 1: the cell's building footprint vertices (local metres, flat
+     * [x0, y0, x1, y1, ...]) so the renderer can sample World Terrain at each
+     * of them exactly (a grid would float buildings on steep slopes).
      */
-    async generate({ cell, ground, kit = 'realism', kitOverrides = {}, trees = 1 }) {
+    async prepare({ cell }) {
+      const fx = await fixtureOf(cell);
+      const n = fx.buildings.reduce((a, b) => a + b.p.length, 0);
+      const points = new Float64Array(n * 2);
+      let k = 0;
+      for (const b of fx.buildings) for (const [x, y] of b.p) ((points[k++] = x), (points[k++] = y));
+      return { points, centre: fx.centre };
+    },
+    /**
+     * Phase 2 (or the whole job when `vertexHeights` is absent: heights then
+     * come from the ground grid alone).
+     * @param {{cell:{z:number,x:number,y:number}, ground:object, vertexHeights?:Float32Array|number[], kit?:string, kitOverrides?:object, trees?:number}} job
+     */
+    async generate({ cell, ground, vertexHeights = null, kit = 'realism', kitOverrides = {}, trees = 1 }) {
       const t0 = Date.now();
-      const data = await dataTile(cell);
+      const fixture = await fixtureOf(cell);
       const t1 = Date.now();
-      const fixture = cellFixture(data, cell);
+      if (vertexHeights) {
+        let k = 0;
+        for (const b of fixture.buildings) {
+          b.hz = Array.from({ length: b.p.length }, () => vertexHeights[k++]);
+        }
+      }
       const built = buildCell(fixture, ground, kitOf(kit, kitOverrides), { trees });
       const t2 = Date.now();
       const main = writeGlb({ soup: built.soup });

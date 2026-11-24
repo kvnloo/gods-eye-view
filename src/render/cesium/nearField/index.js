@@ -100,6 +100,34 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
     return null;
   };
 
+  /** sampleTerrainMostDetailed, re-asking points whose tile failed (throttled 429s leave NaN). */
+  async function sampleRetrying(tp, pts) {
+    await Cesium.sampleTerrainMostDetailed(tp, pts);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const bad = pts.filter((c) => !Number.isFinite(c.height));
+      if (!bad.length) break;
+      await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+      bad.forEach((c) => (c.height = 0));
+      await Cesium.sampleTerrainMostDetailed(tp, bad, true).catch(() => bad.forEach((c) => (c.height = NaN)));
+    }
+    return pts;
+  }
+
+  /** World Terrain at each footprint vertex (local metres around `centre`); NaN where unavailable. */
+  async function samplePoints(points, centre) {
+    const tp = terrainNow();
+    const out = new Float32Array(points.length / 2);
+    if (!tp) return out; // ellipsoid
+    const pts = [];
+    for (let k = 0; k < points.length; k += 2) {
+      const g = fromLocal(points[k], points[k + 1], centre);
+      pts.push(Cesium.Cartographic.fromDegrees(g.lon, g.lat));
+    }
+    if (pts.length) await sampleRetrying(tp, pts);
+    pts.forEach((c, k) => (out[k] = Number.isFinite(c.height) ? c.height : NaN));
+    return out;
+  }
+
   async function sampleGrid(cell) {
     const centre = tileCentre(cell);
     const side = tileSizeM(cell);
@@ -114,7 +142,7 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
           const g = fromLocal(-half + i * spacing, -half + j * spacing, centre);
           pts.push(Cesium.Cartographic.fromDegrees(g.lon, g.lat));
         }
-      await Cesium.sampleTerrainMostDetailed(terrain, pts);
+      await sampleRetrying(terrain, pts);
       pts.forEach((c, k) => (heights[k] = Number.isFinite(c.height) ? Math.round(c.height * 100) / 100 : NaN));
       const finite = heights.filter(Number.isFinite);
       const fill = finite.length ? finite.reduce((a, b) => a + b, 0) / finite.length : 0;
@@ -303,10 +331,11 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
     cells.set(c.key, entry);
     state.pending.add(c.key);
     try {
-      const ground = await sampleGrid(entry.cell);
+      const prep = await runJob({ phase: 'prepare', cell: entry.cell });
+      const [ground, vertexHeights] = await Promise.all([sampleGrid(entry.cell), samplePoints(prep.points, prep.centre)]);
       entry.ground = ground;
       entry.terrain = terrainNow() ? terrainSource : 'ellipsoid';
-      const out = await runJob({ cell: entry.cell, ground, kit: look.kit, kitOverrides: look.colours ?? {}, trees: look.trees ?? 1 });
+      const out = await runJob({ cell: entry.cell, ground, vertexHeights, kit: look.kit, kitOverrides: look.colours ?? {}, trees: look.trees ?? 1 });
       const modelMatrix = enuOf(entry.centre.lat, entry.centre.lon);
       // Cesium caches typed-array glTFs by basePath alone (ResourceCacheKey
       // "gltf:<basePath>"): without a unique one every cell gets the first model.
@@ -468,7 +497,7 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
       };
     },
     cells: () =>
-      cells.values().map((e) => ({ key: e.key, status: e.status, needed: needed.has(e.key), appear: e.appear, stats: e.stats, error: e.error })),
+      cells.values().map((e) => ({ key: e.key, status: e.status, needed: needed.has(e.key), shown: !!e.main?.show, appear: e.appear, stats: e.stats, error: e.error })),
     setEnabled(on) {
       state.enabled = !!on;
       scene.requestRender?.();

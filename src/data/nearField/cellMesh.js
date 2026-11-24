@@ -299,7 +299,8 @@ export function buildCell(fixture, ground, kit = NEAR_FIELD_KITS.realism, opts =
         continue;
       }
     }
-    const cornersZ = outer.map(([x, y]) => gz(x, y));
+    // exact World Terrain heights at the footprint vertices when the renderer sampled them
+    const cornersZ = b.hz?.length === outer.length && b.hz.every(Number.isFinite) ? b.hz : outer.map(([x, y]) => gz(x, y));
     const zMin = Math.min(...cornersZ);
     const zMean = cornersZ.reduce((a, z) => a + z, 0) / cornersZ.length;
     let z0 = zMin - SKIRT;
@@ -408,7 +409,8 @@ export function buildCell(fixture, ground, kit = NEAR_FIELD_KITS.realism, opts =
     const ncol = kind === 'pine' ? kit.pine.length : autumn ? kit.autumn.length : kit.leaf.length;
     const key = `${kind}:${Math.floor(rp() * 3)}:${Math.floor(rp() * ncol)}:${autumn ? 1 : 0}`;
     const k = scale * (0.85 + rp() * 0.45);
-    proto(key).instances.push([x, y, gz(x, y) - 0.8, k, rp() * Math.PI * 2]);
+    // sunk a little: the grid is bilinear between 20 m samples
+    proto(key).instances.push([x, y, gz(x, y) - 1.2, k, rp() * Math.PI * 2]);
     treeCount++;
   };
   const density = Math.max(0.05, kit.density ?? 1) * (opts.trees ?? 1);

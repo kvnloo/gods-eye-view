@@ -104,6 +104,14 @@ const WINTERCATS = {
   },
   textures: { lutTexture: '/themes/luts/wintercats.png' },
   quality: DESKTOP_HIGH,
+  // near-field bubble (?nearField=1): Norse timber walls, turf/slate roofs, dark conifers
+  nearField: {
+    kit: 'norse',
+    key: 0.78,
+    ambient: 0.58,
+    shadow: [0.46, 0.44, 0.58],
+    warm: [1.0, 0.94, 0.84],
+  },
 };
 
 // "Enhanced realism", in the spirit of the BotW "Digital Dreams" ReShade
@@ -156,6 +164,7 @@ const ENHANCED = {
   },
   textures: {},
   quality: DESKTOP_HIGH,
+  nearField: { kit: 'realism', key: 0.85, ambient: 0.5, warm: [1.0, 0.95, 0.86] },
 };
 
 // The old ?look=cozy chain re-expressed as a preset (paint + palette-ish grade).
@@ -173,6 +182,7 @@ const COZY = {
     vignette: { vignette: 0.32 },
   },
   textures: { lutTexture: '/themes/luts/wintercats.png' },
+  nearField: { kit: 'mix', key: 0.75, ambient: 0.62 },
 };
 
 const NONE = {
@@ -258,8 +268,43 @@ export function normalizePreset(input, { customIds = [] } = {}) {
       textures,
       effects: Array.isArray(input.effects) ? input.effects : [],
       quality: normalizeQuality(input.quality, problems),
+      nearField: normalizeNearField(input.nearField, problems),
     },
     problems,
+  };
+}
+
+const NEAR_FIELD_KIT_NAMES = new Set(['norse', 'realism', 'mix']);
+const isRgb = (v) =>
+  Array.isArray(v) && v.length === 3 && v.every((x) => Number.isFinite(x) && x >= 0 && x <= 4);
+
+/**
+ * A preset's near-field block (exp/near-field-v0): which asset kit the
+ * bubble's generated buildings and trees use, its light, and optional kit
+ * overrides (`colours`: palette lists of #rrggbb). Null when absent: the
+ * bubble then uses the neutral `realism` kit.
+ */
+export function normalizeNearField(q, problems = []) {
+  if (q == null) return null;
+  if (typeof q !== 'object') {
+    problems.push('bad nearField block');
+    return null;
+  }
+  const num = (v, lo, hi, d) => (Number.isFinite(v) && v >= lo && v <= hi ? v : d);
+  const kit = NEAR_FIELD_KIT_NAMES.has(q.kit) ? q.kit : 'realism';
+  if (q.kit != null && kit !== q.kit) problems.push(`unknown nearField kit ${q.kit}`);
+  const colours = {};
+  for (const [k, v] of Object.entries(q.colours ?? {}))
+    if (Array.isArray(v) ? v.every((c) => /^#[0-9a-f]{6}$/i.test(c)) : /^#[0-9a-f]{6}$/i.test(v)) colours[k] = v;
+    else problems.push(`bad nearField colour ${k}`);
+  return {
+    kit,
+    key: num(q.key, 0, 2, 0.8),
+    ambient: num(q.ambient, 0, 2, 0.55),
+    shadow: isRgb(q.shadow) ? [...q.shadow] : [0.5, 0.5, 0.56],
+    warm: isRgb(q.warm) ? [...q.warm] : [1, 0.97, 0.92],
+    trees: num(q.trees, 0, 3, 1),
+    colours,
   };
 }
 

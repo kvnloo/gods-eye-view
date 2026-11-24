@@ -147,6 +147,8 @@ export const TILE_UNIFORMS = Object.freeze({
   osmDelight: f(0.85, 0, 1, 0.01, 'OSM: de-light on mapped surfaces (calmer)'),
   osmStrength: f(0, 0, 1, 0.01, 'OSM: strength floor on mapped surfaces'),
   osmRoof: f(1, 0, 1, 0.01, 'OSM: one roof colour per building'),
+  osmEdge: f(0, 0, 1, 0.01, 'OSM: roof eave line along footprints (crisp)'),
+  osmEdgeM: f(2.5, 0.5, 8, 0.1, 'OSM: eave line width (m)'),
   shallowM: f(30, 2, 120, 1, 'Shallows width (m from shore)'),
   foamM: f(3, 0, 20, 0.5, 'Shore foam width (m)'),
   foamAmt: f(0.35, 0, 1, 0.01, 'Shore foam'),
@@ -306,7 +308,7 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
   // a CPU double-precision eye matrix; ENU -> web-mercator tile units by a
   // second-order expansion (data/osmMask/maskMath.js localToTile). Manual
   // bilinear over 4 texelFetch taps: ids (B) must not be filtered.
-  float oValid = 0.0, oShore = -64.0, oGrass = 0.0, oForest = 0.0, oBld = 0.0, oRoad = 0.0, oId = 0.0;
+  float oValid = 0.0, oShore = -64.0, oGrass = 0.0, oForest = 0.0, oBld = 0.0, oRoad = 0.0, oId = 0.0, oEdgeD = 0.0;
   vec2 pL = vec2(0.0);
   if ((u_th_osm > 0.001 || u_th_debugOsm > 0.5) && u_th_osmInfo.x > 0.001 && u_th_osmInfo.w > 0.5) {
     pL = (u_th_osmEyeToLocal * vec4(pEC, 1.0)).xy;
@@ -326,7 +328,7 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
       vec4 rr = vec4(t00.r, t10.r, t01.r, t11.r);
       vec4 gg = vec4(t00.g, t10.g, t01.g, t11.g) * 255.0;
       vec4 ib = vec4(t00.b, t10.b, t01.b, t11.b) * 255.0;
-      vec4 aa = vec4(t00.a, t10.a, t01.a, t11.a);
+      vec4 aa = vec4(t00.a, t10.a, t01.a, t11.a) * 255.0;
       oShore = (dot(rr, wq) * 255.0 - 127.5) * 0.5;
       oGrass = dot(step(64.0, gg) * (1.0 - step(192.0, gg)), wq);
       oForest = dot(step(192.0, gg), wq);
@@ -340,7 +342,9 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
       oId = m1 == bw4.x ? ib.x : (m1 == bw4.y ? ib.y : (m1 == bw4.z ? ib.z : ib.w));
       // fade over the outer tile of the atlas and with the global fade
       float edgeT = min(min(X, Y) + halfN, halfN - max(X, Y));
-      oValid = dot(aa, wq) * smoothstep(0.15, 1.2, edgeT) * u_th_osmInfo.x;
+      oValid = dot(step(0.5, aa), wq) * smoothstep(0.15, 1.2, edgeT) * u_th_osmInfo.x;
+      // metres from the footprint edge inside buildings (A: 1 + 20 m)
+      oEdgeD = dot(max(aa - 1.0, 0.0), wq) / 20.0;
     }
   }
   float osmW = oValid * u_th_osm;
@@ -424,6 +428,10 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
     roofO *= 0.94 + 0.12 * fract(oId * 0.3819660 + 0.71);
     vec3 bldC = mix(czm_srgbToLinear(u_th_wall), roofO, 1.0 - wallW);
     pal = mix(pal, bldC, oB * osmW * u_th_osmRoof * (1.0 - 0.6 * vegKeep));
+    // eave line: a darker rim just inside each OSM footprint, on roofs only
+    // (crisp painted roof edges; world-anchored, so it does not shimmer)
+    float rim = smoothstep(0.3, 0.6, oBld) * (1.0 - smoothstep(0.5 * u_th_osmEdgeM, u_th_osmEdgeM, oEdgeD));
+    pal *= 1.0 - u_th_osmEdge * 0.45 * rim * osmW * (1.0 - wallW) * (1.0 - vegKeep);
     // parks / grass: moss green with a soft world-anchored mottle; woods: dark conifer
     float mt = th_vnoise(pL / 9.0) * 0.7 + th_vnoise(pL / 3.3) * 0.3 - 0.5;
     vec3 grassO = czm_srgbToLinear(u_th_grass) * (1.0 + 2.0 * u_th_mottle * mt);

@@ -168,6 +168,10 @@ test('mask tile raster: classes, shore distance, building ids', () => {
   const b1 = at(87, 87).building;
   const b2 = at(106, 87).building;
   assert.ok(b1 >= 2 && b2 >= 2);
+  // A: metres from the footprint edge inside a building (eave lines), 0 outside
+  assert.equal(at(70, 87).edgeM, 0);
+  assert.ok(at(81, 87).edgeM > 0 && at(81, 87).edgeM < at(82, 87).edgeM, `${at(81, 87).edgeM} ${at(82, 87).edgeM}`);
+  assert.ok(Math.abs(at(81, 87).edgeM - 0.5 * mpp) < 0.1, `${at(81, 87).edgeM} vs ${0.5 * mpp}`);
   // shore distance grows away from the shore line (x = 128 texels), in metres
   const s1 = at(130, 100).shoreM;
   const s2 = at(133, 100).shoreM;
@@ -202,7 +206,7 @@ test('mask generator fetches each data tile once and rasterises from a stub', as
   const gen = createMaskGenerator({ fetchImpl, tileJsonUrl: 'https://x/planet' });
   const a = await gen.maskTile({ z: 16, x: 401, y: 801 });
   const b = await gen.maskTile({ z: 16, x: 402, y: 801 });
-  assert.equal(a.rgba[3], 255);
+  assert.equal(a.rgba[3], 1); // loaded, no building
   assert.equal(a.rgba[0] < 128, true); // no water
   assert.equal(b.features, 0);
   assert.equal(fetches, 2); // tilejson + one data tile (cached for the second mask tile)

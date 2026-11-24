@@ -10,7 +10,9 @@
  *   G  vegetation: 0 none, 128 grass / park / meadow, 255 wood / forest
  *   B  surface id (read nearest): 0 ground, 1 road, 2..255 building id
  *      (a hash of the footprint centroid: one roof colour per building)
- *   A  255 = covered by OSM data (0 = not loaded: the classifier decides)
+ *   A  0 = not loaded (the classifier decides); loaded: 1 + 20 * metres from the
+ *      footprint edge inside a building (1 outside; 255 = 12.7 m or more): roof
+ *      eave lines of a fixed width in metres
  *
  * Pure (typed arrays only): runs in the mask worker and in node tests. The
  * data is (c) OpenStreetMap contributors (ODbL), kept in memory only.
@@ -246,6 +248,9 @@ export function rasteriseMaskTile(tile, datas, { px = TILE_PX, pad = PAD_PX } = 
     const dWater = distanceTransform(W, W, (i) => water[i] === 1);
     sd = (i) => (water[i] ? dLand[i] - 0.5 : -(dWater[i] - 0.5)) * mpp;
   }
+  let anyBuilding = false;
+  for (let i = 0; i < N; i++) if (id[i] >= 2) { anyBuilding = true; break; }
+  const dEdge = anyBuilding ? distanceTransform(W, W, (i) => id[i] < 2) : null;
   for (let j = 0; j < px; j++)
     for (let i = 0; i < px; i++) {
       const g = (j + pad) * W + (i + pad);
@@ -254,7 +259,7 @@ export function rasteriseMaskTile(tile, datas, { px = TILE_PX, pad = PAD_PX } = 
       out[o] = Math.max(0, Math.min(255, Math.round(127.5 + 2 * m)));
       out[o + 1] = veg[g];
       out[o + 2] = id[g];
-      out[o + 3] = 255;
+      out[o + 3] = id[g] >= 2 && dEdge ? Math.min(255, 1 + Math.round(Math.max(0, dEdge[g] - 0.5) * mpp * 20)) : 1;
     }
   return { rgba: out, features, mpp };
 }
@@ -267,5 +272,6 @@ export const decodeTexel = (r, g, b, a) => ({
   forest: g >= 192,
   road: b === 1,
   building: b >= 2 ? b : 0,
-  valid: a > 127,
+  valid: a > 0,
+  edgeM: a > 0 ? (a - 1) / 20 : 0,
 });

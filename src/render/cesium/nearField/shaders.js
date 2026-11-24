@@ -37,15 +37,31 @@ void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
   vec3 upEC = normalize(czm_normal * vec3(0.0, 0.0, 1.0));
   float sky = 0.5 + 0.5 * dot(n, upEC);
   vec3 amb = mix(u_nfShadow, vec3(1.0), 0.35 + 0.65 * sky) * u_nfLight.y;
-  vec3 col = c.rgb * (amb + u_nfWarm * key * u_nfLight.x);
-  if (c.a < 0.6) {
-    // water: sky tint toward grazing angles, gentle ripple glints
-    float fres = pow(1.0 - abs(dot(n, normalize(-pEC))), 3.0);
-    float rip = sin(p.x * 0.9 + czm_frameNumber * 0.02) * sin(p.y * 1.1 - czm_frameNumber * 0.017);
-    col = c.rgb * (0.75 + 0.25 * u_nfLight.y) + fres * 0.18 * u_nfWarm + max(rip - 0.85, 0.0) * 0.35;
-  }
-  material.diffuse = col;
+  material.diffuse = c.rgb * (amb + u_nfWarm * key * u_nfLight.x);
   material.alpha = 1.0;
+}
+`;
+
+/**
+ * Water (translucent pass): no dither. Opacity = vertex alpha (0 at shores and
+ * marina cut-outs) x a smooth radial fade, so the surface melts into the map's
+ * own water; the tile is hidden only under the fully opaque interior.
+ */
+export const WATER_FS = /* glsl */ `
+void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
+  vec3 pEC = fsInput.attributes.positionEC;
+  vec3 p = (u_nfEyeToLocal * vec4(pEC, 1.0)).xyz;
+  float d = length(p.xy - u_nfCentre);
+  float R = u_nfBubble.x;
+  float a = (1.0 - smoothstep(R * (1.0 - u_nfBubble.y), R, d)) * u_nfBubble.w;
+  vec4 c = fsInput.attributes.color_0;
+  vec3 v = normalize(-pEC);
+  vec3 upEC = normalize(czm_normal * vec3(0.0, 0.0, 1.0));
+  float fres = pow(1.0 - abs(dot(upEC, v)), 4.0);
+  float rip = sin(p.x * 0.9 + czm_frameNumber * 0.02) * sin(p.y * 1.1 - czm_frameNumber * 0.017);
+  vec3 col = c.rgb * (0.7 + 0.3 * u_nfLight.y) + fres * 0.16 * u_nfWarm + max(rip - 0.88, 0.0) * 0.3 * u_nfWarm;
+  material.diffuse = col;
+  material.alpha = clamp(c.a * a, 0.0, 1.0);
 }
 `;
 
@@ -70,14 +86,19 @@ void nfClip(FragmentInput fsInput, inout czm_modelMaterial material) {
     hit = p.z > level - 6.0 && p.z < level + 2.5;
   }
   if (!hit) return;
+  float R = u_nfcBubble.x;
+  float d = length(p.xy - u_nfcCentre);
+  float a = (1.0 - smoothstep(R * (1.0 - u_nfcBubble.y), R, d)) * u_nfcBubble.z;
   if (u_nfcDebug > 0.5) {
     // debug: paint what would be hidden (red = footprint column, blue = water band)
     material.diffuse = mix(material.diffuse, m.r > 0.5 ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 0.3, 1.0), 0.75);
     return;
   }
-  float R = u_nfcBubble.x;
-  float d = length(p.xy - u_nfcCentre);
-  float a = (1.0 - smoothstep(R * (1.0 - u_nfcBubble.y), R, d)) * u_nfcBubble.z;
+  if (m.r <= 0.5) {
+    // our water is translucent where it fades: hide the tile only under fully opaque water
+    if (a >= 0.999) discard;
+    return;
+  }
   if (nfIgn(gl_FragCoord.xy) < a) discard;
 }
 `;

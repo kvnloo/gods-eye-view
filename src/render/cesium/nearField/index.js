@@ -21,7 +21,7 @@
 import * as Cesium from 'cesium';
 import { HOST_KEY, tileShaderHost } from '../themes/tileShaderHost.js';
 import { loadPreset, normalizeNearField, presetRequest } from '../themes/presets.js';
-import { MODEL_FS, TILE_GLSL } from './shaders.js';
+import { MODEL_FS, TILE_GLSL, WATER_FS } from './shaders.js';
 import {
   BUBBLE,
   bubbleCentre,
@@ -195,7 +195,7 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
   const cells = createLru(MAX_CELLS, {
     pinned: (k) => needed.has(k),
     onEvict: (_k, e) => {
-      for (const m of [e.main, e.trees]) if (m && !m.isDestroyed()) collection.remove(m);
+      for (const m of [e.main, e.water, e.trees]) if (m && !m.isDestroyed()) collection.remove(m);
     },
   });
 
@@ -204,10 +204,11 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
     u_nfShadow: { type: Cesium.UniformType.VEC3, value: Cesium.Cartesian3.fromArray(look.shadow) },
     u_nfWarm: { type: Cesium.UniformType.VEC3, value: Cesium.Cartesian3.fromArray(look.warm) },
   });
-  function modelShader(isTree) {
+  function modelShader(isTree, water = false) {
     return new Cesium.CustomShader({
       mode: Cesium.CustomShaderMode.MODIFY_MATERIAL,
       lightingModel: Cesium.LightingModel.UNLIT,
+      translucencyMode: water ? Cesium.CustomShaderTranslucencyMode.TRANSLUCENT : Cesium.CustomShaderTranslucencyMode.INHERIT,
       uniforms: {
         u_nfEyeToLocal: { type: Cesium.UniformType.MAT4, value: Cesium.Matrix4.IDENTITY.clone() },
         u_nfCentre: { type: Cesium.UniformType.VEC2, value: new Cesium.Cartesian2() },
@@ -215,11 +216,11 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
         u_nfIsTree: { type: Cesium.UniformType.FLOAT, value: isTree ? 1 : 0 },
         ...lightUniforms(),
       },
-      fragmentShaderText: MODEL_FS,
+      fragmentShaderText: water ? WATER_FS : MODEL_FS,
     });
   }
-  // two shared shaders: every cell model uses one of them (uniforms set once per frame)
-  const shaders = { main: modelShader(false), trees: modelShader(true) };
+  // three shared shaders: every cell model uses one of them (uniforms set once per frame)
+  const shaders = { main: modelShader(false), trees: modelShader(true), water: modelShader(false, true) };
 
   // ---- the tile part (hide Google under our objects)
   const MASK_N = 2048;
@@ -271,7 +272,7 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
       const polys = e.footprints.map((f) => f.rings.map((r) => r.map(([x, y]) => [x + ox, y + oy])));
       rasterize(north, n, px, half, polys, 1);
       fps += polys.length;
-      for (const [x0, y0, x1, y1, level] of e.water) {
+      for (const [x0, y0, x1, y1, level] of e.waterRects) {
         const code = Math.max(0, Math.min(65535, Math.round((level + 1000) * 10)));
         const i0 = Math.max(0, Math.floor((x0 + ox + half) / px)), i1 = Math.min(n - 1, Math.ceil((x1 + ox + half) / px) - 1);
         const j0 = Math.max(0, Math.floor((y0 + oy + half) / px)), j1 = Math.min(n - 1, Math.ceil((y1 + oy + half) / px) - 1);
@@ -345,7 +346,7 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
           ? collection.add(
               await Cesium.Model.fromGltfAsync({
                 gltf: bytes,
-                basePath: `/near-field-cell/${c.key}/${shader === shaders.trees ? 'trees' : 'main'}/${++modelSeq}/`,
+                basePath: `/near-field-cell/${c.key}/${shader === shaders.trees ? 'trees' : shader === shaders.water ? 'water' : 'main'}/${++modelSeq}/`,
                 modelMatrix,
                 upAxis: Cesium.Axis.Z,
                 forwardAxis: Cesium.Axis.X,
@@ -356,13 +357,14 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
             )
           : null;
       entry.main = await make(out.main, shaders.main);
+      entry.water = await make(out.water, shaders.water);
       entry.trees = await make(out.trees, shaders.trees);
       if (cells.peek(c.key) !== entry) {
         // evicted while loading
-        for (const m of [entry.main, entry.trees]) if (m) collection.remove(m);
+        for (const m of [entry.main, entry.water, entry.trees]) if (m) collection.remove(m);
         return;
       }
-      Object.assign(entry, { status: 'ready', footprints: out.footprints, water: out.water, buildings: out.buildings, stats: out.stats, readyAt: performance.now() });
+      Object.assign(entry, { status: 'ready', footprints: out.footprints, waterRects: out.waterRects, buildings: out.buildings, stats: out.stats, readyAt: performance.now() });
       state.jobsDone++;
     } catch (error) {
       entry.status = 'error';
@@ -460,7 +462,7 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
       const c = state.centre ? toLocal(state.centre.lat, state.centre.lon, frame) : [0, 0];
       const centre2 = new Cesium.Cartesian2(c[0], c[1]);
       const bubble = new Cesium.Cartesian4(state.radius, BUBBLE.edge, TREE_RADIUS, state.fade);
-      for (const s of [shaders.main, shaders.trees]) {
+      for (const s of [shaders.main, shaders.trees, shaders.water]) {
         s.setUniform('u_nfEyeToLocal', Cesium.Matrix4.clone(eyeToMask, scratch));
         s.setUniform('u_nfCentre', centre2);
         s.setUniform('u_nfBubble', bubble);
@@ -478,6 +480,7 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
         if (on && e.appear < 1) e.appear = Math.min(1, (now - e.readyAt) / 500);
         const d = state.centre ? Math.max(0, Math.hypot(...toLocal(e.centre.lat, e.centre.lon, state.centre)) - tileSizeM(e.cell) * 0.71) : Infinity;
         if (e.main) e.main.show = on;
+        if (e.water) e.water.show = on;
         if (e.trees) e.trees.show = on && d < treeR;
         if (on) shown++;
       }
@@ -504,13 +507,13 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
         pending: [...state.pending],
         cached: cells.size,
         ready: [...cells.values()].filter((e) => e.status === 'ready').length,
-        shownCells: [...cells.values()].filter((e) => e.main?.show).length,
+        shownCells: [...cells.values()].filter((e) => e.main?.show || e.water?.show).length,
         mask: { centre: mask.centre, half: mask.half },
         look,
       };
     },
     cells: () =>
-      cells.values().map((e) => ({ key: e.key, status: e.status, needed: needed.has(e.key), shown: !!e.main?.show, appear: e.appear, stats: e.stats, error: e.error })),
+      cells.values().map((e) => ({ key: e.key, status: e.status, needed: needed.has(e.key), shown: !!(e.main?.show || e.water?.show), appear: e.appear, stats: e.stats, error: e.error })),
     setEnabled(on) {
       state.enabled = !!on;
       state.lastUpdate = 0; // apply on the next frame

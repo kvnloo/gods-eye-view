@@ -124,7 +124,6 @@ export function cellSeed({ z, x, y }) {
 
 const STOREY = 3.2;
 const SKIRT = 2.5; // walls reach this far under the lowest footprint corner (hidden in the ground)
-const WATER_TAG = 0.5; // colour alpha marks water for the shader
 
 function segDist(px, py, ax, ay, bx, by) {
   const dx = bx - ax, dy = by - ay;
@@ -491,33 +490,68 @@ export function buildCell(fixture, ground, kit = NEAR_FIELD_KITS.realism, opts =
         }
     }
 
-  // water surface: run-length quads at each body's level, inside the cell square
-  // (the shown raster leaves marinas to the map's own docks and boats)
+  // Water surface, its own translucent mesh (the renderer fades it smoothly, no dither):
+  // - opacity ramps from 0 at any edge (real shore or a marina cut-out) to 1 at
+  //   EDGE_CELLS cells in, per vertex, so it melts into the map's own shoreline;
+  // - only the fully opaque interior hides the tile underneath (waterRects, the mask);
+  // - the shown raster leaves marinas to the map's own docks and boats.
   const waterRects = [];
+  const ws = new Soup();
   let rocks = 0;
   const shownWater = fixture.waterShown ? waterField({ water: fixture.waterShown }) : water;
   if (water && shownWater) {
     const { n, cell, half, ids, dist } = shownWater;
+    const EDGE_CELLS = 4;
+    const op = (i, j) => (i < 0 || j < 0 || i >= n || j >= n || !ids[j * n + i] ? 0 : Math.min(1, Math.max(0, (dist[j * n + i] - 1) / (EDGE_CELLS - 1))));
+    // corner (i, j) = top-left corner of cell (i, j); opacity = mean of the 4 cells around it
+    const cornerOp = (i, j) => (op(i - 1, j - 1) + op(i, j - 1) + op(i - 1, j) + op(i, j)) / 4;
+    const colourOf = (i, j) => {
+      const band = Math.min(2, Math.max(0, water.dist[j * n + i] - 1));
+      return linear(kit.water[Math.max(0, kit.water.length - 1 - band)] ?? kit.water[0], 0, r, sat);
+    };
     for (let j = 0; j < n; j++) {
       const y1 = half - j * cell, y0 = y1 - cell;
-      if (y0 >= by1 || y1 <= by0) continue;
+      if (y0 >= by1 + 0.6 || y1 <= by0 - 0.6) continue;
       let i = 0;
       while (i < n) {
-        const id = ids[j * n + i];
-        // colour bands by distance to the real shore (truth raster), not to a marina cut-out
-        const band = Math.min(2, Math.max(0, water.dist[j * n + i] - 1));
-        let k = i + 1;
-        while (k < n && ids[j * n + k] === id && Math.min(2, Math.max(0, water.dist[j * n + k] - 1)) === band) k++;
-        if (id) {
-          // 0.6 m past the cell square: neighbouring cells overlap instead of leaving hairline gaps
-          const xa = Math.max(bx0 - 0.6, -half + i * cell), xb = Math.min(bx1 + 0.6, -half + k * cell);
-          const ya = Math.max(by0 - 0.6, y0), yb = Math.min(by1 + 0.6, y1);
-          if (xb > xa && yb > ya) {
-            const level = levels[id] ?? gz((xa + xb) / 2, (ya + yb) / 2) - 0.3;
-            const col = [...linear(kit.water[Math.max(0, kit.water.length - 1 - band)] ?? kit.water[0], 0, r, sat), WATER_TAG];
-            s.quad([xa, ya, level], [xb, ya, level], [xb, yb, level], [xa, yb, level], col);
-            waterRects.push([xa, ya, xb, yb, Math.round(level * 10) / 10]);
+        const k0 = j * n + i;
+        const id = ids[k0];
+        if (!id) {
+          i++;
+          continue;
+        }
+        const level = levels[id] ?? gz(-half + (i + 0.5) * cell, y0 + cell / 2);
+        const interior = dist[k0] >= EDGE_CELLS + 1;
+        if (!interior) {
+          // one quad per edge cell, opacity per corner
+          const xa = -half + i * cell, xb = xa + cell;
+          // each translucent edge cell is drawn by the one cell square holding its centre
+          if (inBox(xa + cell / 2, y0 + cell / 2)) {
+            const c = colourOf(i, j);
+            const v = (x, y, ci, cj) => [x, y, level, cornerOp(ci, cj)];
+            const A = v(xa, y0, i, j + 1), B = v(xb, y0, i + 1, j + 1), C = v(xb, y1, i + 1, j), D = v(xa, y1, i, j);
+            for (const [p0, p1, p2] of [[A, B, C], [A, C, D]]) {
+              ws.p.push(p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], p2[0], p2[1], p2[2]);
+              for (const q of [p0, p1, p2]) ws.c.push(c[0], c[1], c[2], q[3]);
+              ws.n.push(0, 0, 1, 0, 0, 1, 0, 0, 1);
+            }
           }
+          i++;
+          continue;
+        }
+        // interior run: same body, same colour band, all interior
+        const band = Math.min(2, Math.max(0, water.dist[k0] - 1));
+        let k = i + 1;
+        while (k < n && ids[j * n + k] === id && dist[j * n + k] >= EDGE_CELLS + 1 && Math.min(2, Math.max(0, water.dist[j * n + k] - 1)) === band) k++;
+        // 0.6 m past the cell square: neighbouring cells overlap instead of leaving hairline gaps
+        const xa = Math.max(bx0 - 0.6, -half + i * cell), xb = Math.min(bx1 + 0.6, -half + k * cell);
+        const ya = Math.max(by0 - 0.6, y0), yb = Math.min(by1 + 0.6, y1);
+        if (xb > xa && yb > ya) {
+          const col = [...colourOf(i, j), 1];
+          ws.quad([xa, ya, level], [xb, ya, level], [xb, yb, level], [xa, yb, level], col);
+          // the mask: only the opaque interior hides the tile, and only inside the cell square
+          const mx0 = Math.max(bx0, xa), mx1 = Math.min(bx1, xb), my0 = Math.max(by0, ya), my1 = Math.min(by1, yb);
+          if (mx1 > mx0 && my1 > my0) waterRects.push([mx0, my0, mx1, my1, Math.round(level * 10) / 10]);
         }
         i = k;
       }
@@ -547,6 +581,7 @@ export function buildCell(fixture, ground, kit = NEAR_FIELD_KITS.realism, opts =
   const instTris = [...protos.values()].reduce((a, p) => a + p.soup.triangles * p.instances.length, 0);
   return {
     soup: s,
+    waterSoup: ws,
     protos,
     footprints,
     water: waterRects,
@@ -556,7 +591,7 @@ export function buildCell(fixture, ground, kit = NEAR_FIELD_KITS.realism, opts =
       trees: treeCount,
       rocks,
       waterRects: waterRects.length,
-      triangles: s.triangles + instTris,
+      triangles: s.triangles + ws.triangles + instTris,
       storedTriangles: s.triangles + [...protos.values()].reduce((a, p) => a + p.soup.triangles, 0),
     },
   };

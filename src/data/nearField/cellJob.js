@@ -98,6 +98,7 @@ export function createCellGenerator({
       const built = buildCell(fixture, ground, kitOf(kit, kitOverrides), { trees });
       const t2 = Date.now();
       const main = writeGlb({ soup: built.soup });
+      const waterGlb = built.waterSoup.p.length ? writeGlb({ soup: built.waterSoup }) : null;
       const treeGlb = built.protos.size ? writeGlb({ protos: built.protos.values() }) : null;
       const violations = waterViolations(built);
       return {
@@ -106,9 +107,10 @@ export function createCellGenerator({
         side: fixture.side,
         box: fixture.box,
         main,
+        water: waterGlb,
         trees: treeGlb,
         footprints: built.footprints,
-        water: built.water,
+        waterRects: built.water,
         buildings: built.buildings.map(({ c, kind, share, wallBottom, floor, top, lift, area, support, p }) => ({
           c, kind, share, wallBottom, floor, top, lift, area, support,
           // footprint vertices (local metres) for the terrain check; capped per building

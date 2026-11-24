@@ -42,7 +42,7 @@ export const DESKTOP_HIGH = Object.freeze({
 });
 
 // Wintercats: colours and knobs from the theme dream loop v2 against the locked reference (loop-v2/round-v5/style-loop
-// best-build.png) and the wintercats frames; numbers, not images. Loop v2 round 6 (class-scoped photo-tint hybrid, quiet water, earthier roofs): won 2/2 Sausalito + 2/2 general seats.
+// best-build.png) and the wintercats frames; numbers, not images. Loop v2 round 8 (no olive bay + moss greens): won 2/2 Sausalito seats, general tie.
 const WINTERCATS = {
   format: PRESET_FORMAT,
   name: 'wintercats',
@@ -76,10 +76,10 @@ const WINTERCATS = {
       flattenRings: 2,
       vegGb: 0.04,
       vegChroma: 1.0,
-      grass: [0.361, 0.541, 0.235],
-      canopy: [0.173, 0.29, 0.18],
+      grass: [0.404, 0.561, 0.271],
+      canopy: [0.165, 0.29, 0.188],
       water: [0.31, 0.592, 0.596],
-      waterDeep: [0.2, 0.404, 0.478],
+      waterDeep: [0.18, 0.353, 0.431],
       roofA: [0.557, 0.29, 0.204],
       roofB: [0.42, 0.455, 0.267],
       roofC: [0.639, 0.58, 0.502],
@@ -99,6 +99,7 @@ const WINTERCATS = {
       photoWarm: 0.7,
       waterStrength: 0.85,
       vegStrength: 0.9,
+      vegFlatRg: 0.6,
     },
     ao: {
       aoStrength: 0.3,

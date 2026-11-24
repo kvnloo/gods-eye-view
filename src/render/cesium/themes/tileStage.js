@@ -105,6 +105,13 @@ export const TILE_UNIFORMS = Object.freeze({
     'Strength floor on water (class-scoped: keep palette water when strength < 1)',
   ),
   vegStrength: f(0, 0, 1, 0.01, 'Strength floor on vegetation'),
+  vegFlatRg: f(
+    0,
+    0,
+    1,
+    0.01,
+    'Flat vegetation needs red/green ≥ this (green-tinted shallows → water, 0 = off)',
+  ),
   photoSat: f(1, 0, 1.2, 0.01, 'Photo share: saturation (strength < 1)'),
   photoWarm: f(0, 0, 1, 0.01, 'Photo share: warm tint (strength < 1)'),
   classTexels: f(
@@ -253,10 +260,18 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
   // (bluish in shade): shadeVeg sends them to the canopy colour, not water
   float shade = u_th_shadeVeg * (1.0 - smoothstep(0.025, 0.08, l)) * step(a.r, a.g * 1.08);
   veg = max(veg, shade);
+  // green-tinted shallows (algae, silt) pass the vegetation test on flat
+  // ground; grass and lawns carry more red than they do: send them to water
+  float algae = 0.0;
+  if (u_th_vegFlatRg > 0.0) {
+    algae = veg * flatW * (1.0 - smoothstep(u_th_vegFlatRg - 0.06, u_th_vegFlatRg, a.r / max(a.g, 1e-4)));
+    veg -= algae;
+  }
   float blue = smoothstep(0.0, 0.06, (a.b - a.r) / sum) * (1.0 - smoothstep(u_th_vegGb + 0.015, u_th_vegGb + 0.065, gb)) * flatW * (1.0 - veg);
   // open water is a saturated teal/blue; dull bluish surfaces are not
   blue *= smoothstep(u_th_waterChroma, u_th_waterChroma + 0.1, chroma);
   blue *= smoothstep(-u_th_waterGbMin - 0.02, -u_th_waterGbMin, gb);
+  blue = max(blue, algae);
   // waterSeamKeep: the smoothness gate spares saturated candidates, so open
   // water keeps its class across texture seams and wakes (white streaks)
   if (u_th_waterSmooth > 0.0)

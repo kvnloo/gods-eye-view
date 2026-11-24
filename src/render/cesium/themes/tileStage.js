@@ -152,6 +152,8 @@ export const TILE_UNIFORMS = Object.freeze({
   osmMarina: f(0, 0, 1, 0.01, 'OSM water: keep textured photo detail (boats, docks)'),
   osmFlatN: f(0, 0, 1, 0.01, 'OSM: calm shading on mapped roofs and ground (no facet speckle)'),
   vegFlatN: f(0, 0, 1, 0.01, 'Calm shading on tree canopy (no leaf speckle)'),
+  waterSky: f(0, 0, 1, 0.01, 'Water: sky sheen toward the horizon (luminous bay)'),
+  skySheen: color(hex('#a9d3d6'), 'Water sky sheen'),
   shallowM: f(30, 2, 120, 1, 'Shallows width (m from shore)'),
   foamM: f(3, 0, 20, 0.5, 'Shore foam width (m)'),
   foamAmt: f(0.35, 0, 1, 0.01, 'Shore foam'),
@@ -450,6 +452,9 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
     float foamW = smoothstep(-0.5, 0.5, oShore) * (1.0 - smoothstep(0.0, max(u_th_foamM, 0.01), oShore));
     foamW *= 0.55 + 0.45 * th_vnoise(pL / 2.5);
     waterO = mix(waterO, czm_srgbToLinear(u_th_foam), foamW * u_th_foamAmt);
+    // sky sheen: grazing views of open water pick up the sky (Fresnel), so the far bay reads luminous
+    float fres = pow(1.0 - clamp(abs(dot(upEC, normalize(-pEC))), 0.0, 1.0), 3.0);
+    waterO = mix(waterO, czm_srgbToLinear(u_th_skySheen), u_th_waterSky * fres * smoothstep(4.0, 30.0, oShore));
     pal = mix(pal, waterO, oWater * osmW * (1.0 - wallW * 0.7));
     osmCover = osmW * max(max(oWater, oB), max(oR, oVeg * u_th_osmVeg));
     blue = mix(blue, oWater, osmW);

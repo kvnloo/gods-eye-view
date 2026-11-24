@@ -42,7 +42,7 @@ export const DESKTOP_HIGH = Object.freeze({
 });
 
 // Wintercats: colours and knobs from the theme dream loops v2 and v3 (v3: OSM class mask) against the locked reference (loop-v2/round-v5/style-loop
-// best-build.png) and the wintercats frames; numbers, not images. v3 r2: OSM class mask, painted mapped surfaces, per-building roofs, crisp-lite paint, eave lines (abs 4.0 -> 5.0).
+// best-build.png) and the wintercats frames; numbers, not images. v3 r5: calm shading on mapped roofs/ground and canopy, warmer key, cooler lilac-blue shadow, 2 light bands.
 const WINTERCATS = {
   format: PRESET_FORMAT,
   name: 'wintercats',
@@ -68,7 +68,7 @@ const WINTERCATS = {
       flattenTexels: 4,
       detail: 0.1,
       delight: 0.5,
-      bands: 3,
+      bands: 2,
       wrap: 0.6,
       darkFloor: 0.15,
       otherSat: 0.2,
@@ -86,7 +86,7 @@ const WINTERCATS = {
       roofD: [0.353, 0.231, 0.165],
       wall: [0.839, 0.776, 0.659],
       street: [0.612, 0.561, 0.471],
-      shadow: [0.55, 0.5, 0.62],
+      shadow: [0.471, 0.435, 0.627],
       neutralChroma: 2.2,
       waterChroma: 0.25,
       roofVariety: 0.9,
@@ -94,7 +94,7 @@ const WINTERCATS = {
       waterGbMin: 1,
       cellM: 22,
       waterSeamKeep: 0,
-      key: [1.1, 1.0, 0.86],
+      key: [1.14, 1.0, 0.82],
       photoSat: 0.3,
       photoWarm: 0.7,
       waterStrength: 0.85,
@@ -106,6 +106,8 @@ const WINTERCATS = {
       mottle: 0.08,
       foamAmt: 0.3,
       osmEdge: 0.8,
+      osmFlatN: 0.8,
+      vegFlatN: 0.7,
     },
     ao: {
       aoStrength: 0.3,
@@ -148,7 +150,7 @@ const WINTERCATS = {
       clarityRadiusPx: 8,
     },
     cas: {
-      casSharpness: 0.35,
+      casSharpness: 0.15,
     },
     vignette: {
       vignette: 0.15,

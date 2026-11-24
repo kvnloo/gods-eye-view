@@ -6,6 +6,10 @@ import { fileURLToPath } from 'node:url';
 import { fromDegrees, toLonLatH } from '../geo/ellipsoid.js';
 import { bindRenderer } from '../render/rendererOf.js';
 import { heightsOf } from './heights.js';
+import {
+  partitionForkOnly,
+  staleForkOnlyMessage,
+} from '../testSupport/forkOnlyExempt.mjs';
 
 const ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -304,7 +308,10 @@ test('height queries go through the service', () => {
       return false;
     return direct.test(codeOf(file));
   });
-  assert.deepEqual(offenders, []);
+  // FORK-ONLY: the fork's city builder is set aside, and only it.
+  const forkOnly = partitionForkOnly('heightService', offenders);
+  assert.deepEqual(forkOnly.offenders, []);
+  assert.deepEqual(forkOnly.unused, [], staleForkOnlyMessage('heightService'));
   // A known site that has moved onto the service leaves the list.
   const stale = [...KNOWN].filter((file) => !direct.test(codeOf(file)));
   assert.deepEqual(stale, []);

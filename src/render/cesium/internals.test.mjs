@@ -25,6 +25,10 @@ import {
   updateCameraChanged,
   webglContext,
 } from './internals.js';
+import {
+  partitionForkOnly,
+  staleForkOnlyMessage,
+} from '../../testSupport/forkOnlyExempt.mjs';
 
 const ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -283,7 +287,10 @@ test('private Cesium fields are reached only through internals.js', () => {
       for (const [, name] of code.matchAll(pattern))
         if (cesiumPrivate.has(name)) offenders.push(`${file} ._${name}`);
   }
-  assert.deepEqual([...new Set(offenders)], []);
+  // FORK-ONLY: the fork's city builder is set aside, and only it.
+  const forkOnly = partitionForkOnly('cesiumInternals', [...new Set(offenders)]);
+  assert.deepEqual(forkOnly.offenders, []);
+  assert.deepEqual(forkOnly.unused, [], staleForkOnlyMessage('cesiumInternals'));
 });
 
 test('customShaderTexture reads the texture a custom shader made for a uniform', () => {

@@ -1,0 +1,10 @@
+{
+ "northbeach": {"label": "North Beach SF (Washington Sq, QA control)", "plot": "plot-n105201-126637", "lat": 37.801473230326984, "lon": -122.41021134056297, "plotNote": "Washington Square (QA default)"},
+ "presidio": {"label": "Presidio Main Post / Crissy edge, SF", "plot": "plot-n105200-126533", "lat": 37.80111390585699, "lon": -122.45778641158287, "plotNote": "Main Post lawn south of Crissy Marsh"},
+ "sausalito": {"label": "Sausalito waterfront (Dunphy Park)", "plot": "plot-n105367-126364", "lat": 37.86112109234639, "lon": -122.48788513443384, "plotNote": "Dunphy Park lawn"},
+ "millvalley": {"label": "Mill Valley (Old Mill Park, redwoods)", "plot": "plot-n105490-126144", "lat": 37.905318002155944, "lon": -122.55354779970317, "plotNote": "Old Mill Park"},
+ "tiburon": {"label": "Tiburon (Blackie's Pasture, Richardson Bay)", "plot": "plot-n105465-126300", "lat": 37.89633489040604, "lon": -122.48952509774948, "plotNote": "Blackie's Pasture meadow"},
+ "bernal": {"label": "Bernal Heights Park hillside, SF", "plot": "plot-n105038-126729", "lat": 37.74290334171757, "lon": -122.41400724356936, "plotNote": "Bernal Heights Park slope"},
+ "ggpark": {"label": "Golden Gate Park edge (Lindley Meadow / Richmond), SF", "plot": "plot-n105115-126513", "lat": 37.7705713259073, "lon": -122.4906539298558, "plotNote": "Lindley Meadow"},
+ "tahoe": {"label": "Tahoe City, CA (Commons Beach, lake + pines)", "plot": "plot-n109011-129151", "lat": 39.17049946101329, "lon": -120.14045959700795, "plotNote": "Commons Beach park lawn"}
+}

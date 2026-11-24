@@ -1,0 +1,47 @@
+{
+  "schema": "city-loop-v2/rubric@1",
+  "frozen": "2026-11-22",
+  "rule": "FROZEN for the whole run. Any edit is a new rubric version; scores across versions are not comparable. Never re-point an anchor at the loop's own output.",
+  "scale": "1-5 absolute; 3 = acceptable shipped-game quality for this layer, 5 = matches the best reference.",
+  "layers": {
+    "game_feel": {
+      "question": "Does this read as a city-builder GAME (Cities: Skylines / Civilization) with clear verbs, goals, feedback and juice, rather than a dashboard, form or slide?",
+      "1": "form, dialog, spreadsheet or plain map; no verbs on the world",
+      "3": "verbs or tools tethered to the world are visible, some feedback",
+      "5": "unmistakably a game: tethered verb wheel/tray, goals/progress, satisfying build feedback"
+    },
+    "gev_brand": {
+      "question": "Fidelity to the GEV HUD design language: near-black translucent glass, cyan #2EC8E8 accent with soft glow, thin corner brackets, wide-tracked caps headings, monospace numerals, colour only for meaning; the full GEV app shell (wordmark, rails, dock, attribution) present.",
+      "1": "generic web UI / off-brand panels",
+      "3": "GEV look mostly present but inconsistent (heavy boxes, missing brackets/glow, shell partly missing)",
+      "5": "pixel-faithful GEV shell and HUD"
+    },
+    "legibility": {
+      "question": "Can a first-time player read what matters at this zoom in 2 seconds? Info hierarchy by zoom (far = district/yields, mid = plot + verbs, near = details). Text size/contrast, no clutter, no overlaps, no repeated figures.",
+      "1": "unreadable or cluttered, overlapping, duplicated numbers",
+      "3": "readable with effort",
+      "5": "instantly readable, clean hierarchy"
+    },
+    "scene_integration": {
+      "question": "Does the proposal/game layer sit IN the photoreal 3D world: shared light, contact with ground, shadows, scale, no floating CG boxes or blurry 2D imagery? Is the world itself convincing at this zoom?",
+      "1": "blurry 2D imagery or obvious placeholder boxes floating",
+      "3": "plausible but visibly pasted on",
+      "5": "seamless, believable at this camera"
+    },
+    "honesty": {
+      "question": "Are AI/estimate claims honestly labelled (AI concept chip, EST on modelled figures, unknown as '—'), with no fake or contradictory numbers?",
+      "1": "unlabelled invented figures or contradictions",
+      "3": "mostly labelled",
+      "5": "every non-observed figure labelled; no fake numbers"
+    },
+    "wintercats_fidelity": {
+      "question": "Closeness to the owner-chosen 'wintercats' look (A1/A2 refs): warm painterly palette with a colour LUT, soft GI/AO, tilt-shift depth of field and softness, low-poly painterly forms, minimal dark top resource bar + bottom build tray, a placement ghost/build juice, weather as reward.",
+      "1": "harsh, desaturated or dashboard-like; no softness; no game HUD minimalism",
+      "3": "some of the palette/softness or HUD minimalism",
+      "5": "reads like the wintercats builder"
+    }
+  },
+  "taste_layers": ["game_feel", "gev_brand", "scene_integration"],
+  "floor": "ship needs every beat >= 2 on every layer AND Kevin's verdict; critics never grant approval",
+  "pairwise": "Each pair is judged in both A/B orders by each judge; a judge's verdict counts only if it holds in both orders, otherwise TIE. Panel verdict = majority of non-tie judge verdicts; no majority = TIE."
+}

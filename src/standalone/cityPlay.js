@@ -1,0 +1,1599 @@
+import * as Cesium from 'cesium';
+import { watch } from 'vue';
+import { msg, t } from '../i18n/index.js';
+import { claimPointer, releasePointer } from '../data/inputOwnership.js';
+import {
+  isGridPlot,
+  neighborPlots,
+  plotBlock,
+  plotPoint,
+  snapCityPlot,
+} from '../data/cityPlot.js';
+import { cityLocation } from '../data/cityLocations.js';
+import { cityGrid } from '../data/cityGrid.js';
+import { dioramaGroundPoint, groundPoint, resolveClickedPlot } from '../data/cityPlotPick.js';
+import { observerSolarPosition } from '../data/satellitePass.js';
+import { CITY_LAND_USES, MAX_ZONED_PLOTS } from '../data/cityLandUse.js';
+import { presentCityWalkAccess } from '../ui/cityWalkAccess.js';
+import {
+  holdContinuousRender,
+  releaseContinuousRender,
+} from '../renderGovernor.js';
+import {
+  KIND_ICONS,
+  carouselCards,
+  createPlayState,
+  detailCallouts,
+  districtPins,
+  groundShadow,
+  nextKind,
+  playReducer,
+  plotAlternatives,
+  plotCode,
+  plotLane,
+  resourceStats,
+  resumeAlternative,
+  wheelActions,
+  zoneLegend,
+  zoomTier,
+} from '../ui/cityPlayModel.js';
+import { pageLookFlags } from '../data/cityLookFlags.js';
+import { MASSING_ASSUMPTIONS, plotMassing } from '../data/cityMassing.js';
+import {
+  cellYield,
+  districtCells,
+  pageHudFlags,
+  placementCheck,
+} from '../data/cityGameHud.js';
+import { mountConceptDrape } from './cityConceptDrape.js';
+
+const OWNER = 'city-play';
+const BODY_CLASS = 'gev-city-play';
+const BOX_HEIGHT = 26;
+// The concept card stands on its plot: 48 m wide, 32 m tall, base on the ground.
+const HOLO_WIDTH = 48;
+const HOLO_HEIGHT = 32;
+const GROUND_LIFT = 0.3;
+// FORK-ONLY (?cityR1=flat): a concept laid flat rides this far over its plot.
+const FLAT_LIFT = 0.25;
+const SCAN_MS = 1400;
+const BEACON_HEIGHT = 160;
+// Narrow screens lead the framing so the plot sits above the bottom carousel.
+const NARROW_LEAD = { oblique: 120, detail: 50 };
+const ACCENT = Cesium.Color.fromCssColorString('#2ec8e8');
+const KIND_COLORS = {
+  park: Cesium.Color.fromCssColorString('#5ee08a'),
+  plaza: Cesium.Color.fromCssColorString('#ffc25c'),
+  'bike-lane': ACCENT,
+};
+// Proposed land-use tints reuse GEV's existing palette.
+const ZONE_COLORS = {
+  housing: Cesium.Color.fromCssColorString('#ffc25c'),
+  'mixed-use': Cesium.Color.fromCssColorString('#ff5c6e'),
+  civic: ACCENT,
+  'open-space': Cesium.Color.fromCssColorString('#5ee08a'),
+};
+const CLASSIFY = Cesium.ClassificationType.BOTH;
+const FRAMES = {
+  oblique: { pitch: -34, range: 290 },
+  detail: { pitch: -30, range: 225 },
+  // A district fills the view: its range is this many times its radius.
+  district: { pitch: -32, fit: 4 },
+};
+
+// FORK-ONLY (exp/city-loop-r1, ?cityR1=ghost,flat): see src/data/cityLookFlags.js.
+const R1 = pageLookFlags();
+// FORK-ONLY (exp/city-game-hud, ?cityHud=…): see src/data/cityGameHud.js.
+const HUD = pageHudFlags();
+const VALID = Cesium.Color.fromCssColorString('#5ee08a');
+const INVALID = Cesium.Color.fromCssColorString('#ff5c6e');
+// Far-zoom grid: plot lines and 200 m district lines, as thin ground rings (m).
+const PLOT_LINE_METERS = 1.4;
+const CELL_LINE_METERS = 4;
+// A ring polygon: the corners and the same corners pulled `meters` inward.
+function ringPolygon(corners, meters) {
+  const lon0 = corners.reduce((s, [lon]) => s + lon, 0) / corners.length;
+  const lat0 = corners.reduce((s, [, lat]) => s + lat, 0) / corners.length;
+  const ky = 111_320;
+  const kx = ky * Math.cos((lat0 * Math.PI) / 180);
+  const inner = corners.map(([lon, lat]) => {
+    const x = (lon - lon0) * kx;
+    const y = (lat - lat0) * ky;
+    const d = Math.hypot(x, y) || 1;
+    const k = Math.max(0, d - meters * Math.SQRT2) / d;
+    return [lon0 + (x * k) / kx, lat0 + (y * k) / ky];
+  });
+  return new Cesium.PolygonHierarchy(
+    Cesium.Cartesian3.fromDegreesArray(corners.flat()),
+    [
+      new Cesium.PolygonHierarchy(
+        Cesium.Cartesian3.fromDegreesArray(inner.flat()),
+      ),
+    ],
+  );
+}
+// The ghost of the assumed block's footprint inside the plot (the massing's
+// own setback), draped on the ground while the player chooses.
+function ghostFootprint(plot) {
+  try {
+    return plotMassing({
+      corners: plot.corners,
+      storeys: MASSING_ASSUMPTIONS.storeys,
+    }).footprint;
+  } catch {
+    return null;
+  }
+}
+
+function ring(plot, height) {
+  const points = [...plot.corners, plot.corners[0]].flat();
+  return height === undefined
+    ? Cesium.Cartesian3.fromDegreesArray(points)
+    : Cesium.Cartesian3.fromDegreesArrayHeights(
+        [...plot.corners, plot.corners[0]].flatMap(([lon, lat]) => [
+          lon,
+          lat,
+          height,
+        ]),
+      );
+}
+
+/**
+ * Own City builder play mode on the globe: plot picking, the in-world
+ * footprint and concept holograms, camera framing, and screen anchors for the
+ * overlay. The builder still owns the document; this module only calls its
+ * explicit reimagine/reroll/setZone/open controls.
+ */
+export function mountCityPlay({
+  viewer,
+  builder,
+  store,
+  // The selected map's public citation name, or null while none is established.
+  mapSource = () => null,
+  doc = globalThis.document,
+  win = globalThis.window,
+  now = () => performance.now(),
+}) {
+  const scene = viewer?.scene;
+  if (!scene || !doc) return { receive() {}, destroy() {} };
+  const location = cityLocation(win?.location?.search);
+  // FORK-ONLY (exp/city-loop-v5): every pick snaps with snapCityPlot: inside
+  // a fitted grid's claim (cityGrid.js) only its street-aligned land cells are
+  // plots; the global grid answers elsewhere. On the diorama of a location
+  // with a grid, picks read the diorama's own surface.
+  const snap = snapCityPlot;
+  const onDiorama = () =>
+    Boolean(cityGrid(location?.key) && win?.__gevDiorama?.state.ready);
+  let state = createPlayState();
+  let data = {
+    alternatives: null,
+    zoning: [],
+    pending: false,
+    pendingId: null,
+  };
+  let walkCache = { list: undefined, map: {} };
+  let lease = null;
+  let handler = null;
+  let saved = null;
+  let removeRender = null;
+  let framing = false;
+  let notice = null;
+  let disposed = false;
+  let lastAnchors = '';
+  let hoverQueued = null;
+  let range = Number.NaN;
+  let resumed = false;
+  // While Reimagine captures and generates, the map shows the plot as it is.
+  let capturing = false;
+  const heights = new Map();
+  const picked = new Set();
+  const appeared = new Map();
+  const ds = new Cesium.CustomDataSource('gev-city-play');
+  const added = viewer.dataSources.add(ds);
+  const holos = new Map();
+  const tints = new Map();
+  const zoneTints = new Map();
+  const select = [];
+  const hover = [];
+  const grid = [];
+  // FORK-ONLY (?cityHud=plots): the far-zoom district cells, their yields
+  // and ground rings; (?cityHud=place) the tray tool the ghost previews.
+  let cells = [];
+  let cellsKey = '';
+  const cellRings = [];
+  const yields = new Map();
+  let armed = 'massing';
+  const drape = HUD.drape ? mountConceptDrape({ viewer }) : null;
+
+  function baseHeight(plot, pickedHeight) {
+    const diorama = win?.__gevDiorama;
+    if ((isGridPlot(plot) || /^d-[a-z]+$/.test(plot.id)) && diorama?.state.ready)
+      return diorama.groundAt([plot.center.lon, plot.center.lat]);
+    // The first pick on a plot fixes its ground; later picks may hit our own holo.
+    if (Number.isFinite(pickedHeight) && !heights.has(plot.id)) {
+      heights.set(plot.id, pickedHeight);
+      picked.add(plot.id);
+    }
+    if (heights.has(plot.id)) return heights.get(plot.id);
+    let h = 0;
+    try {
+      const surface = Cesium.Cartographic.toCartesian(
+        Cesium.Cartographic.fromDegrees(plot.center.lon, plot.center.lat),
+      );
+      // Our own holo stands across the plot centre; never clamp onto it.
+      const clamped = scene.clampToHeightSupported
+        ? scene.clampToHeight(surface, ds.entities.values)
+        : null;
+      const sampled = clamped
+        ? Cesium.Cartographic.fromCartesian(clamped).height
+        : scene.globe?.getHeight?.(
+            Cesium.Cartographic.fromDegrees(plot.center.lon, plot.center.lat),
+          );
+      if (Number.isFinite(sampled)) h = sampled;
+    } catch {
+      /* tiles not ready: the ellipsoid stands in */
+    }
+    heights.set(plot.id, h);
+    return h;
+  }
+
+  function clearList(list) {
+    for (const entity of list.splice(0)) ds.entities.remove(entity);
+  }
+
+  // FORK-ONLY (?cityHud=place): may the armed tool go on this plot?
+  function placement(plot) {
+    return placementCheck({
+      tool: armed,
+      plot,
+      pending: data.pending || framing,
+      full: data.full,
+      zoneFull:
+        zoning().length >= MAX_ZONED_PLOTS && !(plot && useOf(plot.id)),
+      use: plot && useOf(plot.id),
+    });
+  }
+
+  function drawHover() {
+    clearList(hover);
+    const plot = state.hover;
+    if (!plot || plot.id === state.plot?.id) return;
+    if (HUD.place && state.tier !== 'district') {
+      // The placement ghost snaps to the plot under the cursor: its outline
+      // and the assumed block's footprint, green where the tool can go, red
+      // where it cannot (no budget, no concept slot, busy).
+      const tint = placement(plot).valid ? VALID : INVALID;
+      const foot = ghostFootprint(plot);
+      hover.push(
+        ds.entities.add({
+          polygon: {
+            hierarchy: ring(plot).slice(0, 4),
+            material: tint.withAlpha(0.16),
+            classificationType: CLASSIFY,
+          },
+        }),
+        ds.entities.add({
+          polygon: {
+            hierarchy: ringPolygon(plot.corners, 1.6),
+            material: tint.withAlpha(0.85),
+            classificationType: CLASSIFY,
+          },
+        }),
+      );
+      if (foot)
+        hover.push(
+          ds.entities.add({
+            polygon: {
+              hierarchy: Cesium.Cartesian3.fromDegreesArray(foot.flat()),
+              material: tint.withAlpha(0.3),
+              classificationType: CLASSIFY,
+            },
+          }),
+        );
+      return;
+    }
+    hover.push(
+      ds.entities.add({
+        polygon: {
+          hierarchy: ring(plot).slice(0, 4),
+          material: ACCENT.withAlpha(0.12),
+          classificationType: CLASSIFY,
+        },
+      }),
+      ds.entities.add({
+        polyline: {
+          positions: ring(plot),
+          width: 2,
+          material: ACCENT.withAlpha(0.7),
+          clampToGround: true,
+          classificationType: CLASSIFY,
+        },
+      }),
+    );
+  }
+
+  function drawSelection() {
+    clearList(select);
+    clearList(grid);
+    const plot = state.plot;
+    if (!plot) return;
+    const base = baseHeight(plot);
+    // Choosing shows the prism and neighbour grid; once a concept stands on the
+    // plot only its outline and projector edges remain, so the concept leads.
+    const district = state.district;
+    // A massing block (behind ?massing=1) leads like a concept does.
+    const choosing =
+      !district &&
+      (state.wheel || !shownByPlot().has(plot.id)) &&
+      !store.massing?.on;
+    // A district outlines its own plots in place of the neighbour grid.
+    for (const cell of district ??
+      (choosing && !capturing ? neighborPlots(plot, 1) : [])) {
+      grid.push(
+        ds.entities.add({
+          polyline: {
+            positions: ring(cell),
+            width: district ? 3 : 2,
+            material: ACCENT.withAlpha(district ? 0.8 : 0.36),
+            clampToGround: true,
+            classificationType: CLASSIFY,
+          },
+        }),
+      );
+    }
+    // SPIKE (exp/city-real-asset-spike): a seated massing building stands on
+    // its own plate; the tint and the outline step aside until it goes.
+    const quiet = Boolean(store.massing?.on && store.massing.quiet);
+    select.push(
+      ds.entities.add({
+        id: `${OWNER}-footprint`,
+        polygon: {
+          show: !quiet,
+          hierarchy: ring(plot).slice(0, 4),
+          material: ACCENT.withAlpha(choosing ? 0.28 : 0.14),
+          classificationType: CLASSIFY,
+        },
+      }),
+      ds.entities.add({
+        polyline: {
+          show: !quiet,
+          positions: ring(plot),
+          width: 9,
+          material: new Cesium.PolylineGlowMaterialProperty({
+            glowPower: 0.3,
+            color: ACCENT,
+          }),
+          clampToGround: true,
+          classificationType: CLASSIFY,
+        },
+      }),
+    );
+    if (choosing && R1.ghost) {
+      // A placement ghost lying on the ground: the block's footprint, tinted
+      // and outlined in dashes, instead of a 26 m cyan prism over the plot.
+      const foot = ghostFootprint(plot);
+      if (foot)
+        select.push(
+          ds.entities.add({
+            id: `${OWNER}-ghost`,
+            polygon: {
+              hierarchy: Cesium.Cartesian3.fromDegreesArray(foot.flat()),
+              material: ACCENT.withAlpha(0.3),
+              classificationType: CLASSIFY,
+            },
+          }),
+          ds.entities.add({
+            polyline: {
+              positions: Cesium.Cartesian3.fromDegreesArray(
+                [...foot, foot[0]].flat(),
+              ),
+              width: 3,
+              material: new Cesium.PolylineDashMaterialProperty({
+                color: Cesium.Color.WHITE.withAlpha(0.9),
+                gapColor: ACCENT.withAlpha(0.35),
+                dashLength: 14,
+              }),
+              clampToGround: true,
+              classificationType: CLASSIFY,
+            },
+          }),
+        );
+    }
+    if (choosing && HUD.place && !capturing) {
+      // The placement ghost on the chosen plot: the assumed block it would
+      // build, standing translucent on its footprint (valid green, invalid
+      // red), the plot's snapped outline under it, in place of the 26 m prism.
+      const tint = placement(plot).valid ? VALID : INVALID;
+      const foot = ghostFootprint(plot);
+      const tall =
+        MASSING_ASSUMPTIONS.storeys * MASSING_ASSUMPTIONS.storeyHeightMeters;
+      select.push(
+        ds.entities.add({
+          polygon: {
+            hierarchy: ringPolygon(plot.corners, 1.8),
+            material: tint.withAlpha(0.9),
+            classificationType: CLASSIFY,
+          },
+        }),
+      );
+      if (foot)
+        select.push(
+          ds.entities.add({
+            id: `${OWNER}-ghost`,
+            polygon: {
+              hierarchy: Cesium.Cartesian3.fromDegreesArray(foot.flat()),
+              height: base + GROUND_LIFT,
+              extrudedHeight: base + tall,
+              material: tint.withAlpha(0.22),
+              outline: true,
+              outlineColor: tint.withAlpha(0.95),
+              shadows: Cesium.ShadowMode.DISABLED,
+            },
+          }),
+          ds.entities.add({
+            polyline: {
+              positions: Cesium.Cartesian3.fromDegreesArrayHeights(
+                [...foot, foot[0]].flatMap(([lon, lat]) => [
+                  lon,
+                  lat,
+                  base + tall,
+                ]),
+              ),
+              width: 5,
+              material: new Cesium.PolylineGlowMaterialProperty({
+                glowPower: 0.3,
+                color: tint,
+              }),
+            },
+          }),
+          ...foot.map(([lon, lat]) =>
+            ds.entities.add({
+              polyline: {
+                positions: Cesium.Cartesian3.fromDegreesArrayHeights([
+                  lon,
+                  lat,
+                  base,
+                  lon,
+                  lat,
+                  base + tall,
+                ]),
+                width: 3,
+                material: tint.withAlpha(0.9),
+              },
+            }),
+          ),
+        );
+    }
+    if (choosing && !R1.ghost && !HUD.place)
+      select.push(
+        ds.entities.add({
+          wall: {
+            positions: ring(plot, base),
+            minimumHeights: Array(5).fill(base),
+            maximumHeights: Array(5).fill(base + BOX_HEIGHT),
+            material: ACCENT.withAlpha(0.22),
+          },
+        }),
+        ds.entities.add({
+          polyline: {
+            positions: ring(plot, base + BOX_HEIGHT),
+            width: 6,
+            material: new Cesium.PolylineGlowMaterialProperty({
+              glowPower: 0.25,
+              color: ACCENT,
+            }),
+          },
+        }),
+      );
+    if (choosing && !R1.ghost && !HUD.place)
+      select.push(
+        ...plot.corners.map(([lon, lat]) =>
+          ds.entities.add({
+            polyline: {
+              positions: Cesium.Cartesian3.fromDegreesArrayHeights([
+                lon,
+                lat,
+                base,
+                lon,
+                lat,
+                base + BOX_HEIGHT,
+              ]),
+              width: 4,
+              material: new Cesium.PolylineGlowMaterialProperty({
+                glowPower: 0.3,
+                color: ACCENT,
+              }),
+            },
+          }),
+        ),
+      );
+  }
+
+  // The world shown on each plot: focused card, else kept world, else latest concept.
+  function shownByPlot() {
+    const shown = new Map();
+    const list = data.alternatives ?? [];
+    const byPlot = new Map();
+    for (const a of list) {
+      if (!a.site || !a.concept) continue;
+      byPlot.set(a.site.plot.id, [...(byPlot.get(a.site.plot.id) ?? []), a]);
+    }
+    for (const [plotId, options] of byPlot) {
+      const focused =
+        state.plot?.id === plotId &&
+        options.find((a) => a.id === state.focusId);
+      const kept = options.find((a) => a.id === state.built[plotId]);
+      shown.set(plotId, focused || kept || options.at(-1));
+    }
+    return shown;
+  }
+
+  function holoGeometry(a) {
+    const plot = a.site.plot;
+    const base = baseHeight(plot);
+    const heading = Cesium.Math.toRadians(
+      (a.site.reference ?? a.concept.sourceView).camera.heading,
+    );
+    // Stand the card across the capture camera's view so it faces that view.
+    const half = HOLO_WIDTH / 2;
+    const east = Math.cos(heading) * half;
+    const north = -Math.sin(heading) * half;
+    const metersLat = 111_320;
+    const metersLon = metersLat * Math.cos((plot.center.lat * Math.PI) / 180);
+    const a0 = [
+      plot.center.lon - east / metersLon,
+      plot.center.lat - north / metersLat,
+    ];
+    const a1 = [
+      plot.center.lon + east / metersLon,
+      plot.center.lat + north / metersLat,
+    ];
+    const lift = base + GROUND_LIFT;
+    // The card faces back toward the capture camera.
+    const face = (Cesium.Math.toDegrees(heading) + 540) % 360;
+    return { base, lift, top: lift + HOLO_HEIGHT, a0, a1, face };
+  }
+
+  // The sun of the scene clock, the same time Cesium lights the globe with.
+  function sunAt(plot) {
+    try {
+      return observerSolarPosition(
+        plot.center.lat,
+        plot.center.lon,
+        Cesium.JulianDate.toDate(viewer.clock.currentTime).getTime(),
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  const shownTilesets = () =>
+    Array.from({ length: scene.primitives.length }, (_, i) =>
+      scene.primitives.get(i),
+    ).filter((p) => p instanceof Cesium.Cesium3DTileset && p.show);
+
+  // FORK-ONLY (?cityR1=flat): a flat concept cuts the photoreal mesh out of
+  // its plot while it shows (as massing does for a block), so it lies on the
+  // plot instead of under what stands there; the cut goes when it hides.
+  function setFlatCut(holo, want) {
+    const cuts = holo._cityCuts;
+    if (!cuts || want === cuts.length > 0) return;
+    if (!want) {
+      for (const c of cuts.splice(0)) {
+        c.tileset.clippingPolygons?.remove(c.polygon);
+        if (c.created && c.tileset.clippingPolygons?.length === 0)
+          c.tileset.clippingPolygons = undefined;
+      }
+      return;
+    }
+    if (!Cesium.ClippingPolygonCollection.isSupported(scene)) return;
+    const positions = Cesium.Cartesian3.fromDegreesArray(
+      holo._cityPlot.corners.flat(),
+    );
+    for (const tileset of shownTilesets()) {
+      const created = !tileset.clippingPolygons;
+      if (created)
+        tileset.clippingPolygons = new Cesium.ClippingPolygonCollection();
+      cuts.push({
+        tileset,
+        created,
+        polygon: tileset.clippingPolygons.add(
+          new Cesium.ClippingPolygon({ positions }),
+        ),
+      });
+    }
+  }
+
+  function flatConcept(a, key) {
+    const plot = a.site.plot;
+    const base = baseHeight(plot);
+    const heading = (a.site.reference ?? a.concept.sourceView).camera.heading;
+    const holo = ds.entities.add({
+      id: `${OWNER}-concept-${a.id}`,
+      polygon: {
+        hierarchy: ring(plot).slice(0, 4),
+        height: base + FLAT_LIFT,
+        material: new Cesium.ImageMaterialProperty({
+          image: a.concept.image,
+          transparent: false,
+        }),
+        stRotation: Cesium.Math.toRadians(heading),
+        shadows: Cesium.ShadowMode.RECEIVE_ONLY,
+      },
+    });
+    holo._cityKey = key;
+    holo._cityPlot = plot;
+    holo._cityAlternative = a.id;
+    holo._cityShadows = [];
+    holo._cityCuts = [];
+    holo._cityGround = {
+      sun: sunAt(plot),
+      baseGapMeters: FLAT_LIFT,
+      shadowMeters: 0,
+      shade: 1,
+      contact: true,
+      cast: false,
+      flat: true,
+    };
+    return holo;
+  }
+
+  function removeHolo(plotId) {
+    const holo = holos.get(plotId);
+    if (!holo) return;
+    setFlatCut(holo, false);
+    if (holo._cityDrape) drape?.clear(plotId);
+    for (const shadow of holo._cityShadows) ds.entities.remove(shadow);
+    ds.entities.remove(holo);
+    holos.delete(plotId);
+  }
+
+  function drawConcepts() {
+    const shown = state.active ? shownByPlot() : new Map();
+    const tier = state.tier;
+    for (const [plotId, entity] of holos) {
+      const a = shown.get(plotId);
+      if (!a || entity._cityKey !== `${a.id}:${a.revision}`) removeHolo(plotId);
+    }
+    for (const [plotId, entity] of tints) {
+      if (
+        !shown.has(plotId) ||
+        entity._cityKind !== shown.get(plotId).parameters.kind
+      ) {
+        ds.entities.remove(entity);
+        ds.entities.remove(entity._cityBeacon);
+        tints.delete(plotId);
+      }
+    }
+    for (const [plotId, a] of shown) {
+      const key = `${a.id}:${a.revision}`;
+      if (!tints.has(plotId)) {
+        const tint = ds.entities.add({
+          polygon: {
+            hierarchy: ring(a.site.plot).slice(0, 4),
+            material: KIND_COLORS[a.parameters.kind].withAlpha(0.34),
+            classificationType: CLASSIFY,
+          },
+        });
+        tint._cityKind = a.parameters.kind;
+        // A tall kind-coloured beacon makes a 40 m plot readable from the district view.
+        const base = baseHeight(a.site.plot);
+        tint._cityBeacon = ds.entities.add({
+          wall: {
+            positions: ring(a.site.plot, base),
+            minimumHeights: Array(5).fill(base),
+            maximumHeights: Array(5).fill(base + BEACON_HEIGHT),
+            material: KIND_COLORS[a.parameters.kind].withAlpha(0.42),
+          },
+        });
+        tints.set(plotId, tint);
+      }
+      tints.get(plotId)._cityBeacon._cityPlot = a.site.plot;
+      // A proposed land use takes the plot's ground tint; the beacon stays.
+      tints.get(plotId).show =
+        !useOf(plotId) && !capturing && !R1.flat && !HUD.drape;
+      tints.get(plotId)._cityBeacon.show = tier === 'district';
+      if (!holos.has(plotId) && R1.flat) holos.set(plotId, flatConcept(a, key));
+      if (!holos.has(plotId) && drape) holos.set(plotId, drapeConcept(a, key));
+      if (!holos.has(plotId)) {
+        const g = holoGeometry(a);
+        if (!appeared.has(key)) appeared.set(key, now());
+        const start = appeared.get(key);
+        const lift = g.lift;
+        const heights = () => {
+          const k = Math.min(1, (now() - start) / SCAN_MS);
+          const h = lift + (g.top - lift) * (1 - (1 - k) ** 3);
+          return [h, h];
+        };
+        const animating = now() - start < SCAN_MS;
+        const sun = sunAt(a.site.plot);
+        const ground = groundShadow({
+          a0: g.a0,
+          a1: g.a1,
+          heightMeters: HOLO_HEIGHT,
+          faceAzimuthDeg: g.face,
+          sun,
+          lat: a.site.plot.center.lat,
+        });
+        // Contact band and cast shadow drape on tiles and terrain.
+        const shadows = [
+          [ground.contact, 0.62],
+          [ground.cast, 0.4],
+        ]
+          .filter(([corners]) => corners)
+          .map(([corners, alpha]) =>
+            ds.entities.add({
+              polygon: {
+                hierarchy: Cesium.Cartesian3.fromDegreesArray(corners.flat()),
+                material: Cesium.Color.BLACK.withAlpha(alpha),
+                classificationType: CLASSIFY,
+              },
+            }),
+          );
+        const holo = ds.entities.add({
+          id: `${OWNER}-concept-${a.id}`,
+          wall: {
+            positions: Cesium.Cartesian3.fromDegreesArrayHeights([
+              ...g.a0,
+              lift,
+              ...g.a1,
+              lift,
+            ]),
+            minimumHeights: [lift, lift],
+            maximumHeights: animating
+              ? new Cesium.CallbackProperty(heights, false)
+              : [g.top, g.top],
+            material: new Cesium.ImageMaterialProperty({
+              image: a.concept.image,
+              transparent: true,
+              // Cesium lights walls from the eye; shade the face by the sun instead.
+              color: new Cesium.Color(
+                ground.shade,
+                ground.shade,
+                ground.shade,
+                0.94,
+              ),
+            }),
+            outline: true,
+            outlineColor: ACCENT,
+          },
+        });
+        holo._cityKey = key;
+        holo._cityPlot = a.site.plot;
+        holo._cityAlternative = a.id;
+        holo._cityShadows = shadows;
+        holo._cityGround = {
+          sun,
+          baseGapMeters: g.lift - g.base,
+          shadowMeters: ground.lengthMeters,
+          shade: ground.shade,
+          contact: Boolean(ground.contact),
+          cast: Boolean(ground.cast),
+        };
+        holos.set(plotId, holo);
+        if (animating) {
+          holdContinuousRender(OWNER);
+          setTimeout(() => {
+            if (holos.get(plotId) === holo)
+              holo.wall.maximumHeights = [g.top, g.top];
+            if (![...appeared.values()].some((s) => now() - s < SCAN_MS))
+              releaseContinuousRender(OWNER);
+            scene.requestRender();
+          }, SCAN_MS + 50);
+        }
+      }
+      const holo = holos.get(plotId);
+      holo.show =
+        tier !== 'district' &&
+        !capturing &&
+        !(R1.flat && store.massing?.on);
+      for (const shadow of holo._cityShadows) shadow.show = holo.show;
+      setFlatCut(holo, holo.show && ds.show);
+    }
+    // FORK-ONLY (?cityHud=drape): the concept of the selected plot (else the
+    // newest shown) lies projected on the ground; the rest wait.
+    if (drape) {
+      const want =
+        (state.plot && holos.get(state.plot.id)) ||
+        [...holos.values()].filter((h) => h.show !== false).at(-1);
+      if (!want || !ds.show || want.show === false || !state.active)
+        drape.show(false);
+      else {
+        drape.set(want._cityDrape);
+        drape.show(true);
+      }
+    }
+  }
+
+  // FORK-ONLY (?cityHud=drape): a concept stands for its drape (src/standalone/
+  // cityConceptDrape.js) as an empty marker entity, so the snapshot and the
+  // tier logic treat it like any concept; the picture is on the ground.
+  function drapeConcept(a, key) {
+    const plot = a.site.plot;
+    const base = baseHeight(plot);
+    const heading = (a.site.reference ?? a.concept.sourceView).camera.heading;
+    const holo = ds.entities.add({
+      id: `${OWNER}-concept-${a.id}`,
+      position: Cesium.Cartesian3.fromDegrees(
+        plot.center.lon,
+        plot.center.lat,
+        base,
+      ),
+    });
+    holo._cityKey = key;
+    holo._cityPlot = plot;
+    holo._cityAlternative = a.id;
+    holo._cityShadows = [];
+    holo._cityDrape = { plot, image: a.concept.image, heading, base };
+    holo._cityGround = {
+      sun: sunAt(plot),
+      baseGapMeters: 0,
+      shadowMeters: 0,
+      shade: 1,
+      contact: true,
+      cast: false,
+      draped: true,
+    };
+    return holo;
+  }
+
+  const zoning = () => data.zoning ?? [];
+  const useOf = (plotId) =>
+    zoning().find((z) => z.plot.id === plotId)?.use ?? null;
+
+  // Each zoned plot drapes its proposed land-use tint and edge on the map.
+  function drawZones() {
+    const wanted = new Map(
+      (state.active ? zoning() : []).map((z) => [z.plot.id, z]),
+    );
+    for (const [plotId, tint] of zoneTints) {
+      if (wanted.get(plotId)?.use === tint._cityUse) continue;
+      ds.entities.remove(tint._cityEdge);
+      ds.entities.remove(tint);
+      zoneTints.delete(plotId);
+    }
+    for (const tint of zoneTints.values())
+      tint.show = tint._cityEdge.show = !capturing;
+    for (const [plotId, z] of wanted) {
+      if (zoneTints.has(plotId)) continue;
+      const color = ZONE_COLORS[z.use];
+      const tint = ds.entities.add({
+        polygon: {
+          hierarchy: ring(z.plot).slice(0, 4),
+          material: color.withAlpha(0.42),
+          classificationType: CLASSIFY,
+        },
+      });
+      tint._cityUse = z.use;
+      tint._cityEdge = ds.entities.add({
+        polyline: {
+          positions: ring(z.plot),
+          width: 3,
+          material: color.withAlpha(0.9),
+          clampToGround: true,
+          classificationType: CLASSIFY,
+        },
+      });
+      zoneTints.set(plotId, tint);
+    }
+  }
+
+  // The existing walk-access estimate (#206) per alternative, never recomputed here.
+  function walkByAlternative() {
+    const list = data.alternatives ?? [];
+    if (walkCache.list !== list)
+      walkCache = {
+        list,
+        map: Object.fromEntries(
+          presentCityWalkAccess(list)
+            .rows.filter((r) => r.id !== 'baseline' && r.state === 'evaluated')
+            .map((r) => [r.id, r.meanMeters]),
+        ),
+      };
+    return walkCache.map;
+  }
+
+  function pinsNow() {
+    return districtPins(data.alternatives ?? [], state.built, {
+      zoning: zoning(),
+      walk: walkByAlternative(),
+    });
+  }
+
+  // FORK-ONLY (?cityHud=plots): at far zoom the 40 m plot grid and the 200 m
+  // districts lie on the ground as thin rings (one batched classification
+  // primitive per colour), each district with a yield chip (the overlay).
+  function drawCells() {
+    const want = HUD.plots && state.active && state.tier === 'district';
+    if (!want) {
+      clearList(cellRings);
+      return;
+    }
+    if (cellRings._key === cellsKey && cellRings.length) return;
+    clearList(cellRings);
+    cellRings._key = cellsKey;
+    const focus = cells[Math.floor(cells.length / 2)];
+    for (const cell of cells) {
+      if (cell === focus)
+        cellRings.push(
+          ds.entities.add({
+            polygon: {
+              hierarchy: Cesium.Cartesian3.fromDegreesArray(
+                cell.corners.flat(),
+              ),
+              material: ACCENT.withAlpha(0.1),
+              classificationType: CLASSIFY,
+            },
+          }),
+        );
+      for (const plot of cell.plots)
+        cellRings.push(
+          ds.entities.add({
+            polygon: {
+              hierarchy: ringPolygon(plot.corners, PLOT_LINE_METERS),
+              material: ACCENT.withAlpha(0.38),
+              classificationType: CLASSIFY,
+            },
+          }),
+        );
+      cellRings.push(
+        ds.entities.add({
+          polygon: {
+            hierarchy: ringPolygon(cell.corners, CELL_LINE_METERS),
+            material: ACCENT.withAlpha(cell === focus ? 0.95 : 0.5),
+            classificationType: CLASSIFY,
+          },
+        }),
+      );
+    }
+  }
+  // Only the district in the middle of the view carries its yield chip: the
+  // model gives every 25-plot district the same estimate, and nine equal
+  // chips read as noise (round-2 smoke).
+  function cellsNow() {
+    if (!(HUD.plots && state.tier === 'district')) return [];
+    const cell = cells[Math.floor(cells.length / 2)];
+    if (!cell) return [];
+    if (!yields.has(cell.id)) yields.set(cell.id, cellYield(cell));
+    return [{ ...yields.get(cell.id), center: cell.center }];
+  }
+
+  function render() {
+    ds.show = state.active;
+    drawHover();
+    drawSelection();
+    drawConcepts();
+    drawZones();
+    drawCells();
+    scene.requestRender();
+  }
+
+  function selectedAlternative() {
+    const plot = state.plot;
+    if (!plot) return null;
+    const shown = shownByPlot().get(plot.id);
+    const list = plotAlternatives(data.alternatives ?? [], plot.id);
+    return (
+      list.find((a) => a.id === state.focusId) ?? shown ?? list.at(-1) ?? null
+    );
+  }
+
+  function present() {
+    if (disposed) return;
+    const plot = state.plot;
+    const alternatives = data.alternatives ?? [];
+    const focused = selectedAlternative();
+    const source = plot && mapSource();
+    store.publish({
+      active: state.active,
+      tier: state.tier,
+      wheelOpen: state.wheel,
+      pending: data.pending || framing,
+      framing,
+      provider: data.provider,
+      error: notice ? t(notice) : data.error,
+      status: data.status,
+      stats: resourceStats(data.alternatives, {
+        walk: walkByAlternative(),
+        focusId: focused?.id,
+      }),
+      plot: plot && {
+        id: plot.id,
+        code: plotCode(plot),
+        area: plot.areaSquareMeters,
+        size: plot.sizeMeters,
+        use: useOf(plot.id),
+        source,
+        lane: plotLane({
+          concept: shownByPlot().has(plot.id),
+          use: useOf(plot.id),
+          source,
+        }),
+      },
+      // The plots of the selected district; the selected plot is its anchor.
+      district: state.district?.map((cell) => cell.id) ?? null,
+      actions: wheelActions({
+        pending: data.pending || framing,
+        full: data.full,
+        zoneMenu: state.zoneMenu,
+        use: plot && useOf(plot.id),
+        zoneFull:
+          zoning().length >= MAX_ZONED_PLOTS && !(plot && useOf(plot.id)),
+      }),
+      legend:
+        state.zoneMenu || (state.tier === 'district' && zoning().length)
+          ? zoneLegend(zoning())
+          : null,
+      cards: carouselCards(alternatives, plot?.id, {
+        builtId: plot ? state.built[plot.id] : null,
+        focusId: focused?.id,
+        pendingId: data.pendingId,
+        zoning: zoning(),
+      }),
+      focused: focused && {
+        id: focused.id,
+        title: focused.title,
+        kind: focused.parameters.kind,
+        icon: KIND_ICONS[focused.parameters.kind],
+        parameters: focused.parameters,
+        revision: focused.revision,
+        concept: Boolean(focused.concept),
+        built: state.built[plot.id] === focused.id,
+      },
+      callouts: state.tier === 'detail' ? detailCallouts(focused) : [],
+      pins: state.tier === 'district' ? pinsNow() : [],
+      // FORK-ONLY (exp/city-game-hud): the zoning budget spent, the far-zoom
+      // district cells and the armed tray tool.
+      zoned: zoning().length,
+      cells: cellsNow(),
+      armed,
+    });
+  }
+
+  function sync() {
+    render();
+    present();
+  }
+
+  function dispatch(action) {
+    const next = playReducer(state, action);
+    if (next === state) return;
+    const tierOnly = action.type === 'tier';
+    state = next;
+    if (tierOnly) {
+      drawConcepts();
+      drawCells();
+      drawHover();
+      present();
+      scene.requestRender();
+    } else sync();
+  }
+
+  // --- per-frame anchors -------------------------------------------------
+  const occluder = new Cesium.EllipsoidalOccluder(
+    Cesium.Ellipsoid.WGS84,
+    Cesium.Cartesian3.ZERO,
+  );
+  const scratch = new Cesium.Cartesian2();
+  function project(lon, lat, height) {
+    const world = Cesium.Cartesian3.fromDegrees(lon, lat, height);
+    const camera = viewer.camera;
+    const toPoint = Cesium.Cartesian3.subtract(
+      world,
+      camera.positionWC,
+      new Cesium.Cartesian3(),
+    );
+    if (Cesium.Cartesian3.dot(toPoint, camera.directionWC) <= 0) return null;
+    occluder.cameraPosition = camera.positionWC;
+    if (!occluder.isPointVisible(world)) return null;
+    const p = scene.cartesianToCanvasCoordinates(world, scratch);
+    if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return null;
+    const rect = scene.canvas.getBoundingClientRect();
+    const x = Math.round(p.x + rect.left);
+    const y = Math.round(p.y + rect.top);
+    const pad = 40;
+    if (x < -pad || y < -pad || x > rect.right + pad || y > rect.bottom + pad)
+      return null;
+    return { x, y };
+  }
+  function frame() {
+    if (!state.active || disposed) return;
+    const camera = viewer.camera;
+    const plot = state.plot;
+    if (plot) {
+      const base = baseHeight(plot);
+      range = Cesium.Cartesian3.distance(
+        camera.positionWC,
+        Cesium.Cartesian3.fromDegrees(plot.center.lon, plot.center.lat, base),
+      );
+    } else {
+      const c = camera.positionCartographic;
+      const ground = scene.globe?.show ? (scene.globe.getHeight(c) ?? 0) : 0;
+      range = c.height - ground;
+    }
+    const tier = zoomTier(range, state.tier);
+    if (tier !== state.tier) dispatch({ type: 'tier', tier });
+    const anchors = {
+      plot: null,
+      footprint: null,
+      tag: null,
+      holo: null,
+      callouts: {},
+      pins: {},
+    };
+    if (plot) {
+      const base = baseHeight(plot);
+      anchors.plot = project(plot.center.lon, plot.center.lat, base);
+      anchors.footprint = plot.corners.map(([lon, lat]) =>
+        project(lon, lat, base),
+      );
+      const [lon, lat] = plot.corners[2];
+      anchors.tag = project(lon, lat, base + BOX_HEIGHT);
+      const a = shownByPlot().get(plot.id);
+      if (a) {
+        const g = holoGeometry(a);
+        anchors.holo = project(plot.center.lon, plot.center.lat, g.top);
+      }
+      if (state.tier === 'detail') {
+        for (const c of detailCallouts(selectedAlternative())) {
+          const p = plotPoint(plot, c.fx, c.fy);
+          anchors.callouts[c.id] = project(p.lon, p.lat, base + 2);
+        }
+      }
+    }
+    if (state.tier === 'district') {
+      for (const pin of pinsNow()) {
+        const h = baseHeight({ id: pin.plotId, center: pin.center });
+        anchors.pins[pin.plotId] = project(pin.center.lon, pin.center.lat, h);
+      }
+    }
+    // FORK-ONLY (?cityHud=plots): the district cells around the view's centre.
+    if (HUD.plots && state.tier === 'district') {
+      const mid = viewer.camera.pickEllipsoid(
+        new Cesium.Cartesian2(
+          scene.canvas.clientWidth / 2,
+          scene.canvas.clientHeight * 0.55,
+        ),
+        Cesium.Ellipsoid.WGS84,
+      );
+      if (mid) {
+        const c = Cesium.Cartographic.fromCartesian(mid);
+        const near = districtCells(
+          {
+            lat: Cesium.Math.toDegrees(c.latitude),
+            lon: Cesium.Math.toDegrees(c.longitude),
+          },
+          1,
+        );
+        const key = near.map((cell) => cell.id).join();
+        if (key !== cellsKey) {
+          cells = near;
+          cellsKey = key;
+          drawCells();
+          present();
+          scene.requestRender();
+        }
+      }
+      anchors.cells = {};
+      for (const cell of cells.slice(Math.floor(cells.length / 2)).slice(0, 1)) {
+        const h = baseHeight({ id: cell.id, center: cell.center });
+        anchors.cells[cell.id] = project(cell.center.lon, cell.center.lat, h);
+      }
+    }
+    const key = JSON.stringify(anchors);
+    if (key !== lastAnchors) {
+      lastAnchors = key;
+      store.place(anchors);
+    }
+  }
+
+  // --- input ---------------------------------------------------------------
+  // The ground under the cursor, as the click resolver reads it.
+  const pickPoint = (position) => {
+    if (onDiorama())
+      return dioramaGroundPoint(viewer.camera, position, win.__gevDiorama);
+    return groundPoint(scene, viewer.camera, position);
+  };
+  function onClick({ position }, extend = false) {
+    if (framing) return;
+    // An armed massing tool (the protected edge) takes the next ground click.
+    if (store.massingControls?.click?.(pickPoint(position))) return;
+    // Shift-click a second plot: the block between it and the selected plot
+    // becomes a district, framed whole.
+    if (extend && state.plot) {
+      const point = pickPoint(position);
+      const block = plotBlock(state.plot, point && snap(point));
+      if (block) {
+        dispatch({ type: 'district', plots: block });
+        frameDistrict(block);
+      }
+      return;
+    }
+    const hit = resolveClickedPlot({
+      scene,
+      camera: viewer.camera,
+      position,
+      snap,
+      pointAt: pickPoint,
+      owns: (entity) => ds.entities.contains(entity),
+    });
+    if (!hit) {
+      dispatch({ type: 'clear' });
+      return;
+    }
+    const { plot } = hit;
+    // Clicking a concept card selects that plot again.
+    if (hit.height === undefined) {
+      dispatch({ type: 'select', plot });
+      return;
+    }
+    baseHeight(plot, hit.height);
+    notice = null;
+    // From far away (district, or well beyond plot framing) the click swoops in.
+    const far =
+      state.tier === 'district' ||
+      (!state.plot && range > FRAMES.oblique.range * 1.6);
+    dispatch({ type: 'select', plot });
+    if (far) void fly(plot, 'oblique');
+  }
+  function onMove({ endPosition }) {
+    hoverQueued = endPosition;
+    win.requestAnimationFrame?.(() => {
+      if (!hoverQueued || !state.active) return;
+      if (onDiorama()) {
+        const point = pickPoint(hoverQueued);
+        hoverQueued = null;
+        const plot = point && snap(point);
+        if (plot?.id !== state.hover?.id) dispatch({ type: 'hover', plot });
+        return;
+      }
+      const world = viewer.camera.pickEllipsoid(
+        hoverQueued,
+        Cesium.Ellipsoid.WGS84,
+      );
+      hoverQueued = null;
+      if (!world) return dispatch({ type: 'hover', plot: null });
+      const c = Cesium.Cartographic.fromCartesian(world);
+      const plot = snap({
+        lat: Cesium.Math.toDegrees(c.latitude),
+        lon: Cesium.Math.toDegrees(c.longitude),
+      });
+      if (plot?.id !== state.hover?.id) dispatch({ type: 'hover', plot });
+    });
+  }
+  function onKey(event) {
+    if (event.key !== 'Escape' || !state.active) return;
+    if (doc.querySelector('dialog[open]')) return;
+    const target = event.target;
+    if (
+      target?.isContentEditable ||
+      /^(INPUT|TEXTAREA|SELECT)$/.test(target?.tagName ?? '')
+    )
+      return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    controls.exit();
+  }
+
+  function fly(plot, kind) {
+    const frameOf = FRAMES[kind];
+    const base = baseHeight(plot);
+    const camera = viewer.camera;
+    const lead = scene.canvas.clientWidth < 600 ? NARROW_LEAD[kind] : 0;
+    // Aim at a point between the camera and the plot, which lifts the plot on screen.
+    const metersLon = 111_320 * Math.cos((plot.center.lat * Math.PI) / 180);
+    const aimLat =
+      plot.center.lat - (Math.cos(camera.heading) * lead) / 111_320;
+    const aimLon =
+      plot.center.lon - (Math.sin(camera.heading) * lead) / metersLon;
+    return new Promise((resolve) => {
+      camera.cancelFlight?.();
+      camera.flyToBoundingSphere(
+        new Cesium.BoundingSphere(
+          Cesium.Cartesian3.fromDegrees(aimLon, aimLat, base),
+          plot.sizeMeters,
+        ),
+        {
+          offset: new Cesium.HeadingPitchRange(
+            camera.heading,
+            Cesium.Math.toRadians(frameOf.pitch),
+            frameOf.range,
+          ),
+          duration: 1.4,
+          easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT,
+          complete: () => resolve(true),
+          cancel: () => resolve(false),
+        },
+      );
+    });
+  }
+  function frameDistrict(plots) {
+    const base = baseHeight(plots[0]);
+    const sphere = Cesium.BoundingSphere.fromPoints(
+      plots.flatMap((cell) => ring(cell, base).slice(0, 4)),
+    );
+    viewer.camera.cancelFlight?.();
+    viewer.camera.flyToBoundingSphere(sphere, {
+      offset: new Cesium.HeadingPitchRange(
+        viewer.camera.heading,
+        Cesium.Math.toRadians(FRAMES.district.pitch),
+        sphere.radius * FRAMES.district.fit,
+      ),
+      duration: 1.4,
+      easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT,
+    });
+  }
+  // Give the map a bounded moment to load the framed tiles before capture.
+  function settled(timeoutMs = 15000) {
+    const started = now();
+    return new Promise((resolve) => {
+      const check = () => {
+        const tilesetsReady = Array.from(
+          { length: scene.primitives.length },
+          (_, i) => scene.primitives.get(i),
+        ).every((p) => !p?.show || p.tilesLoaded !== false);
+        const globeReady = !scene.globe?.show || scene.globe.tilesLoaded;
+        if ((tilesetsReady && globeReady) || now() - started > timeoutMs)
+          resolve();
+        else {
+          scene.requestRender();
+          setTimeout(check, 120);
+        }
+      };
+      check();
+    });
+  }
+
+  async function reimagine(kind) {
+    const plot = state.plot;
+    if (!plot || framing || data.pending || data.full) return;
+    framing = true;
+    notice = null;
+    present();
+    try {
+      await fly(plot, 'oblique');
+      await settled();
+      // The capture keeps the cyan footprint so the concept knows its plot.
+      clearList(grid);
+      clearList(hover);
+      for (const holo of holos.values()) holo.show = false;
+      scene.requestRender();
+    } finally {
+      framing = false;
+    }
+    if (disposed || !state.active || state.plot !== plot) return sync();
+    // builder.reimagine publishes before it captures: keep the old concept,
+    // its shadows and tints off the map until the new concept lands.
+    capturing = true;
+    let id = null;
+    try {
+      id = await builder.reimagine({ plot, kind });
+    } finally {
+      capturing = false;
+    }
+    // The concept takes the stage; clicking the plot brings the wheel back.
+    if (id && state.plot?.id === plot.id) dispatch({ type: 'landed', id });
+    else sync();
+  }
+
+  // A sampled (not picked) ground is re-measured once the framed tiles load,
+  // so a restored concept stands on the surface instead of a coarse tile.
+  function reground(plot) {
+    if (disposed || !state.active || picked.has(plot.id)) return;
+    const before = heights.get(plot.id);
+    heights.delete(plot.id);
+    if (Math.abs(baseHeight(plot) - before) < 0.5) return;
+    removeHolo(plot.id);
+    const tint = tints.get(plot.id);
+    if (tint) {
+      ds.entities.remove(tint._cityBeacon);
+      ds.entities.remove(tint);
+    }
+    tints.delete(plot.id);
+    sync();
+  }
+
+  // The first entry after a page load frames the latest restored concept.
+  function resume() {
+    if (resumed) return;
+    resumed = true;
+    const c = viewer.camera.positionCartographic;
+    const a = resumeAlternative(
+      data.alternatives,
+      c && {
+        lat: Cesium.Math.toDegrees(c.latitude),
+        lon: Cesium.Math.toDegrees(c.longitude),
+        height: c.height,
+      },
+    );
+    if (!a) return;
+    const plot = a.site.plot;
+    dispatch({ type: 'resume', plot, id: a.id });
+    if (state.plot !== plot) return;
+    void fly(plot, 'oblique').then(
+      (landed) => landed && settled(8000).then(() => reground(plot)),
+    );
+  }
+
+  const controls = {
+    toggle() {
+      if (state.active) controls.exit();
+      else controls.enter();
+    },
+    enter() {
+      if (disposed || state.active) return;
+      // The newest claim takes over: a newer tool taking the pointer turns
+      // City builder off as if the person had.
+      const claimed = claimPointer(OWNER, {
+        onLost: () => {
+          if (lease === claimed) controls.exit();
+        },
+      });
+      if (!claimed) return;
+      lease = claimed;
+      notice = null;
+      handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
+      handler.setInputAction(onClick, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+      handler.setInputAction(
+        (event) => onClick(event, true),
+        Cesium.ScreenSpaceEventType.LEFT_CLICK,
+        Cesium.KeyboardEventModifier.SHIFT,
+      );
+      handler.setInputAction(onMove, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+      // Borrow the Viewer's own select/track clicks for the mode's lifetime.
+      const stock = viewer.screenSpaceEventHandler;
+      saved = {
+        click:
+          stock?.getInputAction(Cesium.ScreenSpaceEventType.LEFT_CLICK) ?? null,
+        double:
+          stock?.getInputAction(
+            Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK,
+          ) ?? null,
+      };
+      stock?.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_CLICK);
+      stock?.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
+      doc.addEventListener('keydown', onKey, true);
+      removeRender = scene.postRender.addEventListener(frame);
+      doc.body.classList.add(BODY_CLASS);
+      dispatch({ type: 'enter' });
+      frame();
+      resume();
+    },
+    exit() {
+      if (!state.active) return;
+      handler?.destroy();
+      handler = null;
+      const stock = viewer.screenSpaceEventHandler;
+      if (stock && saved) {
+        if (saved.click)
+          stock.setInputAction(
+            saved.click,
+            Cesium.ScreenSpaceEventType.LEFT_CLICK,
+          );
+        if (saved.double)
+          stock.setInputAction(
+            saved.double,
+            Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK,
+          );
+      }
+      saved = null;
+      doc.removeEventListener('keydown', onKey, true);
+      removeRender?.();
+      removeRender = null;
+      releaseContinuousRender(OWNER);
+      doc.body.classList.remove(BODY_CLASS);
+      releasePointer(lease);
+      lease = null;
+      notice = null;
+      lastAnchors = '';
+      store.place(null);
+      dispatch({ type: 'exit' });
+    },
+    act(id) {
+      if (!state.plot) return;
+      if (id === 'zone' || id === 'back') {
+        dispatch({ type: 'zone-menu', open: id === 'zone' });
+        return;
+      }
+      if (id === 'clear-use' || CITY_LAND_USES.includes(id)) {
+        void builder.setZone({
+          plot: state.plot,
+          use: id === 'clear-use' ? null : id,
+        });
+        return;
+      }
+      if (id === 'inspect') {
+        void fly(state.plot, 'detail');
+        return;
+      }
+      const tried = plotAlternatives(
+        data.alternatives ?? [],
+        state.plot.id,
+      ).map((a) => a.parameters.kind);
+      const kind = id === 'reimagine' ? nextKind(tried) : id;
+      if (KIND_ICONS[kind]) void reimagine(kind);
+    },
+    focus(id) {
+      dispatch({ type: 'focus', id });
+    },
+    build(id) {
+      if (!state.plot) return;
+      dispatch({ type: 'build', plotId: state.plot.id, id });
+    },
+    async reroll(id) {
+      const plotId = state.plot?.id;
+      const landed = await builder.reroll(id);
+      // Only the plot that was rerolled hands the stage to its new concept.
+      if (state.active && state.plot?.id === plotId)
+        dispatch({ type: landed ? 'landed' : 'focus', id });
+    },
+    openRecords() {
+      builder.open();
+    },
+    // FORK-ONLY (?cityHud=place): the tray tool the placement ghost previews.
+    arm(id) {
+      if (armed === id) return;
+      armed = id;
+      render();
+      present();
+    },
+  };
+
+  const probe = Object.freeze({
+    snapshot: () =>
+      Object.freeze({
+        active: state.active,
+        tier: state.tier,
+        range,
+        framing,
+        pending: Boolean(data.pending),
+        plot: state.plot && {
+          id: state.plot.id,
+          center: { ...state.plot.center },
+        },
+        footprint:
+          Boolean(ds.entities.getById(`${OWNER}-footprint`)) && ds.show,
+        concepts: [...holos.values()]
+          .filter((e) => e.show !== false && ds.show)
+          .map((e) => e._cityAlternative),
+        grounding: Object.fromEntries(
+          [...holos.values()].map((e) => [e._cityAlternative, e._cityGround]),
+        ),
+        anchors: lastAnchors ? JSON.parse(lastAnchors) : null,
+        bodyClass: doc.body.classList.contains(BODY_CLASS),
+        zoning: zoning().map((z) => ({ plotId: z.plot.id, use: z.use })),
+        zoneTints: ds.show ? zoneTints.size : 0,
+        district: state.district?.map((cell) => cell.id) ?? null,
+      }),
+  });
+  if (win) win.__gevCityPlay = probe;
+  store.connect(controls);
+  present();
+  // The selection prism steps aside while a massing block stands.
+  const stopMassing = watch(
+    () => `${Boolean(store.massing?.on)} ${Boolean(store.massing?.quiet)}`,
+    () => render(),
+  );
+
+  return {
+    receive(next) {
+      data = next ?? data;
+      if (disposed) return;
+      sync();
+    },
+    destroy() {
+      if (disposed) return;
+      controls.exit();
+      stopMassing();
+      disposed = true;
+      if (win?.__gevCityPlay === probe) delete win.__gevCityPlay;
+      drape?.destroy();
+      Promise.resolve(added).then(() => viewer.dataSources?.remove(ds, true));
+      if (store.controls === controls) {
+        store.connect(null);
+        store.publish(null);
+        store.place(null);
+      }
+    },
+  };
+}

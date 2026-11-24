@@ -1,5 +1,18 @@
 import { DEFAULT_VOICE_TIER, resolveVoiceModel } from './voiceCost.js';
 
+/** Whether this page is a situation room (?situation=1). */
+function situationPage() {
+  try {
+    return (
+      new URLSearchParams(globalThis.location?.search || '').get(
+        'situation',
+      ) === '1'
+    );
+  } catch {
+    return false;
+  }
+}
+
 /** Realtime-compatible token and SDP requests, independent of microphone/UI ownership. */
 export function createRealtimeBackend({
   tokenEndpoint = '/api/realtime/token',
@@ -18,6 +31,7 @@ export function createRealtimeBackend({
     async requestToken({
       tier = DEFAULT_VOICE_TIER,
       authMode = 'api-key',
+      situation = situationPage(),
       signal,
     } = {}) {
       signal = scoped(signal);
@@ -27,6 +41,8 @@ export function createRealtimeBackend({
         tier: resolveVoiceModel(tier).tier,
       });
       if (authMode === 'oauth') query.set('auth', 'oauth');
+      // A situation-room page is offered the card actions.
+      if (situation) query.set('situation', '1');
       const url = `${tokenEndpoint}${separator}${query}`;
       const response = await tokenTransport(url, {
         signal,

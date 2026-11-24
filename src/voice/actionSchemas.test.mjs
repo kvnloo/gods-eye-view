@@ -64,7 +64,9 @@ test('the complete Realtime tool payload pins the manifest-generated layer relea
     // visual style; set_cyber_sonar is excluded above).
     // The Space Missions panel adds one panel target.
     // Fire Perimeters queries add lastGrowthTime.
-    '2be49b7634a7b74b756a68cf80835ee36411e087edb549eb39f1ce7310afe60f',
+    // The situation room adds set_situation_mode, show_card, brief, pin_card,
+    // dismiss_card and focus_event (offered only to situation-mode sessions).
+    '55e16904aa3020390fe077e33417113e32e9ff7687f8d0be87857ab19ee101ae',
   );
 });
 
@@ -163,6 +165,12 @@ test('all legacy action arguments are byte-identical after removing the delibera
         'osm_query',
         'show_street_level',
         'open_stories',
+        'set_situation_mode',
+        'show_card',
+        'brief',
+        'pin_card',
+        'dismiss_card',
+        'focus_event',
       ].includes(tool.name),
   );
   // Layer enums are generated from the voice layer manifest and pinned by

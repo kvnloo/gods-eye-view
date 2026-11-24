@@ -11,6 +11,7 @@ import SceneChromeView from './SceneChromeView.vue';
 import ProviderSettingsView from './ProviderSettingsView.vue';
 import IntelHudView from './IntelHudView.vue';
 import StoriesView from './StoriesView.vue';
+import SituationView from './SituationView.vue';
 
 /**
  * Application views by name. A page places each one with a host element,
@@ -28,6 +29,7 @@ export const APPLICATION_VIEWS = Object.freeze({
   welcome: WelcomeView,
   'intel-hud': IntelHudView,
   stories: StoriesView,
+  situation: SituationView,
 });
 
 const mounted = new WeakMap();

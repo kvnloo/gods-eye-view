@@ -134,8 +134,11 @@ function createRealtimeOAuthLoginHandler({
  * refuses a whole session whose tool schema uses `\p{…}` patterns (#1618), as
  * Chat Completions did (#1616), so voice drops the same pattern hints chat does.
  */
-function realtimeSessionTools(tools, { overpass = false } = {}) {
-  return offeredTools(tools, { overpass }).map((tool) =>
+function realtimeSessionTools(
+  tools,
+  { overpass = false, situation = false } = {},
+) {
+  return offeredTools(tools, { overpass, situation }).map((tool) =>
     tool.parameters
       ? { ...tool, parameters: chatSchema(tool.parameters) }
       : tool,
@@ -296,6 +299,8 @@ function createRealtimeTokenHandler({
         ? {}
         : { transcription: { model: transcribeModel } };
     const overpass = overpassConfigured();
+    // A situation-room page (?situation=1) asks for its card actions.
+    const situation = query.get('situation') === '1';
     const sessionConfig = {
       session: {
         type: 'realtime',
@@ -322,7 +327,7 @@ function createRealtimeTokenHandler({
           output: { voice },
         },
         instructions: realtimeInstructions(annotationGuidance, { overpass }),
-        tools: realtimeSessionTools(tools, { overpass }),
+        tools: realtimeSessionTools(tools, { overpass, situation }),
         tool_choice: 'auto',
       },
     };

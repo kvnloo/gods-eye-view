@@ -4,6 +4,56 @@ import {
 } from '../../../src/voice/layerManifest.js';
 
 export const ACTION_DESCRIPTIONS = {
+  set_situation_mode: {
+    description:
+      'Turn the situation room on or off: the live event stream, per-source status and "what matters now" over the globe.',
+  },
+  show_card: {
+    description:
+      'Show a situation card built from a real GEV query: aircraft or vessels in an area, quakes, fires, the next satellite pass, public cameras, a place outline, a distance, news or storms. The card shows source, observed time, freshness and coverage, and holds, then leaves a one-line receipt. Claim only what the result says; a needs-key or unavailable result means no data was shown.',
+    parameters: {
+      properties: {
+        kind: { description: 'What to show.' },
+        place: { description: 'A place name, e.g. "Strait of Hormuz".' },
+        latitude: { description: 'Instead of place: a point.' },
+        longitude: { description: 'Instead of place: a point.' },
+        label: { description: 'Name for a point.' },
+        radiusKm: { description: 'Search radius around the place or point.' },
+        filter: {
+          description: 'Vessels: destination text to match, e.g. "Oakland".',
+        },
+        satellite: { description: 'Satellite for a pass, default ISS.' },
+        to: { description: 'Distance: the second place.' },
+        minMagnitude: { description: 'Quakes: smallest magnitude.' },
+      },
+    },
+  },
+  brief: {
+    description:
+      'Put a briefing card on screen. With only a place, GEV composes it from its own sources (air, weather, quakes, fires, news, cameras, sea), filling in as each answers, with sources and unknowns listed. With a body, it shows your text (markdown-lite: paragraphs, - bullets, **bold**) with the sources you list.',
+    parameters: {
+      properties: {
+        title: { description: 'Card title.' },
+        place: { description: 'Place the brief is about.' },
+        body: { description: 'Your briefing text.' },
+        sources: { description: 'Where the text came from.' },
+        unknowns: { description: 'What is not known.' },
+        radiusKm: { description: 'Radius for the air picture.' },
+      },
+    },
+  },
+  pin_card: {
+    description:
+      'Pin a card so it stays until dismissed (newest card when id is omitted); pinned:false releases it.',
+  },
+  dismiss_card: {
+    description:
+      'Dismiss a card (newest when id is omitted) or all; each leaves its receipt.',
+  },
+  focus_event: {
+    description:
+      'Fly to an event from the live stream: rank 1-3 of "what matters now", or an event id. Returns the event and the suggested next question.',
+  },
   fly_to_location: {
     description:
       "Fly the God's Eye View camera to a known city, geocoded country/region/city/landmark, or explicit WGS84 coordinate. Countries/cities frame the whole place; landmarks/buildings use close framing.",

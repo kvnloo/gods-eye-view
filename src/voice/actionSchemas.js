@@ -1018,6 +1018,115 @@ const schemas = [
       },
     },
   },
+  {
+    name: 'set_situation_mode',
+    parameters: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        enabled: { type: 'boolean' },
+      },
+    },
+  },
+  {
+    name: 'show_card',
+    parameters: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['kind'],
+      properties: {
+        kind: {
+          type: 'string',
+          enum: [
+            'aircraft',
+            'vessels',
+            'quakes',
+            'fires',
+            'satellite',
+            'camera',
+            'area',
+            'distance',
+            'news',
+            'cyclones',
+          ],
+        },
+        place: { type: 'string', minLength: 1, maxLength: 200 },
+        latitude: { type: 'number', minimum: -90, maximum: 90 },
+        longitude: { type: 'number', minimum: -180, maximum: 180 },
+        label: { type: 'string', minLength: 1, maxLength: 120 },
+        radiusKm: { type: 'number', minimum: 1, maximum: 2000 },
+        filter: { type: 'string', minLength: 1, maxLength: 80 },
+        satellite: { type: 'string', minLength: 1, maxLength: 80 },
+        to: { type: 'string', minLength: 1, maxLength: 200 },
+        minMagnitude: { type: 'number', minimum: 2.5, maximum: 10 },
+      },
+    },
+  },
+  {
+    name: 'brief',
+    parameters: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        title: { type: 'string', minLength: 1, maxLength: 120 },
+        place: { type: 'string', minLength: 1, maxLength: 200 },
+        body: { type: 'string', minLength: 1, maxLength: 4000 },
+        sources: {
+          type: 'array',
+          maxItems: 12,
+          items: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['name'],
+            properties: {
+              name: { type: 'string', minLength: 1, maxLength: 80 },
+              url: { type: 'string', maxLength: 500 },
+              observedAt: { type: 'string', maxLength: 40 },
+            },
+          },
+        },
+        unknowns: {
+          type: 'array',
+          maxItems: 8,
+          items: { type: 'string', minLength: 1, maxLength: 160 },
+        },
+        radiusKm: { type: 'number', minimum: 5, maximum: 2000 },
+      },
+    },
+  },
+  {
+    name: 'pin_card',
+    parameters: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        id: { type: 'string', minLength: 1, maxLength: 40 },
+        pinned: { type: 'boolean' },
+      },
+    },
+  },
+  {
+    name: 'dismiss_card',
+    parameters: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        id: { type: 'string', minLength: 1, maxLength: 40 },
+        all: { type: 'boolean' },
+      },
+    },
+  },
+  {
+    name: 'focus_event',
+    parameters: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        id: { type: 'string', minLength: 1, maxLength: 120 },
+        rank: { type: 'integer', minimum: 1, maximum: 3 },
+      },
+    },
+  },
 ];
 
 function freeze(value) {

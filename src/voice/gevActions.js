@@ -16,6 +16,10 @@ import { isStoriesOpen } from './realtimeInputPolicy.js';
 export { readLayerLifecycleSummary } from './layerSummary.js';
 import { defaultGeospatial } from '../search/defaults.js';
 import { msg } from '../i18n/index.js';
+import {
+  isSituationAction,
+  runSituationAction,
+} from '../situation/situationActions.js';
 import { useProviderSettingsStore } from '../ui/stores/providerSettings.js';
 import { applicationPinia } from '../ui/vueRuntime.js';
 import {
@@ -314,6 +318,7 @@ export function createGevActionRunner({
   readVoicePanelOperation = null,
   osmSearch = null,
   areaOptions = null,
+  situation = null,
 }) {
   // Voice enable times and analyst follow-up memory belong to this runner.
   // Speech builders turn results into say/display envelopes; callers extend
@@ -457,6 +462,16 @@ export function createGevActionRunner({
     const current = () =>
       !runOptions.signal?.aborted &&
       (typeof runOptions.isCurrent !== 'function' || runOptions.isCurrent());
+    // The situation room (cards, briefs, the live event stream) owns its
+    // actions; the page supplies it as a reader because it is built after
+    // this runner.
+    if (isSituationAction(name))
+      return runSituationAction(
+        typeof situation === 'function' ? situation() : situation,
+        name,
+        args,
+        { signal: runOptions.signal, origin: runOptions.origin },
+      );
     if (name === 'open_stories') {
       const denied = { ok: false, action: name, applied: false };
       const cancelled = {

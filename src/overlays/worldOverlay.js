@@ -56,6 +56,24 @@ const DEFAULT_COLLISION_CAPACITY = 96;
 // work-conserving ceiling preserves every source's shipped cap; pinned and
 // active/protected entries bypass it.
 export const AMBIENT_CARD_COLLISION_CAPACITY = 1150;
+
+/**
+ * One scale for every world label, for a screen read from across a room
+ * (the situation room on a TV sets it so 10 px labels draw at 18 px). Labels
+ * keep their own curves; collision uses the scaled boxes, so fewer fit.
+ */
+let _displayScale = 1;
+export const WORLD_OVERLAY_DISPLAY_SCALE_MAX = 2.5;
+export function setWorldOverlayDisplayScale(scale) {
+  const value = Number(scale);
+  _displayScale = Number.isFinite(value)
+    ? Math.min(WORLD_OVERLAY_DISPLAY_SCALE_MAX, Math.max(1, value))
+    : 1;
+  return _displayScale;
+}
+export function getWorldOverlayDisplayScale() {
+  return _displayScale;
+}
 const DEFAULT_MOVING_SOLVE_MS = 125;
 const VALID_VARIANTS = new Set([
   'label',
@@ -2022,6 +2040,7 @@ function snapshotAndProject(entry, source, viewProjection, keyhole) {
     }
     record.paintScale *= altitudeFactor;
   }
+  record.paintScale *= _displayScale;
   record.altitudeAlpha =
     entry.altitudeFadeEnd === Number.POSITIVE_INFINITY
       ? Number.isFinite(cameraAltitude) && cameraAltitude < entry.minAltitude

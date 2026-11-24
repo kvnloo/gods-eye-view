@@ -32,6 +32,15 @@ import {
   readZ0liveDisplayConfig,
 } from '../voice/z0liveDisplay.js';
 import { getWorldPacket } from '../agent/worldPacket.js';
+import { readSituationConfig } from '../situation/config.js';
+import { createSituationController } from '../situation/situationController.js';
+import { createGlobeProjector } from '../situation/globeProjector.js';
+import { useSituationStore } from '../ui/stores/situation.js';
+import { holdRootClass } from '../ui/rail/rootClass.js';
+import { setWorldOverlayDisplayScale } from '../overlays/worldOverlay.js';
+
+// World labels are 10-13 px for a desk; the situation room is read from 3 m.
+const SITUATION_LABEL_SCALE = 1.8;
 import { isStoriesOpen } from '../voice/realtimeInputPolicy.js';
 import { installViews, isEmbeddedInline } from './embed.js';
 import {
@@ -75,6 +84,7 @@ export function createApplicationTools({
   sceneDataPacks,
   drawMarkActions = [],
   library = {},
+  situation = {},
   signal,
   defer,
 }) {
@@ -337,6 +347,61 @@ export function createApplicationTools({
   defer(() => {
     if (window.__godsEyeView === debug) delete window.__godsEyeView;
   });
+  // The situation room (cards, briefs, the live event stream): opt-in with
+  // `?situation=1` or the set_situation_mode action. Its actions run through
+  // the voice runner below, so voice, chat, z0live and agents share them.
+  let situationController = null;
+  if (typeof situation?.services === 'function') {
+    const situationStore = useSituationStore(applicationPinia());
+    const projector = createGlobeProjector(viewer);
+    let releaseRootClass = null;
+    situationController = createSituationController({
+      services: situation.services,
+      run: (name, args, options = {}) =>
+        (voiceCommands.actionRunner || voiceCommands.runner)(name, args, {
+          ...options,
+          signal: options.signal
+            ? AbortSignal.any([signal, options.signal].filter(Boolean))
+            : signal,
+        }),
+      publish: (view) => {
+        if (view?.enabled && !releaseRootClass) {
+          releaseRootClass = holdRootClass(document, 'gev-situation');
+          setWorldOverlayDisplayScale(SITUATION_LABEL_SCALE);
+          governorRequestRender('situation-labels');
+        }
+        if (!view?.enabled && releaseRootClass) {
+          releaseRootClass();
+          releaseRootClass = null;
+          setWorldOverlayDisplayScale(1);
+          governorRequestRender('situation-labels');
+        }
+        situationStore.publish(view);
+      },
+      publishPins: (pins) => situationStore.publishPins(pins),
+      project: projector.project,
+      onFrame: projector.onFrame,
+      readLayerEnabled: (layerId) =>
+        dataManager.getAll().find((layer) => layer.id === layerId)?.enabled ===
+        true,
+      requestRender: () => governorRequestRender('situation'),
+    });
+    situationStore.connect({
+      expand: (id, open) => situationController.expand(id, open),
+      pin: (id, pinned) => situationController.pin({ id, pinned }),
+      dismiss: (id) => situationController.dismiss({ id }),
+      ask: (args) =>
+        situationController.showCard(args, { origin: 'screen', signal }),
+      focus: (id) => situationController.focusEvent({ id }, { signal }),
+    });
+    debug.situation = situationController;
+    defer(() => {
+      situationController.stop();
+      situationStore.connect(null);
+      releaseRootClass?.();
+      setWorldOverlayDisplayScale(1);
+    });
+  }
   voiceCommands = initGevVoiceCommands({
     ...voice,
     canStartVoice: () => !isStoriesOpen(),
@@ -358,7 +423,10 @@ export function createApplicationTools({
     annotations,
     // A voice or chat selection opens its card in Context, as a click does.
     contextCard: createContextCardOpener(applicationPinia()),
+    situation: () => situationController,
   });
+  if (situationController && readSituationConfig().enabled)
+    situationController.setEnabled(true);
   defer(() => {
     voiceCommands.stop({ removeUi: true });
     if (window.__gevVoiceCommands === voiceCommands)
@@ -381,10 +449,14 @@ export function createApplicationTools({
           },
         );
       },
-      readContext: () =>
-        compactWorldContext(
+      readContext: () => ({
+        ...compactWorldContext(
           getWorldPacket({ viewer, styleManager, dataManager, sceneDirector }),
         ),
+        ...(situationController?.enabled
+          ? { situation: situationController.context() }
+          : {}),
+      }),
     });
     void bridge.start();
     debug.z0liveDisplay = bridge.status;

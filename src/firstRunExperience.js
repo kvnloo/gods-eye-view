@@ -195,6 +195,8 @@ export function shouldShowFirstRun({
   if (hasShareState) return false;
   const params = new URLSearchParams(location?.search || '');
   if (params.get('welcome') === '0') return false;
+  // A situation-room display (a TV) never shows the welcome launcher.
+  if (params.get('situation') === '1') return false;
   // An embedded globe never shows the welcome launcher.
   if (params.get('embed') === '1' || globalThis.GEV_EMBED_INLINE === true)
     return false;

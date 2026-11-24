@@ -1082,6 +1082,12 @@ const STEP_TITLES = Object.freeze({
   analyst_query: msg('Analyst query'),
   next_iss_pass: msg('Next ISS pass'),
   next_satellite_pass: msg('Next satellite pass'),
+  set_situation_mode: msg('Situation room'),
+  show_card: msg('Show card'),
+  brief: msg('Brief'),
+  pin_card: msg('Pin card'),
+  dismiss_card: msg('Dismiss card'),
+  focus_event: msg('Focus event'),
 });
 
 /** A short on-screen label for one tool call in the voice card's plan. */

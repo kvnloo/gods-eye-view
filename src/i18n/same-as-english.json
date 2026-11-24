@@ -56,7 +56,8 @@
     "{n} hPa",
     "{kind} {name}",
     "{speed} {direction}",
-    "3D"
+    "3D",
+    "NORAD"
   ],
   "de": [
     "1090 MHz",
@@ -299,7 +300,12 @@
     "ON AIR",
     "Stream",
     "{seconds} s",
-    "Mode"
+    "Mode",
+    "HOTSPOTS · 24 H",
+    "ACRES",
+    "NORAD",
+    "SATS",
+    "LIVE · {age}"
   ],
   "es": [
     "1 min/s",
@@ -495,7 +501,9 @@
     "3D",
     "KT",
     "Manual",
-    "{seconds} s"
+    "{seconds} s",
+    "CONT.",
+    "NORAD"
   ],
   "fr": [
     "1 min/s",
@@ -753,7 +761,10 @@
     "{n} mm",
     "3D",
     "KT",
-    "{seconds} s"
+    "{seconds} s",
+    "NORAD",
+    "CAMS",
+    "SATS"
   ],
   "it": [
     "1 min/s",
@@ -987,7 +998,9 @@
     "{n} mm",
     "3D",
     "KT",
-    "{seconds} s"
+    "{seconds} s",
+    "CONT.",
+    "NORAD"
   ],
   "ja": [
     "1090 MHz",
@@ -1071,7 +1084,8 @@
     "{n} hPa",
     "{n} mm",
     "3D",
-    "KT"
+    "KT",
+    "NORAD"
   ],
   "pt": [
     "1 min/s",
@@ -1267,7 +1281,9 @@
     "3D",
     "KT",
     "Manual",
-    "{seconds} s"
+    "{seconds} s",
+    "CONT.",
+    "NORAD"
   ],
   "ru": [
     "1900–1945",
@@ -1312,7 +1328,9 @@
     "M {n}",
     "{n}%",
     "{kind} {name}",
-    "3D"
+    "3D",
+    "NORAD",
+    "LIVE · {age}"
   ],
   "sv": [
     "STATION",
@@ -1505,7 +1523,10 @@
     "{n} mm",
     "3D",
     "KT",
-    "{seconds} s"
+    "{seconds} s",
+    "NORAD",
+    "STORM",
+    "LIVE · {age}"
   ],
   "uk": [
     "1900–1945",
@@ -1544,7 +1565,8 @@
     "M {n}",
     "{n}%",
     "{kind} {name}",
-    "3D"
+    "3D",
+    "NORAD"
   ],
   "zh-CN": [
     "1090 MHz",
@@ -1629,7 +1651,8 @@
     "{n} MW",
     "{n}%",
     "{n} hPa",
-    "3D"
+    "3D",
+    "NORAD"
   ],
   "zh-Hant": [
     "1090 MHz",
@@ -1714,7 +1737,8 @@
     "{n} MW",
     "{n}%",
     "{n} hPa",
-    "3D"
+    "3D",
+    "NORAD"
   ],
   "he": [
     "{speed} kn",
@@ -1831,6 +1855,7 @@
     "{n} hPa",
     "{kind} {name}",
     "3D",
-    "KT"
+    "KT",
+    "NORAD"
   ]
 }

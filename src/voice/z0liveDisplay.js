@@ -59,6 +59,16 @@ const ACTION_SUMMARIES = Object.freeze({
   next_iss_pass: 'When the ISS next passes over a place',
   next_satellite_pass: 'When a satellite next passes over a place: {target}',
   set_hud: 'Show or hide the HUD: {visible}',
+  set_situation_mode:
+    'Turn the situation room (live events, source status, what matters now) on or off: {enabled}',
+  show_card:
+    'Show a card from a real GEV query: {kind:"aircraft"|"vessels"|"quakes"|"fires"|"satellite"|"camera"|"area"|"distance"|"news"|"cyclones", place?|latitude,longitude, radiusKm?, filter?, satellite?, to?}',
+  brief:
+    'Brief card: {place} composes one from GEV sources; or {title, body (markdown-lite), sources:[{name,url?,observedAt?}], unknowns?}',
+  pin_card: 'Keep a card on screen: {id?, pinned?}',
+  dismiss_card: 'Dismiss a card to its receipt: {id?} or {all:true}',
+  focus_event:
+    'Fly to a live event: {rank:1-3} from what matters now, or {id}; returns the next question to ask',
 });
 
 const KNOWN_ACTIONS = new Set(GEV_ACTION_SCHEMAS.map((schema) => schema.name));
@@ -155,6 +165,13 @@ export function summarizeResult(result, context = null) {
       'name',
       'summary',
       'count',
+      // Situation room results: the card or event the caller can refer to.
+      'card',
+      'cards',
+      'event',
+      'next_question',
+      'next_action',
+      'enabled',
     ]) {
       if (result[key] !== undefined && result[key] !== null)
         out[key] = result[key];

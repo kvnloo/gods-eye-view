@@ -1,0 +1,53 @@
+name: Factory main mirror
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: Apply the fast-forward (false only checks readiness)
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: factory-main-mirror
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    if: github.repository == 'kvnloo/gods-eye-view' && (github.ref == 'refs/heads/staging' || (github.ref == 'refs/heads/ci/factory-foundation' && github.event_name == 'workflow_dispatch' && !inputs.apply))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Compare and fast-forward main without checking out code
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APPLY: ${{ github.event_name == 'schedule' || inputs.apply }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          fork=kvnloo/gods-eye-view
+          upstream=bilawalsidhu/gods-eye-view
+          before=$(gh api "repos/$fork/git/ref/heads/main" --jq .object.sha)
+          target=$(gh api "repos/$upstream/git/ref/heads/main" --jq .object.sha)
+          printf 'Fork main: `%s`\n\nUpstream main: `%s`\n\n' "$before" "$target" | tee -a "$GITHUB_STEP_SUMMARY"
+          if [[ "$before" == "$target" ]]; then
+            printf 'Already in sync.\n' | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          ancestor=$(gh api "repos/$upstream/compare/$before...$target" --jq .merge_base_commit.sha)
+          if [[ "$ancestor" != "$before" ]]; then
+            printf '::error::Fork main is not an ancestor of upstream main; refusing to update.\n'
+            exit 1
+          fi
+          if [[ "$APPLY" != true ]]; then
+            printf 'Fast-forward available (dry run).\n' | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          gh api -X PATCH "repos/$fork/git/refs/heads/main" -f sha="$target" -F force=false --jq .object.sha
+          after=$(gh api "repos/$fork/git/ref/heads/main" --jq .object.sha)
+          [[ "$after" == "$target" ]]
+          printf 'Fast-forwarded to `%s`.\n' "$after" | tee -a "$GITHUB_STEP_SUMMARY"

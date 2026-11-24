@@ -40,7 +40,7 @@ import { hideOsmCredit, showOsmCredit } from '../../../data/dataCredits.js';
 import { t } from '../../../i18n/index.js';
 
 const GRID_N = 25; // terrain samples per cell side
-const MAX_CELLS = 110; // LRU of generated cells (models stay in GPU memory while cached)
+const MAX_CELLS = 56; // LRU of generated cells (models stay in GPU memory while cached)
 const MAX_INFLIGHT = 3;
 const TREE_RADIUS = 0.72; // trees fade out at this share of the bubble radius (LOD)
 const OWNER = 'near-field';
@@ -387,6 +387,8 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
   }
 
   function updateBubble(now) {
+    state.camKey = camKey();
+    state.lastUpdate = now;
     const carto = camera.positionCartographic;
     const lat = Cesium.Math.toDegrees(carto.latitude);
     const lon = Cesium.Math.toDegrees(carto.longitude);
@@ -482,6 +484,16 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
     showCredit(shown > 0);
   }
   const removePre = scene.preRender.addEventListener(perFrame);
+  // The app may run Cesium in request-render mode: keep frames coming while
+  // the bubble is loading, fading in or swapping its mask.
+  const camKey = () => {
+    const p = camera.positionWC;
+    return `${Math.round(p.x)},${Math.round(p.y)},${Math.round(p.z)},${camera.heading.toFixed(3)},${camera.pitch.toFixed(3)}`;
+  };
+  const kick = setInterval(() => {
+    if (!api.idle() || mask.next || camKey() !== state.camKey) scene.requestRender?.();
+  }, 250);
+
 
   // ---- QA API
   const api = {
@@ -500,6 +512,7 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
       cells.values().map((e) => ({ key: e.key, status: e.status, needed: needed.has(e.key), shown: !!e.main?.show, appear: e.appear, stats: e.stats, error: e.error })),
     setEnabled(on) {
       state.enabled = !!on;
+      state.lastUpdate = 0; // apply on the next frame
       scene.requestRender?.();
     },
     /** True when every needed cell is ready (or failed) and nothing is pending. */
@@ -509,6 +522,18 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
         const e = cells.peek(k);
         return e && e.status !== 'pending' && (e.status === 'error' || e.appear >= 1);
       }) && mask.cells === state.needed.filter((k) => cells.peek(k)?.status === 'ready').join(',');
+    },
+    /** QA: terrain heights at [lat, lon] points from the bubble's terrain source (never Google). */
+    async sample(latLons) {
+      const tp = terrainNow();
+      const pts = latLons.map(([lat, lon]) => Cesium.Cartographic.fromDegrees(lon, lat));
+      if (tp) await sampleRetrying(tp, pts);
+      return pts.map((c) => (tp ? c.height : 0));
+    },
+    /** QA: the generated buildings of a cell (local metres around `centre`). */
+    buildingsOf(key) {
+      const e = cells.peek(key);
+      return e?.buildings ? { centre: e.centre, buildings: e.buildings } : null;
     },
     /**
      * Physical checks of the generated buildings in view, against Cesium World
@@ -533,9 +558,9 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
         idx.push([start, pts.length]);
       }
       const tp = terrainNow();
-      if (tp && pts.length) await Cesium.sampleTerrainMostDetailed(tp, pts);
+      if (tp && pts.length) await sampleRetrying(tp, pts);
       else pts.forEach((p) => (p.height = 0));
-      const out = { terrain: terrainSource, buildings: pick.length, land: 0, floating: 0, floorOff1m: 0, maxFloorOff: 0, slopeOver3m: 0, onWater: 0, onWaterUnsupported: 0, pier: 0, hull: 0, examples: [] };
+      const out = { terrain: terrainSource, buildings: pick.length, land: 0, elevatedParts: 0, floating: 0, floorOff1m: 0, maxFloorOff: 0, slopeOver3m: 0, onWater: 0, onWaterUnsupported: 0, pier: 0, hull: 0, examples: [] };
       pick.forEach(({ e, b }, k) => {
         if (b.kind === 'pier') out.pier++;
         if (b.kind === 'hull') out.hull++;
@@ -544,6 +569,11 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
           if (!b.support) out.onWaterUnsupported++;
         }
         if (b.kind !== 'land') return;
+        // building:part pieces that OSM lifts (render_min_height > 0) float by design
+        if (b.lift > 0) {
+          out.elevatedParts++;
+          return;
+        }
         out.land++;
         const hs = pts.slice(idx[k][0], idx[k][1]).map((p) => p.height).filter(Number.isFinite);
         if (!hs.length) return;
@@ -563,6 +593,7 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
     },
     remove() {
       removePre();
+      clearInterval(kick);
       showCredit(false);
       note?.remove();
       for (const h of hosts) h.detach(tilePart.id);

@@ -25,7 +25,6 @@ import {
   footprintWater,
   groundSampler,
   inPolygon,
-  levelWater,
   linear,
   orientedRect,
   pine,
@@ -256,6 +255,39 @@ function pierNear(fixture, poly) {
 }
 
 /**
+ * Water level per body: the median terrain height along its shoreline (water
+ * cells next to land) plus a small lift, so our surface sits on the visible
+ * waterline even where the terrain carries bathymetry under the water, and
+ * covers a terrain-following globe in keyless mode. Bodies with no shoreline
+ * in the cell use the 75th percentile of the terrain under them.
+ */
+export function shoreLevels(water, gz, lift = 0.4) {
+  const { n, cell, half, ids, dist } = water;
+  const shore = new Map();
+  const all = new Map();
+  for (let j = 0; j < n; j++)
+    for (let i = 0; i < n; i++) {
+      const k = j * n + i;
+      const id = ids[k];
+      if (!id) continue;
+      const h = gz(-half + (i + 0.5) * cell, half - (j + 0.5) * cell);
+      if (!all.has(id)) all.set(id, []);
+      all.get(id).push(h);
+      if (dist[k] === 1) {
+        if (!shore.has(id)) shore.set(id, []);
+        shore.get(id).push(h);
+      }
+    }
+  const levels = {};
+  for (const [id, hs] of all) {
+    const s = shore.get(id);
+    const pick = (a, q) => [...a].sort((x, y) => x - y)[Math.min(a.length - 1, Math.floor(a.length * q))];
+    levels[id] = Math.round(((s?.length >= 4 ? pick(s, 0.5) : pick(hs, 0.75)) + lift) * 100) / 100;
+  }
+  return levels;
+}
+
+/**
  * Build a cell. Returns { soup, trees (protos with instances), footprints,
  * water (mask rectangles with levels), buildings (per-building facts for the
  * physical checks), stats }.
@@ -266,14 +298,14 @@ export function buildCell(fixture, ground, kit = NEAR_FIELD_KITS.realism, opts =
   const sat = kit.sat ?? 1;
   const gz = groundSampler(ground);
   const water = waterField(fixture);
-  const levels = water ? levelWater(ground, water) : {};
+  const levels = water ? shoreLevels(water, gz) : {};
   const [bx0, by0, bx1, by1] = fixture.box;
   const inBox = (x, y, pad = 0) => x >= bx0 + pad && x < bx1 - pad && y >= by0 + pad && y < by1 - pad;
   const s = new Soup();
   const occ = new Grid(24);
   const footprints = [];
   const facts = [];
-  const counts = { buildings: 0, gabled: 0, extruded: 0, pier: 0, hull: 0, droppedOnWater: 0, tiny: 0 };
+  const counts = { buildings: 0, gabled: 0, extruded: 0, pier: 0, hull: 0, droppedOnWater: 0, tiny: 0, terrainOutliers: 0 };
 
   const waterLevelAt = (body) => {
     const L = levels[body.id];
@@ -299,8 +331,12 @@ export function buildCell(fixture, ground, kit = NEAR_FIELD_KITS.realism, opts =
         continue;
       }
     }
-    // exact World Terrain heights at the footprint vertices when the renderer sampled them
-    const cornersZ = b.hz?.length === outer.length && b.hz.every(Number.isFinite) ? b.hz : outer.map(([x, y]) => gz(x, y));
+    // exact World Terrain heights at the footprint vertices when the renderer sampled them;
+    // a vertex far off the 20 m grid is a failed tile sample, not terrain: use the grid there
+    const gridZ = outer.map(([x, y]) => gz(x, y));
+    const cornersZ = b.hz?.length === outer.length
+      ? b.hz.map((h, i) => (Number.isFinite(h) && Math.abs(h - gridZ[i]) < 15 ? h : (counts.terrainOutliers++, gridZ[i])))
+      : gridZ;
     const zMin = Math.min(...cornersZ);
     const zMean = cornersZ.reduce((a, z) => a + z, 0) / cornersZ.length;
     let z0 = zMin - SKIRT;
@@ -349,7 +385,7 @@ export function buildCell(fixture, ground, kit = NEAR_FIELD_KITS.realism, opts =
     const item = { outer, holes: b.holes ?? [] };
     occ.add(item, Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys));
     footprints.push({ rings: [outer, ...(b.holes ?? [])], top });
-    facts.push({ c: b.c, kind, share: Math.round(share * 100) / 100, wallBottom: z0, floor, top, area: Math.round(area), p: outer, support: support?.kind ?? null });
+    facts.push({ c: b.c, kind, share: Math.round(share * 100) / 100, wallBottom: z0, floor, top, lift, area: Math.round(area), p: outer, support: support?.kind ?? null });
   }
 
   // roads (for keeping trees off them, and street-tree rows)
@@ -470,8 +506,9 @@ export function buildCell(fixture, ground, kit = NEAR_FIELD_KITS.realism, opts =
         let k = i + 1;
         while (k < n && ids[j * n + k] === id && Math.min(2, dist[j * n + k] - 1) === band) k++;
         if (id) {
-          const xa = Math.max(bx0, -half + i * cell), xb = Math.min(bx1, -half + k * cell);
-          const ya = Math.max(by0, y0), yb = Math.min(by1, y1);
+          // 0.6 m past the cell square: neighbouring cells overlap instead of leaving hairline gaps
+          const xa = Math.max(bx0 - 0.6, -half + i * cell), xb = Math.min(bx1 + 0.6, -half + k * cell);
+          const ya = Math.max(by0 - 0.6, y0), yb = Math.min(by1 + 0.6, y1);
           if (xb > xa && yb > ya) {
             const level = levels[id] ?? gz((xa + xb) / 2, (ya + yb) / 2) - 0.3;
             const col = [...linear(kit.water[Math.max(0, kit.water.length - 1 - band)] ?? kit.water[0], 0, r, sat), WATER_TAG];

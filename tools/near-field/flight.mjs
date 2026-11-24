@@ -26,13 +26,30 @@ const browser = await chromium.launch({ executablePath: exe, headless: true, arg
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 const errs = [];
 page.on('pageerror', (e) => errs.push(String(e).slice(0, 300)));
+page.on('console', (m) => { if (/context lost|CONTEXT_LOST|out of memory|nearField/i.test(m.text())) errs.push(`[${m.type()}] ${m.text().slice(0, 300)}`); });
+let navigations = 0;
+page.on('framenavigated', (fr) => { if (fr === page.mainFrame()) navigations++; });
 const s0 = steps[0];
 await page.goto(`${base}/?${query}&welcome=0#v=2&lat=${s0.lat}&lon=${s0.lon}&alt=${s0.alt}&heading=${s0.heading}&pitch=${s0.pitch}&map=photoreal`, { waitUntil: 'domcontentloaded', timeout: 90000 });
 await page.waitForFunction(() => window.__godsEyeView?.viewer && window.__gevNearField, null, { timeout: 120000 });
 await page.waitForTimeout(4000);
 for (let i = 0; i < 3; i++) { await page.keyboard.press('Escape'); await page.waitForTimeout(200); }
 const rows = [];
+const waitApp = async () => {
+  await page.waitForFunction(() => window.__godsEyeView?.viewer && window.__gevNearField, null, { timeout: 120000 });
+  await page.waitForTimeout(3000);
+};
 for (const s of steps) {
+  try {
+    await stepOnce(s);
+  } catch (error) {
+    errs.push(`step ${s.name}: ${String(error).slice(0, 200)}`);
+    rows.push({ step: s.name, crashed: true, navigations });
+    console.log(JSON.stringify(rows[rows.length - 1]));
+    await waitApp().catch(() => {});
+  }
+}
+async function stepOnce(s) {
   await page.evaluate((v) => {
     const viewer = window.__godsEyeView.viewer;
     const e = viewer.scene.globe.ellipsoid;
@@ -75,14 +92,17 @@ for (const s of steps) {
   console.log(JSON.stringify(row));
 }
 const summary = {
+  crashedSteps: rows.filter((r) => r.crashed).length,
+  navigations,
   steps: rows.length,
   idleAll: rows.every((r) => r.idle),
-  holes: rows.reduce((a, r) => a + r.holes, 0),
-  stuckPending: rows.filter((r) => !r.idle && r.pending > 0).length,
-  staleShown: rows.reduce((a, r) => a + Math.max(0, r.staleShown), 0),
+  // the climb above the cut-off must leave nothing generated on screen
+  holes: rows.reduce((a, r) => a + (r.holes ?? 0), 0),
+  stuckPending: rows.filter((r) => !r.crashed && !r.idle && r.pending > 0).length,
+  staleShown: rows.reduce((a, r) => a + Math.max(0, r.staleShown ?? 0), 0),
   climbOff: rows.find((r) => r.step === 'sf-climb-2500'),
-  medianMsToIdle: rows.map((r) => r.ms).sort((a, b) => a - b)[Math.floor(rows.length / 2)],
-  maxMsToIdle: Math.max(...rows.map((r) => r.ms)),
+  medianMsToIdle: rows.filter((r) => r.ms).map((r) => r.ms).sort((a, b) => a - b)[Math.floor(rows.filter((r) => r.ms).length / 2)],
+  maxMsToIdle: Math.max(...rows.filter((r) => r.ms).map((r) => r.ms)),
   pageErrors: errs.slice(0, 10),
 };
 console.log(JSON.stringify({ summary }));

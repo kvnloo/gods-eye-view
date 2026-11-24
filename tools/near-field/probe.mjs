@@ -68,20 +68,31 @@ for (const v of views) {
       const viewer = window.__godsEyeView.viewer;
       const scene = viewer.scene;
       const gl = scene.context._gl;
-      const run = (n) => { for (let i = 0; i < 5; i++) scene.render(); gl.finish(); const t = performance.now(); for (let i = 0; i < n; i++) { scene.render(); gl.finish(); } return (performance.now() - t) / n; };
+      // request-render mode would skip frames: ask for every one
+      const frame = () => { scene.requestRender(); scene.render(); };
+      const run = (n) => { for (let i = 0; i < 5; i++) frame(); gl.finish(); const t = performance.now(); for (let i = 0; i < n; i++) { frame(); gl.finish(); } return (performance.now() - t) / n; };
       const out = {};
       const nf = window.__gevNearField;
       const med = () => [run(40), run(40), run(40)].sort((a, b) => a - b)[1];
       out.on = med();
-      if (nf) { nf.setEnabled(false); for (let i = 0; i < 10; i++) scene.render(); out.off = med(); nf.setEnabled(true); for (let i = 0; i < 10; i++) scene.render(); out.onAgain = med(); }
+      if (nf) { nf.setEnabled(false); for (let i = 0; i < 10; i++) frame(); out.off = med(); nf.setEnabled(true); for (let i = 0; i < 10; i++) frame(); out.onAgain = med(); out.offAgain = (nf.setEnabled(false), med()); nf.setEnabled(true); for (let i = 0; i < 10; i++) frame(); }
       return out;
     });
     if (nf) await page.waitForTimeout(1500);
   }
   if (has('--shots')) {
-    const file = `${outDir}/${v.name}.png`;
+    const file = `${outDir}/${v.name}${has('--pair') ? '-on' : ''}.png`;
     await page.screenshot({ path: file });
     row.file = file;
+  }
+  if (has('--pair') && nf) {
+    // the same page, camera and theme with the bubble switched off
+    await page.evaluate(() => window.__gevNearField.setEnabled(false));
+    await page.waitForTimeout(2500);
+    row.fileOff = `${outDir}/${v.name}-off.png`;
+    await page.screenshot({ path: row.fileOff });
+    await page.evaluate(() => window.__gevNearField.setEnabled(true));
+    await page.waitForTimeout(1500);
   }
   log.push(row);
   console.log(JSON.stringify(row));

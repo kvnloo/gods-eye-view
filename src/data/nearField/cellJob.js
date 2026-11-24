@@ -109,8 +109,8 @@ export function createCellGenerator({
         trees: treeGlb,
         footprints: built.footprints,
         water: built.water,
-        buildings: built.buildings.map(({ c, kind, share, wallBottom, floor, top, area, support, p }) => ({
-          c, kind, share, wallBottom, floor, top, area, support,
+        buildings: built.buildings.map(({ c, kind, share, wallBottom, floor, top, lift, area, support, p }) => ({
+          c, kind, share, wallBottom, floor, top, lift, area, support,
           // footprint vertices (local metres) for the terrain check; capped per building
           p: p.length > 16 ? p.filter((_, i) => i % Math.ceil(p.length / 16) === 0) : p,
         })),

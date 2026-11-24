@@ -42,7 +42,7 @@ export const DESKTOP_HIGH = Object.freeze({
 });
 
 // Wintercats: colours and knobs from the theme dream loop v2 against the locked reference (loop-v2/round-v5/style-loop
-// best-build.png) and the wintercats frames; numbers, not images. Loop v2 round 1 (defect pass + paint): abs 2.0 -> 3.0.
+// best-build.png) and the wintercats frames; numbers, not images. Loop v2 round 3 (warm light + golden haze + softer brush): won 2/2 Sausalito + 2/2 general seats.
 const WINTERCATS = {
   format: PRESET_FORMAT,
   name: 'wintercats',
@@ -65,7 +65,7 @@ const WINTERCATS = {
     tile: {
       strength: 1,
       flatten: 0,
-      flattenTexels: 5,
+      flattenTexels: 7,
       detail: 0.1,
       delight: 0.85,
       bands: 3,
@@ -86,13 +86,15 @@ const WINTERCATS = {
       roofD: [0.306, 0.227, 0.18],
       wall: [0.839, 0.776, 0.659],
       street: [0.659, 0.624, 0.549],
-      shadow: [0.56, 0.53, 0.62],
+      shadow: [0.55, 0.5, 0.62],
       neutralChroma: 2.2,
       waterChroma: 0.25,
       roofVariety: 0.7,
       waterSmooth: 0.4,
       waterGbMin: 1,
       cellM: 22,
+      waterSeamKeep: 1,
+      key: [1.1, 1.0, 0.86],
     },
     ao: {
       aoStrength: 0.3,
@@ -102,21 +104,21 @@ const WINTERCATS = {
     haze: {
       hazeStart: 3,
       hazeDensity: 0.03,
-      hazeMax: 0.2,
-      hazeColor: [0.84, 0.84, 0.8],
+      hazeMax: 0.35,
+      hazeColor: [0.9, 0.86, 0.76],
       skyTint: 0.25,
       skyColor: [0.7, 0.84, 0.9],
     },
     dof: {
-      dofBlurPx: 6,
+      dofBlurPx: 8,
       focusRange: 0.45,
-      tiltAmount: 0.35,
+      tiltAmount: 0.5,
       tiltBand: 0.2,
       skyBlur: 0.4,
     },
     bloom: {
       bloomThreshold: 0.75,
-      bloomIntensity: 0.6,
+      bloomIntensity: 0.8,
       bloomClamp: 0.1,
     },
     lut: {
@@ -125,23 +127,23 @@ const WINTERCATS = {
     grade: {
       saturation: 0.92,
       vibrance: 0.0,
-      temperature: 0.12,
+      temperature: 0.25,
       contrast: 1.14,
       lift: [0.01, 0.008, 0.015],
     },
     clarity: {
-      clarity: -0.4,
+      clarity: -0.6,
       clarityRadiusPx: 8,
     },
     cas: {
       casSharpness: 0.0,
     },
     vignette: {
-      vignette: 0.12,
-      vignetteColor: [0.4, 0.36, 0.34],
+      vignette: 0.15,
+      vignetteColor: [0.42, 0.34, 0.3],
     },
     paint: {
-      paintRadius: 2,
+      paintRadius: 4,
     },
   },
   textures: { lutTexture: '/themes/luts/wintercats.png' },

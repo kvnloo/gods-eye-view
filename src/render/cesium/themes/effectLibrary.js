@@ -56,6 +56,9 @@ uniform sampler2D launchpadTexture;
 vec3 fx_normal(vec2 uv) { return normalize(texture(launchpadTexture, uv).xyz * 2.0 - 1.0); }
 `;
 
+// Radii in effect uniforms are CSS pixels: px is one CSS pixel in uv, so a
+// preset looks the same at device pixel ratio 1 and 2 (the quality block
+// renders at the DPR; a 2-px brush was half as strong on a Retina screen).
 const HEAD = /* glsl */ `
 uniform sampler2D colorTexture;
 uniform vec2 colorTextureDimensions;
@@ -86,7 +89,7 @@ const LAUNCHPAD_FS = /* glsl */ `${HEAD}${DEPTH}
 void main() {
   vec2 uv = v_textureCoordinates;
   if (fx_sky(uv)) { out_FragColor = vec4(0.5, 0.5, 1.0, 1.0); return; }
-  vec2 px = 1.0 / colorTextureDimensions;
+  vec2 px = czm_pixelRatio / colorTextureDimensions;
   vec3 p = fx_eye(uv);
   vec3 l = fx_eye(uv - vec2(px.x, 0.0));
   vec3 r = fx_eye(uv + vec2(px.x, 0.0));
@@ -111,7 +114,7 @@ uniform float aoMode;
 void main() {
   vec2 uv = v_textureCoordinates;
   if (fx_sky(uv)) { out_FragColor = vec4(1.0); return; }
-  vec2 px = 1.0 / colorTextureDimensions;
+  vec2 px = czm_pixelRatio / colorTextureDimensions;
   vec3 p = fx_eye(uv);
   float d = length(p);
   vec3 n = fx_normal(uv);
@@ -159,7 +162,7 @@ void main() {
   vec2 uv = v_textureCoordinates;
   vec4 src = texture(colorTexture, uv);
   if (fx_sky(uv)) { out_FragColor = src; return; }
-  vec2 px = 1.0 / colorTextureDimensions;
+  vec2 px = czm_pixelRatio / colorTextureDimensions;
   float d = length(fx_eye(uv));
   float acc = 0.0;
   float w = 0.0;
@@ -185,7 +188,7 @@ void main() {
   vec2 uv = v_textureCoordinates;
   vec4 src = texture(colorTexture, uv);
   if (fx_sky(uv)) { out_FragColor = src; return; }
-  vec2 px = 1.0 / colorTextureDimensions;
+  vec2 px = czm_pixelRatio / colorTextureDimensions;
   vec3 p = fx_eye(uv);
   float d = length(p);
   vec3 n = fx_normal(uv);
@@ -242,7 +245,7 @@ uniform float skyBlur;
 void main() {
   vec2 uv = v_textureCoordinates;
   vec4 src = texture(colorTexture, uv);
-  vec2 px = 1.0 / colorTextureDimensions;
+  vec2 px = czm_pixelRatio / colorTextureDimensions;
   float focus = fx_dist(vec2(0.5));
   bool sky = fx_sky(uv);
   float dist = sky ? 1.0e8 : length(fx_eye(uv));
@@ -275,7 +278,7 @@ uniform vec3 bloomTint;
 void main() {
   vec2 uv = v_textureCoordinates;
   vec4 src = texture(colorTexture, uv);
-  vec2 px = 1.0 / colorTextureDimensions;
+  vec2 px = czm_pixelRatio / colorTextureDimensions;
   vec3 acc = vec3(0.0);
   for (int i = 0; i < 12; i++) {
     float a = float(i) * 0.5235988 + 0.26;
@@ -354,7 +357,7 @@ uniform float clarityRadiusPx;
 void main() {
   vec2 uv = v_textureCoordinates;
   vec4 src = texture(colorTexture, uv);
-  vec2 px = 1.0 / colorTextureDimensions;
+  vec2 px = czm_pixelRatio / colorTextureDimensions;
   float d = fx_dist(uv);
   float l = fx_luma(src.rgb);
   float acc = l;
@@ -378,7 +381,7 @@ const CAS_FS = /* glsl */ `${HEAD}
 uniform float casSharpness;
 void main() {
   vec2 uv = v_textureCoordinates;
-  vec2 px = 1.0 / colorTextureDimensions;
+  vec2 px = czm_pixelRatio / colorTextureDimensions;
   vec4 src = texture(colorTexture, uv);
   vec3 e = src.rgb;
   vec3 b = texture(colorTexture, uv + vec2(0.0, -px.y)).rgb;
@@ -470,7 +473,7 @@ void sector(vec2 uv, vec2 dir, vec2 px, inout vec3 bestMean, inout float bestVar
 void main() {
   vec2 uv = v_textureCoordinates;
   vec4 src = texture(colorTexture, uv);
-  vec2 px = 1.0 / colorTextureDimensions;
+  vec2 px = czm_pixelRatio / colorTextureDimensions;
   vec3 best = src.rgb;
   float bestVar = 1e9;
   sector(uv, vec2(-1.0, -1.0), px, best, bestVar);
@@ -486,7 +489,7 @@ uniform sampler2D sourceTexture;
 uniform float wipe;
 void main() {
   vec2 uv = v_textureCoordinates;
-  vec2 px = 1.0 / colorTextureDimensions;
+  vec2 px = czm_pixelRatio / colorTextureDimensions;
   vec4 src = texture(colorTexture, uv);
   if (uv.x < wipe) src = texture(sourceTexture, uv);
   if (wipe > 0.0 && abs(uv.x - wipe) < px.x * 1.5) src = vec4(0.18, 0.78, 0.91, 1.0);

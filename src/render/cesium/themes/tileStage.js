@@ -97,6 +97,15 @@ export const TILE_UNIFORMS = Object.freeze({
     0.05,
     'Neutral class reach (more roofs/walls in palette)',
   ),
+  photoSat: f(1, 0, 1.2, 0.01, 'Photo share: saturation (strength < 1)'),
+  photoWarm: f(0, 0, 1, 0.01, 'Photo share: warm tint (strength < 1)'),
+  classTexels: f(
+    0,
+    0,
+    24,
+    0.5,
+    'Classifier ring (texels; wider = fewer speckled class edges, 0 = flatten ring)',
+  ),
   flattenRings: f(1, 1, 2, 1, 'Flatten rings (2 = smoother, 17 taps)'),
   shadeWarm: f(0, 0, 1, 0.01, 'Shade → warm neutral (de-light lift)'),
   vegChroma: f(1, 0.2, 1.5, 0.01, 'Vegetation photo-hue kept'),
@@ -176,6 +185,24 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
     }
   }
   #endif
+  // the classifier may look at a wider neighbourhood than the colour: class
+  // edges then follow blobs, not single texels (no speckled class flips)
+  vec3 classA = albedo;
+  #ifdef HAS_BASE_COLOR_TEXTURE
+  if (u_th_classTexels > 0.0) {
+    vec2 cuv = TEXCOORD_BASE_COLOR;
+    #ifdef HAS_BASE_COLOR_TEXTURE_TRANSFORM
+    cuv = computeTextureTransform(cuv, u_baseColorTextureTransform);
+    #endif
+    vec2 ct = u_th_classTexels / vec2(textureSize(u_baseColorTexture, 0));
+    vec3 cacc = albedo * 2.0;
+    for (int i = 0; i < 8; i++) {
+      float ang = float(i) * 0.7853982 + 0.2;
+      cacc += czm_srgbToLinear(texture(u_baseColorTexture, cuv + vec2(cos(ang), sin(ang)) * ct).rgb);
+    }
+    classA = cacc / 10.0;
+  }
+  #endif
   vec3 pEC = fsInput.attributes.positionEC;
   vec3 pWC = fsInput.attributes.positionWC;
   #ifdef HAS_BASE_COLOR_TEXTURE
@@ -203,7 +230,7 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
   float flatW = smoothstep(0.72, 0.92, up);
   float wallW = 1.0 - smoothstep(0.3, 0.6, up);
 
-  vec3 a = max(albedo, vec3(1e-4));
+  vec3 a = max(classA, vec3(1e-4));
   float sum = a.r + a.g + a.b;
   float exg = (2.0 * a.g - a.r - a.b) / sum;
   // green over blue tells grass and trees (g >> b) from teal water (g ~ b)
@@ -284,7 +311,11 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
   float toon = (floor(b) + smoothstep(0.3, 0.7, fract(b))) / u_th_bands;
   vec3 lightC = mix(czm_srgbToLinear(u_th_shadow), u_th_key, toon);
   vec3 lit = pal * mix(vec3(1.0), lightC, u_th_relight);
-  material.diffuse = mix(photo, lit, u_th_strength);
+  // the photo share (strength < 1) is desaturated and warmed first, so the
+  // photo's blue shade cast does not come back through the blend
+  vec3 photoMix = mix(vec3(th_luma(photo)), photo, u_th_photoSat);
+  photoMix *= mix(vec3(1.0), vec3(1.08, 1.0, 0.86), u_th_photoWarm);
+  material.diffuse = mix(photoMix, lit, u_th_strength);
 }
 `;
 

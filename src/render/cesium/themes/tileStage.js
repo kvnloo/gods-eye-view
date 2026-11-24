@@ -151,6 +151,7 @@ export const TILE_UNIFORMS = Object.freeze({
   osmEdgeM: f(2.5, 0.5, 8, 0.1, 'OSM: eave line width (m)'),
   osmMarina: f(0, 0, 1, 0.01, 'OSM water: keep textured photo detail (boats, docks)'),
   osmFlatN: f(0, 0, 1, 0.01, 'OSM: calm shading on mapped roofs and ground (no facet speckle)'),
+  vegFlatN: f(0, 0, 1, 0.01, 'Calm shading on tree canopy (no leaf speckle)'),
   shallowM: f(30, 2, 120, 1, 'Shallows width (m from shore)'),
   foamM: f(3, 0, 20, 0.5, 'Shore foam width (m)'),
   foamAmt: f(0.35, 0, 1, 0.01, 'Shore foam'),
@@ -474,7 +475,7 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
   L = normalize(mix(Lfix, L, smoothstep(0.0, 0.25, sunUp)));
   // mapped roofs and ground: light a calmer normal (derivative normals of
   // melted photogrammetry facet into speckle); walls keep theirs
-  vec3 nL = normalize(mix(n, upEC, u_th_osmFlatN * osmCover * smoothstep(0.55, 0.85, up)));
+  vec3 nL = normalize(mix(n, upEC, max(u_th_osmFlatN * osmCover * smoothstep(0.55, 0.85, up), u_th_vegFlatN * veg)));
   float ndl = dot(nL, L);
   float w = clamp((ndl + u_th_wrap) / (1.0 + u_th_wrap), 0.0, 1.0);
   float b = w * u_th_bands;

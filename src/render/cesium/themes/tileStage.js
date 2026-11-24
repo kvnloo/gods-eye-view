@@ -475,7 +475,9 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
   // surfaces OSM names are de-lit more (calmer, painted)
   vec3 keepLight = pal * (th_luma(max(albedo, vec3(1e-4))) / max(th_luma(pal), 1e-3));
   // fully painted surfaces: OSM roofs (eave line kept) and vegetation
-  float paintedW = max(u_th_osmRoofFlat * osmW * oB * (1.0 - wallW) * (1.0 - vegKeep), u_th_vegFlat * veg);
+  // (vegetation only inside the local mask: at globe scale flat greens erase the land's relief)
+  float localMask = oValid * (1.0 - step(0.5, u_th_osmGlobal.x));
+  float paintedW = max(u_th_osmRoofFlat * osmW * oB * (1.0 - wallW) * (1.0 - vegKeep), u_th_vegFlat * veg * localMask);
   pal = mix(keepLight, pal, mix(mix(u_th_delight, max(u_th_delight, u_th_osmDelight), osmCover), 1.0, paintedW));
   // shadeWarm: photo shade (dark, blue-cast) is lifted toward a warm neutral
   // of the palette instead of keeping its cyan cast
@@ -493,7 +495,7 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
   L = normalize(mix(Lfix, L, smoothstep(0.0, 0.25, sunUp)));
   // mapped roofs and ground: light a calmer normal (derivative normals of
   // melted photogrammetry facet into speckle); walls keep theirs
-  vec3 nL = normalize(mix(n, upEC, max(u_th_osmFlatN * osmCover * smoothstep(0.55, 0.85, up), u_th_vegFlatN * veg)));
+  vec3 nL = normalize(mix(n, upEC, max(u_th_osmFlatN * osmCover * smoothstep(0.55, 0.85, up), u_th_vegFlatN * veg * localMask)));
   float ndl = dot(nL, L);
   float w = clamp((ndl + u_th_wrap) / (1.0 + u_th_wrap), 0.0, 1.0);
   float b = w * u_th_bands;

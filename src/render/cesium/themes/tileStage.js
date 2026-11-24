@@ -149,6 +149,8 @@ export const TILE_UNIFORMS = Object.freeze({
   osmRoof: f(1, 0, 1, 0.01, 'OSM: one roof colour per building'),
   osmEdge: f(0, 0, 1, 0.01, 'OSM: roof eave line along footprints (crisp)'),
   osmEdgeM: f(2.5, 0.5, 8, 0.1, 'OSM: eave line width (m)'),
+  osmMarina: f(0, 0, 1, 0.01, 'OSM water: keep textured photo detail (boats, docks)'),
+  osmFlatN: f(0, 0, 1, 0.01, 'OSM: calm shading on mapped roofs and ground (no facet speckle)'),
   shallowM: f(30, 2, 120, 1, 'Shallows width (m from shore)'),
   foamM: f(3, 0, 20, 0.5, 'Shore foam width (m)'),
   foamAmt: f(0.35, 0, 1, 0.01, 'Shore foam'),
@@ -349,6 +351,9 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
   }
   float osmW = oValid * u_th_osm;
   float oWater = smoothstep(-1.0, 1.0, oShore) * (1.0 - max(oRoad, oBld));
+  // boats and unmapped docks on OSM water are textured (open water is smooth):
+  // they keep the photo instead of being painted over
+  oWater *= 1.0 - u_th_osmMarina * smoothstep(0.25, 0.6, texC);
   float oB = oBld;
   float oR = oRoad * (1.0 - oB);
   float oVeg = clamp(oGrass + oForest, 0.0, 1.0) * (1.0 - oWater) * (1.0 - oB) * (1.0 - oR);
@@ -467,7 +472,10 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
   vec3 Lh = L - upEC * sunUp;
   vec3 Lfix = normalize(upEC * 0.8 + normalize(Lh + upEC * 1e-3) * 0.6);
   L = normalize(mix(Lfix, L, smoothstep(0.0, 0.25, sunUp)));
-  float ndl = dot(n, L);
+  // mapped roofs and ground: light a calmer normal (derivative normals of
+  // melted photogrammetry facet into speckle); walls keep theirs
+  vec3 nL = normalize(mix(n, upEC, u_th_osmFlatN * osmCover * smoothstep(0.55, 0.85, up)));
+  float ndl = dot(nL, L);
   float w = clamp((ndl + u_th_wrap) / (1.0 + u_th_wrap), 0.0, 1.0);
   float b = w * u_th_bands;
   float toon = (floor(b) + smoothstep(0.3, 0.7, fract(b))) / u_th_bands;

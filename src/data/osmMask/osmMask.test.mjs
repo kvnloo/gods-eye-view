@@ -147,7 +147,8 @@ function fakeData(tile) {
       { rings: [sq(1600, 1300, 1800, 1500)], h: 10, min: 0, hide: false },
     ],
     piers: [],
-    pierLines: [],
+    // a pier line out over the water
+    pierLines: [[[2048, 3584], [4000, 3584]]],
   };
 }
 
@@ -165,6 +166,8 @@ test('mask tile raster: classes, shore distance, building ids', () => {
   assert.ok(at(20, 240).forest);
   assert.ok(at(200, 100).water && at(200, 100).shoreM > 30);
   assert.ok(at(60, 128).road);
+  // the pier over the water is a surface (id 1), not open water for the shader
+  assert.ok(at(200, 224).road && at(200, 224).water);
   const b1 = at(87, 87).building;
   const b2 = at(106, 87).building;
   assert.ok(b1 >= 2 && b2 >= 2);

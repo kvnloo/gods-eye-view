@@ -8,7 +8,7 @@
  *   R  water signed distance to the shore: 127.5 + 2 * metres (water > 128),
  *      clamped to +-63 m (a blurred water channel: shallows, foam)
  *   G  vegetation: 0 none, 128 grass / park / meadow, 255 wood / forest
- *   B  surface id (read nearest): 0 ground, 1 road, 2..255 building id
+ *   B  surface id (read nearest): 0 ground, 1 road or pier, 2..255 building id
  *      (a hash of the footprint centroid: one roof colour per building)
  *   A  0 = not loaded (the classifier decides); loaded: 1 + 20 * metres from the
  *      footprint edge inside a building (1 outside; 255 = 12.7 m or more): roof
@@ -217,6 +217,16 @@ export function rasteriseMaskTile(tile, datas, { px = TILE_PX, pad = PAD_PX } = 
       const wm = ROAD_WIDTH_M[r.t] ?? 6;
       const hw = Math.max(0.6, wm / 2 / mpp);
       strokeLine(id, W, W, r.p.map(P), hw, 1);
+      features++;
+    }
+    // piers and docks (OSM man_made=pier): a walkable surface, not water
+    for (const pr of data.piers ?? []) {
+      if (!inGrid(pr.rings)) continue;
+      fillPolygon(id, W, W, pr.rings.map((r) => r.map(P)), 1);
+      features++;
+    }
+    for (const line of data.pierLines ?? []) {
+      strokeLine(id, W, W, line.map(P), Math.max(0.6, 1.5 / mpp), 1);
       features++;
     }
     for (const b of data.buildings ?? []) {

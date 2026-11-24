@@ -97,6 +97,14 @@ export const TILE_UNIFORMS = Object.freeze({
     0.05,
     'Neutral class reach (more roofs/walls in palette)',
   ),
+  waterStrength: f(
+    0,
+    0,
+    1,
+    0.01,
+    'Strength floor on water (class-scoped: keep palette water when strength < 1)',
+  ),
+  vegStrength: f(0, 0, 1, 0.01, 'Strength floor on vegetation'),
   photoSat: f(1, 0, 1.2, 0.01, 'Photo share: saturation (strength < 1)'),
   photoWarm: f(0, 0, 1, 0.01, 'Photo share: warm tint (strength < 1)'),
   classTexels: f(
@@ -315,7 +323,12 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
   // photo's blue shade cast does not come back through the blend
   vec3 photoMix = mix(vec3(th_luma(photo)), photo, u_th_photoSat);
   photoMix *= mix(vec3(1.0), vec3(1.08, 1.0, 0.86), u_th_photoWarm);
-  material.diffuse = mix(photoMix, lit, u_th_strength);
+  // class-scoped strength: water and vegetation may keep more palette than
+  // the land blend (the photo-tint hybrid greys the bay otherwise)
+  float s = u_th_strength;
+  s = mix(s, max(s, u_th_waterStrength), blue);
+  s = mix(s, max(s, u_th_vegStrength), veg);
+  material.diffuse = mix(photoMix, lit, s);
 }
 `;
 

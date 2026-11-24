@@ -42,7 +42,7 @@ export const DESKTOP_HIGH = Object.freeze({
 });
 
 // Wintercats: colours and knobs from the theme dream loop v2 against the locked reference (loop-v2/round-v5/style-loop
-// best-build.png) and the wintercats frames; numbers, not images. Loop v2 round 3 (warm light + golden haze + softer brush): won 2/2 Sausalito + 2/2 general seats.
+// best-build.png) and the wintercats frames; numbers, not images. Loop v2 round 6 (class-scoped photo-tint hybrid, quiet water, earthier roofs): won 2/2 Sausalito + 2/2 general seats.
 const WINTERCATS = {
   format: PRESET_FORMAT,
   name: 'wintercats',
@@ -63,11 +63,11 @@ const WINTERCATS = {
   ],
   uniforms: {
     tile: {
-      strength: 1,
+      strength: 0.6,
       flatten: 0,
       flattenTexels: 7,
       detail: 0.1,
-      delight: 0.85,
+      delight: 0.5,
       bands: 3,
       wrap: 0.6,
       darkFloor: 0.15,
@@ -78,11 +78,11 @@ const WINTERCATS = {
       vegChroma: 1.0,
       grass: [0.361, 0.541, 0.235],
       canopy: [0.173, 0.29, 0.18],
-      water: [0.235, 0.62, 0.639],
-      waterDeep: [0.165, 0.435, 0.514],
-      roofA: [0.612, 0.29, 0.196],
+      water: [0.31, 0.592, 0.596],
+      waterDeep: [0.2, 0.404, 0.478],
+      roofA: [0.557, 0.29, 0.204],
       roofB: [0.42, 0.455, 0.267],
-      roofC: [0.702, 0.643, 0.557],
+      roofC: [0.639, 0.58, 0.502],
       roofD: [0.306, 0.227, 0.18],
       wall: [0.839, 0.776, 0.659],
       street: [0.659, 0.624, 0.549],
@@ -93,8 +93,12 @@ const WINTERCATS = {
       waterSmooth: 0.4,
       waterGbMin: 1,
       cellM: 22,
-      waterSeamKeep: 1,
+      waterSeamKeep: 0,
       key: [1.1, 1.0, 0.86],
+      photoSat: 0.3,
+      photoWarm: 0.7,
+      waterStrength: 0.85,
+      vegStrength: 0.9,
     },
     ao: {
       aoStrength: 0.3,
@@ -118,14 +122,14 @@ const WINTERCATS = {
     },
     bloom: {
       bloomThreshold: 0.75,
-      bloomIntensity: 0.8,
+      bloomIntensity: 0.5,
       bloomClamp: 0.1,
     },
     lut: {
-      lutStrength: 0.25,
+      lutStrength: 0.7,
     },
     grade: {
-      saturation: 0.92,
+      saturation: 0.94,
       vibrance: 0.0,
       temperature: 0.25,
       contrast: 1.14,

@@ -27,6 +27,9 @@ const nf = /nearField=1/.test(query);
 if (nf) await page.waitForFunction(() => window.__gevNearField, null, { timeout: 60000 });
 await page.waitForTimeout(5000);
 for (let i = 0; i < 3; i++) { await page.keyboard.press('Escape'); await page.waitForTimeout(200); }
+// same HUD state as the theme loop / reference frame: no onboarding popover, scope mask dimmed
+await page.getByRole('button', { name: /not now/i }).first().click({ timeout: 3000 }).catch(() => {});
+await page.addStyleTag({ content: '#scope-mask{opacity:.45 !important}' });
 const log = [];
 for (const v of views) {
   await page.evaluate((v) => {

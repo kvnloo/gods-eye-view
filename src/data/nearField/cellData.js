@@ -178,6 +178,30 @@ export function rasterize(ids, n, cell, half, polygons, id = 1) {
   }
 }
 
+export const MARINA_KEEP_M = 15;
+
+/** Zero every raster cell whose centre lies within `d` metres of any polyline. */
+export function clearNear(ids, n, cell, half, lines, d) {
+  for (const line of lines)
+    for (let k = 0; k + 1 < line.length; k++) {
+      const [ax, ay] = line[k];
+      const [bx, by] = line[k + 1];
+      const i0 = Math.max(0, Math.floor((Math.min(ax, bx) - d + half) / cell));
+      const i1 = Math.min(n - 1, Math.floor((Math.max(ax, bx) + d + half) / cell));
+      const j0 = Math.max(0, Math.floor((half - Math.max(ay, by) - d) / cell));
+      const j1 = Math.min(n - 1, Math.floor((half - Math.min(ay, by) + d) / cell));
+      const dx = bx - ax, dy = by - ay;
+      const L = dx * dx + dy * dy || 1;
+      for (let j = j0; j <= j1; j++)
+        for (let i = i0; i <= i1; i++) {
+          if (!ids[j * n + i]) continue;
+          const px = -half + (i + 0.5) * cell, py = half - (j + 0.5) * cell;
+          const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / L));
+          if (Math.hypot(px - ax - t * dx, py - ay - t * dy) < d) ids[j * n + i] = 0;
+        }
+    }
+}
+
 /** Run-length rows of a raster (the fixture @2 `water.rle` format). */
 export function toRle(ids, n) {
   const rle = [];
@@ -243,6 +267,12 @@ export function cellFixture(data, cell) {
   water.forEach((f, i) => rasterize(ids, wn, WATER_CELL_M, whalf, [f.rings], Math.min(250, i + 1)));
   const piers = polysIn(data.piers, 20).map((f) => tidy(f.rings[0], true));
   const pierLines = data.pierLines.map((l) => l.map(P)).filter((l) => overlaps(bboxOf(l), half, 30));
+  // Marinas: keep the map's own docks and moored boats. No generated water
+  // surface (and so no hidden tile) within MARINA_KEEP_M of a mapped pier or
+  // dock. The full raster stays the truth for "is this building on water".
+  const shown = ids.slice();
+  clearNear(shown, wn, WATER_CELL_M, whalf, [...pierLines, ...piers.map((r) => [...r, r[0]])], MARINA_KEEP_M);
+  for (const r of piers) rasterize(shown, wn, WATER_CELL_M, whalf, [[r]], 0);
   const areas = polysIn(data.cover, 20).map((f) => ({ k: f.k, p: tidy(f.rings[0], true), holes: f.rings.slice(1) }));
   const roads = data.roads
     .map((r) => ({ t: r.t, p: r.p.map(P) }))
@@ -262,5 +292,6 @@ export function cellFixture(data, cell) {
     piers,
     pierLines,
     water: anyWater ? { n: wn, cell: WATER_CELL_M, half: whalf, rle: toRle(ids, wn) } : null,
+    waterShown: anyWater ? { n: wn, cell: WATER_CELL_M, half: whalf, rle: toRle(shown, wn) } : null,
   };
 }

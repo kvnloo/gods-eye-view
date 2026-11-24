@@ -219,6 +219,23 @@ test('osm-geo invariants: no building on water without a pier or hull; terrain c
   }
 });
 
+test('marinas: no generated water near mapped docks, but buildings there still count as on water', () => {
+  const t14 = tileOf(SAUSALITO.lat, SAUSALITO.lon, 14);
+  const data = syntheticData(t14);
+  data.pierLines.push([[3400, 150], [3400, 450]]); // a dock in the "sea"
+  const fx = cellFixture(data, { z: 16, x: t14.x * 4 + 3, y: t14.y * 4 });
+  const truth = waterField(fx);
+  const shown = waterField({ water: fx.waterShown });
+  const [dx, dy] = (() => {
+    // the dock's middle in local metres: find it through the fixture's own pier line
+    const l = fx.pierLines.find((q) => q.length === 2);
+    return [(l[0][0] + l[1][0]) / 2, (l[0][1] + l[1][1]) / 2];
+  })();
+  assert.ok(truth.at(dx + 6, dy) > 0, 'truth raster keeps the water at the dock');
+  assert.equal(shown.at(dx + 6, dy), 0, 'no generated water 6 m from the dock');
+  assert.ok(shown.at(dx + 60, dy) > 0, 'generated water away from the dock');
+});
+
 test('trees: wood landcover is planted, density follows the kit, deterministic per cell', () => {
   const t14 = tileOf(SAUSALITO.lat, SAUSALITO.lon, 14);
   const data = syntheticData(t14);

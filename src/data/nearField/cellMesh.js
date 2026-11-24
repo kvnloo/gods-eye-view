@@ -492,10 +492,12 @@ export function buildCell(fixture, ground, kit = NEAR_FIELD_KITS.realism, opts =
     }
 
   // water surface: run-length quads at each body's level, inside the cell square
+  // (the shown raster leaves marinas to the map's own docks and boats)
   const waterRects = [];
   let rocks = 0;
-  if (water) {
-    const { n, cell, half, ids, dist } = water;
+  const shownWater = fixture.waterShown ? waterField({ water: fixture.waterShown }) : water;
+  if (water && shownWater) {
+    const { n, cell, half, ids, dist } = shownWater;
     for (let j = 0; j < n; j++) {
       const y1 = half - j * cell, y0 = y1 - cell;
       if (y0 >= by1 || y1 <= by0) continue;
@@ -525,7 +527,8 @@ export function buildCell(fixture, ground, kit = NEAR_FIELD_KITS.realism, opts =
       for (let j = 1; j < n - 1; j++)
         for (let i = 1; i < n - 1; i++) {
           const k = j * n + i;
-          if (!ids[k] || dist[k] !== 1 || rr() > 0.45 * kit.rocks) continue;
+          // a real shoreline (truth raster), not the edge of a marina cut-out
+          if (!ids[k] || water.dist[k] !== 1 || rr() > 0.45 * kit.rocks) continue;
           const x = -half + (i + 0.5) * cell + (rr() - 0.5) * cell;
           const y = half - (j + 0.5) * cell + (rr() - 0.5) * cell;
           if (!inBox(x, y)) continue;

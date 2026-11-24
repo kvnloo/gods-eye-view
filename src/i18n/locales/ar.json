@@ -5180,5 +5180,6 @@
   "Cozy valley (legacy ?look=cozy, screen-space only)": "وادٍ دافئ (‎?look=cozy القديم، على الشاشة فقط)",
   "None (photoreal as served)": "بلا (واقعي كما يُقدَّم)",
   "Texel density heatmap (debug)": "خريطة حرارية لكثافة البكسلات النسيجية (تصحيح)",
-  "Classifier view (debug)": "عرض المصنِّف (تصحيح)"
+  "Classifier view (debug)": "عرض المصنِّف (تصحيح)",
+  "Ink edges (depth and normals)": "حواف حبرية (العمق والاتجاهات العمودية)"
 }

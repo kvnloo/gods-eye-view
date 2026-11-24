@@ -4732,5 +4732,6 @@
   "Cozy valley (legacy ?look=cozy, screen-space only)": "Gemütliches Tal (altes ?look=cozy, nur Bildschirmraum)",
   "None (photoreal as served)": "Keine (fotorealistisch wie geliefert)",
   "Texel density heatmap (debug)": "Texeldichte-Heatmap (Debug)",
-  "Classifier view (debug)": "Klassifikator-Ansicht (Debug)"
+  "Classifier view (debug)": "Klassifikator-Ansicht (Debug)",
+  "Ink edges (depth and normals)": "Tuschekanten (Tiefe und Normalen)"
 }

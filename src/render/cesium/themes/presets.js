@@ -42,7 +42,7 @@ export const DESKTOP_HIGH = Object.freeze({
 });
 
 // Wintercats: colours and knobs from the theme dream loop v2 against the locked reference (loop-v2/round-v5/style-loop
-// best-build.png) and the wintercats frames; numbers, not images. Loop v2 round 8 (no olive bay + moss greens): won 2/2 Sausalito seats, general tie.
+// best-build.png) and the wintercats frames; numbers, not images. Loop v2 round 9 (crisp: DOF capped, paint r2; focus-band sharpness gate 0.62 of no-theme): won 2/2 Sausalito seats.
 const WINTERCATS = {
   format: PRESET_FORMAT,
   name: 'wintercats',
@@ -65,7 +65,7 @@ const WINTERCATS = {
     tile: {
       strength: 0.6,
       flatten: 0,
-      flattenTexels: 7,
+      flattenTexels: 4,
       detail: 0.1,
       delight: 0.5,
       bands: 3,
@@ -115,11 +115,12 @@ const WINTERCATS = {
       skyColor: [0.7, 0.84, 0.9],
     },
     dof: {
-      dofBlurPx: 8,
-      focusRange: 0.45,
-      tiltAmount: 0.5,
-      tiltBand: 0.2,
-      skyBlur: 0.4,
+      dofBlurPx: 2.5,
+      focusRange: 0.6,
+      tiltAmount: 0.25,
+      tiltBand: 0.3,
+      skyBlur: 0.3,
+      tiltCenter: 0.6,
     },
     bloom: {
       bloomThreshold: 0.75,
@@ -137,7 +138,7 @@ const WINTERCATS = {
       lift: [0.01, 0.008, 0.015],
     },
     clarity: {
-      clarity: -0.6,
+      clarity: -0.15,
       clarityRadiusPx: 8,
     },
     cas: {
@@ -148,7 +149,12 @@ const WINTERCATS = {
       vignetteColor: [0.42, 0.34, 0.3],
     },
     paint: {
-      paintRadius: 4,
+      paintRadius: 2,
+    },
+    outline: {
+      inkStrength: 0.55,
+      inkNormal: 0.45,
+      inkDepth: 0.03,
     },
   },
   textures: { lutTexture: '/themes/luts/wintercats.png' },

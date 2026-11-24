@@ -4732,5 +4732,6 @@
   "Cozy valley (legacy ?look=cozy, screen-space only)": "Mysig dal (äldre ?look=cozy, endast skärm)",
   "None (photoreal as served)": "Ingen (fotorealistisk som levererad)",
   "Texel density heatmap (debug)": "Värmekarta för texeltäthet (felsökning)",
-  "Classifier view (debug)": "Klassificerarvy (felsökning)"
+  "Classifier view (debug)": "Klassificerarvy (felsökning)",
+  "Ink edges (depth and normals)": "Bläckkanter (djup och normaler)"
 }

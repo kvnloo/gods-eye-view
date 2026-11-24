@@ -4844,5 +4844,6 @@
   "Cozy valley (legacy ?look=cozy, screen-space only)": "Vallée douillette (ancien ?look=cozy, écran seulement)",
   "None (photoreal as served)": "Aucun (photoréaliste tel que servi)",
   "Texel density heatmap (debug)": "Carte thermique de densité de texels (débogage)",
-  "Classifier view (debug)": "Vue du classificateur (débogage)"
+  "Classifier view (debug)": "Vue du classificateur (débogage)",
+  "Ink edges (depth and normals)": "Contours à l’encre (profondeur et normales)"
 }

@@ -4844,5 +4844,6 @@
   "Cozy valley (legacy ?look=cozy, screen-space only)": "עמק נעים (‎?look=cozy הישן, מסך בלבד)",
   "None (photoreal as served)": "ללא (פוטוריאליסטי כפי שמוגש)",
   "Texel density heatmap (debug)": "מפת חום של צפיפות טקסלים (ניפוי באגים)",
-  "Classifier view (debug)": "תצוגת המסווג (ניפוי באגים)"
+  "Classifier view (debug)": "תצוגת המסווג (ניפוי באגים)",
+  "Ink edges (depth and normals)": "קווי דיו (עומק ונורמלים)"
 }

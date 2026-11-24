@@ -4956,5 +4956,6 @@
   "Cozy valley (legacy ?look=cozy, screen-space only)": "Затишна долина (старий ?look=cozy, лише екран)",
   "None (photoreal as served)": "Немає (фотореалізм як є)",
   "Texel density heatmap (debug)": "Теплова карта щільності текселів (налагодження)",
-  "Classifier view (debug)": "Вигляд класифікатора (налагодження)"
+  "Classifier view (debug)": "Вигляд класифікатора (налагодження)",
+  "Ink edges (depth and normals)": "Чорнильні контури (глибина і нормалі)"
 }

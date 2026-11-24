@@ -4620,5 +4620,6 @@
   "Cozy valley (legacy ?look=cozy, screen-space only)": "溫馨山谷（舊版 ?look=cozy，僅屏幕空間）",
   "None (photoreal as served)": "無（按原樣的照片級寫實）",
   "Texel density heatmap (debug)": "紋素密度熱圖（調試）",
-  "Classifier view (debug)": "分類器視圖（調試）"
+  "Classifier view (debug)": "分類器視圖（調試）",
+  "Ink edges (depth and normals)": "墨線邊緣（深度與法線）"
 }

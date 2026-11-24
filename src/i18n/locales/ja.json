@@ -4620,5 +4620,6 @@
   "Cozy valley (legacy ?look=cozy, screen-space only)": "コージーバレー（旧 ?look=cozy、画面のみ）",
   "None (photoreal as served)": "なし（配信どおりのフォトリアル）",
   "Texel density heatmap (debug)": "テクセル密度ヒートマップ（デバッグ）",
-  "Classifier view (debug)": "分類ビュー（デバッグ）"
+  "Classifier view (debug)": "分類ビュー（デバッグ）",
+  "Ink edges (depth and normals)": "インクの輪郭（深度と法線）"
 }

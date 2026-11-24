@@ -234,6 +234,41 @@ void main() {
   out_FragColor = vec4(c, src.a);
 }`;
 
+// ---------------------------------------------------------------------- ink
+// Depth/normal ink edges (Saito & Takahashi, "Comprehensible Rendering of 3-D
+// Shapes", SIGGRAPH 1990: G-buffer discontinuities): painted-map outlines
+// that sharpen form instead of blurring it. Thin, tinted, distance-faded.
+const INK_FS = /* glsl */ `${HEAD}${DEPTH}${LAUNCHPAD_READ}
+uniform float inkStrength;
+uniform float inkWidthPx;
+uniform float inkNormal;
+uniform float inkDepth;
+uniform float inkFadeFar;
+uniform vec3 inkColor;
+void main() {
+  vec2 uv = v_textureCoordinates;
+  vec4 src = texture(colorTexture, uv);
+  if (fx_sky(uv) || inkStrength <= 0.0) { out_FragColor = src; return; }
+  vec2 px = czm_pixelRatio / colorTextureDimensions * inkWidthPx;
+  vec3 n0 = fx_normal(uv);
+  float d0 = fx_dist(uv);
+  float en = 0.0;
+  float ed = 0.0;
+  vec2 o[4];
+  o[0] = vec2(px.x, 0.0); o[1] = vec2(-px.x, 0.0); o[2] = vec2(0.0, px.y); o[3] = vec2(0.0, -px.y);
+  for (int i = 0; i < 4; i++) {
+    vec2 s = uv + o[i];
+    en = max(en, 1.0 - dot(n0, fx_normal(s)));
+    // only the nearer side draws the line: outlines sit on the object, 1 px
+    ed = max(ed, (fx_dist(s) - d0) / max(d0, 1.0));
+  }
+  float edge = max(smoothstep(inkNormal, inkNormal * 2.0, en), smoothstep(inkDepth, inkDepth * 3.0, ed));
+  float rel = d0 / max(czm_eyeHeight, 30.0);
+  edge *= 1.0 - smoothstep(inkFadeFar * 0.5, inkFadeFar, rel);
+  vec3 c = mix(src.rgb, src.rgb * inkColor, clamp(edge * inkStrength, 0.0, 1.0));
+  out_FragColor = vec4(c, src.a);
+}`;
+
 // ---------------------------------------------------------------------- DOF
 const DOF_FS = /* glsl */ `${HEAD}${DEPTH}
 uniform float dofBlurPx;
@@ -637,6 +672,21 @@ export const POST_EFFECTS = Object.freeze([
       gain: color([1, 1, 1], 'Gain'),
       shadows: f(0, -1, 1, 0.01, 'Shadows'),
       highlights: f(0, -1, 1, 0.01, 'Highlights'),
+    },
+  },
+  {
+    id: 'outline',
+    label: msg('Ink edges (depth and normals)'),
+    cost: 1.0,
+    launchpad: true,
+    fragmentShader: INK_FS,
+    uniforms: {
+      inkStrength: f(0.5, 0, 1, 0.01, 'Strength'),
+      inkWidthPx: f(1, 0.5, 4, 0.25, 'Width (px)'),
+      inkNormal: f(0.25, 0.02, 1, 0.01, 'Crease threshold'),
+      inkDepth: f(0.02, 0.002, 0.2, 0.001, 'Silhouette threshold'),
+      inkFadeFar: f(6, 1, 40, 0.5, 'Fade by distance (× eye height)'),
+      inkColor: color([0.42, 0.34, 0.32], 'Ink colour'),
     },
   },
   {

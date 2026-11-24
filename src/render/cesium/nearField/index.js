@@ -36,14 +36,12 @@ import {
   toLocal,
 } from '../../../data/nearField/tiling.js';
 import { rasterize } from '../../../data/nearField/cellData.js';
-import { hideOsmCredit, showOsmCredit } from '../../../data/dataCredits.js';
 import { t } from '../../../i18n/index.js';
 
 const GRID_N = 25; // terrain samples per cell side
 const MAX_CELLS = 56; // LRU of generated cells (models stay in GPU memory while cached)
 const MAX_INFLIGHT = 3;
 const TREE_RADIUS = 0.72; // trees fade out at this share of the bubble radius (LOD)
-const OWNER = 'near-field';
 
 function ionToken() {
   try {
@@ -314,13 +312,20 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
     doc.body.appendChild(note);
   }
   let creditShown = false;
+  const osmCredit = new Cesium.Credit(
+    '<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a> · <a href="https://openmaptiles.org" target="_blank" rel="noopener">© OpenMapTiles</a> · <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a>',
+    true,
+  );
   function showCredit(on) {
     if (on === creditShown) return;
     creditShown = on;
     if (note) note.style.display = on ? 'block' : 'none';
     try {
-      if (on) showOsmCredit(viewer, OWNER, { openMapTiles: true });
-      else hideOsmCredit(viewer, OWNER);
+      // Cesium's own credit line, next to the Google/Cesium credits (on screen). Done here, not
+      // through data/dataCredits.js: that module would pull the renderer bridge into this chunk.
+      const display = viewer.creditDisplay ?? scene.frameState?.creditDisplay;
+      if (on) display?.addStaticCredit(osmCredit);
+      else display?.removeStaticCredit(osmCredit);
     } catch (error) {
       state.errors.push(`credit: ${error?.message ?? error}`);
     }

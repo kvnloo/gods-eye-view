@@ -271,6 +271,30 @@ export function createOsmMask(Cesium, viewer, { setUniform, workerFactory } = {}
         worker: state.stats,
       };
     },
+    /**
+     * OSM class shares in the mask window shown now (OSM geometry only: no
+     * tile pixels). Every 8th texel; fractions of the mapped texels.
+     * Feeds the learned theme (learnedTheme.js) and its offline training.
+     */
+    classStats(step = 8) {
+      if (!state.win) return null;
+      let n = 0, water = 0, grass = 0, forest = 0, road = 0, bld = 0;
+      for (let y = 0; y < PX; y += step)
+        for (let x = 0; x < PX; x += step) {
+          const i = (y * PX + x) * 4;
+          if (atlas[i + 3] < 1) continue;
+          n++;
+          const b = atlas[i + 2];
+          const g = atlas[i + 1];
+          if (b >= 2) bld++;
+          else if (b === 1) road++;
+          else if (atlas[i] > 128) water++;
+          else if (g >= 192) forest++;
+          else if (g >= 64) grass++;
+        }
+      const f = (v) => (n ? v / n : 0);
+      return { n, z: state.win.z, eyeHeight: state.eyeHeight, water: f(water), grass: f(grass), forest: f(forest), road: f(road), building: f(bld) };
+    },
     /** True when the window in view is fully loaded and uploaded. */
     idle() {
       return !!state.win && !state.next && !state.dirty && !state.inflight.size && state.loaded >= state.win.tiles.length;

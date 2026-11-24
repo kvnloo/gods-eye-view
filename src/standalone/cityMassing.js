@@ -46,6 +46,9 @@ import {
   seatShader,
 } from './cityMassingSeat.js';
 
+// The theme engine's per-tileset shader host (render/cesium/themes/tileShaderHost.js).
+const TILE_SHADER_HOST = Symbol.for('gev.tileShaderHost');
+
 const OWNER = 'city-massing';
 // The plate fills the plot from below the ground to just above it: the globe
 // never z-fights its top, and a cut photoreal mesh never shows a void.
@@ -524,7 +527,7 @@ export function mountCityMassing({
   // Cut the plot out of every shown 3D tileset (Google photoreal) so the block
   // never intersects the real building; the cut joins any existing clipping.
   // SPIKE: seated, the tiles take the block's shadow from `shader`, not the map.
-  function cut(plot, shader) {
+  function cut(plot, shader, seatPart) {
     if (!Cesium.ClippingPolygonCollection.isSupported(scene)) return [];
     const positions = Cesium.Cartesian3.fromDegreesArray(plot.corners.flat());
     const cuts = [];
@@ -547,7 +550,12 @@ export function mountCityMassing({
       tileset.shadows = shader
         ? Cesium.ShadowMode.DISABLED
         : Cesium.ShadowMode.RECEIVE_ONLY;
-      if (shader) tileset.customShader = shader;
+      // exp/theme-engine-v0: a themed tileset composes one shader from parts.
+      const host = tileset[TILE_SHADER_HOST];
+      if (shader && host && seatPart) {
+        host.attach(seatPart);
+        cuts[cuts.length - 1].seatHost = host;
+      } else if (shader) tileset.customShader = shader;
       // The mesh is a hollow shell: where the cut slices a neighbour or the
       // ground above the plate, its inside is drawn, not the sky behind it.
       tileset.backFaceCulling = false;
@@ -625,7 +633,8 @@ export function mountCityMassing({
         tileset.clippingPolygons = undefined;
       tileset.shadows = shadows;
       tileset.backFaceCulling = was.backFaceCulling;
-      tileset.customShader = was.customShader;
+      if (was.seatHost) was.seatHost.detach('seat');
+      else tileset.customShader = was.customShader;
     }
   }
 
@@ -879,7 +888,7 @@ export function mountCityMassing({
           },
         }),
       sides: close(hole, base + PLATE_RISE, seat),
-      cuts: cut(hole, seat?.shader),
+      cuts: cut(hole, seat?.shader, seat?.part),
       plate: ds.entities.add({
         id: `${OWNER}-plate`,
         polygon: {

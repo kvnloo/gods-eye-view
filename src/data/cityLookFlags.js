@@ -5,6 +5,7 @@
 //
 //   ?look=cozy            the Cozy Valley post chain (src/standalone/cozyValleyLook.js)
 //   ?look=diorama         the low-poly OSM district (src/standalone/cityDiorama.js)
+//   ?preset=|?theme=      whole-globe theme engine (exp/theme-engine-v0); turns both looks off
 //   ?city=v3              preset: look=diorama + cityHud=game + cityR1=kit (exp/city-loop-v3/v4)
 //   ?city=hero            preset: city=v3 at the hero location, cityLoc=sausalito (exp/city-loop-v4)
 //   ?cityR1=ghost,flat,kit,chip,tray | all
@@ -40,7 +41,11 @@ export function cityLookFlags(search = '') {
   // cityHud=game, src/data/cityGameHud.js, + cityR1=kit); an explicit ?look=
   // or ?cityR1= still wins.
   const preset = CITY_PRESETS.includes(q.get('city'));
-  const look = q.get('look') ?? (preset ? 'diorama' : null);
+  let look = q.get('look') ?? (preset ? 'diorama' : null);
+  // exp/theme-engine-v0: a whole-globe theme (?preset= / ?theme=,
+  // src/render/cesium/themes/) replaces the island looks: no diorama, and
+  // ?look=cozy is the theme engine's 'cozy' preset instead of its own chain.
+  if (q.has('preset') || q.has('theme')) look = null;
   const flags = { look: look === 'cozy' || look === 'diorama' ? look : null };
   const presetR1 = preset && !q.has('cityR1');
   for (const f of CITY_R1_FEATURES)

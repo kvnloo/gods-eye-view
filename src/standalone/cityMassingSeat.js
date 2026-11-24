@@ -173,25 +173,22 @@ export function groundMaterial(read) {
  */
 export function seatShader() {
   const { VEC3, VEC4 } = Cesium.UniformType;
-  const shader = new Cesium.CustomShader({
-    uniforms: {
-      u_originEC: { type: VEC3, value: new Cesium.Cartesian3() },
-      u_east: { type: VEC3, value: new Cesium.Cartesian3() },
-      u_north: { type: VEC3, value: new Cesium.Cartesian3() },
-      u_up: { type: VEC3, value: new Cesium.Cartesian3() },
-      u_wall0: { type: VEC4, value: new Cesium.Cartesian4() },
-      u_wall1: { type: VEC4, value: new Cesium.Cartesian4() },
-      u_wall2: { type: VEC4, value: new Cesium.Cartesian4() },
-      u_wall3: { type: VEC4, value: new Cesium.Cartesian4() },
-      u_levels: { type: VEC4, value: new Cesium.Cartesian4() },
-      u_seatOn: { type: VEC3, value: new Cesium.Cartesian3() },
-      u_seatTone: { type: VEC4, value: new Cesium.Cartesian4() },
-      u_viewSun: { type: VEC3, value: new Cesium.Cartesian3() },
-      u_seatKnee: { type: VEC3, value: new Cesium.Cartesian3() },
-    },
-    fragmentShaderText: `${SEAT_GLSL}
-void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
-  vec3 world = czm_inverseViewRotation * (fsInput.attributes.positionEC - u_originEC);
+  const uniforms = {
+    u_originEC: { type: VEC3, value: new Cesium.Cartesian3() },
+    u_east: { type: VEC3, value: new Cesium.Cartesian3() },
+    u_north: { type: VEC3, value: new Cesium.Cartesian3() },
+    u_up: { type: VEC3, value: new Cesium.Cartesian3() },
+    u_wall0: { type: VEC4, value: new Cesium.Cartesian4() },
+    u_wall1: { type: VEC4, value: new Cesium.Cartesian4() },
+    u_wall2: { type: VEC4, value: new Cesium.Cartesian4() },
+    u_wall3: { type: VEC4, value: new Cesium.Cartesian4() },
+    u_levels: { type: VEC4, value: new Cesium.Cartesian4() },
+    u_seatOn: { type: VEC3, value: new Cesium.Cartesian3() },
+    u_seatTone: { type: VEC4, value: new Cesium.Cartesian4() },
+    u_viewSun: { type: VEC3, value: new Cesium.Cartesian3() },
+    u_seatKnee: { type: VEC3, value: new Cesium.Cartesian3() },
+  };
+  const body = `  vec3 world = czm_inverseViewRotation * (fsInput.attributes.positionEC - u_originEC);
   vec3 p = vec3(dot(world, u_east), dot(world, u_north), dot(world, u_up));
   vec3 sunWorld = czm_inverseViewRotation * czm_lightDirectionEC;
   vec3 sun = vec3(dot(sunWorld, u_east), dot(sunWorld, u_north), dot(sunWorld, u_up));
@@ -207,22 +204,45 @@ void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
     light = mix(vec3(1.0), light, max(u_seatKnee.z, smoothstep(u_seatKnee.x, u_seatKnee.y, seen)));
   }
   material.diffuse *= pow(light, vec3(2.2));
-}`,
+`;
+  const shader = new Cesium.CustomShader({
+    uniforms,
+    fragmentShaderText: `${SEAT_GLSL}
+void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
+${body}}`,
   });
+  // exp/theme-engine-v0: the same shader as a part for a tileset whose
+  // CustomShader the theme engine composes (Symbol.for('gev.tileShaderHost'),
+  // src/render/cesium/themes/tileShaderHost.js): one shader per tileset.
+  const part = {
+    id: 'seat',
+    order: 10,
+    uniforms: Object.fromEntries(
+      Object.entries(uniforms).map(([k, u]) => [k, { ...u }]),
+    ),
+    glsl: SEAT_GLSL,
+    body: `{\n${body}}`,
+    hosts: new Set(),
+  };
+  const set = (name, value) => {
+    shader.setUniform(name, value);
+    part.uniforms[name].value = value;
+    for (const host of part.hosts) host.setUniform(name, value);
+  };
   return {
     shader,
+    part,
     place(look, originEC) {
-      shader.setUniform('u_originEC', originEC);
-      shader.setUniform('u_east', look.gevEast);
-      shader.setUniform('u_north', look.gevNorth);
-      shader.setUniform('u_up', look.gevUp);
-      for (let i = 0; i < 4; i++)
-        shader.setUniform(`u_wall${i}`, look[`gevWall${i}`]);
-      shader.setUniform('u_levels', look.gevLevels);
-      shader.setUniform('u_seatOn', look.gevSeatOn);
-      shader.setUniform('u_seatTone', look.gevSeatTone);
-      shader.setUniform('u_viewSun', look.gevViewSun);
-      shader.setUniform('u_seatKnee', look.gevSeatKnee);
+      set('u_originEC', originEC);
+      set('u_east', look.gevEast);
+      set('u_north', look.gevNorth);
+      set('u_up', look.gevUp);
+      for (let i = 0; i < 4; i++) set(`u_wall${i}`, look[`gevWall${i}`]);
+      set('u_levels', look.gevLevels);
+      set('u_seatOn', look.gevSeatOn);
+      set('u_seatTone', look.gevSeatTone);
+      set('u_viewSun', look.gevViewSun);
+      set('u_seatKnee', look.gevSeatKnee);
     },
   };
 }

@@ -132,6 +132,14 @@ export function createApplicationViewer({
     viewer.scene.skyAtmosphere.atmosphereLightIntensity = 18;
     viewer.scene.skyAtmosphere.saturationShift = -0.12;
     viewer.scene.skyAtmosphere.brightnessShift = -0.08;
+    // FORK-ONLY (exp/theme-engine-v0): ?preset= / ?theme= restyles the whole
+    // globe (themes/index.js); loaded only when asked for.
+    if (/[?&](preset|theme)=/.test(globalThis.location?.search ?? ''))
+      void import('./themes/index.js')
+        .then(({ installThemeFromLocation }) =>
+          installThemeFromLocation(viewer),
+        )
+        .catch((error) => console.error('[theme] failed to load', error));
     return viewer;
   } catch (error) {
     viewer.destroy();

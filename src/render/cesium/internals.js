@@ -314,3 +314,36 @@ export function materialTexture(material, uniform) {
 export function customShaderTexture(shader, uniform) {
   return shader?._textureManager?.getTexture?.(uniform);
 }
+
+/**
+ * FORK-ONLY (exp/theme-engine-v0): metadata of the glTF primitives a loaded
+ * 3D tile drew, for the theme engine's probe (`themes/engine.js`). Reads
+ * Cesium objects' fields only, never texture pixels: whether a NORMAL
+ * attribute exists and, per base-colour texture, whether Cesium generated a
+ * mip chain, its minification filter and pixel format.
+ * @param {object} tile Cesium Cesium3DTile.
+ * @returns {{normals: boolean, texture: object|null}[]}
+ */
+export function tilePrimitiveFacts(tile) {
+  const components = tile?.content?._model?._sceneGraph?.components;
+  const out = [];
+  for (const node of components?.nodes ?? [])
+    for (const primitive of node.primitives ?? []) {
+      const texture =
+        primitive.material?.metallicRoughness?.baseColorTexture?.texture;
+      out.push({
+        normals: !!primitive.attributes?.some((a) => a.semantic === 'NORMAL'),
+        texture: texture
+          ? {
+              key: texture,
+              hasMipmap: !!texture._hasMipmap,
+              minificationFilter: texture.sampler?.minificationFilter,
+              pixelFormat: texture.pixelFormat,
+              width: texture.width,
+              height: texture.height,
+            }
+          : null,
+      });
+    }
+  return out;
+}

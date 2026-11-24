@@ -1,0 +1,53 @@
+/**
+ * @module render/cesium/themes
+ * @description FORK-ONLY (exp/theme-engine-v0). Entry of the theme engine
+ * for the app: `createApplicationViewer` loads this module on demand when
+ * the page asks for a theme, so the engine covers the whole app (every
+ * location, zoom and mode; city builder on or off). Without `?preset=` /
+ * `?theme=` nothing here runs.
+ *
+ *   ?preset=wintercats | enhanced-realism | cozy | none | <url of JSON>
+ *   ?theme=<same>          alias
+ *   &themeWipe=0.5         before/after wipe (left = as served)
+ *   &themePanel=1          the developer overlay (panel.js)
+ *   &themeBudget=0         no automatic frame-budget switch-offs
+ *
+ * `window.__gevTheme` is the engine API (QA and the panel use it).
+ */
+import * as Cesium from 'cesium';
+import { tilePrimitiveFacts } from '../internals.js';
+import { createThemeEngine } from './engine.js';
+import { BUILT_IN_PRESETS, loadPreset, presetRequest } from './presets.js';
+
+/** Install the theme the page asks for; resolves to the engine or null. */
+export async function installThemeFromLocation(
+  viewer,
+  { win = globalThis.window } = {},
+) {
+  const request = presetRequest(win?.location?.search ?? '');
+  if (!request || !viewer?.scene) return null;
+  const engine = createThemeEngine(Cesium, viewer, {
+    wipe: request.wipe,
+    budget: request.budget,
+    tilePrimitiveFacts,
+  });
+  const apply = async (value) => {
+    try {
+      const { preset, problems } = await loadPreset(value);
+      engine.setPreset(preset);
+      if (problems.length) console.warn('[theme] preset problems:', problems);
+    } catch (error) {
+      console.error('[theme] preset failed to load:', error);
+    }
+  };
+  await apply(request.value);
+  if (win) win.__gevTheme = Object.assign(engine, { loadPreset: apply });
+  if (request.panel) {
+    const { mountThemePanel } = await import('./panel.js');
+    mountThemePanel(engine, {
+      presets: Object.keys(BUILT_IN_PRESETS),
+      loadPreset: apply,
+    });
+  }
+  return engine;
+}

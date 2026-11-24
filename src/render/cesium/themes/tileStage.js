@@ -153,6 +153,8 @@ export const TILE_UNIFORMS = Object.freeze({
   osmFlatN: f(0, 0, 1, 0.01, 'OSM: calm shading on mapped roofs and ground (no facet speckle)'),
   vegFlatN: f(0, 0, 1, 0.01, 'Calm shading on tree canopy (no leaf speckle)'),
   waterSky: f(0, 0, 1, 0.01, 'Water: sky sheen toward the horizon (luminous bay)'),
+  osmRoofFlat: f(0, 0, 1, 0.01, 'OSM roofs fully painted (no photo light or texture)'),
+  vegFlat: f(0, 0, 1, 0.01, 'Vegetation fully painted (no photo light or texture)'),
   skySheen: color(hex('#a9d3d6'), 'Water sky sheen'),
   shallowM: f(30, 2, 120, 1, 'Shallows width (m from shore)'),
   foamM: f(3, 0, 20, 0.5, 'Shore foam width (m)'),
@@ -472,13 +474,15 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
   // de-light: palette value vs the photo's own (baked-shadow) luminance;
   // surfaces OSM names are de-lit more (calmer, painted)
   vec3 keepLight = pal * (th_luma(max(albedo, vec3(1e-4))) / max(th_luma(pal), 1e-3));
-  pal = mix(keepLight, pal, mix(u_th_delight, max(u_th_delight, u_th_osmDelight), osmCover));
+  // fully painted surfaces: OSM roofs (eave line kept) and vegetation
+  float paintedW = max(u_th_osmRoofFlat * osmW * oB * (1.0 - wallW) * (1.0 - vegKeep), u_th_vegFlat * veg);
+  pal = mix(keepLight, pal, mix(mix(u_th_delight, max(u_th_delight, u_th_osmDelight), osmCover), 1.0, paintedW));
   // shadeWarm: photo shade (dark, blue-cast) is lifted toward a warm neutral
   // of the palette instead of keeping its cyan cast
   float shadeW = u_th_shadeWarm * (1.0 - smoothstep(0.02, 0.12, l)) * smoothstep(-0.02, 0.06, (a.b - a.r) / sum) * (1.0 - veg) * (1.0 - blue);
   pal = mix(pal, vec3(th_luma(pal)) * vec3(1.06, 1.0, 0.92), shadeW);
   float detail = clamp(th_luma(max(photo, vec3(1e-4))) / max(l, 1e-3), 0.6, 1.5);
-  pal *= mix(1.0, detail, u_th_detail * (1.0 - 0.5 * osmCover));
+  pal *= mix(1.0, detail, u_th_detail * (1.0 - 0.5 * osmCover) * (1.0 - paintedW));
 
   // Below the horizon the sun would light the world from underneath: blend
   // toward a high key from the sun's side, so night stays readable.
@@ -506,6 +510,7 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
   s = mix(s, max(s, u_th_waterStrength), blue);
   s = mix(s, max(s, u_th_vegStrength), veg);
   s = mix(s, max(s, u_th_osmStrength), osmCover);
+  s = mix(s, 1.0, paintedW);
   material.diffuse = mix(photoMix, lit, s);
 }
 `;

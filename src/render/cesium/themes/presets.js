@@ -20,15 +20,33 @@
  */
 import { EFFECT_IDS } from './effectLibrary.js';
 
+/** Marks English text for scripts/i18n.mjs; the panel translates with t(). */
+const msg = (text) => text;
+
 export const PRESET_FORMAT = 'gev-theme-preset/1';
 export const PERF_TIERS = Object.freeze({ low: 20, medium: 30, high: 45 });
+
+/**
+ * Render quality a preset asks for (council L1 §1: GEV renders at CSS pixels
+ * and leaves the tiles' maximumScreenSpaceError at 16, so Google tiles look
+ * blurrier than they are). `resolutionScale: 'dpr'` renders at the device
+ * pixel ratio up to `maxDpr` (`phoneMaxDpr` on touch-first screens); the
+ * error and MSAA apply on desktop only. Omitted: the app's own settings.
+ */
+export const DESKTOP_HIGH = Object.freeze({
+  resolutionScale: 'dpr',
+  maxDpr: 2,
+  phoneMaxDpr: 1.5,
+  maximumScreenSpaceError: 8,
+  msaa: 4,
+});
 
 // Colours from the locked wintercats reference (loop-v2/round-v5/style-loop
 // best-build.png) and the wintercats frames; numbers, not images.
 const WINTERCATS = {
   format: PRESET_FORMAT,
   name: 'wintercats',
-  label: 'Wintercats (cozy painterly city builder)',
+  label: msg('Wintercats (cozy painterly city builder)'),
   perfTier: 'medium',
   techniques: [
     'tile',
@@ -85,6 +103,7 @@ const WINTERCATS = {
     vignette: { vignette: 0.22, vignetteColor: [0.4, 0.38, 0.52] },
   },
   textures: { lutTexture: '/themes/luts/wintercats.png' },
+  quality: DESKTOP_HIGH,
 };
 
 // "Enhanced realism", in the spirit of the BotW "Digital Dreams" ReShade
@@ -93,7 +112,7 @@ const WINTERCATS = {
 const ENHANCED = {
   format: PRESET_FORMAT,
   name: 'enhanced-realism',
-  label: 'Enhanced realism (golden hour)',
+  label: msg('Enhanced realism (golden hour)'),
   perfTier: 'high',
   techniques: [
     'ao',
@@ -136,13 +155,14 @@ const ENHANCED = {
     grain: { grain: 0.025 },
   },
   textures: {},
+  quality: DESKTOP_HIGH,
 };
 
 // The old ?look=cozy chain re-expressed as a preset (paint + palette-ish grade).
 const COZY = {
   format: PRESET_FORMAT,
   name: 'cozy',
-  label: 'Cozy valley (legacy ?look=cozy, screen-space only)',
+  label: msg('Cozy valley (legacy ?look=cozy, screen-space only)'),
   perfTier: 'medium',
   techniques: ['paint', 'haze', 'dof', 'bloom', 'lut', 'grade', 'vignette'],
   uniforms: {
@@ -158,7 +178,7 @@ const COZY = {
 const NONE = {
   format: PRESET_FORMAT,
   name: 'none',
-  label: 'None (photoreal as served)',
+  label: msg('None (photoreal as served)'),
   perfTier: 'high',
   techniques: [],
   uniforms: {},
@@ -237,8 +257,28 @@ export function normalizePreset(input, { customIds = [] } = {}) {
       uniforms,
       textures,
       effects: Array.isArray(input.effects) ? input.effects : [],
+      quality: normalizeQuality(input.quality, problems),
     },
     problems,
+  };
+}
+
+/** A preset's quality block, checked; null when it has none. */
+function normalizeQuality(q, problems) {
+  if (q == null) return null;
+  if (typeof q !== 'object') {
+    problems.push('bad quality block');
+    return null;
+  }
+  const num = (v, lo, hi) =>
+    Number.isFinite(v) && v >= lo && v <= hi ? v : undefined;
+  return {
+    resolutionScale:
+      q.resolutionScale === 'dpr' ? 'dpr' : num(q.resolutionScale, 0.25, 4),
+    maxDpr: num(q.maxDpr, 0.5, 4) ?? 2,
+    phoneMaxDpr: num(q.phoneMaxDpr, 0.5, 4) ?? 1.5,
+    maximumScreenSpaceError: num(q.maximumScreenSpaceError, 1, 64),
+    msaa: num(q.msaa, 0, 8),
   };
 }
 
@@ -255,6 +295,7 @@ export function presetRequest(search = '') {
     ),
     panel: q.get('themePanel') === '1',
     budget: q.get('themeBudget') !== '0',
+    quality: q.get('themeQuality') !== '0',
   };
 }
 

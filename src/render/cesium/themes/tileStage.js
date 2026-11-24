@@ -34,6 +34,8 @@ const f = (def, min, max, step, label) => ({
   step,
   label,
 });
+/** Marks English text for scripts/i18n.mjs; the panel translates with t(). */
+const msg = (text) => text;
 const color = (def, label) => ({ type: 'color', default: def, label });
 const hex = (h) =>
   [1, 3, 5].map(
@@ -70,6 +72,11 @@ export const TILE_UNIFORMS = Object.freeze({
   roofD: color(hex('#6e4a36'), 'Roof timber'),
   shadow: color([0.42, 0.44, 0.62], 'Shadow tint'),
   key: color([1.06, 1.0, 0.9], 'Key light'),
+  debugTexel: {
+    type: 'bool',
+    default: 0,
+    label: msg('Texel density heatmap (debug)'),
+  },
 });
 
 export const TILE_GLSL = /* glsl */ `
@@ -100,6 +107,24 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
   #endif
   vec3 pEC = fsInput.attributes.positionEC;
   vec3 pWC = fsInput.attributes.positionWC;
+  #ifdef HAS_BASE_COLOR_TEXTURE
+  if (u_th_debugTexel > 0.5) {
+    // Texel density from derivatives only (no texture content): screen
+    // pixels per texel; log2 < 0 blue (texels minified, LOD/resolution can
+    // still add detail), 0 green (1:1), > 0 red (magnified: source poverty).
+    vec2 duv = TEXCOORD_BASE_COLOR;
+    vec2 ts = vec2(textureSize(u_baseColorTexture, 0));
+    float tpp = max(length(dFdx(duv) * ts), length(dFdy(duv) * ts));
+    float mpp = max(length(dFdx(pEC)), length(dFdy(pEC)));
+    float m = clamp(-log2(max(tpp, 1e-6)) / 3.0, -1.0, 1.0);
+    vec3 heat = m < 0.0 ? mix(vec3(0.1, 0.8, 0.2), vec3(0.1, 0.3, 1.0), -m) : mix(vec3(0.1, 0.8, 0.2), vec3(1.0, 0.15, 0.1), m);
+    // texels per metre bands every 10 texels/m (thin dark lines)
+    float tpm = tpp / max(mpp, 1e-6);
+    heat *= 0.75 + 0.25 * smoothstep(0.0, 0.15, abs(fract(tpm / 10.0) - 0.5));
+    material.diffuse = czm_srgbToLinear(heat);
+    return;
+  }
+  #endif
   vec3 n = normalize(cross(dFdx(pEC), dFdy(pEC)));
   if (dot(n, -pEC) < 0.0) n = -n;
   vec3 upEC = normalize(czm_viewRotation * normalize(pWC));

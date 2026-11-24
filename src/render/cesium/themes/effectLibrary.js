@@ -30,6 +30,9 @@
  *   this fork's cozyValleyLook.js.
  */
 
+/** Marks English text for scripts/i18n.mjs; the panel translates with t(). */
+const msg = (text) => text;
+
 const COMMON = /* glsl */ `
 float fx_luma(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
 float fx_hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
@@ -498,7 +501,7 @@ void main() {
 export const POST_EFFECTS = Object.freeze([
   {
     id: 'launchpad',
-    label: 'Launchpad (depth → normals prepass)',
+    label: msg('Launchpad (depth → normals prepass)'),
     internal: true,
     cost: 0.5,
     passes: [
@@ -513,14 +516,14 @@ export const POST_EFFECTS = Object.freeze([
   },
   {
     id: 'paint',
-    label: 'Kuwahara paint',
+    label: msg('Kuwahara paint'),
     cost: 3.6,
     fragmentShader: PAINT_FS,
     uniforms: { paintRadius: f(3, 1, 8, 0.5, 'Brush radius (px)') },
   },
   {
     id: 'ao',
-    label: 'Ambient occlusion (tinted, capped)',
+    label: msg('Ambient occlusion (tinted, capped)'),
     cost: 2.5,
     launchpad: true,
     passes: [
@@ -539,7 +542,7 @@ export const POST_EFFECTS = Object.freeze([
   },
   {
     id: 'gi',
-    label: 'GI-lite (one-bounce colour bleed)',
+    label: msg('GI-lite (one-bounce colour bleed)'),
     cost: 2.4,
     launchpad: true,
     fragmentShader: GI_FS,
@@ -551,7 +554,7 @@ export const POST_EFFECTS = Object.freeze([
   },
   {
     id: 'haze',
-    label: 'Depth haze / fog',
+    label: msg('Depth haze / fog'),
     cost: 0.2,
     fragmentShader: HAZE_FS,
     uniforms: {
@@ -565,7 +568,7 @@ export const POST_EFFECTS = Object.freeze([
   },
   {
     id: 'dof',
-    label: 'Depth of field / tilt-shift',
+    label: msg('Depth of field / tilt-shift'),
     cost: 1.8,
     fragmentShader: DOF_FS,
     uniforms: {
@@ -579,7 +582,7 @@ export const POST_EFFECTS = Object.freeze([
   },
   {
     id: 'godrays',
-    label: 'God rays (sun shafts)',
+    label: msg('God rays (sun shafts)'),
     cost: 2.4,
     fragmentShader: GODRAYS_FS,
     uniforms: {
@@ -591,7 +594,7 @@ export const POST_EFFECTS = Object.freeze([
   },
   {
     id: 'bloom',
-    label: 'Bloom (clamped)',
+    label: msg('Bloom (clamped)'),
     cost: 2.4,
     fragmentShader: BLOOM_FS,
     uniforms: {
@@ -604,7 +607,7 @@ export const POST_EFFECTS = Object.freeze([
   },
   {
     id: 'lut',
-    label: 'LUT (3D colour lookup)',
+    label: msg('LUT (3D colour lookup)'),
     cost: 0.2,
     fragmentShader: LUT_FS,
     textures: ['lutTexture'],
@@ -616,7 +619,7 @@ export const POST_EFFECTS = Object.freeze([
   },
   {
     id: 'grade',
-    label: 'Grade (lift/gamma/gain, WB, curves)',
+    label: msg('Grade (lift/gamma/gain, WB, curves)'),
     cost: 0.1,
     fragmentShader: GRADE_FS,
     uniforms: {
@@ -635,7 +638,7 @@ export const POST_EFFECTS = Object.freeze([
   },
   {
     id: 'clarity',
-    label: 'Local contrast / clarity',
+    label: msg('Local contrast / clarity'),
     cost: 1.6,
     fragmentShader: CLARITY_FS,
     uniforms: {
@@ -645,14 +648,14 @@ export const POST_EFFECTS = Object.freeze([
   },
   {
     id: 'cas',
-    label: 'Contrast-adaptive sharpen',
+    label: msg('Contrast-adaptive sharpen'),
     cost: 0.5,
     fragmentShader: CAS_FS,
     uniforms: { casSharpness: f(0.4, 0, 1, 0.01, 'Sharpness') },
   },
   {
     id: 'vignette',
-    label: 'Vignette',
+    label: msg('Vignette'),
     cost: 0.1,
     fragmentShader: VIGNETTE_FS,
     uniforms: {
@@ -663,7 +666,7 @@ export const POST_EFFECTS = Object.freeze([
   },
   {
     id: 'grain',
-    label: 'Film grain',
+    label: msg('Film grain'),
     cost: 0.1,
     fragmentShader: GRAIN_FS,
     uniforms: {
@@ -673,7 +676,7 @@ export const POST_EFFECTS = Object.freeze([
   },
   {
     id: 'wipe',
-    label: 'Before/after wipe',
+    label: msg('Before/after wipe'),
     internal: true,
     cost: 0.1,
     fragmentShader: WIPE_FS,

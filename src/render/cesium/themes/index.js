@@ -11,11 +11,12 @@
  *   &themeWipe=0.5         before/after wipe (left = as served)
  *   &themePanel=1          the developer overlay (panel.js)
  *   &themeBudget=0         no automatic frame-budget switch-offs
+ *   &themeQuality=0        keep the app's resolution, MSAA and tile error
  *
  * `window.__gevTheme` is the engine API (QA and the panel use it).
  */
 import * as Cesium from 'cesium';
-import { tilePrimitiveFacts } from '../internals.js';
+import { tilePrimitiveFacts, webglContext } from '../internals.js';
 import { createThemeEngine } from './engine.js';
 import { BUILT_IN_PRESETS, loadPreset, presetRequest } from './presets.js';
 
@@ -30,6 +31,8 @@ export async function installThemeFromLocation(
     wipe: request.wipe,
     budget: request.budget,
     tilePrimitiveFacts,
+    glOf: webglContext,
+    quality: request.quality,
   });
   const apply = async (value) => {
     try {

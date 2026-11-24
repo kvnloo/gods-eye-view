@@ -65,6 +65,14 @@ test('built-in presets name only library effects and declared uniforms', () => {
   }
   assert.ok(BUILT_IN_PRESETS.wintercats.techniques.includes('tile'));
   assert.equal(BUILT_IN_PRESETS.none.techniques.length, 0);
+  assert.equal(BUILT_IN_PRESETS.none.quality, undefined);
+  for (const name of ['wintercats', 'enhanced-realism']) {
+    const q = normalizePreset(BUILT_IN_PRESETS[name]).preset.quality;
+    assert.deepEqual(
+      [q.resolutionScale, q.maximumScreenSpaceError, q.msaa],
+      ['dpr', 8, 4],
+    );
+  }
 });
 
 test('a malformed preset is cleaned, never thrown', () => {
@@ -91,6 +99,7 @@ test('the page asks for a theme with ?preset= or ?theme=', () => {
       wipe: 0.4,
       panel: true,
       budget: true,
+      quality: true,
     },
   );
   assert.equal(presetRequest('?preset=/p.json&themeBudget=0').budget, false);

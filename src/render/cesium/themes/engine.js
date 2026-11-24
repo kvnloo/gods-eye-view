@@ -300,8 +300,80 @@ export function createThemeEngine(Cesium, viewer, options = {}) {
     applyEnabled();
   }
 
+  // ------------------------------------------------------------- quality
+  const qualityPrior = { saved: false, sse: new Map() };
+  let quality = null;
+  const phone = () =>
+    globalThis.matchMedia?.('(pointer: coarse)').matches === true ||
+    (globalThis.innerWidth ?? 1200) < 800;
+  function wantedScale() {
+    if (!quality || quality.resolutionScale === undefined) return null;
+    const dpr = globalThis.devicePixelRatio || 1;
+    const cap = phone() ? quality.phoneMaxDpr : quality.maxDpr;
+    return quality.resolutionScale === 'dpr'
+      ? Math.min(dpr, cap)
+      : Math.min(quality.resolutionScale, cap);
+  }
+  function applyQuality(next) {
+    if (options.quality === false) next = null;
+    if (next && !qualityPrior.saved) {
+      qualityPrior.saved = true;
+      qualityPrior.scale = viewer.resolutionScale;
+      qualityPrior.recommended = viewer.useBrowserRecommendedResolution;
+      qualityPrior.msaa = scene.msaaSamples;
+    }
+    quality = next;
+    if (!next && qualityPrior.saved) {
+      viewer.resolutionScale = qualityPrior.scale;
+      viewer.useBrowserRecommendedResolution = qualityPrior.recommended;
+      if (scene.msaaSamples !== qualityPrior.msaa)
+        scene.msaaSamples = qualityPrior.msaa;
+      for (const [ts, sse] of qualityPrior.sse)
+        if (!ts.isDestroyed?.()) ts.maximumScreenSpaceError = sse;
+      qualityPrior.sse.clear();
+      qualityPrior.saved = false;
+      return;
+    }
+    if (!next) return;
+    const scale = wantedScale();
+    if (scale !== null) {
+      // Cesium: with the browser-recommended resolution on, 1 is one pixel
+      // per CSS pixel; the scale multiplies that.
+      viewer.useBrowserRecommendedResolution = true;
+      viewer.resolutionScale = scale;
+    }
+    if (
+      !phone() &&
+      Number.isFinite(next.msaa) &&
+      scene.msaaSupported !== false
+    ) {
+      const samples = Math.max(1, next.msaa);
+      if (scene.msaaSamples !== samples) scene.msaaSamples = samples;
+    }
+    applyTileQuality();
+  }
+  function applyTileQuality() {
+    const sse = quality?.maximumScreenSpaceError;
+    if (!Number.isFinite(sse) || phone()) return;
+    for (const ts of tilesets()) {
+      if (ts.isDestroyed?.() || !('maximumScreenSpaceError' in ts)) continue;
+      if (!qualityPrior.sse.has(ts))
+        qualityPrior.sse.set(ts, ts.maximumScreenSpaceError);
+      if (ts.maximumScreenSpaceError !== sse) ts.maximumScreenSpaceError = sse;
+    }
+  }
+
+  let qualityTick = 0;
   const removePreUpdate = scene.preUpdate.addEventListener(() => {
-    if (!disposed && state.enabled.has('tile')) attachTiles();
+    if (disposed) return;
+    if (state.enabled.has('tile')) attachTiles();
+    if (quality && ++qualityTick % 30 === 0) {
+      applyTileQuality();
+      // the app's pixelRatio setting (0 = scale 1) may land after us
+      const scale = wantedScale();
+      if (scale !== null && viewer.resolutionScale === 1 && scale !== 1)
+        viewer.resolutionScale = scale;
+    }
   });
   const removePostRender = scene.postRender.addEventListener(onPostRender);
 
@@ -339,6 +411,7 @@ export function createThemeEngine(Cesium, viewer, options = {}) {
       rebuild();
     else applyEnabled();
     if (state.enabled.has('tile')) attachTiles();
+    applyQuality(preset.quality ?? null);
     return problems;
   }
 
@@ -381,7 +454,7 @@ export function createThemeEngine(Cesium, viewer, options = {}) {
     return {
       format: 'gev-theme-preset/1',
       name: `${state.preset?.name ?? 'custom'}-edit`,
-      label: `${state.preset?.label ?? 'Custom'} (edited)`,
+      label: `${state.preset?.label ?? 'Custom'} *`,
       perfTier: state.preset?.perfTier ?? 'medium',
       techniques: state.order.filter((id) => state.enabled.has(id)),
       uniforms,
@@ -480,6 +553,34 @@ export function createThemeEngine(Cesium, viewer, options = {}) {
     addEffect,
     exportPreset,
     probe,
+    get quality() {
+      return quality
+        ? {
+            ...quality,
+            resolutionScale: viewer.resolutionScale,
+            msaaSamples: scene.msaaSamples,
+          }
+        : null;
+    },
+    setQuality(on) {
+      applyQuality(on ? (state.preset?.quality ?? null) : null);
+      scene.requestRender?.();
+    },
+    /**
+     * Mean ms per forced frame over `n` frames (CPU + GPU: each frame is
+     * flushed with gl.finish; no pixels are read back).
+     */
+    benchmark(n = 60) {
+      const gl = options.glOf?.(scene);
+      for (let i = 0; i < 5; i++) scene.render();
+      gl?.finish();
+      const t0 = performance.now();
+      for (let i = 0; i < n; i++) {
+        scene.render();
+        gl?.finish();
+      }
+      return (performance.now() - t0) / n;
+    },
     /** Set one uniform (no rebuild). */
     set(id, key, value) {
       if (!values[id]) return;
@@ -524,6 +625,7 @@ export function createThemeEngine(Cesium, viewer, options = {}) {
       removePreUpdate();
       removePostRender();
       removeStages();
+      applyQuality(null);
       for (const ts of hosts)
         if (!ts.isDestroyed?.()) ts[HOST_KEY]?.detach('theme');
       hosts.clear();

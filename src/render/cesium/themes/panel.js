@@ -9,7 +9,7 @@
  * It sits top-right below the HUD's top bar and leaves the bottom edge (the
  * map attribution) free.
  */
-// i18n-ignore-file: developer-only overlay behind ?themePanel=1
+import { t } from '../../../i18n/index.js';
 
 const CSS = `
 .gev-theme-panel{position:fixed;top:64px;right:12px;z-index:2147483000;width:320px;max-height:calc(100vh - 140px);overflow:auto;
@@ -30,6 +30,9 @@ const CSS = `
 .gev-theme-panel .note{color:#e8c46a}
 .gev-theme-panel textarea{width:100%;height:90px}
 `;
+
+/** Marks English text for scripts/i18n.mjs; rendered through t(). */
+const msg = (text) => text;
 
 const toHex = (c) =>
   `#${c
@@ -115,7 +118,7 @@ export function mountThemePanel(
     const box = el('div', { className: `fx${open.has(id) ? ' open' : ''}` });
     const check = el('input', { type: 'checkbox', checked: enabled });
     check.onchange = () => engine.enable(id, check.checked);
-    const name = el('label', {}, check, ` ${label}`);
+    const name = el('label', {}, check, ` ${t(label)}`);
     const more = el('button', {
       textContent: open.has(id) ? '−' : '+',
       title: 'uniforms',
@@ -126,13 +129,13 @@ export function mountThemePanel(
     };
     const up = el('button', {
       textContent: '↑',
-      title: 'move up',
+      title: t('move up'),
       disabled: index <= 0,
     });
     up.onclick = () => engine.move(id, -1);
     const down = el('button', {
       textContent: '↓',
-      title: 'move down',
+      title: t('move down'),
       disabled: index < 0,
     });
     down.onclick = () => engine.move(id, 1);
@@ -184,7 +187,9 @@ export function mountThemePanel(
     const all = [
       {
         id: 'tile',
-        label: 'Stage 0: tile material (palette, de-light, flatten, relight)',
+        label: msg(
+          'Stage 0: tile material (palette, de-light, flatten, relight)',
+        ),
         uniforms: engine.tileUniforms,
       },
       ...engine.effects(),

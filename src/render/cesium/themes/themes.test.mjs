@@ -100,9 +100,13 @@ test('the page asks for a theme with ?preset= or ?theme=', () => {
       panel: true,
       budget: true,
       quality: true,
+      osm: true,
+      osmDebug: false,
     },
   );
   assert.equal(presetRequest('?preset=/p.json&themeBudget=0').budget, false);
+  assert.equal(presetRequest('?preset=none&themeOsm=0').osm, false);
+  assert.equal(presetRequest('?preset=none&themeOsmDebug=1').osmDebug, true);
 });
 
 test('loadPreset resolves built-ins and fetches URLs', async () => {

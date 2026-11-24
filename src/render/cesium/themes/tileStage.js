@@ -138,6 +138,22 @@ export const TILE_UNIFORMS = Object.freeze({
   roofD: color(hex('#6e4a36'), 'Roof timber'),
   shadow: color([0.42, 0.44, 0.62], 'Shadow tint'),
   key: color([1.06, 1.0, 0.9], 'Key light'),
+  // ---- OSM class mask (loop v3): OpenStreetMap water / park / forest /
+  // building / road classes per world position (osmMask.js), blended over the
+  // per-pixel classifier; beyond the mask the classifier alone decides
+  osm: f(0, 0, 1, 0.01, 'OSM class mask (OpenStreetMap classes)'),
+  osmWaterTrust: f(0.85, 0, 1, 0.01, 'OSM: no water where OSM has land'),
+  osmVeg: f(1, 0, 1, 0.01, 'OSM: parks and woods painted green'),
+  osmDelight: f(0.85, 0, 1, 0.01, 'OSM: de-light on mapped surfaces (calmer)'),
+  osmStrength: f(0, 0, 1, 0.01, 'OSM: strength floor on mapped surfaces'),
+  osmRoof: f(1, 0, 1, 0.01, 'OSM: one roof colour per building'),
+  shallowM: f(30, 2, 120, 1, 'Shallows width (m from shore)'),
+  foamM: f(3, 0, 20, 0.5, 'Shore foam width (m)'),
+  foamAmt: f(0.35, 0, 1, 0.01, 'Shore foam'),
+  mottle: f(0.06, 0, 0.3, 0.01, 'Soft mottle on grass and woods'),
+  conifer: color(hex('#23402c'), 'Woods (conifer)'),
+  foam: color(hex('#e6ece4'), 'Foam'),
+  debugOsm: f(0, 0, 1, 1, 'OSM mask overlay (debug)'),
   debugClass: {
     type: 'bool',
     default: 0,
@@ -153,6 +169,13 @@ export const TILE_UNIFORMS = Object.freeze({
 export const TILE_GLSL = /* glsl */ `
 float th_luma(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
 float th_hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float th_vnoise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  i = mod(i, 289.0);
+  return mix(mix(th_hash(i), th_hash(i + vec2(1.0, 0.0)), f.x), mix(th_hash(i + vec2(0.0, 1.0)), th_hash(i + vec2(1.0, 1.0)), f.x), f.y);
+}
 void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
   if (u_th_strength <= 0.001) return;
   if (gl_FragCoord.x < u_th_wipe * czm_viewport.z + czm_viewport.x) return;
@@ -279,6 +302,84 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
       (1.0 - u_th_waterSeamKeep * smoothstep(u_th_waterChroma + 0.1, u_th_waterChroma + 0.3, chroma));
   float neutral = (1.0 - smoothstep(0.12 * u_th_neutralChroma, 0.3 * u_th_neutralChroma, chroma)) * (1.0 - veg) * (1.0 - blue);
 
+  // ---- OSM class mask (loop v3). Local ENU metres at the atlas anchor from
+  // a CPU double-precision eye matrix; ENU -> web-mercator tile units by a
+  // second-order expansion (data/osmMask/maskMath.js localToTile). Manual
+  // bilinear over 4 texelFetch taps: ids (B) must not be filtered.
+  float oValid = 0.0, oShore = -64.0, oGrass = 0.0, oForest = 0.0, oBld = 0.0, oRoad = 0.0, oId = 0.0;
+  vec2 pL = vec2(0.0);
+  if ((u_th_osm > 0.001 || u_th_debugOsm > 0.5) && u_th_osmInfo.x > 0.001 && u_th_osmInfo.w > 0.5) {
+    pL = (u_th_osmEyeToLocal * vec4(pEC, 1.0)).xy;
+    float X = u_th_osmGeo.x * pL.x * (1.0 + u_th_osmGeo.z * pL.y);
+    float Y = -u_th_osmGeo.y * (pL.y + 0.5 * u_th_osmGeo.z * pL.y * pL.y - 0.5 * u_th_osmGeo.w * pL.x * pL.x);
+    float halfN = 0.5 * u_th_osmInfo.y / u_th_osmInfo.z;
+    vec2 tc = (vec2(X, Y) + halfN) * u_th_osmInfo.z - 0.5;
+    float apx = u_th_osmInfo.y;
+    if (tc.x > 0.0 && tc.y > 0.0 && tc.x < apx - 1.5 && tc.y < apx - 1.5) {
+      ivec2 i0 = ivec2(floor(tc));
+      vec2 fw = fract(tc);
+      vec4 t00 = texelFetch(u_th_osmMask, i0, 0);
+      vec4 t10 = texelFetch(u_th_osmMask, i0 + ivec2(1, 0), 0);
+      vec4 t01 = texelFetch(u_th_osmMask, i0 + ivec2(0, 1), 0);
+      vec4 t11 = texelFetch(u_th_osmMask, i0 + ivec2(1, 1), 0);
+      vec4 wq = vec4((1.0 - fw.x) * (1.0 - fw.y), fw.x * (1.0 - fw.y), (1.0 - fw.x) * fw.y, fw.x * fw.y);
+      vec4 rr = vec4(t00.r, t10.r, t01.r, t11.r);
+      vec4 gg = vec4(t00.g, t10.g, t01.g, t11.g) * 255.0;
+      vec4 ib = vec4(t00.b, t10.b, t01.b, t11.b) * 255.0;
+      vec4 aa = vec4(t00.a, t10.a, t01.a, t11.a);
+      oShore = (dot(rr, wq) * 255.0 - 127.5) * 0.5;
+      oGrass = dot(step(64.0, gg) * (1.0 - step(192.0, gg)), wq);
+      oForest = dot(step(192.0, gg), wq);
+      vec4 isR = step(0.5, ib) * (1.0 - step(1.5, ib));
+      vec4 isB = step(1.5, ib);
+      oRoad = dot(isR, wq);
+      oBld = dot(isB, wq);
+      // the id of the heaviest building tap (one colour per footprint)
+      vec4 bw4 = isB * (wq + 1e-3);
+      float m1 = max(max(bw4.x, bw4.y), max(bw4.z, bw4.w));
+      oId = m1 == bw4.x ? ib.x : (m1 == bw4.y ? ib.y : (m1 == bw4.z ? ib.z : ib.w));
+      // fade over the outer tile of the atlas and with the global fade
+      float edgeT = min(min(X, Y) + halfN, halfN - max(X, Y));
+      oValid = dot(aa, wq) * smoothstep(0.15, 1.2, edgeT) * u_th_osmInfo.x;
+    }
+  }
+  float osmW = oValid * u_th_osm;
+  float oWater = smoothstep(-1.0, 1.0, oShore) * (1.0 - max(oRoad, oBld));
+  float oB = oBld;
+  float oR = oRoad * (1.0 - oB);
+  float oVeg = clamp(oGrass + oForest, 0.0, 1.0) * (1.0 - oWater) * (1.0 - oB) * (1.0 - oR);
+  // unmapped trees: the classifier's vegetation stays (yards, street trees),
+  // except on OSM water and (mostly) on flat roofs
+  float vegKeep = veg * (1.0 - oWater) * (1.0 - 0.75 * oB * flatW);
+  // the classifier's water is not trusted where OSM has land
+  blue = mix(blue, blue * (1.0 - u_th_osmWaterTrust) * (1.0 - oB), osmW);
+  #ifdef HAS_BASE_COLOR_TEXTURE
+  if (u_th_debugOsm > 0.5) {
+    // overlay of the OSM mask over the tile as served (alignment check):
+    // water blue (darker offshore), shore line white, grass light green,
+    // woods dark green, buildings orange by id with dark outlines, roads grey
+    vec3 dc = photo;
+    float cov = 0.0;
+    vec3 oc = vec3(0.0);
+    if (oValid > 0.001) {
+      oc = mix(vec3(0.35, 0.7, 1.0), vec3(0.05, 0.2, 0.75), smoothstep(0.0, 40.0, oShore));
+      cov = oWater;
+      vec3 g = mix(vec3(0.55, 0.95, 0.35), vec3(0.05, 0.45, 0.1), oForest / max(oGrass + oForest, 1e-3));
+      oc = mix(oc, g, oVeg); cov = max(cov, oVeg);
+      oc = mix(oc, vec3(0.55), oR); cov = max(cov, oR);
+      float hb = fract(oId * 0.6180339);
+      oc = mix(oc, mix(vec3(1.0, 0.45, 0.1), vec3(1.0, 0.8, 0.2), hb), oB); cov = max(cov, oB);
+      float line = 1.0 - smoothstep(0.0, 0.6, abs(oShore));
+      float edge = smoothstep(0.05, 0.3, oBld) * (1.0 - smoothstep(0.7, 0.95, oBld));
+      dc = mix(photo, oc, 0.55 * cov * oValid);
+      dc = mix(dc, vec3(1.0), line * oValid);
+      dc = mix(dc, vec3(0.08, 0.02, 0.0), edge * oValid);
+    }
+    material.diffuse = dc;
+    return;
+  }
+  #endif
+
   vec3 vegC = mix(czm_srgbToLinear(u_th_canopy), czm_srgbToLinear(u_th_grass), flatW);
   // vegChroma < 1 pulls the vegetation palette toward its own luminance
   vegC = mix(vec3(th_luma(vegC)), vegC, min(u_th_vegChroma, 1.0));
@@ -311,15 +412,45 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
   pal = mix(pal, neutralC, neutral);
   pal = mix(pal, waterC, blue);
   pal = mix(pal, vegC, veg);
-  // de-light: palette value vs the photo's own (baked-shadow) luminance
+  // ---- OSM classes over the classifier palette
+  float osmCover = 0.0;
+  if (osmW > 0.001) {
+    // roads: warm grey/earth (street trees keep their canopy)
+    pal = mix(pal, czm_srgbToLinear(u_th_street), oR * osmW * (1.0 - vegKeep));
+    // buildings: one roof colour per footprint id (not per screen cell), walls by normal
+    float hb = fract(oId * 0.6180339 + 0.13);
+    vec3 roofO = hb < 0.3 ? czm_srgbToLinear(u_th_roofA) : (hb < 0.55 ? czm_srgbToLinear(u_th_roofB) : (hb < 0.8 ? czm_srgbToLinear(u_th_roofC) : czm_srgbToLinear(u_th_roofD)));
+    roofO = mix(czm_srgbToLinear(u_th_roofC), roofO, u_th_roofVariety);
+    roofO *= 0.94 + 0.12 * fract(oId * 0.3819660 + 0.71);
+    vec3 bldC = mix(czm_srgbToLinear(u_th_wall), roofO, 1.0 - wallW);
+    pal = mix(pal, bldC, oB * osmW * u_th_osmRoof * (1.0 - 0.6 * vegKeep));
+    // parks / grass: moss green with a soft world-anchored mottle; woods: dark conifer
+    float mt = th_vnoise(pL / 9.0) * 0.7 + th_vnoise(pL / 3.3) * 0.3 - 0.5;
+    vec3 grassO = czm_srgbToLinear(u_th_grass) * (1.0 + 2.0 * u_th_mottle * mt);
+    vec3 forestO = czm_srgbToLinear(u_th_conifer) * (1.0 + 3.0 * u_th_mottle * mt);
+    vec3 vegO = mix(grassO, forestO, oForest / max(oGrass + oForest, 1e-3));
+    vegO = mix(vegO, czm_srgbToLinear(u_th_wall), wallW * 0.5);
+    pal = mix(pal, vegO, oVeg * osmW * u_th_osmVeg * (1.0 - 0.5 * vegKeep));
+    // water: shallows -> deep by distance to the OSM shore, gentle foam at the shore
+    vec3 waterO = mix(czm_srgbToLinear(u_th_water), czm_srgbToLinear(u_th_waterDeep), smoothstep(2.0, u_th_shallowM, oShore));
+    float foamW = smoothstep(-0.5, 0.5, oShore) * (1.0 - smoothstep(0.0, max(u_th_foamM, 0.01), oShore));
+    foamW *= 0.55 + 0.45 * th_vnoise(pL / 2.5);
+    waterO = mix(waterO, czm_srgbToLinear(u_th_foam), foamW * u_th_foamAmt);
+    pal = mix(pal, waterO, oWater * osmW * (1.0 - wallW * 0.7));
+    osmCover = osmW * max(max(oWater, oB), max(oR, oVeg * u_th_osmVeg));
+    blue = mix(blue, oWater, osmW);
+    veg = mix(veg, max(vegKeep, oVeg * u_th_osmVeg), osmW);
+  }
+  // de-light: palette value vs the photo's own (baked-shadow) luminance;
+  // surfaces OSM names are de-lit more (calmer, painted)
   vec3 keepLight = pal * (th_luma(max(albedo, vec3(1e-4))) / max(th_luma(pal), 1e-3));
-  pal = mix(keepLight, pal, u_th_delight);
+  pal = mix(keepLight, pal, mix(u_th_delight, max(u_th_delight, u_th_osmDelight), osmCover));
   // shadeWarm: photo shade (dark, blue-cast) is lifted toward a warm neutral
   // of the palette instead of keeping its cyan cast
   float shadeW = u_th_shadeWarm * (1.0 - smoothstep(0.02, 0.12, l)) * smoothstep(-0.02, 0.06, (a.b - a.r) / sum) * (1.0 - veg) * (1.0 - blue);
   pal = mix(pal, vec3(th_luma(pal)) * vec3(1.06, 1.0, 0.92), shadeW);
   float detail = clamp(th_luma(max(photo, vec3(1e-4))) / max(l, 1e-3), 0.6, 1.5);
-  pal *= mix(1.0, detail, u_th_detail);
+  pal *= mix(1.0, detail, u_th_detail * (1.0 - 0.5 * osmCover));
 
   // Below the horizon the sun would light the world from underneath: blend
   // toward a high key from the sun's side, so night stays readable.
@@ -343,15 +474,42 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
   float s = u_th_strength;
   s = mix(s, max(s, u_th_waterStrength), blue);
   s = mix(s, max(s, u_th_vegStrength), veg);
+  s = mix(s, max(s, u_th_osmStrength), osmCover);
   material.diffuse = mix(photoMix, lit, s);
 }
 `;
 
 /** The tile stage as a shader-host part (see tileShaderHost.js). */
-export function tileStagePart(Cesium, values = {}) {
+export function tileStagePart(Cesium, values = {}, runtime = {}) {
   const T = Cesium.UniformType;
   const uniforms = {
     u_th_wipe: { type: T.FLOAT, value: Number(values.wipe ?? 0) },
+    // OSM class mask (osmMask.js); `runtime` carries the current values so
+    // a tileset themed later starts with the live mask
+    u_th_osmMask: {
+      type: T.SAMPLER_2D,
+      value:
+        runtime.u_th_osmMask ??
+        new Cesium.TextureUniform({
+          typedArray: new Uint8Array(4),
+          width: 1,
+          height: 1,
+          minificationFilter: Cesium.TextureMinificationFilter.NEAREST,
+          magnificationFilter: Cesium.TextureMagnificationFilter.NEAREST,
+        }),
+    },
+    u_th_osmEyeToLocal: {
+      type: T.MAT4,
+      value: runtime.u_th_osmEyeToLocal ?? Cesium.Matrix4.IDENTITY.clone(),
+    },
+    u_th_osmGeo: {
+      type: T.VEC4,
+      value: runtime.u_th_osmGeo ?? new Cesium.Cartesian4(0, 0, 0, 0),
+    },
+    u_th_osmInfo: {
+      type: T.VEC4,
+      value: runtime.u_th_osmInfo ?? new Cesium.Cartesian4(0, 1, 1, 0),
+    },
   };
   for (const [k, spec] of Object.entries(TILE_UNIFORMS)) {
     const v = values[k] ?? spec.default;

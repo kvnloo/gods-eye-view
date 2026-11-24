@@ -12,12 +12,15 @@
  *   &themePanel=1          the developer overlay (panel.js)
  *   &themeBudget=0         no automatic frame-budget switch-offs
  *   &themeQuality=0        keep the app's resolution, MSAA and tile error
+ *   &themeOsm=0            no OSM class mask (per-pixel classifier only)
+ *   &themeOsmDebug=1       overlay the OSM class mask on the tiles as served
  *
  * `window.__gevTheme` is the engine API (QA and the panel use it).
  */
 import * as Cesium from 'cesium';
 import { tilePrimitiveFacts, webglContext } from '../internals.js';
 import { createThemeEngine } from './engine.js';
+import { createOsmMask } from './osmMask.js';
 import { BUILT_IN_PRESETS, loadPreset, presetRequest } from './presets.js';
 
 /** Install the theme the page asks for; resolves to the engine or null. */
@@ -33,6 +36,11 @@ export async function installThemeFromLocation(
     tilePrimitiveFacts,
     glOf: webglContext,
     quality: request.quality,
+    // OSM class mask for the tile stage (loop v3); &themeOsm=0 turns it off
+    osmMask:
+      request.osm && typeof Worker !== 'undefined'
+        ? ({ setUniform }) => createOsmMask(Cesium, viewer, { setUniform })
+        : null,
   });
   const apply = async (value) => {
     try {
@@ -44,6 +52,7 @@ export async function installThemeFromLocation(
     }
   };
   await apply(request.value);
+  if (request.osmDebug) engine.set('tile', 'debugOsm', 1);
   if (win) win.__gevTheme = Object.assign(engine, { loadPreset: apply });
   if (request.panel) {
     const { mountThemePanel } = await import('./panel.js');

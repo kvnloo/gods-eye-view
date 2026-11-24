@@ -59,6 +59,18 @@ export function createThemeEngine(Cesium, viewer, options = {}) {
   const stages = new Map(); // id -> top-level stage
   const scratch = new Map(); // `${id}.${k}` -> Cartesian3
   const hosts = new Set();
+  // runtime (non-preset) tile uniforms: the OSM class mask (osmMask.js)
+  const runtime = {};
+  function setRuntimeUniform(name, value) {
+    runtime[name] = value;
+    for (const ts of hosts) {
+      if (ts.isDestroyed?.()) continue;
+      ts[HOST_KEY]?.setUniform(name, value);
+    }
+  }
+  const osmMask = options.osmMask
+    ? options.osmMask({ setUniform: setRuntimeUniform })
+    : null;
   const listeners = new Set();
   let disposed = false;
 
@@ -99,7 +111,9 @@ export function createThemeEngine(Cesium, viewer, options = {}) {
       const host = ts[HOST_KEY];
       if (host?.parts().includes('theme')) continue;
       try {
-        tileShaderHost(Cesium, ts).attach(tileStagePart(Cesium, tileValues()));
+        tileShaderHost(Cesium, ts).attach(
+          tileStagePart(Cesium, tileValues(), runtime),
+        );
         hosts.add(ts);
       } catch (error) {
         fail('tile', error);
@@ -397,6 +411,17 @@ export function createThemeEngine(Cesium, viewer, options = {}) {
   const removePreUpdate = scene.preUpdate.addEventListener(() => {
     if (disposed) return;
     if (state.enabled.has('tile')) attachTiles();
+    if (osmMask) {
+      const v = values.tile;
+      try {
+        osmMask.update(
+          state.enabled.has('tile') && (v.osm > 0.001 || v.debugOsm > 0.5),
+        );
+      } catch (error) {
+        if (state.errors.length < 50)
+          state.errors.push({ id: 'osmMask', message: String(error?.message ?? error) });
+      }
+    }
     if (++qualityTick % 30 === 0) applyHud();
     if (quality && qualityTick % 30 === 0) {
       applyTileQuality();
@@ -580,6 +605,8 @@ export function createThemeEngine(Cesium, viewer, options = {}) {
     },
     effects: () => [...effects.values()].filter((e) => !e.internal),
     tileUniforms: TILE_UNIFORMS,
+    /** OSM class mask controller (null in the offline harness). */
+    osmMask,
     values: (id) => values[id],
     setPreset,
     addEffect,
@@ -656,6 +683,7 @@ export function createThemeEngine(Cesium, viewer, options = {}) {
       disposed = true;
       removePreUpdate();
       removePostRender();
+      osmMask?.dispose();
       removeStages();
       applyQuality(null);
       applyHud();

@@ -369,6 +369,8 @@ export function presetRequest(search = '') {
     panel: q.get('themePanel') === '1',
     budget: q.get('themeBudget') !== '0',
     quality: q.get('themeQuality') !== '0',
+    osm: q.get('themeOsm') !== '0',
+    osmDebug: q.get('themeOsmDebug') === '1',
   };
 }
 

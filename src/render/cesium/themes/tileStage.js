@@ -135,8 +135,10 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
   vec3 a = max(albedo, vec3(1e-4));
   float sum = a.r + a.g + a.b;
   float exg = (2.0 * a.g - a.r - a.b) / sum;
-  float veg = smoothstep(u_th_vegLo, u_th_vegHi, exg);
-  float blue = smoothstep(0.03, 0.12, (a.b - max(a.r, a.g * 0.92)) / sum) * flatW * (1.0 - veg);
+  // green over blue tells grass and trees (g >> b) from teal water (g ~ b)
+  float gb = (a.g - a.b) / sum;
+  float veg = smoothstep(u_th_vegLo, u_th_vegHi, exg) * smoothstep(0.015, 0.06, gb);
+  float blue = smoothstep(0.0, 0.06, (a.b - a.r) / sum) * (1.0 - smoothstep(0.03, 0.08, gb)) * flatW * (1.0 - veg);
   float l = th_luma(a);
   float mx = max(a.r, max(a.g, a.b));
   float chroma = (mx - min(a.r, min(a.g, a.b))) / max(mx, 1e-4);
@@ -161,7 +163,14 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
   float detail = clamp(th_luma(max(photo, vec3(1e-4))) / max(l, 1e-3), 0.6, 1.5);
   pal *= mix(1.0, detail, u_th_detail);
 
-  float ndl = dot(n, czm_lightDirectionEC);
+  // Below the horizon the sun would light the world from underneath: blend
+  // toward a high key from the sun's side, so night stays readable.
+  vec3 L = czm_lightDirectionEC;
+  float sunUp = dot(L, upEC);
+  vec3 Lh = L - upEC * sunUp;
+  vec3 Lfix = normalize(upEC * 0.8 + normalize(Lh + upEC * 1e-3) * 0.6);
+  L = normalize(mix(Lfix, L, smoothstep(0.0, 0.25, sunUp)));
+  float ndl = dot(n, L);
   float w = clamp((ndl + u_th_wrap) / (1.0 + u_th_wrap), 0.0, 1.0);
   float b = w * u_th_bands;
   float toon = (floor(b) + smoothstep(0.3, 0.7, fract(b))) / u_th_bands;

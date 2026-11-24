@@ -58,6 +58,8 @@ export const TILE_UNIFORMS = Object.freeze({
   relight: f(1, 0, 1, 0.01, 'Relight amount'),
   vegLo: f(0.02, -0.1, 0.2, 0.005, 'Vegetation threshold'),
   vegHi: f(0.1, 0, 0.3, 0.005, 'Vegetation full'),
+  shadeVeg: f(0, 0, 1, 0.01, 'Shaded canopy (dark → trees)'),
+  waterChroma: f(0, 0, 0.6, 0.01, 'Water minimum chroma'),
   roofVariety: f(0.6, 0, 1, 0.01, 'Roof colour variety'),
   cellM: f(14, 2, 60, 1, 'Roof colour cell (m)'),
   grass: color(hex('#7aa840'), 'Grass'),
@@ -137,11 +139,17 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
   float exg = (2.0 * a.g - a.r - a.b) / sum;
   // green over blue tells grass and trees (g >> b) from teal water (g ~ b)
   float gb = (a.g - a.b) / sum;
-  float veg = smoothstep(u_th_vegLo, u_th_vegHi, exg) * smoothstep(0.015, 0.06, gb);
-  float blue = smoothstep(0.0, 0.06, (a.b - a.r) / sum) * (1.0 - smoothstep(0.03, 0.08, gb)) * flatW * (1.0 - veg);
   float l = th_luma(a);
   float mx = max(a.r, max(a.g, a.b));
   float chroma = (mx - min(a.r, min(a.g, a.b))) / max(mx, 1e-4);
+  float veg = smoothstep(u_th_vegLo, u_th_vegHi, exg) * smoothstep(0.015, 0.06, gb);
+  // dark, not-red pixels are mostly shaded tree canopy in photogrammetry
+  // (bluish in shade): shadeVeg sends them to the canopy colour, not water
+  float shade = u_th_shadeVeg * (1.0 - smoothstep(0.025, 0.08, l)) * step(a.r, a.g * 1.08);
+  veg = max(veg, shade);
+  float blue = smoothstep(0.0, 0.06, (a.b - a.r) / sum) * (1.0 - smoothstep(0.03, 0.08, gb)) * flatW * (1.0 - veg);
+  // open water is a saturated teal/blue; dull bluish surfaces are not
+  blue *= smoothstep(u_th_waterChroma, u_th_waterChroma + 0.1, chroma);
   float neutral = (1.0 - smoothstep(0.12, 0.3, chroma)) * (1.0 - veg) * (1.0 - blue);
 
   vec3 vegC = mix(czm_srgbToLinear(u_th_canopy), czm_srgbToLinear(u_th_grass), flatW);

@@ -58,8 +58,8 @@ void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
  */
 export const TILE_GLSL = /* glsl */ `
 ${IGN}
-void nfClip(FragmentInput fsInput) {
-  if (u_nfcBubble.z <= 0.001) return;
+void nfClip(FragmentInput fsInput, inout czm_modelMaterial material) {
+  if (u_nfcBubble.z <= 0.001 && u_nfcDebug < 0.5) return;
   vec3 p = (u_nfcEyeToLocal * vec4(fsInput.attributes.positionEC, 1.0)).xyz;
   vec2 uv = p.xy / (2.0 * u_nfcBubble.w) + 0.5;
   if (uv.x <= 0.0 || uv.y <= 0.0 || uv.x >= 1.0 || uv.y >= 1.0) return;
@@ -70,6 +70,11 @@ void nfClip(FragmentInput fsInput) {
     hit = p.z > level - 6.0 && p.z < level + 2.5;
   }
   if (!hit) return;
+  if (u_nfcDebug > 0.5) {
+    // debug: paint what would be hidden (red = footprint column, blue = water band)
+    material.diffuse = mix(material.diffuse, m.r > 0.5 ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 0.3, 1.0), 0.75);
+    return;
+  }
   float R = u_nfcBubble.x;
   float d = length(p.xy - u_nfcCentre);
   float a = (1.0 - smoothstep(R * (1.0 - u_nfcBubble.y), R, d)) * u_nfcBubble.z;

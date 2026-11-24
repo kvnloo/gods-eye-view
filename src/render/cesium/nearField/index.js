@@ -230,13 +230,14 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
       u_nfcEyeToLocal: { type: Cesium.UniformType.MAT4, value: Cesium.Matrix4.IDENTITY.clone() },
       u_nfcCentre: { type: Cesium.UniformType.VEC2, value: new Cesium.Cartesian2() },
       u_nfcBubble: { type: Cesium.UniformType.VEC4, value: new Cesium.Cartesian4(0, BUBBLE.edge, 0, 1) },
+      u_nfcDebug: { type: Cesium.UniformType.FLOAT, value: request.debug ? 1 : 0 },
       u_nfcMask: {
         type: Cesium.UniformType.SAMPLER_2D,
         value: new Cesium.TextureUniform({ typedArray: new Uint8Array(4), width: 1, height: 1 }),
       },
     },
     glsl: TILE_GLSL,
-    body: 'nfClip(fsInput);',
+    body: 'nfClip(fsInput, material);',
   };
   const hosts = new Set();
   function attachTiles() {
@@ -522,6 +523,17 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
         const e = cells.peek(k);
         return e && e.status !== 'pending' && (e.status === 'error' || e.appear >= 1);
       }) && mask.cells === state.needed.filter((k) => cells.peek(k)?.status === 'ready').join(',');
+    },
+    /**
+     * QA: add a stand-in 3D Tiles tileset (our own synthetic content, e.g. a
+     * flat checker plane) to test the hide-under-our-objects part and the
+     * dithered hand-off without any Google content.
+     */
+    async qaAddTileset(url) {
+      const ts = await Cesium.Cesium3DTileset.fromUrl(url);
+      scene.primitives.add(ts);
+      state.lastUpdate = 0;
+      return true;
     },
     /** QA: terrain heights at [lat, lon] points from the bubble's terrain source (never Google). */
     async sample(latLons) {

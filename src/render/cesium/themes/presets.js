@@ -42,7 +42,7 @@ export const DESKTOP_HIGH = Object.freeze({
 });
 
 // Wintercats: colours and knobs from the theme dream loops v2 and v3 (v3: OSM class mask) against the locked reference (loop-v2/round-v5/style-loop
-// best-build.png) and the wintercats frames; numbers, not images. v3 r5: calm shading on mapped roofs/ground and canopy, warmer key, cooler lilac-blue shadow, 2 light bands.
+// best-build.png) and the wintercats frames; numbers, not images. v3 r7: luminous blue-teal bay with a Fresnel sky sheen, crisp brush (Kuwahara r1, CAS .25).
 const WINTERCATS = {
   format: PRESET_FORMAT,
   name: 'wintercats',
@@ -78,8 +78,8 @@ const WINTERCATS = {
       vegChroma: 1.0,
       grass: [0.373, 0.541, 0.251],
       canopy: [0.165, 0.29, 0.188],
-      water: [0.31, 0.592, 0.596],
-      waterDeep: [0.18, 0.353, 0.431],
+      water: [0.353, 0.651, 0.659],
+      waterDeep: [0.247, 0.459, 0.565],
       roofA: [0.643, 0.314, 0.184],
       roofB: [0.373, 0.42, 0.271],
       roofC: [0.702, 0.573, 0.447],
@@ -108,6 +108,8 @@ const WINTERCATS = {
       osmEdge: 0.8,
       osmFlatN: 0.8,
       vegFlatN: 0.7,
+      shallowM: 45,
+      waterSky: 0.5,
     },
     ao: {
       aoStrength: 0.3,
@@ -150,14 +152,14 @@ const WINTERCATS = {
       clarityRadiusPx: 8,
     },
     cas: {
-      casSharpness: 0.15,
+      casSharpness: 0.25,
     },
     vignette: {
       vignette: 0.15,
       vignetteColor: [0.42, 0.34, 0.3],
     },
     paint: {
-      paintRadius: 1.5,
+      paintRadius: 1,
     },
     outline: {
       inkStrength: 0.55,

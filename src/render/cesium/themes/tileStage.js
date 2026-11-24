@@ -319,6 +319,15 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
     pL = (u_th_osmEyeToLocal * vec4(pEC, 1.0)).xy;
     float X = u_th_osmGeo.x * pL.x * (1.0 + u_th_osmGeo.z * pL.y);
     float Y = -u_th_osmGeo.y * (pL.y + 0.5 * u_th_osmGeo.z * pL.y * pL.y - 0.5 * u_th_osmGeo.w * pL.x * pL.x);
+    if (u_th_osmGlobal.x > 0.5) {
+      // globe-scale water mask: world position -> web mercator directly (float is ample at km texels)
+      float lon = atan(pWC.y, pWC.x);
+      float lat = clamp(atan(pWC.z, length(pWC.xy) * 0.99330562), -1.4844, 1.4844);
+      float n = u_th_osmGlobal.y;
+      X = (lon / 6.2831853 + 0.5) * n - u_th_osmGlobal.z;
+      X = mod(X + 0.5 * n, n) - 0.5 * n;
+      Y = (0.5 - log(tan(0.7853982 + 0.5 * lat)) / 6.2831853) * n - u_th_osmGlobal.w;
+    }
     float halfN = 0.5 * u_th_osmInfo.y / u_th_osmInfo.z;
     vec2 tc = (vec2(X, Y) + halfN) * u_th_osmInfo.z - 0.5;
     float apx = u_th_osmInfo.y;
@@ -531,6 +540,10 @@ export function tileStagePart(Cesium, values = {}, runtime = {}) {
     u_th_osmInfo: {
       type: T.VEC4,
       value: runtime.u_th_osmInfo ?? new Cesium.Cartesian4(0, 1, 1, 0),
+    },
+    u_th_osmGlobal: {
+      type: T.VEC4,
+      value: runtime.u_th_osmGlobal ?? new Cesium.Cartesian4(0, 1, 0, 0),
     },
   };
   for (const [k, spec] of Object.entries(TILE_UNIFORMS)) {

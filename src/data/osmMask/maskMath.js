@@ -24,22 +24,28 @@ export const TILE_PX = 256;
 export const PAD_PX = 24;
 
 /**
- * Mask level by eye height (metres above ground): finer near the ground, off
- * for far views (the classifier alone themes the globe). `fade` blends the
- * whole mask out between 16 and 24 km.
+ * Mask level by eye height (metres above ground): finer near the ground.
+ * Up to 24 km the shader maps local ENU metres to tiles (`global: false`);
+ * above, it is a water-only mask (OSM ocean and lakes at low zoom) mapped
+ * from the world position directly (`global: true`), so the globe's oceans
+ * are water even where the photo has clouds, glint or sea ice.
  */
 export const LEVELS = Object.freeze([
   { z: 16, maxEye: 1400 },
   { z: 15, maxEye: 5000 },
   { z: 14, maxEye: 24000 },
+  { z: 9, maxEye: 150000, global: true },
+  { z: 7, maxEye: 700000, global: true },
+  { z: 5, maxEye: 3500000, global: true },
+  { z: 3, maxEye: Infinity, global: true },
 ]);
 export function maskLevel(eyeHeight) {
   const h = Math.max(0, Number(eyeHeight) || 0);
   const lv = LEVELS.find((l) => h <= l.maxEye);
-  if (!lv) return { z: 0, fade: 0 };
-  const fade = h <= 16000 ? 1 : Math.max(0, 1 - (h - 16000) / 8000);
-  return { z: lv.z, fade };
+  return { z: lv.z, fade: 1, global: !!lv.global };
 }
+/** Below this zoom only water is rasterised (roads and buildings would be kilometres wide). */
+export const WATER_ONLY_BELOW = 12;
 
 /** Global web-mercator coordinate in tile units at zoom z (x east, y south). */
 export function lonLatToTileXY(lon, lat, z) {

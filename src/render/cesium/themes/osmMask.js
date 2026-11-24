@@ -16,6 +16,7 @@
  *   u_th_osmEyeToLocal  mat4 eye -> ENU metres at the atlas anchor
  *   u_th_osmGeo         vec4 (kx, ky, t, t2): data/osmMask/maskMath.js maskGeo
  *   u_th_osmInfo        vec4 (fade, atlas texels, texels per tile, ready)
+ *   u_th_osmGlobal      vec4 (global mapping on, 2^z, window centre corner x, y in tiles)
  */
 import { ATLAS_N, TILE_PX, maskGeo, maskLevel, maskWindow, windowStale } from '../../../data/osmMask/maskMath.js';
 import { createLru, tileKey } from '../../../data/nearField/tiling.js';
@@ -39,7 +40,7 @@ export function createOsmMask(Cesium, viewer, { setUniform, workerFactory } = {}
   const N = ATLAS_N;
   const PX = N * TILE_PX;
   const atlas = new Uint8Array(PX * PX * 4);
-  const cache = createLru(320); // tile key -> rgba (main-thread copy, for re-centring)
+  const cache = createLru(160); // tile key -> rgba (main-thread copy, for re-centring; ~42 MB)
   const state = {
     enabled: true,
     win: null, // window shown by the shader
@@ -212,10 +213,14 @@ export function createOsmMask(Cesium, viewer, { setUniform, workerFactory } = {}
     }
     const eye = eyeHeightNow();
     state.eyeHeight = eye;
-    const { z, fade } = maskLevel(eye);
+    const { z, fade, global } = maskLevel(eye);
     state.fade = fade;
     if (z) {
-      const f = focus(eye);
+      const c = camera.positionCartographic;
+      // globe scale: the window is centred under the camera (the view-ahead point is off the planet)
+      const f = global
+        ? { lat: Cesium.Math.toDegrees(c.latitude), lon: Cesium.Math.toDegrees(c.longitude) }
+        : focus(eye);
       const cur = target();
       if (windowStale(cur, f.lat, f.lon, z)) startWindow(maskWindow(f.lat, f.lon, z, N));
       pump();
@@ -233,6 +238,8 @@ export function createOsmMask(Cesium, viewer, { setUniform, workerFactory } = {}
       shownKey = win.key;
       const g = maskGeo(win.anchor.lat, win.z);
       setUniform('u_th_osmGeo', new Cesium.Cartesian4(g.kx, g.ky, g.t, g.t2));
+      // global mapping (world position -> mercator) for the low-zoom water-only levels
+      setUniform('u_th_osmGlobal', new Cesium.Cartesian4(win.z < 12 ? 1 : 0, 2 ** win.z, win.cx, win.cy));
     }
     const enu = Cesium.Transforms.eastNorthUpToFixedFrame(
       Cesium.Cartesian3.fromDegrees(win.anchor.lon, win.anchor.lat, 0),

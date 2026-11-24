@@ -17,7 +17,7 @@
  * Pure (typed arrays only): runs in the mask worker and in node tests. The
  * data is (c) OpenStreetMap contributors (ODbL), kept in memory only.
  */
-import { DATA_ZOOM, PAD_PX, TILE_PX, buildingId, metresPerTexel, tileXYToLonLat } from './maskMath.js';
+import { DATA_ZOOM, PAD_PX, TILE_PX, WATER_ONLY_BELOW, buildingId, metresPerTexel, tileXYToLonLat } from './maskMath.js';
 
 /** Road widths in metres by OpenMapTiles class (decodeDataTile maps minor -> residential, path -> footway). */
 export const ROAD_WIDTH_M = Object.freeze({
@@ -148,16 +148,17 @@ export function distanceTransform(w, h, isSeed) {
  * near a z14 edge need the neighbour too, or its water edge reads as a shore.
  */
 export function dataTilesFor(tile, pad = PAD_PX, px = TILE_PX) {
-  const k = 2 ** (tile.z - DATA_ZOOM);
+  const dz = Math.min(tile.z, DATA_ZOOM);
+  const k = 2 ** (tile.z - dz);
   const m = pad / px;
   const x0 = Math.floor((tile.x - m) / k);
   const x1 = Math.floor((tile.x + 1 + m) / k);
   const y0 = Math.floor((tile.y - m) / k);
   const y1 = Math.floor((tile.y + 1 + m) / k);
-  const n = 2 ** DATA_ZOOM;
+  const n = 2 ** dz;
   const out = [];
   for (let y = y0; y <= y1; y++)
-    for (let x = x0; x <= x1; x++) if (y >= 0 && y < n) out.push({ z: DATA_ZOOM, x: ((x % n) + n) % n, y, dx: x });
+    for (let x = x0; x <= x1; x++) if (y >= 0 && y < n) out.push({ z: dz, x: ((x % n) + n) % n, y, dx: x });
   return out;
 }
 
@@ -174,12 +175,13 @@ export function rasteriseMaskTile(tile, datas, { px = TILE_PX, pad = PAD_PX } = 
   const water = new Uint8Array(N);
   const veg = new Uint8Array(N);
   const id = new Uint8Array(N);
-  const k = 2 ** (tile.z - DATA_ZOOM);
+  const waterOnly = tile.z < WATER_ONLY_BELOW;
   const mpp = metresPerTexel(tileXYToLonLat(tile.x + 0.5, tile.y + 0.5, tile.z).lat, tile.z, px);
   let features = 0;
   for (const data of datas) {
     const dx = data.tile.dx ?? data.tile.x;
     const ext = data.extent || 4096;
+    const k = 2 ** (tile.z - data.tile.z);
     // data-tile pixel -> mask grid texel
     const sx = (k * px) / ext;
     const ox = (dx * k - tile.x) * px + pad;
@@ -202,6 +204,7 @@ export function rasteriseMaskTile(tile, datas, { px = TILE_PX, pad = PAD_PX } = 
       fillPolygon(water, W, W, wtr.rings.map((r) => r.map(P)), 1);
       features++;
     }
+    if (waterOnly) continue;
     for (const c of data.cover ?? []) {
       if (c.k !== 'grass' && c.k !== 'park') continue;
       if (!inGrid(c.rings)) continue;
@@ -240,7 +243,7 @@ export function rasteriseMaskTile(tile, datas, { px = TILE_PX, pad = PAD_PX } = 
       }
       cx /= o.length;
       cy /= o.length;
-      const g = tileXYToLonLat(dx + cx / ext, data.tile.y + cy / ext, DATA_ZOOM);
+      const g = tileXYToLonLat(dx + cx / ext, data.tile.y + cy / ext, data.tile.z);
       fillPolygon(id, W, W, b.rings.map((r) => r.map(P)), buildingId(g.lon, g.lat));
       features++;
     }

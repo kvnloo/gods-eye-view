@@ -44,11 +44,13 @@ test('mercator round trip and tile window', () => {
     assert.equal(windowStale(win, lat, lon, 16), false);
     assert.equal(windowStale(win, lat, lon, 15), true);
   }
-  assert.deepEqual(maskLevel(400), { z: 16, fade: 1 });
+  assert.deepEqual(maskLevel(400), { z: 16, fade: 1, global: false });
   assert.equal(maskLevel(3000).z, 15);
   assert.equal(maskLevel(10000).z, 14);
-  assert.ok(maskLevel(20000).fade > 0 && maskLevel(20000).fade < 1);
-  assert.equal(maskLevel(1e6).z, 0);
+  assert.equal(maskLevel(10000).global, false);
+  // globe scale: a water-only mask in world-position mapping
+  assert.deepEqual(maskLevel(1e6), { z: 5, fade: 1, global: true });
+  assert.equal(maskLevel(1.4e7).z, 3);
 });
 
 test('local ENU -> tile uv (the GLSL map) is within 0.25 m of exact WGS84 -> mercator over +-3 km', () => {
@@ -196,6 +198,21 @@ test('mask tiles near a z14 edge also read the neighbour data tile', () => {
     ['100/200', '99/200'].sort(),
   );
   assert.equal(dataTilesFor({ z: 16, x: 4 * 100 + 1, y: 4 * 200 + 1 }).length, 1);
+  // below z14 the data tile is the mask tile itself (plus neighbours for the pad)
+  const low = dataTilesFor({ z: 5, x: 5, y: 12 });
+  assert.ok(low.every((t) => t.z === 5) && low.some((t) => t.x === 5 && t.y === 12));
+});
+
+test('low-zoom mask tiles carry water only', () => {
+  const tile = { z: 5, x: 5, y: 12 };
+  const data = { ...fakeData({ z: 5, x: 5, y: 12 }) };
+  const { rgba } = rasteriseMaskTile(tile, [data]);
+  const at = (i, j) => {
+    const o = (j * TILE_PX + i) * 4;
+    return decodeTexel(rgba[o], rgba[o + 1], rgba[o + 2], rgba[o + 3]);
+  };
+  assert.ok(at(200, 100).water);
+  assert.ok(!at(20, 20).grass && !at(60, 128).road && !at(87, 87).building);
 });
 
 test('mask generator fetches each data tile once and rasterises from a stub', async () => {

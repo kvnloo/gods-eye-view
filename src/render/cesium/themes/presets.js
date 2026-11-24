@@ -41,8 +41,8 @@ export const DESKTOP_HIGH = Object.freeze({
   msaa: 4,
 });
 
-// Wintercats: colours and knobs from the theme dream loop v2 against the locked reference (loop-v2/round-v5/style-loop
-// best-build.png) and the wintercats frames; numbers, not images. Loop v2 round 9 (crisp: DOF capped, paint r2; focus-band sharpness gate 0.62 of no-theme): won 2/2 Sausalito seats.
+// Wintercats: colours and knobs from the theme dream loops v2 and v3 (v3: OSM class mask) against the locked reference (loop-v2/round-v5/style-loop
+// best-build.png) and the wintercats frames; numbers, not images. v3 r2: OSM class mask, painted mapped surfaces, per-building roofs, crisp-lite paint, eave lines (abs 4.0 -> 5.0).
 const WINTERCATS = {
   format: PRESET_FORMAT,
   name: 'wintercats',
@@ -76,20 +76,20 @@ const WINTERCATS = {
       flattenRings: 2,
       vegGb: 0.04,
       vegChroma: 1.0,
-      grass: [0.404, 0.561, 0.271],
+      grass: [0.373, 0.541, 0.251],
       canopy: [0.165, 0.29, 0.188],
       water: [0.31, 0.592, 0.596],
       waterDeep: [0.18, 0.353, 0.431],
-      roofA: [0.557, 0.29, 0.204],
-      roofB: [0.42, 0.455, 0.267],
-      roofC: [0.639, 0.58, 0.502],
-      roofD: [0.306, 0.227, 0.18],
+      roofA: [0.643, 0.314, 0.184],
+      roofB: [0.373, 0.42, 0.271],
+      roofC: [0.702, 0.573, 0.447],
+      roofD: [0.353, 0.231, 0.165],
       wall: [0.839, 0.776, 0.659],
-      street: [0.659, 0.624, 0.549],
+      street: [0.612, 0.561, 0.471],
       shadow: [0.55, 0.5, 0.62],
       neutralChroma: 2.2,
       waterChroma: 0.25,
-      roofVariety: 0.7,
+      roofVariety: 0.9,
       waterSmooth: 0.4,
       waterGbMin: 1,
       cellM: 22,
@@ -100,6 +100,12 @@ const WINTERCATS = {
       waterStrength: 0.85,
       vegStrength: 0.9,
       vegFlatRg: 0.6,
+      osm: 1,
+      osmStrength: 0.9,
+      osmDelight: 0.95,
+      mottle: 0.08,
+      foamAmt: 0.3,
+      osmEdge: 0.8,
     },
     ao: {
       aoStrength: 0.3,
@@ -115,7 +121,7 @@ const WINTERCATS = {
       skyColor: [0.7, 0.84, 0.9],
     },
     dof: {
-      dofBlurPx: 2.5,
+      dofBlurPx: 1,
       focusRange: 0.6,
       tiltAmount: 0.25,
       tiltBand: 0.3,
@@ -138,18 +144,18 @@ const WINTERCATS = {
       lift: [0.01, 0.008, 0.015],
     },
     clarity: {
-      clarity: -0.15,
+      clarity: 0,
       clarityRadiusPx: 8,
     },
     cas: {
-      casSharpness: 0.0,
+      casSharpness: 0.35,
     },
     vignette: {
       vignette: 0.15,
       vignetteColor: [0.42, 0.34, 0.3],
     },
     paint: {
-      paintRadius: 2,
+      paintRadius: 1.5,
     },
     outline: {
       inkStrength: 0.55,

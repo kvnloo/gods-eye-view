@@ -41,10 +41,12 @@ export const NEAR_FIELD_KITS = Object.freeze({
   // wintercats: Norse timber walls, turf and slate roofs, dark conifers, mossy shore rocks
   norse: Object.freeze({
     walls: NORSE.walls,
-    roofs: NORSE.roofs,
+    // mossy turf, slate, terracotta and dark timber (judge r0: lime turf read as flat; terracotta helped)
+    roofs: ['#6a7f3c', '#75864a', '#5d7234', '#4d5864', '#5d6875', '#b0563a', '#a14d35', '#7f8a4a', '#5a3d2e'],
     towerWalls: ['#cdbb98', '#b9a27c', '#8a6a4a', '#d8c7a4', '#6e5038', '#a48a68'],
     towerRoofs: ['#5d6875', '#4d5864', '#6f8f3a', '#5a4636'],
-    window: '#3a2e26',
+    window: '#2b2a2c',
+    door: '#4a3020',
     pine: GOLD.pine,
     leaf: ['#5f7a34', '#6e8a3a', '#4f6a2e', '#7d8f42', '#586e30'],
     autumn: ['#b8743a', '#a8622e', '#c8903e'],
@@ -64,7 +66,8 @@ export const NEAR_FIELD_KITS = Object.freeze({
     roofs: ['#5b5f66', '#6b6e73', '#7a5a48', '#8a4f3a', '#4d5157', '#9a6a52'],
     towerWalls: ['#b7bcc2', '#a6acb3', '#c9c4ba', '#8f969e', '#d4d0c8', '#9da3a8'],
     towerRoofs: ['#6a6d70', '#5a5d61', '#7a7c7e'],
-    window: '#47525c',
+    window: '#3c4650',
+    door: '#3d3a36',
     pine: ['#2f4a33', '#38563a', '#2a4230'],
     leaf: ['#5a7a3a', '#4f6e34', '#66843f', '#587334'],
     autumn: ['#9a7a3a'],
@@ -84,7 +87,8 @@ export const NEAR_FIELD_KITS = Object.freeze({
     roofs: MIX.roofs,
     towerWalls: ['#efe2c4', '#e6cfa6', '#d9c29a', '#c9b08a'],
     towerRoofs: ['#b8573a', '#5d6875', '#6e4a36'],
-    window: '#4a3a30',
+    window: '#3a3230',
+    door: '#5a3a28',
     pine: PALETTE.pine,
     leaf: PALETTE.leaf,
     autumn: PALETTE.autumn,
@@ -151,6 +155,52 @@ class Grid {
   }
 }
 
+/**
+ * A wall quad from (x0,y0) to (x1,y1) between za and zb whose colour darkens
+ * toward the ground (baked contact shade: soft, painterly, costs nothing).
+ * `zShade` is the height where the shade is full (the visible floor).
+ */
+function shadedQuad(s, x0, y0, x1, y1, za, zb, col, zShade, depth = 0.28, span = 6) {
+  const k = (z) => 1 - depth * Math.max(0, Math.min(1, 1 - (z - zShade) / span));
+  const ca = col.map((c, i) => (i < 3 ? c * k(za) : c));
+  const cb = col.map((c, i) => (i < 3 ? c * k(zb) : c));
+  const A = [x0, y0, za], B = [x1, y1, za], C = [x1, y1, zb], D = [x0, y0, zb];
+  for (const [p0, p1, p2, c0, c1, c2] of [[A, B, C, ca, ca, cb], [A, C, D, ca, cb, cb]]) {
+    const ux = p1[0] - p0[0], uy = p1[1] - p0[1], uz = p1[2] - p0[2];
+    const vx = p2[0] - p0[0], vy = p2[1] - p0[1], vz = p2[2] - p0[2];
+    let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+    const L = Math.hypot(nx, ny, nz) || 1;
+    s.p.push(...p0, ...p1, ...p2);
+    for (const c of [c0, c1, c2]) {
+      s.n.push(nx / L, ny / L, nz / L);
+      s.c.push(c[0], c[1], c[2], c[3] ?? 1);
+    }
+  }
+}
+
+/** Windows (and one door) on a wall run, as dark panes standing 4 cm proud of the wall. */
+function windows(s, x0, y0, x1, y1, zFloor, storeys, pane, frame, r, door = false) {
+  const L = Math.hypot(x1 - x0, y1 - y0);
+  if (L < 3) return;
+  const ux = (x1 - x0) / L, uy = (y1 - y0) / L;
+  const nx = uy, ny = -ux; // outward for counter-clockwise rings
+  const off = 0.04;
+  const n = Math.max(1, Math.floor((L - 1.2) / 2.6));
+  const step = L / n;
+  const doorAt = door ? Math.floor(r() * n) : -1;
+  for (let f = 0; f < storeys; f++)
+    for (let i = 0; i < n; i++) {
+      const mid = step * (i + 0.5);
+      const isDoor = f === 0 && i === doorAt;
+      const w = isDoor ? 0.55 : 0.5;
+      const za = zFloor + f * STOREY + (isDoor ? 0.02 : 0.95);
+      const zb = zFloor + f * STOREY + (isDoor ? 2.1 : 2.2);
+      const ax = x0 + ux * (mid - w) + nx * off, ay = y0 + uy * (mid - w) + ny * off;
+      const bx = x0 + ux * (mid + w) + nx * off, by = y0 + uy * (mid + w) + ny * off;
+      s.quad([ax, ay, za], [bx, by, za], [bx, by, zb], [ax, ay, zb], isDoor ? frame : pane);
+    }
+}
+
 /** Flat-roofed extrusion of a footprint (with courtyards) and storey bands. */
 function extrude(s, outer, holes, z0, zFloor, zTop, wall, roof, band, r) {
   const rings = [outer, ...holes];
@@ -161,7 +211,7 @@ function extrude(s, outer, holes, z0, zFloor, zTop, wall, roof, band, r) {
       const [x1, y1] = ring[(i + 1) % ring.length];
       const L = Math.hypot(x1 - x0, y1 - y0);
       if (L < 0.05) continue;
-      const q = (za, zb, col) => s.quad([x0, y0, za], [x1, y1, za], [x1, y1, zb], [x0, y0, zb], col);
+      const q = (za, zb, col) => shadedQuad(s, x0, y0, x1, y1, za, zb, col, zFloor);
       if (storeys >= 2 && L > 2.5) {
         // ground floor wall, then per storey: sill wall + window band
         q(z0, zFloor + STOREY * 0.9, wall);
@@ -202,15 +252,29 @@ function extrude(s, outer, holes, z0, zFloor, zTop, wall, roof, band, r) {
   }
 }
 
-/** Gabled (or hipped) house on an oriented rectangle. */
-function gable(s, rect, z0, zFloor, wallTop, wall, roof, r, pitch = 38, ridgeMax = 6.5) {
+/** Gabled (or hipped) house on an oriented rectangle, with windows, a door and contact shade. */
+function gable(s, rect, z0, zFloor, wallTop, wall, roof, r, pitch = 38, ridgeMax = 6.5, trim = null) {
   const { c, u, a, b } = rect;
   const v = [-u[1], u[0]];
   const P = (sa, tb) => [c[0] + u[0] * sa + v[0] * tb, c[1] + u[1] * sa + v[1] * tb];
   const A = a, B = b;
   if (A < 1.2 || B < 1.2) return null;
   const corners = [P(-A, -B), P(A, -B), P(A, B), P(-A, B)];
-  prism(s, corners, z0, wallTop, wall, false);
+  for (let i = 0; i < 4; i++) {
+    const [x0, y0] = corners[i];
+    const [x1, y1] = corners[(i + 1) % 4];
+    shadedQuad(s, x0, y0, x1, y1, z0, wallTop, wall, zFloor);
+  }
+  if (trim) {
+    const storeys = Math.max(1, Math.min(3, Math.floor((wallTop - zFloor + 0.4) / STOREY)));
+    // long walls get windows; the first long wall gets the door
+    windows(s, ...corners[0], ...corners[1], zFloor, storeys, trim.pane, trim.frame, r, true);
+    windows(s, ...corners[2], ...corners[3], zFloor, storeys, trim.pane, trim.frame, r, false);
+    if (A > 4) {
+      windows(s, ...corners[1], ...corners[2], zFloor, 1, trim.pane, trim.frame, r, false);
+      windows(s, ...corners[3], ...corners[0], zFloor, 1, trim.pane, trim.frame, r, false);
+    }
+  }
   const e = 0.45;
   const rh = Math.min(ridgeMax, (B + e) * Math.tan((pitch * Math.PI) / 180));
   const hip = B > 7.5;
@@ -360,7 +424,8 @@ export function buildCell(fixture, ground, kit = NEAR_FIELD_KITS.realism, opts =
     let top;
     if (small) {
       const roof = linear(kit.roofs[Math.floor(r() * kit.roofs.length)], 0.07, r, sat);
-      const g = gable(s, rect, z0, floor, Math.max(floor + 2.6, zTop - 2.2), wall, roof, r);
+      const trim = { pane: linear(kit.window, 0.06, r, sat), frame: linear(kit.door ?? kit.window, 0.06, r, sat) };
+      const g = gable(s, rect, z0, floor, Math.max(floor + 2.6, zTop - 2.2), wall, roof, r, 38, 6.5, trim);
       if (!g) {
         counts.tiny++;
         continue;

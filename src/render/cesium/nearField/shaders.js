@@ -37,7 +37,19 @@ void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
   vec3 upEC = normalize(czm_normal * vec3(0.0, 0.0, 1.0));
   float sky = 0.5 + 0.5 * dot(n, upEC);
   vec3 amb = mix(u_nfShadow, vec3(1.0), 0.35 + 0.65 * sky) * u_nfLight.y;
-  material.diffuse = c.rgb * (amb + u_nfWarm * key * u_nfLight.x);
+  vec3 col = c.rgb * (amb + u_nfWarm * key * u_nfLight.x);
+  // sloped roofs: shingle/turf courses, faded out where they would alias (screen-space width)
+  float upness = dot(n, upEC);
+  if (upness > 0.35 && upness < 0.97) {
+    float f = p.z * 2.4;
+    float w = fwidth(f);
+    float course = smoothstep(0.0, 0.18, fract(f));
+    col *= 1.0 - (1.0 - course) * 0.2 * (1.0 - clamp(w * 1.6, 0.0, 1.0));
+  }
+  // painterly value break-up (world-anchored, very low contrast)
+  float g = fract(sin(dot(floor(p.xy * 0.7), vec2(12.9898, 78.233))) * 43758.5453);
+  col *= 0.96 + 0.08 * g;
+  material.diffuse = col;
   material.alpha = 1.0;
 }
 `;

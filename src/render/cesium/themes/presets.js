@@ -107,10 +107,10 @@ const WINTERCATS = {
   // near-field bubble (?nearField=1): Norse timber walls, turf/slate roofs, dark conifers
   nearField: {
     kit: 'norse',
-    key: 0.78,
-    ambient: 0.58,
-    shadow: [0.46, 0.44, 0.58],
-    warm: [1.0, 0.94, 0.84],
+    key: 0.85,
+    ambient: 0.56,
+    shadow: [0.5, 0.47, 0.62],
+    warm: [1.0, 0.9, 0.76],
   },
 };
 

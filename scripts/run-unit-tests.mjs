@@ -1,4 +1,4 @@
-import { readdirSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -31,8 +31,14 @@ export function assertCalibratedAllocationRuntime(version = process.versions.nod
  * there. `unitTestRunner.test.mjs` asserts the list covers every `*.test.mjs`
  * outside dependencies, build output and dot-directories, so adding a tree
  * without adding it here fails.
+ *
+ * FORK-ONLY: `downstream/` holds the fork's city-loop tooling (from
+ * exp/theme-engine-v0, not for upstream); its unit tests run under plain
+ * `node --test` and so run here too. It is the one root that may be absent
+ * (a checkout or fixture without the fork's tooling); the others must exist.
  */
-export const UNIT_TEST_ROOTS = Object.freeze(['src', 'server']);
+export const UNIT_TEST_ROOTS = Object.freeze(['src', 'server', 'downstream']);
+const OPTIONAL_UNIT_TEST_ROOTS = new Set(['downstream']);
 
 /** Discover repository unit tests in stable path order. */
 export function discoverUnitTestFiles(root = process.cwd()) {
@@ -46,7 +52,11 @@ export function discoverUnitTestFiles(root = process.cwd()) {
       }
     }
   };
-  for (const testRoot of UNIT_TEST_ROOTS) visit(path.join(root, testRoot));
+  for (const testRoot of UNIT_TEST_ROOTS) {
+    const directory = path.join(root, testRoot);
+    if (OPTIONAL_UNIT_TEST_ROOTS.has(testRoot) && !existsSync(directory)) continue;
+    visit(directory);
+  }
   return files.sort();
 }
 

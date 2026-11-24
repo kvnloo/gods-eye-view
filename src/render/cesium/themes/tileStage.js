@@ -60,6 +60,7 @@ export const TILE_UNIFORMS = Object.freeze({
   vegHi: f(0.1, 0, 0.3, 0.005, 'Vegetation full'),
   shadeVeg: f(0, 0, 1, 0.01, 'Shaded canopy (dark → trees)'),
   waterChroma: f(0, 0, 0.6, 0.01, 'Water minimum chroma'),
+  darkFloor: f(0, 0, 0.3, 0.01, 'Dark shade floor (no cyan shadows)'),
   roofVariety: f(0.6, 0, 1, 0.01, 'Roof colour variety'),
   cellM: f(14, 2, 60, 1, 'Roof colour cell (m)'),
   grass: color(hex('#7aa840'), 'Grass'),
@@ -141,7 +142,9 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
   float gb = (a.g - a.b) / sum;
   float l = th_luma(a);
   float mx = max(a.r, max(a.g, a.b));
-  float chroma = (mx - min(a.r, min(a.g, a.b))) / max(mx, 1e-4);
+  // darkFloor: shade in photos carries a blue cast; dividing by a dark max
+  // makes it look saturated (then de-lighting paints it bright cyan)
+  float chroma = (mx - min(a.r, min(a.g, a.b))) / max(mx, max(u_th_darkFloor, 1e-4));
   float veg = smoothstep(u_th_vegLo, u_th_vegHi, exg) * smoothstep(0.015, 0.06, gb);
   // dark, not-red pixels are mostly shaded tree canopy in photogrammetry
   // (bluish in shade): shadeVeg sends them to the canopy colour, not water
@@ -161,6 +164,7 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
   vec3 neutralC = mix(czm_srgbToLinear(u_th_wall), flatNeutral, 1.0 - wallW);
 
   vec3 other = a / max(l, 1e-3) * 0.42;
+  other = mix(vec3(0.42), other, smoothstep(0.0, max(u_th_darkFloor, 1e-4), l));
   vec3 pal = other;
   pal = mix(pal, neutralC, neutral);
   pal = mix(pal, waterC, blue);

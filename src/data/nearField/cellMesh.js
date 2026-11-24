@@ -504,9 +504,10 @@ export function buildCell(fixture, ground, kit = NEAR_FIELD_KITS.realism, opts =
       let i = 0;
       while (i < n) {
         const id = ids[j * n + i];
-        const band = Math.min(2, dist[j * n + i] - 1);
+        // colour bands by distance to the real shore (truth raster), not to a marina cut-out
+        const band = Math.min(2, Math.max(0, water.dist[j * n + i] - 1));
         let k = i + 1;
-        while (k < n && ids[j * n + k] === id && Math.min(2, dist[j * n + k] - 1) === band) k++;
+        while (k < n && ids[j * n + k] === id && Math.min(2, Math.max(0, water.dist[j * n + k] - 1)) === band) k++;
         if (id) {
           // 0.6 m past the cell square: neighbouring cells overlap instead of leaving hairline gaps
           const xa = Math.max(bx0 - 0.6, -half + i * cell), xb = Math.min(bx1 + 0.6, -half + k * cell);

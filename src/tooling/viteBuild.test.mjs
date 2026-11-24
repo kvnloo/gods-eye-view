@@ -8,8 +8,10 @@ import path from 'node:path';
 import { build, createServer, preview } from 'vite';
 import {
   BROWSER_CSP,
+  BROWSER_HEADERS,
   createBrowserViteConfig,
   escapeFsDenyPath,
+  z0liveConnectOrigins,
 } from '../../build/vite.js';
 import standaloneConfig, * as compatibility from '../../vite.config.js';
 import * as providers from '../../server/providers/local.js';
@@ -18,6 +20,32 @@ import { makeFixtureRoot } from './fixtureRoot.mjs';
 
 const nominatimStorageDir = await makeFixtureRoot('gev-build-composition-');
 test.after(() => rm(nominatimStorageDir, { recursive: true, force: true }));
+
+test('an opt-in z0live broker origin widens only connect-src, and only for bare http(s) origins', () => {
+  assert.deepEqual(z0liveConnectOrigins(undefined), []);
+  assert.deepEqual(
+    z0liveConnectOrigins(
+      ' http://127.0.0.1:8791 ,https://broker.example/,http://127.0.0.1:8791,' +
+        'ftp://x,http://a/path,http://u:p@b,*,http://*.example,javascript:alert(1)',
+    ),
+    ['http://127.0.0.1:8791', 'https://broker.example'],
+  );
+  assert.equal(createBrowserViteConfig({}).server.headers, BROWSER_HEADERS);
+  const config = createBrowserViteConfig({
+    z0liveOrigins: 'http://127.0.0.1:8791',
+  });
+  const csp = config.server.headers['Content-Security-Policy'];
+  const directives = csp.split('; ');
+  const baseline = BROWSER_CSP.split('; ');
+  assert.equal(directives.length, baseline.length);
+  directives.forEach((directive, index) => {
+    if (directive.startsWith('connect-src '))
+      assert.equal(directive, `${baseline[index]} http://127.0.0.1:8791`);
+    else assert.equal(directive, baseline[index]);
+  });
+  assert.deepEqual(config.preview.headers, config.server.headers);
+  assert.equal(config.server.headers['X-Frame-Options'], 'DENY');
+});
 
 test('explicit build inputs preserve browser-only defines, plugin order and loopback protections', () => {
   const plugin = { name: 'fixture-provider' };

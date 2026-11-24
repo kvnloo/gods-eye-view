@@ -52,19 +52,23 @@ export function initGevVoiceCommands(options) {
   // The controller exists only after the runner, so its hooks bind late.
   const deixis = { pointer, referents, cameraKey };
   let commands;
+  const runner = withToolCatalog(
+    createGevActionRunner({
+      ...options,
+      deixis,
+      readVoicePanelOperation: () => commands?.captureVoicePanelOperation?.(),
+    }),
+    options.toolCatalog,
+  );
   commands = createVoiceCommands({
     ...options,
     pointer,
     referents,
-    runner: withToolCatalog(
-      createGevActionRunner({
-        ...options,
-        deixis,
-        readVoicePanelOperation: () => commands?.captureVoicePanelOperation?.(),
-      }),
-      options.toolCatalog,
-    ),
+    runner,
   });
+  // Model-free callers (the z0live display bridge) run the same actions the
+  // session, chat and omnibar do, whichever voice adapter the page uses.
+  commands.actionRunner = runner;
   deixis.imageFrame = () => commands.retainedImageFrame?.() || null;
   deixis.onPointerUsed = () => commands.announcePointer?.();
   const lifetime = commands.signal ?? commands.session?.signal;

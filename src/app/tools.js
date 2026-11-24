@@ -26,6 +26,12 @@ import { createLibraryBrowser } from '../ui/libraryBrowser.js';
 import { useDataLibraryStore } from '../ui/stores/dataLibrary.js';
 import { localGeoJsonServices } from './localGeojsonServices.js';
 import { initGevVoiceCommands } from '../voice/gevRealtime.js';
+import {
+  compactWorldContext,
+  createZ0liveDisplayBridge,
+  readZ0liveDisplayConfig,
+} from '../voice/z0liveDisplay.js';
+import { getWorldPacket } from '../agent/worldPacket.js';
 import { isStoriesOpen } from '../voice/realtimeInputPolicy.js';
 import { installViews, isEmbeddedInline } from './embed.js';
 import {
@@ -359,6 +365,31 @@ export function createApplicationTools({
       delete window.__gevVoiceCommands;
   });
   debug.voiceCommands = voiceCommands;
+  // Opt-in (`?z0live=<broker URL>`): a z0live call or agent drives this globe.
+  const z0live = readZ0liveDisplayConfig();
+  if (z0live) {
+    const bridge = createZ0liveDisplayBridge({
+      ...z0live,
+      run: (name, args, options = {}) => {
+        const signals = [signal, options.signal].filter(Boolean);
+        return (voiceCommands.actionRunner || voiceCommands.runner)(
+          name,
+          args,
+          {
+            ...options,
+            signal: signals.length > 1 ? AbortSignal.any(signals) : signals[0],
+          },
+        );
+      },
+      readContext: () =>
+        compactWorldContext(
+          getWorldPacket({ viewer, styleManager, dataManager, sceneDirector }),
+        ),
+    });
+    void bridge.start();
+    debug.z0liveDisplay = bridge.status;
+    defer(() => bridge.stop());
+  }
   defer(
     installViews({
       shell: styleManager,

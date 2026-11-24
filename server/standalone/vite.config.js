@@ -42,6 +42,8 @@ export function standaloneConfig(
     host: process.env.HOST,
     port: process.env.PORT,
     allowedHosts: resolveAllowedHosts(process.env.GEV_ALLOWED_HOSTS),
+    // Opt-in z0live display bridge (docs/Z0LIVE-DISPLAY.md): broker origins.
+    z0liveOrigins: process.env.GEV_Z0LIVE_ORIGINS,
     command,
   });
 }

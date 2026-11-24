@@ -97,6 +97,51 @@ export const BROWSER_HEADERS = Object.freeze({
 });
 
 /**
+ * Origins of an opt-in z0live desktop broker (`GEV_Z0LIVE_ORIGINS`, comma
+ * separated) the page may connect to. A loopback broker speaks plain http,
+ * which connect-src otherwise refuses. Only bare http(s) origins pass: no
+ * path, credentials, query or wildcard.
+ */
+export function z0liveConnectOrigins(value) {
+  const origins = [];
+  for (const part of String(value ?? '').split(',')) {
+    const text = part.trim();
+    if (!text) continue;
+    let url;
+    try {
+      url = new URL(text);
+    } catch {
+      continue;
+    }
+    if (
+      !['http:', 'https:'].includes(url.protocol) ||
+      url.username ||
+      url.password ||
+      url.search ||
+      url.hash ||
+      url.pathname !== '/' ||
+      text.includes('*')
+    )
+      continue;
+    if (!origins.includes(url.origin)) origins.push(url.origin);
+  }
+  return origins;
+}
+
+/** BROWSER_HEADERS, with connect-src widened to the given broker origins. */
+export function browserHeaders(connectOrigins = []) {
+  if (!connectOrigins.length) return BROWSER_HEADERS;
+  const csp = BROWSER_CSP.split('; ')
+    .map((directive) =>
+      directive.startsWith('connect-src ')
+        ? `${directive} ${connectOrigins.join(' ')}`
+        : directive,
+    )
+    .join('; ');
+  return Object.freeze({ ...BROWSER_HEADERS, 'Content-Security-Policy': csp });
+}
+
+/**
  * Content-Security-Policy for every `/api` response. API routes return data,
  * never a document, so a response opened directly in a tab gets no origin and
  * can load nothing.
@@ -176,9 +221,11 @@ export function createBrowserViteConfig({
   host = 'localhost',
   port = 4173,
   allowedHosts = DEFAULT_ALLOWED_HOSTS,
+  z0liveOrigins,
   command,
 } = {}) {
   const photonSetting = photonEndpointSetting(photonUrl);
+  const headers = browserHeaders(z0liveConnectOrigins(z0liveOrigins));
   return {
     plugins: [
       // First, so every API response, including a Host refusal, carries them.
@@ -235,11 +282,11 @@ export function createBrowserViteConfig({
       // give the whole page a real Content-Security-Policy (BROWSER_CSP).
       // Embed-mode documents are framable instead: embed-framing.js rewrites
       // only the frame-ancestors directive and keeps the rest of the policy.
-      headers: BROWSER_HEADERS,
+      headers,
     },
     // The preview server serves the same documents, so it carries the same
     // framing + CSP hardening (one constant, no drift).
-    preview: { headers: BROWSER_HEADERS },
+    preview: { headers },
     define: {
       // vue-i18n holds the locale and catalogs; Core formats the messages
       // (src/ui/i18n.js), so the build drops vue-i18n's message compiler.

@@ -4930,6 +4930,7 @@
       "src/voice/voiceCardPresentation.js",
       "src/voice/resultDisplay.js",
       "src/voice/gevRealtime.js",
+      "src/voice/z0liveDisplay.js",
       "src/voice/layerSummary.js",
       "src/voice/cloudVoiceAuth.js",
       "src/voice/realtimeBackend.js",

@@ -140,6 +140,12 @@ export function createApplicationViewer({
           installThemeFromLocation(viewer),
         )
         .catch((error) => console.error('[theme] failed to load', error));
+    // FORK-ONLY (exp/near-field-v0): ?nearField=1 adds the camera-following
+    // OSM detail bubble over the photoreal tiles (nearField/index.js).
+    if (/[?&]nearField=(1|true)\b/.test(globalThis.location?.search ?? ''))
+      void import('./nearField/index.js')
+        .then(({ installNearField }) => installNearField(viewer))
+        .catch((error) => console.error('[nearField] failed to load', error));
     return viewer;
   } catch (error) {
     viewer.destroy();

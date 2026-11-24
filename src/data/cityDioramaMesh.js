@@ -286,7 +286,7 @@ export class Soup {
   get triangles() { return this.p.length / 9; }
 }
 
-function prism(s, pts2, z0, z1, col, top = true) {
+export function prism(s, pts2, z0, z1, col, top = true) {
   // pts2 counter-clockwise
   const n = pts2.length;
   for (let i = 0; i < n; i++) {
@@ -297,7 +297,7 @@ function prism(s, pts2, z0, z1, col, top = true) {
   if (top) for (let i = 1; i < n - 1; i++) s.tri([...pts2[0], z1], [...pts2[i], z1], [...pts2[i + 1], z1], col);
 }
 
-function ring(cx, cy, r, sides, rot = 0) {
+export function ring(cx, cy, r, sides, rot = 0) {
   return Array.from({ length: sides }, (_, i) => {
     const t = rot + (i / sides) * Math.PI * 2;
     return [cx + Math.cos(t) * r, cy + Math.sin(t) * r];
@@ -315,7 +315,7 @@ function cone(s, cx, cy, z0, h, r, sides, col, rot) {
   for (let i = 1; i < sides - 1; i++) s.tri([...base[0], z0], [...base[i + 1], z0], [...base[i], z0], col);
 }
 
-const ICO = (() => {
+export const ICO = (() => {
   const t = (1 + Math.sqrt(5)) / 2;
   const v = [[-1, t, 0], [1, t, 0], [-1, -t, 0], [1, -t, 0], [0, -1, t], [0, 1, t], [0, -1, -t], [0, 1, -t], [t, 0, -1], [t, 0, 1], [-t, 0, -1], [-t, 0, 1]]
     .map((p) => { const L = Math.hypot(...p); return p.map((c) => c / L); });
@@ -396,7 +396,7 @@ function wallHeight(b, o, r) {
 }
 
 // ---------- trees
-function pine(s, x, y, z, k, r, sat, pick) {
+export function pine(s, x, y, z, k, r, sat, pick) {
   const kit = pick?.kit ?? PALETTE;
   const h = (7 + r() * 5) * k;
   const rad = (2.2 + r() * 0.9) * k;
@@ -416,7 +416,7 @@ function pine(s, x, y, z, k, r, sat, pick) {
   return { r: rad, h };
 }
 
-function broadleaf(s, x, y, z, k, r, o, sat, pick) {
+export function broadleaf(s, x, y, z, k, r, o, sat, pick) {
   const kit = pick?.kit ?? PALETTE;
   const rad = (2.6 + r() * 1.6) * k * (pick?.canopy ? 1.12 : 1);
   const h = (3.2 + r() * 1.5) * k;
@@ -440,7 +440,7 @@ function broadleaf(s, x, y, z, k, r, o, sat, pick) {
 }
 
 // look pass A: a boulder prototype (unit radius); most get a moss cap
-function rockProto(s, r, col, sat, tag = 1) {
+export function rockProto(s, r, col, sat, tag = 1) {
   const stone = linear(GOLD.rock[col % GOLD.rock.length], 0.06, r, sat);
   const moss = col % 4 !== 3 ? linear(GOLD.moss[col % GOLD.moss.length], 0.06, r, sat) : null;
   appendBoulder(s, ICO, 0, 0, 0, 1, [...stone, tag], moss && [...moss, tag], r);
@@ -539,7 +539,7 @@ function clipEdge(polygon, axis, edge, sign) {
   return clipped;
 }
 
-function footprintWater(polygon, water) {
+export function footprintWater(polygon, water) {
   if (!water) return null;
   const { n, half, cell, ids } = water;
   const xs = polygon.map(([x]) => x), ys = polygon.map(([, y]) => y);
@@ -573,7 +573,7 @@ function footprintWater(polygon, water) {
   return [...bodies.values()].sort((a, b) => b.area - a.area)[0] ?? null;
 }
 
-function buildingSupport(s, rect, kind, plane, base, water, body) {
+export function buildingSupport(s, rect, kind, plane, base, water, body) {
   const { c, u, a, b } = rect;
   const point = (x, y) => [c[0] + u[0] * x - u[1] * y, c[1] + u[1] * x + u[0] * y];
   const outline = (length, width) => [

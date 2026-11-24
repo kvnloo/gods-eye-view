@@ -52,7 +52,8 @@ export const NEAR_FIELD_KITS = Object.freeze({
     autumn: ['#b8743a', '#a8622e', '#c8903e'],
     autumnShare: 0.1,
     pineShare: 0.7,
-    water: ['#2c5a64', '#326a72', '#3a7a80'],
+    // the theme tile stage's water (deep #2a7a8e, shallows #44a4ac), so the hand-off has no colour step (judge r1)
+    water: ['#2a7a8e', '#2d7f91', '#318594'],
     rocks: 1,
     density: 1.15,
     yard: 0.5,

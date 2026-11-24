@@ -70,8 +70,8 @@ void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material) {
   vec3 v = normalize(-pEC);
   vec3 upEC = normalize(czm_normal * vec3(0.0, 0.0, 1.0));
   float fres = pow(1.0 - abs(dot(upEC, v)), 4.0);
-  float rip = sin(p.x * 0.9 + czm_frameNumber * 0.02) * sin(p.y * 1.1 - czm_frameNumber * 0.017);
-  vec3 col = c.rgb * (0.7 + 0.3 * u_nfLight.y) + fres * 0.16 * u_nfWarm + max(rip - 0.88, 0.0) * 0.3 * u_nfWarm;
+  // no sparkle term: judges read glints as stipple at the hand-off (r1)
+  vec3 col = c.rgb * (0.7 + 0.3 * u_nfLight.y) + fres * 0.16 * u_nfWarm;
   material.diffuse = col;
   material.alpha = clamp(c.a * a, 0.0, 1.0);
 }

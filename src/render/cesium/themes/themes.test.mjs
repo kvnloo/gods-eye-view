@@ -179,3 +179,18 @@ test('the documented fantasy preset loads with its carried custom effect', () =>
   assert.ok(preset.techniques.includes('ink'));
   assert.equal(parseCustomEffect(preset.effects[0]).effect.id, 'ink');
 });
+
+test('a preset hud block dims the scope mask and bad values are dropped', () => {
+  const ok = normalizePreset({ techniques: [], hud: { scopeMask: 0.15 } });
+  assert.deepEqual(ok.preset.hud, { scopeMask: 0.15 });
+  assert.deepEqual(ok.problems, []);
+  const bad = normalizePreset({ techniques: [], hud: { scopeMask: 3 } });
+  assert.deepEqual(bad.preset.hud, {});
+  assert.ok(bad.problems.includes('bad hud.scopeMask'));
+  assert.equal(normalizePreset({ techniques: [] }).preset.hud, null);
+});
+
+test('every tile-stage uniform is used by the tile GLSL', () => {
+  for (const k of Object.keys(TILE_UNIFORMS))
+    assert.match(TILE_GLSL, new RegExp(`u_th_${k}\\b`), k);
+});

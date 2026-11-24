@@ -4843,5 +4843,6 @@
   "Enhanced realism (golden hour)": "Realismo migliorato (ora dorata)",
   "Cozy valley (legacy ?look=cozy, screen-space only)": "Valle accogliente (vecchio ?look=cozy, solo schermo)",
   "None (photoreal as served)": "Nessuno (fotorealistico come fornito)",
-  "Texel density heatmap (debug)": "Mappa di calore della densità dei texel (debug)"
+  "Texel density heatmap (debug)": "Mappa di calore della densità dei texel (debug)",
+  "Classifier view (debug)": "Vista del classificatore (debug)"
 }

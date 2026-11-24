@@ -41,8 +41,8 @@ export const DESKTOP_HIGH = Object.freeze({
   msaa: 4,
 });
 
-// Colours from the locked wintercats reference (loop-v2/round-v5/style-loop
-// best-build.png) and the wintercats frames; numbers, not images.
+// Wintercats: colours and knobs from the theme dream loop v2 against the locked reference (loop-v2/round-v5/style-loop
+// best-build.png) and the wintercats frames; numbers, not images. Loop v2 round 1 (defect pass + paint): abs 2.0 -> 3.0.
 const WINTERCATS = {
   format: PRESET_FORMAT,
   name: 'wintercats',
@@ -50,6 +50,7 @@ const WINTERCATS = {
   perfTier: 'medium',
   techniques: [
     'tile',
+    'paint',
     'ao',
     'haze',
     'dof',
@@ -63,24 +64,48 @@ const WINTERCATS = {
   uniforms: {
     tile: {
       strength: 1,
-      // Google tiles carry no mip chain (probe on real tiles: 543/543
-      // textures without mipmaps), so the mip bias does nothing there: use
-      // the texel ring.
       flatten: 0,
-      flattenTexels: 2.5,
-      detail: 0.3,
+      flattenTexels: 5,
+      detail: 0.1,
       delight: 0.85,
       bands: 3,
       wrap: 0.6,
+      darkFloor: 0.15,
+      otherSat: 0.2,
+      shadeWarm: 1.0,
+      flattenRings: 2,
+      vegGb: 0.04,
+      vegChroma: 1.0,
+      grass: [0.361, 0.541, 0.235],
+      canopy: [0.173, 0.29, 0.18],
+      water: [0.235, 0.62, 0.639],
+      waterDeep: [0.165, 0.435, 0.514],
+      roofA: [0.612, 0.29, 0.196],
+      roofB: [0.42, 0.455, 0.267],
+      roofC: [0.702, 0.643, 0.557],
+      roofD: [0.306, 0.227, 0.18],
+      wall: [0.839, 0.776, 0.659],
+      street: [0.659, 0.624, 0.549],
+      shadow: [0.56, 0.53, 0.62],
+      neutralChroma: 2.2,
+      waterChroma: 0.25,
+      roofVariety: 0.7,
+      waterSmooth: 0.4,
+      waterGbMin: 1,
+      cellM: 22,
     },
-    ao: { aoStrength: 0.5, aoMax: 0.4, aoTint: [0.5, 0.55, 0.85] },
+    ao: {
+      aoStrength: 0.3,
+      aoMax: 0.4,
+      aoTint: [0.55, 0.5, 0.55],
+    },
     haze: {
       hazeStart: 3,
-      hazeDensity: 0.04,
-      hazeMax: 0.55,
-      hazeColor: [0.7, 0.86, 0.9],
+      hazeDensity: 0.03,
+      hazeMax: 0.2,
+      hazeColor: [0.84, 0.84, 0.8],
       skyTint: 0.25,
-      skyColor: [0.62, 0.86, 0.92],
+      skyColor: [0.7, 0.84, 0.9],
     },
     dof: {
       dofBlurPx: 6,
@@ -89,21 +114,39 @@ const WINTERCATS = {
       tiltBand: 0.2,
       skyBlur: 0.4,
     },
-    bloom: { bloomThreshold: 0.75, bloomIntensity: 0.6, bloomClamp: 0.1 },
-    lut: { lutStrength: 0.7 },
-    grade: {
-      saturation: 0.96,
-      vibrance: 0.1,
-      temperature: 0.12,
-      contrast: 1.04,
-      lift: [0.02, 0.025, 0.05],
+    bloom: {
+      bloomThreshold: 0.75,
+      bloomIntensity: 0.6,
+      bloomClamp: 0.1,
     },
-    clarity: { clarity: -0.25, clarityRadiusPx: 8 },
-    cas: { casSharpness: 0.25 },
-    vignette: { vignette: 0.22, vignetteColor: [0.4, 0.38, 0.52] },
+    lut: {
+      lutStrength: 0.25,
+    },
+    grade: {
+      saturation: 0.92,
+      vibrance: 0.0,
+      temperature: 0.12,
+      contrast: 1.14,
+      lift: [0.01, 0.008, 0.015],
+    },
+    clarity: {
+      clarity: -0.4,
+      clarityRadiusPx: 8,
+    },
+    cas: {
+      casSharpness: 0.0,
+    },
+    vignette: {
+      vignette: 0.12,
+      vignetteColor: [0.4, 0.36, 0.34],
+    },
+    paint: {
+      paintRadius: 2,
+    },
   },
   textures: { lutTexture: '/themes/luts/wintercats.png' },
   quality: DESKTOP_HIGH,
+  hud: { scopeMask: 0.15 },
 };
 
 // "Enhanced realism", in the spirit of the BotW "Digital Dreams" ReShade
@@ -258,9 +301,26 @@ export function normalizePreset(input, { customIds = [] } = {}) {
       textures,
       effects: Array.isArray(input.effects) ? input.effects : [],
       quality: normalizeQuality(input.quality, problems),
+      hud: normalizeHud(input.hud, problems),
     },
     problems,
   };
+}
+
+/** A preset's HUD block ({ scopeMask: 0..1 opacity }); null when it has none. */
+function normalizeHud(h, problems) {
+  if (h == null) return null;
+  if (typeof h !== 'object') {
+    problems.push('bad hud block');
+    return null;
+  }
+  const out = {};
+  if (h.scopeMask !== undefined) {
+    if (Number.isFinite(h.scopeMask) && h.scopeMask >= 0 && h.scopeMask <= 1)
+      out.scopeMask = h.scopeMask;
+    else problems.push('bad hud.scopeMask');
+  }
+  return out;
 }
 
 /** A preset's quality block, checked; null when it has none. */

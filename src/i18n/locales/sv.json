@@ -4731,5 +4731,6 @@
   "Enhanced realism (golden hour)": "Förbättrad realism (gyllene timmen)",
   "Cozy valley (legacy ?look=cozy, screen-space only)": "Mysig dal (äldre ?look=cozy, endast skärm)",
   "None (photoreal as served)": "Ingen (fotorealistisk som levererad)",
-  "Texel density heatmap (debug)": "Värmekarta för texeltäthet (felsökning)"
+  "Texel density heatmap (debug)": "Värmekarta för texeltäthet (felsökning)",
+  "Classifier view (debug)": "Klassificerarvy (felsökning)"
 }

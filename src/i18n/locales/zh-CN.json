@@ -4619,5 +4619,6 @@
   "Enhanced realism (golden hour)": "增强写实（黄金时段）",
   "Cozy valley (legacy ?look=cozy, screen-space only)": "温馨山谷（旧版 ?look=cozy，仅屏幕空间）",
   "None (photoreal as served)": "无（按原样的照片级写实）",
-  "Texel density heatmap (debug)": "纹素密度热图（调试）"
+  "Texel density heatmap (debug)": "纹素密度热图（调试）",
+  "Classifier view (debug)": "分类器视图（调试）"
 }

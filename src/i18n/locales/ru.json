@@ -4955,5 +4955,6 @@
   "Enhanced realism (golden hour)": "Улучшенный реализм (золотой час)",
   "Cozy valley (legacy ?look=cozy, screen-space only)": "Уютная долина (старый ?look=cozy, только экран)",
   "None (photoreal as served)": "Нет (фотореализм как есть)",
-  "Texel density heatmap (debug)": "Тепловая карта плотности текселей (отладка)"
+  "Texel density heatmap (debug)": "Тепловая карта плотности текселей (отладка)",
+  "Classifier view (debug)": "Вид классификатора (отладка)"
 }

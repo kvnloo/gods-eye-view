@@ -4619,5 +4619,6 @@
   "Enhanced realism (golden hour)": "強化リアリズム（ゴールデンアワー）",
   "Cozy valley (legacy ?look=cozy, screen-space only)": "コージーバレー（旧 ?look=cozy、画面のみ）",
   "None (photoreal as served)": "なし（配信どおりのフォトリアル）",
-  "Texel density heatmap (debug)": "テクセル密度ヒートマップ（デバッグ）"
+  "Texel density heatmap (debug)": "テクセル密度ヒートマップ（デバッグ）",
+  "Classifier view (debug)": "分類ビュー（デバッグ）"
 }

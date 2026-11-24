@@ -58,9 +58,48 @@ export const TILE_UNIFORMS = Object.freeze({
   relight: f(1, 0, 1, 0.01, 'Relight amount'),
   vegLo: f(0.02, -0.1, 0.2, 0.005, 'Vegetation threshold'),
   vegHi: f(0.1, 0, 0.3, 0.005, 'Vegetation full'),
+  vegGb: f(
+    0.015,
+    0,
+    0.15,
+    0.005,
+    'Vegetation green-over-blue (teal water is not grass)',
+  ),
   shadeVeg: f(0, 0, 1, 0.01, 'Shaded canopy (dark → trees)'),
   waterChroma: f(0, 0, 0.6, 0.01, 'Water minimum chroma'),
   darkFloor: f(0, 0, 0.3, 0.01, 'Dark shade floor (no cyan shadows)'),
+  otherSat: f(1, 0, 1, 0.01, 'Unclassified colour saturation'),
+  waterSeamKeep: f(
+    0,
+    0,
+    1,
+    0.01,
+    'Water smoothness gate spares saturated water (no seam streaks)',
+  ),
+  waterGbMin: f(
+    1,
+    0,
+    1,
+    0.005,
+    'Water: green may sit this far below blue (shade is bluer)',
+  ),
+  waterSmooth: f(
+    0,
+    0,
+    1,
+    0.01,
+    'Water must be smooth (share of textured ring taps, 0 = off)',
+  ),
+  neutralChroma: f(
+    1,
+    0.5,
+    3,
+    0.05,
+    'Neutral class reach (more roofs/walls in palette)',
+  ),
+  flattenRings: f(1, 1, 2, 1, 'Flatten rings (2 = smoother, 17 taps)'),
+  shadeWarm: f(0, 0, 1, 0.01, 'Shade → warm neutral (de-light lift)'),
+  vegChroma: f(1, 0.2, 1.5, 0.01, 'Vegetation photo-hue kept'),
   roofVariety: f(0.6, 0, 1, 0.01, 'Roof colour variety'),
   cellM: f(14, 2, 60, 1, 'Roof colour cell (m)'),
   grass: color(hex('#7aa840'), 'Grass'),
@@ -75,6 +114,11 @@ export const TILE_UNIFORMS = Object.freeze({
   roofD: color(hex('#6e4a36'), 'Roof timber'),
   shadow: color([0.42, 0.44, 0.62], 'Shadow tint'),
   key: color([1.06, 1.0, 0.9], 'Key light'),
+  debugClass: {
+    type: 'bool',
+    default: 0,
+    label: msg('Classifier view (debug)'),
+  },
   debugTexel: {
     type: 'bool',
     default: 0,
@@ -90,6 +134,9 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
   if (gl_FragCoord.x < u_th_wipe * czm_viewport.z + czm_viewport.x) return;
   vec3 photo = material.diffuse; // linear
   vec3 albedo = photo;
+  // local texture contrast from the flatten ring (0 = no ring): open water
+  // is smooth, roofs and streets in shade (also blue-cast) are not
+  float texC = 0.0;
   #ifdef HAS_BASE_COLOR_TEXTURE
   if (u_th_flatten > 0.0 || u_th_flattenTexels > 0.0) {
     vec2 uv = TEXCOORD_BASE_COLOR;
@@ -100,11 +147,32 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
     if (u_th_flattenTexels > 0.0) {
       vec2 t = u_th_flattenTexels / vec2(textureSize(u_baseColorTexture, 0));
       vec3 acc = albedo;
+      float wsum = 1.0;
+      float ls[8];
+      float lsum = th_luma(albedo);
       for (int i = 0; i < 8; i++) {
         float ang = float(i) * 0.7853982;
-        acc += czm_srgbToLinear(texture(u_baseColorTexture, uv + vec2(cos(ang), sin(ang)) * t, u_th_flatten).rgb);
+        vec3 s = czm_srgbToLinear(texture(u_baseColorTexture, uv + vec2(cos(ang), sin(ang)) * t, u_th_flatten).rgb);
+        ls[i] = th_luma(s);
+        lsum += ls[i];
+        acc += s;
       }
-      albedo = acc / 9.0;
+      // share of ring taps more than 20% off the local mean: a texture seam
+      // or a wake moves 2-3 of 8 taps, a roof or street most of them
+      float lmean = max(lsum / 9.0, 0.01);
+      float off = 0.0;
+      for (int i = 0; i < 8; i++) off += step(0.2, abs(ls[i] - lmean) / lmean);
+      texC = off / 8.0;
+      wsum += 8.0;
+      if (u_th_flattenRings > 1.5) {
+        // inner ring, rotated half a step: 17 taps, smoother patches
+        for (int i = 0; i < 8; i++) {
+          float ang = float(i) * 0.7853982 + 0.3926991;
+          acc += czm_srgbToLinear(texture(u_baseColorTexture, uv + vec2(cos(ang), sin(ang)) * t * 0.5, u_th_flatten).rgb);
+        }
+        wsum += 8.0;
+      }
+      albedo = acc / wsum;
     }
   }
   #endif
@@ -145,26 +213,50 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
   // darkFloor: shade in photos carries a blue cast; dividing by a dark max
   // makes it look saturated (then de-lighting paints it bright cyan)
   float chroma = (mx - min(a.r, min(a.g, a.b))) / max(mx, max(u_th_darkFloor, 1e-4));
-  float veg = smoothstep(u_th_vegLo, u_th_vegHi, exg) * smoothstep(0.015, 0.06, gb);
+  float veg = smoothstep(u_th_vegLo, u_th_vegHi, exg) * smoothstep(u_th_vegGb, u_th_vegGb + 0.045, gb);
   // dark, not-red pixels are mostly shaded tree canopy in photogrammetry
   // (bluish in shade): shadeVeg sends them to the canopy colour, not water
   float shade = u_th_shadeVeg * (1.0 - smoothstep(0.025, 0.08, l)) * step(a.r, a.g * 1.08);
   veg = max(veg, shade);
-  float blue = smoothstep(0.0, 0.06, (a.b - a.r) / sum) * (1.0 - smoothstep(0.03, 0.08, gb)) * flatW * (1.0 - veg);
+  float blue = smoothstep(0.0, 0.06, (a.b - a.r) / sum) * (1.0 - smoothstep(u_th_vegGb + 0.015, u_th_vegGb + 0.065, gb)) * flatW * (1.0 - veg);
   // open water is a saturated teal/blue; dull bluish surfaces are not
   blue *= smoothstep(u_th_waterChroma, u_th_waterChroma + 0.1, chroma);
-  float neutral = (1.0 - smoothstep(0.12, 0.3, chroma)) * (1.0 - veg) * (1.0 - blue);
+  blue *= smoothstep(-u_th_waterGbMin - 0.02, -u_th_waterGbMin, gb);
+  // waterSeamKeep: the smoothness gate spares saturated candidates, so open
+  // water keeps its class across texture seams and wakes (white streaks)
+  if (u_th_waterSmooth > 0.0)
+    blue *= 1.0 - smoothstep(u_th_waterSmooth, u_th_waterSmooth + 0.25, texC) *
+      (1.0 - u_th_waterSeamKeep * smoothstep(u_th_waterChroma + 0.1, u_th_waterChroma + 0.3, chroma));
+  float neutral = (1.0 - smoothstep(0.12 * u_th_neutralChroma, 0.3 * u_th_neutralChroma, chroma)) * (1.0 - veg) * (1.0 - blue);
 
   vec3 vegC = mix(czm_srgbToLinear(u_th_canopy), czm_srgbToLinear(u_th_grass), flatW);
+  // vegChroma < 1 pulls the vegetation palette toward its own luminance
+  vegC = mix(vec3(th_luma(vegC)), vegC, min(u_th_vegChroma, 1.0));
   vec3 waterC = mix(czm_srgbToLinear(u_th_waterDeep), czm_srgbToLinear(u_th_water), smoothstep(0.02, 0.12, l));
-  float h = th_hash(floor(pWC.xy / u_th_cellM) + floor(pWC.z / u_th_cellM));
+  // cell hash on small numbers: ECEF metres (~6e6) fed straight into
+  // sin() lose float32 precision, and every roof got the same colour
+  vec3 cell = mod(floor(pWC / u_th_cellM), 289.0);
+  float h = fract(sin(dot(cell, vec3(12.9898, 78.233, 37.719))) * 43758.5453);
   vec3 roof = h < 0.3 ? czm_srgbToLinear(u_th_roofA) : (h < 0.55 ? czm_srgbToLinear(u_th_roofB) : (h < 0.8 ? czm_srgbToLinear(u_th_roofC) : czm_srgbToLinear(u_th_roofD)));
   roof = mix(czm_srgbToLinear(u_th_roofC), roof, u_th_roofVariety);
   vec3 flatNeutral = mix(czm_srgbToLinear(u_th_street), roof, smoothstep(0.12, 0.3, l));
   vec3 neutralC = mix(czm_srgbToLinear(u_th_wall), flatNeutral, 1.0 - wallW);
 
   vec3 other = a / max(l, 1e-3) * 0.42;
-  other = mix(vec3(0.42), other, smoothstep(0.0, max(u_th_darkFloor, 1e-4), l));
+  // unclassified surfaces: keep only some photo chroma, toward a warm grey
+  vec3 warmGrey = vec3(0.45, 0.42, 0.38);
+  other = mix(warmGrey, other, u_th_otherSat);
+  other = mix(warmGrey, other, smoothstep(0.0, max(u_th_darkFloor, 1e-4), l));
+  #ifdef HAS_BASE_COLOR_TEXTURE
+  if (u_th_debugClass > 0.5) {
+    // veg green, water blue, neutral (by surface: wall/flat) greys, rest red
+    vec3 dc = mix(vec3(0.8, 0.15, 0.1), mix(vec3(0.75), vec3(0.45), wallW), neutral);
+    dc = mix(dc, vec3(0.1, 0.3, 0.9), blue);
+    dc = mix(dc, vec3(0.1, 0.7, 0.15), veg);
+    material.diffuse = czm_srgbToLinear(dc);
+    return;
+  }
+  #endif
   vec3 pal = other;
   pal = mix(pal, neutralC, neutral);
   pal = mix(pal, waterC, blue);
@@ -172,6 +264,10 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
   // de-light: palette value vs the photo's own (baked-shadow) luminance
   vec3 keepLight = pal * (th_luma(max(albedo, vec3(1e-4))) / max(th_luma(pal), 1e-3));
   pal = mix(keepLight, pal, u_th_delight);
+  // shadeWarm: photo shade (dark, blue-cast) is lifted toward a warm neutral
+  // of the palette instead of keeping its cyan cast
+  float shadeW = u_th_shadeWarm * (1.0 - smoothstep(0.02, 0.12, l)) * smoothstep(-0.02, 0.06, (a.b - a.r) / sum) * (1.0 - veg) * (1.0 - blue);
+  pal = mix(pal, vec3(th_luma(pal)) * vec3(1.06, 1.0, 0.92), shadeW);
   float detail = clamp(th_luma(max(photo, vec3(1e-4))) / max(l, 1e-3), 0.6, 1.5);
   pal *= mix(1.0, detail, u_th_detail);
 

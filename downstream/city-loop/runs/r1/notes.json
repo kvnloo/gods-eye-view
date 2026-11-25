@@ -1,0 +1,50 @@
+{
+ "district": {
+  "change": "?look=cozy - An in-app stylising chain (Kuwahara paint + hue-aware palette + posterise + clamped bloom + haze + tilt-shift, no AO) moves the far view toward wintercats instead of a sepia grade.",
+  "diagnostic panel (A=parent,B=r1; keyless Esri, NOT photoreal)": "{\"game_feel\": \"tie\", \"gev_brand\": \"tie\", \"scene_integration\": \"parent\", \"wintercats_fidelity\": \"candidate\", \"legibility\": \"parent\"}",
+  "look chain on this beat (clear vs look)": "n/a (district candidate IS the look)",
+  "status": "HOLD (provisional)",
+  "why": "wintercats_fidelity up (3/3) but scene_integration down (2 of 3 strict) and legibility (advisory) down: the chain trades world clarity for look. Mixed on trusted layers -> not kept yet; needs photoreal evidence.",
+  "capture note": "panel ran on 1ec7fec frames; 3683380 changes only CSS for shadow/growth, so these beats are the same code"
+ },
+ "select": {
+  "change": "?cityR1=ghost - A ground-draped footprint ghost (block footprint tint + dashed outline) reads as a placement ghost and sits in the world better than a 26 m cyan prism.",
+  "diagnostic panel (A=parent,B=r1; keyless Esri, NOT photoreal)": "{\"game_feel\": \"tie\", \"gev_brand\": \"tie\", \"scene_integration\": \"candidate\", \"wintercats_fidelity\": \"tie\", \"legibility\": \"candidate\"}",
+  "look chain on this beat (clear vs look)": "{\"wintercats_fidelity\": \"candidate\", \"scene_integration\": \"parent\", \"legibility\": \"tie\"}",
+  "status": "PROVISIONAL KEEP",
+  "why": "scene_integration up (2 strict), other trusted layers tie; the change is subtle at this camera.",
+  "capture note": "panel ran on 1ec7fec frames; 3683380 changes only CSS for shadow/growth, so these beats are the same code"
+ },
+ "reimagine": {
+  "change": "?cityR1=flat - Laying the concept flat on its plot (tiles clipped to the plot, no kind tint) integrates better than a standing 48x32 m card plus a green tint.",
+  "diagnostic panel (A=parent,B=r1; keyless Esri, NOT photoreal)": "{\"game_feel\": \"tie\", \"gev_brand\": \"tie\", \"scene_integration\": \"candidate\", \"wintercats_fidelity\": \"tie\", \"legibility\": \"candidate\"}",
+  "look chain on this beat (clear vs look)": "{\"wintercats_fidelity\": \"candidate\", \"scene_integration\": \"parent\", \"legibility\": \"tie\"}",
+  "status": "PROVISIONAL KEEP",
+  "why": "scene_integration up 3/3 strict, legibility up; no trusted layer down.",
+  "capture note": "panel ran on 1ec7fec frames; 3683380 changes only CSS for shadow/growth, so these beats are the same code"
+ },
+ "build": {
+  "change": "?cityR1=kit - A warm diorama palette on the facade shader + low-poly faceted trees in the 4 m margin replaces the pale placeholder box.",
+  "diagnostic panel (A=parent,B=r1; keyless Esri, NOT photoreal)": "{\"game_feel\": \"candidate\", \"gev_brand\": \"tie\", \"scene_integration\": \"candidate\", \"wintercats_fidelity\": \"candidate\", \"legibility\": \"candidate\"}",
+  "look chain on this beat (clear vs look)": "{\"wintercats_fidelity\": \"candidate\", \"scene_integration\": \"parent\", \"legibility\": \"tie\"}",
+  "status": "PROVISIONAL KEEP",
+  "why": "game_feel, scene_integration, wintercats_fidelity all up 3/3 strict (gev_brand tie). Strongest result.",
+  "capture note": "panel ran on 1ec7fec frames; 3683380 changes only CSS for shadow/growth, so these beats are the same code"
+ },
+ "shadow": {
+  "change": "?cityR1=chip - Merging the massing readout and study into one compact chip and hiding the card tray uncovers the subject.",
+  "diagnostic panel (A=parent,B=r1; keyless Esri, NOT photoreal)": "{\"game_feel\": \"parent\", \"gev_brand\": \"candidate\", \"scene_integration\": \"candidate\", \"wintercats_fidelity\": \"candidate\", \"legibility\": \"candidate\"}",
+  "look chain on this beat (clear vs look)": "{\"wintercats_fidelity\": \"candidate\", \"scene_integration\": \"parent\", \"legibility\": \"tie\"}",
+  "status": "PROVISIONAL KEEP (trial 2)",
+  "why": "Trial 2 (verbs kept): gev_brand, scene_integration, wintercats_fidelity up; game_feel recovered to tie. No trusted layer down.",
+  "trial 2 panel (3683380, verbs kept)": "{\"game_feel\": \"tie\", \"gev_brand\": \"candidate\", \"scene_integration\": \"candidate\", \"wintercats_fidelity\": \"candidate\", \"legibility\": \"candidate\"}"
+ },
+ "growth": {
+  "change": "?cityR1=tray - Collapsing the card tray while the timeline is open lets the district read.",
+  "diagnostic panel (A=parent,B=r1; keyless Esri, NOT photoreal)": "{\"game_feel\": \"parent\", \"gev_brand\": \"tie\", \"scene_integration\": \"candidate\", \"wintercats_fidelity\": \"parent\", \"legibility\": \"candidate\"}",
+  "look chain on this beat (clear vs look)": "{\"wintercats_fidelity\": \"candidate\", \"scene_integration\": \"parent\", \"legibility\": \"tie\"}",
+  "status": "REJECT (2 trials) -> technique change next round",
+  "why": "Both trials: game_feel and wintercats_fidelity DOWN 3/3 strict, scene_integration up. Restoring the verbs did not help, so the cause is removing the tray itself (wintercats HAS a bottom build tray). Next: slim icon-only build tray, not a collapse.",
+  "trial 2 panel (3683380, verbs kept)": "{\"game_feel\": \"parent\", \"gev_brand\": \"tie\", \"scene_integration\": \"candidate\", \"wintercats_fidelity\": \"parent\", \"legibility\": \"candidate\"}"
+ }
+}

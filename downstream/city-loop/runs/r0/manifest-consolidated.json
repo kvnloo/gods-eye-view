@@ -1,0 +1,228 @@
+{
+  "schema": "city-loop-v2/capture@1",
+  "label": "consolidated",
+  "startedAt": "2026-11-22T16:14:51.863Z",
+  "app": {
+    "sha": "21c792b8a02272a62f942ef63ce8a953e6b2584e",
+    "subject": "spike(city): GLB stand-in and 3D-tile seating harness (fork-only, not for upstream)",
+    "dirty": false
+  },
+  "url": "http://127.0.0.1:4189/?welcome=0&massing=1#v=2&lat=37.796083363277035&lon=-122.41021134056297&alt=600&heading=0&pitch=-45&roll=0&style=normal",
+  "viewport": {
+    "width": 1600,
+    "height": 1000
+  },
+  "plot": "plot-n105201-126637",
+  "site": {
+    "lat": 37.796083363277035,
+    "lon": -122.41021134056297,
+    "alt": 600,
+    "heading": 0,
+    "pitch": -45
+  },
+  "sunTime": "2026-06-21T15:00:00Z",
+  "browser": {
+    "version": "151.0.7922.108",
+    "args": [
+      "--no-sandbox",
+      "--disable-dev-shm-usage",
+      "--use-gl=angle",
+      "--use-angle=swiftshader",
+      "--enable-unsafe-swiftshader",
+      "--ozone-platform=headless",
+      "--ignore-gpu-blocklist"
+    ]
+  },
+  "tiles": {
+    "creditText": "Upgrade for commercial use.•Data attribution",
+    "credits": [
+      "<span>Flights: OpenSky Network — Schäfer et al., “Bringing Up OpenSky”, IPSN 2014 · <a href=\"https://opensky-network.org/\" target=\"_blank\" rel=\"noopener\">opensky-network.org</a> (non-commercial)</span>",
+      "<span>Military flights, aircraft traces, bounded regional flight fallback &amp; GNSS navigation integrity: <a href=\"https://adsb.lol/\" target=\"_blank\" rel=\"noopener\">adsb.lol</a> (ODbL 1.0)</span>",
+      "<span>Aircraft type, registration &amp; flight routes: <a href=\"https://www.adsbdb.com/\" target=\"_blank\" rel=\"noopener\">adsbdb</a> · aircraft data from PlaneBase · ICAO-to-N-number conversion by Guillaume Michel · route data is the work of David Taylor, Edinburgh, and Jim Mason, Glasgow, and may not be copied, published, or incorporated into other databases without the explicit permission of David J Taylor, Edinburgh</span>",
+      "<span>Aircraft photos: <a href=\"https://www.planespotters.net/\" target=\"_blank\" rel=\"noopener\">Planespotters.net</a> · each photo is © its photographer, credited beside it</span>",
+      "<span>Vessel photos: <a href=\"https://openvesselphotos.org/\" target=\"_blank\" rel=\"noopener\">Open Vessel Photos</a> · each photo keeps its author&#39;s open licence, credited beside it</span>",
+      "<span>Live vessels (AIS): <a href=\"https://aisstream.io/\" target=\"_blank\" rel=\"noopener\">AISStream.io</a></span>",
+      "<span>Satellites (TLEs and SATCAT): CelesTrak (<a href=\"https://celestrak.org/\" target=\"_blank\" rel=\"noopener\">celestrak.org</a>), Dr. T.S. Kelso</span>",
+      "<span>ISS model: <a href=\"https://science.nasa.gov/3d-resources/international-space-station-iss-d-igoal/\" target=\"_blank\" rel=\"noopener\">NASA 3D Resources</a> (JSC IGOAL)</span>",
+      "<span>Tiangong model: made for God&#39;s Eye View; dimensions from <a href=\"https://doi.org/10.34133/space.0035\" target=\"_blank\" rel=\"noopener\">Wang, Zhang &amp; Wang 2023</a> (CC BY 4.0) and eoPortal</span>",
+      "<span>ISS joint telemetry (where switched on): NASA ISSLive, via Lightstreamer</span>",
+      "<span>ISS live video (LIVE section): NASA, via YouTube (<a href=\"https://www.youtube.com/watch?v=ROboUHfPUrU\" target=\"_blank\" rel=\"noopener\">exterior cameras</a></span>",
+      "<span><a href=\"https://www.youtube.com/watch?v=M3HKLzjvKPc\" target=\"_blank\" rel=\"noopener\">live video and audio</a>)</span>",
+      "<span>Satellite operators and purposes: <a href=\"https://www.ucsusa.org/satellite_database\" target=\"_blank\" rel=\"noopener\">UCS Satellite Database</a> (UCS-Satellite-Database 5-1-2023), Union of Concerned Scientists</span>",
+      "<span>Imaging sensor swaths: operator and agency specifications, cited per platform</span>",
+      "<span>Space mission launch, payload &amp; recovery metadata: <a href=\"https://ll.thespacedevs.com/docs/\" target=\"_blank\" rel=\"noopener\">Launch Library 2 — The Space Devs</a> (API documentation and rate limits)</span>",
+      "<span>Earthquakes: Data courtesy of the U.S. Geological Survey</span>",
+      "<span>Sea marks overlay: <a href=\"https://www.openseamap.org/\" target=\"_blank\" rel=\"noopener\">© OpenSeaMap contributors</a> (CC BY-SA 2.0) · Data © OpenStreetMap contributors (ODbL)</span>",
+      "<span>Ski pistes overlay: <a href=\"https://www.opensnowmap.org/\" target=\"_blank\" rel=\"noopener\">© www.opensnowmap.org</a> (CC BY-SA) · Data © OpenStreetMap contributors (ODbL)</span>",
+      "<span>Recent imagery: We acknowledge the use of imagery provided by services from NASA&#39;s Global Imagery Browse Services (GIBS), part of NASA&#39;s Earth Science Data and Information System (ESDIS). <a href=\"https://gibs.earthdata.nasa.gov/\" target=\"_blank\" rel=\"noopener\">gibs.earthdata.nasa.gov</a></span>",
+      "<a href=\"https://lpdaac.usgs.gov/products/hlss30v002/\" target=\"_blank\" rel=\"noopener\">HLS product page</a>"
+    ],
+    "imgs": [
+      "http://127.0.0.1:4189/cesium/Assets/Images/ion-credit.png",
+      "https://assets.ion.cesium.com/google-credit.png"
+    ],
+    "globeShown": false,
+    "stack": {
+      "activeId": "photoreal",
+      "activeStack": {
+        "id": "photoreal",
+        "label": "Google 3D",
+        "shortLabel": "3D",
+        "kind": "photoreal",
+        "requiresIon": false
+      },
+      "stacks": [
+        {
+          "id": "photoreal",
+          "label": "Google 3D",
+          "shortLabel": "3D",
+          "kind": "photoreal",
+          "requiresIon": false,
+          "available": true,
+          "unavailableReason": null
+        },
+        {
+          "id": "bing-aerial",
+          "label": "Bing Aerial",
+          "shortLabel": "Aerial",
+          "kind": "ion",
+          "style": 2,
+          "requiresIon": true,
+          "available": true,
+          "unavailableReason": null
+        },
+        {
+          "id": "bing-labels",
+          "label": "Bing Labels",
+          "shortLabel": "Labels",
+          "kind": "ion",
+          "style": 3,
+          "requiresIon": true,
+          "available": true,
+          "unavailableReason": null
+        },
+        {
+          "id": "esri-imagery",
+          "label": "Esri Satellite",
+          "shortLabel": "SAT",
+          "kind": "esri-imagery",
+          "requiresIon": false,
+          "available": true,
+          "unavailableReason": null
+        },
+        {
+          "id": "osm",
+          "label": "OSM",
+          "shortLabel": "OSM",
+          "kind": "osm",
+          "requiresIon": false,
+          "available": true,
+          "unavailableReason": null
+        }
+      ],
+      "status": "ready",
+      "lastError": null,
+      "switchOrigin": "manual",
+      "hasCesiumIonToken": true
+    },
+    "tilesets": [
+      {
+        "show": true,
+        "url": "https://tile.googleapis.com/v1/3dtiles/root.json?key=REDACTED"
+      }
+    ],
+    "google": true,
+    "rendering": "google-photoreal-3d-tiles"
+  },
+  "frameTiming": {
+    "startup": {
+      "frames": 9,
+      "seconds": 3,
+      "fps": 3,
+      "p50ms": 463.19999999995343,
+      "p95ms": 733.5
+    },
+    "end": {
+      "frames": 11,
+      "seconds": 3,
+      "fps": 3.6666666666666665,
+      "p50ms": 414.30000000004657,
+      "p95ms": 490.69999999995343
+    }
+  },
+  "beats": {
+    "district": {
+      "status": "failed",
+      "error": "locator.waitFor: Timeout 20000ms exceeded.",
+      "failureShot": {
+        "file": "district--failure.png",
+        "sha256": "b4c63a72ca7cc62fbcd554d9c6c990ae782936ee26b1bc783b8cd16b34a0eeea"
+      },
+      "seconds": 21.453
+    },
+    "select": {
+      "status": "failed",
+      "error": "plot not on free map {\"x\":800,\"y\":485,\"free\":false}",
+      "failureShot": {
+        "file": "select--failure.png",
+        "sha256": "b4c63a72ca7cc62fbcd554d9c6c990ae782936ee26b1bc783b8cd16b34a0eeea"
+      },
+      "seconds": 4.784
+    },
+    "reimagine": {
+      "status": "failed",
+      "error": "page.evaluate: TypeError: Cannot read properties of undefined (reading 'snapshot')",
+      "failureShot": {
+        "file": "reimagine--failure.png",
+        "sha256": "b4c63a72ca7cc62fbcd554d9c6c990ae782936ee26b1bc783b8cd16b34a0eeea"
+      },
+      "seconds": 0.197
+    },
+    "build": {
+      "status": "failed",
+      "error": "page.evaluate: TypeError: Cannot read properties of undefined (reading 'snapshot')",
+      "failureShot": {
+        "file": "build--failure.png",
+        "sha256": "b4c63a72ca7cc62fbcd554d9c6c990ae782936ee26b1bc783b8cd16b34a0eeea"
+      },
+      "seconds": 0.179
+    },
+    "shadow": {
+      "status": "failed",
+      "error": "locator.click: Timeout 20000ms exceeded.",
+      "failureShot": {
+        "file": "shadow--failure.png",
+        "sha256": "b4c63a72ca7cc62fbcd554d9c6c990ae782936ee26b1bc783b8cd16b34a0eeea"
+      },
+      "seconds": 20.185
+    },
+    "growth": {
+      "status": "failed",
+      "error": "no free far plot for the district",
+      "failureShot": {
+        "file": "growth--failure.png",
+        "sha256": "b4c63a72ca7cc62fbcd554d9c6c990ae782936ee26b1bc783b8cd16b34a0eeea"
+      },
+      "seconds": 0.274
+    }
+  },
+  "cozy": {},
+  "console": [
+    {
+      "type": "info",
+      "text": "[Init] Google 3D Tiles loaded via fallback."
+    }
+  ],
+  "pageErrors": [],
+  "marks": {
+    "ready": 20.27
+  },
+  "finishedAt": "2026-11-22T16:16:06.513Z",
+  "video": {
+    "full": "journey-full-consolidated.mp4",
+    "cut": "journey-consolidated.mp4",
+    "beatsInCut": [],
+    "fullSha256": "392208c29b6968616b03512ef546e6275a41bdae466584087edb09098e0ee1c6",
+    "cutError": "missing"
+  }
+}

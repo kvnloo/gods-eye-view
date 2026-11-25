@@ -317,12 +317,13 @@ export function estimateDataUrlBytes(dataUrl) {
  * as that frame is drawn (its `postRender`), where a read sees it.
  * @param {object} viewer
  * @param {() => void} [onFrame]
+ * @param {number} [timeoutMs=400] fresh-frame wait budget
  * @returns {Promise<boolean>} true only when a fresh frame was presented —
  *   false while hidden (render loop suspended; a capture would be stale) or
  *   when the bounded wait timed out. Callers must not label a non-fresh
  *   canvas as current. (perf wave 2)
  */
-export async function renderFreshCesiumFrame(viewer, onFrame) {
+export async function renderFreshCesiumFrame(viewer, onFrame, timeoutMs = 400) {
   const frame = findFrame(viewer);
   if (!frame) return false;
   // While the document is hidden the render loop is suspended — don't
@@ -347,7 +348,7 @@ export async function renderFreshCesiumFrame(viewer, onFrame) {
       setTimeout(() => {
         remove();
         resolve(false);
-      }, 400);
+      }, timeoutMs);
     });
     frame.requestRender('voice-capture');
     const fresh = await rendered;

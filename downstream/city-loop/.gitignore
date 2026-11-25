@@ -1,0 +1,14 @@
+# Images, videos and raw judge replies stay out of git (gallery copies live outside the repo).
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.mp4
+*.webm
+runs/**/video-raw/
+runs/**/img/
+runs/**/raw/
+runs/**/*.log
+.env
+.env.*
+__pycache__/

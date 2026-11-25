@@ -1,0 +1,493 @@
+/**
+ * @module render/cesium/themes/presets
+ * @description FORK-ONLY (exp/theme-engine-v0). Theme presets: JSON like a
+ * ReShade .ini. A preset is data only:
+ *
+ *   {
+ *     "format": "gev-theme-preset/1",
+ *     "name": "wintercats",
+ *     "label": "Wintercats (cozy city builder)",
+ *     "perfTier": "medium",            // low | medium | high (frame budget)
+ *     "techniques": ["tile", "ao", "haze", ...],   // ordered, enabled
+ *     "uniforms": { "<effect>": { "<uniform>": value } },
+ *     "textures": { "lutTexture": "/themes/luts/wintercats.png" },
+ *     "effects": [ <custom effect objects, see customEffects.js> ]
+ *   }
+ *
+ * Effects not listed in `techniques` are off; uniforms not given take the
+ * library defaults. `?preset=<name>` picks a built-in, `?preset=<url>` loads
+ * a JSON file (same origin or CORS), `?theme=<name>` is an alias.
+ */
+import { EFFECT_IDS } from './effectLibrary.js';
+
+/** Marks English text for scripts/i18n.mjs; the panel translates with t(). */
+const msg = (text) => text;
+
+export const PRESET_FORMAT = 'gev-theme-preset/1';
+export const PERF_TIERS = Object.freeze({ low: 20, medium: 30, high: 45 });
+
+/**
+ * Render quality a preset asks for (council L1 §1: GEV renders at CSS pixels
+ * and leaves the tiles' maximumScreenSpaceError at 16, so Google tiles look
+ * blurrier than they are). `resolutionScale: 'dpr'` renders at the device
+ * pixel ratio up to `maxDpr` (`phoneMaxDpr` on touch-first screens); the
+ * error and MSAA apply on desktop only. Omitted: the app's own settings.
+ */
+export const DESKTOP_HIGH = Object.freeze({
+  resolutionScale: 'dpr',
+  maxDpr: 2,
+  phoneMaxDpr: 1.5,
+  maximumScreenSpaceError: 8,
+  msaa: 4,
+});
+
+// Wintercats: colours and knobs from the theme dream loops v2 and v3 (v3: OSM class mask) against the locked reference (loop-v2/round-v5/style-loop
+// best-build.png) and the wintercats frames; numbers, not images. v3 r10: fully painted OSM roofs and local foliage, calm canopy normal, firmer wrap .45, warm AO .4.
+const WINTERCATS = {
+  format: PRESET_FORMAT,
+  name: 'wintercats',
+  label: msg('Wintercats (cozy painterly city builder)'),
+  perfTier: 'medium',
+  techniques: [
+    'tile',
+    'paint',
+    'ao',
+    'haze',
+    'dof',
+    'bloom',
+    'lut',
+    'grade',
+    'clarity',
+    'cas',
+    'vignette',
+  ],
+  uniforms: {
+    tile: {
+      strength: 0.6,
+      flatten: 0,
+      flattenTexels: 4,
+      detail: 0.1,
+      delight: 0.5,
+      bands: 2,
+      wrap: 0.45,
+      darkFloor: 0.15,
+      otherSat: 0.2,
+      shadeWarm: 1.0,
+      flattenRings: 2,
+      vegGb: 0.04,
+      vegChroma: 1.0,
+      // app loop r01 (GEV-I1): warmer, more muted olive grass and canopy (held-out DISTS -0.0016, 5/6 views; blind judges 15/20 seats)
+      // app loop r08 (GEV-I1): darker olive greens and deeper teal water (TRAIN target class medians)
+      grass: [0.325, 0.425, 0.28],
+      canopy: [0.11, 0.21, 0.17],
+      water: [0.3, 0.59, 0.59],
+      waterDeep: [0.21, 0.42, 0.51],
+      roofA: [0.643, 0.314, 0.184],
+      roofB: [0.373, 0.42, 0.271],
+      roofC: [0.702, 0.573, 0.447],
+      roofD: [0.353, 0.231, 0.165],
+      wall: [0.839, 0.776, 0.659],
+      street: [0.612, 0.561, 0.471],
+      shadow: [0.471, 0.435, 0.627],
+      neutralChroma: 2.2,
+      waterChroma: 0.25,
+      roofVariety: 0.9,
+      waterSmooth: 0.4,
+      waterGbMin: 1,
+      cellM: 22,
+      waterSeamKeep: 0,
+      key: [1.14, 1.0, 0.82],
+      photoSat: 0.3,
+      photoWarm: 0.7,
+      waterStrength: 0.85,
+      vegStrength: 0.9,
+      vegFlatRg: 0.6,
+      osm: 1,
+      osmStrength: 0.9,
+      osmDelight: 0.95,
+      mottle: 0.08,
+      foamAmt: 0.3,
+      osmEdge: 0.8,
+      osmFlatN: 0.8,
+      vegFlatN: 1,
+      shallowM: 45,
+      waterSky: 0.5,
+      osmRoofFlat: 1,
+      vegFlat: 1,
+      // app loop r08: painted volume (sun-lit tree crowns, lawn strokes, hip roofs) and steep facets away from OSM
+      // buildings painted as canopy (held-out DISTS -0.0152 4/6, train -0.0086 20/24; blind A/B 16/20 seats)
+      matTree: 1,
+      crownM: 9,
+      crownGap: 0.5,
+      grassTex: 1,
+      matRoof: 1,
+      osmTreeFacets: 1,
+    },
+    ao: {
+      aoStrength: 0.4,
+      aoMax: 0.5,
+      aoTint: [0.5, 0.42, 0.42],
+    },
+    haze: {
+      hazeStart: 3,
+      hazeDensity: 0.03,
+      hazeMax: 0.35,
+      hazeColor: [0.9, 0.86, 0.76],
+      skyTint: 0.25,
+      skyColor: [0.7, 0.84, 0.9],
+    },
+    dof: {
+      dofBlurPx: 1,
+      focusRange: 0.6,
+      tiltAmount: 0.25,
+      tiltBand: 0.3,
+      skyBlur: 0.3,
+      tiltCenter: 0.6,
+    },
+    bloom: {
+      bloomThreshold: 0.75,
+      bloomIntensity: 0.5,
+      bloomClamp: 0.1,
+    },
+    lut: {
+      lutStrength: 0.7,
+    },
+    grade: {
+      saturation: 0.94,
+      vibrance: 0.0,
+      // app loop r05 (GEV-I1): warmer grade (held-out DISTS -0.0038 6/6; blind judges 15/20 seats)
+      temperature: 0.7,
+      contrast: 1.14,
+      lift: [0.01, 0.008, 0.015],
+    },
+    clarity: {
+      clarity: 0,
+      clarityRadiusPx: 8,
+    },
+    cas: {
+      casSharpness: 0.25,
+    },
+    vignette: {
+      vignette: 0.15,
+      vignetteColor: [0.42, 0.34, 0.3],
+    },
+    paint: {
+      paintRadius: 1,
+    },
+    outline: {
+      inkStrength: 0.55,
+      inkNormal: 0.45,
+      inkDepth: 0.03,
+    },
+  },
+  textures: { lutTexture: '/themes/luts/wintercats.png' },
+  quality: DESKTOP_HIGH,
+  hud: { scopeMask: 0.15 },
+  // near-field bubble (?nearField=1): Norse timber walls, turf/slate roofs, dark conifers
+  nearField: {
+    kit: 'norse',
+    key: 0.85,
+    ambient: 0.56,
+    shadow: [0.5, 0.47, 0.62],
+    warm: [1.0, 0.9, 0.76],
+  },
+};
+
+// "Enhanced realism", in the spirit of the BotW "Digital Dreams" ReShade
+// presets: keep the photo, add depth cues (AO, GI-lite), a golden grade,
+// gentle DOF, bloom and sharpening. No tile restyle.
+const ENHANCED = {
+  format: PRESET_FORMAT,
+  name: 'enhanced-realism',
+  label: msg('Enhanced realism (golden hour)'),
+  perfTier: 'high',
+  techniques: [
+    'ao',
+    'gi',
+    'haze',
+    'dof',
+    'godrays',
+    'bloom',
+    'grade',
+    'clarity',
+    'cas',
+    'vignette',
+    'grain',
+  ],
+  uniforms: {
+    ao: { aoStrength: 0.6, aoMax: 0.5, aoTint: [0.62, 0.6, 0.72] },
+    gi: { giStrength: 0.3 },
+    haze: {
+      hazeStart: 5,
+      hazeDensity: 0.025,
+      hazeMax: 0.45,
+      hazeColor: [0.86, 0.84, 0.78],
+    },
+    dof: { dofBlurPx: 5, focusRange: 0.6, tiltAmount: 0, skyBlur: 0.2 },
+    godrays: { raysIntensity: 0.5 },
+    bloom: { bloomThreshold: 0.7, bloomIntensity: 0.8, bloomClamp: 0.14 },
+    grade: {
+      temperature: 0.3,
+      contrast: 1.08,
+      vibrance: 0.3,
+      saturation: 1.02,
+      lift: [0.01, 0.0, 0.03],
+      gain: [1.04, 1.0, 0.94],
+      shadows: 0.1,
+      highlights: -0.1,
+    },
+    clarity: { clarity: 0.45 },
+    cas: { casSharpness: 0.5 },
+    vignette: { vignette: 0.25, vignetteColor: [0.3, 0.25, 0.22] },
+    grain: { grain: 0.025 },
+  },
+  textures: {},
+  quality: DESKTOP_HIGH,
+  nearField: { kit: 'realism', key: 0.85, ambient: 0.5, warm: [1.0, 0.95, 0.86] },
+};
+
+// The old ?look=cozy chain re-expressed as a preset (paint + palette-ish grade).
+const COZY = {
+  format: PRESET_FORMAT,
+  name: 'cozy',
+  label: msg('Cozy valley (legacy ?look=cozy, screen-space only)'),
+  perfTier: 'medium',
+  techniques: ['paint', 'haze', 'dof', 'bloom', 'lut', 'grade', 'vignette'],
+  uniforms: {
+    paint: { paintRadius: 3 },
+    dof: { tiltAmount: 0.6, dofBlurPx: 6 },
+    lut: { lutStrength: 0.6 },
+    grade: { saturation: 1.15, vibrance: 0.3, temperature: 0.1 },
+    vignette: { vignette: 0.32 },
+  },
+  textures: { lutTexture: '/themes/luts/wintercats.png' },
+  nearField: { kit: 'mix', key: 0.75, ambient: 0.62 },
+};
+
+const NONE = {
+  format: PRESET_FORMAT,
+  name: 'none',
+  label: msg('None (photoreal as served)'),
+  perfTier: 'high',
+  techniques: [],
+  uniforms: {},
+  textures: {},
+};
+
+export const BUILT_IN_PRESETS = Object.freeze({
+  wintercats: WINTERCATS,
+  'enhanced-realism': ENHANCED,
+  cozy: COZY,
+  none: NONE,
+});
+
+/** A deep copy of a built-in preset, or null. */
+export function builtInPreset(name) {
+  const p = BUILT_IN_PRESETS[String(name ?? '').toLowerCase()];
+  return p ? structuredClone(p) : null;
+}
+
+/**
+ * Check a preset object; returns { preset, problems } with unknown effect
+ * names and malformed values dropped (never thrown: a bad preset must not
+ * break the globe).
+ */
+export function normalizePreset(input, { customIds = [] } = {}) {
+  const problems = [];
+  const carried = (input?.effects ?? []).map((e) =>
+    typeof e === 'string' ? e.match(/"id"\s*:\s*"([^"]+)"/)?.[1] : e?.id,
+  );
+  const known = new Set([
+    ...EFFECT_IDS,
+    ...customIds,
+    ...carried.filter(Boolean),
+  ]);
+  if (!input || typeof input !== 'object')
+    return {
+      preset: structuredClone(NONE),
+      problems: ['preset is not an object'],
+    };
+  if (input.format && input.format !== PRESET_FORMAT)
+    problems.push(`unknown format ${input.format}`);
+  const techniques = [];
+  for (const id of Array.isArray(input.techniques) ? input.techniques : []) {
+    if (!known.has(id)) problems.push(`unknown effect ${id}`);
+    else if (!techniques.includes(id)) techniques.push(id);
+  }
+  const uniforms = {};
+  for (const [id, values] of Object.entries(input.uniforms ?? {})) {
+    if (!known.has(id) || typeof values !== 'object' || !values) {
+      problems.push(`uniforms for unknown effect ${id}`);
+      continue;
+    }
+    uniforms[id] = {};
+    for (const [k, v] of Object.entries(values)) {
+      const ok =
+        (typeof v === 'number' && Number.isFinite(v)) ||
+        (Array.isArray(v) &&
+          v.length === 3 &&
+          v.every((x) => Number.isFinite(x)));
+      if (ok) uniforms[id][k] = Array.isArray(v) ? [...v] : v;
+      else problems.push(`bad value ${id}.${k}`);
+    }
+  }
+  const textures = {};
+  for (const [k, v] of Object.entries(input.textures ?? {}))
+    if (typeof v === 'string' && /^(\/|https?:|data:image\/)/.test(v))
+      textures[k] = v;
+    else problems.push(`bad texture ${k}`);
+  return {
+    preset: {
+      format: PRESET_FORMAT,
+      name: String(input.name ?? 'custom'),
+      label: String(input.label ?? input.name ?? 'Custom'),
+      perfTier: PERF_TIERS[input.perfTier] ? input.perfTier : 'medium',
+      techniques,
+      uniforms,
+      textures,
+      effects: Array.isArray(input.effects) ? input.effects : [],
+      quality: normalizeQuality(input.quality, problems),
+      hud: normalizeHud(input.hud, problems),
+      nearField: normalizeNearField(input.nearField, problems),
+      sun: normalizeSun(input.sun, problems),
+    },
+    problems,
+  };
+}
+
+/**
+ * A preset's own sun (themeSun.js): real azimuth, elevation clamped to
+ * [minEl, maxEl] degrees, optional cast shadows. Null when absent: the
+ * scene's sun is untouched.
+ */
+export function normalizeSun(s, problems = []) {
+  if (s == null) return null;
+  if (typeof s !== 'object') {
+    problems.push('bad sun block');
+    return null;
+  }
+  const num = (k, lo, hi, d) => {
+    if (s[k] === undefined) return d;
+    if (Number.isFinite(s[k]) && s[k] >= lo && s[k] <= hi) return s[k];
+    problems.push(`bad sun.${k}`);
+    return d;
+  };
+  const minEl = num('minEl', -10, 90, 15);
+  const maxEl = Math.max(minEl, num('maxEl', -10, 90, 40));
+  return {
+    minEl,
+    maxEl,
+    shadows: s.shadows !== false,
+    darkness: num('darkness', 0, 1, 0.55),
+    softShadows: s.softShadows !== false,
+    size: num('size', 512, 8192, 4096),
+    maxDistance: num('maxDistance', 100, 50000, 5000),
+    color: isRgb(s.color) ? [...s.color] : [1, 1, 1],
+    intensity: num('intensity', 0, 10, 2),
+    depthBias: s.depthBias === undefined ? null : num('depthBias', 0, 0.05, null),
+  };
+}
+
+/** A preset's HUD block ({ scopeMask: 0..1 opacity }); null when it has none. */
+function normalizeHud(h, problems) {
+  if (h == null) return null;
+  if (typeof h !== 'object') {
+    problems.push('bad hud block');
+    return null;
+  }
+  const out = {};
+  if (h.scopeMask !== undefined) {
+    if (Number.isFinite(h.scopeMask) && h.scopeMask >= 0 && h.scopeMask <= 1)
+      out.scopeMask = h.scopeMask;
+    else problems.push('bad hud.scopeMask');
+  }
+  return out;
+}
+
+const NEAR_FIELD_KIT_NAMES = new Set(['norse', 'realism', 'mix']);
+const isRgb = (v) =>
+  Array.isArray(v) && v.length === 3 && v.every((x) => Number.isFinite(x) && x >= 0 && x <= 4);
+
+/**
+ * A preset's near-field block (exp/near-field-v0): which asset kit the
+ * bubble's generated buildings and trees use, its light, and optional kit
+ * overrides (`colours`: palette lists of #rrggbb). Null when absent: the
+ * bubble then uses the neutral `realism` kit.
+ */
+export function normalizeNearField(q, problems = []) {
+  if (q == null) return null;
+  if (typeof q !== 'object') {
+    problems.push('bad nearField block');
+    return null;
+  }
+  const num = (v, lo, hi, d) => (Number.isFinite(v) && v >= lo && v <= hi ? v : d);
+  const kit = NEAR_FIELD_KIT_NAMES.has(q.kit) ? q.kit : 'realism';
+  if (q.kit != null && kit !== q.kit) problems.push(`unknown nearField kit ${q.kit}`);
+  const colours = {};
+  for (const [k, v] of Object.entries(q.colours ?? {}))
+    if (Array.isArray(v) ? v.every((c) => /^#[0-9a-f]{6}$/i.test(c)) : /^#[0-9a-f]{6}$/i.test(v)) colours[k] = v;
+    else problems.push(`bad nearField colour ${k}`);
+  return {
+    kit,
+    key: num(q.key, 0, 2, 0.8),
+    ambient: num(q.ambient, 0, 2, 0.55),
+    shadow: isRgb(q.shadow) ? [...q.shadow] : [0.5, 0.5, 0.56],
+    warm: isRgb(q.warm) ? [...q.warm] : [1, 0.97, 0.92],
+    trees: num(q.trees, 0, 3, 1),
+    colours,
+  };
+}
+
+/** A preset's quality block, checked; null when it has none. */
+function normalizeQuality(q, problems) {
+  if (q == null) return null;
+  if (typeof q !== 'object') {
+    problems.push('bad quality block');
+    return null;
+  }
+  const num = (v, lo, hi) =>
+    Number.isFinite(v) && v >= lo && v <= hi ? v : undefined;
+  return {
+    resolutionScale:
+      q.resolutionScale === 'dpr' ? 'dpr' : num(q.resolutionScale, 0.25, 4),
+    maxDpr: num(q.maxDpr, 0.5, 4) ?? 2,
+    phoneMaxDpr: num(q.phoneMaxDpr, 0.5, 4) ?? 1.5,
+    maximumScreenSpaceError: num(q.maximumScreenSpaceError, 1, 64),
+    msaa: num(q.msaa, 0, 8),
+  };
+}
+
+/** The preset a page asks for: `?preset=` (or `?theme=`), else null. */
+export function presetRequest(search = '') {
+  const q = new URLSearchParams(search ?? '');
+  const value = q.get('preset') ?? q.get('theme');
+  if (!value) return null;
+  return {
+    value,
+    wipe: Math.min(
+      1,
+      Math.max(0, Number(q.get('themeWipe') ?? q.get('lookWipe') ?? 0) || 0),
+    ),
+    panel: q.get('themePanel') === '1',
+    budget: q.get('themeBudget') !== '0',
+    quality: q.get('themeQuality') !== '0',
+    osm: q.get('themeOsm') !== '0',
+    osmDebug: q.get('themeOsmDebug') === '1',
+    // GEV-G: same-origin override of the learned model file (QA / A-B of models)
+    ...(/^\/[^/]/.test(q.get('themeLearned') ?? '') && { learnedUrl: q.get('themeLearned') }),
+  };
+}
+
+/** Load a preset by built-in name or URL (JSON). */
+export async function loadPreset(value, { fetchImpl = globalThis.fetch } = {}) {
+  const built = builtInPreset(value);
+  if (built) return normalizePreset(built);
+  if (!/^(\/|https?:)/.test(value))
+    return {
+      ...normalizePreset(builtInPreset('none')),
+      problems: [`unknown preset ${value}`],
+    };
+  const res = await fetchImpl(value);
+  if (!res.ok) throw new Error(`preset ${value}: HTTP ${res.status}`);
+  return normalizePreset(await res.json());
+}

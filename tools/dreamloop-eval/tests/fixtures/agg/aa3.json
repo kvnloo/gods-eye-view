@@ -1,0 +1,107 @@
+{
+ "schema": "gev-dreamloop/scores-1",
+ "build_id": "par",
+ "run_id": "a3",
+ "split": {
+  "version": "test-1",
+  "path": "split.json",
+  "sha256": "5p1it"
+ },
+ "work_res": [
+  384,
+  256
+ ],
+ "metrics_requested": [
+  "dists",
+  "class_de"
+ ],
+ "device": "cpu",
+ "time": "fixture",
+ "expected": {
+  "train": 3,
+  "heldout": 2
+ },
+ "not_scored": [],
+ "views": [
+  {
+   "view_id": "A0-V0",
+   "location_id": "A0",
+   "panel": "train",
+   "build_id": "par",
+   "run_id": "a3",
+   "target_version": "t1",
+   "target_sha256": "t-A0-V0",
+   "capture_sha256": "c-par-a3-A0-V0",
+   "metrics": {
+    "dists": 0.299,
+    "class_de": 10
+   },
+   "unavailable": {},
+   "classes": {}
+  },
+  {
+   "view_id": "A0-V1",
+   "location_id": "A0",
+   "panel": "train",
+   "build_id": "par",
+   "run_id": "a3",
+   "target_version": "t1",
+   "target_sha256": "t-A0-V1",
+   "capture_sha256": "c-par-a3-A0-V1",
+   "metrics": {
+    "dists": 0.202,
+    "class_de": 12
+   },
+   "unavailable": {},
+   "classes": {}
+  },
+  {
+   "view_id": "A1-V0",
+   "location_id": "A1",
+   "panel": "train",
+   "build_id": "par",
+   "run_id": "a3",
+   "target_version": "t1",
+   "target_sha256": "t-A1-V0",
+   "capture_sha256": "c-par-a3-A1-V0",
+   "metrics": {
+    "dists": 0.101,
+    "class_de": 14
+   },
+   "unavailable": {},
+   "classes": {}
+  },
+  {
+   "view_id": "B0-V0",
+   "location_id": "B0",
+   "panel": "heldout",
+   "build_id": "par",
+   "run_id": "a3",
+   "target_version": "t1",
+   "target_sha256": "t-B0-V0",
+   "capture_sha256": "c-par-a3-B0-V0",
+   "metrics": {
+    "dists": 0.249,
+    "class_de": 9
+   },
+   "unavailable": {},
+   "classes": {}
+  },
+  {
+   "view_id": "B0-V1",
+   "location_id": "B0",
+   "panel": "heldout",
+   "build_id": "par",
+   "run_id": "a3",
+   "target_version": "t1",
+   "target_sha256": "t-B0-V1",
+   "capture_sha256": "c-par-a3-B0-V1",
+   "metrics": {
+    "dists": 0.35,
+    "class_de": 11
+   },
+   "unavailable": {},
+   "classes": {}
+  }
+ ]
+}

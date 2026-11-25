@@ -1,0 +1,260 @@
+{
+  "_source": "project-artifacts/gev/city-dream export_score_golden.py over accepted dream rounds; goals ASSUMED",
+  "goals": {
+    "status": "assumed",
+    "required": ["homes"],
+    "weights": {
+      "homes": {
+        "w": 1,
+        "base": 12,
+        "scale": 12,
+        "unit": ""
+      },
+      "public_space": {
+        "w": 1,
+        "base": 0,
+        "scale": 50,
+        "unit": "m²"
+      },
+      "bike_m": {
+        "w": 1,
+        "base": 0,
+        "scale": 3,
+        "unit": "m"
+      },
+      "walk_m": {
+        "w": 0.5,
+        "base": 6,
+        "scale": 4,
+        "unit": "m"
+      },
+      "canopy_pct": {
+        "w": 1,
+        "base": 18,
+        "scale": 10,
+        "unit": "%"
+      },
+      "park_shade": {
+        "w": -1,
+        "base": 0,
+        "scale": 1,
+        "unit": ""
+      },
+      "parking": {
+        "w": 0,
+        "base": null,
+        "scale": 1,
+        "unit": ""
+      },
+      "through_lanes": {
+        "w": 0,
+        "base": null,
+        "scale": 1,
+        "unit": ""
+      },
+      "headway_min": {
+        "w": -1,
+        "base": 15,
+        "scale": 5,
+        "unit": "min"
+      },
+      "transit_cap": {
+        "w": 1,
+        "base": 240,
+        "scale": 120,
+        "unit": "/h"
+      },
+      "parking_removed": {
+        "w": 0,
+        "base": null,
+        "scale": 1,
+        "unit": ""
+      }
+    }
+  },
+  "cases": [
+    {
+      "name": "r034-curb",
+      "rounds": ["r034"],
+      "moves": [
+        {
+          "parking": [4, 1],
+          "public_space": [0, 28.8],
+          "parking_removed": [0, 1]
+        }
+      ],
+      "state": {
+        "parking": {
+          "base": 4,
+          "value": 1,
+          "status": "SPEC-BASE"
+        },
+        "public_space": {
+          "base": 0,
+          "value": 28.8,
+          "status": "SPEC-BASE"
+        },
+        "parking_removed": {
+          "base": 0,
+          "value": 1,
+          "status": "SPEC-BASE"
+        }
+      },
+      "score": null,
+      "missing": ["homes"],
+      "chips": ["public_space", "parking", "parking_removed"]
+    },
+    {
+      "name": "r037-district-growth",
+      "rounds": ["r037"],
+      "moves": [
+        {
+          "homes": [300, 600],
+          "park_shade": [null, 1]
+        }
+      ],
+      "state": {
+        "homes": {
+          "base": 300,
+          "value": 600,
+          "status": "SPEC-BASE"
+        },
+        "park_shade": {
+          "base": 0,
+          "value": 1,
+          "status": "ASSUMED-BASE"
+        }
+      },
+      "score": 0.0,
+      "missing": [],
+      "chips": ["homes"]
+    },
+    {
+      "name": "r038-shadow",
+      "rounds": ["r038"],
+      "moves": [
+        {
+          "park_shade": [null, 0],
+          "homes": [12.0, 18.0]
+        }
+      ],
+      "state": {
+        "park_shade": {
+          "base": 0,
+          "value": 0,
+          "status": "ASSUMED-BASE"
+        },
+        "homes": {
+          "base": 12.0,
+          "value": 18.0,
+          "status": "SPEC-BASE"
+        }
+      },
+      "score": 0.25,
+      "missing": [],
+      "chips": ["homes"]
+    },
+    {
+      "name": "r038-r039-section",
+      "rounds": ["r038", "r039"],
+      "moves": [
+        {
+          "park_shade": [null, 0],
+          "homes": [12.0, 18.0]
+        },
+        {
+          "through_lanes": [4, 2],
+          "walk_m": [6, 8],
+          "bike_m": [0, 3],
+          "parking_removed": [0, 10],
+          "parking": [10.0, 10.0]
+        }
+      ],
+      "state": {
+        "park_shade": {
+          "base": 0,
+          "value": 0,
+          "status": "ASSUMED-BASE"
+        },
+        "homes": {
+          "base": 12.0,
+          "value": 18.0,
+          "status": "SPEC-BASE"
+        },
+        "through_lanes": {
+          "base": 4,
+          "value": 2,
+          "status": "SPEC-BASE"
+        },
+        "walk_m": {
+          "base": 6,
+          "value": 8,
+          "status": "SPEC-BASE"
+        },
+        "bike_m": {
+          "base": 0,
+          "value": 3,
+          "status": "SPEC-BASE"
+        },
+        "parking_removed": {
+          "base": 0,
+          "value": 10,
+          "status": "SPEC-BASE"
+        },
+        "parking": {
+          "base": 10.0,
+          "value": 10.0,
+          "status": "SPEC-BASE"
+        }
+      },
+      "score": 0.5,
+      "missing": [],
+      "chips": ["bike_m", "homes", "walk_m", "parking_removed"]
+    },
+    {
+      "name": "r038-r041-transit",
+      "rounds": ["r038", "r041"],
+      "moves": [
+        {
+          "park_shade": [null, 0],
+          "homes": [12.0, 18.0]
+        },
+        {
+          "headway_min": [15, 10],
+          "transit_cap": [240.0, 360.0],
+          "parking_removed": [0, 6]
+        }
+      ],
+      "state": {
+        "park_shade": {
+          "base": 0,
+          "value": 0,
+          "status": "ASSUMED-BASE"
+        },
+        "homes": {
+          "base": 12.0,
+          "value": 18.0,
+          "status": "SPEC-BASE"
+        },
+        "headway_min": {
+          "base": 15,
+          "value": 10,
+          "status": "SPEC-BASE"
+        },
+        "transit_cap": {
+          "base": 240.0,
+          "value": 360.0,
+          "status": "SPEC-BASE"
+        },
+        "parking_removed": {
+          "base": 0,
+          "value": 6,
+          "status": "SPEC-BASE"
+        }
+      },
+      "score": 0.625,
+      "missing": [],
+      "chips": ["headway_min", "homes", "transit_cap", "parking_removed"]
+    }
+  ]
+}

@@ -1,0 +1,337 @@
+/* Massing v0 readout beside the selected plot (CityMassingReadout.vue, behind
+   ?massing=1). The same HUD glass, accent and type as the play mode cards
+   (city-play.css): darkened theme glass keeps every label at 4.5:1 or better
+   over bright roofs (qa-city-massing audits), caps labels at 12 px. */
+.city-massing {
+  position: fixed;
+  z-index: 121;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font: 12px var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  background:
+    linear-gradient(rgba(4, 8, 12, 0.46), rgba(4, 8, 12, 0.46)), var(--glass-bg);
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  backdrop-filter: blur(16px) saturate(1.3);
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.45),
+    0 0 14px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.city-massing[data-city-massing-on='true'] {
+  width: 240px;
+}
+.city-massing-toggle {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--accent);
+  font: 600 12px var(--font-mono);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.city-massing-toggle[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg-dark);
+  box-shadow: 0 0 14px var(--accent-glow);
+}
+.city-massing-led {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.city-massing-rows {
+  margin: 8px 0 0;
+}
+.city-massing-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  min-height: 32px;
+}
+.city-massing-row dt {
+  color: color-mix(in srgb, var(--text-primary) 76%, transparent);
+}
+.city-massing-row dd {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.city-massing-value {
+  color: var(--accent);
+  text-shadow: 0 0 10px var(--accent-glow);
+}
+.city-massing-est {
+  padding: 1px 6px;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: 4px;
+  color: var(--text-primary);
+}
+.city-massing-step {
+  width: 30px;
+  height: 30px;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--accent);
+  font: 600 16px var(--font-mono);
+  cursor: pointer;
+}
+.city-massing-step:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.city-massing-leader {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.city-massing-leader line {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 4px var(--accent-glow));
+}
+
+/* The shadow study beside the readout (CityShadowStudy.vue): the same glass.
+   Its figures keep their case, so metres read "m"; the tip labels sit on the
+   globe at the ends of the study's ground lines. While the study is on the
+   play wheel steps aside: its ring is as wide as the shadow it would cover. */
+body:has([data-city-shadow-on='true']) [data-city-play-wheel] {
+  visibility: hidden;
+}
+.city-shadow[data-city-shadow-on='true'] {
+  width: 300px;
+}
+.city-shadow .city-massing-row {
+  min-height: 28px;
+}
+.city-shadow .city-massing-value {
+  text-transform: none;
+}
+.city-shadow-alert .city-massing-value {
+  color: var(--warning, #ffb454);
+  text-shadow: none;
+}
+.city-shadow-button {
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--accent);
+  font: 600 12px var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.city-shadow-button[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--bg-dark);
+}
+.city-shadow-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.city-shadow-set {
+  min-height: 30px;
+}
+.city-shadow-fit {
+  width: 100%;
+  min-height: 34px;
+  margin-top: 6px;
+  letter-spacing: 0.04em;
+}
+.city-shadow-note {
+  margin: 6px 0 0;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+.city-shadow-cost {
+  margin-top: 2px;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+.city-shadow-tip {
+  position: fixed;
+  z-index: 121;
+  margin: 0;
+  padding: 6px 12px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  font: 600 13px var(--font-mono);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: var(--text-primary);
+  background: rgba(4, 8, 12, 0.84);
+  pointer-events: none;
+}
+.city-shadow-tip[data-city-shadow-tip='was'] {
+  border-color: #fff;
+}
+.city-shadow-tip:not([data-city-shadow-tip='now']) {
+  border-style: dashed;
+}
+.city-massing-leader circle {
+  fill: var(--accent);
+  stroke: var(--bg-dark);
+  stroke-width: 2;
+}
+
+/* A phone with the play wheel open leaves only a short band above or below it
+   (about 70 px): the toggle and the rows wrap into two 24 px lines. */
+@media (max-width: 599px) {
+  .city-massing {
+    padding: 4px 8px;
+    letter-spacing: 0.02em;
+  }
+  .city-massing[data-city-massing-on='true'] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 8px;
+    align-items: center;
+    width: min(366px, calc(100vw - 24px));
+  }
+  .city-massing-toggle {
+    min-height: 24px;
+    padding: 0 10px;
+    letter-spacing: 0.12em;
+  }
+  .city-massing-rows {
+    display: contents;
+  }
+  .city-massing-row {
+    display: inline-flex;
+    gap: 6px;
+    min-height: 24px;
+  }
+  .city-massing-row dd {
+    gap: 4px;
+  }
+  .city-massing-step {
+    width: 24px;
+    height: 24px;
+  }
+  /* HOMES and SHADOW REACH: one line above the plot tag. */
+  .city-massing-extra {
+    display: flex;
+    gap: 2px 8px;
+    align-items: center;
+  }
+}
+
+/* The growth timeline of a district (CityGrowthTimeline.vue): the same glass,
+   at the right of the view the district is framed in. Its lines keep their
+   case, so metres read "m²". While it is on, the play wheel and the play
+   bar's counters step aside: they count saved possible worlds, and "PLOTS 0"
+   beside a district of 25 plots reads as a contradiction. */
+body:has([data-city-growth-on='true']) :is([data-city-play-wheel], .city-play-stat) {
+  display: none;
+}
+.city-growth {
+  top: 128px;
+  right: 24px;
+}
+.city-growth[data-city-growth-on='true'] {
+  width: 420px;
+}
+.city-growth-line {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 28px;
+  margin: 0;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+.city-growth-line[data-city-growth-line='district'] {
+  margin-top: 6px;
+  color: color-mix(in srgb, var(--text-primary) 76%, transparent);
+}
+.city-growth-line--homes {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.city-growth-line--lowered {
+  color: var(--warning, #ffb454);
+}
+.city-growth-steps {
+  display: inline-flex;
+  gap: 6px;
+}
+/* One rail: a line through the three stops, the stage shown filled. */
+.city-growth-rail {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  margin: 10px 0;
+}
+.city-growth-rail::before {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  left: 12px;
+  height: 2px;
+  content: '';
+  background: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.city-growth-stop {
+  position: relative;
+  min-width: 84px;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: 999px;
+  background: #060b10;
+  color: color-mix(in srgb, var(--text-primary) 76%, transparent);
+  font: 600 12px var(--font-mono);
+  letter-spacing: 0.14em;
+  cursor: pointer;
+}
+.city-growth-stop[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--bg-dark);
+  box-shadow: 0 0 14px var(--accent-glow);
+}
+/* A sun-locked block's badge, above the block on the globe. */
+.city-growth-lock {
+  position: fixed;
+  z-index: 121;
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  padding: 3px 9px;
+  border: 1px solid #ffb454;
+  border-radius: 999px;
+  font: 600 11px var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #ffb454;
+  background: rgba(4, 8, 12, 0.84);
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+}
+.city-growth-lock svg {
+  width: 12px;
+  height: 12px;
+  fill: currentColor;
+}

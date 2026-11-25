@@ -1,6 +1,10 @@
 import { createStandaloneApplication } from './standalone/application.js';
 import { describeError } from './standalone/errors.js';
 import { t } from './i18n/index.js';
+import { reportTvBoot } from './ui/cast/tvBoot.js';
+
+// A TV view (Cast) says it loaded before the globe starts.
+reportTvBoot('html');
 
 // The Vite boundary exposes only undefined, null, or a validated URL.
 const photonSetting = import.meta.env.PHOTON_URL;
@@ -15,6 +19,7 @@ const application = createStandaloneApplication({
 
 application.start().catch((error) => {
   console.error("God's Eye View initialization failed:", error);
+  reportTvBoot('failed', { error: describeError(error) });
   const loaderStatus = document.querySelector('#loading-screen .loader-status');
   loaderStatus.textContent = t('Error: {message}', {
     message: describeError(error),

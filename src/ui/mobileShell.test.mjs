@@ -167,7 +167,7 @@ function fixture({
   backdrop.hidden = true;
   const tabBar = element('nav', document);
   tabBar.id = 'mobile-tab-bar';
-  for (const { sheet } of MOBILE_TABS) {
+  for (const { sheet } of MOBILE_TABS.filter((tab) => tab.sheet)) {
     const button = element('button', document);
     button.dataset.mobileSheet = sheet;
     button.setAttribute('aria-expanded', 'false');
@@ -264,9 +264,9 @@ function fixture({
   };
 }
 
-test('every tab names a sheet and every sheet panel maps back to its sheet', () => {
+test('every tab names a sheet or an action and every sheet panel maps back to its sheet', () => {
   assert.deepEqual(
-    MOBILE_TABS.map(({ sheet }) => sheet),
+    MOBILE_TABS.filter(({ sheet }) => sheet).map(({ sheet }) => sheet),
     Object.keys(MOBILE_SHEET_PANELS),
   );
   for (const [sheet, panels] of Object.entries(MOBILE_SHEET_PANELS))
@@ -527,28 +527,38 @@ test('desktop widths never see the shell; crossing to desktop restores it', () =
   );
 });
 
-test('the shell publishes whether it is on and which sheet is open', () => {
+test('the shell publishes whether it is on, which sheet is open and its height', () => {
   const phone = fixture();
   assert.deepEqual(phone.views.at(-1), {
     enabled: true,
     sheet: null,
+    snap: null,
     tabs: MOBILE_TABS,
   });
   phone.press('search');
   assert.deepEqual(phone.views.at(-1), {
     enabled: true,
     sheet: 'search',
+    snap: null,
+    tabs: MOBILE_TABS,
+  });
+  phone.press('layers');
+  assert.deepEqual(phone.views.at(-1), {
+    enabled: true,
+    sheet: 'layers',
+    snap: 'half',
     tabs: MOBILE_TABS,
   });
   phone.resize(false);
   assert.deepEqual(phone.views.at(-1), {
     enabled: false,
     sheet: null,
+    snap: null,
     tabs: MOBILE_TABS,
   });
   const desktop = fixture({ mobile: false });
   assert.deepEqual(desktop.views, [
-    { enabled: false, sheet: null, tabs: MOBILE_TABS },
+    { enabled: false, sheet: null, snap: null, tabs: MOBILE_TABS },
   ]);
 });
 

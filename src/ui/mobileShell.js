@@ -39,8 +39,71 @@ export const MOBILE_TABS = Object.freeze([
   Object.freeze({ sheet: 'cameras', label: msg('Cameras'), icon: 'videocam' }),
   Object.freeze({ sheet: 'context', label: msg('Context'), icon: 'radar' }),
   Object.freeze({ sheet: 'search', label: msg('Search'), icon: 'search' }),
+  // Not a sheet: Cast opens its own menu (views/panels/CastButton.vue).
+  Object.freeze({ action: 'cast', label: msg('Cast'), icon: 'cast' }),
   Object.freeze({ sheet: 'more', label: msg('More'), icon: 'more_horiz' }),
 ]);
+
+/**
+ * The heights an open sheet rests at, smallest first: a peek over the globe,
+ * half the screen (where a sheet opens) and the full height under the top bar.
+ * Search and More stack the dock over a rail and keep their own heights.
+ */
+export const MOBILE_SHEET_SNAPS = Object.freeze(['peek', 'half', 'full']);
+export const MOBILE_SNAP_ATTR = 'data-mobile-snap';
+export const MOBILE_DEFAULT_SNAP = 'half';
+/** Sheets whose height the grab handle sets. */
+export const MOBILE_RESIZABLE_SHEETS = Object.freeze([
+  'layers',
+  'cameras',
+  'context',
+]);
+/** Vertical travel before a drag on the handle is a resize, not a tap. */
+export const MOBILE_DRAG_CLAIM_PX = 8;
+
+/**
+ * Pixel heights of the snaps for a viewport, as mobile-shell.css sizes them.
+ * @param {number} viewportHeight
+ * @param {{ tabSpace?: number, topInset?: number }} [insets]
+ */
+export function snapHeights(
+  viewportHeight,
+  { tabSpace = 58, topInset = 0 } = {},
+) {
+  const usable = Math.max(0, viewportHeight - tabSpace);
+  return {
+    peek: Math.round(viewportHeight * 0.3),
+    half: Math.round(Math.min(viewportHeight * 0.62, viewportHeight - 168)),
+    full: Math.round(Math.max(0, usable - topInset - 64)),
+  };
+}
+
+/** A tap on the handle: peek → half → full → peek. */
+export function nextSnap(snap) {
+  const index = MOBILE_SHEET_SNAPS.indexOf(snap);
+  return MOBILE_SHEET_SNAPS[(index + 1) % MOBILE_SHEET_SNAPS.length];
+}
+
+/**
+ * Where a released drag comes to rest. The fling projects the height
+ * 180 ms ahead (Sound Atlas's v·0.18); a sheet pulled well under its peek
+ * closes.
+ * @param {number} height The sheet's height at release, px.
+ * @param {number} velocity Height change in px per ms (positive grows).
+ * @param {{ peek: number, half: number, full: number }} heights
+ * @returns {'peek'|'half'|'full'|null} null closes the sheet.
+ */
+export function restingSnap(height, velocity, heights) {
+  const projected = height + velocity * 180;
+  if (projected < heights.peek * 0.6) return null;
+  let best = MOBILE_SHEET_SNAPS[0];
+  for (const snap of MOBILE_SHEET_SNAPS)
+    if (
+      Math.abs(heights[snap] - projected) < Math.abs(heights[best] - projected)
+    )
+      best = snap;
+  return best;
+}
 
 /**
  * Surfaces that own the screen close the open sheet and keep sheets closed.
@@ -154,6 +217,11 @@ export function initMobileShell({
   // Opening a sheet or destroying the shell cancels a pending focus return.
   let focusReturns = 0;
   let swipe = null;
+  let snap = MOBILE_DEFAULT_SNAP;
+  // A drag on the grab handle: { id, y, height, claimed, lastY, lastT, velocity }.
+  let grab = null;
+  // The click that ends a drag on the handle is not a tap.
+  let swallowGrabClick = false;
   const written = new Map();
 
   const writeVar = (name, value) => {
@@ -181,6 +249,12 @@ export function initMobileShell({
         .map((node) => viewportHeight - node.getBoundingClientRect().top),
     );
     writeVar('--mobile-sheet-cover', `${Math.round(cover)}px`);
+    // The globe actions ride just above the voice dock in the thumb zone.
+    if (!currentSheetOf(body) && shown(dock))
+      writeVar(
+        '--mobile-dock-cover',
+        `${Math.round(viewportHeight - dock.getBoundingClientRect().top)}px`,
+      );
   };
 
   const resize =
@@ -222,14 +296,37 @@ export function initMobileShell({
     publish({
       enabled: body.classList.contains(MOBILE_SHELL_CLASS),
       sheet: currentSheetOf(body),
+      snap: resizable(currentSheetOf(body)) ? snap : null,
       tabs: MOBILE_TABS,
     });
+
+  const resizable = (sheet) => MOBILE_RESIZABLE_SHEETS.includes(sheet);
 
   const present = (sheet) => {
     if (sheet) body.setAttribute(MOBILE_SHEET_ATTR, sheet);
     else body.removeAttribute(MOBILE_SHEET_ATTR);
+    if (!sheet) snap = MOBILE_DEFAULT_SNAP;
+    if (resizable(sheet)) body.setAttribute(MOBILE_SNAP_ATTR, snap);
+    else body.removeAttribute(MOBILE_SNAP_ATTR);
     publishChrome();
     measureSheet();
+  };
+
+  const endGrab = () => {
+    grab = null;
+    body.classList.remove('mobile-sheet-dragging');
+    body.style.removeProperty('--mobile-sheet-drag-height');
+  };
+
+  /** Rest the open sheet at a snap height; a detent buzz marks the change. */
+  const setSnap = (next) => {
+    const sheet = currentSheetOf(body);
+    if (!resizable(sheet) || !MOBILE_SHEET_SNAPS.includes(next)) return;
+    endGrab();
+    if (snap === next) return;
+    snap = next;
+    globalThis.navigator?.vibrate?.(8);
+    present(sheet);
   };
 
   /** The first visible control of the sheet's first panel, for focus on open. */
@@ -253,6 +350,7 @@ export function initMobileShell({
 
   const setSheet = (requested) => {
     swipe = null;
+    endGrab();
     if (!body.classList.contains(MOBILE_SHELL_CLASS)) return;
     const sheet = sheetBlocked(body) ? null : requested;
     const previous = currentSheetOf(body);
@@ -473,6 +571,97 @@ export function initMobileShell({
     },
     { passive: true },
   );
+  // The grab handle: a tap steps peek → half → full, a vertical drag resizes
+  // and a release rests at the nearest snap (a fling carries it on). The
+  // handle captures the pointer, so a drag that starts on it never reaches the
+  // globe, and a drag that starts on the globe never moves the sheet.
+  const grabHandle = (target) =>
+    target?.closest?.('#mobile-sheet-grab') ?? null;
+  const viewportHeights = () =>
+    snapHeights(globalThis.innerHeight || 0, {
+      tabSpace:
+        element('mobile-tab-bar')?.getBoundingClientRect?.().height || 58,
+    });
+  listen(documentRef, 'pointerdown', (event) => {
+    const handle = grabHandle(event.target);
+    const sheet = currentSheetOf(body);
+    if (!handle || !resizable(sheet) || event.button > 0) return;
+    handle.setPointerCapture?.(event.pointerId);
+    grab = {
+      id: event.pointerId,
+      y: event.clientY,
+      height: viewportHeights()[snap],
+      claimed: false,
+      lastY: event.clientY,
+      lastT: event.timeStamp,
+      velocity: 0,
+    };
+  });
+  listen(documentRef, 'pointermove', (event) => {
+    if (!grab || event.pointerId !== grab.id) return;
+    const dy = event.clientY - grab.y;
+    if (!grab.claimed) {
+      if (Math.abs(dy) < MOBILE_DRAG_CLAIM_PX) return;
+      grab.claimed = true;
+      body.classList.add('mobile-sheet-dragging');
+    }
+    event.preventDefault();
+    const dt = Math.max(1, event.timeStamp - grab.lastT);
+    grab.velocity = -(event.clientY - grab.lastY) / dt;
+    grab.lastY = event.clientY;
+    grab.lastT = event.timeStamp;
+    const { full } = viewportHeights();
+    // Past the ends the sheet follows at a third of the finger (rubber band).
+    let height = grab.height - dy;
+    if (height > full) height = full + (height - full) / 3;
+    if (height < 0) height /= 3;
+    body.style.setProperty(
+      '--mobile-sheet-drag-height',
+      `${Math.round(height)}px`,
+    );
+  });
+  const releaseGrab = (event) => {
+    if (!grab || event.pointerId !== grab.id) return;
+    const drag = grab;
+    endGrab();
+    if (!drag.claimed) return;
+    swallowGrabClick = true;
+    setTimeout(() => {
+      swallowGrabClick = false;
+    }, 0);
+    const height = drag.height - (event.clientY - drag.y);
+    const rest = restingSnap(height, drag.velocity, viewportHeights());
+    if (rest) setSnap(rest);
+    else {
+      returnFocus = tabFor(currentSheetOf(body)) ?? returnFocus;
+      setSheet(null);
+    }
+  };
+  listen(documentRef, 'pointerup', releaseGrab);
+  listen(documentRef, 'pointercancel', (event) => {
+    if (grab && event.pointerId === grab.id) endGrab();
+  });
+  listen(documentRef, 'click', (event) => {
+    if (!grabHandle(event.target)) return;
+    event.preventDefault();
+    if (swallowGrabClick) return;
+    setSnap(nextSnap(snap));
+  });
+  listen(documentRef, 'keydown', (event) => {
+    if (!grabHandle(event.target)) return;
+    const step = { ArrowUp: 1, ArrowDown: -1, PageUp: 1, PageDown: -1 }[
+      event.key
+    ];
+    if (!step) return;
+    event.preventDefault();
+    const index = MOBILE_SHEET_SNAPS.indexOf(snap) + step;
+    setSnap(
+      MOBILE_SHEET_SNAPS[
+        Math.max(0, Math.min(MOBILE_SHEET_SNAPS.length - 1, index))
+      ],
+    );
+  });
+
   // Bubble phase, so fields cancelling an edit, lightboxes, viewers and tools
   // take Escape first; panels yield it to the sheet (PanelChrome), and an open
   // dialog keeps its own native close.
@@ -496,6 +685,8 @@ export function initMobileShell({
   return {
     setSheet,
     getSheet: () => currentSheetOf(body),
+    setSnap,
+    getSnap: () => (resizable(currentSheetOf(body)) ? snap : null),
     /**
      * The collapsed state to share for a panel a sheet borrowed: its state
      * before the sheets, or the user's own change since. Undefined otherwise.
@@ -513,8 +704,10 @@ export function initMobileShell({
       for (const remove of removers.splice(0)) remove();
       body.classList.remove(MOBILE_SHELL_CLASS);
       body.removeAttribute(MOBILE_SHEET_ATTR);
+      body.removeAttribute(MOBILE_SNAP_ATTR);
       body.style.removeProperty('--mobile-sheet-height');
       body.style.removeProperty('--mobile-sheet-cover');
+      body.style.removeProperty('--mobile-dock-cover');
       if (viewport && viewportContent !== null)
         viewport.setAttribute('content', viewportContent);
       publish(null);

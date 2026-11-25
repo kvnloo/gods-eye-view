@@ -313,20 +313,23 @@ test('the phone tab bar joins the end of the page while the shell publishes', as
   assert.equal(bar.getAttribute('aria-label'), 'Panels');
   assert.equal(bar.getAttribute('aria-hidden'), 'false');
   assert.equal(backdrop.hidden, true);
-  const tabs = [...bar.querySelectorAll('.mobile-tab')];
+  const all = [...bar.querySelectorAll('.mobile-tab')];
   assert.deepEqual(
-    tabs.map(
+    all.map(
       (tab) =>
-        `${tab.dataset.mobileSheet}:${tab.querySelector('.mobile-tab-icon').textContent}:${tab.querySelector('.mobile-tab-label').textContent}`,
+        `${tab.dataset.mobileSheet ?? tab.dataset.mobileAction}:${tab.querySelector('.mobile-tab-icon').textContent}:${tab.querySelector('.mobile-tab-label').textContent}`,
     ),
     [
       'layers:layers:Layers',
       'cameras:videocam:Cameras',
       'context:radar:Context',
       'search:search:Search',
+      'cast:cast:Cast',
       'more:more_horiz:More',
     ],
   );
+  // Cast opens its own menu; the sheet tabs report their sheet.
+  const tabs = all.filter((tab) => tab.dataset.mobileSheet);
   assert.deepEqual(
     tabs.map((tab) => tab.getAttribute('aria-expanded')),
     ['false', 'false', 'false', 'false', 'false'],

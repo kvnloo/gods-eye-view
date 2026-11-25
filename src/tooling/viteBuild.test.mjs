@@ -145,7 +145,7 @@ test('root config retains existing named exports and standalone provider order',
     assert.equal(compatibility[name], value, name);
   const config = standaloneConfig({ mode: 'test' }, { nominatimStorageDir });
   const standaloneProviders = config.plugins
-    .slice(4, -7)
+    .slice(4, -8)
     .map((plugin) => plugin.name);
   assert.equal(
     standaloneProviders.filter((name) => name === 'gemini-live-proxy').length,
@@ -161,12 +161,14 @@ test('root config retains existing named exports and standalone provider order',
       .localProviderPlugins({ nominatimStorageDir })
       .map((plugin) => plugin.name),
   );
-  assert.equal(config.plugins.at(-8).name, 'gev-key-setup');
+  assert.equal(config.plugins.at(-9).name, 'gev-key-setup');
   // Token fallback follows real providers and local MCP before the API 404.
-  assert.equal(config.plugins.at(-7).name, 'local-mcp');
-  assert.equal(config.plugins.at(-6).name, 'google-token-unavailable');
+  assert.equal(config.plugins.at(-8).name, 'local-mcp');
+  assert.equal(config.plugins.at(-7).name, 'google-token-unavailable');
   // Dev-only, under its own path.
-  assert.equal(config.plugins.at(-5).name, 'conformance-references');
+  assert.equal(config.plugins.at(-6).name, 'conformance-references');
+  // The Cast button's relay (/api/cast), before the API 404.
+  assert.equal(config.plugins.at(-5).name, 'gev-cast-relay');
   assert.equal(config.plugins.at(-4).name, 'api-not-found');
   // Config-only, so it sits after the provider slice rather than in it.
   assert.equal(config.plugins.at(-3).name, 'gev-unwatched-runtime-dirs');
@@ -288,7 +290,7 @@ test('only embed-mode documents may be framed, and only by the allowed ancestors
   }
 });
 
-test('the CSP admits the event media embeds and the Maps JavaScript API, and no other script origin', async () => {
+test('the CSP admits the event media embeds, the Maps JavaScript API and the Cast SDK, and no other script origin', async () => {
   const { embeddedMediaFrameUrl, resolveEmbeddedMediaSource } =
     await import('../../src/data/bhoteKoshiEmbeddedMedia.js');
   const directive = (name) =>
@@ -306,8 +308,8 @@ test('the CSP admits the event media embeds and the Maps JavaScript API, and no 
     'https://platform.twitter.com',
   ])
     assert.ok(scripts.includes(origin), origin);
-  // Only those three and Google Street View's Maps JavaScript API, never a
-  // wildcard or a scheme.
+  // Only those three, Google Street View's Maps JavaScript API and the Cast
+  // sender SDK, never a wildcard or a scheme.
   assert.deepEqual(
     scripts.filter(
       (source) => source.startsWith('http') || source === 'https:',
@@ -317,6 +319,8 @@ test('the CSP admits the event media embeds and the Maps JavaScript API, and no 
       'https://connect.facebook.net',
       'https://platform.twitter.com',
       'https://maps.googleapis.com',
+      // Google Cast's sender SDK, behind the Cast button.
+      'https://www.gstatic.com',
     ],
   );
   assert.ok(!scripts.some((source) => source.includes('*')));

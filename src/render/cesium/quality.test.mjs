@@ -207,7 +207,11 @@ test('with adaptive on, frames over budget step the ratio down and on-time ones 
   run(30, 40);
   assert.deepEqual(backingSize(widget, [390, 844], 3), [585, 1266], '2 → 1.5');
   run(1000 / 60, 300); // 5 s on time
-  assert.deepEqual(backingSize(widget, [390, 844], 3), [780, 1688], 'back to 2');
+  assert.deepEqual(
+    backingSize(widget, [390, 844], 3),
+    [780, 1688],
+    'back to 2',
+  );
   // A fixed ratio stops the steps.
   quality.set({ pixelRatio: 1 });
   run(30, 80);

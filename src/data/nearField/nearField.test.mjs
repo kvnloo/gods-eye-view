@@ -8,6 +8,7 @@ import {
   createLru,
   edgeAlpha,
   nearFieldRequest,
+  prefersLiteWorld,
   parentTile,
   tileBounds,
   tileCentre,
@@ -117,9 +118,26 @@ test('edge alpha: 1 inside, 0 outside, monotonic across the band', () => {
 
 test('flags: off by default, on with nearField=1', () => {
   assert.equal(nearFieldRequest(''), null);
-  assert.equal(nearFieldRequest('?theme=wintercats'), null);
+  assert.equal(nearFieldRequest('?theme=wintercats&world=photoreal'), null);
+  assert.equal(nearFieldRequest('?theme=wintercats-learned'), null);
+  assert.equal(nearFieldRequest('?theme=noir'), null);
   assert.equal(nearFieldRequest('?nearField=0'), null);
   assert.deepEqual(nearFieldRequest('?nearField=1&nearFieldKit=norse'), { kit: 'norse', debug: false });
+});
+
+test('flags: wintercats picks the procedural world by default; lite follows the device unless set', () => {
+  const full = { mode: 'world', pack: 'wintercats', lite: false, debug: false };
+  assert.deepEqual(nearFieldRequest('?theme=wintercats'), full);
+  assert.deepEqual(nearFieldRequest('?preset=wintercats'), full);
+  assert.deepEqual(nearFieldRequest('?world=procedural'), full);
+  assert.deepEqual(nearFieldRequest('?theme=wintercats', { lite: true }), { ...full, lite: true });
+  assert.deepEqual(nearFieldRequest('?theme=wintercats&worldLite=0', { lite: true }), full);
+  assert.deepEqual(nearFieldRequest('?world=procedural&worldLite=1'), { ...full, lite: true });
+  assert.equal(prefersLiteWorld(undefined), false);
+  const phone = { matchMedia: () => ({ matches: true }), screen: { width: 412, height: 915 } };
+  const desk = { matchMedia: () => ({ matches: false }), screen: { width: 2560, height: 1440 } };
+  assert.equal(prefersLiteWorld(phone), true);
+  assert.equal(prefersLiteWorld(desk), false);
 });
 
 test('raster: scanline fill + RLE round trip through the diorama water field', () => {

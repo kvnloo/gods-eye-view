@@ -21,7 +21,7 @@ import * as Cesium from 'cesium';
 import { tilePrimitiveFacts, webglContext } from '../internals.js';
 import { createThemeEngine } from './engine.js';
 import { createOsmMask } from './osmMask.js';
-import { nearFieldRequest } from '../../../data/nearField/tiling.js';
+import { nearFieldRequest, prefersLiteWorld } from '../../../data/nearField/tiling.js';
 import { loadStylePack, rgb } from '../../../data/nearField/stylePack.js';
 import { BUILT_IN_PRESETS, loadPreset, presetRequest } from './presets.js';
 
@@ -31,7 +31,7 @@ export async function installThemeFromLocation(
   { win = globalThis.window } = {},
 ) {
   const search = win?.location?.search ?? '';
-  const world = nearFieldRequest(search);
+  const world = nearFieldRequest(search, { lite: prefersLiteWorld(win) });
   const request = presetRequest(search) ?? (world?.mode === 'world'
     ? presetRequest('?preset=wintercats&' + search.slice(1))
 

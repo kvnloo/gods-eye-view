@@ -40,12 +40,33 @@ export const WORLD = Object.freeze({
 });
 export const WORLD_LITE = Object.freeze({ ...WORLD, max: 1800 });
 
-/** `?nearField=1` flags, or null when the bubble is off (the default). */
-export function nearFieldRequest(search = '') {
+/** Themes whose default world is the procedural one (`&world=photoreal` opts out). */
+export const PROCEDURAL_WORLD_THEMES = Object.freeze(['wintercats']);
+
+/** Phones and tablets get the lite world unless `worldLite=0|1` says otherwise. */
+export function prefersLiteWorld(win = globalThis.window) {
+  try {
+    const coarse = win?.matchMedia?.('(pointer: coarse)')?.matches ?? false;
+    const short = Math.min(win?.screen?.width ?? 1e4, win?.screen?.height ?? 1e4);
+    return Boolean(coarse && short < 900);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * `?nearField=1` / `?world=procedural` flags, or null when the bubble is off
+ * (the default). `?theme=wintercats` (or `?preset=`) picks the procedural world
+ * unless `&world=` names another one; `lite` is the device default for that.
+ */
+export function nearFieldRequest(search = '', { lite = false } = {}) {
   const q = new URLSearchParams(search ?? '');
-  if (q.get('world') === 'procedural') return {
+  const theme = q.get('theme') ?? q.get('preset');
+  const world = q.get('world') ?? (PROCEDURAL_WORLD_THEMES.includes(theme) ? 'procedural' : null);
+  if (world === 'procedural') return {
     mode: 'world', pack: q.get('stylePack') || 'wintercats',
-    lite: q.get('worldLite') === '1', debug: q.get('nearFieldDebug') === '1',
+    lite: q.has('worldLite') ? q.get('worldLite') === '1' : Boolean(lite),
+    debug: q.get('nearFieldDebug') === '1',
   };
   const on = q.get('nearField');
   if (on !== '1' && on !== 'true') return null;

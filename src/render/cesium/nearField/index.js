@@ -32,6 +32,7 @@ import {
   createLru,
   fromLocal,
   nearFieldRequest,
+  prefersLiteWorld,
   tileBounds,
   tileCentre,
   tileKey,
@@ -57,7 +58,7 @@ function ionToken() {
 }
 
 export async function installNearField(viewer, { win = globalThis.window } = {}) {
-  const request = nearFieldRequest(win?.location?.search ?? '');
+  const request = nearFieldRequest(win?.location?.search ?? '', { lite: prefersLiteWorld(win) });
   if (!request || !viewer?.scene) return null;
   const world = request.mode === 'world';
   const style = world ? await loadStylePack(request.pack) : null;

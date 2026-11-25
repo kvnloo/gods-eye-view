@@ -12,6 +12,12 @@
   --mobile-sheet-max-height: min(62vh, calc(100vh - 168px));
   --mobile-dock-sheet-max-height: 34vh;
   --mobile-rail-under-dock-max-height: 40vh;
+  /* The three resting heights of a resizable sheet (mobileShell.js snapHeights). */
+  --mobile-snap-peek: 30vh;
+  --mobile-snap-half: min(62vh, calc(100vh - 168px));
+  --mobile-snap-full: calc(100vh - var(--mobile-tab-space) - var(--mobile-top-inset) - 64px);
+  /* Every phone control is at least this big on both sides (WCAG 2.5.5). */
+  --mobile-target: 44px;
 }
 
 /* Dynamic viewport units keep sheets inside the area a mobile browser's
@@ -21,6 +27,11 @@
     --mobile-sheet-max-height: min(62dvh, calc(100dvh - 168px));
     --mobile-dock-sheet-max-height: 34dvh;
     --mobile-rail-under-dock-max-height: 40dvh;
+    --mobile-snap-peek: 30dvh;
+    --mobile-snap-half: min(62dvh, calc(100dvh - 168px));
+    --mobile-snap-full: calc(
+      100dvh - var(--mobile-tab-space) - var(--mobile-top-inset) - 64px
+    );
   }
 }
 
@@ -36,7 +47,7 @@ body.mobile-shell #mobile-tab-bar {
   left: 0;
   z-index: 170;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   height: var(--mobile-tab-space);
   padding: 0 max(4px, env(safe-area-inset-right, 0px))
     var(--mobile-bottom-inset) max(4px, env(safe-area-inset-left, 0px));
@@ -99,10 +110,36 @@ body.mobile-shell #title-bar .subtitle {
   display: none;
 }
 
+/* The globe actions sit in the thumb zone, a row just above the credit line
+   (Sound Atlas keeps every common control at the bottom). Cast lives in the
+   tab bar on phones. */
 body.mobile-shell #top-center-actions {
-  top: calc(var(--mobile-top-inset) + 10px);
+  top: auto;
+  bottom: calc(var(--mobile-tab-space) + 146px + var(--world-timeline-lift, 0px));
   inset-inline-start: auto;
   inset-inline-end: 12px;
+  gap: 8px;
+}
+
+body.mobile-shell #top-center-actions > button,
+body.mobile-shell #top-center-actions > #north-up-view {
+  width: var(--mobile-target);
+  min-width: var(--mobile-target);
+  height: var(--mobile-target);
+  min-height: var(--mobile-target);
+}
+
+body.mobile-shell #top-center-actions > #cast-btn,
+body.mobile-shell[data-mobile-sheet] #top-center-actions {
+  display: none;
+}
+
+/* The corner chips and Stories stay up top, at a full finger's size. */
+body.mobile-shell #key-setup-chip,
+body.mobile-shell #hStories,
+body.mobile-shell .locale-picker-button {
+  min-width: var(--mobile-target);
+  min-height: var(--mobile-target);
 }
 
 /* ── HUD: one compact readout under the top bar ────────────────────────── */
@@ -459,4 +496,97 @@ body.mobile-shell.cockpit-mode #mobile-tab-bar {
 body.mobile-shell.ui-clean-view #command-dock,
 body.mobile-shell.cockpit-mode #command-dock {
   bottom: calc(var(--mobile-bottom-inset) + 10px);
+}
+
+/* ── Sheet heights: peek, half, full (Sound Atlas's three snaps) ───────────
+ * mobileShell.js sets data-mobile-snap on the Layers, Cameras and Context
+ * sheets and moves between the heights from the grab handle: a tap steps,
+ * a drag follows the finger (--mobile-sheet-drag-height) and rests at the
+ * nearest height on release. */
+body.mobile-shell[data-mobile-snap='peek'] {
+  --mobile-sheet-max-height: var(--mobile-snap-peek);
+}
+
+body.mobile-shell[data-mobile-snap='half'] {
+  --mobile-sheet-max-height: var(--mobile-snap-half);
+}
+
+body.mobile-shell[data-mobile-snap='full'] {
+  --mobile-sheet-max-height: var(--mobile-snap-full);
+}
+
+body.mobile-shell.mobile-sheet-dragging[data-mobile-snap] {
+  --mobile-sheet-max-height: var(--mobile-sheet-drag-height);
+}
+
+body.mobile-shell[data-mobile-snap][data-mobile-sheet='layers']
+  #left-panel-stack,
+body.mobile-shell[data-mobile-snap][data-mobile-sheet='cameras']
+  #right-context-rail,
+body.mobile-shell[data-mobile-snap][data-mobile-sheet='context']
+  #right-context-rail {
+  height: var(--mobile-sheet-max-height);
+  padding-top: 26px;
+  transition: height 280ms cubic-bezier(0.2, 0.9, 0.25, 1.04);
+}
+
+body.mobile-shell.mobile-sheet-dragging[data-mobile-snap] #left-panel-stack,
+body.mobile-shell.mobile-sheet-dragging[data-mobile-snap] #right-context-rail {
+  transition: none;
+}
+
+#mobile-sheet-grab {
+  display: none;
+}
+
+body.mobile-shell[data-mobile-snap] #mobile-sheet-grab {
+  position: fixed;
+  bottom: calc(var(--mobile-tab-space) + var(--mobile-sheet-height, 0px) - 30px);
+  left: 50%;
+  z-index: 166;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  width: 120px;
+  height: var(--mobile-target);
+  padding: 20px 0 0;
+  translate: -50% 0;
+  background: none;
+  border: 0;
+  cursor: grab;
+  /* The handle owns its drag: the page neither scrolls nor zooms under it,
+     and the pointer is captured, so the globe never sees the gesture. */
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body.mobile-shell.mobile-sheet-dragging #mobile-sheet-grab {
+  cursor: grabbing;
+}
+
+#mobile-sheet-grab .mobile-sheet-grab-bar {
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.42);
+}
+
+#mobile-sheet-grab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -4px;
+  border-radius: 10px;
+}
+
+/* Cast is the sixth tab; it shows its state while a TV is playing. */
+body.mobile-shell .mobile-tab-cast[aria-pressed='true'] {
+  color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.mobile-shell[data-mobile-snap] #left-panel-stack,
+  body.mobile-shell[data-mobile-snap] #right-context-rail {
+    transition: none;
+  }
 }

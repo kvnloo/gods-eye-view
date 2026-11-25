@@ -86,3 +86,13 @@ test('the viewer options take multisampling, by default 4, and keep the drawing 
   assert.equal(given.contextOptions.webgl.preserveDrawingBuffer, true);
   assert.equal(applicationViewerOptions(credits, { msaa: 8 }).msaaSamples, 8);
 });
+
+test('the viewer draws at the display’s pixel ratio: a 3x phone gets 1170x2532, not 390x844', async () => {
+  const { applicationViewerOptions } = await import('./applicationViewer.js');
+  const options = applicationViewerOptions({});
+  // Cesium: pixelRatio = (useBrowserRecommendedResolution ? 1 : dpr) × scale.
+  const ratio =
+    (options.useBrowserRecommendedResolution ?? true ? 1 : 3) *
+    (options.resolutionScale ?? 1);
+  assert.deepEqual([390 * ratio, 844 * ratio], [1170, 2532]);
+});

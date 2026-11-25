@@ -1,4 +1,5 @@
 import { isPointerFree } from '../../data/inputOwnership.js';
+import { scenePixelRatioOf } from '../../data/iconAtlas.js';
 import { inputFor as defaultInputFor } from '../../input/dispatcher.js';
 import { fromDegrees } from '../../geo/ellipsoid.js';
 import { cssColor } from '../../render/color.js';
@@ -629,14 +630,12 @@ export function createNewsLayer({
 
   /**
    * Drawing-buffer pixels per CSS pixel: the renderer's own resolution
-   * scale (its quality port's `pixelRatio`, 1 while that is 0, browser
-   * recommended), not the device's.
+   * scale (its quality port's `pixelRatio`; the display's while that is 0).
    */
   function scenePixelRatio() {
-    const ratio = viewer
-      ? rendererOf(viewer)?.quality?.get?.()?.pixelRatio
-      : undefined;
-    return Number.isFinite(ratio) && ratio > 0 ? ratio : 1;
+    return scenePixelRatioOf(
+      viewer ? rendererOf(viewer)?.quality?.get?.()?.pixelRatio : undefined,
+    );
   }
 
   // News placed no closer than a country: one badge at its centre with the

@@ -21,12 +21,26 @@ export const NEAR_IMAGE_DEVICE_PX = 76;
  * `imageLod.switchPx`, which the draw contract measures in CSS pixels: the
  * device switch divided by the drawing buffer's pixels per CSS pixel. That
  * is the scene's pixel ratio, which the quality port's frame signals report
- * as `pixelRatio`: on the default renderer its `pixelRatio` setting, or 1
- * while that is 0 (browser recommended). `devicePixelRatio` does not enter
- * it. A layer drawing through the port passes the ratio its frames report
+ * as `pixelRatio`: on the default renderer its `pixelRatio` setting, or
+ * the display's `devicePixelRatio` while that is 0 (the display's own, see
+ * `scenePixelRatioOf`). A layer drawing through the port passes the ratio its frames report
  * and rewrites its rows' switch when that changes.
  * @param {number} [pixelRatio] Drawing-buffer pixels per CSS pixel (1).
  */
+/**
+ * Drawing-buffer pixels per CSS pixel for a quality `pixelRatio` setting:
+ * the setting when above 0, else the display's own ratio (the contract's 0).
+ * @param {number|undefined} setting
+ * @param {number} [display]
+ */
+export function scenePixelRatioOf(
+  setting,
+  display = globalThis.devicePixelRatio,
+) {
+  if (Number.isFinite(setting) && setting > 0) return setting;
+  return Number.isFinite(display) && display > 0 ? display : 1;
+}
+
 export function nearImageSwitchPx(pixelRatio = 1) {
   const ratio = Number.isFinite(pixelRatio) && pixelRatio > 0 ? pixelRatio : 1;
   return NEAR_IMAGE_DEVICE_PX / ratio;

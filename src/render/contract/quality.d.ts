@@ -8,7 +8,11 @@
 import type { Off } from './common';
 
 export interface QualitySettings {
-  /** Absolute device pixel ratio for the scene; 0 = browser recommended. */
+  /**
+   * Absolute device pixel ratio for the scene; 0 = the display's own
+   * (`devicePixelRatio`), which a renderer may step down while frames run
+   * over budget.
+   */
   pixelRatio: number;
   msaa: 0 | 2 | 4 | 8;
   /** 0..1: 3D tile detail (screen-space error, both directions). */

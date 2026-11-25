@@ -25,7 +25,7 @@ import {
   findQuery,
   rendererOf,
 } from '../render/rendererOf.js';
-import { nearImageSwitchPx } from './iconAtlas.js';
+import { nearImageSwitchPx, scenePixelRatioOf } from './iconAtlas.js';
 import {
   aircraftIcon,
   FLEET_ICON_PX,
@@ -564,7 +564,7 @@ export function createAircraftIcons({
   /** The near-image switch in CSS px for the scene's pixel ratio. */
   function _imageSwitchPx(viewer = state._viewer) {
     return nearImageSwitchPx(
-      rendererOf(viewer)?.quality?.get?.()?.pixelRatio ?? 1,
+      scenePixelRatioOf(rendererOf(viewer)?.quality?.get?.()?.pixelRatio),
     );
   }
 

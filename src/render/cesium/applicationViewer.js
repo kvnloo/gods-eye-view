@@ -56,7 +56,9 @@ if (typeof window !== 'undefined' && !window.__CESIUM__)
  * false leaves render errors to the caller's own notice instead of Cesium's
  * panel; `msaa` is the multisampling to start with (0 off, 4 by default).
  * The drawing buffer is kept after presenting, for `capture` and
- * `readPixels` to read the frame drawn.
+ * `readPixels` to read the frame drawn. It draws at the display's pixel
+ * ratio (a 3x phone: 3 drawing-buffer pixels per CSS pixel), not Cesium's
+ * default of one per CSS pixel; the quality port steps it down under load.
  */
 export function applicationViewerOptions(
   creditContainer,
@@ -83,6 +85,7 @@ export function applicationViewerOptions(
     msaaSamples: msaa || 1,
     contextOptions: { webgl: { preserveDrawingBuffer: true } },
     showRenderLoopErrors,
+    useBrowserRecommendedResolution: false,
   };
 }
 

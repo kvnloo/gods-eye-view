@@ -39,6 +39,8 @@ function fixture({
   maximumSamples = 8,
   tickStarted,
   gl = null,
+  adaptive = false,
+  dpr = 1,
 } = {}) {
   const primitives = new Collection();
   const scene = {
@@ -77,6 +79,8 @@ function fixture({
     limits: { maximumTextureSize: 16384, maximumSamples },
     tickStarted,
     gl,
+    adaptive,
+    devicePixelRatio: () => dpr,
   });
   const tick = () => {
     scene.preUpdate.raise();
@@ -162,7 +166,52 @@ test('msaa options stop at what the context can draw', () => {
   assert.deepEqual(msaa.options, [0, 2, 4]);
 });
 
-test('pixelRatio is an absolute ratio; 0 is the browser’s recommended one', () => {
+/**
+ * The canvas's backing size as Cesium sizes it (CesiumWidget's
+ * configurePixelRatio and configureCanvasSize): CSS size × (1 at the
+ * browser's recommended resolution, else devicePixelRatio) × resolutionScale.
+ */
+export function backingSize(widget, [cssWidth, cssHeight], dpr) {
+  const ratio =
+    (widget.useBrowserRecommendedResolution === false ? dpr : 1) *
+    widget.resolutionScale;
+  return [Math.round(cssWidth * ratio), Math.round(cssHeight * ratio)];
+}
+
+test('pixelRatio 0 draws a 3x phone at its own resolution, 1170x2532 for 390x844', () => {
+  const { quality, widget } = fixture({ dpr: 3 });
+  quality.set({ pixelRatio: 0 });
+  assert.deepEqual(backingSize(widget, [390, 844], 3), [1170, 2532]);
+  quality.set({ pixelRatio: 1.5 });
+  assert.deepEqual(backingSize(widget, [390, 844], 3), [585, 1266]);
+  quality.set({ pixelRatio: 0 });
+  assert.deepEqual(backingSize(widget, [390, 844], 3), [1170, 2532]);
+});
+
+test('with adaptive on, frames over budget step the ratio down and on-time ones back up', (t) => {
+  let now = 0;
+  t.mock.method(performance, 'now', () => now);
+  const { widget, scene, quality } = fixture({ dpr: 3, adaptive: true });
+  quality.set({ pixelRatio: 0 });
+  const run = (ms, frames) => {
+    for (let i = 0; i < frames; i++) {
+      now += ms;
+      scene.postRender.raise();
+    }
+  };
+  run(30, 40); // ~1.2 s at 33 fps
+  assert.deepEqual(backingSize(widget, [390, 844], 3), [780, 1688], '3 → 2');
+  run(30, 40);
+  assert.deepEqual(backingSize(widget, [390, 844], 3), [585, 1266], '2 → 1.5');
+  run(1000 / 60, 300); // 5 s on time
+  assert.deepEqual(backingSize(widget, [390, 844], 3), [780, 1688], 'back to 2');
+  // A fixed ratio stops the steps.
+  quality.set({ pixelRatio: 1 });
+  run(30, 80);
+  assert.deepEqual(backingSize(widget, [390, 844], 3), [390, 844]);
+});
+
+test('pixelRatio is an absolute ratio; 0 is the display’s own', () => {
   const { quality, widget } = fixture();
   widget.useBrowserRecommendedResolution = false;
   widget.resolutionScale = 0.75;
@@ -171,7 +220,7 @@ test('pixelRatio is an absolute ratio; 0 is the browser’s recommended one', ()
   assert.equal(widget.resolutionScale, 2);
   assert.equal(quality.get().pixelRatio, 2);
   quality.set({ pixelRatio: 0 });
-  assert.equal(widget.useBrowserRecommendedResolution, true);
+  assert.equal(widget.useBrowserRecommendedResolution, false);
   assert.equal(widget.resolutionScale, 1);
   quality.set({ pixelRatio: 'x' });
   assert.equal(quality.get().pixelRatio, 0, 'not a number: left as it was');

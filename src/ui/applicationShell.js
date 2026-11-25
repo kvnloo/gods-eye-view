@@ -76,6 +76,8 @@ import { installEntityContext } from './entityContextBridge.js';
 import { installRailEdgeScroll } from './railEdgeScroll.js';
 import { useCockpitStore } from './stores/cockpit.js';
 import { useGlobeActionsStore } from './stores/globeActions.js';
+import { useCastStore } from './stores/cast.js';
+import { initCast } from './cast/castShell.js';
 import { useRecordingStore } from './stores/recording.js';
 import { onPlacePacksLoadingChange } from '../data/placeBelow.js';
 import { withPlacePacks } from './placePacksLoading.js';
@@ -673,6 +675,7 @@ export class StyleManager extends ShellFacade {
     this._initLocationBar();
     this._initMobileShell();
     this._initShareButton();
+    this._initCast();
     this._initCameraOrientationControls();
     this._initClearSelectedLayersButton();
     this._initHUDToggle();
@@ -1793,6 +1796,22 @@ export class StyleManager extends ShellFacade {
     this._shareToken = store.connect({ share: () => this._share() });
   }
 
+  /**
+   * Cast: the phone's Cast button, or, on a TV view (`?tv=…`), following the
+   * phone's view through the relay (src/ui/cast/).
+   * @returns {void}
+   */
+  _initCast() {
+    this._cast?.destroy();
+    this._cast = initCast({
+      store: useCastStore(applicationPinia()),
+      snapshotHash: () => this.shareLinkManager?.snapshotHash() ?? null,
+      restoreHash: (hash) => this.shareLinkManager?.restore(hash) ?? false,
+      viewer: this.viewer,
+      toast: (text) => this._showToast(text),
+    });
+  }
+
   /** Share or copy the current link, then say how it went. */
   async _share() {
     if (this._disposed) return;
@@ -1909,6 +1928,7 @@ export class StyleManager extends ShellFacade {
     useLocaleStore(applicationPinia()).publishPicker(null);
     this._recording.destroy();
     this._mobileShell?.destroy();
+    this._cast?.destroy();
     this._panelNavigation?.destroy();
     this._wildlifeSightingCard?.destroy();
     this._ui.destroy();

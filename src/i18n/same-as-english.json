@@ -56,7 +56,10 @@
     "{n} hPa",
     "{kind} {name}",
     "{speed} {direction}",
-    "3D"
+    "3D",
+    "Samsung TV · Smart View",
+    "Chromecast · Google TV",
+    "Apple TV · AirPlay"
   ],
   "de": [
     "1090 MHz",
@@ -296,7 +299,10 @@
     "{n} mm",
     "Route",
     "3D",
-    "KT"
+    "KT",
+    "Samsung TV · Smart View",
+    "Chromecast · Google TV",
+    "Apple TV · AirPlay"
   ],
   "es": [
     "1 min/s",
@@ -490,7 +496,10 @@
     "{n} min",
     "{n} mm",
     "3D",
-    "KT"
+    "KT",
+    "Samsung TV · Smart View",
+    "Chromecast · Google TV",
+    "Apple TV · AirPlay"
   ],
   "fr": [
     "1 min/s",
@@ -748,7 +757,10 @@
     "{n} min",
     "{n} mm",
     "3D",
-    "KT"
+    "KT",
+    "Samsung TV · Smart View",
+    "Chromecast · Google TV",
+    "Apple TV · AirPlay"
   ],
   "it": [
     "1 min/s",
@@ -982,7 +994,10 @@
     "{n} min",
     "{n} mm",
     "3D",
-    "KT"
+    "KT",
+    "Samsung TV · Smart View",
+    "Chromecast · Google TV",
+    "Apple TV · AirPlay"
   ],
   "ja": [
     "1090 MHz",
@@ -1066,7 +1081,10 @@
     "{n} hPa",
     "{n} mm",
     "3D",
-    "KT"
+    "KT",
+    "Samsung TV · Smart View",
+    "Chromecast · Google TV",
+    "Apple TV · AirPlay"
   ],
   "pt": [
     "1 min/s",
@@ -1260,7 +1278,10 @@
     "{n} min",
     "{n} mm",
     "3D",
-    "KT"
+    "KT",
+    "Samsung TV · Smart View",
+    "Chromecast · Google TV",
+    "Apple TV · AirPlay"
   ],
   "ru": [
     "1900–1945",
@@ -1305,7 +1326,10 @@
     "M {n}",
     "{n}%",
     "{kind} {name}",
-    "3D"
+    "3D",
+    "Samsung TV · Smart View",
+    "Chromecast · Google TV",
+    "Apple TV · AirPlay"
   ],
   "sv": [
     "STATION",
@@ -1498,7 +1522,10 @@
     "{n} min",
     "{n} mm",
     "3D",
-    "KT"
+    "KT",
+    "Samsung TV · Smart View",
+    "Chromecast · Google TV",
+    "Apple TV · AirPlay"
   ],
   "uk": [
     "1900–1945",
@@ -1537,7 +1564,10 @@
     "M {n}",
     "{n}%",
     "{kind} {name}",
-    "3D"
+    "3D",
+    "Samsung TV · Smart View",
+    "Chromecast · Google TV",
+    "Apple TV · AirPlay"
   ],
   "zh-CN": [
     "1090 MHz",
@@ -1622,7 +1652,10 @@
     "{n} MW",
     "{n}%",
     "{n} hPa",
-    "3D"
+    "3D",
+    "Samsung TV · Smart View",
+    "Chromecast · Google TV",
+    "Apple TV · AirPlay"
   ],
   "zh-Hant": [
     "1090 MHz",
@@ -1707,7 +1740,10 @@
     "{n} MW",
     "{n}%",
     "{n} hPa",
-    "3D"
+    "3D",
+    "Samsung TV · Smart View",
+    "Chromecast · Google TV",
+    "Apple TV · AirPlay"
   ],
   "he": [
     "{speed} kn",
@@ -1824,6 +1860,9 @@
     "{n} hPa",
     "{kind} {name}",
     "3D",
-    "KT"
+    "KT",
+    "Samsung TV · Smart View",
+    "Chromecast · Google TV",
+    "Apple TV · AirPlay"
   ]
 }

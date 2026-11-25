@@ -19,6 +19,7 @@ const M_PER_DEG = 111_320;
 /** Bubble policy (metres). Exported so tests and the docs quote one source. */
 export const BUBBLE = Object.freeze({
   /** radius = clamp(eyeHeight * perHeight, min, max) */
+  cellZoom: CELL_ZOOM,
   perHeight: 2.2,
   min: 320,
   max: 1100,
@@ -33,9 +34,19 @@ export const BUBBLE = Object.freeze({
   lead: 0.45,
 });
 
+export const WORLD = Object.freeze({
+  cellZoom: 15, perHeight: 3, min: 900, max: 3000, fadeFrom: 3200,
+  offAbove: 4500, edge: 0.2, margin: 200, lead: 0.5,
+});
+export const WORLD_LITE = Object.freeze({ ...WORLD, max: 1800 });
+
 /** `?nearField=1` flags, or null when the bubble is off (the default). */
 export function nearFieldRequest(search = '') {
   const q = new URLSearchParams(search ?? '');
+  if (q.get('world') === 'procedural') return {
+    mode: 'world', pack: q.get('stylePack') || 'wintercats',
+    lite: q.get('worldLite') === '1', debug: q.get('nearFieldDebug') === '1',
+  };
   const on = q.get('nearField');
   if (on !== '1' && on !== 'true') return null;
   return {
@@ -86,7 +97,9 @@ export function parentTile(tile, z = DATA_ZOOM) {
 /** Local east/north metres of (lat, lon) around an origin (equirectangular; < 1 cm error over 1 km). */
 export function toLocal(lat, lon, origin) {
   const kx = M_PER_DEG * Math.cos((origin.lat * Math.PI) / 180);
-  return [(lon - origin.lon) * kx, (lat - origin.lat) * M_PER_DEG];
+  const delta = lon - origin.lon;
+  const east = delta > 180 ? delta - 360 : delta < -180 ? delta + 360 : delta;
+  return [east * kx, (lat - origin.lat) * M_PER_DEG];
 }
 
 export function fromLocal(x, y, origin) {
@@ -117,7 +130,7 @@ export function bubbleCentre({ lat, lon, heading = 0, pitch = -Math.PI / 2, eyeH
   const ahead = down >= Math.PI / 2 - 1e-3 ? 0 : eyeHeight / Math.tan(down);
   const lead = Math.min(policy.lead * radius, ahead);
   const p = fromLocal(Math.sin(heading) * lead, Math.cos(heading) * lead, { lat, lon });
-  return { ...p, lead };
+  return { lat: p.lat, lon: ((p.lon + 540) % 360) - 180, lead };
 }
 
 /**
@@ -128,7 +141,7 @@ export function cellsInBubble(centre, radius, z = CELL_ZOOM, limit = 400) {
   if (!(radius > 0)) return [];
   const c = tileOf(centre.lat, centre.lon, z);
   const side = tileSizeM(c);
-  const span = Math.ceil(radius / side) + 1;
+  const span = Math.ceil(Math.min(radius / side, Math.sqrt(limit / Math.PI) + 2)) + 1;
   const n = 2 ** z;
   const out = [];
   for (let dy = -span; dy <= span; dy++)
@@ -198,6 +211,7 @@ export function createLru(max, { onEvict = () => {}, pinned = () => false } = {}
     },
     keys: () => [...m.keys()],
     values: () => [...m.values()],
+    iterate: () => m.values(),
     clear() {
       for (const [k, v] of [...m]) {
         m.delete(k);

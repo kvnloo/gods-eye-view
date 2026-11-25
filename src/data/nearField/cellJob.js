@@ -11,6 +11,7 @@
 import { createLru, parentTile, tileKey } from './tiling.js';
 import { cellFixture, decodeDataTile } from './cellData.js';
 import { buildCell, kitOf, waterViolations } from './cellMesh.js';
+import { buildWorldGround, terrainFrame } from './worldGround.js';
 import { writeGlb } from './glb.js';
 
 export const OPENFREEMAP_TILEJSON = 'https://tiles.openfreemap.org/planet';
@@ -58,10 +59,10 @@ export function createCellGenerator({
     return p;
   }
   const fixtures = createLru(48);
-  async function fixtureOf(cell) {
-    const key = tileKey(cell);
+  async function fixtureOf(cell, world) {
+    const key = `${tileKey(cell)}:${!!world}`;
     if (fixtures.has(key)) return fixtures.get(key);
-    const fx = cellFixture(await dataTile(cell), cell);
+    const fx = cellFixture(await dataTile(cell), cell, world);
     fixtures.set(key, fx);
     return fx;
   }
@@ -72,8 +73,8 @@ export function createCellGenerator({
      * [x0, y0, x1, y1, ...]) so the renderer can sample World Terrain at each
      * of them exactly (a grid would float buildings on steep slopes).
      */
-    async prepare({ cell }) {
-      const fx = await fixtureOf(cell);
+    async prepare({ cell, world }) {
+      const fx = await fixtureOf(cell, world);
       const n = fx.buildings.reduce((a, b) => a + b.p.length, 0);
       const points = new Float64Array(n * 2);
       let k = 0;
@@ -85,9 +86,9 @@ export function createCellGenerator({
      * come from the ground grid alone).
      * @param {{cell:{z:number,x:number,y:number}, ground:object, vertexHeights?:Float32Array|number[], kit?:string, kitOverrides?:object, trees?:number}} job
      */
-    async generate({ cell, ground, vertexHeights = null, kit = 'realism', kitOverrides = {}, trees = 1 }) {
+    async generate({ cell, ground, vertexHeights = null, kit = 'realism', kitOverrides = {}, trees = 1, style, groundPx = 512 }) {
       const t0 = Date.now();
-      const fixture = await fixtureOf(cell);
+      const fixture = await fixtureOf(cell, !!style);
       const t1 = Date.now();
       if (vertexHeights) {
         let k = 0;
@@ -95,11 +96,26 @@ export function createCellGenerator({
           b.hz = Array.from({ length: b.p.length }, () => vertexHeights[k++]);
         }
       }
-      const built = buildCell(fixture, ground, kitOf(kit, kitOverrides), { trees });
+      const built = buildCell(fixture, ground, kitOf(kit, style?.kit ?? kitOverrides), { trees, style });
       const t2 = Date.now();
-      const main = writeGlb({ soup: built.soup });
+      if (style) {
+        const frame = terrainFrame(fixture.centre);
+        const p = built.soup.p;
+        for (let i = 0; i < p.length; i += 3) {
+          const [x, y, z] = frame(p[i], p[i + 1], p[i + 2]);
+          p[i] = x; p[i + 1] = y; p[i + 2] = z;
+        }
+        for (const { instances } of built.protos.values()) {
+          for (const instance of instances) {
+            const [x, y, z] = frame(...instance);
+            instance[0] = x; instance[1] = y; instance[2] = z;
+          }
+        }
+      }
+      const main = writeGlb({ soup: built.soup, normals: !!style });
+      const groundGlb = style ? writeGlb({ ground: await buildWorldGround(fixture, ground, style.ground, groundPx) }) : null;
       const waterGlb = built.waterSoup.p.length ? writeGlb({ soup: built.waterSoup }) : null;
-      const treeGlb = built.protos.size ? writeGlb({ protos: built.protos.values() }) : null;
+      const treeGlb = built.protos.size ? writeGlb({ protos: built.protos.values(), normals: !!style }) : null;
       const violations = waterViolations(built);
       return {
         cell: { z: cell.z, x: cell.x, y: cell.y },
@@ -107,6 +123,7 @@ export function createCellGenerator({
         side: fixture.side,
         box: fixture.box,
         main,
+        ground: groundGlb,
         water: waterGlb,
         trees: treeGlb,
         footprints: built.footprints,
@@ -116,7 +133,7 @@ export function createCellGenerator({
           // footprint vertices (local metres) for the terrain check; capped per building
           p: p.length > 16 ? p.filter((_, i) => i % Math.ceil(p.length / 16) === 0) : p,
         })),
-        stats: { ...built.stats, waterViolations: violations.length, fetchMs: t1 - t0, buildMs: t2 - t1, totalMs: Date.now() - t0 },
+        stats: { ...built.stats, groundPx: style ? groundPx : 0, waterViolations: violations.length, fetchMs: t1 - t0, buildMs: t2 - t1, totalMs: Date.now() - t0 },
       };
     },
   };

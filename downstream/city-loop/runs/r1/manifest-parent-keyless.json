@@ -1,0 +1,357 @@
+{
+  "schema": "city-loop-v2/capture@1",
+  "label": "parent",
+  "startedAt": "2026-11-22T18:56:48.396Z",
+  "app": {
+    "sha": "f81b24797c8763a4eed1a4a0f77a9ae990b29509",
+    "subject": "downstream(city-loop): dream loop v2 harness + round-0 receipts (fork-only)",
+    "dirty": false
+  },
+  "url": "http://127.0.0.1:4190/?welcome=0&massing=1#v=2&lat=37.796083363277035&lon=-122.41021134056297&alt=600&heading=0&pitch=-45&roll=0&style=normal",
+  "viewport": {
+    "width": 1600,
+    "height": 1000
+  },
+  "plot": "plot-n105201-126637",
+  "site": {
+    "lat": 37.796083363277035,
+    "lon": -122.41021134056297,
+    "alt": 600,
+    "heading": 0,
+    "pitch": -45
+  },
+  "sunTime": "2026-06-21T15:00:00Z",
+  "browser": {
+    "version": "151.0.7922.108",
+    "args": [
+      "--no-sandbox",
+      "--disable-dev-shm-usage",
+      "--use-gl=angle",
+      "--use-angle=swiftshader",
+      "--enable-unsafe-swiftshader",
+      "--ozone-platform=headless",
+      "--ignore-gpu-blocklist"
+    ]
+  },
+  "tiles": {
+    "creditText": "Powered by EsriData attribution",
+    "credits": [
+      "<span>Flights: OpenSky Network — Schäfer et al., “Bringing Up OpenSky”, IPSN 2014 · <a href=\"https://opensky-network.org/\" target=\"_blank\" rel=\"noopener\">opensky-network.org</a> (non-commercial)</span>",
+      "<span>Military flights, aircraft traces, bounded regional flight fallback &amp; GNSS navigation integrity: <a href=\"https://adsb.lol/\" target=\"_blank\" rel=\"noopener\">adsb.lol</a> (ODbL 1.0)</span>",
+      "<span>Aircraft type, registration &amp; flight routes: <a href=\"https://www.adsbdb.com/\" target=\"_blank\" rel=\"noopener\">adsbdb</a> · aircraft data from PlaneBase · ICAO-to-N-number conversion by Guillaume Michel · route data is the work of David Taylor, Edinburgh, and Jim Mason, Glasgow, and may not be copied, published, or incorporated into other databases without the explicit permission of David J Taylor, Edinburgh</span>",
+      "<span>Aircraft photos: <a href=\"https://www.planespotters.net/\" target=\"_blank\" rel=\"noopener\">Planespotters.net</a> · each photo is © its photographer, credited beside it</span>",
+      "<span>Vessel photos: <a href=\"https://openvesselphotos.org/\" target=\"_blank\" rel=\"noopener\">Open Vessel Photos</a> · each photo keeps its author&#39;s open licence, credited beside it</span>",
+      "<span>Live vessels (AIS): <a href=\"https://aisstream.io/\" target=\"_blank\" rel=\"noopener\">AISStream.io</a></span>",
+      "<span>Satellites (TLEs and SATCAT): CelesTrak (<a href=\"https://celestrak.org/\" target=\"_blank\" rel=\"noopener\">celestrak.org</a>), Dr. T.S. Kelso</span>",
+      "<span>ISS model: <a href=\"https://science.nasa.gov/3d-resources/international-space-station-iss-d-igoal/\" target=\"_blank\" rel=\"noopener\">NASA 3D Resources</a> (JSC IGOAL)</span>",
+      "<span>Tiangong model: made for God&#39;s Eye View; dimensions from <a href=\"https://doi.org/10.34133/space.0035\" target=\"_blank\" rel=\"noopener\">Wang, Zhang &amp; Wang 2023</a> (CC BY 4.0) and eoPortal</span>",
+      "<span>ISS joint telemetry (where switched on): NASA ISSLive, via Lightstreamer</span>",
+      "<span>ISS live video (LIVE section): NASA, via YouTube (<a href=\"https://www.youtube.com/watch?v=ROboUHfPUrU\" target=\"_blank\" rel=\"noopener\">exterior cameras</a></span>",
+      "<span><a href=\"https://www.youtube.com/watch?v=M3HKLzjvKPc\" target=\"_blank\" rel=\"noopener\">live video and audio</a>)</span>",
+      "<span>Satellite operators and purposes: <a href=\"https://www.ucsusa.org/satellite_database\" target=\"_blank\" rel=\"noopener\">UCS Satellite Database</a> (UCS-Satellite-Database 5-1-2023), Union of Concerned Scientists</span>",
+      "<span>Imaging sensor swaths: operator and agency specifications, cited per platform</span>",
+      "<span>Space mission launch, payload &amp; recovery metadata: <a href=\"https://ll.thespacedevs.com/docs/\" target=\"_blank\" rel=\"noopener\">Launch Library 2 — The Space Devs</a> (API documentation and rate limits)</span>",
+      "<span>Earthquakes: Data courtesy of the U.S. Geological Survey</span>",
+      "<span>Sea marks overlay: <a href=\"https://www.openseamap.org/\" target=\"_blank\" rel=\"noopener\">© OpenSeaMap contributors</a> (CC BY-SA 2.0) · Data © OpenStreetMap contributors (ODbL)</span>",
+      "<span>Ski pistes overlay: <a href=\"https://www.opensnowmap.org/\" target=\"_blank\" rel=\"noopener\">© www.opensnowmap.org</a> (CC BY-SA) · Data © OpenStreetMap contributors (ODbL)</span>",
+      "<span>Recent imagery: We acknowledge the use of imagery provided by services from NASA&#39;s Global Imagery Browse Services (GIBS), part of NASA&#39;s Earth Science Data and Information System (ESDIS). <a href=\"https://gibs.earthdata.nasa.gov/\" target=\"_blank\" rel=\"noopener\">gibs.earthdata.nasa.gov</a></span>",
+      "<a href=\"https://lpdaac.usgs.gov/products/hlss30v002/\" target=\"_blank\" rel=\"noopener\">HLS product page</a>"
+    ],
+    "imgs": [
+      "http://127.0.0.1:4190/cesium/Assets/Images/ion-credit.png"
+    ],
+    "globeShown": true,
+    "stack": {
+      "activeId": "esri-imagery",
+      "activeStack": {
+        "id": "esri-imagery",
+        "label": "Esri Satellite",
+        "shortLabel": "SAT",
+        "kind": "esri-imagery",
+        "requiresIon": false
+      },
+      "stacks": [
+        {
+          "id": "photoreal",
+          "label": "Google 3D",
+          "shortLabel": "3D",
+          "kind": "photoreal",
+          "requiresIon": false,
+          "available": false,
+          "unavailableReason": "Needs GOOGLE_MAPS_API_KEY — add it in Provider Settings — or a Cesium ion token for the ion-hosted route"
+        },
+        {
+          "id": "bing-aerial",
+          "label": "Bing Aerial",
+          "shortLabel": "Aerial",
+          "kind": "ion",
+          "style": 2,
+          "requiresIon": true,
+          "available": false,
+          "unavailableReason": "Needs CESIUM_ION_TOKEN — add it in Provider Settings"
+        },
+        {
+          "id": "bing-labels",
+          "label": "Bing Labels",
+          "shortLabel": "Labels",
+          "kind": "ion",
+          "style": 3,
+          "requiresIon": true,
+          "available": false,
+          "unavailableReason": "Needs CESIUM_ION_TOKEN — add it in Provider Settings"
+        },
+        {
+          "id": "esri-imagery",
+          "label": "Esri Satellite",
+          "shortLabel": "SAT",
+          "kind": "esri-imagery",
+          "requiresIon": false,
+          "available": true,
+          "unavailableReason": null
+        },
+        {
+          "id": "osm",
+          "label": "OSM",
+          "shortLabel": "OSM",
+          "kind": "osm",
+          "requiresIon": false,
+          "available": true,
+          "unavailableReason": null
+        }
+      ],
+      "status": "ready",
+      "lastError": "Needs GOOGLE_MAPS_API_KEY — add it in Provider Settings — or a Cesium ion token for the ion-hosted route",
+      "switchOrigin": "manual",
+      "hasCesiumIonToken": false
+    },
+    "tilesets": [],
+    "google": true,
+    "rendering": "imagery-globe:esri-imagery"
+  },
+  "frameTiming": {
+    "startup": {
+      "frames": 18,
+      "seconds": 3,
+      "fps": 6,
+      "p50ms": 162.20000000018626,
+      "p95ms": 330.09999999962747
+    },
+    "end": {
+      "frames": 13,
+      "seconds": 3,
+      "fps": 4.333333333333333,
+      "p50ms": 303.1000000005588,
+      "p95ms": 457.29999999981374
+    }
+  },
+  "beats": {
+    "district": {
+      "status": "ok",
+      "file": "district.png",
+      "sha256": "363e5743472ddfb6f2cbd1c88805d61268e11f423d82ca14920c122c0bc23375",
+      "tier": "district",
+      "cameraAlt": 1500,
+      "seconds": 56.166
+    },
+    "select": {
+      "status": "ok",
+      "file": "select.png",
+      "sha256": "d5009a6b76ac086d3d65eef4abfbea0d8e3703593b0aa6f0aa6b9d62362c1212",
+      "plotId": "plot-n105201-126637",
+      "tier": "plot",
+      "seconds": 98.295
+    },
+    "reimagine": {
+      "status": "ok",
+      "file": "reimagine.png",
+      "sha256": "d09fef1b0279b3d85c2ffcdfe4d705b9ce31bad3de089365c8a62f2e56c26a3f",
+      "aiLabel": "AI CONCEPT, NOT A PLAN OR AN APPROVAL",
+      "seconds": 54.081
+    },
+    "build": {
+      "status": "ok",
+      "file": "build.png",
+      "sha256": "fce34eb7f204ffe1eb43e70c00905d8f2edd85f40919a6a9c71de3968e57d1ce",
+      "storeys": 6,
+      "blockMaterial": "GevCityMassingFacade",
+      "seconds": 50.555
+    },
+    "shadow": {
+      "status": "ok",
+      "file": "shadow.png",
+      "sha256": "7844c4d66a7485b1d676a5740680509ce7da83d8e68c7bcf5723fbef0c3919cf",
+      "storeys": 3,
+      "seconds": 52.062
+    },
+    "growth": {
+      "status": "ok",
+      "file": "growth.png",
+      "sha256": "1a7d086bb6795471567cf05e89d6d86302838e417586ac76cebd252143242598",
+      "stops": [
+        "now",
+        "5yr",
+        "15yr"
+      ],
+      "stages": {
+        "now": {
+          "file": "growth--stage-now.png",
+          "sha256": "003adc18ef133a94a5ed37af64699e8ca706efe3bd19719a4936392d86bc6a75"
+        },
+        "5yr": {
+          "file": "growth--stage-5yr.png",
+          "sha256": "9453d26c1d5e3aa95b551f4d24700478428e1bea71ebf4aed1f0c3e49224d441"
+        },
+        "15yr": {
+          "file": "growth--stage-15yr.png",
+          "sha256": "1a7d086bb6795471567cf05e89d6d86302838e417586ac76cebd252143242598"
+        }
+      },
+      "seconds": 184.136
+    }
+  },
+  "cozy": {
+    "district": {
+      "report": {
+        "ao": "off",
+        "bloom": "off",
+        "cozy": "on",
+        "source": "harness:filter/cozyValley.js"
+      },
+      "full": {
+        "file": "district--cozy.png",
+        "sha256": "bfd1f05832b967803a588fda8831cb2cf5f4786340d797e6228101bc973e3b7b"
+      },
+      "gradeOnly": {
+        "file": "district--cozy-grade-only.png",
+        "sha256": "bfd1f05832b967803a588fda8831cb2cf5f4786340d797e6228101bc973e3b7b"
+      },
+      "wipe": {
+        "file": "district--cozy-wipe.png",
+        "sha256": "78250068de0673a844df1d362f3cb810a6b154bc09ca3306c8787bb6441c29b9"
+      }
+    },
+    "select": {
+      "report": {
+        "ao": "off",
+        "bloom": "off",
+        "cozy": "on",
+        "source": "harness:filter/cozyValley.js"
+      },
+      "full": {
+        "file": "select--cozy.png",
+        "sha256": "7150921efb6e57d9f8bbc6327fe79ab4c1842d06e2fd5722290c62713380cea0"
+      },
+      "gradeOnly": {
+        "file": "select--cozy-grade-only.png",
+        "sha256": "7150921efb6e57d9f8bbc6327fe79ab4c1842d06e2fd5722290c62713380cea0"
+      },
+      "wipe": {
+        "file": "select--cozy-wipe.png",
+        "sha256": "5cece6f50122b35d45e55c68ae35a2c2b7ff97f816527b88e6476837fc52bfbb"
+      }
+    },
+    "reimagine": {
+      "report": {
+        "ao": "off",
+        "bloom": "off",
+        "cozy": "on",
+        "source": "harness:filter/cozyValley.js"
+      },
+      "full": {
+        "file": "reimagine--cozy.png",
+        "sha256": "d0577b88ab7808b46d2c525735247e0a60b489749a126bc6ecd3e22d5cd3c35e"
+      },
+      "gradeOnly": {
+        "file": "reimagine--cozy-grade-only.png",
+        "sha256": "d0577b88ab7808b46d2c525735247e0a60b489749a126bc6ecd3e22d5cd3c35e"
+      },
+      "wipe": {
+        "file": "reimagine--cozy-wipe.png",
+        "sha256": "49f88c0375a4feb2a064d828f54216bfe6ca64b173c863d77b564bea723e5858"
+      }
+    },
+    "build": {
+      "report": {
+        "ao": "off",
+        "bloom": "off",
+        "cozy": "on",
+        "source": "harness:filter/cozyValley.js"
+      },
+      "full": {
+        "file": "build--cozy.png",
+        "sha256": "ed3fac9bb132a6799857fdd5d21f76c452d2b946641303e18d11f1e904c2fd17"
+      },
+      "gradeOnly": {
+        "file": "build--cozy-grade-only.png",
+        "sha256": "ed3fac9bb132a6799857fdd5d21f76c452d2b946641303e18d11f1e904c2fd17"
+      },
+      "wipe": {
+        "file": "build--cozy-wipe.png",
+        "sha256": "9576ef7ab49ecc1f94df2e5aeba3866944d4aac3b7dfe95b6ace669b818c14c9"
+      }
+    },
+    "shadow": {
+      "report": {
+        "ao": "off",
+        "bloom": "off",
+        "cozy": "on",
+        "source": "harness:filter/cozyValley.js"
+      },
+      "full": {
+        "file": "shadow--cozy.png",
+        "sha256": "5ecb26a1c48d7657b3937da9ad17f05755f3bf569bf7126839d880918539013a"
+      },
+      "gradeOnly": {
+        "file": "shadow--cozy-grade-only.png",
+        "sha256": "5ecb26a1c48d7657b3937da9ad17f05755f3bf569bf7126839d880918539013a"
+      },
+      "wipe": {
+        "file": "shadow--cozy-wipe.png",
+        "sha256": "22c0b89292f8d8a8d9e649ab8699e4bb89acf2654f8b80f72276e7520b69e617"
+      }
+    },
+    "growth": {
+      "report": {
+        "ao": "off",
+        "bloom": "off",
+        "cozy": "on",
+        "source": "harness:filter/cozyValley.js"
+      },
+      "full": {
+        "file": "growth--cozy.png",
+        "sha256": "1ea43d2e2cf7b31c527d6b5390fec235560e77c0db8bd4f9aeef7465ff9d13a3"
+      },
+      "gradeOnly": {
+        "file": "growth--cozy-grade-only.png",
+        "sha256": "1ea43d2e2cf7b31c527d6b5390fec235560e77c0db8bd4f9aeef7465ff9d13a3"
+      },
+      "wipe": {
+        "file": "growth--cozy-wipe.png",
+        "sha256": "8056ee1019ab99f70584592440d901e140ef4be2e96d55fbc61fb53c3059c5c6"
+      }
+    }
+  },
+  "console": [
+    {
+      "type": "warning",
+      "text": "[Init] Google 3D Tiles unavailable, using the keyless globe: Error: Google 3D tokens are not offered\n    at Object.loadPhotoreal (http://127.0.0.1:4190/src/maps/globeEngine.js:201:24)\n    at async createApplicationScene (http://127.0.0.1:4190/src/app/scene.js:186:22)\n    at async Object.createScene "
+    },
+    {
+      "type": "warning",
+      "text": "[MapStack] Needs GOOGLE_MAPS_API_KEY — add it in Provider Settings — or a Cesium ion token for the ion-hosted route"
+    }
+  ],
+  "pageErrors": [],
+  "marks": {
+    "ready": 15.557,
+    "district": 68.742,
+    "select": 166.492,
+    "reimagine": 220.794,
+    "build": 271.315,
+    "shadow": 323.018,
+    "growth": 508.08
+  },
+  "query": "",
+  "lookSource": "harness",
+  "finishedAt": "2026-11-22T19:05:26.195Z"
+}

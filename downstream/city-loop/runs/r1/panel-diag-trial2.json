@@ -1,0 +1,97 @@
+{
+ "rubric_sha256": "98dd1aadb8fa4641d7c63fd956cc154bb08b5ab7031d74febf2a36454243e723",
+ "summary": {
+  "shadow--parent_vs_r1t2": {
+   "panel": {
+    "game_feel": "TIE",
+    "gev_brand": "B",
+    "scene_integration": "B",
+    "wintercats_fidelity": "B",
+    "legibility": "B"
+   },
+   "judges": {
+    "codex-gpt-6.2-sol": {
+     "game_feel": "A",
+     "gev_brand": "B",
+     "scene_integration": "B",
+     "wintercats_fidelity": "B",
+     "legibility": "B"
+    },
+    "claude-sonnet": {
+     "game_feel": "TIE",
+     "gev_brand": "B",
+     "scene_integration": "B",
+     "wintercats_fidelity": "B",
+     "legibility": "B"
+    },
+    "claude-opus": {
+     "game_feel": "B",
+     "gev_brand": "B",
+     "scene_integration": "B",
+     "wintercats_fidelity": "B",
+     "legibility": "B"
+    }
+   }
+  },
+  "growth--parent_vs_r1t2": {
+   "panel": {
+    "game_feel": "A",
+    "gev_brand": "TIE",
+    "scene_integration": "B",
+    "wintercats_fidelity": "A",
+    "legibility": "B"
+   },
+   "judges": {
+    "codex-gpt-6.2-sol": {
+     "game_feel": "A",
+     "gev_brand": "TIE",
+     "scene_integration": "B",
+     "wintercats_fidelity": "A",
+     "legibility": "B"
+    },
+    "claude-sonnet": {
+     "game_feel": "A",
+     "gev_brand": "A",
+     "scene_integration": "B",
+     "wintercats_fidelity": "A",
+     "legibility": "B"
+    },
+    "claude-opus": {
+     "game_feel": "A",
+     "gev_brand": "TIE",
+     "scene_integration": "B",
+     "wintercats_fidelity": "A",
+     "legibility": "B"
+    }
+   }
+  }
+ },
+ "pairs": [
+  {
+   "id": "shadow--parent_vs_r1t2",
+   "a": "/Users/kvn/.hermes/profiles/tek/workspace/gev-city-recovery-20261122/loop-v2/r1-work/diag/parent/shadow.jpg",
+   "b": "/Users/kvn/.hermes/profiles/tek/workspace/gev-city-recovery-20261122/loop-v2/r1-work/diag/r1c/shadow.jpg",
+   "context": "the same app frame (the player opened the shadow/sun-fit study for the proposed building) from two builds of the app",
+   "layers": [
+    "game_feel",
+    "gev_brand",
+    "scene_integration",
+    "wintercats_fidelity",
+    "legibility"
+   ]
+  },
+  {
+   "id": "growth--parent_vs_r1t2",
+   "a": "/Users/kvn/.hermes/profiles/tek/workspace/gev-city-recovery-20261122/loop-v2/r1-work/diag/parent/growth.jpg",
+   "b": "/Users/kvn/.hermes/profiles/tek/workspace/gev-city-recovery-20261122/loop-v2/r1-work/diag/r1c/growth.jpg",
+   "context": "the same app frame (the district growth timeline (NOW / 5 YR / 15 YR) at 15 YR) from two builds of the app",
+   "layers": [
+    "game_feel",
+    "gev_brand",
+    "scene_integration",
+    "wintercats_fidelity",
+    "legibility"
+   ]
+  }
+ ]
+}

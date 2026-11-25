@@ -32,6 +32,10 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { parsers } from 'prettier/plugins/babel.mjs';
 import { parse as parseSfc } from 'vue/compiler-sfc';
+import {
+  partitionForkOnly,
+  staleForkOnlyMessage,
+} from '../testSupport/forkOnlyExempt.mjs';
 
 const root = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -252,11 +256,21 @@ function reachesCesiumFile(file) {
 
 test('only allow-listed files outside the Cesium adapter reach Cesium', () => {
   const allowed = new Set(allowList);
-  const offenders = runtimeFiles.filter(
-    (file) => !allowed.has(file) && reachesCesiumFile(file),
+  // FORK-ONLY: the fork's city builder is set aside, and only it; it is
+  // never added to the allow-list.
+  const forkOnly = partitionForkOnly(
+    'noCesiumOutsideRender',
+    runtimeFiles.filter(
+      (file) => !allowed.has(file) && reachesCesiumFile(file),
+    ),
   );
   assert.deepEqual(
-    offenders,
+    forkOnly.unused,
+    [],
+    staleForkOnlyMessage('noCesiumOutsideRender'),
+  );
+  assert.deepEqual(
+    forkOnly.offenders,
     [],
     'Reach the renderer through its contract (src/render/contract) instead.',
   );

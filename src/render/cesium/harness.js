@@ -72,6 +72,10 @@ export const CESIUM_CHECKS = new Set([
   'draw.lines.drape',
   'draw.lines.split',
   'draw.lines.outlineDraped',
+  'draw.lines.ageFade',
+  'draw.lines.timeWindow',
+  'draw.lines.breaks',
+  'draw.lines.breaks.timeWindow',
   'draw.lines.segments',
   'draw.lines.segmentStyles',
   'draw.sets.blend',
@@ -82,9 +86,12 @@ export const CESIUM_CHECKS = new Set([
   'draw.models',
   'draw.shapes.lit',
   'draw.models.loadFailed',
+  'draw.models.nodes',
   'draw.models.tint',
   'draw.models.blend',
+  'draw.models.paint',
   'draw.models.update',
+  'draw.models.parts',
   'draw.motion',
   'draw.motion.arc',
   'draw.motion.climb',
@@ -115,6 +122,7 @@ export const CESIUM_CHECKS = new Set([
   'frame.time',
   'globe.base.vector',
   'globe.imagery',
+  'globe.imagery.decoded',
   'globe.imagery.frames',
   'globe.imagery.video',
   'globe.sky',
@@ -194,6 +202,7 @@ function nextFrame() {
 export function createCesiumHarness({
   name = 'cesium',
   model,
+  modelNode,
   missingModel,
   cameraController,
 } = {}) {
@@ -266,6 +275,7 @@ export function createCesiumHarness({
       ? {
           assets: {
             model,
+            ...(modelNode ? { modelNode } : {}),
             missingModel,
             // The model's bytes, for the check that a model drawn from them
             // never fetches its url.

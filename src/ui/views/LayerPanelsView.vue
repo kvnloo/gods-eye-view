@@ -8,10 +8,12 @@ import { useSceneStore } from '../stores/scenes.js';
 import { STORY_TAG_LIMIT, STORY_TAGS } from '../../scenes/storyTags.js';
 import { vClassToggle } from '../rail/classToggle.js';
 import SceneDialog from './panels/SceneDialog.vue';
+import CommunityPlanningPreview from './panels/CommunityPlanningPreview.vue';
 import SceneOptions from './SceneOptions.vue';
 import SceneShotList from './SceneShotList.vue';
 import CctvPanel from './panels/CctvPanel.vue';
 import StreetLevelPanel from './panels/StreetLevelPanel.vue';
+import StreetLevelPhotoViewer from './panels/StreetLevelPhotoViewer.vue';
 import DrawControls from './panels/DrawControls.vue';
 import GeoImport from './panels/GeoImport.vue';
 import UiSelect from '../kit/UiSelect.js';
@@ -71,6 +73,7 @@ async function importChosen(event) {
 
   <!-- Street Level Panel (moved into #right-context-rail at runtime) -->
   <StreetLevelPanel />
+  <StreetLevelPhotoViewer />
 
   <!-- Scene Director Panel -->
   <RailPanel id="scene-panel" start-collapsed v-class-toggle="{ running: scene?.running, 'has-shots': scene?.hasShots }" :title="t('AUTHORING')" :hint="t('Create and edit scenes')" scroll>
@@ -78,7 +81,7 @@ async function importChosen(event) {
       <div class="scene-controls">
         <UiSelect class="gev-field" id="scene-select" :aria-label="t('Scene')" :disabled="off('select')" @update:model-value="scenes.act('selectScene', $event)"><SceneOptions /></UiSelect>
         <UiButton id="scene-new-btn" type="button" :disabled="off('new')" @click="scenes.act('create')" class="gev-action-button scene-btn" :title="t('Start a new, empty scene')">{{ t('NEW SCENE') }}</UiButton>
-        <UiButton tone="alert" id="scene-delete-btn" type="button" :disabled="off('delete')" @click="scenes.act('deleteScene')" class="gev-action-button gev-action-button--danger scene-btn scene-btn-danger" :title="t('Delete this scene and all of its shots')">{{ t('DELETE') }}</UiButton>
+        <UiButton tone="danger" id="scene-delete-btn" type="button" :disabled="off('delete')" @click="scenes.act('deleteScene')" class="gev-action-button gev-action-button--danger scene-btn scene-btn-danger" :title="t('Delete this scene and all of its shots')">{{ t('DELETE') }}</UiButton>
       </div>
       <p class="scene-step-heading">{{ t('SHOTS') }}</p>
       <div class="scene-controls">
@@ -86,11 +89,11 @@ async function importChosen(event) {
         <UiButton id="scene-update-shot-btn" type="button" :disabled="off('update')" @click="scenes.act('update')" class="gev-action-button scene-btn" :title="t('Replace the selected shot with the current view')">{{ t('UPDATE SHOT') }}</UiButton>
       </div>
       <SceneShotList />
-      <p class="scene-shot-hint">{{ t('Click a shot to select it, double-click to rename.') }}</p>
+      <p class="scene-shot-hint">{{ t('Click a shot to go to it, double-click to rename.') }}</p>
       <p class="scene-step-heading">{{ t('PREVIEW') }}</p>
       <div class="scene-controls">
         <UiButton variant="primary" id="scene-start-btn" type="button" class="gev-action-button scene-btn scene-btn-primary" :title="t('Play from this scene through the rest of the project')" :disabled="off('start')" @click="scenes.act('start')">{{ scene?.playLabel ?? t('PLAY', { context: 'scene' }) }}</UiButton>
-        <UiButton tone="alert" id="scene-stop-btn" type="button" :disabled="off('stop')" @click="scenes.act('stop')" class="gev-action-button gev-action-button--danger scene-btn scene-btn-danger" :title="t('Stop playback (Esc)')">{{ t('STOP') }}</UiButton>
+        <UiButton tone="danger" id="scene-stop-btn" type="button" :disabled="off('stop')" @click="scenes.act('stop')" class="gev-action-button gev-action-button--danger scene-btn scene-btn-danger" :title="t('Stop playback (Esc)')">{{ t('STOP') }}</UiButton>
         <UiButton id="scene-next-btn" type="button" :disabled="off('next')" @click="scenes.act('next')" class="gev-action-button scene-btn" :title="t('Play the shot after the selected one, moving on to the next scene when needed')">{{ t('NEXT') }}</UiButton>
       </div>
       <p class="scene-step-heading">{{ t('SAVE & SHARE') }}</p>
@@ -113,6 +116,7 @@ async function importChosen(event) {
         <UiButton type="button" class="gev-action-button scene-btn" :disabled="off('details')" :title="t('Edit anchors, data packs and shot details')" @click="toolbar.edit()">{{ t('EDIT DETAILS') }}</UiButton>
         <UiButton type="button" class="gev-action-button scene-btn" :disabled="off('share')" :title="t('Download this scene as JSON or an asset bundle')" @click="toolbar.share()">{{ t('SHARE SCENE') }}</UiButton>
       </div>
+      <CommunityPlanningPreview />
       <div class="scene-progress">
         <div id="scene-progress-fill" :style="scene ? { width: `${scene.progress}%` } : undefined">{{ scene?.progress ?? 0 }}%</div>
       </div>

@@ -6,12 +6,13 @@ import {
   ratioLadder,
 } from './adaptiveResolution.js';
 
-function drive(display = 3) {
+function drive(display = 3, { warmupMs = 0 } = {}) {
   const changes = [];
   let t = 0;
   const ratio = createAdaptiveRatio({
     display: () => display,
     onChange: (r) => changes.push(r),
+    warmupMs,
   });
   const run = (ms, frames) => {
     for (let i = 0; i < frames; i++) ratio.frame((t += ms));
@@ -76,6 +77,30 @@ test('on-time frames step back up after the hold; a step that runs slow again wa
   run(FRAME_BUDGET_MS, 60 * 3);
   assert.equal(ratio.ratio(), 3);
   assert.deepEqual(changes, [2, 3, 2, 3]);
+});
+
+test('startup frames (the warm-up) decide nothing', () => {
+  const { ratio, run } = drive(3, { warmupMs: 5000 });
+  run(80, 60); // 4.8 s of startup hitches
+  assert.equal(ratio.ratio(), 3);
+  run(40, 40); // past the warm-up and still slow: now it steps
+  assert.equal(ratio.ratio(), 2);
+});
+
+test('a parked view goes back up: an idle frame after the hold has room', () => {
+  const { ratio, changes, run, gap } = drive();
+  run(40, 30);
+  run(40, 30);
+  assert.equal(ratio.ratio(), 1.5, 'stepped down while busy');
+  gap(1000);
+  run(FRAME_BUDGET_MS, 1);
+  assert.equal(ratio.ratio(), 1.5, 'inside the hold');
+  for (let i = 0; i < 4; i++) {
+    gap(3000);
+    run(FRAME_BUDGET_MS, 1);
+  }
+  assert.equal(ratio.ratio(), 3);
+  assert.deepEqual(changes, [2, 1.5, 2, 3]);
 });
 
 test('a window needs enough frames to decide', () => {

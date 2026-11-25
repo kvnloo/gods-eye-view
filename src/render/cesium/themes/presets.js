@@ -146,7 +146,8 @@ const WINTERCATS = {
     grade: {
       saturation: 0.94,
       vibrance: 0.0,
-      temperature: 0.25,
+      // app loop r05 (GEV-I1): warmer grade (held-out DISTS -0.0038 6/6; blind judges 15/20 seats)
+      temperature: 0.7,
       contrast: 1.14,
       lift: [0.01, 0.008, 0.015],
     },

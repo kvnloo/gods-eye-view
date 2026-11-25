@@ -1,0 +1,77 @@
+# Fork-factory modularity gates for feature PRs into nightly.
+# Owned by the modular-commits card; ci.yml and factory-ci-sha.yml belong to the
+# CI-gates card, the nightly/promotion workflows to the promotion card.
+# Required-check names (job names) are listed in CONTRIBUTING-FACTORY.md.
+name: Factory modularity
+
+on:
+  pull_request:
+    branches: [nightly]
+  workflow_dispatch:
+    inputs:
+      base:
+        description: Base commit or ref (the range starts at its merge-base with head)
+        required: true
+      head:
+        description: Head commit or ref
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: factory-modularity-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  # Upstream-main sync merges into nightly are not feature PRs.
+  IS_SYNC: ${{ github.event_name == 'pull_request' && github.head_ref == 'main' }}
+  BASE: ${{ github.event.pull_request.base.sha || inputs.base }}
+  HEAD: ${{ github.event.pull_request.head.sha || inputs.head }}
+
+jobs:
+  tooling:
+    name: factory-modularity/tooling-tests
+    if: github.repository == 'kvnloo/gods-eye-view'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Fixture tests for the hot-file, per-commit and upstream-port tools
+        run: python3 -m unittest discover -s scripts/factory/tests -v
+
+  hot-files:
+    name: factory-modularity/hot-files
+    if: github.repository == 'kvnloo/gods-eye-view'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Touch at most N hot-file entries (scripts/factory/hot-files.json)
+        if: env.IS_SYNC != 'true'
+        run: python3 scripts/factory/hot_files.py --base "$BASE" --head "$HEAD"
+
+  commit-builds:
+    name: factory-modularity/commit-builds
+    if: github.repository == 'kvnloo/gods-eye-view'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      PUPPETEER_SKIP_DOWNLOAD: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24.22.2
+          cache: npm
+      - name: Build every commit in the PR range in isolation
+        if: env.IS_SYNC != 'true'
+        run: python3 scripts/factory/build_each_commit.py --base "$BASE" --head "$HEAD"

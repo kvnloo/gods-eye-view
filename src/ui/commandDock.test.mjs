@@ -317,14 +317,16 @@ test('the phone tab bar joins the end of the page while the shell publishes', as
   assert.deepEqual(
     all.map(
       (tab) =>
-        `${tab.dataset.mobileSheet ?? tab.dataset.mobileAction}:${tab.querySelector('.mobile-tab-icon').textContent}:${tab.querySelector('.mobile-tab-label').textContent}`,
+        `${tab.dataset.mobileSheet ?? tab.dataset.mobileAction}:${tab.querySelector('.mobile-tab-icon').textContent}:${tab.querySelector('.mobile-tab-label, .mobile-search-placeholder').textContent}`,
     ),
+    // One sheet, top to bottom: the search field, Cast in the player row,
+    // then the panel tabs.
     [
+      'search:search:Search any location...',
+      'cast:cast:Cast',
       'layers:layers:Layers',
       'cameras:videocam:Cameras',
       'context:radar:Context',
-      'search:search:Search',
-      'cast:cast:Cast',
       'more:more_horiz:More',
     ],
   );
@@ -343,7 +345,8 @@ test('the phone tab bar joins the end of the page while the shell publishes', as
   assert.equal(backdrop.hidden, false);
   assert.deepEqual(
     tabs.map((tab) => tab.getAttribute('aria-expanded')),
-    ['false', 'false', 'true', 'false', 'false'],
+    // search, layers, cameras, context, more
+    ['false', 'false', 'false', 'true', 'false'],
   );
   store.publishPhoneShell({ enabled: false, sheet: null, tabs: MOBILE_TABS });
   await nextTick();

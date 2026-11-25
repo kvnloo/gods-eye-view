@@ -21,21 +21,26 @@
 import * as Cesium from 'cesium';
 import { HOST_KEY, tileShaderHost } from '../themes/tileShaderHost.js';
 import { loadPreset, normalizeNearField, presetRequest } from '../themes/presets.js';
-import { MODEL_FS, TILE_GLSL, WATER_FS } from './shaders.js';
+import { GROUND_FS, MODEL_FS, TILE_GLSL, WATER_FS, WORLD_MODEL_FS, WORLD_TREE_FS } from './shaders.js';
 import {
   BUBBLE,
+  WORLD,
+  WORLD_LITE,
   bubbleCentre,
   bubbleRadius,
   cellsInBubble,
   createLru,
   fromLocal,
   nearFieldRequest,
+  tileBounds,
   tileCentre,
   tileKey,
   tileSizeM,
   toLocal,
 } from '../../../data/nearField/tiling.js';
+import { loadStylePack, rgb } from '../../../data/nearField/stylePack.js';
 import { rasterize } from '../../../data/nearField/cellData.js';
+import { groundSampler } from '../../../data/cityDioramaMesh.js';
 import { t } from '../../../i18n/index.js';
 
 const GRID_N = 25; // terrain samples per cell side
@@ -54,6 +59,12 @@ function ionToken() {
 export async function installNearField(viewer, { win = globalThis.window } = {}) {
   const request = nearFieldRequest(win?.location?.search ?? '');
   if (!request || !viewer?.scene) return null;
+  const world = request.mode === 'world';
+  const style = world ? await loadStylePack(request.pack) : null;
+  if (style?.problems.length) console.warn('[nearField] style pack:', style.problems);
+  const policy = world ? (request.lite ? WORLD_LITE : WORLD) : BUBBLE;
+  const maxCells = world ? (request.lite ? 90 : 140) : MAX_CELLS;
+  const maxInflight = world ? 4 : MAX_INFLIGHT;
   const scene = viewer.scene;
   const camera = scene.camera;
   const ellipsoid = Cesium.Ellipsoid.WGS84;
@@ -61,7 +72,7 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
   // ---- theme: the preset's nearField block picks the kit and light
   let look = normalizeNearField({ kit: 'realism' });
   const themeReq = presetRequest(win?.location?.search ?? '');
-  if (themeReq) {
+  if (themeReq && !world) {
     try {
       const { preset } = await loadPreset(themeReq.value);
       look = preset.nearField ?? look;
@@ -100,6 +111,10 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
 
   /** sampleTerrainMostDetailed, re-asking points whose tile failed (throttled 429s leave NaN). */
   async function sampleRetrying(tp, pts) {
+    if (!tp.availability) {
+      await Cesium.sampleTerrain(tp, 12, pts);
+      return pts;
+    }
     await Cesium.sampleTerrainMostDetailed(tp, pts);
     for (let attempt = 0; attempt < 2; attempt++) {
       const bad = pts.filter((c) => !Number.isFinite(c.height));
@@ -131,13 +146,21 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
     const side = tileSizeM(cell);
     const spacing = (side + 48) / (GRID_N - 1);
     const half = (spacing * (GRID_N - 1)) / 2;
+    let west = -half, south = -half, dx = spacing, dy = spacing;
+    if (world) {
+      const [w, s, e, n] = tileBounds(cell);
+      [west, south] = toLocal(s, w, centre);
+      const [east, north] = toLocal(n, e, centre);
+      dx = (east - west) / (GRID_N - 1);
+      dy = (north - south) / (GRID_N - 1);
+    }
     const heights = new Array(GRID_N * GRID_N).fill(0);
     const terrain = terrainNow();
     if (terrain) {
       const pts = [];
       for (let j = 0; j < GRID_N; j++)
         for (let i = 0; i < GRID_N; i++) {
-          const g = fromLocal(-half + i * spacing, -half + j * spacing, centre);
+          const g = fromLocal(west + i * dx, south + j * dy, centre);
           pts.push(Cesium.Cartographic.fromDegrees(g.lon, g.lat));
         }
       await sampleRetrying(terrain, pts);
@@ -146,7 +169,7 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
       const fill = finite.length ? finite.reduce((a, b) => a + b, 0) / finite.length : 0;
       for (let k = 0; k < heights.length; k++) if (!Number.isFinite(heights[k])) heights[k] = fill;
     }
-    return { n: GRID_N, spacing, half, heights, centre: 0, offset: 0 };
+    return { n: GRID_N, spacing, half, heights, west, south, dx, dy, centre: 0, offset: 0 };
   }
 
   // ---- worker
@@ -175,6 +198,9 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
   collection.show = true;
   const state = {
     enabled: true,
+    mode: world ? 'world' : 'bubble',
+    cellZoom: policy.cellZoom,
+    pack: style ? { name: style.name, hash: style.hash, problems: style.problems } : null,
     radius: 0,
     fade: 0,
     centre: null,
@@ -190,19 +216,26 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
     jobsDone: 0,
   };
   const needed = new Set();
-  const cells = createLru(MAX_CELLS, {
+  const cells = createLru(maxCells, {
     pinned: (k) => needed.has(k),
     onEvict: (_k, e) => {
-      for (const m of [e.main, e.water, e.trees]) if (m && !m.isDestroyed()) collection.remove(m);
+      for (const m of [e.main, e.water, e.trees, e.surface]) if (m && !m.isDestroyed()) collection.remove(m);
     },
   });
 
+  // Adapts the honeyed key and cool sky fill from Tinytown's DAY rig
+  // (MIT, Pete Koomen). The same pack configures the real shadow-map sun.
+  if (style) {
+    const l = style.pack.light;
+    look = { kit: style.name, key: l.key, ambient: l.ambient, warm: rgb(l.color), shadow: l.shadeTint };
+  }
   const lightUniforms = () => ({
     u_nfLight: { type: Cesium.UniformType.VEC2, value: new Cesium.Cartesian2(look.key, look.ambient) },
     u_nfShadow: { type: Cesium.UniformType.VEC3, value: Cesium.Cartesian3.fromArray(look.shadow) },
     u_nfWarm: { type: Cesium.UniformType.VEC3, value: Cesium.Cartesian3.fromArray(look.warm) },
   });
-  function modelShader(isTree, water = false) {
+  function modelShader(isTree, water = false, ground = false) {
+    const paint = style?.pack.look;
     return new Cesium.CustomShader({
       mode: Cesium.CustomShaderMode.MODIFY_MATERIAL,
       lightingModel: Cesium.LightingModel.UNLIT,
@@ -213,15 +246,21 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
         u_nfBubble: { type: Cesium.UniformType.VEC4, value: new Cesium.Cartesian4(0, BUBBLE.edge, TREE_RADIUS, 0) },
         u_nfIsTree: { type: Cesium.UniformType.FLOAT, value: isTree ? 1 : 0 },
         ...lightUniforms(),
+        ...(paint && { u_nfPaint: { type: Cesium.UniformType.VEC4,
+          value: new Cesium.Cartesian4(paint.meadow, paint.patina, paint.darkLift, paint.shadeCool) } }),
       },
-      fragmentShaderText: water ? WATER_FS : MODEL_FS,
+      fragmentShaderText: world ? (ground ? GROUND_FS : isTree ? WORLD_TREE_FS : WORLD_MODEL_FS) : water ? WATER_FS : MODEL_FS,
     });
   }
   // three shared shaders: every cell model uses one of them (uniforms set once per frame)
-  const shaders = { main: modelShader(false), trees: modelShader(true), water: modelShader(false, true) };
+  const shaders = {
+    main: modelShader(false), trees: modelShader(true),
+    ...(world ? { ground: modelShader(false, false, true) } : { water: modelShader(false, true) }),
+  };
+  const modelShaders = Object.values(shaders);
 
   // ---- the tile part (hide Google under our objects)
-  const MASK_N = 2048;
+  const MASK_N = world ? 1024 : 2048;
   const tilePart = {
     id: 'near-field-clip',
     order: -10,
@@ -229,6 +268,7 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
       u_nfcEyeToLocal: { type: Cesium.UniformType.MAT4, value: Cesium.Matrix4.IDENTITY.clone() },
       u_nfcCentre: { type: Cesium.UniformType.VEC2, value: new Cesium.Cartesian2() },
       u_nfcBubble: { type: Cesium.UniformType.VEC4, value: new Cesium.Cartesian4(0, BUBBLE.edge, 0, 1) },
+      u_nfcWorld: { type: Cesium.UniformType.FLOAT, value: world ? 1 : 0 },
       u_nfcDebug: { type: Cesium.UniformType.FLOAT, value: request.debug ? 1 : 0 },
       u_nfcMask: {
         type: Cesium.UniformType.SAMPLER_2D,
@@ -238,20 +278,23 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
     glsl: TILE_GLSL,
     body: 'nfClip(fsInput, material);',
   };
-  const hosts = new Set();
+  const hosts = new Map();
   function attachTiles() {
     const p = scene.primitives;
     for (let i = 0; i < p.length; i++) {
       const ts = p.get(i);
       if (!(ts instanceof Cesium.Cesium3DTileset) || ts.isDestroyed()) continue;
+      if (hosts.has(ts)) continue;
       const host = ts[HOST_KEY] ?? tileShaderHost(Cesium, ts);
       if (!host.parts().includes(tilePart.id)) host.attach(tilePart);
-      hosts.add(host);
+      hosts.set(ts, { host, shadows: ts.shadows });
+      if (world) ts.shadows = Cesium.ShadowMode.DISABLED;
     }
+    for (const ts of hosts.keys()) if (ts.isDestroyed()) hosts.delete(ts);
   }
   const setTileUniform = (name, value) => {
     tilePart.uniforms[name].value = value;
-    for (const h of hosts) if (h.parts().includes(tilePart.id)) h.setUniform(name, value);
+    for (const { host } of hosts.values()) host.setUniform(name, value);
   };
 
   // mask frame: a local ENU square around `mask.centre`
@@ -261,14 +304,26 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
   function buildMask(centre, half) {
     const n = MASK_N;
     const px = (2 * half) / n;
-    const north = new Uint8Array(n * n);
+    const northPixels = new Uint8Array(n * n);
     const rgba = new Uint8Array(n * n * 4);
+    const maskFrame = world ? Cesium.Matrix4.inverseTransformation(enuOf(centre.lat, centre.lon), new Cesium.Matrix4()) : null;
+    const corner = new Cesium.Cartesian3();
     let fps = 0;
     for (const e of cells.values()) {
       if (e.status !== 'ready' || !needed.has(e.key) || e.appear < 1) continue;
+      if (world) {
+        const [w, s, east, north] = tileBounds(e.cell);
+        const ring = [[w, s], [east, s], [east, north], [w, north]].map(([lon, lat]) => {
+          Cesium.Cartesian3.fromDegrees(lon, lat, 0, ellipsoid, corner);
+          Cesium.Matrix4.multiplyByPoint(maskFrame, corner, corner);
+          return [corner.x, corner.y];
+        });
+        rasterize(northPixels, n, px, half, [[ring]], 1);
+        continue;
+      }
       const [ox, oy] = toLocal(e.centre.lat, e.centre.lon, centre);
       const polys = e.footprints.map((f) => f.rings.map((r) => r.map(([x, y]) => [x + ox, y + oy])));
-      rasterize(north, n, px, half, polys, 1);
+      rasterize(northPixels, n, px, half, polys, 1);
       fps += polys.length;
       for (const [x0, y0, x1, y1, level] of e.waterRects) {
         const code = Math.max(0, Math.min(65535, Math.round((level + 1000) * 10)));
@@ -285,7 +340,7 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
     }
     for (let row = 0; row < n; row++) {
       const j = n - 1 - row;
-      for (let i = 0; i < n; i++) if (north[row * n + i]) rgba[(j * n + i) * 4] = 255;
+      for (let i = 0; i < n; i++) if (northPixels[row * n + i]) rgba[(j * n + i) * 4 + (world ? 1 : 0)] = 255;
     }
     state.maskBuilds++;
     state.maskFootprints = fps;
@@ -334,15 +389,18 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
   // ---- cell lifecycle
   let modelSeq = 0;
   async function load(c) {
-    const entry = { key: c.key, cell: { z: c.z, x: c.x, y: c.y }, status: 'pending', appear: 0, centre: tileCentre(c) };
+    const entry = { side: tileSizeM(c), key: c.key, cell: { z: c.z, x: c.x, y: c.y }, status: 'pending', appear: 0, centre: tileCentre(c) };
     cells.set(c.key, entry);
     state.pending.add(c.key);
     try {
-      const prep = await runJob({ phase: 'prepare', cell: entry.cell });
-      const [ground, vertexHeights] = await Promise.all([sampleGrid(entry.cell), samplePoints(prep.points, prep.centre)]);
+      const groundWork = sampleGrid(entry.cell);
+      const vertexWork = world ? null : runJob({ phase: 'prepare', cell: entry.cell })
+        .then((prep) => samplePoints(prep.points, prep.centre));
+      const [ground, vertexHeights] = await Promise.all([groundWork, vertexWork]);
       entry.ground = ground;
+      entry.heightAt = groundSampler(ground);
       entry.terrain = terrainNow() ? terrainSource : 'ellipsoid';
-      const out = await runJob({ cell: entry.cell, ground, vertexHeights, kit: look.kit, kitOverrides: look.colours ?? {}, trees: look.trees ?? 1 });
+      const out = await runJob({ cell: entry.cell, ground, vertexHeights, kit: world ? 'realism' : look.kit, kitOverrides: look.colours ?? {}, style: style?.pack, groundPx: request.lite ? 256 : 512, trees: request.lite ? 0.40 : look.trees ?? 1 });
       const modelMatrix = enuOf(entry.centre.lat, entry.centre.lon);
       // Cesium caches typed-array glTFs by basePath alone (ResourceCacheKey
       // "gltf:<basePath>"): without a unique one every cell gets the first model.
@@ -356,21 +414,25 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
                 upAxis: Cesium.Axis.Z,
                 forwardAxis: Cesium.Axis.X,
                 customShader: shader,
-                shadows: Cesium.ShadowMode.DISABLED,
+                shadows: world ? (shader === shaders.ground ? Cesium.ShadowMode.RECEIVE_ONLY
+                  : shader === shaders.trees ? Cesium.ShadowMode.CAST_ONLY : Cesium.ShadowMode.ENABLED)
+                  : Cesium.ShadowMode.DISABLED,
+                incrementallyLoadTextures: !world,
                 show: false,
               }),
             )
           : null;
+      entry.surface = await make(out.ground, shaders.ground);
       entry.main = await make(out.main, shaders.main);
       entry.water = await make(out.water, shaders.water);
       entry.trees = await make(out.trees, shaders.trees);
       if (cells.peek(c.key) !== entry) {
         // evicted while loading
-        for (const m of [entry.main, entry.water, entry.trees]) if (m) collection.remove(m);
+        for (const m of [entry.main, entry.water, entry.trees, entry.surface]) if (m) collection.remove(m);
         return;
       }
-      Object.assign(entry, { status: 'ready', footprints: out.footprints, waterRects: out.waterRects, buildings: out.buildings, stats: out.stats, readyAt: performance.now() });
-      state.jobsDone++;
+      Object.assign(entry, { status: world ? 'uploading' : 'ready', footprints: out.footprints, waterRects: out.waterRects, buildings: out.buildings, stats: out.stats, readyAt: performance.now() });
+      if (!world) state.jobsDone++;
     } catch (error) {
       entry.status = 'error';
       entry.error = String(error?.message ?? error);
@@ -387,6 +449,11 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
       if (!e.ground) continue;
       const [x, y] = toLocal(lat, lon, e.centre);
       const g = e.ground;
+      if (world) {
+        if (x < g.west || x > g.west + g.dx * (g.n - 1) ||
+            y < g.south || y > g.south + g.dy * (g.n - 1)) continue;
+        return e.heightAt(x, y);
+      }
       if (Math.abs(x) > g.half || Math.abs(y) > g.half) continue;
       const i = Math.round((x + g.half) / g.spacing), j = Math.round((y + g.half) / g.spacing);
       return g.heights[Math.min(g.n - 1, Math.max(0, j)) * g.n + Math.min(g.n - 1, Math.max(0, i))];
@@ -403,7 +470,7 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
     const g = groundBelow(lat, lon);
     state.lastGround = g;
     state.eyeHeight = carto.height - g;
-    const { radius, fade } = state.enabled ? bubbleRadius(state.eyeHeight) : { radius: 0, fade: 0 };
+    const { radius, fade } = state.enabled ? bubbleRadius(state.eyeHeight, policy) : { radius: 0, fade: 0 };
     state.radius = radius;
     state.fade = fade;
     needed.clear();
@@ -412,13 +479,22 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
       state.centre = null;
       return;
     }
-    const centre = bubbleCentre({ lat, lon, heading: camera.heading, pitch: camera.pitch, eyeHeight: state.eyeHeight }, radius);
+    const centre = bubbleCentre({ lat, lon, heading: camera.heading, pitch: camera.pitch, eyeHeight: state.eyeHeight }, radius, policy);
     state.centre = centre;
-    const list = cellsInBubble(centre, radius + BUBBLE.margin);
+    const list = cellsInBubble(centre, radius + policy.margin, policy.cellZoom, world ? maxCells : 400);
     state.needed = list.map((c) => c.key);
     for (const c of list) needed.add(c.key);
+    let uploading = 0;
+    for (const e of cells.iterate()) {
+      if (e.status !== 'uploading') continue;
+      if (e.surface.ready && (!e.main || e.main.ready) && (!e.trees || e.trees.ready)) {
+        e.status = 'ready';
+        e.readyAt = now - 500;
+        state.jobsDone++;
+      } else uploading++;
+    }
     for (const c of list) {
-      if (state.pending.size >= MAX_INFLIGHT) break;
+      if (state.pending.size + uploading >= maxInflight) break;
       if (!cells.has(c.key)) load(c);
     }
     // cells built on the bare ellipsoid before the app's terrain arrived are rebuilt
@@ -429,20 +505,28 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
     cells.trim();
     // the mask follows the bubble in steps (rebuilt when the centre moved or cells changed)
     const ready = list.filter((c) => cells.peek(c.key)?.status === 'ready' && cells.peek(c.key).appear >= 1).map((c) => c.key).join(',');
-    const half = Math.ceil((radius + BUBBLE.margin) / 50) * 50;
+    const half = Math.ceil((radius + policy.margin) / 50) * 50;
     const moved = !mask.centre || Math.hypot(...toLocal(centre.lat, centre.lon, mask.centre)) > radius * 0.15 || half > mask.half;
     if ((moved || ready !== mask.cells) && !mask.next) {
       const mc = { lat: centre.lat, lon: centre.lon };
-      mask.next = { centre: mc, half, tex: buildMask(mc, half), cells: ready };
+      mask.next = { centre: mc, half, tex: buildMask(mc, half), cells: ready, matrix: enuOf(mc.lat, mc.lon) };
       setTileUniform('u_nfcMask', mask.next.tex);
       mask.pendingFrames = 2; // the texture lands on the next update; switch the frame after it
     }
     state.lastUpdate = now;
   }
 
-  const scratch = new Cesium.Matrix4();
+  const centre2 = new Cesium.Cartesian2();
+  const bubble = new Cesium.Cartesian4();
+  const clipBubble = new Cesium.Cartesian4();
+  const tileUp = new Cesium.Cartesian3();
+  const upWC = new Cesium.Cartesian3();
   const worldToMask = new Cesium.Matrix4();
   const eyeToMask = new Cesium.Matrix4();
+  const cellDistance = (e, centre) => {
+    const delta = (e.centre.lon - centre.lon + 540) % 360 - 180;
+    return 111320 * Math.hypot(delta * Math.cos(centre.lat * Math.PI / 180), e.centre.lat - centre.lat);
+  };
   function perFrame() {
     if (!state.enabled && state.fade === 0 && !creditShown) return;
     const now = performance.now();
@@ -455,35 +539,42 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
       }
     }
     if (mask.next && --mask.pendingFrames <= 0) {
-      Object.assign(mask, { centre: mask.next.centre, half: mask.next.half, cells: mask.next.cells });
+      Object.assign(mask, { centre: mask.next.centre, half: mask.next.half, cells: mask.next.cells, matrix: mask.next.matrix });
       mask.next = null;
     }
     // shared uniforms
-    const frame = mask.centre ?? state.centre;
+    const frame = mask.centre;
     let shown = 0;
     if (frame) {
-      Cesium.Matrix4.inverseTransformation(enuOf(frame.lat, frame.lon), worldToMask);
+      Cesium.Matrix4.inverseTransformation(mask.matrix, worldToMask);
       Cesium.Matrix4.multiply(worldToMask, camera.inverseViewMatrix, eyeToMask);
-      const c = state.centre ? toLocal(state.centre.lat, state.centre.lon, frame) : [0, 0];
-      const centre2 = new Cesium.Cartesian2(c[0], c[1]);
-      const bubble = new Cesium.Cartesian4(state.radius, BUBBLE.edge, TREE_RADIUS, state.fade);
-      for (const s of [shaders.main, shaders.trees, shaders.water]) {
-        s.setUniform('u_nfEyeToLocal', Cesium.Matrix4.clone(eyeToMask, scratch));
+      if (state.centre) {
+        Cesium.Cartesian3.fromDegrees(state.centre.lon, state.centre.lat, 0, ellipsoid, upWC);
+        Cesium.Matrix4.multiplyByPoint(worldToMask, upWC, tileUp);
+      } else {
+        tileUp.x = 0;
+        tileUp.y = 0;
+      }
+      centre2.x = tileUp.x;
+      centre2.y = tileUp.y;
+      Cesium.Cartesian4.fromElements(state.radius, policy.edge, TREE_RADIUS, state.fade, bubble);
+      for (const s of modelShaders) {
+        s.setUniform('u_nfEyeToLocal', eyeToMask);
         s.setUniform('u_nfCentre', centre2);
         s.setUniform('u_nfBubble', bubble);
       }
-      setTileUniform('u_nfcEyeToLocal', Cesium.Matrix4.clone(eyeToMask));
+      setTileUniform('u_nfcEyeToLocal', eyeToMask);
       setTileUniform('u_nfcCentre', centre2);
-      setTileUniform('u_nfcBubble', new Cesium.Cartesian4(state.radius, BUBBLE.edge, request.debug ? 0 : state.fade, mask.half || 1));
+      Cesium.Cartesian4.fromElements(state.radius, policy.edge, request.debug ? 0 : state.fade, mask.half || 1, clipBubble);
+      setTileUniform('u_nfcBubble', clipBubble);
       // visibility: models of needed cells; trees only inside the tree radius (LOD)
-      const treeR = state.radius * TREE_RADIUS + BUBBLE.margin;
-      const dist = new Map();
-      if (state.centre) for (const k of state.needed) dist.set(k, 0);
-      for (const e of cells.values()) {
+      const treeR = state.radius * TREE_RADIUS + policy.margin;
+      for (const e of cells.iterate()) {
         if (e.status !== 'ready') continue;
         const on = needed.has(e.key) && state.fade > 0;
         if (on && e.appear < 1) e.appear = Math.min(1, (now - e.readyAt) / 500);
-        const d = state.centre ? Math.max(0, Math.hypot(...toLocal(e.centre.lat, e.centre.lon, state.centre)) - tileSizeM(e.cell) * 0.71) : Infinity;
+        const d = state.centre ? Math.max(0, cellDistance(e, state.centre) - e.side * 0.71) : Infinity;
+        if (e.surface) e.surface.show = on;
         if (e.main) e.main.show = on;
         if (e.water) e.water.show = on;
         if (e.trees) e.trees.show = on && d < treeR;
@@ -507,18 +598,27 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
   // ---- QA API
   const api = {
     get state() {
+      const totals = { buildings: 0, trees: 0, groundPx: 0, groundReady: 0 };
+      for (const e of cells.iterate()) {
+        if (!needed.has(e.key) || e.status !== 'ready') continue;
+        totals.buildings += e.stats.buildings;
+        totals.trees += e.stats.trees;
+        totals.groundPx += e.stats.groundPx ** 2;
+        if (e.surface?.ready) totals.groundReady++;
+      }
       return {
+        totals,
         ...state,
         pending: [...state.pending],
         cached: cells.size,
         ready: [...cells.values()].filter((e) => e.status === 'ready').length,
-        shownCells: [...cells.values()].filter((e) => e.main?.show || e.water?.show).length,
+        shownCells: [...cells.values()].filter((e) => e.surface?.show || e.main?.show || e.water?.show).length,
         mask: { centre: mask.centre, half: mask.half },
         look,
       };
     },
     cells: () =>
-      cells.values().map((e) => ({ key: e.key, status: e.status, needed: needed.has(e.key), shown: !!(e.main?.show || e.water?.show), appear: e.appear, stats: e.stats, error: e.error })),
+      cells.values().map((e) => ({ key: e.key, status: e.status, needed: needed.has(e.key), shown: !!(e.surface?.show || e.main?.show || e.water?.show), appear: e.appear, stats: e.stats, error: e.error })),
     setEnabled(on) {
       state.enabled = !!on;
       state.lastUpdate = 0; // apply on the next frame
@@ -529,7 +629,7 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
       if (!state.radius) return true;
       return state.needed.every((k) => {
         const e = cells.peek(k);
-        return e && e.status !== 'pending' && (e.status === 'error' || e.appear >= 1);
+        return e && (e.status === 'error' || (e.status === 'ready' && e.appear >= 1 && (!world || e.surface.ready)));
       }) && mask.cells === state.needed.filter((k) => cells.peek(k)?.status === 'ready').join(',');
     },
     /**
@@ -616,7 +716,10 @@ export async function installNearField(viewer, { win = globalThis.window } = {})
       clearInterval(kick);
       showCredit(false);
       note?.remove();
-      for (const h of hosts) h.detach(tilePart.id);
+      for (const [ts, { host, shadows }] of hosts) {
+        host.detach(tilePart.id);
+        if (world && !ts.isDestroyed()) ts.shadows = shadows;
+      }
       cells.clear();
       scene.primitives.remove(collection);
       worker.terminate();

@@ -21,6 +21,8 @@ import * as Cesium from 'cesium';
 import { tilePrimitiveFacts, webglContext } from '../internals.js';
 import { createThemeEngine } from './engine.js';
 import { createOsmMask } from './osmMask.js';
+import { nearFieldRequest } from '../../../data/nearField/tiling.js';
+import { loadStylePack, rgb } from '../../../data/nearField/stylePack.js';
 import { BUILT_IN_PRESETS, loadPreset, presetRequest } from './presets.js';
 
 /** Install the theme the page asks for; resolves to the engine or null. */
@@ -28,10 +30,28 @@ export async function installThemeFromLocation(
   viewer,
   { win = globalThis.window } = {},
 ) {
-  const request = presetRequest(win?.location?.search ?? '');
+  const search = win?.location?.search ?? '';
+  const world = nearFieldRequest(search);
+  const request = presetRequest(search) ?? (world?.mode === 'world'
+    ? presetRequest('?preset=wintercats&' + search.slice(1))
+
+    : null);
   if (!request || !viewer?.scene) return null;
+  const style = world?.mode === 'world' ? (await loadStylePack(world.pack)).pack : null;
   const engine = createThemeEngine(Cesium, viewer, {
     wipe: request.wipe,
+    transformPreset: style && ((preset) => {
+      const uniforms = { ...preset.uniforms };
+      for (const [effect, values] of Object.entries(style.post)) {
+        uniforms[effect] = { ...uniforms[effect], ...values };
+      }
+      const light = style.light;
+      return {
+        ...preset,
+        uniforms,
+        sun: { ...light, color: rgb(light.color), intensity: 1, size: world.lite ? Math.min(light.size, 1024) : light.size },
+      };
+    }),
     budget: request.budget,
     tilePrimitiveFacts,
     glOf: webglContext,

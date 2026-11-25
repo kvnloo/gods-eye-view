@@ -34,6 +34,7 @@ import {
   roadWidth,
   waterField,
 } from '../cityDioramaMesh.js';
+import { treePrototype } from './canopy.js';
 import { ringArea } from './cellData.js';
 
 /** Theme asset kits. A preset's `nearField` block names one and may override any field. */
@@ -203,7 +204,7 @@ function windows(s, x0, y0, x1, y1, zFloor, storeys, pane, frame, r, door = fals
 }
 
 /** Flat-roofed extrusion of a footprint (with courtyards) and storey bands. */
-function extrude(s, outer, holes, z0, zFloor, zTop, wall, roof, band, r) {
+function extrude(s, outer, holes, z0, zFloor, zTop, wall, roof, band, r, narrowBands = false) {
   const rings = [outer, ...holes];
   const storeys = Math.min(40, Math.floor((zTop - zFloor) / STOREY));
   for (const ring of rings) {
@@ -219,7 +220,7 @@ function extrude(s, outer, holes, z0, zFloor, zTop, wall, roof, band, r) {
         let z = zFloor + STOREY * 0.9;
         for (let k = 1; k < storeys; k++) {
           const zw = zFloor + k * STOREY + 0.9;
-          const ze = Math.min(zTop - 0.4, zw + 1.5);
+          const ze = Math.min(zTop - 0.4, zw + (narrowBands ? 0.85 : 1.5));
           if (zw > z) q(z, zw, wall);
           if (ze > zw) q(zw, ze, band);
           z = Math.max(z, ze);
@@ -437,7 +438,8 @@ export function buildCell(fixture, ground, kit = NEAR_FIELD_KITS.realism, opts =
       const tw = linear(kit.towerWalls[Math.floor(r() * kit.towerWalls.length)], 0.05, r, sat);
       const roof = linear(kit.towerRoofs[Math.floor(r() * kit.towerRoofs.length)], 0.06, r, sat);
       const band = linear(kit.window, 0.08, r, sat);
-      extrude(s, outer, b.holes ?? [], z0, floor, zTop, height > 14 ? tw : wall, roof, band, r);
+      const towerHeight = opts.style ? 22 : 14;
+      extrude(s, outer, b.holes ?? [], z0, floor, zTop, height > towerHeight ? tw : wall, roof, band, r, !!opts.style);
       top = zTop + (height > 9 ? 0.7 : 0);
       counts.extruded++;
     }
@@ -503,8 +505,24 @@ export function buildCell(fixture, ground, kit = NEAR_FIELD_KITS.realism, opts =
     }
     return protos.get(key);
   };
+  const species = opts.style?.trees.species;
+  const shareTotal = species?.reduce((sum, item) => sum + item.share, 0);
   let treeCount = 0;
   const plant = (x, y, pineShare, scale = 1) => {
+    if (species) {
+      let choice = rp() * shareTotal;
+      let index = 0;
+      while (index < species.length - 1 && (choice -= species[index].share) >= 0) index++;
+      const item = species[index];
+      const variant = rp() < 0.5 ? 0 : 1;
+      const key = `species:${index}:${variant}`;
+      if (!protos.has(key)) protos.set(key, { soup: treePrototype(item, variant), instances: [] });
+      const [min, max] = item.radius;
+      const radius = scale * (min + rp() * (max - min));
+      protos.get(key).instances.push([x, y, gz(x, y) - 0.35, radius, rp() * Math.PI * 2, Math.floor(rp() * 256)]);
+      treeCount++;
+      return;
+    }
     const kind = rp() < pineShare ? 'pine' : 'leaf';
     const autumn = kind === 'leaf' && rp() < kit.autumnShare;
     const ncol = kind === 'pine' ? kit.pine.length : autumn ? kit.autumn.length : kit.leaf.length;
@@ -532,12 +550,19 @@ export function buildCell(fixture, ground, kit = NEAR_FIELD_KITS.realism, opts =
         plant(px, py, pineShare);
       }
   };
+  const styleDensity = opts.style?.trees.density;
   for (const a of fixture.areas ?? []) {
+    if (styleDensity) {
+      const keep = styleDensity[a.k] ?? 0;
+      if (keep) scatter(a, a.k === 'wood' ? 10 : 13, keep, 0, 2);
+      continue;
+    }
     if (a.k === 'wood') scatter(a, 6.5, 0.8, Math.min(0.95, kit.pineShare + 0.15), 1.6);
     else if (a.k === 'park' || a.k === 'grass') scatter(a, 10, 0.4, kit.pineShare, 2.2);
     else if (a.k === 'residential') scatter(a, 12, 0.3 * kit.yard, kit.pineShare * 0.7, 2.4);
   }
-  if (kit.street > 0)
+  const street = styleDensity ? styleDensity.street * (opts.trees ?? 1) : kit.street;
+  if (street > 0)
     for (const seg of roads) {
       if (seg.w < 7 || seg.w > 13) continue;
       const [ax, ay] = seg.a;
@@ -548,7 +573,7 @@ export function buildCell(fixture, ground, kit = NEAR_FIELD_KITS.realism, opts =
       const off = seg.w / 2 + 1.4;
       for (let d = 5; d < L - 4; d += 10)
         for (const side of [-1, 1]) {
-          if (rp() > kit.street) continue;
+          if (rp() > street) continue;
           const x = ax + ((bx - ax) * d) / L + nx * off * side;
           const y = ay + ((by - ay) * d) / L + ny * off * side;
           if (!free(x, y, 0.7)) continue;
@@ -565,7 +590,7 @@ export function buildCell(fixture, ground, kit = NEAR_FIELD_KITS.realism, opts =
   const ws = new Soup();
   let rocks = 0;
   const shownWater = fixture.waterShown ? waterField({ water: fixture.waterShown }) : water;
-  if (water && shownWater) {
+  if (!opts.style && water && shownWater) {
     const { n, cell, half, ids, dist } = shownWater;
     const EDGE_CELLS = 4;
     const op = (i, j) => (i < 0 || j < 0 || i >= n || j >= n || !ids[j * n + i] ? 0 : Math.min(1, Math.max(0, (dist[j * n + i] - 1) / (EDGE_CELLS - 1))));

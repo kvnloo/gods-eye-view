@@ -15,7 +15,7 @@ self.onmessage = async (event) => {
       return;
     }
     const out = await generator.generate(job);
-    const transfer = [out.main?.buffer, out.water?.buffer, out.trees?.buffer].filter(Boolean);
+    const transfer = [out.main?.buffer, out.ground?.buffer, out.water?.buffer, out.trees?.buffer].filter(Boolean);
     self.postMessage({ id, ok: true, out, data: { ...generator.stats } }, transfer);
   } catch (error) {
     self.postMessage({ id, ok: false, error: String(error?.message ?? error) });

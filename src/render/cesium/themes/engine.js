@@ -450,7 +450,7 @@ export function createThemeEngine(Cesium, viewer, options = {}) {
 
   // -------------------------------------------------------------- presets
   function setPreset(input) {
-    const { preset, problems } = normalizePreset(input, {
+    const { preset, problems } = normalizePreset(options.transformPreset?.(input) ?? input, {
       customIds: [...effects.keys()],
     });
     for (const raw of preset.effects ?? []) addEffect(raw, { rebuild: false });

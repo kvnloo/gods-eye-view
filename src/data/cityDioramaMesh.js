@@ -153,14 +153,14 @@ export function linear(hex, jitter = 0, r = Math.random, sat = 1) {
 // ---------- ground height (baked grid, bilinear)
 export function groundSampler(ground) {
   if (!ground?.heights?.length) return () => 0;
-  const { n, spacing, half, heights } = ground;
+  const { n, spacing, half, heights, west = -half, south = -half, dx = spacing, dy = spacing } = ground;
   const off = ground.offset ?? 0;
   const h0 = ground.centre ?? 0;
   return (x, y) => {
-    const fx = Math.min(n - 1.001, Math.max(0, (x + half) / spacing));
-    const fy = Math.min(n - 1.001, Math.max(0, (y + half) / spacing));
-    const i = Math.floor(fx);
-    const j = Math.floor(fy);
+    const fx = Math.min(n - 1, Math.max(0, (x - west) / dx));
+    const fy = Math.min(n - 1, Math.max(0, (y - south) / dy));
+    const i = Math.min(n - 2, Math.floor(fx));
+    const j = Math.min(n - 2, Math.floor(fy));
     const tx = fx - i;
     const ty = fy - j;
     const at = (a, b) => heights[b * n + a];

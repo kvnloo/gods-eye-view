@@ -1,0 +1,14 @@
+{
+  "max_hot_entries": 4,
+  "evidence": "CONTRIBUTING-FACTORY.md#hot-files: entries touched by >=10% of the 763 first-parent changes on upstream/main 77e0937 since 2026-08-25, or by >=10% of the 123 open kvnloo/gods-eye-view PRs (2026-11-25). Regenerate with scripts/factory/hot_file_evidence.py.",
+  "entries": [
+    {"id": "current-state", "paths": ["docs/CURRENT-STATE.md"]},
+    {"id": "package-boundaries", "paths": ["scripts/package-boundaries.json"]},
+    {"id": "format-scope", "paths": ["scripts/format-scope.json"]},
+    {"id": "changelog", "paths": ["CHANGELOG.md"]},
+    {"id": "package-manifest", "paths": ["package.json", "package-lock.json"]},
+    {"id": "i18n-catalogues", "paths": ["src/i18n/locales/*.json", "src/i18n/same-as-english.json"]},
+    {"id": "data-sources", "paths": ["DATA_SOURCES.md"]},
+    {"id": "readme", "paths": ["README.md"]}
+  ]
+}

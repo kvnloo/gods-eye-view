@@ -34,6 +34,31 @@ test('the announcement stays unread when a lazy Stories open resolves to false',
   assert.equal(localStorage.getItem('gevStoriesPopSeen'), '1');
 });
 
+test('on a phone-width screen the Stories announcement does not open over the view', async (t) => {
+  const host = document.body.appendChild(document.createElement('div'));
+  const pinia = createPinia();
+  useStoriesStore(pinia).connect({ open: async () => true });
+  const original = globalThis.matchMedia;
+  globalThis.matchMedia = (query) => ({
+    matches: query === '(max-width: 720px)',
+    media: query,
+    addEventListener() {},
+    removeEventListener() {},
+  });
+  const app = createApp(StoriesView).use(pinia);
+  app.mount(host);
+  t.after(() => {
+    app.unmount();
+    host.remove();
+    globalThis.matchMedia = original;
+    localStorage.removeItem('gevStoriesPopSeen');
+  });
+  await nextTick();
+  assert.ok(host.querySelector('#hStories'), 'the Stories entry is still there');
+  assert.equal(host.querySelector('#hPop'), null);
+  assert.equal(localStorage.getItem('gevStoriesPopSeen'), null, 'still unread');
+});
+
 test('the story screen previews a drag and seeks once on release', async (t) => {
   const host = document.body.appendChild(document.createElement('div'));
   const pinia = createPinia();

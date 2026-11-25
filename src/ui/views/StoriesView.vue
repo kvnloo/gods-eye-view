@@ -19,6 +19,7 @@ import {
 } from '../../stories/format.js';
 import { guardStoriesKeyboard } from '../../stories/keyboard.js';
 import UiButton from '../kit/UiButton.vue';
+import { MOBILE_SHELL_MEDIA_QUERY } from '../mobileShell.js';
 
 // The screens, their styles and the story data load with Stories (see
 // src/stories/boot.js); only the button, popup and toast load with GEV.
@@ -143,6 +144,10 @@ function readPopSeen() {
     return store.popSeen;
   }
 }
+// On a phone the popup covers half the view on first load, and the welcome
+// card already announces Stories there: it waits for a wider screen.
+const phoneScreen = () =>
+  globalThis.matchMedia?.(MOBILE_SHELL_MEDIA_QUERY).matches === true;
 function markPopSeen() {
   store.popSeen = true;
   popOpen.value = false;
@@ -274,7 +279,7 @@ onMounted(() => {
       mode.value !== 'closed' ||
       document.body.classList.contains('stories-mode'),
   });
-  popOpen.value = !readPopSeen();
+  popOpen.value = !readPopSeen() && !phoneScreen();
   watchCredit();
 });
 onBeforeUnmount(() => {

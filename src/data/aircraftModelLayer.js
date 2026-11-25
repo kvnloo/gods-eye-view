@@ -15,6 +15,7 @@ import {
 } from './modelRecord.js';
 import { modelDrawnScale } from './modelVisualAnchor.js';
 import { fleetModelSet } from './fleetModels.js';
+import { scenePixelRatioOf } from './iconAtlas.js';
 import { findCamera, findDraw, rendererOf } from '../render/rendererOf.js';
 import { fromDegrees, toLonLatH } from '../geo/ellipsoid.js';
 import {
@@ -138,7 +139,7 @@ export function createAircraftModels({
     return {
       width: Number(canvas?.clientWidth) || 0,
       height: Number(canvas?.clientHeight) || 0,
-      pixelRatio: renderer?.quality?.get?.()?.pixelRatio ?? 1,
+      pixelRatio: scenePixelRatioOf(renderer?.quality?.get?.()?.pixelRatio),
     };
   }
 

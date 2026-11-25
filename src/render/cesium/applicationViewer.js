@@ -137,7 +137,7 @@ export function createApplicationViewer({
     viewer.scene.skyAtmosphere.brightnessShift = -0.08;
     // FORK-ONLY (exp/theme-engine-v0): ?preset= / ?theme= restyles the whole
     // globe (themes/index.js); loaded only when asked for.
-    if (/[?&](preset|theme)=/.test(globalThis.location?.search ?? ''))
+    if (/[?&]((preset|theme)=|world=procedural(?:&|$))/.test(globalThis.location?.search ?? ''))
       void import('./themes/index.js')
         .then(({ installThemeFromLocation }) =>
           installThemeFromLocation(viewer),
@@ -145,7 +145,7 @@ export function createApplicationViewer({
         .catch((error) => console.error('[theme] failed to load', error));
     // FORK-ONLY (exp/near-field-v0): ?nearField=1 adds the camera-following
     // OSM detail bubble over the photoreal tiles (nearField/index.js).
-    if (/[?&]nearField=(1|true)\b/.test(globalThis.location?.search ?? ''))
+    if (/[?&](nearField=(1|true)|world=procedural|(theme|preset)=wintercats)(?:&|$)/.test(globalThis.location?.search ?? ''))
       void import('./nearField/index.js')
         .then(({ installNearField }) => installNearField(viewer))
         .catch((error) => console.error('[nearField] failed to load', error));

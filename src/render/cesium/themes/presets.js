@@ -77,10 +77,11 @@ const WINTERCATS = {
       vegGb: 0.04,
       vegChroma: 1.0,
       // app loop r01 (GEV-I1): warmer, more muted olive grass and canopy (held-out DISTS -0.0016, 5/6 views; blind judges 15/20 seats)
-      grass: [0.38, 0.5, 0.22],
-      canopy: [0.13, 0.25, 0.13],
-      water: [0.353, 0.651, 0.659],
-      waterDeep: [0.247, 0.459, 0.565],
+      // app loop r08 (GEV-I1): darker olive greens and deeper teal water (TRAIN target class medians)
+      grass: [0.325, 0.425, 0.28],
+      canopy: [0.11, 0.21, 0.17],
+      water: [0.3, 0.59, 0.59],
+      waterDeep: [0.21, 0.42, 0.51],
       roofA: [0.643, 0.314, 0.184],
       roofB: [0.373, 0.42, 0.271],
       roofC: [0.702, 0.573, 0.447],
@@ -113,6 +114,14 @@ const WINTERCATS = {
       waterSky: 0.5,
       osmRoofFlat: 1,
       vegFlat: 1,
+      // app loop r08: painted volume (sun-lit tree crowns, lawn strokes, hip roofs) and steep facets away from OSM
+      // buildings painted as canopy (held-out DISTS -0.0152 4/6, train -0.0086 20/24; blind A/B 16/20 seats)
+      matTree: 1,
+      crownM: 9,
+      crownGap: 0.5,
+      grassTex: 1,
+      matRoof: 1,
+      osmTreeFacets: 1,
     },
     ao: {
       aoStrength: 0.4,
@@ -340,8 +349,42 @@ export function normalizePreset(input, { customIds = [] } = {}) {
       quality: normalizeQuality(input.quality, problems),
       hud: normalizeHud(input.hud, problems),
       nearField: normalizeNearField(input.nearField, problems),
+      sun: normalizeSun(input.sun, problems),
     },
     problems,
+  };
+}
+
+/**
+ * A preset's own sun (themeSun.js): real azimuth, elevation clamped to
+ * [minEl, maxEl] degrees, optional cast shadows. Null when absent: the
+ * scene's sun is untouched.
+ */
+export function normalizeSun(s, problems = []) {
+  if (s == null) return null;
+  if (typeof s !== 'object') {
+    problems.push('bad sun block');
+    return null;
+  }
+  const num = (k, lo, hi, d) => {
+    if (s[k] === undefined) return d;
+    if (Number.isFinite(s[k]) && s[k] >= lo && s[k] <= hi) return s[k];
+    problems.push(`bad sun.${k}`);
+    return d;
+  };
+  const minEl = num('minEl', -10, 90, 15);
+  const maxEl = Math.max(minEl, num('maxEl', -10, 90, 40));
+  return {
+    minEl,
+    maxEl,
+    shadows: s.shadows !== false,
+    darkness: num('darkness', 0, 1, 0.55),
+    softShadows: s.softShadows !== false,
+    size: num('size', 512, 8192, 4096),
+    maxDistance: num('maxDistance', 100, 50000, 5000),
+    color: isRgb(s.color) ? [...s.color] : [1, 1, 1],
+    intensity: num('intensity', 0, 10, 2),
+    depthBias: s.depthBias === undefined ? null : num('depthBias', 0, 0.05, null),
   };
 }
 

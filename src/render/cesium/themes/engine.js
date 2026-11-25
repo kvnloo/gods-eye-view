@@ -28,6 +28,7 @@ import { TILE_UNIFORMS, tileStagePart, tileUniformValue } from './tileStage.js';
 import { tileShaderHost, HOST_KEY } from './tileShaderHost.js';
 import { normalizePreset, PERF_TIERS } from './presets.js';
 import { parseCustomEffect } from './customEffects.js';
+import { createThemeSun } from './themeSun.js';
 
 const LAUNCHPAD = 'launchpad';
 const WIPE = 'wipe';
@@ -73,6 +74,19 @@ export function createThemeEngine(Cesium, viewer, options = {}) {
     : null;
   const listeners = new Set();
   let disposed = false;
+  // a preset's own sun (themeSun.js); absent in harnesses without Cesium lights
+  const sun =
+    Cesium.DirectionalLight && scene.shadowMap !== undefined && scene.globe
+      ? createThemeSun(Cesium, viewer)
+      : null;
+  function applySun() {
+    try {
+      sun?.set(disposed ? null : (state.preset?.sun ?? null));
+    } catch (error) {
+      if (state.errors.length < 50)
+        state.errors.push({ id: 'sun', message: String(error?.message ?? error) });
+    }
+  }
 
   const changed = () => {
     scene.requestRender?.();
@@ -431,6 +445,7 @@ export function createThemeEngine(Cesium, viewer, options = {}) {
           state.errors.push({ id: 'osmMask', message: String(error?.message ?? error) });
       }
     }
+    if (sun?.state.active) sun.update();
     if (++qualityTick % 30 === 0) applyHud();
     if (quality && qualityTick % 30 === 0) {
       applyTileQuality();
@@ -444,7 +459,7 @@ export function createThemeEngine(Cesium, viewer, options = {}) {
 
   // -------------------------------------------------------------- presets
   function setPreset(input) {
-    const { preset, problems } = normalizePreset(input, {
+    const { preset, problems } = normalizePreset(options.transformPreset?.(input) ?? input, {
       customIds: [...effects.keys()],
     });
     for (const raw of preset.effects ?? []) addEffect(raw, { rebuild: false });
@@ -478,6 +493,7 @@ export function createThemeEngine(Cesium, viewer, options = {}) {
     if (state.enabled.has('tile')) attachTiles();
     applyQuality(preset.quality ?? null);
     applyHud();
+    applySun();
     return problems;
   }
 
@@ -683,6 +699,14 @@ export function createThemeEngine(Cesium, viewer, options = {}) {
     setBudget(on) {
       state.budget = !!on;
     },
+    /** The preset sun's state, or null (no sun support in this scene). */
+    get sun() {
+      return sun ? sun.state : null;
+    },
+    /** Fix the preset sun's time (ISO, ms, JulianDate); null = the scene clock. */
+    setSunTime(time) {
+      sun?.setTime(time);
+    },
     onChange(fn) {
       listeners.add(fn);
       return () => listeners.delete(fn);
@@ -696,6 +720,7 @@ export function createThemeEngine(Cesium, viewer, options = {}) {
       removeStages();
       applyQuality(null);
       applyHud();
+      sun?.dispose();
       for (const ts of hosts)
         if (!ts.isDestroyed?.()) ts[HOST_KEY]?.detach('theme');
       hosts.clear();

@@ -1,0 +1,25 @@
+{
+  "ground": {
+    "meadow": ["#737d5b", 0.08], "park": ["#788660", 0.06], "wood": ["#56654e", 0.07],
+    "residential": ["#898c7d", 0.08], "water": ["#486675", 0.02], "shallow": ["#60918e", 0.03],
+    "road": ["#626569", 0.04], "kerb": ["#a3a6a5", 0.04]
+  },
+  "kit": {
+    "walls": ["#b6b5ac", "#cbcac2", "#9e998f"], "roofs": ["#50545a", "#686663"],
+    "towerWalls": ["#a0a8ad", "#b9bdbe"], "towerRoofs": ["#5d656a"]
+  },
+  "trees": {
+    "species": [
+      { "shape": "round", "radius": [2, 3.6], "squash": 1, "lobes": 8, "colours": ["#668752", "#6e8a58"], "shade": "#465c40", "share": 0.8 },
+      { "shape": "conifer", "radius": [1.4, 2.6], "squash": 3, "lobes": 5, "colours": ["#537354", "#56785e"], "shade": "#3d5745", "share": 0.2 }
+    ]
+  },
+  "light": { "minEl": 28, "maxEl": 50, "color": "#f7f6f2", "shadeTint": [1, 1, 1] },
+  "post": {
+    "ao": { "aoStrength": 0.2 },
+    "dof": { "tiltAmount": 0 },
+    "grade": { "temperature": 0, "saturation": 0.9, "contrast": 1 },
+    "lut": { "lutStrength": 0 }
+  },
+  "look": { "meadow": 0.2, "patina": 0.3, "darkLift": 0.01, "shadeCool": 0 }
+}

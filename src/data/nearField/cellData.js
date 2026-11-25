@@ -21,6 +21,13 @@ const WATER_CLASSES = new Set(['ocean', 'lake', 'river', 'pond', 'dock', 'basin'
 const TREE_COVER = new Set(['wood', 'forest']);
 const GRASS_COVER = new Set(['grass', 'park', 'meadow', 'scrub', 'garden']);
 const STREETS = new Set(['motorway', 'trunk', 'primary', 'secondary', 'tertiary', 'minor', 'service', 'pedestrian', 'path', 'track', 'busway', 'raceway']);
+const WORLD_COVER = {
+  farmland: 'farmland', cropland: 'farmland', farm: 'farmland', orchard: 'farmland',
+  vineyard: 'farmland', farmyard: 'farmland', allotments: 'farmland',
+  industrial: 'commercial', commercial: 'commercial', retail: 'commercial', quarry: 'rock',
+  sand: 'sand', beach: 'sand', bare_rock: 'rock', rock: 'rock', scree: 'rock',
+  glacier: 'ice', ice: 'ice', cemetery: 'park', recreation_ground: 'park',
+};
 const SUBCLASS_ROAD = { minor: 'residential', path: 'footway' };
 
 /** Signed area in tile pixels (y down): > 0 = MVT exterior ring. */
@@ -37,7 +44,7 @@ function signedArea(ring) {
  */
 export function decodeDataTile(buffer, tile) {
   const vt = new VectorTile(new PbfReader(buffer));
-  const out = { tile, extent: 4096, buildings: [], water: [], piers: [], pierLines: [], cover: [], roads: [] };
+  const out = { tile, extent: 4096, buildings: [], water: [], piers: [], pierLines: [], cover: [], roads: [], worldCover: [], worldRoads: [], plazas: [] };
   const polys = (f) => {
     const rings = f.loadGeometry();
     const list = [];
@@ -69,16 +76,22 @@ export function decodeDataTile(buffer, tile) {
   each('landcover', (f) => {
     const c = f.properties.class;
     const k = TREE_COVER.has(c) ? 'wood' : GRASS_COVER.has(c) ? 'grass' : null;
-    if (!k || f.type !== 3) return;
-    for (const rings of polys(f)) out.cover.push({ rings, k });
+    if (f.type !== 3) return;
+    if (k) for (const rings of polys(f)) out.cover.push({ rings, k });
+    else {
+      const kind = WORLD_COVER[f.properties.subclass] ?? WORLD_COVER[c];
+      if (kind) for (const rings of polys(f)) out.worldCover.push({ rings, k: kind });
+    }
   });
   each('park', (f) => {
     if (f.type !== 3) return;
     for (const rings of polys(f)) out.cover.push({ rings, k: 'park' });
   });
   each('landuse', (f) => {
-    if (f.type !== 3 || f.properties.class !== 'residential') return;
-    for (const rings of polys(f)) out.cover.push({ rings, k: 'residential' });
+    if (f.type !== 3) return;
+    const c = f.properties.class;
+    if (c === 'residential') for (const rings of polys(f)) out.cover.push({ rings, k: c });
+    else if (WORLD_COVER[c]) for (const rings of polys(f)) out.worldCover.push({ rings, k: WORLD_COVER[c] });
   });
   each('transportation', (f) => {
     const c = f.properties.class;
@@ -87,10 +100,21 @@ export function decodeDataTile(buffer, tile) {
       else if (f.type === 2) for (const line of f.loadGeometry()) out.pierLines.push(line.map((p) => [p.x, p.y]));
       return;
     }
-    if (f.type !== 2 || !STREETS.has(c)) return;
     if (f.properties.brunnel === 'tunnel') return;
+    if (f.type === 3 && (c === 'pedestrian' || c === 'path')) {
+      for (const rings of polys(f)) out.plazas.push({ rings });
+      return;
+    }
+    if (f.type !== 2 || (!STREETS.has(c) && c !== 'rail' && c !== 'transit')) return;
     const t = SUBCLASS_ROAD[c] ?? c;
-    for (const line of f.loadGeometry()) if (line.length >= 2) out.roads.push({ t, p: line.map((q) => [q.x, q.y]) });
+    for (const line of f.loadGeometry()) {
+      if (line.length < 2) continue;
+      const p = line.map((q) => [q.x, q.y]);
+      if (STREETS.has(c)) out.roads.push({ t, p });
+      const subclass = f.properties.subclass;
+      const worldType = ['cycleway', 'steps', 'living_street', 'unclassified'].includes(subclass) ? subclass : t;
+      if (f.properties.brunnel !== 'bridge') out.worldRoads.push({ t: worldType, p });
+    }
   });
   return out;
 }
@@ -162,7 +186,10 @@ export function rasterize(ids, n, cell, half, polygons, id = 1) {
         if (y0 !== y1) edges.push([x0, y0, x1, y1]);
       }
     if (!edges.length) continue;
-    for (let row = 0; row < n; row++) {
+    const [, south, , north] = bboxOf(rings[0]);
+    const first = Math.max(0, Math.floor((half - north) / cell));
+    const end = Math.min(n, Math.ceil((half - south) / cell));
+    for (let row = first; row < end; row++) {
       const y = half - (row + 0.5) * cell;
       const xs = [];
       for (const [x0, y0, x1, y1] of edges)
@@ -229,7 +256,7 @@ export function toRle(ids, n) {
  * generated exactly once across cells); trees and water are cut to the cell
  * square by the mesh builder.
  */
-export function cellFixture(data, cell) {
+export function cellFixture(data, cell, world = false) {
   const origin = tileCentre(cell);
   const P = projector(data, origin);
   const side = tileSizeM(cell);
@@ -240,6 +267,7 @@ export function cellFixture(data, cell) {
   const box = [bx0, by0, bx1, by1];
   const own = ([x, y]) => x >= box[0] && x < box[2] && y >= box[1] && y < box[3];
   const buildings = [];
+  const contacts = [];
   for (const b of data.buildings) {
     if (b.hide) continue; // building:part outlines that OpenMapTiles marks as not for 3D
     const rings = b.rings.map((r) => r.map(P));
@@ -250,9 +278,9 @@ export function cellFixture(data, cell) {
     const area = Math.abs(ringArea(outer));
     if (area < 6) continue;
     const c = ringCentroid(outer);
-    if (!own(c)) continue;
     const holes = rings.slice(1).map((r) => tidy(r, false)).filter((r) => r.length >= 3 && Math.abs(ringArea(r)) > 4);
-    buildings.push({ p: outer, holes, h: b.h, min: b.min, area, c });
+    if (world) contacts.push([outer, ...holes]);
+    if (own(c)) buildings.push({ p: outer, holes, h: b.h, min: b.min, area, c });
   }
   const polysIn = (list, pad) =>
     list
@@ -273,8 +301,8 @@ export function cellFixture(data, cell) {
   const shown = ids.slice();
   clearNear(shown, wn, WATER_CELL_M, whalf, [...pierLines, ...piers.map((r) => [...r, r[0]])], MARINA_KEEP_M);
   for (const r of piers) rasterize(shown, wn, WATER_CELL_M, whalf, [[r]], 0);
-  const areas = polysIn(data.cover, 20).map((f) => ({ k: f.k, p: tidy(f.rings[0], true), holes: f.rings.slice(1) }));
-  const roads = data.roads
+  const areas = polysIn(world ? [...data.cover, ...data.worldCover] : data.cover, 20).map((f) => ({ k: f.k, p: tidy(f.rings[0], true), holes: f.rings.slice(1) }));
+  const roads = (world ? data.worldRoads : data.roads)
     .map((r) => ({ t: r.t, p: r.p.map(P) }))
     .filter((r) => overlaps(bboxOf(r.p), half, 30));
   const anyWater = ids.some((v) => v);
@@ -287,6 +315,7 @@ export function cellFixture(data, cell) {
     side,
     box,
     buildings,
+    ...(world && { contacts, waterPolygons: water, plazas: polysIn(data.plazas, 20) }),
     roads,
     areas,
     piers,

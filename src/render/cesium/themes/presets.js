@@ -76,8 +76,9 @@ const WINTERCATS = {
       flattenRings: 2,
       vegGb: 0.04,
       vegChroma: 1.0,
-      grass: [0.373, 0.541, 0.251],
-      canopy: [0.165, 0.29, 0.188],
+      // app loop r01 (GEV-I1): warmer, more muted olive grass and canopy (held-out DISTS -0.0016, 5/6 views; blind judges 15/20 seats)
+      grass: [0.38, 0.5, 0.22],
+      canopy: [0.13, 0.25, 0.13],
       water: [0.353, 0.651, 0.659],
       waterDeep: [0.247, 0.459, 0.565],
       roofA: [0.643, 0.314, 0.184],

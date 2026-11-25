@@ -2,6 +2,7 @@
 # Offline tests for scripts/factory/sync-main.sh using throwaway file:// repositories.
 # Covers: in sync, check-only, fast-forward, divergence, upstream rewrite, auth/access failure,
 # server-side rejection (a pre-receive hook printing GitHub's GH013 text). Never touches GitHub.
+# shellcheck disable=SC2016,SC2034  # check() evals single-quoted assertions that read these vars
 set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 sync="$here/sync-main.sh"

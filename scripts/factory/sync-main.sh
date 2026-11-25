@@ -16,6 +16,7 @@
 # Exit codes: 0 in sync / fast-forwarded / check ok, 2 authentication or access failure,
 # 3 divergence (not fast-forwardable), 4 push rejected, 5 post-push verification mismatch,
 # 64 usage error.
+# shellcheck disable=SC2016  # backticks are literal markdown for the job summary
 set -euo pipefail
 
 mode=${SYNC_MODE:-apply}

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Read-only audit of the main-mirror protection model (docs/factory/MAIN-SYNC.md).
 # Needs `gh` authenticated as a repository admin. Changes nothing.
+# shellcheck disable=SC2015  # ok/no only print, so `a && ok || no` is a safe if/else
 set -euo pipefail
 R=${1:-kvnloo/gods-eye-view}
 bad=0

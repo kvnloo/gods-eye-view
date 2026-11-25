@@ -429,6 +429,8 @@ export function presetRequest(search = '') {
     quality: q.get('themeQuality') !== '0',
     osm: q.get('themeOsm') !== '0',
     osmDebug: q.get('themeOsmDebug') === '1',
+    // GEV-G: same-origin override of the learned model file (QA / A-B of models)
+    ...(/^\/[^/]/.test(q.get('themeLearned') ?? '') && { learnedUrl: q.get('themeLearned') }),
   };
 }
 

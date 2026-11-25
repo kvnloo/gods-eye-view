@@ -51,9 +51,24 @@ export async function installThemeFromLocation(
       console.error('[theme] preset failed to load:', error);
     }
   };
-  await apply(request.value);
+  // GEV-G: ?theme=wintercats-learned = the wintercats stack with knobs set
+  // per view by the learned model (learnedTheme.js); the model file is fetched
+  let learned = null;
+  if (request.value === 'wintercats-learned') {
+    try {
+      const { loadLearnedModel, createLearnedTheme } = await import('./learnedTheme.js');
+      const model = await loadLearnedModel(request.learnedUrl || undefined);
+      learned = createLearnedTheme(Cesium, viewer, engine, model);
+    } catch (error) {
+      console.error('[theme] learned theme failed, falling back to wintercats:', error);
+      await apply('wintercats');
+    }
+  } else await apply(request.value);
   if (request.osmDebug) engine.set('tile', 'debugOsm', 1);
-  if (win) win.__gevTheme = Object.assign(engine, { loadPreset: apply });
+  if (win) {
+    win.__gevTheme = Object.assign(engine, { loadPreset: apply });
+    if (learned) win.__gevLearned = learned;
+  }
   if (request.panel) {
     const { mountThemePanel } = await import('./panel.js');
     mountThemePanel(engine, {

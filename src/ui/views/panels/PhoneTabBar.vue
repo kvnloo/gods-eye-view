@@ -28,7 +28,7 @@ const tabs = computed(() =>
 <template>
   <Teleport v-if="phone" to="body">
     <div id="mobile-sheet-backdrop" :hidden="!phone.sheet"></div>
-    <button v-if="phone.sheet && phone.snap" id="mobile-sheet-grab" type="button" :aria-label="grabLabel" aria-keyshortcuts="ArrowUp ArrowDown" :data-snap="phone.snap"><span class="mobile-sheet-grab-bar" aria-hidden="true"></span></button>
+    <UiButton v-if="phone.sheet && phone.snap" id="mobile-sheet-grab" :label="grabLabel" :native-title="false" aria-keyshortcuts="ArrowUp ArrowDown" :data-snap="phone.snap"><span class="mobile-sheet-grab-bar" aria-hidden="true"></span></UiButton>
     <nav id="mobile-tab-bar" :aria-label="t('Panels')" :aria-hidden="String(!phone.enabled)">
       <template v-for="tab in tabs" :key="tab.sheet ?? tab.action">
         <CastButton v-if="tab.action === 'cast'" variant="tab" />

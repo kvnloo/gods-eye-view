@@ -3,6 +3,8 @@ import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 import { t } from '../../../i18n/index.js';
 import { useCastStore } from '../../stores/cast.js';
+import UiButton from '../../kit/UiButton.vue';
+import UiIcon from '../../kit/UiIcon.vue';
 
 // The Cast button: a tab in the phone tab bar, an icon in the desktop globe
 // actions. Both open the same menu (CastMenu.vue).
@@ -21,8 +23,8 @@ const onClick = (event) => {
 </script>
 
 <template>
-  <button v-if="props.variant === 'tab'" type="button" class="mobile-tab mobile-tab-cast" data-mobile-action="cast" aria-haspopup="dialog" aria-controls="cast-menu" :aria-expanded="String(menuOpen)" :aria-pressed="String(Boolean(casting))" :aria-label="label" @click="onClick"><span class="material-symbols-outlined mobile-tab-icon" aria-hidden="true">{{ casting ? 'cast_connected' : 'cast' }}</span><span class="mobile-tab-label" aria-hidden="true">{{ t('Cast') }}</span></button>
-  <button v-else id="cast-btn" type="button" aria-haspopup="dialog" aria-controls="cast-menu" :aria-expanded="String(menuOpen)" :aria-pressed="String(Boolean(casting))" :aria-label="label" :title="label" @click="onClick">
-    <span class="material-symbols-outlined" aria-hidden="true">{{ casting ? 'cast_connected' : 'cast' }}</span>
-  </button>
+  <UiButton v-if="props.variant === 'tab'" class="mobile-tab mobile-tab-cast" data-mobile-action="cast" aria-haspopup="dialog" aria-controls="cast-menu" :aria-expanded="String(menuOpen)" :pressed="Boolean(casting)" :label="label" :native-title="false" @click="onClick"><UiIcon class="mobile-tab-icon" :name="casting ? 'cast_connected' : 'cast'" :size="null" /><span class="mobile-tab-label" aria-hidden="true">{{ t('Cast') }}</span></UiButton>
+  <UiButton v-else id="cast-btn" aria-haspopup="dialog" aria-controls="cast-menu" :aria-expanded="String(menuOpen)" :pressed="Boolean(casting)" :label="label" @click="onClick">
+    <UiIcon :name="casting ? 'cast_connected' : 'cast'" :size="null" />
+  </UiButton>
 </template>

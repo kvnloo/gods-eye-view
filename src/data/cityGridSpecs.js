@@ -1,0 +1,75 @@
+// FORK-ONLY (exp/city-loop-v5): fitted plot grids per QA location (see
+// cityGrid.js). Sausalito is r03's Dunphy Park lattice (bc5acb3), unchanged;
+// North Beach and Presidio are made by downstream/city-loop/inner/fit-grids.mjs
+// from their OSM fixtures (ODbL) and USGS 3DEP elevation (public domain).
+// A '1' cell is a plot; rows run along the street bearing from `origin`.
+export const CITY_GRIDS = Object.freeze({
+  sausalito: Object.freeze({
+    key: 'sausalito',
+    origin: [-122.48872712259113, 37.86104922745239],
+    bearingDeg: 32.3,
+    size: 18,
+    rows: 4,
+    cols: 4,
+    cells: ['1111', '1111', '1111', '1111'],
+    claim: { lon: -122.48788513443384, lat: 37.86112109234639, meters: 300 },
+  }),
+  // fit-grids.mjs northbeach: 30 valid cells; hero district 4x4 (16 plots).
+  northbeach: Object.freeze({
+    key: 'northbeach',
+    origin: [-122.41222955786563, 37.80256337513586],
+    bearingDeg: 80.86,
+    size: 18,
+    rows: 17,
+    cols: 17,
+    cells: [
+      '01100000000000000',
+      '11100000000000000',
+      '11100000000000000',
+      '00000000000000000',
+      '00000000000000000',
+      '00000000000000000',
+      '00000000000100000',
+      '00000000001111000',
+      '00000000001111100',
+      '00000000000111100',
+      '00000000000111100',
+      '00000000000111100',
+      '00000000000000000',
+      '00000000000000000',
+      '00000000000000000',
+      '00000000000000000',
+      '00000000000000000',
+    ],
+    claim: { lon: -122.41021134056297, lat: 37.801473230326984, meters: 300 },
+  }),
+  // fit-grids.mjs presidio: 64 valid cells; hero district 6x4 (18 plots).
+  presidio: Object.freeze({
+    key: 'presidio',
+    origin: [-122.4601819699964, 37.80061916712702],
+    bearingDeg: 30.35,
+    size: 18,
+    rows: 17,
+    cols: 17,
+    cells: [
+      '00000001100010100',
+      '00000001100010100',
+      '00000101100000110',
+      '00000101100010100',
+      '00000101100010110',
+      '00000101100010110',
+      '00000101100010110',
+      '00000101100010010',
+      '00000101100000011',
+      '00000101100000000',
+      '00000101100000000',
+      '00000001100000000',
+      '00000001100000000',
+      '00000000000000000',
+      '00000011000000000',
+      '01000001100100000',
+      '00000001000100000',
+    ],
+    claim: { lon: -122.45778641158287, lat: 37.80111390585699, meters: 300 },
+  }),
+});

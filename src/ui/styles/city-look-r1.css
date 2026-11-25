@@ -1,0 +1,40 @@
+/* FORK-ONLY experiment (exp/city-loop-r1): round-1 layout switches, set on
+   <body> by src/standalone/cityLookR1.js from ?cityR1=chip,tray. Without the
+   classes nothing here applies. */
+
+/* chip: while the shadow study is on (and no growth timeline is open), the
+   massing readout and the study become one small chip beside the block: the
+   storeys and height, the floors, where the shadow ends, what the fit cost and
+   FIT TO SUN. The card tray steps aside; the BUILD / REROLL verbs and the AI
+   chip stay (trial 1 hid the verbs too and the panel read it as less of a game,
+   and the rule leaked into the growth beat). */
+body.gev-city-r1-chip:has([data-city-shadow-on='true']):not(:has([data-city-growth-on='true'])) .city-play-cards,
+body.gev-city-r1-chip:has([data-city-shadow-on='true']):not(:has([data-city-growth-on='true'])) [data-city-massing-extra],
+body.gev-city-r1-chip:has([data-city-shadow-on='true']):not(:has([data-city-growth-on='true']))
+  [data-city-massing] [data-city-massing-row]:not([data-city-massing-row='storeys']):not([data-city-massing-row='height']),
+body.gev-city-r1-chip [data-city-shadow-on='true'] [data-city-shadow-row='distance'],
+body.gev-city-r1-chip [data-city-shadow-on='true'] [data-city-shadow-row='sun'],
+body.gev-city-r1-chip [data-city-shadow-on='true'] .city-shadow-set:has([data-city-shadow-pick]) {
+  display: none !important;
+}
+body.gev-city-r1-chip:has([data-city-shadow-on='true']) .city-massing[data-city-massing-on='true'] {
+  width: 208px;
+  padding: 6px 10px;
+}
+body.gev-city-r1-chip [data-city-shadow-on='true'] {
+  width: 208px;
+  padding: 6px 10px;
+  font-size: 11px;
+}
+body.gev-city-r1-chip:has([data-city-shadow-on='true']) .city-massing-toggle {
+  min-height: 26px;
+  padding: 0 10px;
+  font-size: 11px;
+}
+
+/* tray: while the growth timeline is open, the card tray collapses so the
+   district reads; the actions column (BUILD / REROLL / records) and its AI
+   chip stay. */
+body.gev-city-r1-tray:has([data-city-growth-on='true']) .city-play-cards {
+  display: none !important;
+}

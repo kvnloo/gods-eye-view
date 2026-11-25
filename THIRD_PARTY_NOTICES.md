@@ -78,3 +78,52 @@ layer's hexagon grid; the complete resolved dependency inventory remains in
 - Source: <https://github.com/uber/h3-js>
 - License: Apache License 2.0
 - License text: <https://www.apache.org/licenses/LICENSE-2.0>
+
+## OpenStreetMap data (city diorama fixtures)
+
+- Files: `public/city-diorama/*.osm.json` (fork-only city diorama experiment)
+- Content: building footprints, streets, green and water areas and trees,
+  reprojected to local metres; see `public/city-diorama/README.md` for the
+  sources, fetch dates and transform
+- Attribution: © OpenStreetMap contributors
+- Source: <https://www.openstreetmap.org/copyright>
+- License: Open Database License (ODbL) 1.0
+- License text: <https://opendatacommons.org/licenses/odbl/1-0/>
+- The repository's MIT licence does not apply to these files.
+
+## Cesium World Terrain (runtime only, nothing stored)
+
+- Used by: the city diorama (`src/standalone/cityDiorama.js`), which samples
+  terrain heights from Cesium ion (asset 1) at run time with the app's ion
+  token and keeps them in memory only
+- Terms: Cesium ion Terms of Service, <https://cesium.com/legal/terms-of-service/>
+- Attribution: the Cesium ion logo and the data credits ion returns for the
+  asset (for example the U.S. Geological Survey) are shown in Cesium's credit
+  display
+- No terrain heights are stored in this repository.
+
+## Tinytown
+
+The procedural world adapts Tinytown’s canopy geometry, painted surface treatments, palette and daylight rig.
+
+MIT License
+
+Copyright (c) 2026 Pete Koomen
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

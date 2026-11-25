@@ -21,6 +21,10 @@ import {
   UPDATE_COMMAND,
   viewerAccessHits,
 } from '../testSupport/viewerAccess.mjs';
+import {
+  partitionForkOnly,
+  staleForkOnlyMessage,
+} from '../testSupport/forkOnlyExempt.mjs';
 
 const baseline = readBaseline();
 const hits = currentHits();
@@ -97,10 +101,15 @@ test('the matcher catches Cesium-shaped access through a viewer', () => {
 });
 
 test('off-list files reach through the viewer no more than recorded', () => {
+  // FORK-ONLY: the fork's city builder is set aside, and only it; it is
+  // never recorded in the baseline.
+  const forkOnly = partitionForkOnly('viewerAccess', [...hits.keys()]);
+  assert.deepEqual(forkOnly.unused, [], staleForkOnlyMessage('viewerAccess'));
+  const counted = new Set(forkOnly.offenders);
   const over = [];
   for (const [file, found] of hits) {
     const allowed = baseline[file] ?? 0;
-    if (found.length > allowed)
+    if (counted.has(file) && found.length > allowed)
       over.push(
         `  ${file}: ${found.length} accesses, ${allowed} recorded\n${describe(file)}`,
       );

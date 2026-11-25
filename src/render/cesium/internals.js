@@ -167,6 +167,27 @@ export function lastSeenCamera(scene) {
 }
 
 /**
+ * The shadow map's depth bias for primitives (models, 3D tiles). Theme
+ * presets raise it for photogrammetry tiles, which carry no normals, so the
+ * normal offset cannot keep the lookup off the surface (shadow acne).
+ * @param {object} shadowMap Cesium ShadowMap.
+ * @returns {number|undefined}
+ */
+export function shadowPrimitiveDepthBias(shadowMap) {
+  return shadowMap?._primitiveBias?.depthBias;
+}
+
+/**
+ * Set the shadow map's primitive depth bias; a no-op when Cesium renamed it.
+ * @param {object} shadowMap Cesium ShadowMap.
+ * @param {number} value
+ */
+export function setShadowPrimitiveDepthBias(shadowMap, value) {
+  const bias = shadowMap?._primitiveBias;
+  if (bias && 'depthBias' in bias && Number.isFinite(value)) bias.depthBias = value;
+}
+
+/**
  * The scene's WebGL context, for diagnostics that read the GPU directly.
  * @param {object} scene Cesium Scene.
  * @returns {WebGLRenderingContext|WebGL2RenderingContext|undefined}
@@ -299,4 +320,51 @@ export function creditDisplayContents(display) {
  */
 export function materialTexture(material, uniform) {
   return material?._textures?.[uniform];
+}
+
+/**
+ * The texture a custom shader holds for a texture uniform, once it has made
+ * it. A custom shader takes a new texture uniform only as a texture it makes
+ * (and the old one it destroys) on its next update; `drawModels.js` writes a
+ * posed model's part matrices into this texture in place instead, each frame
+ * a part spins.
+ * @param {object} shader Cesium CustomShader.
+ * @param {string} uniform The uniform's name.
+ * @returns {object|undefined} Cesium Texture.
+ */
+export function customShaderTexture(shader, uniform) {
+  return shader?._textureManager?.getTexture?.(uniform);
+}
+
+/**
+ * FORK-ONLY (exp/theme-engine-v0): metadata of the glTF primitives a loaded
+ * 3D tile drew, for the theme engine's probe (`themes/engine.js`). Reads
+ * Cesium objects' fields only, never texture pixels: whether a NORMAL
+ * attribute exists and, per base-colour texture, whether Cesium generated a
+ * mip chain, its minification filter and pixel format.
+ * @param {object} tile Cesium Cesium3DTile.
+ * @returns {{normals: boolean, texture: object|null}[]}
+ */
+export function tilePrimitiveFacts(tile) {
+  const components = tile?.content?._model?._sceneGraph?.components;
+  const out = [];
+  for (const node of components?.nodes ?? [])
+    for (const primitive of node.primitives ?? []) {
+      const texture =
+        primitive.material?.metallicRoughness?.baseColorTexture?.texture;
+      out.push({
+        normals: !!primitive.attributes?.some((a) => a.semantic === 'NORMAL'),
+        texture: texture
+          ? {
+              key: texture,
+              hasMipmap: !!texture._hasMipmap,
+              minificationFilter: texture.sampler?.minificationFilter,
+              pixelFormat: texture.pixelFormat,
+              width: texture.width,
+              height: texture.height,
+            }
+          : null,
+      });
+    }
+  return out;
 }

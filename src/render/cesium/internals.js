@@ -167,6 +167,27 @@ export function lastSeenCamera(scene) {
 }
 
 /**
+ * The shadow map's depth bias for primitives (models, 3D tiles). Theme
+ * presets raise it for photogrammetry tiles, which carry no normals, so the
+ * normal offset cannot keep the lookup off the surface (shadow acne).
+ * @param {object} shadowMap Cesium ShadowMap.
+ * @returns {number|undefined}
+ */
+export function shadowPrimitiveDepthBias(shadowMap) {
+  return shadowMap?._primitiveBias?.depthBias;
+}
+
+/**
+ * Set the shadow map's primitive depth bias; a no-op when Cesium renamed it.
+ * @param {object} shadowMap Cesium ShadowMap.
+ * @param {number} value
+ */
+export function setShadowPrimitiveDepthBias(shadowMap, value) {
+  const bias = shadowMap?._primitiveBias;
+  if (bias && 'depthBias' in bias && Number.isFinite(value)) bias.depthBias = value;
+}
+
+/**
  * The scene's WebGL context, for diagnostics that read the GPU directly.
  * @param {object} scene Cesium Scene.
  * @returns {WebGLRenderingContext|WebGL2RenderingContext|undefined}

@@ -19,6 +19,11 @@
  * Removing the preset's sun puts the scene's light and shadow settings back.
  */
 
+import {
+  shadowPrimitiveDepthBias,
+  setShadowPrimitiveDepthBias,
+} from '../internals.js';
+
 const D2R = Math.PI / 180;
 
 /** Unit vector from the earth toward the sun in fixed (ECEF) axes at `julian`. */
@@ -86,8 +91,7 @@ export function createThemeSun(Cesium, viewer) {
       sm.softShadows = prior.softShadows;
       sm.maximumDistance = prior.maximumDistance;
       if (prior.size && sm.size !== prior.size) sm.size = prior.size;
-      if (prior.depthBias !== undefined && sm._primitiveBias)
-        sm._primitiveBias.depthBias = prior.depthBias;
+      if (prior.depthBias !== undefined) setShadowPrimitiveDepthBias(sm, prior.depthBias);
     }
     prior = null;
     light = null;
@@ -124,7 +128,7 @@ export function createThemeSun(Cesium, viewer) {
         softShadows: sm?.softShadows,
         maximumDistance: sm?.maximumDistance,
         size: sm?.size,
-        depthBias: sm?._primitiveBias?.depthBias,
+        depthBias: shadowPrimitiveDepthBias(sm),
       };
     light = new Cesium.DirectionalLight({
       direction: new Cesium.Cartesian3(0, 0, -1),
@@ -139,9 +143,7 @@ export function createThemeSun(Cesium, viewer) {
       sm.softShadows = spec.softShadows;
       sm.maximumDistance = spec.maxDistance;
       if (sm.size !== spec.size) sm.size = spec.size;
-      // internal Cesium field (1.13x): skipped when renamed
-      if (spec.depthBias !== null && sm._primitiveBias && 'depthBias' in sm._primitiveBias)
-        sm._primitiveBias.depthBias = spec.depthBias;
+      if (spec.depthBias !== null) setShadowPrimitiveDepthBias(sm, spec.depthBias);
     }
     state.active = true;
     scene.requestRender?.();

@@ -320,8 +320,17 @@ export function createThemeEngine(Cesium, viewer, options = {}) {
   const phone = () =>
     globalThis.matchMedia?.('(pointer: coarse)').matches === true ||
     (globalThis.innerWidth ?? 1200) < 800;
+  // A renderer that already draws at the display's ratio (GEV's viewer:
+  // useBrowserRecommendedResolution off, stepped down under load by its
+  // quality port, render/cesium/adaptiveResolution.js) keeps it for 'dpr':
+  // capping a 3x phone at 1.5 here would undo it and fight that ladder.
+  const nativeRenderer = () =>
+    (qualityPrior.saved
+      ? qualityPrior.recommended
+      : viewer.useBrowserRecommendedResolution) === false;
   function wantedScale() {
     if (!quality || quality.resolutionScale === undefined) return null;
+    if (quality.resolutionScale === 'dpr' && nativeRenderer()) return null;
     const dpr = globalThis.devicePixelRatio || 1;
     const cap = phone() ? quality.phoneMaxDpr : quality.maxDpr;
     return quality.resolutionScale === 'dpr'

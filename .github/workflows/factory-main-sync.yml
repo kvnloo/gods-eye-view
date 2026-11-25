@@ -1,53 +1,60 @@
+# Keeps fork `main` a fast-forward-only mirror of bilawalsidhu/gods-eye-view `main`.
+# Owner card: t_4f3cfa1b. Runbook and permission model: docs/factory/MAIN-SYNC.md.
+#
+# `schedule` only fires from the default branch, so this file must live on `staging`.
+# The push credential is a write deploy key stored as the `MAIN_SYNC_DEPLOY_KEY` secret of the
+# `upstream-sync` environment, which only admits jobs running on `staging`. The workflow token
+# itself is read-only. Repository rulesets let only deploy keys update `main`, and nobody
+# (the bot included) may force-push or delete it.
 name: Factory main mirror
+
 on:
   schedule:
     - cron: '17 * * * *'
   workflow_dispatch:
     inputs:
-      apply:
-        description: Apply the fast-forward (false only checks readiness)
-        type: boolean
-        default: false
+      mode:
+        description: apply fast-forwards main; check only reports
+        type: choice
+        options: [apply, check]
+        default: apply
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: factory-main-mirror
+  group: factory-main-sync
   cancel-in-progress: false
 
 jobs:
-  mirror:
-    if: github.repository == 'kvnloo/gods-eye-view' && (github.ref == 'refs/heads/staging' || (github.ref == 'refs/heads/ci/factory-foundation' && github.event_name == 'workflow_dispatch' && !inputs.apply))
+  sync:
+    name: Fast-forward main from upstream
+    if: github.repository == 'kvnloo/gods-eye-view'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
+    environment: upstream-sync
     steps:
-      - name: Compare and fast-forward main without checking out code
+      - name: Check out only the sync script
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: scripts/factory/sync-main.sh
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Fast-forward fork main (never forces)
         env:
-          GH_TOKEN: ${{ github.token }}
-          APPLY: ${{ github.event_name == 'schedule' || inputs.apply }}
+          MAIN_SYNC_DEPLOY_KEY: ${{ secrets.MAIN_SYNC_DEPLOY_KEY }}
+          SYNC_MODE: ${{ github.event_name == 'schedule' && 'apply' || inputs.mode }}
+          SYNC_FORK_URL: git@github.com:kvnloo/gods-eye-view.git
+          SYNC_UPSTREAM_URL: https://github.com/bilawalsidhu/gods-eye-view.git
+          SYNC_TARGET_BRANCH: main
         shell: bash
         run: |
           set -euo pipefail
-          fork=kvnloo/gods-eye-view
-          upstream=bilawalsidhu/gods-eye-view
-          before=$(gh api "repos/$fork/git/ref/heads/main" --jq .object.sha)
-          target=$(gh api "repos/$upstream/git/ref/heads/main" --jq .object.sha)
-          printf 'Fork main: `%s`\n\nUpstream main: `%s`\n\n' "$before" "$target" | tee -a "$GITHUB_STEP_SUMMARY"
-          if [[ "$before" == "$target" ]]; then
-            printf 'Already in sync.\n' | tee -a "$GITHUB_STEP_SUMMARY"
-            exit 0
+          key="$RUNNER_TEMP/main-sync-key"
+          trap 'rm -f "$key"' EXIT
+          # An empty secret leaves no key file; sync-main.sh then fails with the remedy.
+          if [[ -n "$MAIN_SYNC_DEPLOY_KEY" ]]; then
+            (umask 077; printf '%s\n' "$MAIN_SYNC_DEPLOY_KEY" > "$key")
           fi
-          ancestor=$(gh api "repos/$upstream/compare/$before...$target" --jq .merge_base_commit.sha)
-          if [[ "$ancestor" != "$before" ]]; then
-            printf '::error::Fork main is not an ancestor of upstream main; refusing to update.\n'
-            exit 1
-          fi
-          if [[ "$APPLY" != true ]]; then
-            printf 'Fast-forward available (dry run).\n' | tee -a "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-          gh api -X PATCH "repos/$fork/git/refs/heads/main" -f sha="$target" -F force=false --jq .object.sha
-          after=$(gh api "repos/$fork/git/ref/heads/main" --jq .object.sha)
-          [[ "$after" == "$target" ]]
-          printf 'Fast-forwarded to `%s`.\n' "$after" | tee -a "$GITHUB_STEP_SUMMARY"
+          SYNC_SSH_KEY_FILE="$key" bash scripts/factory/sync-main.sh

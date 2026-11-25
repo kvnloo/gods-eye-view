@@ -103,9 +103,15 @@ const pointer = (type, target, y, id = 1) => {
 test('a resizable sheet opens at half and the handle steps it, with a label that says so', async (t) => {
   const { shell } = phone(t);
   await nextTick();
-  const tabs = [...document.querySelectorAll('#mobile-tab-bar > button')];
-  assert.equal(tabs.length, 6);
-  const cast = document.querySelector('#mobile-tab-bar [data-mobile-action="cast"]');
+  // One sheet: the search field, the player row (Cast) and four panel tabs.
+  const bar = document.getElementById('mobile-tab-bar');
+  assert.ok(bar.querySelector(':scope > .mobile-search-field[data-mobile-sheet="search"]'));
+  assert.deepEqual(
+    [...bar.querySelectorAll('.mobile-segments > [data-mobile-sheet]')].map((tab) => tab.dataset.mobileSheet),
+    ['layers', 'cameras', 'context', 'more'],
+  );
+  assert.ok(document.querySelector('#mobile-tools-toggle[aria-controls="top-center-actions"]'));
+  const cast = document.querySelector('#mobile-tab-bar .mobile-player-row [data-mobile-action="cast"]');
   // The name starts with the visible label (WCAG 2.5.3, axe label-content-name-mismatch).
   assert.equal(cast.getAttribute('aria-label'), 'Cast: play on a TV');
   assert.equal(cast.getAttribute('aria-haspopup'), 'dialog');

@@ -26,8 +26,9 @@ const tags = (markup, name) =>
 // Per file: its UiButtons, UiCloseButtons and UiIcons.
 const SURFACES = {
   'views/panels/LocalePicker.vue': [1, 0, 0],
-  // The sheet's grab handle and the tabs.
-  'views/panels/PhoneTabBar.vue': [2, 0, 1],
+  // The sheet's grab handle, the search field, the segment tabs and the
+  // globe-actions toggle; the search, tab and toggle glyphs.
+  'views/panels/PhoneTabBar.vue': [4, 0, 3],
   // The tab and the toolbar button; the menu's stop, targets and close.
   'views/panels/CastButton.vue': [2, 0, 2],
   'views/panels/CastMenu.vue': [2, 1, 2],

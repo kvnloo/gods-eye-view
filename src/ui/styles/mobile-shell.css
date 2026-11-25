@@ -603,3 +603,840 @@ body.mobile-shell .mobile-tab-cast[aria-pressed='true'] {
     transition: none;
   }
 }
+
+
+/* ══ Shell v2: one sheet, one floating element (docs/mobile-shell-v2.md) ═══
+ * Sound Atlas's layout: the globe owns the screen above one bottom sheet. The
+ * sheet's head holds the grab handle, the search field, the player row (voice,
+ * chat, Stories, Cast) and the segmented panel tabs; an open panel sits below
+ * the head. The globe actions are the one floating element, a single pill on
+ * the sheet's top edge, and the map credits are one line beside it. Tokens:
+ * Sound Atlas's neutrals and radii; the accent is the theme's, so city mode's
+ * bronze/gold (city-play.css) carries through. */
+body.mobile-shell {
+  --ms-surface: #131718;
+  --ms-field: rgba(255, 255, 255, 0.05);
+  --ms-field-on: rgba(255, 255, 255, 0.1);
+  --ms-line: rgba(255, 255, 255, 0.09);
+  --ms-ink: #ece8df;
+  --ms-mute: #a39e94;
+  --ms-accent: var(--accent);
+  --ms-pad: 12px;
+  --ms-handle: 18px;
+  --ms-search: 46px;
+  --ms-gap: 8px;
+  --ms-player: 52px;
+  --ms-seg: 50px;
+  --ms-foot: 10px;
+  --ms-head-closed: calc(
+    var(--ms-handle) + var(--ms-search) + var(--ms-gap) + var(--ms-player) +
+      var(--ms-gap) + var(--ms-seg) + var(--ms-foot)
+  );
+  --ms-head-open: calc(8px + var(--ms-seg) + var(--ms-foot));
+  --ms-player-bottom: calc(
+    var(--mobile-bottom-inset) + var(--ms-foot) + var(--ms-seg) + var(--ms-gap)
+  );
+  --mobile-tab-space: calc(var(--ms-head-closed) + var(--mobile-bottom-inset));
+}
+
+body.mobile-shell.city-play {
+  --ms-surface: #1e1b14;
+  --ms-field: rgba(255, 236, 200, 0.05);
+  --ms-field-on: rgba(255, 236, 200, 0.1);
+  --ms-line: rgba(176, 142, 88, 0.4);
+  --ms-ink: #f3ecdb;
+  --ms-mute: rgba(243, 236, 219, 0.72);
+}
+
+body.mobile-shell[data-mobile-sheet] {
+  --mobile-tab-space: calc(var(--ms-head-open) + var(--mobile-bottom-inset));
+  --mobile-snap-peek: 30dvh;
+  --mobile-snap-half: min(62dvh, calc(100dvh - 168px));
+  --mobile-snap-full: calc(
+    100dvh - var(--ms-head-open) - var(--mobile-top-inset) - 64px
+  );
+}
+
+/* ── The sheet head ── */
+body.mobile-shell #mobile-tab-bar {
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ms-gap);
+  height: auto;
+  padding: var(--ms-handle) max(var(--ms-pad), env(safe-area-inset-right, 0px))
+    calc(var(--ms-foot) + var(--mobile-bottom-inset))
+    max(var(--ms-pad), env(safe-area-inset-left, 0px));
+  color: var(--ms-ink);
+  background: var(--ms-surface);
+  border: 1px solid var(--ms-line);
+  border-bottom: 0;
+  border-radius: 22px 22px 0 0;
+  box-shadow: 0 -18px 50px rgba(0, 0, 0, 0.45);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* With a panel open the tabs stay at the bottom, in thumb reach, and the
+   panel rises above them as the top of the same sheet. */
+body.mobile-shell[data-mobile-sheet] #mobile-tab-bar {
+  padding-top: 8px;
+  border-top: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+body.mobile-shell[data-mobile-sheet] #mobile-tab-bar #mobile-sheet-grab {
+  position: fixed;
+  top: auto;
+  bottom: calc(var(--mobile-tab-space) + var(--mobile-sheet-height, 0px) - 30px);
+}
+
+body.mobile-shell .mobile-sheet-handle,
+body.mobile-shell #mobile-tab-bar #mobile-sheet-grab {
+  position: absolute;
+  top: -13px;
+  left: 50%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  width: 120px;
+  height: var(--mobile-target);
+  padding: 20px 0 0;
+  translate: -50% 0;
+}
+
+body.mobile-shell .mobile-sheet-handle .mobile-sheet-grab-bar,
+body.mobile-shell #mobile-sheet-grab .mobile-sheet-grab-bar {
+  width: 38px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+body.mobile-shell #mobile-tab-bar .mobile-tab {
+  color: var(--ms-mute);
+  font: 600 13px/1 var(--font-sans);
+  letter-spacing: 0;
+}
+
+/* Search: the field, as Sound Atlas draws it (a button that opens the
+   Search sheet and its real input). */
+body.mobile-shell #mobile-tab-bar .mobile-search-field {
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 10px;
+  height: var(--ms-search);
+  padding: 0 14px;
+  color: var(--ms-mute);
+  background: var(--ms-field);
+  border: 1px solid var(--ms-line);
+  border-radius: 14px;
+  font: 400 16px/1 var(--font-sans);
+}
+
+body.mobile-shell #mobile-tab-bar .mobile-search-field .mobile-tab-icon {
+  font-size: 20px;
+}
+
+/* The player row: voice (the one filled button) and its status, then the
+   quiet icons; the voice pod and Stories are laid over the slots. */
+body.mobile-shell .mobile-player-row {
+  display: flex;
+  align-items: center;
+  gap: var(--ms-gap);
+  height: var(--ms-player);
+}
+
+body.mobile-shell .mobile-player-slot {
+  flex: 1 1 auto;
+}
+
+body.mobile-shell .mobile-stories-slot {
+  flex: none;
+  width: var(--mobile-target);
+}
+
+body.mobile-shell #mobile-tab-bar .mobile-tab-cast {
+  flex: none;
+  width: var(--mobile-target);
+  height: var(--mobile-target);
+  padding: 0;
+  border-radius: 12px;
+}
+
+body.mobile-shell #mobile-tab-bar .mobile-tab-cast .mobile-tab-label {
+  display: none;
+}
+
+body.mobile-shell #mobile-tab-bar .mobile-tab-cast .mobile-tab-icon,
+body.mobile-shell #mobile-tab-bar .mobile-segments .mobile-tab-icon {
+  font-size: 20px;
+}
+
+/* Segmented panel tabs (Sound Atlas's views control, at 44px). */
+body.mobile-shell .mobile-segments {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+  height: var(--ms-seg);
+  padding: 3px;
+  background: var(--ms-field);
+  border: 1px solid var(--ms-line);
+  border-radius: 13px;
+}
+
+body.mobile-shell #mobile-tab-bar .mobile-segments .mobile-tab {
+  flex-direction: row;
+  gap: 5px;
+  height: var(--mobile-target);
+  padding: 0 2px;
+  border-radius: 10px;
+  font-size: 12.5px;
+}
+
+body.mobile-shell #mobile-tab-bar .mobile-segments .mobile-tab[aria-expanded='true'] {
+  color: var(--ms-ink);
+  background: var(--ms-field-on);
+  box-shadow: inset 0 0 0 1px var(--ms-line);
+}
+
+body.mobile-shell #mobile-tab-bar[data-sheet-open] .mobile-search-field,
+body.mobile-shell #mobile-tab-bar[data-sheet-open] .mobile-player-row {
+  display: none;
+}
+
+/* ── Voice pod → the player row's left part ── */
+body.mobile-shell:not([data-mobile-sheet]) #command-dock {
+  z-index: 172;
+  right: calc(var(--ms-pad) + 2 * var(--mobile-target) + 2 * var(--ms-gap)) !important;
+  left: var(--ms-pad) !important;
+  bottom: var(--ms-player-bottom);
+  padding: 0;
+}
+
+body.mobile-shell #command-dock #gev-voice-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  height: var(--ms-player);
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+body.mobile-shell #command-dock #gev-voice-control > .gev-active-border {
+  display: none;
+}
+
+body.mobile-shell #command-dock #gev-voice-button {
+  order: 0;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  padding: 0;
+  color: #0a0f12;
+  background: var(--ms-accent);
+  border: 0;
+  border-radius: 50%;
+  box-shadow: 0 6px 20px -8px var(--ms-accent);
+}
+
+body.mobile-shell #command-dock #gev-voice-button .gev-mic-label {
+  display: none;
+}
+
+body.mobile-shell #command-dock #gev-chat-button {
+  order: 2;
+  flex: none;
+  width: var(--mobile-target);
+  height: var(--mobile-target);
+  margin-inline-start: auto;
+  padding: 0;
+  color: var(--ms-mute);
+  background: none;
+  border: 0;
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+body.mobile-shell #command-dock #gev-chat-button .gev-chat-label {
+  display: none;
+}
+
+/* ── Stories rides the player row (its inline position is the desktop's) ── */
+body.mobile-shell #hStories {
+  top: auto !important;
+  right: calc(var(--ms-pad) + var(--mobile-target) + var(--ms-gap)) !important;
+  bottom: calc(var(--ms-player-bottom) + (var(--ms-player) - var(--mobile-target)) / 2);
+  z-index: 172;
+  width: var(--mobile-target);
+  height: var(--mobile-target);
+  padding: 0;
+  color: var(--ms-mute);
+  background: none !important;
+  border: 0;
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+body.mobile-shell[data-mobile-sheet] #hStories {
+  display: none;
+}
+
+/* ── The one floating element: the globe actions as one pill ── */
+body.mobile-shell #top-center-actions {
+  bottom: calc(var(--mobile-tab-space) + 34px + var(--world-timeline-lift, 0px));
+  inset-inline-end: var(--ms-pad);
+  gap: 0;
+  padding: 0 2px;
+  background: var(--ms-surface);
+  border: 1px solid var(--ms-line);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+body.mobile-shell #top-center-actions > button,
+body.mobile-shell #top-center-actions > #north-up-view {
+  color: var(--ms-mute);
+  background: none;
+  border: 0;
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+/* ── Credits: one quiet line on the sheet's edge ── */
+body.mobile-shell:not(.recording-mode):not(.cockpit-mode):not(.ui-clean-view)
+  #cesium-credits,
+body.mobile-shell:not(.recording-mode):not(.cockpit-mode):not(.ui-clean-view)
+  #gev-credits {
+  bottom: calc(var(--mobile-tab-space) + 8px + var(--world-timeline-lift, 0px)) !important;
+  left: var(--ms-pad);
+  width: auto !important;
+  white-space: nowrap;
+  scale: 0.72;
+}
+
+body.mobile-shell[data-mobile-sheet]:not(.recording-mode):not(.cockpit-mode):not(
+    .ui-clean-view
+  )
+  #cesium-credits,
+body.mobile-shell[data-mobile-sheet]:not(.recording-mode):not(.cockpit-mode):not(
+    .ui-clean-view
+  )
+  #gev-credits {
+  bottom: calc(var(--mobile-sheet-cover, 0px) + 8px) !important;
+}
+
+/* ── Top: the brand, and one status pill (keys, language) ── */
+body.mobile-shell #title-bar .title-logo {
+  width: 40px;
+}
+
+body.mobile-shell #title-bar .title-glow {
+  display: none;
+}
+
+body.mobile-shell #corner-actions {
+  top: calc(var(--mobile-top-inset) + 10px);
+  flex-direction: row;
+  gap: 0;
+  padding: 0 2px;
+  background: var(--ms-surface);
+  border: 1px solid var(--ms-line);
+  border-radius: 14px;
+}
+
+body.mobile-shell #corner-actions #key-setup-chip,
+body.mobile-shell #corner-actions .locale-picker-button {
+  color: var(--ms-mute);
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+
+/* ── Open panels: above the tabs, the top of the same sheet ── */
+body.mobile-shell[data-mobile-sheet] #mobile-sheet-backdrop:not([hidden]) {
+  inset: 0 0 var(--mobile-tab-space);
+}
+
+body.mobile-shell[data-mobile-sheet='layers'] #left-panel-stack,
+body.mobile-shell[data-mobile-sheet='cameras'] #right-context-rail,
+body.mobile-shell[data-mobile-sheet='context'] #right-context-rail,
+body.mobile-shell[data-mobile-sheet='more'] #left-panel-stack {
+  padding: 22px var(--ms-pad) 6px;
+  background: var(--ms-surface);
+  border: 1px solid var(--ms-line);
+  border-bottom: 0;
+  border-radius: 22px 22px 0 0;
+  box-shadow: 0 -18px 50px rgba(0, 0, 0, 0.45);
+}
+
+body.mobile-shell[data-mobile-snap][data-mobile-sheet='layers'] #left-panel-stack,
+body.mobile-shell[data-mobile-snap][data-mobile-sheet='cameras'] #right-context-rail,
+body.mobile-shell[data-mobile-snap][data-mobile-sheet='context'] #right-context-rail {
+  padding-top: 26px;
+}
+
+/* More stacks the Visual presets over the Visual panel: both fit together. */
+body.mobile-shell[data-mobile-sheet='more'] #left-panel-stack {
+  max-height: var(--mobile-rail-under-dock-max-height);
+  padding-top: 4px;
+  border-top: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+body.mobile-shell[data-mobile-sheet='search'] #command-dock,
+body.mobile-shell[data-mobile-sheet='more'] #command-dock {
+  padding: 22px var(--ms-pad) 8px;
+  background: var(--ms-surface);
+  border: 1px solid var(--ms-line);
+  border-bottom: 0;
+  border-radius: 22px 22px 0 0;
+  box-shadow: 0 -18px 50px rgba(0, 0, 0, 0.45);
+}
+
+/* Panels inside the sheet lose their own cards: one surface, quiet headers. */
+body.mobile-shell[data-mobile-sheet] :is(#left-panel-stack, #right-context-rail, #command-dock) > .panel-collapsible > .panel-glow {
+  display: none;
+}
+
+body.mobile-shell[data-mobile-sheet] :is(#left-panel-stack, #right-context-rail) > .ui-panel > :not(.panel-glow),
+body.mobile-shell[data-mobile-sheet] #command-dock > .panel-collapsible,
+body.mobile-shell[data-mobile-sheet] #command-dock > .panel-collapsible > :not(.panel-glow) {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+body.mobile-shell[data-mobile-sheet] :is(#left-panel-stack, #right-context-rail) > .ui-panel + .ui-panel {
+  border-top: 1px solid var(--ms-line);
+}
+
+body.mobile-shell[data-mobile-sheet] .ui-panel__title {
+  color: var(--ms-mute);
+  font: 600 11px/1.2 var(--font-mono);
+  letter-spacing: 0.08em;
+}
+
+body.mobile-shell[data-mobile-sheet] .ui-panel__head .panel-divider {
+  visibility: hidden;
+}
+
+/* Search: one field where the home search sat, place chips under it. */
+body.mobile-shell[data-mobile-sheet='search'] #location-bar .location-inner {
+  padding: 0;
+}
+
+body.mobile-shell[data-mobile-sheet='search'] #location-bar .location-toolbar,
+body.mobile-shell[data-mobile-sheet='search'] #location-bar-divider {
+  display: none;
+}
+
+body.mobile-shell[data-mobile-sheet='search'] #command-dock #location-bar-popover {
+  padding: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+
+body.mobile-shell[data-mobile-sheet='search'] #location-bar .location-search-wrap {
+  position: relative;
+  order: -1;
+  padding: 0;
+}
+
+body.mobile-shell[data-mobile-sheet='search'] #search-toggle {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  z-index: 1;
+  width: var(--mobile-target);
+  height: var(--mobile-target);
+  background: none;
+  border: 0;
+  filter: grayscale(1) brightness(1.6);
+  opacity: 0.7;
+}
+
+body.mobile-shell[data-mobile-sheet='search'] #location-search {
+  box-sizing: border-box;
+  height: var(--ms-search);
+  padding: 0 14px 0 46px;
+  color: var(--ms-ink);
+  background: var(--ms-field);
+  border: 1px solid var(--ms-line);
+  border-radius: 14px;
+  outline: none;
+  font: 400 16px/1 var(--font-sans);
+  letter-spacing: 0;
+}
+
+body.mobile-shell[data-mobile-sheet='search'] #location-search:focus,
+body.mobile-shell[data-mobile-sheet='search'] #location-search:focus-visible {
+  border-color: var(--ms-accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ms-accent) 14%, transparent);
+}
+
+body.mobile-shell[data-mobile-sheet='search'] #location-search::placeholder {
+  color: var(--ms-mute);
+  font-style: normal;
+}
+
+body.mobile-shell[data-mobile-sheet='search'] #location-bar .location-pills {
+  gap: 6px;
+  scrollbar-width: none;
+}
+
+body.mobile-shell[data-mobile-sheet='search'] #location-bar .location-pill {
+  flex: none;
+  min-height: var(--mobile-target);
+  padding: 0 14px;
+  color: var(--ms-ink);
+  background: var(--ms-field);
+  border: 1px solid var(--ms-line);
+  border-radius: 999px;
+  font: 600 13px/1 var(--font-sans);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+body.mobile-shell[data-mobile-sheet='search'] #command-dock #location-bar-popover::before,
+body.mobile-shell[data-mobile-sheet='search'] #command-dock #location-bar-popover::after {
+  display: none;
+}
+
+body.mobile-shell[data-mobile-sheet='search'] #command-dock .location-search-wrap {
+  display: block;
+  height: var(--ms-search);
+  padding: 0;
+}
+
+body.mobile-shell[data-mobile-sheet='search'] #command-dock #search-toggle {
+  display: grid;
+  place-items: center;
+  top: 1px;
+  height: calc(var(--ms-search) - 2px);
+  padding: 0;
+  font-size: 16px;
+  line-height: 1;
+}
+
+body.mobile-shell[data-mobile-sheet='search'] #command-dock #location-search,
+body.mobile-shell[data-mobile-sheet='search'] #command-dock #location-search.expanded {
+  width: 100%;
+  height: var(--ms-search);
+  font-size: 16px;
+}
+
+body.mobile-shell[data-mobile-sheet='search'] #command-dock #location-search:focus-visible {
+  outline: none;
+}
+
+body.mobile-shell[data-mobile-sheet='search'] #command-dock .location-city-row {
+  gap: 10px;
+  background: none;
+}
+
+/* The dock's tray and focus rules (location.css, command-dock*.css) use
+   :has()/state selectors that outrank any phone selector; the field's
+   geometry and frame must win inside the sheet. */
+body.mobile-shell[data-mobile-sheet='search'] #command-dock #location-search {
+  padding: 0 14px 0 46px !important;
+  outline: none !important;
+}
+
+body.mobile-shell[data-mobile-sheet='search'] #command-dock > #location-bar {
+  background: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* The closed sheet's drawn handle belongs to the head; an open panel has its own. */
+body.mobile-shell[data-mobile-sheet] #mobile-tab-bar .mobile-sheet-handle {
+  display: none;
+}
+
+/* Cast: one action sheet over the home sheet, not a second stacked one. */
+body.mobile-shell:has(#cast-menu) #top-center-actions {
+  visibility: hidden;
+}
+
+
+/* Cast: one action sheet over the home sheet, not a second stacked one. */
+body.mobile-shell #cast-menu.cast-menu {
+  bottom: 0;
+  padding-bottom: calc(var(--mobile-bottom-inset) + 14px);
+  background: var(--ms-surface);
+  border-color: var(--ms-line);
+  border-radius: 22px 22px 0 0;
+  box-shadow: 0 -18px 50px rgba(0, 0, 0, 0.55);
+}
+
+/* Voice, chat and Stories: one filled primary, the rest quiet icons. */
+body.mobile-shell #command-dock #gev-voice-control::before,
+body.mobile-shell #command-dock #gev-voice-control::after {
+  display: none;
+}
+
+body.mobile-shell #command-dock #gev-voice-button,
+body.mobile-shell #command-dock #gev-chat-button {
+  display: grid;
+  grid-template-rows: none;
+  place-items: center;
+  clip-path: none;
+}
+
+body.mobile-shell #command-dock #gev-voice-button .gev-mic-orbit {
+  width: 48px;
+  height: 48px;
+  background: var(--ms-accent);
+  border: 0;
+  border-radius: 50%;
+  box-shadow: 0 6px 20px -8px var(--ms-accent);
+  transform: none;
+}
+
+body.mobile-shell #command-dock #gev-voice-button .gev-mic-orbit::before {
+  display: none;
+}
+
+body.mobile-shell #command-dock #gev-voice-button .gev-mic-orbit > *,
+body.mobile-shell #command-dock #gev-voice-button .gev-mic-orbit img {
+  width: 22px;
+  height: 22px;
+  filter: brightness(0);
+  opacity: 0.82;
+  transform: none;
+}
+
+body.mobile-shell #command-dock #gev-voice-button {
+  background: none;
+  box-shadow: none;
+}
+
+body.mobile-shell #command-dock #gev-chat-button > svg {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+
+body.mobile-shell #command-dock #gev-chat-button:hover,
+body.mobile-shell #command-dock #gev-voice-control[data-assistant-mode='chat'] #gev-chat-button {
+  color: var(--ms-ink);
+  background: var(--ms-field-on);
+}
+
+/* Status: two quiet lines beside the voice button, as Sound Atlas titles
+   the track beside Play. The waveform shows only while voice is live. */
+body.mobile-shell #command-dock #gev-voice-control > .gev-voice-heading {
+  order: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+body.mobile-shell #command-dock .gev-voice-kicker {
+  color: var(--ms-ink);
+  font: 600 13px/1.1 var(--font-sans);
+  letter-spacing: 0.02em;
+}
+
+body.mobile-shell #command-dock #gev-voice-status {
+  overflow: hidden;
+  color: var(--ms-mute);
+  font: 400 11px/1.2 var(--font-mono);
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.mobile-shell #command-dock .gev-voice-heading > .gev-voice-cost,
+body.mobile-shell #command-dock .gev-voice-heading > #gev-voice-cost-warning:not([hidden]) {
+  display: none;
+}
+
+body.mobile-shell #command-dock #gev-voice-control:not([data-chat-busy='true']) .gev-chat-thinking,
+body.mobile-shell
+  #command-dock
+  #gev-voice-control:not(:is([data-status='connecting'], [data-status='listening'], [data-status='executing']))
+  .gev-voice-visualizer {
+  display: none;
+}
+
+body.mobile-shell #gev-stories #hStories.gs-entry {
+  color: var(--ms-mute);
+  background: none !important;
+  border: 0;
+  box-shadow: none;
+}
+
+body.mobile-shell #corner-actions #key-setup-chip,
+body.mobile-shell #corner-actions .locale-picker-button,
+body.mobile-shell #top-center-actions > button,
+body.mobile-shell #top-center-actions > #north-up-view {
+  color: var(--ms-mute);
+}
+
+
+/* Secondary text inside the sheet: Sound Atlas's quiet grey, never below AA. */
+body.mobile-shell[data-mobile-sheet] #left-panel-stack :is(.data-toggle-meta, .data-toggle-meta *, .data-count, .data-layer-group-heading, .data-toggle-btn),
+body.mobile-shell[data-mobile-sheet] #left-panel-stack .ui-panel__title {
+  color: var(--ms-mute);
+}
+
+body.mobile-shell[data-mobile-sheet] #left-panel-stack .ui-panel__title {
+  font: 600 11px/1.2 var(--font-mono);
+  letter-spacing: 0.08em;
+}
+
+body.mobile-shell[data-mobile-sheet] #left-panel-stack .data-toggle-meta {
+  font-size: 10.5px;
+}
+
+
+/* The globe-actions pill at rest: the three view tools and a toggle that
+   brings Clear and Share in beside them. */
+#mobile-tools-toggle {
+  display: none;
+}
+
+body.mobile-shell:not([data-mobile-sheet]):not(:has(#cast-menu)) #mobile-tools-toggle {
+  position: fixed;
+  bottom: calc(var(--mobile-tab-space) + 35px + var(--world-timeline-lift, 0px));
+  right: calc(var(--ms-pad) + 3px + var(--ms-tools-count, 3) * var(--mobile-target));
+  z-index: 151;
+  display: grid;
+  place-items: center;
+  width: var(--mobile-target);
+  height: var(--mobile-target);
+  padding: 0;
+  color: var(--ms-mute);
+  background: none;
+  border: 0;
+  border-radius: 12px;
+}
+
+body.mobile-shell #top-center-actions {
+  padding-inline-start: calc(var(--mobile-target) + 2px);
+}
+
+body.mobile-shell:not(.mobile-tools-open) #top-center-actions > :is(#clear-selected-layers, #share-btn) {
+  display: none;
+}
+
+body.mobile-shell.mobile-tools-open {
+  --ms-tools-count: 5;
+}
+
+#mobile-tools-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -4px;
+}
+
+
+/* The panel tabs as a native tab bar: full width along the sheet's bottom,
+   icon over label, the accent marks the open panel. */
+body.mobile-shell {
+  --ms-seg: 56px;
+}
+
+body.mobile-shell .mobile-segments {
+  margin: 0 calc(-1 * var(--ms-pad));
+  padding: 0 calc(var(--ms-pad) - 6px);
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--ms-line);
+  border-radius: 0;
+}
+
+body.mobile-shell #mobile-tab-bar .mobile-segments .mobile-tab {
+  flex-direction: column;
+  gap: 3px;
+  height: var(--ms-seg);
+  padding: 6px 0 0;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+body.mobile-shell #mobile-tab-bar .mobile-segments .mobile-tab-icon {
+  font-size: 23px;
+}
+
+body.mobile-shell #mobile-tab-bar .mobile-segments .mobile-tab[aria-expanded='true'] {
+  color: var(--ms-accent);
+  background: none;
+  box-shadow: none;
+}
+
+body.mobile-shell[data-mobile-sheet] #mobile-tab-bar {
+  padding-top: 0;
+}
+
+body.mobile-shell[data-mobile-sheet] .mobile-segments {
+  border-top: 0;
+}
+
+/* More air between the tools pill and the credit line. */
+body.mobile-shell #top-center-actions {
+  bottom: calc(var(--mobile-tab-space) + 42px + var(--world-timeline-lift, 0px));
+}
+
+body.mobile-shell:not([data-mobile-sheet]):not(:has(#cast-menu)) #mobile-tools-toggle {
+  bottom: calc(var(--mobile-tab-space) + 43px + var(--world-timeline-lift, 0px));
+}
+
+/* Place chips scroll sideways: the row fades at its end instead of cutting. */
+body.mobile-shell[data-mobile-sheet='search'] #location-bar .location-pills {
+  mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent);
+}
+
+
+/* No seam: the open tab bar is exactly the tabs plus the foot. No divider
+   on home; the row reads as the sheet's last line. */
+body.mobile-shell[data-mobile-sheet] {
+  --ms-head-open: calc(var(--ms-seg) + var(--ms-foot));
+}
+
+body.mobile-shell .mobile-segments {
+  border-top: 0;
+}
+
+
+/* Share sits in the pill like the other tools. */
+body.mobile-shell #top-center-actions > #share-btn {
+  width: var(--mobile-target);
+  min-width: var(--mobile-target);
+  height: var(--mobile-target);
+  min-height: var(--mobile-target);
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+
+/* The first-visit Stories card docks above the sheet, near Stories in the
+   player row, instead of pointing at the top corner. */
+body.mobile-shell #gev-stories .gs-pop {
+  top: auto !important;
+  bottom: calc(var(--mobile-tab-space) + 96px);
+  background: var(--ms-surface);
+  border: 1px solid var(--ms-line);
+  border-radius: 18px;
+}
+
+body.mobile-shell #gev-stories .gs-pop::before,
+body.mobile-shell #gev-stories .gs-pop::after {
+  display: none;
+}

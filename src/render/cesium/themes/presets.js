@@ -77,10 +77,11 @@ const WINTERCATS = {
       vegGb: 0.04,
       vegChroma: 1.0,
       // app loop r01 (GEV-I1): warmer, more muted olive grass and canopy (held-out DISTS -0.0016, 5/6 views; blind judges 15/20 seats)
-      grass: [0.38, 0.5, 0.22],
-      canopy: [0.13, 0.25, 0.13],
-      water: [0.353, 0.651, 0.659],
-      waterDeep: [0.247, 0.459, 0.565],
+      // app loop r08 (GEV-I1): darker olive greens and deeper teal water (TRAIN target class medians)
+      grass: [0.325, 0.425, 0.28],
+      canopy: [0.11, 0.21, 0.17],
+      water: [0.3, 0.59, 0.59],
+      waterDeep: [0.21, 0.42, 0.51],
       roofA: [0.643, 0.314, 0.184],
       roofB: [0.373, 0.42, 0.271],
       roofC: [0.702, 0.573, 0.447],
@@ -113,6 +114,14 @@ const WINTERCATS = {
       waterSky: 0.5,
       osmRoofFlat: 1,
       vegFlat: 1,
+      // app loop r08: painted volume (sun-lit tree crowns, lawn strokes, hip roofs) and steep facets away from OSM
+      // buildings painted as canopy (held-out DISTS -0.0152 4/6, train -0.0086 20/24; blind A/B 16/20 seats)
+      matTree: 1,
+      crownM: 9,
+      crownGap: 0.5,
+      grassTex: 1,
+      matRoof: 1,
+      osmTreeFacets: 1,
     },
     ao: {
       aoStrength: 0.4,

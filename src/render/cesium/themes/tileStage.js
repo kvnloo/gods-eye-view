@@ -156,6 +156,16 @@ export const TILE_UNIFORMS = Object.freeze({
   osmRoofFlat: f(0, 0, 1, 0.01, 'OSM roofs fully painted (no photo light or texture)'),
   vegFlat: f(0, 0, 1, 0.01, 'Vegetation fully painted (no photo light or texture)'),
   skySheen: color(hex('#a9d3d6'), 'Water sky sheen'),
+  // ---- painted volume (app loop r07): sun-lit shapes the photo mesh lacks
+  matTree: f(0, 0, 1, 0.01, 'Tree crowns: lit domes on woods and canopy'),
+  crownM: f(5, 2, 14, 0.5, 'Tree crown size (m)'),
+  crownGap: f(0.45, 0, 1, 0.01, 'Shade between crowns'),
+  matRoof: f(0, 0, 1, 0.01, 'Hip roofs from OSM footprints (sun-lit facets)'),
+  roofPitch: f(32, 5, 60, 1, 'Hip roof pitch (deg)'),
+  grassTex: f(0, 0, 1, 0.01, 'Grass: painted strokes and flower flecks'),
+  flower: color(hex('#e8c76a'), 'Grass flecks'),
+  debugPaint: f(0, 0, 1, 1, 'Painted volume normals (debug)'),
+  osmTreeFacets: f(0, 0, 1, 0.01, 'Steep facets away from OSM buildings are trees (melted canopy, not walls)'),
   shallowM: f(30, 2, 120, 1, 'Shallows width (m from shore)'),
   foamM: f(3, 0, 20, 0.5, 'Shore foam width (m)'),
   foamAmt: f(0.35, 0, 1, 0.01, 'Shore foam'),
@@ -184,6 +194,34 @@ float th_vnoise(vec2 p) {
   f = f * f * (3.0 - 2.0 * f);
   i = mod(i, 289.0);
   return mix(mix(th_hash(i), th_hash(i + vec2(1.0, 0.0)), f.x), mix(th_hash(i + vec2(0.0, 1.0)), th_hash(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+// nearest feature point of a jittered grid (cell units): x = distance,
+// yz = vector from the point to the feature centre
+vec3 th_worley(vec2 p) {
+  vec2 i = floor(p);
+  vec2 fp = fract(p);
+  float md = 8.0;
+  vec2 mv = vec2(0.0);
+  for (int y = -1; y <= 1; y++)
+    for (int x = -1; x <= 1; x++) {
+      vec2 g = vec2(float(x), float(y));
+      vec2 c = mod(i + g, 289.0);
+      vec2 o = 0.2 + 0.6 * vec2(th_hash(c), th_hash(c + 17.31));
+      vec2 rv = g + o - fp;
+      float d = dot(rv, rv);
+      if (d < md) { md = d; mv = rv; }
+    }
+  return vec3(sqrt(md), mv);
+}
+// OSM mask edge distance (A channel, metres inside footprints) bilinear at tc
+float th_osmEdgeAt(vec2 tc) {
+  ivec2 i0 = ivec2(floor(tc));
+  vec2 fw = fract(tc);
+  float a00 = max(texelFetch(u_th_osmMask, i0, 0).a * 255.0 - 1.0, 0.0);
+  float a10 = max(texelFetch(u_th_osmMask, i0 + ivec2(1, 0), 0).a * 255.0 - 1.0, 0.0);
+  float a01 = max(texelFetch(u_th_osmMask, i0 + ivec2(0, 1), 0).a * 255.0 - 1.0, 0.0);
+  float a11 = max(texelFetch(u_th_osmMask, i0 + ivec2(1, 1), 0).a * 255.0 - 1.0, 0.0);
+  return mix(mix(a00, a10, fw.x), mix(a01, a11, fw.x), fw.y) / 20.0;
 }
 void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
   if (u_th_strength <= 0.001) return;
@@ -317,6 +355,8 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
   // bilinear over 4 texelFetch taps: ids (B) must not be filtered.
   float oValid = 0.0, oShore = -64.0, oGrass = 0.0, oForest = 0.0, oBld = 0.0, oRoad = 0.0, oId = 0.0, oEdgeD = 0.0;
   vec2 pL = vec2(0.0);
+  vec2 oTc = vec2(-1.0);
+  float oBNear = 0.0;
   if ((u_th_osm > 0.001 || u_th_debugOsm > 0.5) && u_th_osmInfo.x > 0.001 && u_th_osmInfo.w > 0.5) {
     pL = (u_th_osmEyeToLocal * vec4(pEC, 1.0)).xy;
     float X = u_th_osmGeo.x * pL.x * (1.0 + u_th_osmGeo.z * pL.y);
@@ -334,7 +374,16 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
     vec2 tc = (vec2(X, Y) + halfN) * u_th_osmInfo.z - 0.5;
     float apx = u_th_osmInfo.y;
     if (tc.x > 0.0 && tc.y > 0.0 && tc.x < apx - 1.5 && tc.y < apx - 1.5) {
+      oTc = tc;
       ivec2 i0 = ivec2(floor(tc));
+      if (u_th_osmTreeFacets > 0.001) {
+        // a building within ~2 texels: walls stand on footprint edges
+        for (int k = 0; k < 8; k++) {
+          float ang = float(k) * 0.7853982;
+          ivec2 off = ivec2(round(vec2(cos(ang), sin(ang)) * 2.5));
+          oBNear = max(oBNear, step(1.5, texelFetch(u_th_osmMask, i0 + off, 0).b * 255.0));
+        }
+      }
       vec2 fw = fract(tc);
       vec4 t00 = texelFetch(u_th_osmMask, i0, 0);
       vec4 t10 = texelFetch(u_th_osmMask, i0 + ivec2(1, 0), 0);
@@ -470,6 +519,65 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
     osmCover = osmW * max(max(oWater, oB), max(oR, oVeg * u_th_osmVeg));
     blue = mix(blue, oWater, osmW);
     veg = mix(veg, max(vegKeep, oVeg * u_th_osmVeg), osmW);
+    // steep facets with no building near are melted tree canopy, not walls
+    float tf = u_th_osmTreeFacets * osmW * smoothstep(0.2, 0.7, 1.0 - up) * (1.0 - max(oBNear, oB)) * (1.0 - oWater);
+    if (tf > 0.001) {
+      float mt2 = th_vnoise(pL / 4.0) - 0.5;
+      pal = mix(pal, czm_srgbToLinear(u_th_canopy) * (1.0 + 0.4 * mt2), tf);
+      veg = max(veg, tf);
+    }
+  }
+  // ---- painted volume (app loop r07): shapes the photo mesh does not carry,
+  // lit by the scene sun below. Local ENU metres only (inside the OSM mask).
+  vec3 nPaint = upEC;
+  float paintNW = 0.0;
+  float inMask = oValid * (1.0 - step(0.5, u_th_osmGlobal.x));
+  if (inMask > 0.001 && (u_th_matTree > 0.001 || u_th_matRoof > 0.001 || u_th_grassTex > 0.001)) {
+    mat3 l2e = transpose(mat3(u_th_osmEyeToLocal));
+    float lawn = oGrass * osmW * flatW * (1.0 - oForest);
+    float treeW = u_th_matTree * veg * (1.0 - lawn) * inMask;
+    if (treeW > 0.001) {
+      vec3 wv = th_worley(pL / u_th_crownM);
+      float R = 0.5;
+      float inside = 1.0 - smoothstep(R - 0.1, R + 0.02, wv.x);
+      float hgt = sqrt(max(1.0 - (wv.x / R) * (wv.x / R), 0.0));
+      vec3 nLoc = normalize(vec3(-wv.yz / R * inside, mix(1.0, max(hgt, 0.2), inside)));
+      // one tone per crown, darker gaps between crowns
+      float crownId = th_hash(mod(floor(pL / u_th_crownM + wv.yz), 289.0));
+      vec3 crownC = pal * (0.86 + 0.28 * crownId);
+      crownC *= mix(1.0, 1.0 - u_th_crownGap, 1.0 - inside);
+      pal = mix(pal, crownC, treeW);
+      nPaint = normalize(l2e * nLoc);
+      paintNW = treeW;
+    }
+    float lawnW = u_th_grassTex * lawn * inMask * (1.0 - treeW);
+    if (lawnW > 0.001) {
+      // brush strokes along one direction plus sparse warm flecks
+      float st = th_vnoise(vec2(pL.x * 1.6 + pL.y * 0.5, pL.y * 0.22 - pL.x * 0.1));
+      vec3 g = pal * (1.0 + 0.3 * (st - 0.5));
+      float fl = step(0.94, th_hash(mod(floor(pL / 0.9), 289.0)));
+      g = mix(g, czm_srgbToLinear(u_th_flower), 0.55 * fl);
+      pal = mix(pal, g, lawnW);
+    }
+    float roofW = u_th_matRoof * oB * osmW * (1.0 - wallW) * (1.0 - veg) * step(0.0, oTc.x);
+    if (roofW > 0.001) {
+      // hip roof: each footprint point slopes away from the ridge, i.e. down
+      // the edge-distance field (texture X is east, Y is south)
+      vec2 g = vec2(th_osmEdgeAt(oTc + vec2(1.0, 0.0)) - th_osmEdgeAt(oTc - vec2(1.0, 0.0)),
+                    th_osmEdgeAt(oTc + vec2(0.0, 1.0)) - th_osmEdgeAt(oTc - vec2(0.0, 1.0)));
+      vec2 gl = vec2(g.x, -g.y);
+      float slopeW = smoothstep(0.01, 0.04, length(gl));
+      vec3 nLoc = normalize(vec3(-normalize(gl + 1e-6) * tan(radians(u_th_roofPitch)), 1.0));
+      float w = roofW * slopeW;
+      nPaint = normalize(mix(nPaint, l2e * nLoc, w / max(w + paintNW, 1e-4)));
+      paintNW = max(paintNW, w);
+    }
+  }
+  if (u_th_debugPaint > 0.5) {
+    // painted normal in local ENU (east red, north green, up blue) x weight; grey = none
+    vec3 nl = mat3(u_th_osmEyeToLocal) * nPaint;
+    material.diffuse = mix(vec3(0.2), nl * 0.5 + 0.5, paintNW);
+    return;
   }
   // de-light: palette value vs the photo's own (baked-shadow) luminance;
   // surfaces OSM names are de-lit more (calmer, painted)
@@ -496,6 +604,7 @@ void th_material(FragmentInput fsInput, inout czm_modelMaterial material) {
   // mapped roofs and ground: light a calmer normal (derivative normals of
   // melted photogrammetry facet into speckle); walls keep theirs
   vec3 nL = normalize(mix(n, upEC, max(u_th_osmFlatN * osmCover * smoothstep(0.55, 0.85, up), u_th_vegFlatN * veg * localMask)));
+  nL = normalize(mix(nL, nPaint, paintNW));
   float ndl = dot(nL, L);
   float w = clamp((ndl + u_th_wrap) / (1.0 + u_th_wrap), 0.0, 1.0);
   float b = w * u_th_bands;

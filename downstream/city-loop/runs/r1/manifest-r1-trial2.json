@@ -1,0 +1,371 @@
+{
+  "schema": "city-loop-v2/capture@1",
+  "label": "r1c",
+  "startedAt": "2026-11-22T19:26:13.918Z",
+  "app": {
+    "sha": "3683380c7768243dfbb4a9d58f1b597ccbb7287f",
+    "subject": "exp(city-loop r1): chip keeps BUILD/REROLL and stays out of the growth beat (trial 2); r1 gallery + run_r1.sh; postcard_r1 strict-count variants (fork-only)",
+    "dirty": false
+  },
+  "url": "http://127.0.0.1:4194/?welcome=0&massing=1&cityR1=all#v=2&lat=37.796083363277035&lon=-122.41021134056297&alt=600&heading=0&pitch=-45&roll=0&style=normal",
+  "viewport": {
+    "width": 1600,
+    "height": 1000
+  },
+  "plot": "plot-n105201-126637",
+  "site": {
+    "lat": 37.796083363277035,
+    "lon": -122.41021134056297,
+    "alt": 600,
+    "heading": 0,
+    "pitch": -45
+  },
+  "sunTime": "2026-06-21T15:00:00Z",
+  "browser": {
+    "version": "151.0.7922.108",
+    "args": [
+      "--no-sandbox",
+      "--disable-dev-shm-usage",
+      "--use-gl=angle",
+      "--use-angle=swiftshader",
+      "--enable-unsafe-swiftshader",
+      "--ozone-platform=headless",
+      "--ignore-gpu-blocklist"
+    ]
+  },
+  "tiles": {
+    "creditText": "Powered by EsriData attribution",
+    "credits": [
+      "<span>Flights: OpenSky Network — Schäfer et al., “Bringing Up OpenSky”, IPSN 2014 · <a href=\"https://opensky-network.org/\" target=\"_blank\" rel=\"noopener\">opensky-network.org</a> (non-commercial)</span>",
+      "<span>Military flights, aircraft traces, bounded regional flight fallback &amp; GNSS navigation integrity: <a href=\"https://adsb.lol/\" target=\"_blank\" rel=\"noopener\">adsb.lol</a> (ODbL 1.0)</span>",
+      "<span>Aircraft type, registration &amp; flight routes: <a href=\"https://www.adsbdb.com/\" target=\"_blank\" rel=\"noopener\">adsbdb</a> · aircraft data from PlaneBase · ICAO-to-N-number conversion by Guillaume Michel · route data is the work of David Taylor, Edinburgh, and Jim Mason, Glasgow, and may not be copied, published, or incorporated into other databases without the explicit permission of David J Taylor, Edinburgh</span>",
+      "<span>Aircraft photos: <a href=\"https://www.planespotters.net/\" target=\"_blank\" rel=\"noopener\">Planespotters.net</a> · each photo is © its photographer, credited beside it</span>",
+      "<span>Vessel photos: <a href=\"https://openvesselphotos.org/\" target=\"_blank\" rel=\"noopener\">Open Vessel Photos</a> · each photo keeps its author&#39;s open licence, credited beside it</span>",
+      "<span>Live vessels (AIS): <a href=\"https://aisstream.io/\" target=\"_blank\" rel=\"noopener\">AISStream.io</a></span>",
+      "<span>Satellites (TLEs and SATCAT): CelesTrak (<a href=\"https://celestrak.org/\" target=\"_blank\" rel=\"noopener\">celestrak.org</a>), Dr. T.S. Kelso</span>",
+      "<span>ISS model: <a href=\"https://science.nasa.gov/3d-resources/international-space-station-iss-d-igoal/\" target=\"_blank\" rel=\"noopener\">NASA 3D Resources</a> (JSC IGOAL)</span>",
+      "<span>Tiangong model: made for God&#39;s Eye View; dimensions from <a href=\"https://doi.org/10.34133/space.0035\" target=\"_blank\" rel=\"noopener\">Wang, Zhang &amp; Wang 2023</a> (CC BY 4.0) and eoPortal</span>",
+      "<span>ISS joint telemetry (where switched on): NASA ISSLive, via Lightstreamer</span>",
+      "<span>ISS live video (LIVE section): NASA, via YouTube (<a href=\"https://www.youtube.com/watch?v=ROboUHfPUrU\" target=\"_blank\" rel=\"noopener\">exterior cameras</a></span>",
+      "<span><a href=\"https://www.youtube.com/watch?v=M3HKLzjvKPc\" target=\"_blank\" rel=\"noopener\">live video and audio</a>)</span>",
+      "<span>Satellite operators and purposes: <a href=\"https://www.ucsusa.org/satellite_database\" target=\"_blank\" rel=\"noopener\">UCS Satellite Database</a> (UCS-Satellite-Database 5-1-2023), Union of Concerned Scientists</span>",
+      "<span>Imaging sensor swaths: operator and agency specifications, cited per platform</span>",
+      "<span>Space mission launch, payload &amp; recovery metadata: <a href=\"https://ll.thespacedevs.com/docs/\" target=\"_blank\" rel=\"noopener\">Launch Library 2 — The Space Devs</a> (API documentation and rate limits)</span>",
+      "<span>Earthquakes: Data courtesy of the U.S. Geological Survey</span>",
+      "<span>Sea marks overlay: <a href=\"https://www.openseamap.org/\" target=\"_blank\" rel=\"noopener\">© OpenSeaMap contributors</a> (CC BY-SA 2.0) · Data © OpenStreetMap contributors (ODbL)</span>",
+      "<span>Ski pistes overlay: <a href=\"https://www.opensnowmap.org/\" target=\"_blank\" rel=\"noopener\">© www.opensnowmap.org</a> (CC BY-SA) · Data © OpenStreetMap contributors (ODbL)</span>",
+      "<span>Recent imagery: We acknowledge the use of imagery provided by services from NASA&#39;s Global Imagery Browse Services (GIBS), part of NASA&#39;s Earth Science Data and Information System (ESDIS). <a href=\"https://gibs.earthdata.nasa.gov/\" target=\"_blank\" rel=\"noopener\">gibs.earthdata.nasa.gov</a></span>",
+      "<a href=\"https://lpdaac.usgs.gov/products/hlss30v002/\" target=\"_blank\" rel=\"noopener\">HLS product page</a>"
+    ],
+    "imgs": [
+      "http://127.0.0.1:4194/cesium/Assets/Images/ion-credit.png"
+    ],
+    "globeShown": true,
+    "stack": {
+      "activeId": "esri-imagery",
+      "activeStack": {
+        "id": "esri-imagery",
+        "label": "Esri Satellite",
+        "shortLabel": "SAT",
+        "kind": "esri-imagery",
+        "requiresIon": false
+      },
+      "stacks": [
+        {
+          "id": "photoreal",
+          "label": "Google 3D",
+          "shortLabel": "3D",
+          "kind": "photoreal",
+          "requiresIon": false,
+          "available": false,
+          "unavailableReason": "Needs GOOGLE_MAPS_API_KEY — add it in Provider Settings — or a Cesium ion token for the ion-hosted route"
+        },
+        {
+          "id": "bing-aerial",
+          "label": "Bing Aerial",
+          "shortLabel": "Aerial",
+          "kind": "ion",
+          "style": 2,
+          "requiresIon": true,
+          "available": false,
+          "unavailableReason": "Needs CESIUM_ION_TOKEN — add it in Provider Settings"
+        },
+        {
+          "id": "bing-labels",
+          "label": "Bing Labels",
+          "shortLabel": "Labels",
+          "kind": "ion",
+          "style": 3,
+          "requiresIon": true,
+          "available": false,
+          "unavailableReason": "Needs CESIUM_ION_TOKEN — add it in Provider Settings"
+        },
+        {
+          "id": "esri-imagery",
+          "label": "Esri Satellite",
+          "shortLabel": "SAT",
+          "kind": "esri-imagery",
+          "requiresIon": false,
+          "available": true,
+          "unavailableReason": null
+        },
+        {
+          "id": "osm",
+          "label": "OSM",
+          "shortLabel": "OSM",
+          "kind": "osm",
+          "requiresIon": false,
+          "available": true,
+          "unavailableReason": null
+        }
+      ],
+      "status": "ready",
+      "lastError": "Needs GOOGLE_MAPS_API_KEY — add it in Provider Settings — or a Cesium ion token for the ion-hosted route",
+      "switchOrigin": "manual",
+      "hasCesiumIonToken": false
+    },
+    "tilesets": [],
+    "google": true,
+    "rendering": "imagery-globe:esri-imagery"
+  },
+  "frameTiming": {
+    "startup": {
+      "frames": 17,
+      "seconds": 3,
+      "fps": 5.666666666666667,
+      "p50ms": 174.6000000005588,
+      "p95ms": 386.5
+    },
+    "end": {
+      "frames": 14,
+      "seconds": 3,
+      "fps": 4.666666666666667,
+      "p50ms": 293.79999999981374,
+      "p95ms": 615.7000000001863
+    }
+  },
+  "beats": {
+    "district": {
+      "status": "ok",
+      "file": "district.png",
+      "sha256": "363e5743472ddfb6f2cbd1c88805d61268e11f423d82ca14920c122c0bc23375",
+      "tier": "district",
+      "cameraAlt": 1500,
+      "seconds": 56.101
+    },
+    "select": {
+      "status": "ok",
+      "file": "select.png",
+      "sha256": "3bb8534b530fd7d985f4ede80f2af2426520cb5df126596e31cf51c161cffb62",
+      "plotId": "plot-n105201-126637",
+      "tier": "plot",
+      "seconds": 98.539
+    },
+    "reimagine": {
+      "status": "ok",
+      "file": "reimagine.png",
+      "sha256": "7516a878d28c97757690b5bc68138317b6c43bdf360fd807d93d2c7a5ea3f47c",
+      "aiLabel": "AI CONCEPT, NOT A PLAN OR AN APPROVAL",
+      "seconds": 53.67
+    },
+    "build": {
+      "status": "ok",
+      "file": "build.png",
+      "sha256": "ff2dac6a92791f86ed763137c7f77deb7969755b98ee1c8fc19e5135fd697663",
+      "storeys": 6,
+      "blockMaterial": "GevCityMassingFacadeCozy",
+      "seconds": 50.913
+    },
+    "shadow": {
+      "status": "ok",
+      "file": "shadow.png",
+      "sha256": "1ea36004070397eebab806db5f85a3f11794c7f75fedb718c43cccc1d4090db7",
+      "storeys": 3,
+      "seconds": 51.691
+    },
+    "growth": {
+      "status": "ok",
+      "file": "growth.png",
+      "sha256": "3cf2d00578bbd14895fcf730225e141a8e673cc23c6f687f98c9b479999d440c",
+      "stops": [
+        "now",
+        "5yr",
+        "15yr"
+      ],
+      "stages": {
+        "now": {
+          "file": "growth--stage-now.png",
+          "sha256": "2ceebd727a73e4c8a48291b6fa6a4c20c6e2b0d8db8bc8ea604a160009b8baaf"
+        },
+        "5yr": {
+          "file": "growth--stage-5yr.png",
+          "sha256": "0e8855047a4b9d62e9292c39ee85f25817c632922ece7b3ecf1c492da542f880"
+        },
+        "15yr": {
+          "file": "growth--stage-15yr.png",
+          "sha256": "3cf2d00578bbd14895fcf730225e141a8e673cc23c6f687f98c9b479999d440c"
+        }
+      },
+      "seconds": 186.195
+    }
+  },
+  "cozy": {
+    "district": {
+      "report": {
+        "paint": "kuwahara-4",
+        "look": "palette+posterise+bloom+haze+tilt",
+        "ao": "off",
+        "source": "app:src/standalone/cozyValleyLook.js"
+      },
+      "full": {
+        "file": "district--cozy.png",
+        "sha256": "50ad83642052e97ea4c08533954bc41a907f9363fa36b9a46cc3ba20aa2ffe84"
+      },
+      "gradeOnly": {
+        "file": "district--cozy-grade-only.png",
+        "sha256": "b4affee6ca32d4431edf3ebec30ca821cb54dd45cd983f5160f9329a2eaa3b4d"
+      },
+      "wipe": {
+        "file": "district--cozy-wipe.png",
+        "sha256": "feadd1e041cef25044717b4c68f0bb4465a63f0defc71c2389fae5d6eb39cdb9"
+      }
+    },
+    "select": {
+      "report": {
+        "paint": "kuwahara-4",
+        "look": "palette+posterise+bloom+haze+tilt",
+        "ao": "off",
+        "source": "app:src/standalone/cozyValleyLook.js"
+      },
+      "full": {
+        "file": "select--cozy.png",
+        "sha256": "104cebd0145078ca68bc8dbdd63e4c85e64f6d6fe48fe5ef94ca239da53d6662"
+      },
+      "gradeOnly": {
+        "file": "select--cozy-grade-only.png",
+        "sha256": "f27e22e12c607d859fc162017069dceaff39226fcdd7893677b0de4b77c1332a"
+      },
+      "wipe": {
+        "file": "select--cozy-wipe.png",
+        "sha256": "5a55307f4ff4cd5c4f5c84cbd02e95a70feda9d0585db2564d2bdcdf0f03914e"
+      }
+    },
+    "reimagine": {
+      "report": {
+        "paint": "kuwahara-4",
+        "look": "palette+posterise+bloom+haze+tilt",
+        "ao": "off",
+        "source": "app:src/standalone/cozyValleyLook.js"
+      },
+      "full": {
+        "file": "reimagine--cozy.png",
+        "sha256": "3f2c2f0b6eb1eef96a2aed02e284dac5b03c71036cf65aec08e22994e1ae2ddc"
+      },
+      "gradeOnly": {
+        "file": "reimagine--cozy-grade-only.png",
+        "sha256": "bfaf85b78f7cffc84b6babb367743db52ffb25cbf447e9256d538d88c6a91b71"
+      },
+      "wipe": {
+        "file": "reimagine--cozy-wipe.png",
+        "sha256": "230abf013ce385a58d06b94c0bfdff8a7d132ad94aefa3c20fe1999518ff18f3"
+      }
+    },
+    "build": {
+      "report": {
+        "paint": "kuwahara-4",
+        "look": "palette+posterise+bloom+haze+tilt",
+        "ao": "off",
+        "source": "app:src/standalone/cozyValleyLook.js"
+      },
+      "full": {
+        "file": "build--cozy.png",
+        "sha256": "49e78204d8095d5d87a54c221827f66c897b511e51ff41221c1bc2631a7d237b"
+      },
+      "gradeOnly": {
+        "file": "build--cozy-grade-only.png",
+        "sha256": "9fc2ccf6d2f4e75755c155b1b1325adbabea796da275965732a797e625d05831"
+      },
+      "wipe": {
+        "file": "build--cozy-wipe.png",
+        "sha256": "98329d694213a55ee198e19d30d4774e5b703c05e12be46b23d134f31ed52ca5"
+      }
+    },
+    "shadow": {
+      "report": {
+        "paint": "kuwahara-4",
+        "look": "palette+posterise+bloom+haze+tilt",
+        "ao": "off",
+        "source": "app:src/standalone/cozyValleyLook.js"
+      },
+      "full": {
+        "file": "shadow--cozy.png",
+        "sha256": "af3fbf65ffd672e9d317924b72d7048604b0b8be3f4ae5a426b3e0edb2b47db0"
+      },
+      "gradeOnly": {
+        "file": "shadow--cozy-grade-only.png",
+        "sha256": "db1d7646a8f9973ba633bf3a372d10a73b9da8ce2eae93666a93ea4d2c3b73ab"
+      },
+      "wipe": {
+        "file": "shadow--cozy-wipe.png",
+        "sha256": "63c570af8dff1056ca41ba10a06ab0d20c582891ad63efc4d87c379cf52fff9a"
+      }
+    },
+    "growth": {
+      "report": {
+        "paint": "kuwahara-4",
+        "look": "palette+posterise+bloom+haze+tilt",
+        "ao": "off",
+        "source": "app:src/standalone/cozyValleyLook.js"
+      },
+      "full": {
+        "file": "growth--cozy.png",
+        "sha256": "18a41ffc68db4e8539d6e1083c96d67d6f4990ee0e6868e14cd8ef5217ac47f2"
+      },
+      "gradeOnly": {
+        "file": "growth--cozy-grade-only.png",
+        "sha256": "0080f8e9e30e092ac24c406a255c567e1b3cdcf9bc8732a4b7d73e17f08ed9ae"
+      },
+      "wipe": {
+        "file": "growth--cozy-wipe.png",
+        "sha256": "328473553fae931eb4638ac0dd1044aeeccff78c955fc97bf2466f93c77afa10"
+      }
+    }
+  },
+  "console": [
+    {
+      "type": "warning",
+      "text": "[Init] Google 3D Tiles unavailable, using the keyless globe: Error: Google 3D tokens are not offered\n    at Object.loadPhotoreal (http://127.0.0.1:4194/src/maps/globeEngine.js:201:24)\n    at async createApplicationScene (http://127.0.0.1:4194/src/app/scene.js:186:22)\n    at async Object.createScene "
+    },
+    {
+      "type": "warning",
+      "text": "[MapStack] Needs GOOGLE_MAPS_API_KEY — add it in Provider Settings — or a Cesium ion token for the ion-hosted route"
+    }
+  ],
+  "pageErrors": [],
+  "marks": {
+    "ready": 16.745,
+    "district": 70.112,
+    "select": 167.747,
+    "reimagine": 221.91,
+    "build": 272.495,
+    "shadow": 324.355,
+    "growth": 511.16
+  },
+  "query": "cityR1=all",
+  "lookSource": "app",
+  "finishedAt": "2026-11-22T19:34:55.024Z",
+  "video": {
+    "full": "journey-full-r1c.mp4",
+    "cut": "journey-r1c.mp4",
+    "beatsInCut": [
+      "district",
+      "select",
+      "reimagine",
+      "build",
+      "shadow",
+      "growth"
+    ],
+    "fullSha256": "30574c7630d7f1d2c279d318c6def4df9d807f53d744a02ab0740465a3ddc09f",
+    "cutSha256": "b2654b98a3d557ad6afb9f05478cd4057bd8ba4fb3b7ae97f95452a8fbfe5f05"
+  }
+}

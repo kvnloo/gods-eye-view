@@ -1,0 +1,452 @@
+{
+ "rubric_sha256": "98dd1aadb8fa4641d7c63fd956cc154bb08b5ab7031d74febf2a36454243e723",
+ "summary": {
+  "district--parent_vs_r1": {
+   "panel": {
+    "game_feel": "TIE",
+    "gev_brand": "TIE",
+    "scene_integration": "A",
+    "wintercats_fidelity": "B",
+    "legibility": "A"
+   },
+   "judges": {
+    "codex-gpt-6.2-sol": {
+     "game_feel": "B",
+     "gev_brand": "TIE",
+     "scene_integration": "A",
+     "wintercats_fidelity": "B",
+     "legibility": "A"
+    },
+    "claude-sonnet": {
+     "game_feel": "TIE",
+     "gev_brand": "TIE",
+     "scene_integration": "TIE",
+     "wintercats_fidelity": "B",
+     "legibility": "A"
+    },
+    "claude-opus": {
+     "game_feel": "TIE",
+     "gev_brand": "TIE",
+     "scene_integration": "A",
+     "wintercats_fidelity": "B",
+     "legibility": "TIE"
+    }
+   }
+  },
+  "select--parent_vs_r1": {
+   "panel": {
+    "game_feel": "TIE",
+    "gev_brand": "TIE",
+    "scene_integration": "B",
+    "wintercats_fidelity": "TIE",
+    "legibility": "B"
+   },
+   "judges": {
+    "codex-gpt-6.2-sol": {
+     "game_feel": "A",
+     "gev_brand": "TIE",
+     "scene_integration": "B",
+     "wintercats_fidelity": "A",
+     "legibility": "B"
+    },
+    "claude-sonnet": {
+     "game_feel": "TIE",
+     "gev_brand": "TIE",
+     "scene_integration": "TIE",
+     "wintercats_fidelity": "TIE",
+     "legibility": "B"
+    },
+    "claude-opus": {
+     "game_feel": "TIE",
+     "gev_brand": "TIE",
+     "scene_integration": "B",
+     "wintercats_fidelity": "TIE",
+     "legibility": "B"
+    }
+   }
+  },
+  "reimagine--parent_vs_r1": {
+   "panel": {
+    "game_feel": "TIE",
+    "gev_brand": "TIE",
+    "scene_integration": "B",
+    "wintercats_fidelity": "TIE",
+    "legibility": "B"
+   },
+   "judges": {
+    "codex-gpt-6.2-sol": {
+     "game_feel": "B",
+     "gev_brand": "TIE",
+     "scene_integration": "B",
+     "wintercats_fidelity": "TIE",
+     "legibility": "B"
+    },
+    "claude-sonnet": {
+     "game_feel": "TIE",
+     "gev_brand": "TIE",
+     "scene_integration": "B",
+     "wintercats_fidelity": "TIE",
+     "legibility": "B"
+    },
+    "claude-opus": {
+     "game_feel": "TIE",
+     "gev_brand": "TIE",
+     "scene_integration": "B",
+     "wintercats_fidelity": "TIE",
+     "legibility": "B"
+    }
+   }
+  },
+  "build--parent_vs_r1": {
+   "panel": {
+    "game_feel": "B",
+    "gev_brand": "TIE",
+    "scene_integration": "B",
+    "wintercats_fidelity": "B",
+    "legibility": "B"
+   },
+   "judges": {
+    "codex-gpt-6.2-sol": {
+     "game_feel": "B",
+     "gev_brand": "TIE",
+     "scene_integration": "B",
+     "wintercats_fidelity": "B",
+     "legibility": "B"
+    },
+    "claude-sonnet": {
+     "game_feel": "B",
+     "gev_brand": "TIE",
+     "scene_integration": "B",
+     "wintercats_fidelity": "B",
+     "legibility": "B"
+    },
+    "claude-opus": {
+     "game_feel": "B",
+     "gev_brand": "TIE",
+     "scene_integration": "B",
+     "wintercats_fidelity": "B",
+     "legibility": "TIE"
+    }
+   }
+  },
+  "shadow--parent_vs_r1": {
+   "panel": {
+    "game_feel": "A",
+    "gev_brand": "B",
+    "scene_integration": "B",
+    "wintercats_fidelity": "B",
+    "legibility": "B"
+   },
+   "judges": {
+    "codex-gpt-6.2-sol": {
+     "game_feel": "A",
+     "gev_brand": "B",
+     "scene_integration": "B",
+     "wintercats_fidelity": "B",
+     "legibility": "B"
+    },
+    "claude-sonnet": {
+     "game_feel": "TIE",
+     "gev_brand": "B",
+     "scene_integration": "B",
+     "wintercats_fidelity": "TIE",
+     "legibility": "B"
+    },
+    "claude-opus": {
+     "game_feel": "A",
+     "gev_brand": "B",
+     "scene_integration": "B",
+     "wintercats_fidelity": "B",
+     "legibility": "B"
+    }
+   }
+  },
+  "growth--parent_vs_r1": {
+   "panel": {
+    "game_feel": "A",
+    "gev_brand": "TIE",
+    "scene_integration": "B",
+    "wintercats_fidelity": "A",
+    "legibility": "B"
+   },
+   "judges": {
+    "codex-gpt-6.2-sol": {
+     "game_feel": "A",
+     "gev_brand": "TIE",
+     "scene_integration": "B",
+     "wintercats_fidelity": "A",
+     "legibility": "B"
+    },
+    "claude-sonnet": {
+     "game_feel": "A",
+     "gev_brand": "A",
+     "scene_integration": "B",
+     "wintercats_fidelity": "A",
+     "legibility": "B"
+    },
+    "claude-opus": {
+     "game_feel": "A",
+     "gev_brand": "TIE",
+     "scene_integration": "B",
+     "wintercats_fidelity": "A",
+     "legibility": "B"
+    }
+   }
+  },
+  "select--r1clear_vs_r1look": {
+   "panel": {
+    "wintercats_fidelity": "B",
+    "scene_integration": "A",
+    "legibility": "TIE"
+   },
+   "judges": {
+    "codex-gpt-6.2-sol": {
+     "wintercats_fidelity": "B",
+     "scene_integration": "A",
+     "legibility": "TIE"
+    },
+    "claude-sonnet": {
+     "wintercats_fidelity": "B",
+     "scene_integration": "A",
+     "legibility": "A"
+    },
+    "claude-opus": {
+     "wintercats_fidelity": "B",
+     "scene_integration": "A",
+     "legibility": "TIE"
+    }
+   }
+  },
+  "reimagine--r1clear_vs_r1look": {
+   "panel": {
+    "wintercats_fidelity": "B",
+    "scene_integration": "A",
+    "legibility": "TIE"
+   },
+   "judges": {
+    "codex-gpt-6.2-sol": {
+     "wintercats_fidelity": "B",
+     "scene_integration": "A",
+     "legibility": "TIE"
+    },
+    "claude-sonnet": {
+     "wintercats_fidelity": "B",
+     "scene_integration": "TIE",
+     "legibility": "A"
+    },
+    "claude-opus": {
+     "wintercats_fidelity": "B",
+     "scene_integration": "A",
+     "legibility": "TIE"
+    }
+   }
+  },
+  "build--r1clear_vs_r1look": {
+   "panel": {
+    "wintercats_fidelity": "B",
+    "scene_integration": "A",
+    "legibility": "TIE"
+   },
+   "judges": {
+    "codex-gpt-6.2-sol": {
+     "wintercats_fidelity": "B",
+     "scene_integration": "A",
+     "legibility": "TIE"
+    },
+    "claude-sonnet": {
+     "wintercats_fidelity": "B",
+     "scene_integration": "A",
+     "legibility": "A"
+    },
+    "claude-opus": {
+     "wintercats_fidelity": "B",
+     "scene_integration": "A",
+     "legibility": "TIE"
+    }
+   }
+  },
+  "shadow--r1clear_vs_r1look": {
+   "panel": {
+    "wintercats_fidelity": "B",
+    "scene_integration": "A",
+    "legibility": "TIE"
+   },
+   "judges": {
+    "codex-gpt-6.2-sol": {
+     "wintercats_fidelity": "B",
+     "scene_integration": "A",
+     "legibility": "TIE"
+    },
+    "claude-sonnet": {
+     "wintercats_fidelity": "B",
+     "scene_integration": "A",
+     "legibility": "A"
+    },
+    "claude-opus": {
+     "wintercats_fidelity": "B",
+     "scene_integration": "A",
+     "legibility": "B"
+    }
+   }
+  },
+  "growth--r1clear_vs_r1look": {
+   "panel": {
+    "wintercats_fidelity": "B",
+    "scene_integration": "A",
+    "legibility": "TIE"
+   },
+   "judges": {
+    "codex-gpt-6.2-sol": {
+     "wintercats_fidelity": "B",
+     "scene_integration": "A",
+     "legibility": "TIE"
+    },
+    "claude-sonnet": {
+     "wintercats_fidelity": "B",
+     "scene_integration": "A",
+     "legibility": "A"
+    },
+    "claude-opus": {
+     "wintercats_fidelity": "B",
+     "scene_integration": "A",
+     "legibility": "TIE"
+    }
+   }
+  }
+ },
+ "pairs": [
+  {
+   "id": "district--parent_vs_r1",
+   "a": "/Users/kvn/.hermes/profiles/tek/workspace/gev-city-recovery-20261122/loop-v2/r1-work/diag/parent/district.jpg",
+   "b": "/Users/kvn/.hermes/profiles/tek/workspace/gev-city-recovery-20261122/loop-v2/r1-work/diag/r1/district--cozy.jpg",
+   "context": "the same app frame (far/district zoom of the city builder inside the GEV globe app) from two builds of the app",
+   "layers": [
+    "game_feel",
+    "gev_brand",
+    "scene_integration",
+    "wintercats_fidelity",
+    "legibility"
+   ]
+  },
+  {
+   "id": "select--parent_vs_r1",
+   "a": "/Users/kvn/.hermes/profiles/tek/workspace/gev-city-recovery-20261122/loop-v2/r1-work/diag/parent/select.jpg",
+   "b": "/Users/kvn/.hermes/profiles/tek/workspace/gev-city-recovery-20261122/loop-v2/r1-work/diag/r1/select.jpg",
+   "context": "the same app frame (a plot was just clicked; the verb wheel is shown) from two builds of the app",
+   "layers": [
+    "game_feel",
+    "gev_brand",
+    "scene_integration",
+    "wintercats_fidelity",
+    "legibility"
+   ]
+  },
+  {
+   "id": "reimagine--parent_vs_r1",
+   "a": "/Users/kvn/.hermes/profiles/tek/workspace/gev-city-recovery-20261122/loop-v2/r1-work/diag/parent/reimagine.jpg",
+   "b": "/Users/kvn/.hermes/profiles/tek/workspace/gev-city-recovery-20261122/loop-v2/r1-work/diag/r1/reimagine.jpg",
+   "context": "the same app frame (the player chose REIMAGINE on the plot; an AI concept is shown) from two builds of the app",
+   "layers": [
+    "game_feel",
+    "gev_brand",
+    "scene_integration",
+    "wintercats_fidelity",
+    "legibility"
+   ]
+  },
+  {
+   "id": "build--parent_vs_r1",
+   "a": "/Users/kvn/.hermes/profiles/tek/workspace/gev-city-recovery-20261122/loop-v2/r1-work/diag/parent/build.jpg",
+   "b": "/Users/kvn/.hermes/profiles/tek/workspace/gev-city-recovery-20261122/loop-v2/r1-work/diag/r1/build.jpg",
+   "context": "the same app frame (the player turned on MASSING: a proposed building stands on the plot) from two builds of the app",
+   "layers": [
+    "game_feel",
+    "gev_brand",
+    "scene_integration",
+    "wintercats_fidelity",
+    "legibility"
+   ]
+  },
+  {
+   "id": "shadow--parent_vs_r1",
+   "a": "/Users/kvn/.hermes/profiles/tek/workspace/gev-city-recovery-20261122/loop-v2/r1-work/diag/parent/shadow.jpg",
+   "b": "/Users/kvn/.hermes/profiles/tek/workspace/gev-city-recovery-20261122/loop-v2/r1-work/diag/r1/shadow.jpg",
+   "context": "the same app frame (the player opened the shadow/sun-fit study for the proposed building) from two builds of the app",
+   "layers": [
+    "game_feel",
+    "gev_brand",
+    "scene_integration",
+    "wintercats_fidelity",
+    "legibility"
+   ]
+  },
+  {
+   "id": "growth--parent_vs_r1",
+   "a": "/Users/kvn/.hermes/profiles/tek/workspace/gev-city-recovery-20261122/loop-v2/r1-work/diag/parent/growth.jpg",
+   "b": "/Users/kvn/.hermes/profiles/tek/workspace/gev-city-recovery-20261122/loop-v2/r1-work/diag/r1/growth.jpg",
+   "context": "the same app frame (the district growth timeline (NOW / 5 YR / 15 YR) at 15 YR) from two builds of the app",
+   "layers": [
+    "game_feel",
+    "gev_brand",
+    "scene_integration",
+    "wintercats_fidelity",
+    "legibility"
+   ]
+  },
+  {
+   "id": "select--r1clear_vs_r1look",
+   "a": "/Users/kvn/.hermes/profiles/tek/workspace/gev-city-recovery-20261122/loop-v2/r1-work/diag/r1/select.jpg",
+   "b": "/Users/kvn/.hermes/profiles/tek/workspace/gev-city-recovery-20261122/loop-v2/r1-work/diag/r1/select--cozy.jpg",
+   "context": "the same frame (a plot was just clicked; the verb wheel is shown) with two different render looks",
+   "layers": [
+    "wintercats_fidelity",
+    "scene_integration",
+    "legibility"
+   ]
+  },
+  {
+   "id": "reimagine--r1clear_vs_r1look",
+   "a": "/Users/kvn/.hermes/profiles/tek/workspace/gev-city-recovery-20261122/loop-v2/r1-work/diag/r1/reimagine.jpg",
+   "b": "/Users/kvn/.hermes/profiles/tek/workspace/gev-city-recovery-20261122/loop-v2/r1-work/diag/r1/reimagine--cozy.jpg",
+   "context": "the same frame (the player chose REIMAGINE on the plot; an AI concept is shown) with two different render looks",
+   "layers": [
+    "wintercats_fidelity",
+    "scene_integration",
+    "legibility"
+   ]
+  },
+  {
+   "id": "build--r1clear_vs_r1look",
+   "a": "/Users/kvn/.hermes/profiles/tek/workspace/gev-city-recovery-20261122/loop-v2/r1-work/diag/r1/build.jpg",
+   "b": "/Users/kvn/.hermes/profiles/tek/workspace/gev-city-recovery-20261122/loop-v2/r1-work/diag/r1/build--cozy.jpg",
+   "context": "the same frame (the player turned on MASSING: a proposed building stands on the plot) with two different render looks",
+   "layers": [
+    "wintercats_fidelity",
+    "scene_integration",
+    "legibility"
+   ]
+  },
+  {
+   "id": "shadow--r1clear_vs_r1look",
+   "a": "/Users/kvn/.hermes/profiles/tek/workspace/gev-city-recovery-20261122/loop-v2/r1-work/diag/r1/shadow.jpg",
+   "b": "/Users/kvn/.hermes/profiles/tek/workspace/gev-city-recovery-20261122/loop-v2/r1-work/diag/r1/shadow--cozy.jpg",
+   "context": "the same frame (the player opened the shadow/sun-fit study for the proposed building) with two different render looks",
+   "layers": [
+    "wintercats_fidelity",
+    "scene_integration",
+    "legibility"
+   ]
+  },
+  {
+   "id": "growth--r1clear_vs_r1look",
+   "a": "/Users/kvn/.hermes/profiles/tek/workspace/gev-city-recovery-20261122/loop-v2/r1-work/diag/r1/growth.jpg",
+   "b": "/Users/kvn/.hermes/profiles/tek/workspace/gev-city-recovery-20261122/loop-v2/r1-work/diag/r1/growth--cozy.jpg",
+   "context": "the same frame (the district growth timeline (NOW / 5 YR / 15 YR) at 15 YR) with two different render looks",
+   "layers": [
+    "wintercats_fidelity",
+    "scene_integration",
+    "legibility"
+   ]
+  }
+ ]
+}

@@ -97,13 +97,14 @@ export function isSatelliteSunlit(satECI, dateMs) {
 }
 
 /**
- * Compute the observer local solar elevation angle in degrees.
+ * Local solar position for an observer.
  * @param {number} latDeg Observer latitude in degrees
  * @param {number} lonDeg Observer longitude in degrees
  * @param {number} dateMs UTC epoch timestamp in milliseconds
- * @returns {number} Solar elevation in degrees [-90, 90]
+ * @returns {{azimuthDeg: number, elevationDeg: number}} Azimuth clockwise
+ *   from north [0, 360) and elevation [-90, 90], in degrees
  */
-export function observerSolarElevation(latDeg, lonDeg, dateMs) {
+export function observerSolarPosition(latDeg, lonDeg, dateMs) {
   const sun = solarPositionECI(dateMs);
   const gmst = gstime(new Date(dateMs));
   const gmstDeg = (((gmst * R2D) % 360) + 360) % 360;
@@ -114,7 +115,25 @@ export function observerSolarElevation(latDeg, lonDeg, dateMs) {
   const dec = sun.decDeg * D2R;
   const sinElev =
     Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(H);
-  return Math.asin(Math.max(-1, Math.min(1, sinElev))) * R2D;
+  const azimuth = Math.atan2(
+    -Math.sin(H) * Math.cos(dec),
+    Math.sin(dec) * Math.cos(phi) - Math.cos(dec) * Math.sin(phi) * Math.cos(H),
+  );
+  return {
+    azimuthDeg: (((azimuth * R2D) % 360) + 360) % 360,
+    elevationDeg: Math.asin(Math.max(-1, Math.min(1, sinElev))) * R2D,
+  };
+}
+
+/**
+ * Compute the observer local solar elevation angle in degrees.
+ * @param {number} latDeg Observer latitude in degrees
+ * @param {number} lonDeg Observer longitude in degrees
+ * @param {number} dateMs UTC epoch timestamp in milliseconds
+ * @returns {number} Solar elevation in degrees [-90, 90]
+ */
+export function observerSolarElevation(latDeg, lonDeg, dateMs) {
+  return observerSolarPosition(latDeg, lonDeg, dateMs).elevationDeg;
 }
 
 /**

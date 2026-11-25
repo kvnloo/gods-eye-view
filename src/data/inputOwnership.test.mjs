@@ -14,6 +14,10 @@ import {
   bridgePointer,
 } from './inputOwnership.js';
 import { createInputRouter } from '../render/input/router.js';
+import {
+  partitionForkOnly,
+  staleForkOnlyMessage,
+} from '../testSupport/forkOnlyExempt.mjs';
 
 const ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -196,7 +200,10 @@ test('pointer input, camera holds and the stock clicks go through the one dispat
       if (!allowed.includes(file) && pattern.test(source))
         offenders.push(`${file} ${what}`);
   }
-  assert.deepEqual(offenders, []);
+  // FORK-ONLY: the fork's city builder is set aside, and only it.
+  const forkOnly = partitionForkOnly('inputDispatcher', offenders);
+  assert.deepEqual(forkOnly.offenders, []);
+  assert.deepEqual(forkOnly.unused, [], staleForkOnlyMessage('inputDispatcher'));
 });
 
 test('ambient selection handlers never claim the pointer themselves', () => {

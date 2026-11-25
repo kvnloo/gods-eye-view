@@ -1,0 +1,454 @@
+{
+ "rubric_sha256": "98dd1aadb8fa4641d7c63fd956cc154bb08b5ab7031d74febf2a36454243e723",
+ "judges": [
+  "claude-opus",
+  "claude-sonnet",
+  "codex-gpt-6.2-sol"
+ ],
+ "absolute": {
+  "game_feel": {
+   "group_means": {
+    "trash": 1.0,
+    "slop": 3.0,
+    "good": 4.0,
+    "wc": 4.33,
+    "dash": 3.67
+   },
+   "panel_ordered": true,
+   "judges_ordered": {
+    "claude-opus": true,
+    "claude-sonnet": true,
+    "codex-gpt-6.2-sol": true
+   },
+   "pass": true
+  },
+  "gev_brand": {
+   "group_means": {
+    "trash": 1.5,
+    "slop": 3.67,
+    "good": 4.33,
+    "wc": 1.17,
+    "dash": 3.0
+   },
+   "panel_ordered": true,
+   "judges_ordered": {
+    "claude-opus": false,
+    "claude-sonnet": true,
+    "codex-gpt-6.2-sol": true
+   },
+   "pass": true
+  },
+  "legibility": {
+   "group_means": {
+    "trash": 2.33,
+    "slop": 2.33,
+    "good": 3.0,
+    "wc": 3.17,
+    "dash": 3.0
+   },
+   "panel_ordered": false,
+   "judges_ordered": {
+    "claude-opus": false,
+    "claude-sonnet": false,
+    "codex-gpt-6.2-sol": false
+   },
+   "pass": false
+  },
+  "scene_integration": {
+   "group_means": {
+    "trash": 1.0,
+    "slop": 2.67,
+    "good": 4.0,
+    "wc": 4.33,
+    "dash": 4.0
+   },
+   "panel_ordered": true,
+   "judges_ordered": {
+    "claude-opus": true,
+    "claude-sonnet": true,
+    "codex-gpt-6.2-sol": true
+   },
+   "pass": true
+  },
+  "honesty": {
+   "group_means": {
+    "trash": 4.17,
+    "slop": 4.0,
+    "good": 1.89,
+    "wc": 3.33,
+    "dash": 3.67
+   },
+   "panel_ordered": false,
+   "judges_ordered": {
+    "claude-opus": false,
+    "claude-sonnet": false,
+    "codex-gpt-6.2-sol": false
+   },
+   "pass": false
+  },
+  "taste": {
+   "group_means": {
+    "trash": 1.17,
+    "slop": 3.11,
+    "good": 4.11,
+    "wc": 3.28,
+    "dash": 3.56
+   },
+   "panel_ordered": true,
+   "judges_ordered": {
+    "claude-opus": true,
+    "claude-sonnet": true,
+    "codex-gpt-6.2-sol": true
+   },
+   "pass": true
+  }
+ },
+ "pairwise": {
+  "trash_vs_slop": {
+   "game_feel": {
+    "panel": "B",
+    "expected": "B",
+    "ok": true,
+    "judges": {
+     "codex-gpt-6.2-sol": "B",
+     "claude-sonnet": "B",
+     "claude-opus": "B"
+    }
+   },
+   "gev_brand": {
+    "panel": "B",
+    "expected": "B",
+    "ok": true,
+    "judges": {
+     "codex-gpt-6.2-sol": "B",
+     "claude-sonnet": "B",
+     "claude-opus": "B"
+    }
+   },
+   "legibility": {
+    "panel": "B",
+    "expected": "B",
+    "ok": true,
+    "judges": {
+     "codex-gpt-6.2-sol": "TIE",
+     "claude-sonnet": "B",
+     "claude-opus": "B"
+    }
+   },
+   "scene_integration": {
+    "panel": "B",
+    "expected": "B",
+    "ok": true,
+    "judges": {
+     "codex-gpt-6.2-sol": "B",
+     "claude-sonnet": "B",
+     "claude-opus": "B"
+    }
+   },
+   "honesty": {
+    "panel": "A",
+    "expected": "B",
+    "ok": false,
+    "judges": {
+     "codex-gpt-6.2-sol": "A",
+     "claude-sonnet": "B",
+     "claude-opus": "A"
+    }
+   },
+   "wintercats_fidelity": {
+    "panel": "B",
+    "expected": "B",
+    "ok": true,
+    "judges": {
+     "codex-gpt-6.2-sol": "B",
+     "claude-sonnet": "TIE",
+     "claude-opus": "B"
+    }
+   }
+  },
+  "slop_vs_good": {
+   "game_feel": {
+    "panel": "B",
+    "expected": "B",
+    "ok": true,
+    "judges": {
+     "codex-gpt-6.2-sol": "B",
+     "claude-sonnet": "B",
+     "claude-opus": "B"
+    }
+   },
+   "gev_brand": {
+    "panel": "B",
+    "expected": "B",
+    "ok": true,
+    "judges": {
+     "codex-gpt-6.2-sol": "B",
+     "claude-sonnet": "B",
+     "claude-opus": "B"
+    }
+   },
+   "legibility": {
+    "panel": "B",
+    "expected": "B",
+    "ok": true,
+    "judges": {
+     "codex-gpt-6.2-sol": "B",
+     "claude-sonnet": "B",
+     "claude-opus": "B"
+    }
+   },
+   "scene_integration": {
+    "panel": "B",
+    "expected": "B",
+    "ok": true,
+    "judges": {
+     "codex-gpt-6.2-sol": "B",
+     "claude-sonnet": "B",
+     "claude-opus": "B"
+    }
+   },
+   "honesty": {
+    "panel": "A",
+    "expected": "B",
+    "ok": false,
+    "judges": {
+     "codex-gpt-6.2-sol": "A",
+     "claude-sonnet": "A",
+     "claude-opus": "A"
+    }
+   },
+   "wintercats_fidelity": {
+    "panel": "B",
+    "expected": "B",
+    "ok": true,
+    "judges": {
+     "codex-gpt-6.2-sol": "B",
+     "claude-sonnet": "B",
+     "claude-opus": "TIE"
+    }
+   }
+  },
+  "trash_vs_good": {
+   "game_feel": {
+    "panel": "B",
+    "expected": "B",
+    "ok": true,
+    "judges": {
+     "codex-gpt-6.2-sol": "B",
+     "claude-sonnet": "B",
+     "claude-opus": "B"
+    }
+   },
+   "gev_brand": {
+    "panel": "B",
+    "expected": "B",
+    "ok": true,
+    "judges": {
+     "codex-gpt-6.2-sol": "B",
+     "claude-sonnet": "B",
+     "claude-opus": "B"
+    }
+   },
+   "legibility": {
+    "panel": "TIE",
+    "expected": "B",
+    "ok": false,
+    "judges": {
+     "codex-gpt-6.2-sol": "A",
+     "claude-sonnet": "B",
+     "claude-opus": "TIE"
+    }
+   },
+   "scene_integration": {
+    "panel": "B",
+    "expected": "B",
+    "ok": true,
+    "judges": {
+     "codex-gpt-6.2-sol": "B",
+     "claude-sonnet": "B",
+     "claude-opus": "B"
+    }
+   },
+   "honesty": {
+    "panel": "A",
+    "expected": "B",
+    "ok": false,
+    "judges": {
+     "codex-gpt-6.2-sol": "A",
+     "claude-sonnet": "A",
+     "claude-opus": "A"
+    }
+   },
+   "wintercats_fidelity": {
+    "panel": "B",
+    "expected": "B",
+    "ok": true,
+    "judges": {
+     "codex-gpt-6.2-sol": "B",
+     "claude-sonnet": "B",
+     "claude-opus": "B"
+    }
+   }
+  },
+  "slop1_vs_good_reimagine": {
+   "game_feel": {
+    "panel": "B",
+    "expected": "B",
+    "ok": true,
+    "judges": {
+     "codex-gpt-6.2-sol": "B",
+     "claude-sonnet": "B",
+     "claude-opus": "B"
+    }
+   },
+   "gev_brand": {
+    "panel": "B",
+    "expected": "B",
+    "ok": true,
+    "judges": {
+     "codex-gpt-6.2-sol": "B",
+     "claude-sonnet": "B",
+     "claude-opus": "B"
+    }
+   },
+   "legibility": {
+    "panel": "B",
+    "expected": "B",
+    "ok": true,
+    "judges": {
+     "codex-gpt-6.2-sol": "B",
+     "claude-sonnet": "B",
+     "claude-opus": "B"
+    }
+   },
+   "scene_integration": {
+    "panel": "B",
+    "expected": "B",
+    "ok": true,
+    "judges": {
+     "codex-gpt-6.2-sol": "B",
+     "claude-sonnet": "B",
+     "claude-opus": "B"
+    }
+   },
+   "honesty": {
+    "panel": "A",
+    "expected": "B",
+    "ok": false,
+    "judges": {
+     "codex-gpt-6.2-sol": "A",
+     "claude-sonnet": "A",
+     "claude-opus": "A"
+    }
+   },
+   "wintercats_fidelity": {
+    "panel": "B",
+    "expected": "B",
+    "ok": true,
+    "judges": {
+     "codex-gpt-6.2-sol": "B",
+     "claude-sonnet": "B",
+     "claude-opus": "B"
+    }
+   }
+  },
+  "dash_vs_wcA1": {
+   "wintercats_fidelity": {
+    "panel": "B",
+    "expected": "B",
+    "ok": true,
+    "judges": {
+     "codex-gpt-6.2-sol": "B",
+     "claude-sonnet": "B",
+     "claude-opus": "B"
+    }
+   }
+  },
+  "wcA2_vs_dash": {
+   "wintercats_fidelity": {
+    "panel": "A",
+    "expected": "A",
+    "ok": true,
+    "judges": {
+     "codex-gpt-6.2-sol": "A",
+     "claude-sonnet": "A",
+     "claude-opus": "A"
+    }
+   }
+  }
+ },
+ "look": {
+  "absolute": {
+   "group_means": {
+    "trash": 1.0,
+    "slop": 1.17,
+    "good": 2.11,
+    "wc": 4.67,
+    "dash": 2.33
+   },
+   "judges_ordered": {
+    "claude-opus": true,
+    "claude-sonnet": true,
+    "codex-gpt-6.2-sol": true
+   },
+   "pass": true
+  }
+ },
+ "pairwise_layers": {
+  "game_feel": {
+   "hits": 4,
+   "of": 4,
+   "pass": true
+  },
+  "gev_brand": {
+   "hits": 4,
+   "of": 4,
+   "pass": true
+  },
+  "legibility": {
+   "hits": 3,
+   "of": 4,
+   "pass": false
+  },
+  "scene_integration": {
+   "hits": 4,
+   "of": 4,
+   "pass": true
+  },
+  "honesty": {
+   "hits": 0,
+   "of": 4,
+   "pass": false
+  },
+  "wintercats_fidelity": {
+   "hits": 6,
+   "of": 6,
+   "pass": true
+  }
+ },
+ "verdict": {
+  "taste_layers_pass_absolute": {
+   "taste": true,
+   "game_feel": true,
+   "gev_brand": true,
+   "scene_integration": true
+  },
+  "taste_layers_pass_pairwise": {
+   "game_feel": true,
+   "gev_brand": true,
+   "scene_integration": true
+  },
+  "look_layer_pass": true,
+  "calibrated_layers": [
+   "game_feel",
+   "gev_brand",
+   "scene_integration",
+   "wintercats_fidelity"
+  ],
+  "advisory_only_layers": [
+   "legibility",
+   "honesty"
+  ],
+  "panel_may_rank": true
+ }
+}

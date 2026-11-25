@@ -7,6 +7,7 @@ import { localMcpPlugin } from '../mcp/plugin.js';
 import { apiNotFoundPlugin } from './api-not-found.js';
 import { castRelayPlugin } from './castRelay.js';
 import { conformanceReferencesPlugin } from './conformance-references.js';
+import { cityConceptPlugin } from './city-concept.js';
 import { googleTokenUnavailablePlugin } from './google-token-unavailable.js';
 import { standaloneVoiceTools } from './voiceTools.js';
 import { unwatchedRuntimeDirsPlugin } from './unwatched-cache.js';
@@ -34,6 +35,7 @@ export function standaloneConfig(
       googleTokenUnavailablePlugin(),
       conformanceReferencesPlugin(),
       castRelayPlugin(),
+      cityConceptPlugin(),
       apiNotFoundPlugin(),
       unwatchedRuntimeDirsPlugin(),
     ],

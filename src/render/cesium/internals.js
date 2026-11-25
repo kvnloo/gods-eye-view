@@ -300,3 +300,50 @@ export function creditDisplayContents(display) {
 export function materialTexture(material, uniform) {
   return material?._textures?.[uniform];
 }
+
+/**
+ * The texture a custom shader holds for a texture uniform, once it has made
+ * it. A custom shader takes a new texture uniform only as a texture it makes
+ * (and the old one it destroys) on its next update; `drawModels.js` writes a
+ * posed model's part matrices into this texture in place instead, each frame
+ * a part spins.
+ * @param {object} shader Cesium CustomShader.
+ * @param {string} uniform The uniform's name.
+ * @returns {object|undefined} Cesium Texture.
+ */
+export function customShaderTexture(shader, uniform) {
+  return shader?._textureManager?.getTexture?.(uniform);
+}
+
+/**
+ * FORK-ONLY (exp/theme-engine-v0): metadata of the glTF primitives a loaded
+ * 3D tile drew, for the theme engine's probe (`themes/engine.js`). Reads
+ * Cesium objects' fields only, never texture pixels: whether a NORMAL
+ * attribute exists and, per base-colour texture, whether Cesium generated a
+ * mip chain, its minification filter and pixel format.
+ * @param {object} tile Cesium Cesium3DTile.
+ * @returns {{normals: boolean, texture: object|null}[]}
+ */
+export function tilePrimitiveFacts(tile) {
+  const components = tile?.content?._model?._sceneGraph?.components;
+  const out = [];
+  for (const node of components?.nodes ?? [])
+    for (const primitive of node.primitives ?? []) {
+      const texture =
+        primitive.material?.metallicRoughness?.baseColorTexture?.texture;
+      out.push({
+        normals: !!primitive.attributes?.some((a) => a.semantic === 'NORMAL'),
+        texture: texture
+          ? {
+              key: texture,
+              hasMipmap: !!texture._hasMipmap,
+              minificationFilter: texture.sampler?.minificationFilter,
+              pixelFormat: texture.pixelFormat,
+              width: texture.width,
+              height: texture.height,
+            }
+          : null,
+      });
+    }
+  return out;
+}

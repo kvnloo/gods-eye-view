@@ -78,3 +78,26 @@ layer's hexagon grid; the complete resolved dependency inventory remains in
 - Source: <https://github.com/uber/h3-js>
 - License: Apache License 2.0
 - License text: <https://www.apache.org/licenses/LICENSE-2.0>
+
+## OpenStreetMap data (city diorama fixtures)
+
+- Files: `public/city-diorama/*.osm.json` (fork-only city diorama experiment)
+- Content: building footprints, streets, green and water areas and trees,
+  reprojected to local metres; see `public/city-diorama/README.md` for the
+  sources, fetch dates and transform
+- Attribution: © OpenStreetMap contributors
+- Source: <https://www.openstreetmap.org/copyright>
+- License: Open Database License (ODbL) 1.0
+- License text: <https://opendatacommons.org/licenses/odbl/1-0/>
+- The repository's MIT licence does not apply to these files.
+
+## Cesium World Terrain (runtime only, nothing stored)
+
+- Used by: the city diorama (`src/standalone/cityDiorama.js`), which samples
+  terrain heights from Cesium ion (asset 1) at run time with the app's ion
+  token and keeps them in memory only
+- Terms: Cesium ion Terms of Service, <https://cesium.com/legal/terms-of-service/>
+- Attribution: the Cesium ion logo and the data credits ion returns for the
+  asset (for example the U.S. Geological Survey) are shown in Cesium's credit
+  display
+- No terrain heights are stored in this repository.

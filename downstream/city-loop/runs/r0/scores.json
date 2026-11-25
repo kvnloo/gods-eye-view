@@ -1,0 +1,1720 @@
+{
+ "rubric_sha256": "98dd1aadb8fa4641d7c63fd956cc154bb08b5ab7031d74febf2a36454243e723",
+ "advisory_only_layers": [
+  "honesty",
+  "legibility"
+ ],
+ "beats": {
+  "district": {
+   "capture": {
+    "game_feel": 2.0,
+    "gev_brand": 3.67,
+    "legibility*": 3.0,
+    "scene_integration": 1.67,
+    "honesty*": 4.0,
+    "wintercats_fidelity": 1.0
+   },
+   "cozy": {
+    "game_feel": 2.0,
+    "gev_brand": 3.67,
+    "legibility*": 3.0,
+    "scene_integration": 2.33,
+    "honesty*": 4.0,
+    "wintercats_fidelity": 2.67
+   }
+  },
+  "select": {
+   "capture": {
+    "game_feel": 3.33,
+    "gev_brand": 3.67,
+    "legibility*": 3.0,
+    "scene_integration": 3.0,
+    "honesty*": 4.33,
+    "wintercats_fidelity": 1.67
+   },
+   "cozy": {
+    "game_feel": 3.67,
+    "gev_brand": 4.0,
+    "legibility*": 3.67,
+    "scene_integration": 3.33,
+    "honesty*": 4.33,
+    "wintercats_fidelity": 3.0
+   }
+  },
+  "reimagine": {
+   "capture": {
+    "game_feel": 3.33,
+    "gev_brand": 3.33,
+    "legibility*": 3.0,
+    "scene_integration": 2.33,
+    "honesty*": 4.33,
+    "wintercats_fidelity": 1.67
+   },
+   "cozy": {
+    "game_feel": 3.33,
+    "gev_brand": 3.67,
+    "legibility*": 3.0,
+    "scene_integration": 1.67,
+    "honesty*": 4.0,
+    "wintercats_fidelity": 3.0
+   }
+  },
+  "build": {
+   "capture": {
+    "game_feel": 3.33,
+    "gev_brand": 3.67,
+    "legibility*": 2.33,
+    "scene_integration": 2.0,
+    "honesty*": 3.67,
+    "wintercats_fidelity": 2.0
+   },
+   "cozy": {
+    "game_feel": 3.0,
+    "gev_brand": 4.0,
+    "legibility*": 2.67,
+    "scene_integration": 2.33,
+    "honesty*": 3.67,
+    "wintercats_fidelity": 2.67
+   }
+  },
+  "shadow": {
+   "capture": {
+    "game_feel": 3.0,
+    "gev_brand": 3.33,
+    "legibility*": 2.33,
+    "scene_integration": 2.33,
+    "honesty*": 4.0,
+    "wintercats_fidelity": 1.67
+   },
+   "cozy": {
+    "game_feel": 3.33,
+    "gev_brand": 3.67,
+    "legibility*": 2.0,
+    "scene_integration": 2.33,
+    "honesty*": 4.0,
+    "wintercats_fidelity": 3.0
+   }
+  },
+  "growth": {
+   "capture": {
+    "game_feel": 3.33,
+    "gev_brand": 4.0,
+    "legibility*": 3.0,
+    "scene_integration": 2.0,
+    "honesty*": 4.0,
+    "wintercats_fidelity": 1.67
+   },
+   "cozy": {
+    "game_feel": 4.0,
+    "gev_brand": 4.0,
+    "legibility*": 3.0,
+    "scene_integration": 2.33,
+    "honesty*": 4.0,
+    "wintercats_fidelity": 3.0
+   }
+  }
+ },
+ "pairs": {
+  "district--capture_vs_anchor": {
+   "game_feel": "B",
+   "gev_brand": "B",
+   "scene_integration": "B"
+  },
+  "district--capture_vs_cozy": {
+   "wintercats_fidelity": "B",
+   "scene_integration": "TIE",
+   "legibility": "TIE"
+  },
+  "select--capture_vs_anchor": {
+   "game_feel": "B",
+   "gev_brand": "B",
+   "scene_integration": "B"
+  },
+  "select--capture_vs_cozy": {
+   "wintercats_fidelity": "B",
+   "scene_integration": "A",
+   "legibility": "B"
+  },
+  "reimagine--capture_vs_anchor": {
+   "game_feel": "B",
+   "gev_brand": "B",
+   "scene_integration": "B"
+  },
+  "reimagine--capture_vs_cozy": {
+   "wintercats_fidelity": "B",
+   "scene_integration": "TIE",
+   "legibility": "B"
+  },
+  "build--capture_vs_anchor": {
+   "game_feel": "B",
+   "gev_brand": "B",
+   "scene_integration": "B"
+  },
+  "build--capture_vs_cozy": {
+   "wintercats_fidelity": "B",
+   "scene_integration": "TIE",
+   "legibility": "TIE"
+  },
+  "shadow--capture_vs_anchor": {
+   "game_feel": "B",
+   "gev_brand": "B",
+   "scene_integration": "B"
+  },
+  "shadow--capture_vs_cozy": {
+   "wintercats_fidelity": "B",
+   "scene_integration": "TIE",
+   "legibility": "TIE"
+  },
+  "growth--capture_vs_anchor": {
+   "game_feel": "B",
+   "gev_brand": "B",
+   "scene_integration": "B"
+  },
+  "growth--capture_vs_cozy": {
+   "wintercats_fidelity": "B",
+   "scene_integration": "A",
+   "legibility": "TIE"
+  }
+ },
+ "defects": [
+  {
+   "beat": "district",
+   "arm": "capture",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "A sharply bounded, blurry patch interrupts otherwise crisp streets and buildings.",
+   "where": "Center-left city blocks",
+   "severity": 3,
+   "area_pct": 23
+  },
+  {
+   "beat": "district",
+   "arm": "capture",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "No district labels or yields are visible at this zoom.",
+   "where": "Main city view",
+   "severity": 2,
+   "area_pct": 65
+  },
+  {
+   "beat": "district",
+   "arm": "capture",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Placement mode shows no visible plot outline or world-tethered build controls.",
+   "where": "Main city view below the placement prompt",
+   "severity": 2,
+   "area_pct": 60
+  },
+  {
+   "beat": "district",
+   "arm": "capture",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Small, faint attribution and dock labels are hard to read against the city.",
+   "where": "Lower-left and bottom-center HUD",
+   "severity": 2,
+   "area_pct": 4
+  },
+  {
+   "beat": "district",
+   "arm": "capture",
+   "judge": "claude-sonnet",
+   "what": "Blurry, melted photogrammetry patch with spiky artifacts",
+   "where": "center-left, over the street grid",
+   "severity": 3,
+   "area_pct": 25
+  },
+  {
+   "beat": "district",
+   "arm": "capture",
+   "judge": "claude-sonnet",
+   "what": "No game layer in the world: no plots, ghost, district yields or build tray",
+   "where": "whole scene and bottom",
+   "severity": 3,
+   "area_pct": 80
+  },
+  {
+   "beat": "district",
+   "arm": "capture",
+   "judge": "claude-sonnet",
+   "what": "Cesium/Google attribution is low-contrast and overlaps the busy imagery",
+   "where": "bottom-left",
+   "severity": 1,
+   "area_pct": 2
+  },
+  {
+   "beat": "district",
+   "arm": "capture",
+   "judge": "claude-sonnet",
+   "what": "Faint, low-contrast subtitle and 'Active Style' text",
+   "where": "top-left and top-right",
+   "severity": 1,
+   "area_pct": 2
+  },
+  {
+   "beat": "district",
+   "arm": "capture",
+   "judge": "claude-sonnet",
+   "what": "Hint banner and folder button crowd the top bar, with a stray glow blob left of the banner",
+   "where": "top-center",
+   "severity": 1,
+   "area_pct": 2
+  },
+  {
+   "beat": "district",
+   "arm": "capture",
+   "judge": "claude-opus",
+   "what": "Large blurry, melted low-res region with spiky triangle artefacts (reimagined area or tile failure)",
+   "where": "centre-left of frame",
+   "severity": 3,
+   "area_pct": 25
+  },
+  {
+   "beat": "district",
+   "arm": "capture",
+   "judge": "claude-opus",
+   "what": "No district/yield overlays or resource bar at far zoom; no game info hierarchy",
+   "where": "whole frame / top bar",
+   "severity": 2,
+   "area_pct": 100
+  },
+  {
+   "beat": "district",
+   "arm": "capture",
+   "judge": "claude-opus",
+   "what": "No build tray or verb tools; the bottom dock is just generic app controls",
+   "where": "bottom centre",
+   "severity": 2,
+   "area_pct": 8
+  },
+  {
+   "beat": "district",
+   "arm": "capture",
+   "judge": "claude-opus",
+   "what": "Faint, low-contrast tagline, active-style label and attribution text",
+   "where": "top-left, top-right, bottom-left",
+   "severity": 1,
+   "area_pct": 3
+  },
+  {
+   "beat": "district",
+   "arm": "capture",
+   "judge": "claude-opus",
+   "what": "Stray translucent ellipse artefact overlapping the top of the prompt chip",
+   "where": "top centre above prompt",
+   "severity": 1,
+   "area_pct": 1
+  },
+  {
+   "beat": "district",
+   "arm": "cozy",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Blurry imagery with abrupt seams against sharper neighboring blocks",
+   "where": "Center-left city",
+   "severity": 3,
+   "area_pct": 23
+  },
+  {
+   "beat": "district",
+   "arm": "cozy",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "District boundaries and yields are missing at district zoom",
+   "where": "Central city view",
+   "severity": 2,
+   "area_pct": 55
+  },
+  {
+   "beat": "district",
+   "arm": "cozy",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "No visible plot highlight or placement preview accompanies the selection prompt",
+   "where": "Buildable streets and blocks",
+   "severity": 2,
+   "area_pct": 55
+  },
+  {
+   "beat": "district",
+   "arm": "cozy",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Tiny, low-contrast dock labels are difficult to read",
+   "where": "Bottom-center HUD",
+   "severity": 1,
+   "area_pct": 3
+  },
+  {
+   "beat": "district",
+   "arm": "cozy",
+   "judge": "claude-sonnet",
+   "what": "Smeared photogrammetry with spiky mesh artifacts in the centre-left",
+   "where": "centre-left, blocks around the middle of the frame",
+   "severity": 3,
+   "area_pct": 25
+  },
+  {
+   "beat": "district",
+   "arm": "cozy",
+   "judge": "claude-sonnet",
+   "what": "Heavy blur in the foreground makes it unreadable",
+   "where": "bottom third of the frame",
+   "severity": 2,
+   "area_pct": 20
+  },
+  {
+   "beat": "district",
+   "arm": "cozy",
+   "judge": "claude-sonnet",
+   "what": "No game UI: no build tray, resource bar, plot highlight or ghost",
+   "where": "whole frame",
+   "severity": 3,
+   "area_pct": 100
+  },
+  {
+   "beat": "district",
+   "arm": "cozy",
+   "judge": "claude-sonnet",
+   "what": "Attribution text is low-contrast and overlaps the blurred imagery",
+   "where": "bottom-left",
+   "severity": 1,
+   "area_pct": 2
+  },
+  {
+   "beat": "district",
+   "arm": "cozy",
+   "judge": "claude-sonnet",
+   "what": "Faint tagline and 'Active style' text have very low contrast",
+   "where": "top-left and top-right",
+   "severity": 1,
+   "area_pct": 2
+  },
+  {
+   "beat": "district",
+   "arm": "cozy",
+   "judge": "claude-opus",
+   "what": "Melted, spiky photogrammetry mesh artefacts (stretched shards, smeared blocks) look broken rather than stylised",
+   "where": "centre-left middle of frame",
+   "severity": 3,
+   "area_pct": 25
+  },
+  {
+   "beat": "district",
+   "arm": "cozy",
+   "judge": "claude-opus",
+   "what": "Tilt-shift blur is too strong and muddy, so the centre district looks out of focus rather than miniature",
+   "where": "centre-left and bottom band",
+   "severity": 2,
+   "area_pct": 35
+  },
+  {
+   "beat": "district",
+   "arm": "cozy",
+   "judge": "claude-opus",
+   "what": "No district overlays, yields or goal/progress HUD at far zoom; the game layer is missing",
+   "where": "whole map area",
+   "severity": 3,
+   "area_pct": 80
+  },
+  {
+   "beat": "district",
+   "arm": "cozy",
+   "judge": "claude-opus",
+   "what": "No resource bar or build tray; the bottom dock shows app tools (location/chat/presets) instead of game verbs",
+   "where": "top edge and bottom centre",
+   "severity": 2,
+   "area_pct": 8
+  },
+  {
+   "beat": "district",
+   "arm": "cozy",
+   "judge": "claude-opus",
+   "what": "Tagline under the wordmark and the 'Active style' label are very low contrast and hard to read",
+   "where": "top-left and top-right",
+   "severity": 1,
+   "area_pct": 2
+  },
+  {
+   "beat": "select",
+   "arm": "capture",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Cyan massing overlays the existing church facade with weak ground contact.",
+   "where": "Center, selected plot",
+   "severity": 2,
+   "area_pct": 4
+  },
+  {
+   "beat": "select",
+   "arm": "capture",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Six large action buttons obscure the plot edges and adjacent streets.",
+   "where": "Center, around the selected plot",
+   "severity": 2,
+   "area_pct": 5
+  },
+  {
+   "beat": "select",
+   "arm": "capture",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Small verb captions and thin plot qualifier slow the first read.",
+   "where": "Center wheel and right-side plot callout",
+   "severity": 2,
+   "area_pct": 4
+  },
+  {
+   "beat": "select",
+   "arm": "capture",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Wordmark and compact controls lose contrast against textured rooftops.",
+   "where": "Top HUD",
+   "severity": 2,
+   "area_pct": 5
+  },
+  {
+   "beat": "select",
+   "arm": "capture",
+   "judge": "claude-sonnet",
+   "what": "GEV wordmark and 'NORMAL' label are nearly invisible against the busy imagery",
+   "where": "top-left and top-right",
+   "severity": 2,
+   "area_pct": 3
+  },
+  {
+   "beat": "select",
+   "arm": "capture",
+   "judge": "claude-sonnet",
+   "what": "Verb wheel covers the church, the plot's key feature",
+   "where": "center",
+   "severity": 2,
+   "area_pct": 12
+  },
+  {
+   "beat": "select",
+   "arm": "capture",
+   "judge": "claude-sonnet",
+   "what": "Inspect icon is a magnifier, but the Zone icon is shapes and the two look swapped or mismatched; the icons are inconsistent",
+   "where": "left side of the wheel",
+   "severity": 1,
+   "area_pct": 2
+  },
+  {
+   "beat": "select",
+   "arm": "capture",
+   "judge": "claude-sonnet",
+   "what": "Cesium and Google attribution text is low-contrast and overlaps the imagery",
+   "where": "bottom-left",
+   "severity": 1,
+   "area_pct": 2
+  },
+  {
+   "beat": "select",
+   "arm": "capture",
+   "judge": "claude-sonnet",
+   "what": "The plot callout leader line passes through the Plaza and Park buttons and the wheel, making the connection cluttered",
+   "where": "center-right",
+   "severity": 1,
+   "area_pct": 4
+  },
+  {
+   "beat": "select",
+   "arm": "capture",
+   "judge": "claude-opus",
+   "what": "Verb wheel discs cover the selected plot and the church, hiding the target",
+   "where": "center",
+   "severity": 2,
+   "area_pct": 10
+  },
+  {
+   "beat": "select",
+   "arm": "capture",
+   "judge": "claude-opus",
+   "what": "MASSING chip collides with the INSPECT/ZONE discs and the leader line",
+   "where": "center-left",
+   "severity": 2,
+   "area_pct": 2
+  },
+  {
+   "beat": "select",
+   "arm": "capture",
+   "judge": "claude-opus",
+   "what": "GOD'S EYE VIEW wordmark is faded, low contrast and partly unreadable against the city",
+   "where": "top-left",
+   "severity": 2,
+   "area_pct": 2
+  },
+  {
+   "beat": "select",
+   "arm": "capture",
+   "judge": "claude-opus",
+   "what": "No game HUD: no resource/top bar, goals or build tray; the dock is generic app controls",
+   "where": "top and bottom edges",
+   "severity": 2,
+   "area_pct": 8
+  },
+  {
+   "beat": "select",
+   "arm": "capture",
+   "judge": "claude-opus",
+   "what": "Stray cyan parcel outline lines run through the park, with unclear meaning",
+   "where": "lower center",
+   "severity": 1,
+   "area_pct": 4
+  },
+  {
+   "beat": "select",
+   "arm": "cozy",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Wheel buttons obscure parts of the selected building and its boundary.",
+   "where": "Center",
+   "severity": 2,
+   "area_pct": 6
+  },
+  {
+   "beat": "select",
+   "arm": "cozy",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "The grid-cell qualifier is small and dim relative to the area figure.",
+   "where": "Center-right plot callout",
+   "severity": 1,
+   "area_pct": 1
+  },
+  {
+   "beat": "select",
+   "arm": "cozy",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Heavy blur and darkening soften street and building detail at the frame edges.",
+   "where": "Upper and lower edges",
+   "severity": 1,
+   "area_pct": 24
+  },
+  {
+   "beat": "select",
+   "arm": "cozy",
+   "judge": "claude-sonnet",
+   "what": "Wordmark and tagline are almost invisible against the busy imagery",
+   "where": "top-left",
+   "severity": 2,
+   "area_pct": 3
+  },
+  {
+   "beat": "select",
+   "arm": "cozy",
+   "judge": "claude-sonnet",
+   "what": "'Active style: Normal' text is too faint to read",
+   "where": "top-right",
+   "severity": 2,
+   "area_pct": 2
+  },
+  {
+   "beat": "select",
+   "arm": "cozy",
+   "judge": "claude-sonnet",
+   "what": "Cyan tint over the church flattens detail and looks pasted on, with no shadow or contact",
+   "where": "center",
+   "severity": 2,
+   "area_pct": 8
+  },
+  {
+   "beat": "select",
+   "arm": "cozy",
+   "judge": "claude-sonnet",
+   "what": "The MASSING chip floats loosely to the left, with a leader line crossing the buildings",
+   "where": "center-left",
+   "severity": 1,
+   "area_pct": 2
+  },
+  {
+   "beat": "select",
+   "arm": "cozy",
+   "judge": "claude-sonnet",
+   "what": "Visible dither or pixel pattern, with a blurry foreground in the bottom corners",
+   "where": "bottom-left and bottom-right",
+   "severity": 1,
+   "area_pct": 10
+  },
+  {
+   "beat": "select",
+   "arm": "cozy",
+   "judge": "claude-opus",
+   "what": "Blur on the edges is too strong; foreground trees and roofs look smeared and low-res",
+   "where": "bottom third and left/right edges",
+   "severity": 2,
+   "area_pct": 35
+  },
+  {
+   "beat": "select",
+   "arm": "cozy",
+   "judge": "claude-opus",
+   "what": "Tagline under wordmark and ACTIVE STYLE label are nearly invisible",
+   "where": "top-left and top-right corners",
+   "severity": 2,
+   "area_pct": 2
+  },
+  {
+   "beat": "select",
+   "arm": "cozy",
+   "judge": "claude-opus",
+   "what": "MASSING chip sits against the wheel, and its leader line crowds the INSPECT/ZONE buttons",
+   "where": "centre-left",
+   "severity": 1,
+   "area_pct": 2
+  },
+  {
+   "beat": "select",
+   "arm": "cozy",
+   "judge": "claude-opus",
+   "what": "Flat cyan tint covers the selected church, washing out its texture and lighting",
+   "where": "centre",
+   "severity": 2,
+   "area_pct": 5
+  },
+  {
+   "beat": "select",
+   "arm": "cozy",
+   "judge": "claude-opus",
+   "what": "No top resource bar, goals or build tray, so there is no game loop context",
+   "where": "top and bottom HUD",
+   "severity": 2,
+   "area_pct": 10
+  },
+  {
+   "beat": "reimagine",
+   "arm": "capture",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "The flat concept preview floats over the highlighted building and overlaps its spires.",
+   "where": "Center",
+   "severity": 3,
+   "area_pct": 2
+  },
+  {
+   "beat": "reimagine",
+   "arm": "capture",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Tall, near-opaque concept cards obscure the selected plot and surrounding streets.",
+   "where": "Lower center",
+   "severity": 2,
+   "area_pct": 10
+  },
+  {
+   "beat": "reimagine",
+   "arm": "capture",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Tree count, shade and canopy figures repeat between the resource rail and concept card.",
+   "where": "Top center and lower center-left",
+   "severity": 2,
+   "area_pct": 1.5
+  },
+  {
+   "beat": "reimagine",
+   "arm": "capture",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "The wordmark has low contrast against the aerial imagery.",
+   "where": "Upper left",
+   "severity": 1,
+   "area_pct": 1
+  },
+  {
+   "beat": "reimagine",
+   "arm": "capture",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Uniformly sharp photogrammetry and hard shadows miss the requested painterly softness.",
+   "where": "Exposed cityscape across the frame",
+   "severity": 2,
+   "area_pct": 75
+  },
+  {
+   "beat": "reimagine",
+   "arm": "capture",
+   "judge": "claude-sonnet",
+   "what": "Flat 2D concept image floats and overlaps the church mesh, which is tinted green; it has no grounding",
+   "where": "center, around the church",
+   "severity": 3,
+   "area_pct": 8
+  },
+  {
+   "beat": "reimagine",
+   "arm": "capture",
+   "judge": "claude-sonnet",
+   "what": "Wordmark 'GOD'S EYE VIEW' and the top-right 'NORMAL' label are nearly invisible against the imagery",
+   "where": "top-left and top-right",
+   "severity": 2,
+   "area_pct": 2
+  },
+  {
+   "beat": "reimagine",
+   "arm": "capture",
+   "judge": "claude-sonnet",
+   "what": "Cards and buttons cover the plot's ground and the surrounding streets",
+   "where": "bottom center",
+   "severity": 2,
+   "area_pct": 15
+  },
+  {
+   "beat": "reimagine",
+   "arm": "capture",
+   "judge": "claude-sonnet",
+   "what": "Figures repeat between the top bar and the card (trees 24, shade 60%, canopy 18\u219260%)",
+   "where": "top bar and Pocket Park card",
+   "severity": 1,
+   "area_pct": 3
+  },
+  {
+   "beat": "reimagine",
+   "arm": "capture",
+   "judge": "claude-sonnet",
+   "what": "The Cesium and Google attribution text is low contrast and hard to read",
+   "where": "bottom-left",
+   "severity": 1,
+   "area_pct": 1
+  },
+  {
+   "beat": "reimagine",
+   "arm": "capture",
+   "judge": "claude-opus",
+   "what": "Flat 2D concept plan floats vertically above the plot, not draped on the ground",
+   "where": "center",
+   "severity": 3,
+   "area_pct": 6
+  },
+  {
+   "beat": "reimagine",
+   "arm": "capture",
+   "judge": "claude-opus",
+   "what": "Bright green CG church massing contradicts the pocket-park concept and looks pasted on",
+   "where": "center",
+   "severity": 3,
+   "area_pct": 5
+  },
+  {
+   "beat": "reimagine",
+   "arm": "capture",
+   "judge": "claude-opus",
+   "what": "Concept card tray covers the plot and the surrounding scene",
+   "where": "bottom center",
+   "severity": 2,
+   "area_pct": 16
+  },
+  {
+   "beat": "reimagine",
+   "arm": "capture",
+   "judge": "claude-opus",
+   "what": "GOD'S EYE VIEW wordmark is low-contrast and hard to read against the buildings",
+   "where": "top left",
+   "severity": 2,
+   "area_pct": 2
+  },
+  {
+   "beat": "reimagine",
+   "arm": "capture",
+   "judge": "claude-opus",
+   "what": "Duplicated figures: canopy 18\u219260% and shade 60% appear in both the top bar and the card",
+   "where": "top bar and bottom-left card",
+   "severity": 1,
+   "area_pct": 3
+  },
+  {
+   "beat": "reimagine",
+   "arm": "cozy",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Flat concept preview floats above the site without ground contact",
+   "where": "Center, above the selected building",
+   "severity": 3,
+   "area_pct": 2
+  },
+  {
+   "beat": "reimagine",
+   "arm": "cozy",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Concept cards obscure the base of the highlighted building and plot",
+   "where": "Lower center",
+   "severity": 2,
+   "area_pct": 2
+  },
+  {
+   "beat": "reimagine",
+   "arm": "cozy",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Tree, shade, and canopy estimates repeat in the resource bar and selected card",
+   "where": "Top center and lower center-left",
+   "severity": 2,
+   "area_pct": 2
+  },
+  {
+   "beat": "reimagine",
+   "arm": "cozy",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Baseline canopy value of 18 lacks a unit and an explicit estimate label",
+   "where": "Top resource bar and selected card footer",
+   "severity": 1,
+   "area_pct": 0.5
+  },
+  {
+   "beat": "reimagine",
+   "arm": "cozy",
+   "judge": "claude-sonnet",
+   "what": "The concept plan is a flat 2D texture floating over the plot, with a neon green church mesh poking through it. Neither has ground contact.",
+   "where": "center, around x 680-920, y 360-600",
+   "severity": 3,
+   "area_pct": 5
+  },
+  {
+   "beat": "reimagine",
+   "arm": "cozy",
+   "judge": "claude-sonnet",
+   "what": "The Plaza and Bike Lane cards are tall, mostly empty dark boxes. They cover the park and street below them.",
+   "where": "bottom center, y 600-860",
+   "severity": 2,
+   "area_pct": 8
+  },
+  {
+   "beat": "reimagine",
+   "arm": "cozy",
+   "judge": "claude-sonnet",
+   "what": "The wordmark, tagline and 'Active style' text are very faint against the busy imagery.",
+   "where": "top left and top right",
+   "severity": 2,
+   "area_pct": 3
+  },
+  {
+   "beat": "reimagine",
+   "arm": "cozy",
+   "judge": "claude-sonnet",
+   "what": "The plot callout and Massing chip overlap the buildings. The leader line is thin and crosses the scene.",
+   "where": "right of center, y 340-530",
+   "severity": 1,
+   "area_pct": 3
+  },
+  {
+   "beat": "reimagine",
+   "arm": "cozy",
+   "judge": "claude-sonnet",
+   "what": "The Cesium and Google attribution is low contrast and blurred.",
+   "where": "bottom left",
+   "severity": 1,
+   "area_pct": 1
+  },
+  {
+   "beat": "reimagine",
+   "arm": "cozy",
+   "judge": "claude-opus",
+   "what": "Flat 2D park-plan image standing vertically as a floating billboard, not laid on the plot",
+   "where": "center",
+   "severity": 3,
+   "area_pct": 6
+  },
+  {
+   "beat": "reimagine",
+   "arm": "cozy",
+   "judge": "claude-opus",
+   "what": "Existing church highlighted in green as massing, which contradicts the pocket-park concept",
+   "where": "center",
+   "severity": 3,
+   "area_pct": 5
+  },
+  {
+   "beat": "reimagine",
+   "arm": "cozy",
+   "judge": "claude-opus",
+   "what": "Plaza and Bike Lane concept cards are empty dark slabs with no preview or stats",
+   "where": "lower center",
+   "severity": 2,
+   "area_pct": 7
+  },
+  {
+   "beat": "reimagine",
+   "arm": "cozy",
+   "judge": "claude-opus",
+   "what": "Stats bar repeats the card figures (trees 24, shade 60%, canopy 18\u219260%)",
+   "where": "top center and lower left card",
+   "severity": 1,
+   "area_pct": 3
+  },
+  {
+   "beat": "reimagine",
+   "arm": "cozy",
+   "judge": "claude-opus",
+   "what": "Large opaque card tray and action stack cover the plot surroundings, so the HUD is not minimal",
+   "where": "lower center-right",
+   "severity": 2,
+   "area_pct": 18
+  },
+  {
+   "beat": "build",
+   "arm": "capture",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "The concept image hovers above the bright massing block, whose lower edge is obscured by the tray.",
+   "where": "Center plot",
+   "severity": 3,
+   "area_pct": 5
+  },
+  {
+   "beat": "build",
+   "arm": "capture",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "The massing panel covers part of the selected plot and concept preview.",
+   "where": "Upper center",
+   "severity": 2,
+   "area_pct": 4
+  },
+  {
+   "beat": "build",
+   "arm": "capture",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Tall concept cards obscure the world around the building and leave large gaps inside the Plaza and Bike Lane cards.",
+   "where": "Lower center",
+   "severity": 2,
+   "area_pct": 10
+  },
+  {
+   "beat": "build",
+   "arm": "capture",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Tree, shade and canopy estimates repeat between the resource rail and Pocket Park card.",
+   "where": "Top center and lower-left tray",
+   "severity": 1,
+   "area_pct": 2
+  },
+  {
+   "beat": "build",
+   "arm": "capture",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "FAR and floor area lack the EST tags used on neighboring modeled figures.",
+   "where": "Upper-center massing panel",
+   "severity": 1,
+   "area_pct": 1
+  },
+  {
+   "beat": "build",
+   "arm": "capture",
+   "judge": "claude-sonnet",
+   "what": "Massing stats panel covers the proposed building and plot",
+   "where": "upper center",
+   "severity": 3,
+   "area_pct": 8
+  },
+  {
+   "beat": "build",
+   "arm": "capture",
+   "judge": "claude-sonnet",
+   "what": "The massing is a flat white box with a dark face, with no visible shadow, contact or detail",
+   "where": "center",
+   "severity": 2,
+   "area_pct": 4
+  },
+  {
+   "beat": "build",
+   "arm": "capture",
+   "judge": "claude-sonnet",
+   "what": "Duplicated figures (trees 24, shade 60%, canopy 18\u219260%) appear in the top bar and the card",
+   "where": "top bar and bottom-left card",
+   "severity": 2,
+   "area_pct": 4
+  },
+  {
+   "beat": "build",
+   "arm": "capture",
+   "judge": "claude-sonnet",
+   "what": "Wordmark and top-right label are low-contrast and barely readable against the imagery",
+   "where": "top-left and top-right",
+   "severity": 2,
+   "area_pct": 3
+  },
+  {
+   "beat": "build",
+   "arm": "capture",
+   "judge": "claude-sonnet",
+   "what": "Card tray, build buttons and dock are heavy and crowded, covering much of the ground view. The attribution is faint and overlapped.",
+   "where": "bottom half",
+   "severity": 2,
+   "area_pct": 22
+  },
+  {
+   "beat": "build",
+   "arm": "capture",
+   "judge": "claude-opus",
+   "what": "Massing stats panel and card tray hide the proposed building, the subject of the shot",
+   "where": "center",
+   "severity": 3,
+   "area_pct": 30
+  },
+  {
+   "beat": "build",
+   "arm": "capture",
+   "judge": "claude-opus",
+   "what": "Massing reads as a flat white box with a 2D top-down plan texture stuck on, with no believable shadows",
+   "where": "center",
+   "severity": 3,
+   "area_pct": 6
+  },
+  {
+   "beat": "build",
+   "arm": "capture",
+   "judge": "claude-opus",
+   "what": "Same figures repeated: trees 24, shade 60%, canopy 18\u219260% in both the top bar and the Pocket Park card",
+   "where": "top center and bottom left",
+   "severity": 2,
+   "area_pct": 4
+  },
+  {
+   "beat": "build",
+   "arm": "capture",
+   "judge": "claude-opus",
+   "what": "GOD'S EYE VIEW wordmark and top-right mode label are too faint to read against the busy map",
+   "where": "top left and top right",
+   "severity": 2,
+   "area_pct": 3
+  },
+  {
+   "beat": "build",
+   "arm": "capture",
+   "judge": "claude-opus",
+   "what": "Empty Plaza and Bike Lane cards take up a lot of tray space but show almost no content",
+   "where": "bottom center",
+   "severity": 1,
+   "area_pct": 8
+  },
+  {
+   "beat": "build",
+   "arm": "cozy",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Bright massing block has flat faces and little visible grounding.",
+   "where": "Center, below the plot preview",
+   "severity": 2,
+   "area_pct": 3
+  },
+  {
+   "beat": "build",
+   "arm": "cozy",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "The flat concept preview obscures part of the building and plot.",
+   "where": "Center",
+   "severity": 2,
+   "area_pct": 2
+  },
+  {
+   "beat": "build",
+   "arm": "cozy",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "The massing panel and build tray cover much of the selected site.",
+   "where": "Upper center and lower center",
+   "severity": 2,
+   "area_pct": 17
+  },
+  {
+   "beat": "build",
+   "arm": "cozy",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Tree count, shade percentage, and canopy change repeat across the interface.",
+   "where": "Top resource bar and lower-left concept card",
+   "severity": 1,
+   "area_pct": 4
+  },
+  {
+   "beat": "build",
+   "arm": "cozy",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "FAR and floor area lack estimate or derivation labels.",
+   "where": "Upper-center massing panel",
+   "severity": 1,
+   "area_pct": 1
+  },
+  {
+   "beat": "build",
+   "arm": "cozy",
+   "judge": "claude-sonnet",
+   "what": "MASSING panel covers the proposed building and plot",
+   "where": "upper centre",
+   "severity": 3,
+   "area_pct": 8
+  },
+  {
+   "beat": "build",
+   "arm": "cozy",
+   "judge": "claude-sonnet",
+   "what": "Duplicated canopy, trees and shade figures in the top bar and the Pocket Park card",
+   "where": "top bar and bottom-centre card",
+   "severity": 2,
+   "area_pct": 3
+  },
+  {
+   "beat": "build",
+   "arm": "cozy",
+   "judge": "claude-sonnet",
+   "what": "Large empty dark Plaza and Bike Lane cards hide the ground and the scene",
+   "where": "bottom centre",
+   "severity": 2,
+   "area_pct": 10
+  },
+  {
+   "beat": "build",
+   "arm": "cozy",
+   "judge": "claude-sonnet",
+   "what": "Massing block is a flat white and dark box with no visible shadow or ground contact",
+   "where": "centre",
+   "severity": 2,
+   "area_pct": 4
+  },
+  {
+   "beat": "build",
+   "arm": "cozy",
+   "judge": "claude-sonnet",
+   "what": "The wordmark, tagline and Active Style label are low-contrast and barely legible",
+   "where": "top left and top right",
+   "severity": 2,
+   "area_pct": 3
+  },
+  {
+   "beat": "build",
+   "arm": "cozy",
+   "judge": "claude-opus",
+   "what": "Massing reads as a placeholder box with a floating translucent green slab and plot overlay above it",
+   "where": "center",
+   "severity": 3,
+   "area_pct": 8
+  },
+  {
+   "beat": "build",
+   "arm": "cozy",
+   "judge": "claude-opus",
+   "what": "Build cards and massing stats panel hide the proposed building they describe",
+   "where": "center / lower-center",
+   "severity": 3,
+   "area_pct": 25
+  },
+  {
+   "beat": "build",
+   "arm": "cozy",
+   "judge": "claude-opus",
+   "what": "Plaza and Bike Lane cards are mostly empty dark space",
+   "where": "lower-center",
+   "severity": 2,
+   "area_pct": 10
+  },
+  {
+   "beat": "build",
+   "arm": "cozy",
+   "judge": "claude-opus",
+   "what": "Heavy boxy panels with no corner brackets; HUD is crowded rather than minimal",
+   "where": "center-left and right action column",
+   "severity": 2,
+   "area_pct": 20
+  },
+  {
+   "beat": "build",
+   "arm": "cozy",
+   "judge": "claude-opus",
+   "what": "Wordmark and active-style label are faint and low-contrast",
+   "where": "top-left, top-right",
+   "severity": 1,
+   "area_pct": 3
+  },
+  {
+   "beat": "shadow",
+   "arm": "capture",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Study panels and callouts crowd the plot and obscure parts of the shadow footprint.",
+   "where": "Upper center through center-right",
+   "severity": 2,
+   "area_pct": 13
+  },
+  {
+   "beat": "shadow",
+   "arm": "capture",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Small, widely tracked labels and low-contrast controls slow scanning.",
+   "where": "Massing and Protect Sidewalk panels",
+   "severity": 2,
+   "area_pct": 9
+  },
+  {
+   "beat": "shadow",
+   "arm": "capture",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Bright proposal surfaces and flat shadow graphics diverge from the surrounding scene lighting.",
+   "where": "Center plot",
+   "severity": 2,
+   "area_pct": 3
+  },
+  {
+   "beat": "shadow",
+   "arm": "capture",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Floor area and FAR lack explicit estimate tags.",
+   "where": "Massing panel and Protect Sidewalk summary",
+   "severity": 1,
+   "area_pct": 1
+  },
+  {
+   "beat": "shadow",
+   "arm": "capture",
+   "judge": "claude-sonnet",
+   "what": "Wordmark and top-right label are washed out and low contrast over the imagery",
+   "where": "top-left and top-right",
+   "severity": 2,
+   "area_pct": 3
+  },
+  {
+   "beat": "shadow",
+   "arm": "capture",
+   "judge": "claude-sonnet",
+   "what": "Massing and Protect Sidewalk panels cover the proposed building and the shadow study area",
+   "where": "top-center",
+   "severity": 3,
+   "area_pct": 14
+  },
+  {
+   "beat": "shadow",
+   "arm": "capture",
+   "judge": "claude-sonnet",
+   "what": "Repeated figures: canopy, shade and trees appear in both the top bar and the card, and homes and FAR appear in both panels",
+   "where": "top bar, center panels, pocket park card",
+   "severity": 2,
+   "area_pct": 6
+  },
+  {
+   "beat": "shadow",
+   "arm": "capture",
+   "judge": "claude-sonnet",
+   "what": "The proposed building is a flat white slab with no visible shadow, and it is partly hidden by the callouts",
+   "where": "center",
+   "severity": 2,
+   "area_pct": 5
+  },
+  {
+   "beat": "shadow",
+   "arm": "capture",
+   "judge": "claude-sonnet",
+   "what": "Plaza and Bike Lane cards are large empty dark boxes with little content, and the attribution text is faint",
+   "where": "bottom-center and bottom-left",
+   "severity": 1,
+   "area_pct": 9
+  },
+  {
+   "beat": "shadow",
+   "arm": "capture",
+   "judge": "claude-opus",
+   "what": "The massing and shadow panels and the concept cards cover the building and its shadow being studied",
+   "where": "center",
+   "severity": 3,
+   "area_pct": 35
+  },
+  {
+   "beat": "shadow",
+   "arm": "capture",
+   "judge": "claude-opus",
+   "what": "The white hatched massing box looks like a flat placeholder, with a dark translucent slab floating behind it",
+   "where": "center",
+   "severity": 3,
+   "area_pct": 6
+  },
+  {
+   "beat": "shadow",
+   "arm": "capture",
+   "judge": "claude-opus",
+   "what": "Shadow figures (17 m, clears by 3 m, homes 46\u219223) repeat across the panel, the callouts and the top bar",
+   "where": "center-right",
+   "severity": 2,
+   "area_pct": 10
+  },
+  {
+   "beat": "shadow",
+   "arm": "capture",
+   "judge": "claude-opus",
+   "what": "The GOD'S EYE VIEW wordmark is ghosted and unreadable, and the top-right label is faint",
+   "where": "top-left and top-right",
+   "severity": 2,
+   "area_pct": 3
+  },
+  {
+   "beat": "shadow",
+   "arm": "capture",
+   "judge": "claude-opus",
+   "what": "Two concept cards are empty dark boxes with no preview image",
+   "where": "bottom-center",
+   "severity": 1,
+   "area_pct": 8
+  },
+  {
+   "beat": "shadow",
+   "arm": "cozy",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Two dense study panels crowd the plot and make small figures hard to scan.",
+   "where": "Upper center-right",
+   "severity": 3,
+   "area_pct": 9
+  },
+  {
+   "beat": "shadow",
+   "arm": "cozy",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "The build tray obscures the lower edge of the proposed building.",
+   "where": "Lower center",
+   "severity": 2,
+   "area_pct": 3
+  },
+  {
+   "beat": "shadow",
+   "arm": "cozy",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "The bright proposal and flat shadow patch lack the surrounding scene's lighting and contact cues.",
+   "where": "Center plot",
+   "severity": 2,
+   "area_pct": 3
+  },
+  {
+   "beat": "shadow",
+   "arm": "cozy",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Sidewalk clearance is repeated in the study panel and map callout.",
+   "where": "Center-right study panel and shadow callout",
+   "severity": 2,
+   "area_pct": 2
+  },
+  {
+   "beat": "shadow",
+   "arm": "cozy",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Model-derived floor area and FAR appear without explicit estimate tags.",
+   "where": "Massing panel",
+   "severity": 1,
+   "area_pct": 1
+  },
+  {
+   "beat": "shadow",
+   "arm": "cozy",
+   "judge": "claude-sonnet",
+   "what": "Massing and Protect Sidewalk panels cover the proposed building and plot",
+   "where": "upper centre, over the plot",
+   "severity": 3,
+   "area_pct": 12
+  },
+  {
+   "beat": "shadow",
+   "arm": "cozy",
+   "judge": "claude-sonnet",
+   "what": "Repeated figures (trees 24 EST, shade 60% EST, canopy 18\u219260%) appear in both the top bar and the Pocket Park card",
+   "where": "top bar and bottom-left card",
+   "severity": 2,
+   "area_pct": 4
+  },
+  {
+   "beat": "shadow",
+   "arm": "cozy",
+   "judge": "claude-sonnet",
+   "what": "The proposed building is a flat white slab with a cyan outline and no cast shadow or ground contact",
+   "where": "centre, around (800,550)",
+   "severity": 3,
+   "area_pct": 4
+  },
+  {
+   "beat": "shadow",
+   "arm": "cozy",
+   "judge": "claude-sonnet",
+   "what": "The wordmark and 'Active style: Normal' label are very low contrast against the busy imagery",
+   "where": "top-left and top-right corners",
+   "severity": 2,
+   "area_pct": 2
+  },
+  {
+   "beat": "shadow",
+   "arm": "cozy",
+   "judge": "claude-sonnet",
+   "what": "The Plaza and Bike Lane cards are mostly empty dark boxes with small text, and their text is unclear",
+   "where": "bottom centre cards",
+   "severity": 2,
+   "area_pct": 8
+  },
+  {
+   "beat": "shadow",
+   "arm": "cozy",
+   "judge": "claude-opus",
+   "what": "Proposed building is a blurry white placeholder box and casts no visible shadow on the ground",
+   "where": "center",
+   "severity": 3,
+   "area_pct": 6
+  },
+  {
+   "beat": "shadow",
+   "arm": "cozy",
+   "judge": "claude-opus",
+   "what": "Massing and Protect Sidewalk panels cover the plot being studied",
+   "where": "upper center",
+   "severity": 3,
+   "area_pct": 14
+  },
+  {
+   "beat": "shadow",
+   "arm": "cozy",
+   "judge": "claude-opus",
+   "what": "Same figures shown several times (24 EST, 60% EST, 18\u219260%, homes 23, FAR 1.92, 17 m)",
+   "where": "top bar, panels, bottom-left card",
+   "severity": 2,
+   "area_pct": 10
+  },
+  {
+   "beat": "shadow",
+   "arm": "cozy",
+   "judge": "claude-opus",
+   "what": "Heavy opaque card tray with no corner brackets; the Plaza and Bike Lane cards are mostly empty space",
+   "where": "bottom center",
+   "severity": 2,
+   "area_pct": 14
+  },
+  {
+   "beat": "shadow",
+   "arm": "cozy",
+   "judge": "claude-opus",
+   "what": "Shadow before/after shown only as text callouts, with no overlay or sun visual on the world",
+   "where": "center right",
+   "severity": 2,
+   "area_pct": 4
+  },
+  {
+   "beat": "growth",
+   "arm": "capture",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Bright proposal blocks have flat shading and weak contact shadows against the surrounding buildings.",
+   "where": "Center district",
+   "severity": 3,
+   "area_pct": 10
+  },
+  {
+   "beat": "growth",
+   "arm": "capture",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "The build tray obscures the foreground plots and breaks the district silhouette.",
+   "where": "Lower center",
+   "severity": 2,
+   "area_pct": 8
+  },
+  {
+   "beat": "growth",
+   "arm": "capture",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Small, tightly stacked timeline metrics make secondary information slow to scan.",
+   "where": "Upper-right timeline panel",
+   "severity": 2,
+   "area_pct": 7
+  },
+  {
+   "beat": "growth",
+   "arm": "capture",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "The cost line presents the 12-plot impact without an estimate marker.",
+   "where": "Near the bottom of the timeline panel",
+   "severity": 1,
+   "area_pct": 0.4
+  },
+  {
+   "beat": "growth",
+   "arm": "capture",
+   "judge": "claude-sonnet",
+   "what": "Growth massing shown as flat white boxes with no shadow or contact, reading as placeholders",
+   "where": "center, above the tray",
+   "severity": 3,
+   "area_pct": 12
+  },
+  {
+   "beat": "growth",
+   "arm": "capture",
+   "judge": "claude-sonnet",
+   "what": "Flat 2D map thumbnail pasted in the world as the park proposal, blurry and out of style",
+   "where": "center-left, near plot callout",
+   "severity": 2,
+   "area_pct": 2
+  },
+  {
+   "beat": "growth",
+   "arm": "capture",
+   "judge": "claude-sonnet",
+   "what": "Build tray cards and buttons cover the lower center of the scene, and the plaza and bike lane cards are empty dark slabs",
+   "where": "bottom center",
+   "severity": 2,
+   "area_pct": 14
+  },
+  {
+   "beat": "growth",
+   "arm": "capture",
+   "judge": "claude-sonnet",
+   "what": "Dense timeline panel text, with ASSUMED and COST lines in small caps",
+   "where": "top right",
+   "severity": 1,
+   "area_pct": 8
+  },
+  {
+   "beat": "growth",
+   "arm": "capture",
+   "judge": "claude-sonnet",
+   "what": "Attribution text overlaps the busy imagery and is low-contrast, and the SUN FIT lock chip is ambiguous",
+   "where": "bottom left, on the park card",
+   "severity": 1,
+   "area_pct": 2
+  },
+  {
+   "beat": "growth",
+   "arm": "capture",
+   "judge": "claude-opus",
+   "what": "Untextured white placeholder boxes for 15 YR growth, unlit and pasted on",
+   "where": "center",
+   "severity": 3,
+   "area_pct": 15
+  },
+  {
+   "beat": "growth",
+   "arm": "capture",
+   "judge": "claude-opus",
+   "what": "Card tray covers the district being judged",
+   "where": "bottom-center",
+   "severity": 2,
+   "area_pct": 14
+  },
+  {
+   "beat": "growth",
+   "arm": "capture",
+   "judge": "claude-opus",
+   "what": "Dense small-text stats panel, hard to read in 2s",
+   "where": "top-right",
+   "severity": 2,
+   "area_pct": 10
+  },
+  {
+   "beat": "growth",
+   "arm": "capture",
+   "judge": "claude-opus",
+   "what": "Flat 2D clip-art park tile and thumbnail clash with the photoreal scene",
+   "where": "center-left",
+   "severity": 2,
+   "area_pct": 4
+  },
+  {
+   "beat": "growth",
+   "arm": "capture",
+   "judge": "claude-opus",
+   "what": "Plaza/Bike Lane cards are near-empty placeholders",
+   "where": "bottom-center",
+   "severity": 1,
+   "area_pct": 8
+  },
+  {
+   "beat": "growth",
+   "arm": "cozy",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Bright, uniform proposal masses show weak contact shadows against the surrounding city.",
+   "where": "Center and center-right district",
+   "severity": 3,
+   "area_pct": 12
+  },
+  {
+   "beat": "growth",
+   "arm": "cozy",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "Small, densely stacked growth metrics and assumptions slow reading.",
+   "where": "Upper-right timeline panel",
+   "severity": 2,
+   "area_pct": 9
+  },
+  {
+   "beat": "growth",
+   "arm": "cozy",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "The opaque build tray obscures several foreground plots.",
+   "where": "Lower-center district",
+   "severity": 2,
+   "area_pct": 8
+  },
+  {
+   "beat": "growth",
+   "arm": "cozy",
+   "judge": "codex-gpt-6.2-sol",
+   "what": "The 18% canopy baseline has no visible source or clear estimate label of its own.",
+   "where": "Canopy row in the lower-center pocket park card",
+   "severity": 1,
+   "area_pct": 0.4
+  },
+  {
+   "beat": "growth",
+   "arm": "cozy",
+   "judge": "claude-sonnet",
+   "what": "Proposed massing blocks are flat white boxes with no shadows or contact, floating over the photoreal city",
+   "where": "center, around the plot cluster",
+   "severity": 3,
+   "area_pct": 12
+  },
+  {
+   "beat": "growth",
+   "arm": "cozy",
+   "judge": "claude-sonnet",
+   "what": "Dense growth timeline panel has seven small text lines and many figures",
+   "where": "top right",
+   "severity": 2,
+   "area_pct": 8
+  },
+  {
+   "beat": "growth",
+   "arm": "cozy",
+   "judge": "claude-sonnet",
+   "what": "Faint, low-contrast wordmark subtitle and 'Active style' label",
+   "where": "top left and top right",
+   "severity": 2,
+   "area_pct": 2
+  },
+  {
+   "beat": "growth",
+   "arm": "cozy",
+   "judge": "claude-sonnet",
+   "what": "Build tray cards are tall and mostly empty, and the Plaza and Bike Lane cards have no preview",
+   "where": "bottom center",
+   "severity": 2,
+   "area_pct": 9
+  },
+  {
+   "beat": "growth",
+   "arm": "cozy",
+   "judge": "claude-sonnet",
+   "what": "Cesium/Google attribution text is tiny and its contrast with the background is poor",
+   "where": "bottom left",
+   "severity": 1,
+   "area_pct": 1
+  },
+  {
+   "beat": "growth",
+   "arm": "cozy",
+   "judge": "claude-opus",
+   "what": "Untextured glowing white massing boxes with no shading, so they don't match the photoreal city",
+   "where": "center",
+   "severity": 3,
+   "area_pct": 14
+  },
+  {
+   "beat": "growth",
+   "arm": "cozy",
+   "judge": "claude-opus",
+   "what": "Flat 2D top-down pocket park decal and thumbnail, not 3D",
+   "where": "center-left, above the cards",
+   "severity": 2,
+   "area_pct": 3
+  },
+  {
+   "beat": "growth",
+   "arm": "cozy",
+   "judge": "claude-opus",
+   "what": "Two verb cards are mostly empty dark slabs",
+   "where": "bottom center",
+   "severity": 2,
+   "area_pct": 7
+  },
+  {
+   "beat": "growth",
+   "arm": "cozy",
+   "judge": "claude-opus",
+   "what": "Dense text wall in the timeline panel; small type with eight data lines",
+   "where": "right upper",
+   "severity": 2,
+   "area_pct": 9
+  },
+  {
+   "beat": "growth",
+   "arm": "cozy",
+   "judge": "claude-opus",
+   "what": "Tagline under the wordmark and the 'Active style' label are nearly invisible; NORMAL contradicts the stylised grade",
+   "where": "top-left and top-right",
+   "severity": 1,
+   "area_pct": 2
+  }
+ ]
+}

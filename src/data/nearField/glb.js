@@ -23,7 +23,7 @@ function packColours(c) {
  * @param {{soup?: {p:number[], c:number[]}, protos?: Iterable<{soup:{p:number[],c:number[]}, instances:number[][]}>, generator?: string}} parts
  * @returns {Uint8Array} GLB bytes
  */
-export function writeGlb({ soup, protos = [], generator = 'gev near-field (fork-only)' }) {
+export function writeGlb({ soup, ground, normals = false, protos = [], generator = 'gev near-field (fork-only)' }) {
   const views = [];
   const accessors = [];
   const chunks = [];
@@ -52,15 +52,21 @@ export function writeGlb({ soup, protos = [], generator = 'gev near-field (fork-
       }
     return { min, max };
   };
+  const indexAccessor = (indices) => {
+    accessors.push({ bufferView: push(new Uint16Array(indices), 34963), componentType: USHORT, count: indices.length, type: 'SCALAR' });
+    return accessors.length - 1;
+  };
   const meshes = [];
   const nodes = [];
   const prim = (s) => {
     const p = new Float32Array(s.p);
     return {
       attributes: {
+        ...(normals && s.n?.length && { NORMAL: acc(new Float32Array(s.n), 'VEC3', FLOAT, p.length / 3) }),
         POSITION: acc(p, 'VEC3', FLOAT, p.length / 3, { acc: minmax(p) }),
         COLOR_0: acc(packColours(s.c), 'VEC4', USHORT, s.c.length / 4, { acc: { normalized: true } }),
       },
+      ...(s.indices && { indices: indexAccessor(s.indices) }),
       material: 0,
     };
   };
@@ -68,7 +74,23 @@ export function writeGlb({ soup, protos = [], generator = 'gev near-field (fork-
     meshes.push({ primitives: [prim(soup)] });
     nodes.push({ mesh: meshes.length - 1 });
   }
+  let image;
+  if (ground) {
+    const p = new Float32Array(ground.p);
+    meshes.push({ primitives: [{
+      attributes: {
+        POSITION: acc(p, 'VEC3', FLOAT, p.length / 3, { acc: minmax(p) }),
+        TEXCOORD_0: acc(new Float32Array(ground.uv), 'VEC2', FLOAT, p.length / 3),
+        TEXCOORD_1: acc(new Float32Array(ground.wetness), 'VEC2', FLOAT, p.length / 3),
+      },
+      indices: indexAccessor(ground.indices),
+      material: 0,
+    }] });
+    nodes.push({ mesh: meshes.length - 1 });
+    image = { bufferView: push(ground.png), mimeType: 'image/png' };
+  }
   let instanced = false;
+  let instanceFeatures = false;
   for (const p of protos) {
     if (!p.instances?.length || !p.soup?.p?.length) continue;
     meshes.push({ primitives: [prim(p.soup)] });
@@ -81,12 +103,18 @@ export function writeGlb({ soup, protos = [], generator = 'gev near-field (fork-
       ro.set([0, 0, Math.sin(a / 2), Math.cos(a / 2)], i * 4);
       sc.set([k, k, k], i * 3);
     });
+    const jitter = p.instances[0].length > 5
+      ? acc(Uint16Array.from(p.instances, (instance) => instance[5]), 'SCALAR', USHORT, n, { instance: true })
+      : null;
+    instanceFeatures ||= jitter !== null;
     nodes.push({
       mesh: meshes.length - 1,
       extensions: {
+        ...(jitter !== null && { EXT_instance_features: { featureIds: [{ attribute: 0, featureCount: 256 }] } }),
         EXT_mesh_gpu_instancing: {
           attributes: {
             // min/max matter: Cesium bounds (and culls) an instanced node by them
+            ...(jitter !== null && { _FEATURE_ID_0: jitter }),
             TRANSLATION: acc(tr, 'VEC3', FLOAT, n, { instance: true, acc: minmax(tr) }),
             ROTATION: acc(ro, 'VEC4', FLOAT, n, { instance: true }),
             SCALE: acc(sc, 'VEC3', FLOAT, n, { instance: true }),
@@ -99,12 +127,26 @@ export function writeGlb({ soup, protos = [], generator = 'gev near-field (fork-
   if (!nodes.length) return null;
   const json = {
     asset: { version: '2.0', generator },
-    ...(instanced && { extensionsUsed: ['EXT_mesh_gpu_instancing'], extensionsRequired: ['EXT_mesh_gpu_instancing'] }),
+    ...(instanced && {
+      extensionsUsed: instanceFeatures ? ['EXT_mesh_gpu_instancing', 'EXT_instance_features'] : ['EXT_mesh_gpu_instancing'],
+      extensionsRequired: ['EXT_mesh_gpu_instancing'],
+    }),
     scene: 0,
     scenes: [{ nodes: nodes.map((_, i) => i) }],
     nodes,
     meshes,
-    materials: [{ pbrMetallicRoughness: { baseColorFactor: [1, 1, 1, 1], metallicFactor: 0, roughnessFactor: 1 }, doubleSided: true }],
+    materials: [{
+      pbrMetallicRoughness: {
+        baseColorFactor: [1, 1, 1, 1], metallicFactor: 0, roughnessFactor: 1,
+        ...(image && { baseColorTexture: { index: 0 } }),
+      },
+      doubleSided: !image,
+    }],
+    ...(image && {
+      images: [image],
+      textures: [{ sampler: 0, source: 0 }],
+      samplers: [{ magFilter: 9729, minFilter: 9987, wrapS: 33071, wrapT: 33071 }],
+    }),
     buffers: [{ byteLength: offset }],
     bufferViews: views,
     accessors,

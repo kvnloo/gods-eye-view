@@ -3,7 +3,8 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, nightly, staging]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -13,6 +14,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  factory-base:
+    name: Fork branch policy
+    if: github.repository == 'kvnloo/gods-eye-view' && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Refuse feature PRs to mirror and stable branches
+        env:
+          BASE: ${{ github.base_ref }}
+        run: |
+          case "$BASE" in
+            main|staging) echo '::error::Target nightly. Main mirrors upstream; staging is fast-forward promotion only.'; exit 1 ;;
+          esac
+
   verify:
     name: Node ${{ matrix.node }}
     runs-on: ubuntu-latest
@@ -51,17 +65,31 @@ jobs:
 
       - name: Check published layer-token allocations
         if: github.event_name == 'pull_request'
-        run: npm run layer-token:check -- --base-ref origin/main
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: npm run layer-token:check -- --base-ref "$BASE_SHA"
 
       - name: Check Data Library manifests and share tokens
         if: github.event_name == 'pull_request'
-        run: npm run library:check -- --base-ref origin/main
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: npm run library:check -- --base-ref "$BASE_SHA"
+
+      - name: Check translations
+        run: npm run i18n
+
+      - name: Typecheck renderer declarations
+        run: npx --no-install tsc --noEmit --strict --module NodeNext --target es2022 $(git ls-files 'src/render/**/*.d.ts')
 
       - name: Run unit tests
         run: npm test
 
       - name: Build production bundle
         run: npm run build
+
+      - name: Run performance microbenchmarks (Node 24)
+        if: matrix.node == '24.22.2'
+        run: npm run test:perf
 
   street-level-browser:
     # Hermetic: every Mapillary request is answered from fixtures, so the

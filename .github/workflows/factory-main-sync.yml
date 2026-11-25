@@ -1,0 +1,60 @@
+# Keeps fork `main` a fast-forward-only mirror of bilawalsidhu/gods-eye-view `main`.
+# Owner card: t_4f3cfa1b. Runbook and permission model: docs/factory/MAIN-SYNC.md.
+#
+# `schedule` only fires from the default branch, so this file must live on `staging`.
+# The push credential is a write deploy key stored as the `MAIN_SYNC_DEPLOY_KEY` secret of the
+# `upstream-sync` environment, which only admits jobs running on `staging`. The workflow token
+# itself is read-only. Repository rulesets let only deploy keys update `main`, and nobody
+# (the bot included) may force-push or delete it.
+name: Factory main mirror
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: apply fast-forwards main; check only reports
+        type: choice
+        options: [apply, check]
+        default: apply
+
+permissions:
+  contents: read
+
+concurrency:
+  group: factory-main-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Fast-forward main from upstream
+    if: github.repository == 'kvnloo/gods-eye-view'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: upstream-sync
+    steps:
+      - name: Check out only the sync script
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: scripts/factory/sync-main.sh
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Fast-forward fork main (never forces)
+        env:
+          MAIN_SYNC_DEPLOY_KEY: ${{ secrets.MAIN_SYNC_DEPLOY_KEY }}
+          SYNC_MODE: ${{ github.event_name == 'schedule' && 'apply' || inputs.mode }}
+          SYNC_FORK_URL: git@github.com:kvnloo/gods-eye-view.git
+          SYNC_UPSTREAM_URL: https://github.com/bilawalsidhu/gods-eye-view.git
+          SYNC_TARGET_BRANCH: main
+        shell: bash
+        run: |
+          set -euo pipefail
+          key="$RUNNER_TEMP/main-sync-key"
+          trap 'rm -f "$key"' EXIT
+          # An empty secret leaves no key file; sync-main.sh then fails with the remedy.
+          if [[ -n "$MAIN_SYNC_DEPLOY_KEY" ]]; then
+            (umask 077; printf '%s\n' "$MAIN_SYNC_DEPLOY_KEY" > "$key")
+          fi
+          SYNC_SSH_KEY_FILE="$key" bash scripts/factory/sync-main.sh

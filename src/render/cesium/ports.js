@@ -127,7 +127,8 @@ const destroyedError = () => new Error('renderer destroyed');
  *   With `cameraController`, the camera port is that controller's over
  *   Cesium's camera (`controlledCamera.js`); the ports then have
  *   `attachInput` and `suspendCamera`, which the renderer's input port is
- *   wired with.
+ *   wired with. `adaptiveResolution` has the quality port step the
+ *   display's pixel ratio down under load (`adaptiveResolution.js`).
  */
 export function createCesiumPorts(
   widget,
@@ -137,6 +138,7 @@ export function createCesiumPorts(
     cameraController,
     now: clockNow = () => performance.now(),
     date = null,
+    adaptiveResolution = false,
   },
 ) {
   const scene = widget.scene;
@@ -493,6 +495,7 @@ export function createCesiumPorts(
     frame,
     report,
     tickStarted: () => tickNow,
+    adaptive: adaptiveResolution,
     gl: capabilities.has('gpuTiming') ? webglContext(scene) : null,
     fpsCap: {
       get: () => qualityFps,

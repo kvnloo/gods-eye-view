@@ -127,6 +127,7 @@ export function createCesiumRendererPlugin({
         ports = createCesiumPorts(viewer, {
           capabilities,
           credentials: { googleApiKey, googleTokens, worldDataToken },
+          adaptiveResolution: true,
           ...(cameraController ? { cameraController } : {}),
           ...(clock ? { now, date: () => clock.date() } : {}),
         });

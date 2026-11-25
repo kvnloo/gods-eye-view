@@ -4,9 +4,14 @@
  * (`src/render/contract/quality.d.ts`) over a widget or viewer someone else
  * made and configured. It supports the settings Cesium has a knob for:
  *
- * - `pixelRatio`: the widget's `resolutionScale` at the browser's
- *   recommended resolution, which Cesium takes as one pixel per CSS pixel,
- *   so 0 (browser recommended) is a scale of 1.
+ * - `pixelRatio`: drawing-buffer pixels per CSS pixel. A number above 0 is
+ *   that ratio, fixed (the widget's `resolutionScale` at the browser's
+ *   recommended resolution, which Cesium takes as one pixel per CSS pixel).
+ *   0 is the display's own: Cesium's `useBrowserRecommendedResolution` off,
+ *   so a 3x phone draws 3 pixels per CSS pixel, not 1. With `adaptive`, a
+ *   ratio of 0 follows `adaptiveResolution.js`: stepped down the ladder
+ *   (3, 2, 1.5, 1) while the median frame runs over budget, back up when
+ *   frames are on time.
  * - `msaa`: the scene's `msaaSamples` (0 is Cesium's 1, off), listed only
  *   when the context can multisample.
  * - `shadows`: the scene's shadow map, on or off.
@@ -34,6 +39,7 @@
 import * as Cesium from 'cesium';
 import { listenerList } from './common.js';
 import { webglContext } from './internals.js';
+import { createAdaptiveRatio } from './adaptiveResolution.js';
 
 /** Timer queries kept waiting at most: past it, the oldest is dropped. */
 const MAX_PENDING_QUERIES = 8;
@@ -141,7 +147,10 @@ function tilesetsIn(collection, isTileset, isCollection, out = []) {
  *   limits?: {maximumTextureSize: number, maximumSamples: number},
  *   tickStarted?: () => number,
  *   gl?: object,
- * }} options `gl` is the WebGL context GPU timing reads (the scene's by
+ *   adaptive?: boolean,
+ *   devicePixelRatio?: () => number,
+ * }} options `adaptive` steps the display's ratio down under load while
+ *   `pixelRatio` is 0 (the application's renderer; off for conformance). `gl` is the WebGL context GPU timing reads (the scene's by
  *   default). `tickStarted` is when the tick under way started, on the
  *   `performance.now()` clock; without it the port times from its own
  *   preUpdate listener. Tests pass the predicates and limits; they default
@@ -159,6 +168,8 @@ export function createCesiumQuality(
     limits = Cesium.ContextLimits,
     tickStarted = null,
     gl = webglContext(widget.scene),
+    adaptive = false,
+    devicePixelRatio = () => globalThis.devicePixelRatio || 1,
     fpsCap = {
       get: () => frame.diagnostics?.().targetFps ?? 0,
       set: (fps) => frame.setTargetFps(fps),
@@ -189,6 +200,24 @@ export function createCesiumQuality(
     shadowsAtBuild ?? Boolean(scene.shadowMap?.enabled);
 
   let pixelRatio = 0;
+
+  /** Draws at `ratio` drawing-buffer pixels per CSS pixel, from the display's. */
+  function applyNative(ratio) {
+    if (gone()) return;
+    const scale = ratio / devicePixelRatio();
+    if (widget.useBrowserRecommendedResolution !== false)
+      widget.useBrowserRecommendedResolution = false;
+    if (widget.resolutionScale !== scale) widget.resolutionScale = scale;
+    frame.requestRender?.('quality');
+  }
+  const adaptiveRatio = adaptive
+    ? createAdaptiveRatio({
+        display: devicePixelRatio,
+        onChange: (ratio) => {
+          if (pixelRatio === 0) applyNative(ratio);
+        },
+      })
+    : null;
 
   // Each detail and the errors it was applied over.
   const detail = { tiles: 1, terrain: 1 };
@@ -313,8 +342,13 @@ export function createCesiumQuality(
       const ratio = inRange(value, 0, MAX_PIXEL_RATIO);
       if (ratio === null) return;
       pixelRatio = ratio;
+      adaptiveRatio?.reset();
+      if (ratio === 0) {
+        applyNative(adaptiveRatio?.ratio() ?? devicePixelRatio());
+        return;
+      }
       widget.useBrowserRecommendedResolution = true;
-      widget.resolutionScale = ratio || 1;
+      widget.resolutionScale = ratio;
     },
     msaa(value) {
       const options = msaaOptions();
@@ -388,6 +422,16 @@ export function createCesiumQuality(
       requested = pending.length > 0;
       mode = scene.requestRenderMode ? 'demand' : 'continuous';
     }),
+    ...(adaptiveRatio
+      ? [
+          scene.postRender.addEventListener(() => {
+            if (pixelRatio === 0)
+              adaptiveRatio.frame(
+                tickStarted ? tickStarted() : performance.now(),
+              );
+          }),
+        ]
+      : []),
     scene.postRender.addEventListener(() => {
       if (signalListeners.size === 0) return;
       gpuTimer?.end();

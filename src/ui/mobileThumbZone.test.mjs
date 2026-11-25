@@ -30,12 +30,15 @@ const rule = (selector) => {
   return css.slice(open, css.indexOf('}', open));
 };
 
-test('the tab bar has six actions: five sheets and Cast before More', () => {
+test('the tab bar has its sheets and Cast before More, one column each', () => {
+  // Missions shows only while that layer is on (PhoneTabBar filters it).
   assert.deepEqual(
     MOBILE_TABS.map((tab) => tab.sheet ?? `action:${tab.action}`),
-    ['layers', 'cameras', 'context', 'search', 'action:cast', 'more'],
+    ['layers', 'cameras', 'context', 'missions', 'search', 'action:cast', 'more'],
   );
-  assert.match(rule('body.mobile-shell #mobile-tab-bar'), /grid-template-columns: repeat\(6, 1fr\);/);
+  const bar = rule('body.mobile-shell #mobile-tab-bar');
+  assert.match(bar, /grid-auto-flow: column;/);
+  assert.match(bar, /grid-auto-columns: minmax\(0, 1fr\);/);
 });
 
 test('the viewport meta covers the notch and resizes for the keyboard without JS', () => {

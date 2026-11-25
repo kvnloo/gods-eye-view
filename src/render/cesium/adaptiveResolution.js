@@ -18,7 +18,12 @@
  *
  * A vsync-locked loop cannot run faster than the display, so "room" is
  * "on time", not "well under": the next step is tried and kept or backed
- * off by what it measures. The controller is pure: time comes in through
+ * off by what it measures. An idle loop (one frame after a gap) has room
+ * too: a step down taken while the scene loaded or moved goes back up on
+ * the next frame drawn after its hold, so a parked view is drawn sharp
+ * again instead of staying at the ratio its busiest second picked. The
+ * first `WARMUP_MS` after the first frame (startup: shader compiles, tile
+ * parsing) decide nothing. The controller is pure: time comes in through
  * `frame(t)`, the ratio goes out through `onChange`.
  */
 
@@ -36,6 +41,7 @@ export const SLOW = 1.2;
 export const ROOM = 1.05;
 export const UP_HOLD_MS = 3000;
 export const MAX_HOLD_MS = 60000;
+export const WARMUP_MS = 5000;
 
 /** The ladder for a display ratio: the display's own, then each step below. */
 export function ratioLadder(display, steps = RATIO_STEPS) {
@@ -65,8 +71,10 @@ export function createAdaptiveRatio({
   budgetMs = FRAME_BUDGET_MS,
   windowMs = 1000,
   upHoldMs = UP_HOLD_MS,
+  warmupMs = WARMUP_MS,
   steps = RATIO_STEPS,
 } = {}) {
+  let firstFrame = null;
   let shownDisplay = display();
   let ladder = ratioLadder(shownDisplay, steps);
   let index = 0;
@@ -87,6 +95,15 @@ export function createAdaptiveRatio({
     onChange(ladder[index], { medianMs, from });
   }
 
+  /** One step up once the ratio above has waited out its hold. */
+  function tryUp(t, medianMs) {
+    if (index === 0) return false;
+    const wait = holdFor.get(ladder[index - 1]) ?? upHoldMs;
+    if (t - changedAt < wait) return false;
+    setIndex(index - 1, t, medianMs);
+    return true;
+  }
+
   function decide(t) {
     if (samples.length < MIN_SAMPLES) return;
     const m = median(samples);
@@ -101,10 +118,7 @@ export function createAdaptiveRatio({
         Math.min(MAX_HOLD_MS, (holdFor.get(ratio) ?? upHoldMs / 2) * 2),
       );
       setIndex(index + 1, t, m);
-    } else if (m <= budgetMs * ROOM && index > 0) {
-      const wait = holdFor.get(ladder[index - 1]) ?? upHoldMs;
-      if (t - changedAt >= wait) setIndex(index - 1, t, m);
-    }
+    } else if (m <= budgetMs * ROOM) tryUp(t, m);
   }
 
   return {
@@ -124,13 +138,22 @@ export function createAdaptiveRatio({
         setIndex(0, t, lastMedian ?? 0);
         return;
       }
+      firstFrame ??= t;
       if (last === null || t - last > GAP_MS) {
+        // Idle: a frame on its own has room.
+        if (last !== null) tryUp(t, lastMedian ?? 0);
         last = t;
-        windowStart ??= t;
+        windowStart = t;
+        samples = [];
         return;
       }
       samples.push(t - last);
       last = t;
+      if (t - firstFrame < warmupMs) {
+        samples = [];
+        windowStart = t;
+        return;
+      }
       if (t - windowStart >= windowMs) decide(t);
     },
     /** Forget the run (the loop went idle or the setting changed). */

@@ -199,6 +199,9 @@ test('with adaptive on, frames over budget step the ratio down and on-time ones 
       scene.postRender.raise();
     }
   };
+  run(1000 / 60, 330); // the 5 s warm-up decides nothing
+  assert.deepEqual(backingSize(widget, [390, 844], 3), [1170, 2532]);
+  now += 500; // idle
   run(30, 40); // ~1.2 s at 33 fps
   assert.deepEqual(backingSize(widget, [390, 844], 3), [780, 1688], '3 → 2');
   run(30, 40);

@@ -1,0 +1,6 @@
+{
+  "gate": "build",
+  "state": "success",
+  "description": "vite build passed",
+  "durationMs": 17071
+}

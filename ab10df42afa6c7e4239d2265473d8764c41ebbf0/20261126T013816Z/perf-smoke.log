@@ -1,0 +1,90 @@
+
+$ /home/user/runtime/node_modules/node/bin/node --import=./build/registerVue.js --test-reporter=dot --test-reporter-destination=stdout --test-reporter=/home/user/src/scripts/factory-ci/test-events.mjs --test-reporter-destination=/home/user/src/ci-results/perf-events-0.ndjson --test --test-concurrency=1 --test-isolation=none src/layers/wildlifeSightings/model.perf.test.mjs src/layers/wildlifeSightings/render.perf.test.mjs
+.X
+
+Failed tests:
+
+✖ dense continental production moveEnd pipeline yields every 4ms, including cold tiles and real Cesium billboard updates (855.229884ms)
+  AssertionError [ERR_ASSERTION]: longest layer CPU slice 8.072ms exceeds 4ms
+      at TestContext.<anonymous> (file:///home/user/src/src/layers/wildlifeSightings/render.perf.test.mjs:120:14)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+$ /home/user/runtime/node_modules/node/bin/node --import=./build/registerVue.js --test-reporter=dot --test-reporter-destination=stdout --test-reporter=/home/user/src/scripts/factory-ci/test-events.mjs --test-reporter-destination=/home/user/src/ci-results/perf-events-1.ndjson --test --test-concurrency=1 --test-isolation=none src/layers/wildlifeSightings/model.perf.test.mjs src/layers/wildlifeSightings/render.perf.test.mjs
+.X
+
+Failed tests:
+
+✖ dense continental production moveEnd pipeline yields every 4ms, including cold tiles and real Cesium billboard updates (859.790081ms)
+  AssertionError [ERR_ASSERTION]: longest layer CPU slice 4.777ms exceeds 4ms
+      at TestContext.<anonymous> (file:///home/user/src/src/layers/wildlifeSightings/render.perf.test.mjs:120:14)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+$ /home/user/runtime/node_modules/node/bin/node --import=./build/registerVue.js --test-reporter=dot --test-reporter-destination=stdout --test-reporter=/home/user/src/scripts/factory-ci/test-events.mjs --test-reporter-destination=/home/user/src/ci-results/perf-events-2.ndjson --test --test-concurrency=1 --test-isolation=none src/layers/wildlifeSightings/model.perf.test.mjs src/layers/wildlifeSightings/render.perf.test.mjs
+.X
+
+Failed tests:
+
+✖ dense continental production moveEnd pipeline yields every 4ms, including cold tiles and real Cesium billboard updates (888.55988ms)
+  AssertionError [ERR_ASSERTION]: longest layer CPU slice 5.164ms exceeds 4ms
+      at TestContext.<anonymous> (file:///home/user/src/src/layers/wildlifeSightings/render.perf.test.mjs:120:14)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+$ /home/user/runtime/node_modules/node/bin/node --import=./build/registerVue.js --test-reporter=dot --test-reporter-destination=stdout --test-reporter=/home/user/src/scripts/factory-ci/test-events.mjs --test-reporter-destination=/home/user/src/ci-results/perf-events-3.ndjson --test --test-concurrency=1 --test-isolation=none src/layers/wildlifeSightings/model.perf.test.mjs src/layers/wildlifeSightings/render.perf.test.mjs
+.X
+
+Failed tests:
+
+✖ dense continental production moveEnd pipeline yields every 4ms, including cold tiles and real Cesium billboard updates (812.849099ms)
+  AssertionError [ERR_ASSERTION]: longest layer CPU slice 8.182ms exceeds 4ms
+      at TestContext.<anonymous> (file:///home/user/src/src/layers/wildlifeSightings/render.perf.test.mjs:120:14)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+$ /home/user/runtime/node_modules/node/bin/node --import=./build/registerVue.js --test-reporter=dot --test-reporter-destination=stdout --test-reporter=/home/user/src/scripts/factory-ci/test-events.mjs --test-reporter-destination=/home/user/src/ci-results/perf-events-4.ndjson --test --test-concurrency=1 --test-isolation=none src/layers/wildlifeSightings/model.perf.test.mjs src/layers/wildlifeSightings/render.perf.test.mjs
+.X
+
+Failed tests:
+
+✖ dense continental production moveEnd pipeline yields every 4ms, including cold tiles and real Cesium billboard updates (844.103388ms)
+  AssertionError [ERR_ASSERTION]: longest layer CPU slice 6.850ms exceeds 4ms
+      at TestContext.<anonymous> (file:///home/user/src/src/layers/wildlifeSightings/render.perf.test.mjs:120:14)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

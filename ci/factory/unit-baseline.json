@@ -4,7 +4,7 @@
   "tree": "0629f67b790b64e62a0e66aaf8f14d52c8e589bb",
   "dirty": false,
   "packageLockSha256": "82038ae6fab86ffecf3d70cd04108c3552aca7bc6e90213d2773c982bea7a6b5",
-  "harnessSha256": "bec734239bc71d8941e9962874cfe79bdc107b5634695778c448b1dd9a96ae5c",
+  "harnessSha256": "8c8fbf0ded7e5ff2a66f4537fe6c09fc92e35fbf12d64bfeb4f4627162650bd1",
   "environment": {
     "node": "24.22.2",
     "npm": "11.19.1",
@@ -15,7 +15,7 @@
     "memoryGiB": 8,
     "runner": "boat-default-4vcpu"
   },
-  "generatedAt": "2026-11-25T23:37:55.062Z",
+  "generatedAt": "2026-11-26T00:25:18.587Z",
   "command": "node scripts/factory-ci.mjs unit --write-baseline",
   "counts": {
     "tests": 14427,

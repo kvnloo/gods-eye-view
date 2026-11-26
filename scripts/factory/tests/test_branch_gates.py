@@ -467,6 +467,18 @@ class TestSoakMath(unittest.TestCase):
             bg.load_policy(p)
 
 
+class TestCiWait(Fixture):
+    def test_an_older_verdict_on_the_same_sha_does_not_satisfy_the_wait(self):
+        sha = self.root  # already carries a green gev-ci/full from setUp
+        before = bg.max_status_id(self.gh, sha)
+        stale = bg.wait_for_full(self.gh, sha, POLICY, 0, 0, lambda s: None, min_id=before)
+        self.assertEqual(stale.state, "pending")
+        self.assertIn("timeout", stale.summary())
+        self.ci.start(sha)  # a fresh run posts a newer verdict
+        fresh = bg.wait_for_full(self.gh, sha, POLICY, 0, 0, lambda s: None, min_id=before)
+        self.assertTrue(fresh.green)
+
+
 class TestPromotion(Fixture):
     def nightly_tip(self):
         self.branch("feat/a", self.root, [("a.txt", "a\n")])

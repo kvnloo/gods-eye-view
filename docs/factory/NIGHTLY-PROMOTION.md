@@ -263,7 +263,7 @@ that were rejected and are no longer needed.
 python3 -m unittest discover -s scripts/factory/tests -p 'test_branch_gates.py' -v
 ```
 
-The suite (27 tests) uses real git: a local bare origin that refuses a
+The suite (28 tests) uses real git: a local bare origin that refuses a
 non-fast-forward or a deletion. Its pre-receive hook enforces a trusted
 `gev-ci/full` on nightly and staging, as ruleset 28125551 does. Alongside it
 runs a fake GitHub that owns its clock, the way GitHub owns `created_at`. Tests
@@ -284,4 +284,4 @@ that injects time, statuses or a remote.
     divergence; refs changed mid-promotion; short SHA or branch name; dry run.
   - soak math: exactly 24 h passes and 23 h fails; resets; gaps; staleness;
     observations made before CI went green; untrusted observations; the policy
-    floor.
+    floor; an older `gev-ci/full` on the same SHA does not satisfy the CI wait.

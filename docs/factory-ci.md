@@ -105,9 +105,10 @@ central crop twice, with the globe shown and hidden. It passes when:
   fill fails.
 
 Measured at `53f0caa6`: 98.27% of pixels changed, luma standard deviation 9.49,
-ready in 6.7 s. The full-page screenshot is uploaded as `globe.png`. The
-screenshot shows globe geometry and atmosphere only. Map imagery and Google 3D
-tiles are not tested.
+ready in 6.7 s. The full-page screenshot is uploaded as `globe.png`. It shows
+the globe as a solid base-colour sphere with the starfield and HUD. Map imagery
+and Google 3D tiles are not tested. The blocked icon font makes HUD icons render
+as their ligature names, for example `layers`.
 
 ### Performance smoke (limits pending GEV-F3)
 
@@ -158,4 +159,42 @@ Limitations:
 ## Measured cost
 
 Boat `default` VM: 4 vCPU (AMD EPYC 4585PX), 8 GiB, Ubuntu 24.04, Node 24.22.2,
-npm 11.19.1. See `REPORT` in the PR for single-run numbers and their spread.
+npm 11.19.1. Each line is measured on that VM class. `n` is the number of runs.
+
+| Step | Wall time | CPU (user+sys) | Peak RSS | n |
+|---|---:|---:|---:|---:|
+| `npm ci`, empty npm cache (includes Puppeteer's Chrome) | 13 s, 23 s | 31 s | 0.4 GB | 2 |
+| `node_modules` restore from a tarball (warm) | 2.0 s | | | 1 |
+| lint | 73 to 96 s | 125 s | 3.0 GB | 3 |
+| typecheck, translations | 1.5 s, 0.7 s | | 0.4 GB | 3 |
+| unit (all processes) | 304 to 393 s, median 340 s | 799 s | 0.9 GB | 6 |
+| build | 13 to 15 s | 25 s | 2.2 GB | 3 |
+| bundle-budget | 0.3 s | | | 3 |
+| globe-smoke | 9 to 10 s | 2 s | 0.2 GB | 3 |
+| perf-smoke (5 runs) | 6 to 8 s | 9 s | 0.3 GB | 9 |
+| Whole Boat run, VM start to statuses posted | 7 min 24 s | | | 1 |
+
+The unit gate dominates, and most of it is the parallel test process: 311 s of
+the 393 s baseline run. The serialized allocation probe takes 81 s more. CPU use
+was about 200% of 400%, so the run is not CPU-bound on 4 vCPUs. Caching
+`node_modules` saves 11 to 21 s per job (about 5% of a Boat run) and keeps
+`npm ci` off the network. The cache sizes are 117 MB for the `node_modules`
+tarball and 299 MB for Chrome. On Actions, the four gate jobs run in parallel,
+so wall time is the unit job.
+
+Mirroring to Boat is not an optimisation here. While Actions is paused it is
+the only working runner. A Boat CI app for `runs-on: boat` exists, but it is not
+installed on this account, and installing it needs the owner in a browser.
+
+## Required checks
+
+- On every SHA that `nightly` or `staging` points to: `gev-ci/full`, which
+  implies all eight `gev-ci/*` gates above.
+- On PRs into `nightly` (owned by the modularity card, `factory-modularity.yml`):
+  `factory-modularity/hot-files`, `factory-modularity/commit-builds` and
+  `factory-modularity/tooling-tests`.
+- `Fork branch policy` (in `ci.yml`) refuses PRs into `main` and `staging`.
+  Staging only moves by fast-forward promotion.
+- Upstream's own jobs (`Node 24.22.2`, `Node 26.x`, `Street Level browser gate`,
+  `Windows onboarding`) still run on Actions. They are not part of the factory
+  contract.

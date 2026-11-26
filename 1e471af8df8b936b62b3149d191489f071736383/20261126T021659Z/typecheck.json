@@ -1,0 +1,6 @@
+{
+  "gate": "typecheck",
+  "state": "success",
+  "description": "tsc (renderer declarations) passed",
+  "durationMs": 1449
+}

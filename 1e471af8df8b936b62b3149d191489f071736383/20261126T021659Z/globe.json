@@ -1,0 +1,14 @@
+{
+  "readyMs": 7040,
+  "changedPixels": 64403,
+  "croppedPixels": 65536,
+  "changedFraction": 0.9827117919921875,
+  "lumaStdDev": 9.492031748153295,
+  "pageErrors": [],
+  "thresholds": {
+    "changedFraction": 0.2,
+    "channelDelta": 24,
+    "minLumaStdDev": 4
+  },
+  "screenshot": "/home/user/src/ci-results/globe.png"
+}

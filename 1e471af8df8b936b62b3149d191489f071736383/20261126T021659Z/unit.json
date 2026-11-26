@@ -1,0 +1,83 @@
+{
+  "gate": "unit",
+  "state": "success",
+  "description": "14432 tests; 0 baseline failures, 0 new; 0 fixed",
+  "baselineCommit": "53f0caa6e54d9769740d69424e8bf26364b00a6a",
+  "newFailures": [],
+  "stillFailing": [],
+  "fixed": [],
+  "newlySkipped": [],
+  "emptiedFiles": [],
+  "missingFiles": [
+    "src/testSupport/aircraftFeedLatency.mjs"
+  ],
+  "blocking": 0,
+  "runs": [
+    {
+      "label": "parallel",
+      "exitCode": 0,
+      "signal": null,
+      "ms": 255732,
+      "counts": {
+        "tests": 14417,
+        "failed": 0,
+        "passed": 14414,
+        "cancelled": 0,
+        "skipped": 3,
+        "todo": 0,
+        "topLevel": 14293,
+        "suites": 0
+      },
+      "problem": null
+    },
+    {
+      "label": "src/data/focusAllocations.test.mjs",
+      "exitCode": 0,
+      "signal": null,
+      "ms": 520,
+      "counts": {
+        "tests": 1,
+        "failed": 0,
+        "passed": 1,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "topLevel": 1,
+        "suites": 0
+      },
+      "problem": null
+    },
+    {
+      "label": "src/overlays/worldOverlayAllocation.test.mjs",
+      "exitCode": 0,
+      "signal": null,
+      "ms": 62819,
+      "counts": {
+        "tests": 14,
+        "failed": 0,
+        "passed": 14,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "topLevel": 14,
+        "suites": 0
+      },
+      "problem": null
+    }
+  ],
+  "counts": {
+    "tests": 14432,
+    "passed": 14429,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 3,
+    "todo": 0
+  },
+  "failing": [],
+  "skipped": [
+    "src/keySetupHardening.test.mjs > Windows production hardener applies its exact DACL with native tools",
+    "src/layers/wildlifeSightings/model.perf.test.mjs > 500 / 2,000 / 5,000 icon model updates stay within their named timing budgets",
+    "src/layers/wildlifeSightings/render.perf.test.mjs > dense continental production moveEnd pipeline yields every 4ms, including cold tiles and real Cesium billboard updates"
+  ],
+  "durationMs": 319440
+}

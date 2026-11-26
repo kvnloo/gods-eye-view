@@ -3,7 +3,8 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [nightly, staging]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -13,6 +14,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  factory-base:
+    name: Fork branch policy
+    if: github.repository == 'kvnloo/gods-eye-view' && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Refuse feature PRs to mirror and stable branches
+        env:
+          BASE: ${{ github.base_ref }}
+        run: |
+          case "$BASE" in
+            main|staging) echo '::error::Target nightly. Main mirrors upstream; staging is fast-forward promotion only.'; exit 1 ;;
+          esac
+
+  factory:
+    # Required on the fork: the gev-ci/* statuses this posts on the exact head.
+    name: Factory gates
+    if: >-
+      github.repository == 'kvnloo/gods-eye-view' && (
+        (github.event_name == 'pull_request' && contains(fromJSON('["nightly","staging"]'), github.base_ref)) ||
+        (github.event_name == 'push' && contains(fromJSON('["refs/heads/nightly","refs/heads/staging"]'), github.ref)))
+    permissions:
+      contents: read
+      statuses: write
+    uses: ./.github/workflows/factory-ci-sha.yml
+    with:
+      sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      base-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || '' }}
+
   verify:
     name: Node ${{ matrix.node }}
     runs-on: ubuntu-latest
@@ -51,11 +80,15 @@ jobs:
 
       - name: Check published layer-token allocations
         if: github.event_name == 'pull_request'
-        run: npm run layer-token:check -- --base-ref origin/main
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: npm run layer-token:check -- --base-ref "$BASE_SHA"
 
       - name: Check Data Library manifests and share tokens
         if: github.event_name == 'pull_request'
-        run: npm run library:check -- --base-ref origin/main
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: npm run library:check -- --base-ref "$BASE_SHA"
 
       - name: Run unit tests
         run: npm test

@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "commit": "53f0caa6e54d9769740d69424e8bf26364b00a6a",
+  "environment": {
+    "node": "24.22.2",
+    "platform": "linux",
+    "arch": "x64",
+    "cpus": 4,
+    "cpuModel": "AMD EPYC 4585PX 16-Core Processor",
+    "runner": "boat-default-4vcpu"
+  },
+  "measuredAt": "2026-11-25",
+  "overBudget": {
+    "src/layers/wildlifeSightings/render.perf.test.mjs > dense continental production moveEnd pipeline yields every 4ms, including cold tiles and real Cesium billboard updates": {
+      "budgetMs": 4,
+      "missedRuns": 11,
+      "runs": 20,
+      "observedSliceMs": [4.16, 8.26],
+      "note": "Four 5-run perf-smoke passes at this commit missed 1, 4, 2 and 4 times; four passes on d95cc718 (same src/ apart from one new test file) missed 4, 3, 4 and 3. Run alone on that tree the file missed 16/20, with thread CPU about equal to wall time and near-zero steal: the slice is CPU work, not preemption. The observed range spans both trees. Remove this entry once the layer meets 4 ms here; GEV-F3 owns device budgets."
+    }
+  }
+}

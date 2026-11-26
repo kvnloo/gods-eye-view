@@ -1,0 +1,149 @@
+# Full validation of one exact commit. Called by ci.yml for PRs and pushes, and
+# by the nightly-integration and staging-promotion workflows for the SHA they
+# are about to publish. Contract: docs/factory-ci.md.
+#
+# Every gate posts a commit status on inputs.sha: gev-ci/<gate> plus
+# gev-ci/full. A Boat run of scripts/factory-ci.mjs posts the same contexts, so
+# consumers read statuses, not job names.
+name: Factory CI (exact SHA)
+
+on:
+  workflow_call:
+    inputs:
+      sha:
+        description: Full 40-character commit SHA to validate.
+        required: true
+        type: string
+      base-sha:
+        description: Optional full SHA the append-only ledgers are checked against.
+        required: false
+        type: string
+        default: ''
+    outputs:
+      full:
+        description: success or failure, the state posted as gev-ci/full.
+        value: ${{ jobs.report.outputs.full }}
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Full 40-character commit SHA to validate.
+        required: true
+      base-sha:
+        description: Optional full SHA the append-only ledgers are checked against.
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: factory-ci-sha-${{ inputs.sha }}
+  cancel-in-progress: false
+
+jobs:
+  gates:
+    name: gev-ci ${{ matrix.group }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: ${{ matrix.timeout }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: checks
+            gates: lint typecheck translations
+            browser: 'false'
+            timeout: 20
+          - group: unit
+            gates: unit
+            browser: 'false'
+            timeout: 45
+          - group: build
+            gates: build bundle-budget globe-smoke
+            browser: 'true'
+            timeout: 25
+          - group: perf
+            gates: perf-smoke
+            browser: 'false'
+            timeout: 20
+    env:
+      SHA: ${{ inputs.sha }}
+      BASE_SHA: ${{ inputs.base-sha }}
+      GEV_CI_RUNNER: github-actions
+    steps:
+      - name: Refuse anything but a full SHA
+        run: |
+          [[ $SHA =~ ^[0-9a-f]{40}$ ]] || { echo "::error::sha must be 40 lowercase hex characters"; exit 1; }
+          [[ -z $BASE_SHA || $BASE_SHA =~ ^[0-9a-f]{40}$ ]] || { echo "::error::base-sha must be empty or a full SHA"; exit 1; }
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ inputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Confirm the checked-out commit
+        run: test "$(git rev-parse HEAD)" = "$SHA"
+
+      - uses: ./.github/actions/factory-node
+        with:
+          browser: ${{ matrix.browser }}
+
+      - name: Run gates
+        run: node scripts/factory-ci.mjs ${{ matrix.gates }} --out ci-results ${BASE_SHA:+--base-ref "$BASE_SHA"}
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: gev-ci-${{ matrix.group }}-${{ inputs.sha }}
+          path: |
+            ci-results/*.json
+            ci-results/*.log
+            ci-results/*.png
+          if-no-files-found: error
+          retention-days: 30
+
+  report:
+    name: gev-ci report
+    needs: gates
+    if: always()
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      statuses: write
+    outputs:
+      full: ${{ steps.post.outputs.full }}
+    env:
+      SHA: ${{ inputs.sha }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ inputs.sha }}
+          persist-credentials: false
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: gev-ci-*-${{ inputs.sha }}
+          path: ci-results
+          merge-multiple: true
+
+      - name: Post commit statuses
+        id: post
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          node scripts/factory-ci.mjs statuses ci-results > statuses.tsv
+          {
+            echo "### gev-ci for \`$SHA\`"
+            echo '| Context | State | Detail |'
+            echo '|---|---|---|'
+            while IFS=$'\t' read -r context state description; do
+              gh api -X POST "repos/$GITHUB_REPOSITORY/statuses/$SHA" \
+                -f state="$state" -f context="$context" -f description="$description" -f target_url="$RUN_URL" > /dev/null
+              echo "| $context | $state | $description |"
+            done < statuses.tsv
+          } >> "$GITHUB_STEP_SUMMARY"
+          full=$(awk -F'\t' '$1 == "gev-ci/full" { print $2 }' statuses.tsv)
+          echo "full=$full" >> "$GITHUB_OUTPUT"
+          test "$full" = success

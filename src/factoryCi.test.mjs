@@ -9,6 +9,7 @@ import {
   collectTests,
   compareWithBaseline,
   GATES,
+  perFileCounts,
   processProblem,
   statusesFor,
 } from '../scripts/factory-ci.mjs';
@@ -71,6 +72,13 @@ test('a run whose report cannot be trusted is an error, not a test failure', () 
   assert.match(processProblem({ ...run, summary: null }), /no summary/);
   assert.match(processProblem({ ...run, code: 1 }), /no failing test/);
   assert.match(processProblem({ ...run, tests: new Map() }), /reported 1 tests but emitted 0/);
+});
+
+test('a file that no longer defines tests counts as zero tests', () => {
+  const { run, prefix } = runFixture({ 'a.test.mjs': "import { it } from 'node:test';\nit('ok', () => {});\n", 'empty.test.mjs': 'export {};\n' });
+  assert.equal(processProblem(run), null);
+  const counts = Object.fromEntries(Object.entries(perFileCounts(run.tests)).map(([file, n]) => [file.slice(prefix.length + 1), n]));
+  assert.deepEqual(counts, { 'a.test.mjs': 1 });
 });
 
 test('only new failures, newly skipped tests and emptied files block', () => {

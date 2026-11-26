@@ -48,7 +48,11 @@ function run(command, args, { log, env = {}, timeoutMs = 30 * MINUTE } = {}) {
       resolve({ code: null, signal: null, error: String(error), ms: 0 });
       return;
     }
-    const timer = setTimeout(() => child.kill('SIGKILL'), timeoutMs);
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      child.kill('SIGKILL');
+    }, timeoutMs);
     for (const stream of [child.stdout, child.stderr]) {
       stream.on('data', (chunk) => {
         log.write(chunk);
@@ -61,7 +65,7 @@ function run(command, args, { log, env = {}, timeoutMs = 30 * MINUTE } = {}) {
     });
     child.on('close', (code, signal) => {
       clearTimeout(timer);
-      resolve({ code, signal, error: signal === 'SIGKILL' ? `timed out after ${timeoutMs} ms` : null, ms: Date.now() - started });
+      resolve({ code, signal, error: timedOut ? `timed out after ${timeoutMs} ms` : null, ms: Date.now() - started });
     });
   });
 }
@@ -105,6 +109,7 @@ export function collectTests(lines) {
     const node = {
       file,
       name: wholeFile ? '(file)' : event.name,
+      wholeFile: Boolean(wholeFile),
       kind: event.kind,
       // A todo test may fail without failing the run, so todo/skip win.
       status: event.todo ? 'todo' : event.skip ? 'skip'
@@ -128,7 +133,7 @@ export function collectTests(lines) {
     if (counts) {
       let id = `${node.file} > ${name.join(' > ')}`;
       for (let n = 2; tests.has(id); n++) id = `${node.file} > ${name.join(' > ')} #${n}`;
-      tests.set(id, { status: node.status, kind: node.kind, file: node.file, durationMs: node.durationMs });
+      tests.set(id, { status: node.status, kind: node.kind, file: node.file, wholeFile: node.wholeFile, durationMs: node.durationMs });
     }
     for (const child of node.children) visit(child, name);
   };
@@ -198,9 +203,10 @@ export function compareWithBaseline(baseline, tests, perFile, discovered) {
   return { ...out, blocking };
 }
 
-function perFileCounts(tests) {
+/** Real tests per file. A file with no tests is reported as one passing whole-file entry; it counts as zero. */
+export function perFileCounts(tests) {
   const counts = {};
-  for (const { file, kind } of tests.values()) if (kind === 'test') counts[file] = (counts[file] ?? 0) + 1;
+  for (const { file, kind, wholeFile } of tests.values()) if (kind === 'test' && !wholeFile) counts[file] = (counts[file] ?? 0) + 1;
   return Object.fromEntries(Object.entries(counts).sort(([a], [b]) => a.localeCompare(b)));
 }
 

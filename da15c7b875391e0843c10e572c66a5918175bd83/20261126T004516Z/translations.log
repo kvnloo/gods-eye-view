@@ -1,0 +1,15 @@
+
+$ npm run --silent i18n
+ar: 3818 messages, complete
+de: 3818 messages, complete
+es: 3818 messages, complete
+fr: 3818 messages, complete
+he: 3818 messages, complete
+it: 3818 messages, complete
+ja: 3818 messages, complete
+pt: 3818 messages, complete
+ru: 3818 messages, complete
+sv: 3818 messages, complete
+uk: 3818 messages, complete
+zh-CN: 3818 messages, complete
+zh-Hant: 3818 messages, complete

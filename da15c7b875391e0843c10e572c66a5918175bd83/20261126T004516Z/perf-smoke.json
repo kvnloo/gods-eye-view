@@ -1,0 +1,87 @@
+{
+  "gate": "perf-smoke",
+  "state": "success",
+  "description": "2 benchmarks, none newly over budget; known over at 53f0caa6: dense continental production mov 4/5",
+  "policy": {
+    "runs": 5,
+    "failQuorum": 3
+  },
+  "baselineCommit": "53f0caa6e54d9769740d69424e8bf26364b00a6a",
+  "blocking": [],
+  "misses": {
+    "src/layers/wildlifeSightings/render.perf.test.mjs > dense continental production moveEnd pipeline yields every 4ms, including cold tiles and real Cesium billboard updates": 4
+  },
+  "runs": [
+    {
+      "run": 1,
+      "ms": 1525,
+      "tests": {
+        "src/layers/wildlifeSightings/model.perf.test.mjs > 500 / 2,000 / 5,000 icon model updates stay within their named timing budgets": {
+          "status": "pass",
+          "durationMs": 102.370874
+        },
+        "src/layers/wildlifeSightings/render.perf.test.mjs > dense continental production moveEnd pipeline yields every 4ms, including cold tiles and real Cesium billboard updates": {
+          "status": "fail",
+          "durationMs": 808.394202
+        }
+      }
+    },
+    {
+      "run": 2,
+      "ms": 1414,
+      "tests": {
+        "src/layers/wildlifeSightings/model.perf.test.mjs > 500 / 2,000 / 5,000 icon model updates stay within their named timing budgets": {
+          "status": "pass",
+          "durationMs": 112.341613
+        },
+        "src/layers/wildlifeSightings/render.perf.test.mjs > dense continental production moveEnd pipeline yields every 4ms, including cold tiles and real Cesium billboard updates": {
+          "status": "fail",
+          "durationMs": 616.153562
+        }
+      }
+    },
+    {
+      "run": 3,
+      "ms": 1458,
+      "tests": {
+        "src/layers/wildlifeSightings/model.perf.test.mjs > 500 / 2,000 / 5,000 icon model updates stay within their named timing budgets": {
+          "status": "pass",
+          "durationMs": 88.731786
+        },
+        "src/layers/wildlifeSightings/render.perf.test.mjs > dense continental production moveEnd pipeline yields every 4ms, including cold tiles and real Cesium billboard updates": {
+          "status": "fail",
+          "durationMs": 827.900959
+        }
+      }
+    },
+    {
+      "run": 4,
+      "ms": 1444,
+      "tests": {
+        "src/layers/wildlifeSightings/model.perf.test.mjs > 500 / 2,000 / 5,000 icon model updates stay within their named timing budgets": {
+          "status": "pass",
+          "durationMs": 100.057972
+        },
+        "src/layers/wildlifeSightings/render.perf.test.mjs > dense continental production moveEnd pipeline yields every 4ms, including cold tiles and real Cesium billboard updates": {
+          "status": "pass",
+          "durationMs": 806.348871
+        }
+      }
+    },
+    {
+      "run": 5,
+      "ms": 1620,
+      "tests": {
+        "src/layers/wildlifeSightings/model.perf.test.mjs > 500 / 2,000 / 5,000 icon model updates stay within their named timing budgets": {
+          "status": "pass",
+          "durationMs": 110.113934
+        },
+        "src/layers/wildlifeSightings/render.perf.test.mjs > dense continental production moveEnd pipeline yields every 4ms, including cold tiles and real Cesium billboard updates": {
+          "status": "fail",
+          "durationMs": 920.369728
+        }
+      }
+    }
+  ],
+  "durationMs": 7536
+}

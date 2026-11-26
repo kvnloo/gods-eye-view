@@ -1,0 +1,40 @@
+# Hourly soak observation: one `gev-soak/nightly` commit status on every
+# validated nightly tip that is not on staging yet. The status history on each
+# SHA is the soak ledger that staging promotion reads.
+# Owner card: t_cf66fac4. Runbook: docs/factory/NIGHTLY-PROMOTION.md.
+name: Factory soak observation
+
+on:
+  schedule:
+    - cron: '53 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: factory-soak-observe
+  cancel-in-progress: false
+
+jobs:
+  observe:
+    name: Observe nightly soak
+    if: github.repository == 'kvnloo/gods-eye-view'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      statuses: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          sparse-checkout: |
+            scripts/factory
+            ci/factory/branch-policy.json
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - name: Observe
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/factory/soak_observe.py

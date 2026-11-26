@@ -1,0 +1,33 @@
+{
+  "$comment": "Policy for nightly integration, soak observation and staging promotion. Read from the trusted checkout (default branch), never from a PR. Contract: docs/factory/NIGHTLY-PROMOTION.md. Changing a value is a reviewed edit.",
+  "repo": "kvnloo/gods-eye-view",
+  "nightly_branch": "nightly",
+  "staging_branch": "staging",
+  "nightly_label": "nightly",
+  "integrable_bases": ["nightly", "staging"],
+  "candidate_ref_prefix": "factory/nightly-candidate/",
+  "ci_full_context": "gev-ci/full",
+  "ci_gate_contexts": [
+    "gev-ci/lint",
+    "gev-ci/typecheck",
+    "gev-ci/translations",
+    "gev-ci/unit",
+    "gev-ci/build",
+    "gev-ci/bundle-budget",
+    "gev-ci/globe-smoke",
+    "gev-ci/perf-smoke"
+  ],
+  "ci_red_prefix": "gev-ci/",
+  "pr_extra_required_contexts": [],
+  "$pr_extra_required_contexts": "factory-modularity/{hot-files,commit-builds,tooling-tests} (t_9a4af6d7) only run on GitHub Actions, which is paused on this fork. Add them here once Actions runs them; until then they cannot exist on any head.",
+  "trusted_status_creators": ["kvnloo", "github-actions[bot]"],
+  "soak_context": "gev-soak/nightly",
+  "promotion_context": "gev-promote/staging",
+  "min_soak_hours": 24,
+  "max_observation_gap_hours": 6,
+  "min_soak_observations": 4,
+  "ci_wait_minutes": 90,
+  "max_ci_runs_per_integration": 8,
+  "committer_name": "gev-factory",
+  "committer_email": "gev-factory@users.noreply.github.com"
+}

@@ -1,0 +1,50 @@
+name: Factory Node toolchain
+description: >-
+  Pinned Node plus node_modules restored only on an exact match of OS image,
+  architecture, Node, npm and package-lock.json. A miss runs npm ci; a partial
+  or older tree is never reused.
+inputs:
+  browser:
+    description: Also install and cache the Chrome build Puppeteer pins.
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      with:
+        node-version: 24.22.2
+
+    - name: Cache key
+      id: key
+      shell: bash
+      run: |
+        lock=$(sha256sum package-lock.json | cut -c1-64)
+        echo "modules=factory-nm-v1-${ImageOS}-${RUNNER_ARCH}-node$(node -v)-npm$(npm -v)-${lock}" >> "$GITHUB_OUTPUT"
+        echo "browser=factory-chrome-v1-${ImageOS}-${RUNNER_ARCH}-${lock}" >> "$GITHUB_OUTPUT"
+
+    - name: Restore node_modules
+      id: modules
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+      with:
+        path: node_modules
+        key: ${{ steps.key.outputs.modules }}
+
+    - name: Restore Puppeteer Chrome
+      if: inputs.browser == 'true'
+      id: chrome
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+      with:
+        path: ~/.cache/puppeteer
+        key: ${{ steps.key.outputs.browser }}
+
+    - name: Install locked dependencies
+      if: steps.modules.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        PUPPETEER_SKIP_DOWNLOAD: ${{ inputs.browser == 'true' && '0' || '1' }}
+      run: npm ci --no-audit --no-fund
+
+    - name: Install Puppeteer Chrome
+      if: inputs.browser == 'true' && steps.chrome.outputs.cache-hit != 'true'
+      shell: bash
+      run: npx --no-install puppeteer browsers install chrome

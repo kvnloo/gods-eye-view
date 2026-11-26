@@ -1,0 +1,74 @@
+# Staging promotion: fast-forward `staging` to one explicitly chosen nightly SHA
+# after exact-SHA CI is green and it has a recorded >= 24 h green soak.
+# Owner card: t_cf66fac4. Runbook: docs/factory/NIGHTLY-PROMOTION.md.
+name: Factory staging promotion
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Full 40-character nightly SHA to promote (no branch names, no short SHAs)
+        required: true
+        type: string
+      dry-run:
+        description: Run every check; push nothing
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: factory-branch-mutation
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    name: Promote ${{ inputs.sha }} to staging
+    if: github.repository == 'kvnloo/gods-eye-view'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: factory-branches
+    permissions:
+      contents: read
+      statuses: write # one soak observation + the gev-promote/staging record
+    env:
+      SHA: ${{ inputs.sha }}
+    steps:
+      - name: Refuse anything but a full SHA
+        run: '[[ $SHA =~ ^[0-9a-f]{40}$ ]] || { echo "::error::sha must be 40 lowercase hex characters"; exit 2; }'
+
+      - name: Check out the trusted gate scripts (default branch)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          sparse-checkout: |
+            scripts/factory
+            ci/factory/branch-policy.json
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Branch push token
+        id: app
+        uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
+        with:
+          client-id: ${{ vars.FACTORY_APP_CLIENT_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-workflows: write
+
+      - name: Promote (fails closed)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FACTORY_PUSH_TOKEN: ${{ steps.app.outputs.token }}
+          DRY_RUN: ${{ inputs.dry-run && '--dry-run' || '' }}
+        run: python3 scripts/factory/promote_staging.py --sha "$SHA" --lock '' --report promotion.json $DRY_RUN
+
+      - name: Keep the JSON record
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: staging-promotion-${{ github.run_id }}
+          path: promotion.json
+          if-no-files-found: warn
+          retention-days: 400

@@ -1,0 +1,85 @@
+{
+  "gate": "perf-smoke",
+  "state": "success",
+  "description": "2 benchmarks, none newly over budget; known over at 53f0caa6: dense continental production mov 0/5",
+  "policy": {
+    "runs": 5,
+    "failQuorum": 3
+  },
+  "baselineCommit": "53f0caa6e54d9769740d69424e8bf26364b00a6a",
+  "blocking": [],
+  "misses": {},
+  "runs": [
+    {
+      "run": 1,
+      "ms": 1316,
+      "tests": {
+        "src/layers/wildlifeSightings/model.perf.test.mjs > 500 / 2,000 / 5,000 icon model updates stay within their named timing budgets": {
+          "status": "pass",
+          "durationMs": 89.740995
+        },
+        "src/layers/wildlifeSightings/render.perf.test.mjs > dense continental production moveEnd pipeline yields every 4ms, including cold tiles and real Cesium billboard updates": {
+          "status": "pass",
+          "durationMs": 693.882761
+        }
+      }
+    },
+    {
+      "run": 2,
+      "ms": 1317,
+      "tests": {
+        "src/layers/wildlifeSightings/model.perf.test.mjs > 500 / 2,000 / 5,000 icon model updates stay within their named timing budgets": {
+          "status": "pass",
+          "durationMs": 82.113816
+        },
+        "src/layers/wildlifeSightings/render.perf.test.mjs > dense continental production moveEnd pipeline yields every 4ms, including cold tiles and real Cesium billboard updates": {
+          "status": "pass",
+          "durationMs": 736.648452
+        }
+      }
+    },
+    {
+      "run": 3,
+      "ms": 1306,
+      "tests": {
+        "src/layers/wildlifeSightings/model.perf.test.mjs > 500 / 2,000 / 5,000 icon model updates stay within their named timing budgets": {
+          "status": "pass",
+          "durationMs": 79.865081
+        },
+        "src/layers/wildlifeSightings/render.perf.test.mjs > dense continental production moveEnd pipeline yields every 4ms, including cold tiles and real Cesium billboard updates": {
+          "status": "pass",
+          "durationMs": 745.268725
+        }
+      }
+    },
+    {
+      "run": 4,
+      "ms": 1308,
+      "tests": {
+        "src/layers/wildlifeSightings/model.perf.test.mjs > 500 / 2,000 / 5,000 icon model updates stay within their named timing budgets": {
+          "status": "pass",
+          "durationMs": 82.111396
+        },
+        "src/layers/wildlifeSightings/render.perf.test.mjs > dense continental production moveEnd pipeline yields every 4ms, including cold tiles and real Cesium billboard updates": {
+          "status": "pass",
+          "durationMs": 763.302405
+        }
+      }
+    },
+    {
+      "run": 5,
+      "ms": 1301,
+      "tests": {
+        "src/layers/wildlifeSightings/model.perf.test.mjs > 500 / 2,000 / 5,000 icon model updates stay within their named timing budgets": {
+          "status": "pass",
+          "durationMs": 79.625175
+        },
+        "src/layers/wildlifeSightings/render.perf.test.mjs > dense continental production moveEnd pipeline yields every 4ms, including cold tiles and real Cesium billboard updates": {
+          "status": "pass",
+          "durationMs": 753.684324
+        }
+      }
+    }
+  ],
+  "durationMs": 6604
+}

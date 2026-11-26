@@ -1,0 +1,19 @@
+{
+  "totalBytes": 80939371,
+  "files": 842,
+  "jsFiles": 133,
+  "jsGzipBytes": 7456194,
+  "largestJsGzipBytes": 2796702,
+  "largestJs": "assets/index-D7MC6UWh.js",
+  "entryJsGzipBytes": 4498737,
+  "entries": [
+    "cesium/Cesium.js",
+    "assets/index-D7MC6UWh.js"
+  ],
+  "limits": {
+    "totalBytes": 85000000,
+    "jsGzipBytes": 7850000,
+    "largestJsGzipBytes": 3000000,
+    "entryJsGzipBytes": 4750000
+  }
+}

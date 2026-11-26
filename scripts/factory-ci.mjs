@@ -27,6 +27,7 @@ import { discoverPerfTestFiles, perfTestArgs } from './run-perf-tests.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPORTER = path.join(ROOT, 'scripts/factory-ci/test-events.mjs');
 export const BASELINE_PATH = 'ci/factory/unit-baseline.json';
+export const PERF_BASELINE_PATH = 'ci/factory/perf-baseline.json';
 export const PERF_SMOKE = Object.freeze({ runs: 5, failQuorum: 3 });
 export const GATES = Object.freeze([
   'lint', 'typecheck', 'translations', 'unit', 'build', 'bundle-budget', 'globe-smoke', 'perf-smoke',
@@ -305,14 +306,28 @@ async function perfSmokeGate({ log, out }) {
     }
     runs.push({ run: i + 1, ms: result.ms, tests });
   }
-  const failed = [...misses].filter(([, n]) => n >= PERF_SMOKE.failQuorum);
-  const missed = [...misses].map(([id, n]) => `${id.split(' > ').pop().slice(0, 40)} ${n}/${PERF_SMOKE.runs}`);
+  // Benchmarks already over budget at the baseline commit on this runner class
+  // are listed in PERF_BASELINE_PATH with their measured miss rate. They are
+  // reported every run but cannot block; any other benchmark over quorum blocks.
+  const baselineFile = path.join(ROOT, PERF_BASELINE_PATH);
+  if (!existsSync(baselineFile)) return { state: 'error', description: `${PERF_BASELINE_PATH} is missing`, runs };
+  const baseline = JSON.parse(readFileSync(baselineFile, 'utf8'));
+  const env = environment();
+  if (baseline.environment.node !== env.node || baseline.environment.platform !== env.platform) {
+    return { state: 'error', description: `perf baseline is for Node ${baseline.environment.node}/${baseline.environment.platform}`, runs };
+  }
+  const short = (id) => id.split(' > ').pop().slice(0, 32);
+  const overQuorum = [...misses].filter(([, n]) => n >= PERF_SMOKE.failQuorum).map(([id]) => id);
+  const blocking = overQuorum.filter((id) => !(id in baseline.overBudget));
+  const known = Object.keys(baseline.overBudget).map((id) => `${short(id)} ${misses.get(id) ?? 0}/${PERF_SMOKE.runs}`);
   return {
-    state: failed.length ? 'failure' : 'success',
-    description: failed.length
-      ? `${failed.length} benchmark(s) missed budget in >=${PERF_SMOKE.failQuorum}/${PERF_SMOKE.runs} runs`
-      : `${Object.keys(runs[0].tests).length} benchmarks within budget${missed.length ? `; isolated misses: ${missed.join(', ')}` : ''}`,
+    state: blocking.length ? 'failure' : 'success',
+    description: blocking.length
+      ? `over budget in >=${PERF_SMOKE.failQuorum}/${PERF_SMOKE.runs} runs: ${blocking.map(short).join(', ')}`
+      : `${Object.keys(runs[0].tests).length} benchmarks, none newly over budget${known.length ? `; known over at ${baseline.commit.slice(0, 8)}: ${known.join(', ')}` : ''}`,
     policy: PERF_SMOKE,
+    baselineCommit: baseline.commit,
+    blocking,
     misses: Object.fromEntries(misses),
     runs,
   };

@@ -1,0 +1,78 @@
+# Nightly integration: merge green PRs labeled `nightly` into `nightly`, but only
+# publish an integration SHA whose own gev-ci/* statuses are green.
+# Owner card: t_cf66fac4. Runbook: docs/factory/NIGHTLY-PROMOTION.md.
+#
+# `schedule` fires only from the default branch (`staging`), so this runs once
+# the file has been promoted there. Until then use the host runner in the runbook.
+name: Factory nightly integration
+
+on:
+  schedule:
+    - cron: '41 8 * * *' # 08:41 UTC, 02:41 US Central
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: Assess and merge locally; push nothing
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# One branch mutator at a time: shared with factory-promote-staging.yml.
+concurrency:
+  group: factory-branch-mutation
+  cancel-in-progress: false
+
+jobs:
+  integrate:
+    name: Integrate labeled PRs into nightly
+    if: github.repository == 'kvnloo/gods-eye-view'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    environment: factory-branches
+    permissions:
+      contents: read
+      pull-requests: read
+      statuses: read
+      actions: write # dispatches factory-ci-sha.yml for each integration SHA
+    steps:
+      - name: Check out the trusted gate scripts (default branch, never a PR)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          sparse-checkout: |
+            scripts/factory
+            ci/factory/branch-policy.json
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      # GITHUB_TOKEN cannot push commits that touch .github/workflows, and many
+      # integrations do. The App token is used only by `git push`.
+      - name: Branch push token
+        id: app
+        uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
+        with:
+          client-id: ${{ vars.FACTORY_APP_CLIENT_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-workflows: write
+
+      - name: Integrate (exact-SHA CI via factory-ci-sha.yml)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FACTORY_PUSH_TOKEN: ${{ steps.app.outputs.token }}
+          DRY_RUN: ${{ inputs.dry-run && '--dry-run' || '' }}
+        run: |
+          python3 scripts/factory/nightly_integrate.py --validator dispatch \
+            --ci-workflow factory-ci-sha.yml --ci-ref '${{ github.event.repository.default_branch }}' \
+            --lock '' --report integration.json $DRY_RUN
+
+      - name: Keep the JSON record
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: nightly-integration-${{ github.run_id }}
+          path: integration.json
+          if-no-files-found: warn
+          retention-days: 90
